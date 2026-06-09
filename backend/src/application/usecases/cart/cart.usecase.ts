@@ -22,7 +22,7 @@ export class CartUsecase {
             return await this.cartRepository.upsertCart(userId, productId.toString(), size, quantity);
         }
 
-        const productExist = cart.items.find((item) => (item.product._id as string).toString() === productId.toString() && item.size === size);
+        const productExist = cart.items.find((item) => item.product._id.toString() === productId.toString() && item.size === size);
 
         if (productExist) {
             return await this.updateCartItem(userId, productId, size, quantity);
@@ -38,7 +38,7 @@ export class CartUsecase {
         if (!cart) {
             throw new Error("Cart not found");
         }
-        cart.items = cart.items.filter((item) => (item.product._id as string).toString() !== productId.toString() || item.size !== size);
+        cart.items = cart.items.filter((item) => item.product._id.toString() !== productId.toString() || item.size !== size);
         return await cart.save();
     }
 
@@ -56,8 +56,7 @@ export class CartUsecase {
         if (!cart) {
             throw new Error("Cart not found");
         }
-        cart.items = cart.items.map((item) => (item.product._id as string).toString() === productId.toString() && item.size === size ? { ...item, quantity } : item);
-       
+        cart.items = cart.items.map((item) => item.product._id.toString() === productId.toString() && item.size === size ? { ...item, quantity } : item);
         return await cart.save();
     }
 

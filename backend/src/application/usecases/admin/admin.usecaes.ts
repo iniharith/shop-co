@@ -33,7 +33,7 @@ export class AdminUsecase {
         user.verified = status;
         // WIREUP: socket io to send notification to the user
         await this.notificationUsecase.createNotification({
-            userId: user._id as string,
+            userId: user._id.toString(),
             title: "User Verified",
             message: "Your account has been verified",
             type: "VERIFICATION",

@@ -66,11 +66,11 @@ export class OrderUsecase {
         const orderItems = [];
         for (const item of cart.items) {
 
-            const product = await this.productRepository.findById(item.product._id as string);
+            const product = await this.productRepository.findById(item.product._id.toString());
             if (!product) throw new Error(`Product not found: ${item.product._id}`);
             const sizePerProdut = product.sizes.find(e => e.size == item.size);
             if (!sizePerProdut || sizePerProdut.stock <= 0) throw new Error(`Insufficient stock for product: ${product.name}`);
-            const updatedProduct = await this.productRepository.updateProductStockBySize(product._id as string, item.size, -item.quantity);
+            const updatedProduct = await this.productRepository.updateProductStockBySize(product._id.toString(), item.size, -item.quantity);
 
             const productPrice = product.price * item.quantity;
             orderItems.push({
@@ -99,7 +99,7 @@ export class OrderUsecase {
             title: "Order Placed",
             message: "Your order has been placed successfully",
             type: "ORDER",
-            orderId: order._id as string,
+            orderId: order._id.toString(),
             read: false
         })
         await this.cartRepository.clearCart(userId);
@@ -111,11 +111,11 @@ export class OrderUsecase {
         const order = await this.orderRepository.updateOrder(orderId, { orderStatus: updateStatus });
         if (!order) throw new Error("Order not found");
         await this.notificationUsecase.createNotification({
-            userId: order?.userId as string,
+            userId: order?.userId?.toString(),
             title: "Order Status Updated",
             message: `Your order has been ${updateStatus}`,
             type: "ORDER",
-            orderId: order?._id as string,
+            orderId: order?._id.toString(),
             read: false
         })
         await this.redisService.del(REDIS_KEYS.ORDERS + orderId);
@@ -164,19 +164,19 @@ export class OrderUsecase {
         const order = await this.orderRepository.updateOrder(orderId, { deliveryBoy: user._id });
         if (!order) throw new Error("Order not found");
         await this.notificationUsecase.createNotification({
-            userId: user._id as string,
+            userId: user._id.toString(),
             title: "Order Assigned to You",
             message: "You have been assigned to this order",
             type: "DELIVERY",
-            orderId: order._id as string,
+            orderId: order._id.toString(),
             read: false
         })
         await this.notificationUsecase.createNotification({
-            userId: order?.userId as string,
+            userId: order?.userId?.toString(),
             title: "Order Assigned to " + user.name,
             message: "Your order has been assigned to " + user.name,
             type: "DELIVERY",
-            orderId: order._id as string,
+            orderId: order._id.toString(),
             read: false
         })
         await this.redisService.del(REDIS_KEYS.ORDERS + orderId);
