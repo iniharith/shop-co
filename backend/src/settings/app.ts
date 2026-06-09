@@ -20,8 +20,9 @@ dotenv.config();
 const app = express();
 const allowedOrigins = [
     process.env.FRONTEND_URL as string,
+    process.env.FRONTEND_URL_2 as string,
     process.env.ADMIN_URL as string
-];
+].filter(Boolean);
 
 
 
