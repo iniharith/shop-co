@@ -3,7 +3,7 @@ import { config } from "dotenv";
 config();
 
 export const createRedisClient = (clientType: 'subscriber' | 'publisher' | 'standard' = 'standard') => {
-    const redisUrl = process.env.REDIS_URL;
+   const redisUrl = process.env.REDIS_PUBLIC_URL || process.env.REDIS_URL;
     
     if (!redisUrl) {
         throw new Error("REDIS_URL environment variable is required");
