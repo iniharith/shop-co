@@ -6,7 +6,7 @@ const dotenv_1 = require("dotenv");
 const connectSocket = (server) => {
     return new socket_io_1.Server(server, {
         cors: {
-            origin: [process.env.FRONTEND_URL, process.env.ADMIN_URL],
+            origin: true,
             methods: ["GET", "POST", "PUT", "DELETE"],
             credentials: true
         },

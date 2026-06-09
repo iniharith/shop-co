@@ -6,7 +6,7 @@ config()
 const connectSocket = (server: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>) => {
     return new Server(server, {
         cors: {
-            origin: [process.env.FRONTEND_URL!, process.env.ADMIN_URL!],
+            origin: true,
             methods: ["GET", "POST", "PUT", "DELETE"],
             credentials: true
         },
@@ -16,6 +16,4 @@ const connectSocket = (server: http.Server<typeof http.IncomingMessage, typeof h
     })
 }
 
-
 export default connectSocket;
-
