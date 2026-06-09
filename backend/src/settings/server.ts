@@ -12,15 +12,14 @@ import { handleRedisAndSocketMessageAdmin, handleRedisAndSocketMessageClient } f
 import { socketIoSetup } from '../infrastructure/socket/socketHandler';
 
 process.on("uncaughtException", (err) => {
-    console.log("UNCAUGHT Exception! Shutting down ...");
+    console.log("UNCAUGHT Exception! Ignoring ...");
     console.error(err);
-    process.exit(1);
 });
 
 process.on("unhandledRejection", (err) => {
-    console.log("UNHANDLED REJECTION! Shutting down ...");
+    console.log("UNHANDLED REJECTION! Ignoring ...");
     console.error(err);
-    process.exit(1);
+    // Don't exit - keep server running
 });
 
 const redisService = new RedisService();
@@ -30,7 +29,6 @@ async function main() {
     config();
 
     await connectDB();
-
 
     await initProduct();
     await initAdmin();
@@ -45,13 +43,10 @@ async function main() {
     socketIoSetup(adminNameSpace);
     handleRedisAndSocketMessageAdmin(redisService, adminNameSpace);
 
-
-
     server.listen(PORT, () => {
         console.log(`🎉 Server running on port ${PORT}`);
     });
 }
-
 
 const shutdown = () => {
     console.log("Shutting down gracefully...");
@@ -60,7 +55,6 @@ const shutdown = () => {
 
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
-
 
 main().catch((err) => {
     console.error("Failed to Load Server 🔴:", err);

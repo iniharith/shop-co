@@ -24,14 +24,13 @@ const redis_1 = require("../infrastructure/redis/redis");
 const redisMessagesHandler_1 = require("../infrastructure/redis/redisMessagesHandler");
 const socketHandler_1 = require("../infrastructure/socket/socketHandler");
 process.on("uncaughtException", (err) => {
-    console.log("UNCAUGHT Exception! Shutting down ...");
+    console.log("UNCAUGHT Exception! Ignoring ...");
     console.error(err);
-    process.exit(1);
 });
 process.on("unhandledRejection", (err) => {
-    console.log("UNHANDLED REJECTION! Shutting down ...");
+    console.log("UNHANDLED REJECTION! Ignoring ...");
     console.error(err);
-    process.exit(1);
+    // Don't exit - keep server running
 });
 const redisService = new redis_1.RedisService();
 function main() {
