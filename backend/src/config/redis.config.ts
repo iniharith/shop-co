@@ -10,13 +10,13 @@ export const createRedisClient = (clientType: 'subscriber' | 'publisher' | 'stan
     }
 
     const client = new Redis(redisUrl, {
-        tls: redisUrl.startsWith("rediss://") ? {} : undefined,
         retryStrategy(times) {
-            if (times > 5) return null;
-            const delay = Math.min(times * 50, 2000);
-            return delay;
+            if (times > 10) return null;
+            return Math.min(times * 100, 3000);
         },
-        maxRetriesPerRequest: null
+        maxRetriesPerRequest: null,
+        enableReadyCheck: false,
+        lazyConnect: false
     });
 
     client.on("error", (err) => {
