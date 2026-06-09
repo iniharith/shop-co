@@ -1,35 +1,67 @@
-{
-  "scripts": {
-    "dev": "nodemon ./src/settings/server.ts",
-    "build": "tsc",
-    "start": "node ./dist/settings/server.js"
-  },
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "express-async-handler": "^1.2.0",
-    "express-mongo-sanitize": "^2.2.0",
-    "helmet": "^8.1.0",
-    "ioredis": "^5.6.1",
-    "jose": "^5.8.0",
-    "jsonwebtoken": "^9.0.2",
-    "kafkajs": "^2.2.4",
-    "mongoose": "^8.6.0",
-    "morgan": "^1.10.0",
-    "socket.io": "^4.8.1"
-  },
-  "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/cookie-parser": "^1.4.8",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
-    "@types/jsonwebtoken": "^9.0.6",
-    "@types/morgan": "^1.9.9",
-    "nodemon": "^3.1.4",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
-  }
-}
+// v2
+import express from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import mongoSanitize from 'express-mongo-sanitize';
+import morgan from 'morgan';
+import authRoutes from '../presentation/routes/auth.route';
+import { apiRoutes } from '../shared/constants/api.constant';
+import { notFound, errorHandler } from '../presentation/middlewares/error.middleware';
+import path from 'path';
+import productRoutes from '../presentation/routes/product.route';
+import cartRoutes from '../presentation/routes/cart.route';
+import orderRoutes from '../presentation/routes/order.route';
+import deliveryBoyRoutes from '../presentation/routes/deliveryBoy.route';
+import adminRoutes from '../presentation/routes/admin.route';
+import notificationRoutes from '../presentation/routes/notification.route';
+
+dotenv.config();
+const app = express();
+
+app.use(cookieParser())
+app.use(
+    cors({
+        origin: true,
+        credentials: true,
+        methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+    })
+);
+
+app.options("*", cors({
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+}));
+
+// -------------------- util middleware-------------------------------
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use(express.static(path.join(__dirname, '../../public')));
+
+// -------------------- security middleware-------------------------------
+app.use(mongoSanitize())
+
+if (process.env.NODE_ENV === "development") app.use(morgan("dev"));
+
+// -------------------------  routes-------------------------------
+app.use(apiRoutes.AUTH, authRoutes);
+app.use(apiRoutes.PRODUCT, productRoutes);
+app.use(apiRoutes.CART, cartRoutes);
+app.use(apiRoutes.ORDER, orderRoutes);
+app.use(apiRoutes.DELIVERY_BOY, deliveryBoyRoutes);
+app.use(apiRoutes.ADMIN, adminRoutes);
+app.use(apiRoutes.NOTIFICATION, notificationRoutes);
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+});
+
+// -------------------------  error middleware-------------------------------
+app.use(notFound);
+app.use(errorHandler);
+
+export default app;
