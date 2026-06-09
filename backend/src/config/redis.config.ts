@@ -3,21 +3,18 @@ import { config } from "dotenv";
 config();
 
 export const createRedisClient = (clientType: 'subscriber' | 'publisher' | 'standard' = 'standard') => {
-    const client = process.env.REDIS_URL
-        ? new Redis(process.env.REDIS_URL, {
-            retryStrategy(times) {
-                const delay = Math.min(times * 50, 2000);
-                return delay;
-            }
-        })
-        : new Redis({
-            host: process.env.REDIS_HOST || 'localhost',
-            port: parseInt(process.env.REDIS_PORT || "6379"),
-            retryStrategy(times) {
-                const delay = Math.min(times * 50, 2000);
-                return delay;
-            }
-        });
+    const redisUrl = process.env.REDIS_URL;
+    
+    if (!redisUrl) {
+        throw new Error("REDIS_URL environment variable is required");
+    }
+
+    const client = new Redis(redisUrl, {
+        retryStrategy(times) {
+            const delay = Math.min(times * 50, 2000);
+            return delay;
+        }
+    });
 
     client.on("error", (err) => {
         console.error(`Redis ${clientType} client error:`, err);
