@@ -1,16 +1,24 @@
 "use client";
-import { heroItems } from "@/constants";
 import { Button } from "@heroui/button";
 import React from "react";
-import CountDown from "../../animation/countDown";
-import NumberCounter from "../../animation/counter";
 import { motion } from "framer-motion";
 import { item_variants } from "@/constants/framer-motion";
+import { useRouter } from "nextjs-toploader/app";
+
 const Hero = () => {
-  const text = "FIND CLOTHES THAT MATCHES YOUR STYLE";
+  const router = useRouter();
+  const text = "AFFORDABLE PRINTING SERVICES IN MALAYSIA";
   return (
-    <div className=" relative grid md:grid-cols-2  w-full bg-[#F2F0F1]">
+    <div className="relative grid md:grid-cols-2 w-full bg-[#F2F0F1] min-h-[500px]">
       <div className="flex md:py-0 py-10 flex-col gap-4 items-start px-5 md:px-20 justify-center">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={item_variants}
+          className="bg-red-500 text-white text-xs px-3 py-1 rounded-full font-semibold"
+        >
+          🚀 Fast & On-Time Delivery
+        </motion.div>
         <motion.h1
           className="text-4xl md:text-4xl lg:text-6xl font-bold leading-tight"
           initial="hidden"
@@ -40,56 +48,51 @@ const Hero = () => {
           variants={item_variants}
           className="text-gray-500 md:text-base text-sm w-[90%]"
         >
-          Browse through our diverse range of meticulously crafted garments,
-          designed to bring out your individuality and cater to your sense of
-          style.
+          High-quality printing for business cards, flyers, stickers, banners and more.
+          Fast delivery across Malaysia with best price guarantee.
         </motion.p>
         <motion.div
           initial="hidden"
           animate="visible"
           variants={item_variants}
+          className="flex gap-3 flex-wrap"
         >
-          <Button className="bg-primary md:w-fit w-full px-7 text-white rounded-full cursor-pointer active:scale-95 transition-all duration-300">
-            Shop Now
+          <Button
+            onClick={() => router.push("/home/shop")}
+            className="bg-black text-white px-7 rounded-full cursor-pointer active:scale-95 transition-all duration-300"
+          >
+            Order Now
+          </Button>
+          <Button
+            onClick={() => router.push("/home/shop")}
+            className="bg-white border border-black text-black px-7 rounded-full cursor-pointer active:scale-95 transition-all duration-300"
+          >
+            View Products
           </Button>
         </motion.div>
-        <div className="flex  gap-4 items-start mt-10 justify-center">
-          {heroItems.map((item, index) => (
-            <div key={index} className="flex flex-col gap-2">
-              <p className="flex items-center gap-2 font-bold text-xl md:text-4xl">
-                <NumberCounter
-                  className="text-2xl md:text-4xl "
-                  target={item.count}
-                />
-                +
-              </p>
-              <p className="text-gray-500">{item.description}</p>
+        <div className="flex gap-8 items-start mt-6 justify-center flex-wrap">
+          {[
+            { count: "50+", label: "Print Products" },
+            { count: "10K+", label: "Happy Customers" },
+            { count: "48hr", label: "Fast Delivery" },
+          ].map((item, index) => (
+            <div key={index} className="flex flex-col gap-1">
+              <p className="font-bold text-2xl md:text-4xl">{item.count}</p>
+              <p className="text-gray-500 text-sm">{item.label}</p>
             </div>
           ))}
         </div>
       </div>
-      <div className="flex relative  items-center justify-end md:px-10 px-0">
-        <div className="w-full h-full overflow-hidden">
+      <div className="flex relative items-center justify-end md:px-10 px-0">
+        <div className="w-full h-full overflow-hidden min-h-[300px]">
           <img
             src="/images/hero.jpeg"
-            alt="hero"
+            alt="printing services"
             className="w-full object-cover h-full"
           />
-          <div className="absolute top-0  w-full h-full">
-            <div className="relative top-[50%] left-[10%] w-10 h-10 overflow-hidden">
-              <img
-                src="/star.svg"
-                alt="hero"
-                className="w-full object-cover h-full"
-              />
-            </div>
-            <div className="relative top-[20%] left-[70%] w-20 h-20 overflow-hidden">
-              <img
-                src="/star.svg"
-                alt="hero"
-                className="w-full object-cover h-full"
-              />
-            </div>
+          <div className="absolute top-4 right-4 bg-white rounded-xl shadow-lg p-4 flex flex-col gap-1">
+            <p className="font-bold text-sm">⭐ Best Price Guarantee</p>
+            <p className="text-gray-500 text-xs">Lowest price in Malaysia</p>
           </div>
         </div>
       </div>

@@ -1,62 +1,65 @@
 "use client";
-import { useFilterStore } from "@/store/filterStore";
-import Image from "next/image";
 import { useRouter } from "nextjs-toploader/app";
-
 import React from "react";
 
 const Categorys = () => {
   const categories = [
     {
       id: 1,
-      name: "jacket",
-      image: "/images/jacket.jpg",
+      name: "Business Cards",
+      description: "Professional cards for your brand",
+      icon: "🪪",
+      color: "bg-blue-50",
     },
     {
       id: 2,
-      name: "pant",
-      image: "/images/pants.jpg",
+      name: "Flyers & Leaflets",
+      description: "Promote your business effectively",
+      icon: "📄",
+      color: "bg-yellow-50",
     },
     {
       id: 3,
-      name: "shirt",
-      image: "/images/shirt.jpg",
+      name: "Stickers",
+      description: "Custom stickers for any purpose",
+      icon: "🏷️",
+      color: "bg-green-50",
     },
     {
       id: 4,
-      name: "tshirt",
-      image: "/images/tshirt.jpg",
+      name: "Banners & Signage",
+      description: "Large format prints that stand out",
+      icon: "🚩",
+      color: "bg-red-50",
+    },
+    {
+      id: 5,
+      name: "Booklets",
+      description: "Catalogs, magazines & booklets",
+      icon: "📚",
+      color: "bg-purple-50",
     },
   ];
+
   const router = useRouter();
-  const { setCategories } = useFilterStore();
-  const handleCategoryClick = (category: string) => {
-    setCategories([category]);
-    router.push(`/home/shop`);
-  };
+
   return (
-    <div className="w-full py-10 grid place-items-center">
-      <div className="md:w-[70%] w-[90%] rounded-lg bg-gray-300/30 p-4">
-        <h1 className="text-4xl text-center font-bold">Categories</h1>
-        <div className="grid mt-5 md:grid-cols-3 grid-cols-2 gap-4">
-          {categories.map((category, index) => (
+    <div className="w-full py-16 grid place-items-center bg-gray-50">
+      <div className="md:w-[80%] w-[90%]">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold">Explore Our Products</h1>
+          <p className="text-gray-500 mt-2">Over 50 products with low prices, delivered across Malaysia</p>
+        </div>
+        <div className="grid md:grid-cols-5 grid-cols-2 gap-4">
+          {categories.map((category) => (
             <div
               key={category.id}
-              className={` md:h-[15rem] cursor-pointer hover:scale-95 transition-all duration-300 overflow-hidden h-[10rem] w-full rounded-lg bg-zinc-600/10 ${
-                index % 3 === 0 ? "md:col-span-2" : "md:col-span-1"
-              }`}
-              onClick={() => handleCategoryClick(category.name)}
+              className={`${category.color} cursor-pointer hover:scale-95 transition-all duration-300 rounded-xl p-5 flex flex-col gap-2`}
+              onClick={() => router.push("/home/shop")}
             >
-              <div className="relative w-full h-full">
-                <img
-                  className="object-cover w-full h-full"
-                  src={category.image}
-                  alt={category.name}
-                />
-                <h1 className="absolute bottom-1 left-2 text-white text-2xl font-bold">
-                  {category.name}
-                </h1>
-              </div>
+              <span className="text-4xl">{category.icon}</span>
+              <h2 className="font-bold text-sm">{category.name}</h2>
+              <p className="text-gray-500 text-xs">{category.description}</p>
             </div>
           ))}
         </div>
