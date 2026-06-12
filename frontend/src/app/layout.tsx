@@ -29,7 +29,12 @@ export const metadata: Metadata = {
     template: "%s | Kampung Cetak",
   },
   description: "Custom printing & frame — Kampung Cetak",
-  keywords: ["kampung cetak", "custom prin", "baju custom", "printing malaysia"],
+  keywords: ["kampung cetak", "custom print", "baju custom", "printing malaysia"],
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-16x16.png",
+    apple: "/apple-touch-icon.png",
+  },
   openGraph: {
     siteName: "Kampung Cetak",
     title: "Kampung Cetak",
