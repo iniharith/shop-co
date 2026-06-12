@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { navItems } from "@/constants";
 import { Input } from "../ui/input";
 import { IoCloseCircle, IoNotifications, IoSearch } from "react-icons/io5";
@@ -16,6 +17,7 @@ import { Badge } from "../ui/badge";
 import NotificationsDrawer from "./notifications-drawer";
 import { useNav } from "@/hooks/useNav";
 import AuthModal from "../page-sections/auth/authModal";
+
 // Mock notification data
 const mockNotifications = [
   {
@@ -60,9 +62,19 @@ const MobileNavSheetContent = ({ closeDrawer }: { closeDrawer: Function }) => {
         }
       >
         <div className="bg-gray-200 h-full w-full grow px-3 py-1 flex flex-col rounded-[16px]">
-          <Drawer.Title className="font-medium px-0  border-b border-dashed border-zinc-900/20 justify-between flex items-center mb-2 text-white">
-            <div className="top-0 -translate-x-3 scale-[.8] left-0">
-              <h1 className="text-2xl text-black font-bold">SHOP.CO</h1>
+          <Drawer.Title className="font-medium px-0 border-b border-dashed border-zinc-900/20 justify-between flex items-center mb-2 text-white">
+            {/* ── MOBILE LOGO ── */}
+            <div className="top-0 -translate-x-1 left-0 py-2">
+              <Link href="/" className="flex items-center gap-2">
+                <Image
+                  src="/images/kampung-cetak-logo.png"
+                  alt="Kampung Cetak"
+                  width={36}
+                  height={36}
+                  className="object-contain rounded-full"
+                />
+                <span className="text-lg text-black font-bold">Kampung Cetak</span>
+              </Link>
             </div>
             <Button
               onPress={() => closeDrawer()}
@@ -99,6 +111,7 @@ const MobileNavSheetContent = ({ closeDrawer }: { closeDrawer: Function }) => {
     </Drawer.Portal>
   );
 };
+
 const Nav = () => {
   const {
     isOpen,
@@ -113,6 +126,7 @@ const Nav = () => {
     setIsAuthModalOpen,
     notification,
   } = useNav();
+
   return (
     <>
       <div className="w-full bg-gray-200 px-7 py-2 flex justify-between items-center">
@@ -122,16 +136,26 @@ const Nav = () => {
           onOpenChange={setIsOpen}
           direction="left"
         >
-          <Drawer.Trigger className="md:hidden  block">
+          <Drawer.Trigger className="md:hidden block">
             <FaBars />
           </Drawer.Trigger>
           <MobileNavSheetContent closeDrawer={closeDrawer} />
         </Drawer.Root>
-        <div className="flex  items-center gap-4">
-          <Link href="/">
-            <h1 className="text-2xl font-bold">SHOP.CO</h1>
+
+        {/* ── DESKTOP LOGO ── */}
+        <div className="flex items-center gap-4">
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/images/kampung-cetak-logo.png"
+              alt="Kampung Cetak"
+              width={40}
+              height={40}
+              className="object-contain rounded-full"
+            />
+            <h1 className="text-xl font-bold">Kampung Cetak</h1>
           </Link>
         </div>
+
         <div className="flex gap-4 items-center">
           {navItems.map((item, index) => (
             <Link
@@ -144,7 +168,7 @@ const Nav = () => {
                   <span className="inline-block transition-all duration-300 opacity-100 group-hover:-translate-y-6">
                     {item.label}
                   </span>
-                  <span className="absolute left-0 inline-block translate-y-5 transition-all duration-300 group-hover:scale-[.9]  group-hover:translate-y-0">
+                  <span className="absolute left-0 inline-block translate-y-5 transition-all duration-300 group-hover:scale-[.9] group-hover:translate-y-0">
                     {item.label}
                   </span>
                 </p>
@@ -154,12 +178,12 @@ const Nav = () => {
               </>
             </Link>
           ))}
-          <div className="relative md:flex  ml-2 hidden items-center rounded-full bg-muted-foreground/10 px-5">
+          <div className="relative md:flex ml-2 hidden items-center rounded-full bg-muted-foreground/10 px-5">
             <div className="absolute -translate-x-3">
               <IoSearch className="text-gray-500" />
             </div>
             <Input
-              className="w-60  focus-visible:ring-0  bg-transparent border-none ring-transparent"
+              className="w-60 focus-visible:ring-0 bg-transparent border-none ring-transparent"
               type="text"
               placeholder="Search"
             />
@@ -176,7 +200,7 @@ const Nav = () => {
                 >
                   <FaCartShopping className="" />
                 </Button>
-                <Badge className="absolute top-0 -right-2 bg-blue-100 text-blue-800  text-xs w-4 h-4 rounded-full flex items-center justify-center">
+                <Badge className="absolute top-0 -right-2 bg-blue-100 text-blue-800 text-xs w-4 h-4 rounded-full flex items-center justify-center">
                   {cartCount}
                 </Badge>
               </div>
@@ -195,7 +219,6 @@ const Nav = () => {
                     : 0}
                 </Badge>
               </div>
-
               <Button
                 onPress={() => router.push("/home/profile")}
                 isIconOnly
@@ -209,7 +232,7 @@ const Nav = () => {
             <Button
               onPress={() => setIsAuthModalOpen(true)}
               size="sm"
-              className="rounded-sm font-semibold cursor-pointer border-primary border text-sm  bg-primary/90 active:scale-95 transition-all duration-300 text-white"
+              className="rounded-sm font-semibold cursor-pointer border-primary border text-sm bg-primary/90 active:scale-95 transition-all duration-300 text-white"
             >
               Login
             </Button>
