@@ -68,7 +68,7 @@ app.use('/api/files', fileUploadRoutes);
 app.use('/api/webhooks/whatsapp', whatsappWebhook);
 
 // ─── Admin Panel (served at admin.kampungcetak.com) ──────
-const adminPath = path.join(__dirname, '../../../admin');
+const adminPath = path.join(__dirname, '../../admin');
 app.use('/admin', express.static(adminPath));
 app.get(['/admin', '/admin/*'], (_req, res) => {
     res.sendFile(path.join(adminPath, 'index.html'));
