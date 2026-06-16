@@ -1,119 +1,162 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { IMockProduct } from "@/constants/data";
-import { ColorSelector } from "@/components/global/color-selector";
-import { SizeSelector } from "@/components/global/size-selector";
 import { QuantityPicker } from "@/components/global/quantity-picker";
 import { StarRating } from "@/components/global/star-rating";
-import { Button } from "@heroui/button";
-import { IProduct } from "@/types/IProduct";
+import { IProduct, IPrintingOption } from "@/types/IProduct";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { useUIStore } from "@/store/uiStore";
 import { useAddtoCart } from "@/hooks/useCart";
 import AnimatedButton from "@/components/animation/animatedButton";
+
 interface ProductDetailsProps {
   product: IProduct;
 }
 
 export function ProductDetails({ product }: ProductDetailsProps) {
-  const [selectedSize, setSelectedSize] = useState(product.sizes[0].size);
-  const [quantity, setQuantity] = useState(1);
   const { id } = useParams();
   const { data: session } = useSession();
-  const { setIsAuthModalOpen, setPreviewsFunction, previewsFunction } =
-    useUIStore();
-  const { mutate, isPending, isSuccess, error } = useAddtoCart();
+  const { setIsAuthModalOpen } = useUIStore();
+  const { mutate, isPending } = useAddtoCart();
+
+  const [quantity, setQuantity] = useState(100); // Typical printing starting quantity
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    // Initialize default options
+    if (product.printingOptions) {
+      const defaults: Record<string, number> = {};
+      product.printingOptions.forEach(opt => {
+        if (opt.options.length > 0) {
+          defaults[opt.name] = 0; // Select first option by default
+        }
+      });
+      setSelectedOptions(defaults);
+    }
+    setQuantity(100);
+  }, [product, id]);
+
+  const handleOptionChange = (optionName: string, index: number) => {
+    setSelectedOptions(prev => ({ ...prev, [optionName]: index }));
+  };
+
   const handleAddToCart = () => {
-    console.log("handleAddToCart");
     if (!session) {
       toast.error("Please login to add to cart");
       setIsAuthModalOpen(true);
-
-     
       return;
     }
-    mutate({ productId: product._id, size: selectedSize, quantity });
+    mutate({ productId: product._id, size: "Standard", quantity });
     toast.success("Added to cart");
-    // Here you would typically dispatch an action to your cart state management
   };
 
-  console.log("previewsFunction", previewsFunction);
-  useEffect(() => {
-    setSelectedSize(product.sizes[0].size);
-  }, [product, id]);
+  // Calculate prices
+  let optionAddons = 0;
+  if (product.printingOptions) {
+    product.printingOptions.forEach(opt => {
+      const selectedIdx = selectedOptions[opt.name];
+      if (selectedIdx !== undefined && opt.options[selectedIdx]) {
+        optionAddons += opt.options[selectedIdx].priceAdd;
+      }
+    });
+  }
 
-  const addeDesc = (name: string) => {
-    return `This  ${name} which is perfect for any occasion. Crafted from a soft and breathable fabric, it offers superior comfort and style.This  ${name} which is perfect for any occasion. Crafted from a soft and breathable fabric, it offers superior comfort and style.This  ${name} which is perfect for any occasion. Crafted from a soft and breathable fabric, it offers superior comfort and style.This  ${name} which is perfect for any occasion. Crafted from a soft and breathable fabric, it offers superior comfort and style.`;
-  };
+  const basePrice = product.price + optionAddons;
+  const subtotal = basePrice * (quantity / 100); // Assume base price is per 100 units
+  const vat = subtotal * 0.07; // 7% VAT example
+  const total = subtotal + vat;
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl  ">{product.name}</h1>
-        <div className="flex flex-wrap items-baseline gap-2">
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold">${product.price}</span>
-            {product.originalPrice && (
-              <span className="text-lg text-muted-foreground line-through">
-                ${product.originalPrice}
-              </span>
-            )}
-          </div>
-          {product.discount && (
-            <span className="rounded-md bg-red-100 px-2 py-0.5 text-sm font-medium text-red-600">
-              -{product.discount}%
-            </span>
-          )}
-        </div>
-        <div className="pt-1">
-          <StarRating rating={product.rating} maxRating={5} />
-        </div>
-      </div>
-      <div className="w-full h-1 border-input border-b"></div>
-      <p className="text-muted-foreground">{addeDesc(product.name)}</p>
-
-      <div className="w-full h-1 border-input border-b"></div>
-
-      {/* stock avaible */}
-
-      <SizeSelector
-        sizes={product.sizes}
-        selectedSize={selectedSize}
-        onSelectSize={setSelectedSize}
-      />
-      <div className="flex w-full">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sticky top-24">
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold tracking-tight text-primary">{product.name}</h1>
+        
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Stock Available</span>
-          <span className="text-sm text-muted-foreground">{product.sizes.find(size => size.size === selectedSize)?.stock}</span>
+          <StarRating rating={product.rating} maxRating={5} />
+          <span className="text-sm text-gray-500">({product.rating} / 5)</span>
         </div>
       </div>
-      <div className="w-full h-1 border-input border-b"></div>
-      <div className="flex flex-col gap-4 pt-4 sm:flex-row sm:items-center">
-        <QuantityPicker
-          quantity={quantity}
-          onDecrement={() => setQuantity((q) => Math.max(1, q - 1))}
-          onIncrement={() => setQuantity((q) => q + 1)}
-          max={product.sizes.find(size => size.size === selectedSize)?.stock}
-          onQuantityChange={setQuantity}
-        />
-        {/* <Button
-          onPress={handleAddToCart}
-          className="w-full bg-primary text-white py-3 rounded-xl active:scale-95 transition-all cursor-pointer sm:w-auto flex-1"
-          size="lg"
-        >
-          Add to Cart
-        </Button> */}
-        <AnimatedButton
-          text="Add to Cart"
-          type="submit"
-          isLoading={isPending}
-          className="w-full bg-primary text-white py-3 text-sm font-normal rounded-xl active:scale-95 transition-all cursor-pointer sm:w-auto flex-1"
-          onClick={handleAddToCart}
-        />
+
+      <div className="w-full h-px bg-gray-200 my-6"></div>
+
+      {/* ── PRINTING OPTIONS ── */}
+      <div className="space-y-6">
+        {product.printingOptions && product.printingOptions.map((opt, i) => (
+          <div key={i} className="space-y-2">
+            <label className="text-sm font-semibold text-gray-700">{opt.name}</label>
+            <div className="grid grid-cols-1 gap-2">
+              {opt.options.map((val, idx) => (
+                <label 
+                  key={idx}
+                  className={`flex items-center justify-between p-3 border rounded-xl cursor-pointer transition-all ${
+                    selectedOptions[opt.name] === idx 
+                      ? "border-primary bg-primary/5 ring-1 ring-primary" 
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="radio" 
+                      name={opt.name} 
+                      className="w-4 h-4 text-primary focus:ring-primary"
+                      checked={selectedOptions[opt.name] === idx}
+                      onChange={() => handleOptionChange(opt.name, idx)}
+                    />
+                    <span className="text-sm text-gray-800">{val.label}</span>
+                  </div>
+                  {val.priceAdd > 0 && (
+                    <span className="text-sm text-gray-500">+${val.priceAdd.toFixed(2)}</span>
+                  )}
+                </label>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-gray-700">Quantity</label>
+          <QuantityPicker
+            quantity={quantity}
+            onDecrement={() => setQuantity((q) => Math.max(100, q - 100))}
+            onIncrement={() => setQuantity((q) => q + 100)}
+            max={10000}
+            onQuantityChange={setQuantity}
+          />
+          <p className="text-xs text-gray-500">Order in multiples of 100.</p>
+        </div>
       </div>
+
+      <div className="w-full h-px bg-gray-200 my-6"></div>
+
+      {/* ── PRICE SUMMARY ── */}
+      <div className="bg-gray-50 rounded-xl p-4 space-y-3 mb-6">
+        <div className="flex justify-between text-sm text-gray-600">
+          <span>Subtotal</span>
+          <span>${subtotal.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-sm text-gray-600">
+          <span>VAT (7%)</span>
+          <span>${vat.toFixed(2)}</span>
+        </div>
+        <div className="w-full h-px bg-gray-200"></div>
+        <div className="flex justify-between items-end">
+          <span className="text-base font-semibold text-gray-900">Total Price</span>
+          <div className="text-right">
+            <span className="text-2xl font-bold text-primary">${total.toFixed(2)}</span>
+            <p className="text-xs text-gray-500">includes delivery</p>
+          </div>
+        </div>
+      </div>
+
+      <AnimatedButton
+        text="Add to Cart"
+        type="submit"
+        isLoading={isPending}
+        className="w-full bg-primary text-white py-4 font-semibold rounded-xl active:scale-95 transition-all cursor-pointer shadow-md hover:shadow-lg"
+        onClick={handleAddToCart}
+      />
     </div>
   );
 }

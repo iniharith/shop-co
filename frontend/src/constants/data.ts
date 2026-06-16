@@ -3,29 +3,56 @@ import { Testimonial } from "@/types";
 export const products = [
   {
     _id: 1,
-    name: "T-shirt with Tape Details",
-    price: 120,
-    originalPrice: 120,
-    rating: 4.5,
-    images: ["/jacket.webp"],
-    discount: 0,
-    description: "This is a description of the product",
-    category: "T-shirt",
-    sizes: [{ size: "M", stock: 10 }, { size: "L", stock: 10 }, { size: "XL", stock: 10 }],
+    name: "Premium Business Cards",
+    price: 15, // Base price for minimum quantity
+    originalPrice: 20,
+    rating: 4.8,
+    images: ["/jacket.webp"], // Will use a placeholder for now
+    discount: 25,
+    description: "Make a lasting impression with our high-quality premium business cards. Printed on thick, durable cardstock with vibrant colors and sharp details. Perfect for networking and professional use.",
+    category: "Business Cards",
+    sizes: [{ size: "Standard", stock: 9999 }],
+    printingOptions: [
+      {
+        name: "Format",
+        options: [
+          { label: "Standard (90 x 54 mm)", priceAdd: 0 },
+          { label: "Square (55 x 55 mm)", priceAdd: 5 },
+        ]
+      },
+      {
+        name: "Paper",
+        options: [
+          { label: "260g Art Card", priceAdd: 0 },
+          { label: "310g Art Card", priceAdd: 10 },
+          { label: "Matte Lamination", priceAdd: 15 },
+        ]
+      }
+    ],
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
     _id: 2,
-    name: "Skinny Fit Jeans",
-    price: 240,
-    originalPrice: 260,
-    rating: 3.5,
+    name: "Custom Die-Cut Stickers",
+    price: 30,
+    originalPrice: 35,
+    rating: 4.9,
     images: ["/jacket.webp"],
-    discount: 20,
-    description: "This is a description of the product",
-    category: "Jeans",
-    sizes: [{ size: "M", stock: 10 }, { size: "L", stock: 10 }, { size: "XL", stock: 10 }],
+    discount: 14,
+    description: "High quality custom die-cut stickers. Weatherproof, durable, and easy to peel.",
+    category: "Stickers",
+    sizes: [{ size: "Any", stock: 9999 }],
+    printingOptions: [
+      {
+        name: "Material",
+        options: [
+          { label: "White Vinyl", priceAdd: 0 },
+          { label: "Clear Vinyl", priceAdd: 10 },
+          { label: "Holographic", priceAdd: 20 },
+        ]
+      }
+    ],
     createdAt: new Date(),
     updatedAt: new Date(),
   },

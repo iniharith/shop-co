@@ -24,15 +24,28 @@ const page = () => {
 
     
   return (
-    <div className="w-full py-5 md:px-10 px-5">
+    <div className="w-full py-5 md:px-10 px-5 max-w-[1400px] mx-auto">
       <Breadcrumbs />
       {isPending && <ProductDetailSkeleton />}
       {!isPending && product && (
-        <div className="grid border-b border-input pb-5 grid-cols-1 gap-2 mt-5 md:grid-cols-2 lg:gap-12">
-          <div className="w-full  mx-auto md:mx-0">
-            <ProductGallery images={product.images} />
+        <div className="grid border-b border-gray-200 pb-10 grid-cols-1 mt-6 lg:grid-cols-12 gap-8 items-start">
+          {/* ── LEFT COLUMN: IMAGES & DESCRIPTION ── */}
+          <div className="w-full lg:col-span-7 space-y-8">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+              <ProductGallery images={product.images} />
+            </div>
+            
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+              <h2 className="text-xl font-bold tracking-tight text-primary">Product Information</h2>
+              <div className="w-full h-px bg-gray-200"></div>
+              <p className="text-gray-600 leading-relaxed text-sm md:text-base">
+                {product.description || "High quality printing service offering excellent results with vibrant colors and durability. Ideal for professional and personal use."}
+              </p>
+            </div>
           </div>
-          <div className="w-full max-w-[600px] mx-auto md:mx-0">
+          
+          {/* ── RIGHT COLUMN: CONFIGURATOR (Sticky) ── */}
+          <div className="w-full lg:col-span-5 relative h-full">
             <ProductDetails product={product} />
           </div>
         </div>

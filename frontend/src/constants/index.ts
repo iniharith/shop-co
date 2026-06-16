@@ -18,6 +18,16 @@ export const navItems = [
     
 ]
 
+export const printingCategories = [
+    { label: "Business Cards", href: "/home/shop?category=business-cards" },
+    { label: "Stickers & Labels", href: "/home/shop?category=stickers" },
+    { label: "Flyers & Leaflets", href: "/home/shop?category=flyers" },
+    { label: "Posters", href: "/home/shop?category=posters" },
+    { label: "Packaging", href: "/home/shop?category=packaging" },
+    { label: "Apparel", href: "/home/shop?category=apparel" },
+    { label: "Banners", href: "/home/shop?category=banners" },
+];
+
 
 export const heroItems=[
     {

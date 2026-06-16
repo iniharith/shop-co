@@ -1,10 +1,16 @@
+export interface IPrintingOption {
+    name: string;
+    options: { label: string; priceAdd: number }[];
+}
+
 export interface IProduct {
     _id: string;
     name: string;
     description: string;
-    price: number;
+    price: number; // Base price
     category: string;
-    sizes: ISize[];
+    sizes: ISize[]; // Keep for legacy
+    printingOptions?: IPrintingOption[];
     images: string[];
     createdAt: Date;
     updatedAt: Date;
@@ -12,7 +18,6 @@ export interface IProduct {
     discount: number;
     originalPrice: number;
 }
-
 
 export interface ISize {
     stock: number;
