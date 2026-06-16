@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { CellAction } from "@/components/global/cell-actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
