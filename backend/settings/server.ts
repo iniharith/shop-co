@@ -10,7 +10,7 @@ import { RedisService } from '../infrastructure/redis/redis';
 import { REDIS_CHANNELS } from '../shared/constants/redis.constant';
 import { handleRedisAndSocketMessageAdmin, handleRedisAndSocketMessageClient } from '../infrastructure/redis/redisMessagesHandler';
 import { socketIoSetup } from '../infrastructure/socket/socketHandler';
-import { startTrackingCronJob } from '../infrastructure/jobs/TrackingCronJob';
+import { startParcelPollingJob } from '../shared/jobs/parcel-polling.job';
 
 process.on("uncaughtException", (err) => {
     console.log("UNCAUGHT Exception! Ignoring ...");
@@ -46,7 +46,7 @@ async function main() {
 
     server.listen(PORT, () => {
         console.log(`🎉 Server running on port ${PORT}`);
-        startTrackingCronJob(); // Auto-sync parcels every 15 min
+        startParcelPollingJob();
     });
 }
 

@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kampung Cetak — Admin Dashboard</title>
+  <meta name="description" content="Kampung Cetak Admin Panel - Pengurusan Parcel & Fail Pelanggan" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #06060f;
+      --bg-secondary: #0d0d1f;
+      --bg-card: rgba(255,255,255,0.04);
+      --bg-card-hover: rgba(255,255,255,0.07);
+      --border: rgba(255,255,255,0.08);
+      --border-active: rgba(124,58,237,0.5);
+      --accent: #7c3aed;
+      --accent-light: #a78bfa;
+      --accent-glow: rgba(124,58,237,0.3);
+      --accent-gradient: linear-gradient(135deg, #7c3aed, #4f46e5);
+      --green: #10b981;
+      --green-bg: rgba(16,185,129,0.12);
+      --yellow: #f59e0b;
+      --yellow-bg: rgba(245,158,11,0.12);
+      --blue: #3b82f6;
+      --blue-bg: rgba(59,130,246,0.12);
+      --orange: #f97316;
+      --orange-bg: rgba(249,115,22,0.12);
+      --red: #ef4444;
+      --red-bg: rgba(239,68,68,0.12);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #475569;
+      --sidebar-w: 260px;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      overflow-x: hidden;
+    }
+
+    /* ─── SCROLLBAR ───────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    /* ─── SIDEBAR ────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      min-height: 100vh;
+      background: rgba(13,13,31,0.95);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0;
+      z-index: 100;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-logo {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .sidebar-logo .logo-icon {
+      width: 42px; height: 42px;
+      background: var(--accent-gradient);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .sidebar-logo .brand-name {
+      font-size: 16px; font-weight: 700;
+      background: linear-gradient(135deg, #fff, var(--accent-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .sidebar-logo .brand-sub {
+      font-size: 11px; color: var(--text-muted); font-weight: 400; margin-top: 1px;
+    }
+
+    .sidebar-nav { padding: 16px 12px; flex: 1; }
+    .nav-section-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 1.2px;
+      color: var(--text-muted); text-transform: uppercase;
+      padding: 12px 12px 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 14px; font-weight: 500;
+      color: var(--text-secondary);
+      transition: var(--transition);
+      margin-bottom: 2px;
+      position: relative;
+    }
+    .nav-item:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+    .nav-item.active {
+      background: rgba(124,58,237,0.15);
+      color: var(--accent-light);
+      border: 1px solid rgba(124,58,237,0.25);
+    }
+    .nav-item.active::before {
+      content: '';
+      position: absolute; left: 0; top: 20%; height: 60%;
+      width: 3px; background: var(--accent);
+      border-radius: 0 4px 4px 0;
+    }
+    .nav-item .nav-icon { font-size: 18px; width: 22px; text-align: center; }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--red);
+      color: #fff;
+      font-size: 10px; font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 99px;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+    }
+    .sidebar-footer .admin-info {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .admin-avatar {
+      width: 36px; height: 36px;
+      background: var(--accent-gradient);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px;
+    }
+    .admin-name { font-size: 13px; font-weight: 600; }
+    .admin-role { font-size: 11px; color: var(--text-muted); }
+
+    /* ─── MAIN ───────────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      height: 68px;
+      background: rgba(6,6,15,0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+      position: sticky; top: 0;
+      z-index: 50;
+    }
+    .topbar-title { font-size: 18px; font-weight: 700; }
+    .topbar-actions { display: flex; align-items: center; gap: 12px; }
+    .topbar-btn {
+      padding: 8px 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      font-size: 13px; font-weight: 500;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: var(--transition);
+    }
+    .topbar-btn:hover { background: var(--bg-card-hover); color: var(--text-primary); border-color: var(--accent); }
+    .topbar-btn.primary {
+      background: var(--accent-gradient);
+      color: #fff; border: none;
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+    .topbar-btn.primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .page-content { padding: 32px; flex: 1; }
+
+    /* ─── CARDS ──────────────────────────────────────── */
+    .glass-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      backdrop-filter: blur(20px);
+      transition: var(--transition);
+    }
+    .glass-card:hover { border-color: var(--border-active); box-shadow: 0 0 30px rgba(124,58,237,0.08); }
+
+    /* ─── STAT CARDS ─────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: -30px; right: -20px;
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      opacity: 0.08;
+    }
+    .stat-card.purple::before { background: var(--accent); }
+    .stat-card.green::before { background: var(--green); }
+    .stat-card.blue::before { background: var(--blue); }
+    .stat-card.orange::before { background: var(--orange); }
+    .stat-card.red::before { background: var(--red); }
+    .stat-icon { font-size: 28px; margin-bottom: 12px; }
+    .stat-value { font-size: 32px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+    .stat-label { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+    .stat-trend { font-size: 11px; color: var(--green); margin-top: 6px; }
+
+    /* ─── GRID LAYOUT ─────────────────────────────────── */
+    .content-grid { display: grid; grid-template-columns: 1fr 340px; gap: 24px; }
+    @media(max-width: 1100px) { .content-grid { grid-template-columns: 1fr; } }
+
+    /* ─── TABLE ──────────────────────────────────────── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .section-title { font-size: 16px; font-weight: 700; }
+    .section-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr { transition: var(--transition); }
+    tbody tr:hover { background: var(--bg-card-hover); }
+    tbody td { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.03); vertical-align: middle; }
+    .td-primary { font-weight: 600; color: var(--text-primary); }
+    .td-secondary { color: var(--text-secondary); font-size: 12px; margin-top: 2px; }
+
+    /* ─── BADGES ─────────────────────────────────────── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 11px; font-weight: 600;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; animation: pulse-dot 2s infinite; }
+    @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.8)} }
+
+    .badge-pending { background: var(--yellow-bg); color: var(--yellow); }
+    .badge-pending .badge-dot { background: var(--yellow); }
+    .badge-picked_up { background: var(--blue-bg); color: var(--blue); }
+    .badge-picked_up .badge-dot { background: var(--blue); }
+    .badge-in_transit { background: rgba(124,58,237,0.15); color: var(--accent-light); }
+    .badge-in_transit .badge-dot { background: var(--accent-light); }
+    .badge-out_for_delivery { background: var(--orange-bg); color: var(--orange); }
+    .badge-out_for_delivery .badge-dot { background: var(--orange); }
+    .badge-delivered { background: var(--green-bg); color: var(--green); }
+    .badge-delivered .badge-dot { background: var(--green); }
+    .badge-failed { background: var(--red-bg); color: var(--red); }
+    .badge-failed .badge-dot { background: var(--red); }
+    .badge-reviewed { background: var(--green-bg); color: var(--green); }
+    .badge-pending-review { background: var(--yellow-bg); color: var(--yellow); }
+
+    /* ─── ACTION BUTTONS ─────────────────────────────── */
+    .action-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .action-btn {
+      padding: 5px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 11px; font-weight: 500;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 4px;
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+    .action-btn:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+    .action-btn.btn-track:hover { border-color: var(--blue); color: var(--blue); }
+    .action-btn.btn-awb:hover { border-color: var(--accent); color: var(--accent-light); }
+    .action-btn.btn-whatsapp:hover { border-color: var(--green); color: var(--green); }
+    .action-btn.btn-review:hover { border-color: var(--green); color: var(--green); }
+    .action-btn.btn-delete:hover { border-color: var(--red); color: var(--red); }
+    .action-btn.btn-download:hover { border-color: var(--blue); color: var(--blue); }
+    .action-btn.btn-preview:hover { border-color: var(--yellow); color: var(--yellow); }
+    .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ─── SEARCH & FILTER BAR ─────────────────────────── */
+    .filter-bar {
+      display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;
+    }
+    .search-input {
+      flex: 1; min-width: 200px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 9px 14px;
+      color: var(--text-primary);
+      font-size: 13px; font-family: inherit;
+      transition: var(--transition);
+    }
+    .search-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .search-input::placeholder { color: var(--text-muted); }
+    .filter-select {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 9px 14px;
+      color: var(--text-primary);
+      font-size: 13px; font-family: inherit;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .filter-select:focus { outline: none; border-color: var(--accent); }
+    .filter-select option { background: #1a1a2e; }
+
+    /* ─── MODAL ──────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #0d0d1f;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      width: 100%; max-width: 520px;
+      animation: slide-up 0.25s ease;
+    }
+    @keyframes slide-up { from{transform:translateY(20px);opacity:0} to{transform:none;opacity:1} }
+    .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .modal-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: var(--text-primary);
+      font-size: 13px; font-family: inherit;
+      transition: var(--transition);
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .form-textarea { resize: vertical; min-height: 80px; }
+    .form-select option { background: #1a1a2e; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
+    .btn {
+      padding: 10px 22px;
+      border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; border: none;
+      transition: var(--transition);
+    }
+    .btn-primary { background: var(--accent-gradient); color: #fff; box-shadow: 0 0 16px var(--accent-glow); }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-secondary { background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+    .btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+    .btn-danger:hover { background: var(--red); color: #fff; }
+
+    /* ─── TOAST ──────────────────────────────────────── */
+    .toast-container { position: fixed; top: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    .toast {
+      padding: 14px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 500;
+      display: flex; align-items: center; gap: 10px;
+      animation: toast-in 0.3s ease;
+      min-width: 280px;
+      max-width: 380px;
+      backdrop-filter: blur(20px);
+      border: 1px solid;
+    }
+    @keyframes toast-in { from{transform:translateX(100%);opacity:0} to{transform:none;opacity:1} }
+    .toast-success { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.3); color: var(--green); }
+    .toast-error { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: var(--red); }
+    .toast-info { background: rgba(124,58,237,0.15); border-color: rgba(124,58,237,0.3); color: var(--accent-light); }
+
+    /* ─── SKELETON ───────────────────────────────────── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-card) 25%, rgba(255,255,255,0.06) 50%, var(--bg-card) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* ─── FILE GRID ──────────────────────────────────── */
+    .file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+    .file-card {
+      padding: 16px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .file-card:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(124,58,237,0.15); }
+    .file-thumb {
+      width: 100%; height: 130px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      background: rgba(255,255,255,0.05);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px;
+    }
+    .file-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+    .file-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    .file-card-actions { display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap; }
+
+    /* ─── USER FOLDER ────────────────────────────────── */
+    .folder-section { margin-bottom: 28px; }
+    .folder-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 14px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .folder-header:hover { border-color: var(--accent); }
+    .folder-icon { font-size: 24px; }
+    .folder-name { font-size: 14px; font-weight: 700; }
+    .folder-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .folder-stats { display: flex; gap: 16px; margin-left: auto; }
+    .folder-stat { text-align: right; }
+    .folder-stat-val { font-size: 14px; font-weight: 700; }
+    .folder-stat-lbl { font-size: 11px; color: var(--text-muted); }
+
+    /* ─── LIGHTBOX ───────────────────────────────────── */
+    .lightbox {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 2000;
+      display: none;
+      align-items: center; justify-content: center;
+      padding: 40px;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox-img { max-width: 90vw; max-height: 85vh; object-fit: contain; border-radius: 12px; }
+    .lightbox-close {
+      position: absolute; top: 20px; right: 24px;
+      font-size: 28px; color: #fff; cursor: pointer;
+      width: 44px; height: 44px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      transition: var(--transition);
+    }
+    .lightbox-close:hover { background: rgba(255,255,255,0.2); }
+
+    /* ─── ACTIVITY FEED ──────────────────────────────── */
+    .activity-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      margin-top: 4px; flex-shrink: 0;
+    }
+    .activity-text { font-size: 13px; line-height: 1.5; }
+    .activity-time { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+    /* ─── PAGE SECTIONS ──────────────────────────────── */
+    .page-section { display: none; }
+    .page-section.active { display: block; }
+
+    /* ─── EMPTY STATE ────────────────────────────────── */
+    .empty-state { text-align: center; padding: 60px 20px; }
+    .empty-icon { font-size: 56px; margin-bottom: 16px; opacity: 0.4; }
+    .empty-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    .empty-sub { font-size: 13px; color: var(--text-muted); }
+
+    /* ─── QUICK STAT BAR ─────────────────────────────── */
+    .stat-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .stat-pill {
+      padding: 8px 16px;
+      border-radius: 99px;
+      font-size: 12px; font-weight: 600;
+      display: flex; align-items: center; gap: 6px;
+      border: 1px solid;
+      cursor: pointer; transition: var(--transition);
+    }
+    .stat-pill:hover { opacity: 0.8; }
+    .stat-pill-count { font-weight: 800; font-size: 14px; }
+    .pill-all { background: var(--bg-card); border-color: var(--border); color: var(--text-secondary); }
+    .pill-pending { background: var(--yellow-bg); border-color: rgba(245,158,11,0.3); color: var(--yellow); }
+    .pill-transit { background: rgba(124,58,237,0.12); border-color: rgba(124,58,237,0.3); color: var(--accent-light); }
+    .pill-delivered { background: var(--green-bg); border-color: rgba(16,185,129,0.3); color: var(--green); }
+    .pill-failed { background: var(--red-bg); border-color: rgba(239,68,68,0.3); color: var(--red); }
+
+    /* ─── RESPONSIVE ─────────────────────────────────── */
+    .hamburger { display: none; background: none; border: none; cursor: pointer; color: var(--text-primary); font-size: 22px; }
+    @media(max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: none; }
+      .main { margin-left: 0; }
+      .hamburger { display: flex; }
+      .page-content { padding: 20px 16px; }
+      .form-row { grid-template-columns: 1fr; }
+      .content-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── SIDEBAR ─────────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">
+      <div class="logo-icon">🖨️</div>
+      <div>
+        <div class="brand-name">Kampung Cetak</div>
+        <div class="brand-sub">Admin Dashboard</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Menu Utama</div>
+    <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+      <span class="nav-icon">🏠</span> Dashboard
+    </div>
+    <div class="nav-item" data-page="parcels" onclick="navigate('parcels')">
+      <span class="nav-icon">📦</span> Pengurusan Parcel
+      <span class="nav-badge" id="active-parcels-badge">0</span>
+    </div>
+    <div class="nav-item" data-page="files" onclick="navigate('files')">
+      <span class="nav-icon">📁</span> Fail Pelanggan
+      <span class="nav-badge" id="pending-files-badge">0</span>
+    </div>
+
+    <div class="nav-section-label" style="margin-top:12px">Sistem</div>
+    <div class="nav-item" data-page="settings" onclick="navigate('settings')">
+      <span class="nav-icon">⚙️</span> Tetapan & API
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="admin-info">
+      <div class="admin-avatar">A</div>
+      <div>
+        <div class="admin-name">Admin</div>
+        <div class="admin-role">Kampung Cetak</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ─── MAIN CONTENT ─────────────────────────────────────── -->
+<main class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+    </div>
+    <div class="topbar-actions">
+      <button class="topbar-btn" onclick="refreshCurrentPage()">🔄 Refresh</button>
+      <button class="topbar-btn primary" id="topbar-primary-btn" onclick="topbarAction()">+ Tambah</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- ═══════════════ DASHBOARD PAGE ═══════════════ -->
+    <div id="page-dashboard" class="page-section active">
+      <div class="stats-grid" id="dash-stats">
+        <div class="glass-card stat-card purple">
+          <div class="stat-icon">📦</div>
+          <div class="stat-value" id="dash-total">—</div>
+          <div class="stat-label">Jumlah Parcel</div>
+        </div>
+        <div class="glass-card stat-card blue">
+          <div class="stat-icon">🚚</div>
+          <div class="stat-value" id="dash-transit">—</div>
+          <div class="stat-label">Dalam Perjalanan</div>
+        </div>
+        <div class="glass-card stat-card green">
+          <div class="stat-icon">✅</div>
+          <div class="stat-value" id="dash-delivered">—</div>
+          <div class="stat-label">Telah Dihantar</div>
+        </div>
+        <div class="glass-card stat-card orange">
+          <div class="stat-icon">📁</div>
+          <div class="stat-value" id="dash-pending-files">—</div>
+          <div class="stat-label">Fail Belum Disemak</div>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <div class="glass-card" style="padding:24px">
+          <div class="section-header">
+            <div>
+              <div class="section-title">Aktiviti Terkini</div>
+              <div class="section-sub">5 parcel terakhir dikemas kini</div>
+            </div>
+          </div>
+          <div id="recent-activity">
+            <div class="skeleton" style="height:60px;margin-bottom:10px"></div>
+            <div class="skeleton" style="height:60px;margin-bottom:10px"></div>
+            <div class="skeleton" style="height:60px"></div>
+          </div>
+        </div>
+
+        <div class="glass-card" style="padding:24px">
+          <div class="section-header">
+            <div class="section-title">Tindakan Pantas</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <button class="topbar-btn primary" style="justify-content:center;padding:14px" onclick="navigate('parcels');openAddParcelModal()">
+              📦 + Tambah Parcel Baru
+            </button>
+            <button class="topbar-btn" style="justify-content:center;padding:14px" onclick="syncAll()">
+              🔄 Sync Semua Status Parcel
+            </button>
+            <button class="topbar-btn" style="justify-content:center;padding:14px" onclick="navigate('files')">
+              📁 Lihat Fail Pelanggan
+            </button>
+          </div>
+
+          <div style="margin-top:24px">
+            <div class="section-title" style="margin-bottom:12px;font-size:13px">Status Ringkas</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="mini-status-grid">
+              <div class="glass-card" style="padding:12px;text-align:center">
+                <div style="font-size:18px;font-weight:800;color:var(--yellow)" id="mini-pending">—</div>
+                <div style="font-size:11px;color:var(--text-muted)">Pending</div>
+              </div>
+              <div class="glass-card" style="padding:12px;text-align:center">
+                <div style="font-size:18px;font-weight:800;color:var(--accent-light)" id="mini-transit">—</div>
+                <div style="font-size:11px;color:var(--text-muted)">Transit</div>
+              </div>
+              <div class="glass-card" style="padding:12px;text-align:center">
+                <div style="font-size:18px;font-weight:800;color:var(--orange)" id="mini-otd">—</div>
+                <div style="font-size:11px;color:var(--text-muted)">Out for Delivery</div>
+              </div>
+              <div class="glass-card" style="padding:12px;text-align:center">
+                <div style="font-size:18px;font-weight:800;color:var(--red)" id="mini-failed">—</div>
+                <div style="font-size:11px;color:var(--text-muted)">Gagal</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ PARCELS PAGE ═══════════════════ -->
+    <div id="page-parcels" class="page-section">
+      <div class="stat-bar" id="parcel-stat-bar">
+        <div class="stat-pill pill-all" onclick="filterParcels('')">
+          Semua <span class="stat-pill-count" id="pill-total">0</span>
+        </div>
+        <div class="stat-pill pill-pending" onclick="filterParcels('pending')">
+          ⏳ Pending <span class="stat-pill-count" id="pill-pending">0</span>
+        </div>
+        <div class="stat-pill pill-transit" onclick="filterParcels('in_transit')">
+          🚚 Transit <span class="stat-pill-count" id="pill-transit">0</span>
+        </div>
+        <div class="stat-pill pill-delivered" onclick="filterParcels('delivered')">
+          ✅ Dihantar <span class="stat-pill-count" id="pill-delivered">0</span>
+        </div>
+        <div class="stat-pill pill-failed" onclick="filterParcels('failed')">
+          ❌ Gagal <span class="stat-pill-count" id="pill-failed">0</span>
+        </div>
+      </div>
+
+      <div class="glass-card" style="padding:24px">
+        <div class="filter-bar">
+          <input class="search-input" placeholder="🔍  Cari nama, no. penjejakan, order ID..." id="parcel-search" oninput="searchParcels()" />
+          <select class="filter-select" id="parcel-status-filter" onchange="searchParcels()">
+            <option value="">Semua Status</option>
+            <option value="pending">Pending</option>
+            <option value="picked_up">Dikutip</option>
+            <option value="in_transit">Dalam Perjalanan</option>
+            <option value="out_for_delivery">Dalam Penghantaran</option>
+            <option value="delivered">Dihantar</option>
+            <option value="failed">Gagal</option>
+          </select>
+          <button class="topbar-btn" onclick="syncAll()">🔄 Sync Semua</button>
+          <button class="topbar-btn primary" onclick="openAddParcelModal()">+ Tambah Parcel</button>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Pelanggan</th>
+                <th>No. Penjejakan</th>
+                <th>Kurier</th>
+                <th>Status</th>
+                <th>Dikemas Kini</th>
+                <th>Tindakan</th>
+              </tr>
+            </thead>
+            <tbody id="parcels-tbody">
+              <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Memuatkan...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ FILES PAGE ══════════════════════ -->
+    <div id="page-files" class="page-section">
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px" id="file-stats-row">
+        <div class="glass-card stat-card blue" style="padding:20px">
+          <div class="stat-icon">📄</div>
+          <div class="stat-value" id="fs-total">—</div>
+          <div class="stat-label">Jumlah Fail</div>
+        </div>
+        <div class="glass-card stat-card purple" style="padding:20px">
+          <div class="stat-icon">💾</div>
+          <div class="stat-value" id="fs-size">—</div>
+          <div class="stat-label">Storan Digunakan</div>
+        </div>
+        <div class="glass-card stat-card orange" style="padding:20px">
+          <div class="stat-icon">🔔</div>
+          <div class="stat-value" id="fs-pending">—</div>
+          <div class="stat-label">Belum Disemak</div>
+        </div>
+      </div>
+
+      <div class="glass-card" style="padding:24px">
+        <div class="filter-bar">
+          <input class="search-input" placeholder="🔍  Cari nama fail, ID pelanggan, order..." id="file-search" oninput="searchFiles()" />
+          <select class="filter-select" id="file-review-filter" onchange="searchFiles()">
+            <option value="">Semua Fail</option>
+            <option value="false">Belum Disemak</option>
+            <option value="true">Sudah Disemak</option>
+          </select>
+          <select class="filter-select" id="file-view-mode" onchange="renderFiles()">
+            <option value="grouped">Ikut Pelanggan</option>
+            <option value="all">Semua Fail</option>
+          </select>
+        </div>
+
+        <div id="files-container">
+          <div class="skeleton" style="height:80px;margin-bottom:12px"></div>
+          <div class="skeleton" style="height:80px;margin-bottom:12px"></div>
+          <div class="skeleton" style="height:80px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ SETTINGS PAGE ══════════════════ -->
+    <div id="page-settings" class="page-section">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px">
+
+        <div class="glass-card" style="padding:28px">
+          <div style="font-size:24px;margin-bottom:12px">🚀 EasyParcel API</div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:6px">Tetapan Penghantaran</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px">Urus penghantaran dan jana AWB</div>
+          <div style="background:var(--bg-card);border-radius:10px;padding:16px;margin-bottom:16px">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Status</div>
+            <div style="font-size:14px;font-weight:600" id="ep-status">⚪ Semak .env</div>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.7">
+            <strong style="color:var(--text-primary)">Cara setup:</strong><br>
+            1. Daftar akaun di <a href="https://easyparcel.com" target="_blank" style="color:var(--accent-light)">easyparcel.com</a><br>
+            2. Pergi ke Developer → API Key<br>
+            3. Tambah <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px">EASYPARCEL_API_KEY</code> ke .env
+          </div>
+        </div>
+
+        <div class="glass-card" style="padding:28px">
+          <div style="font-size:24px;margin-bottom:12px">💬 WhatsApp Business</div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:6px">Meta Cloud API</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px">Auto-notifikasi pelanggan</div>
+          <div style="background:var(--bg-card);border-radius:10px;padding:16px;margin-bottom:16px">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Status</div>
+            <div style="font-size:14px;font-weight:600" id="wa-status">⚪ Semak .env</div>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.7">
+            <strong style="color:var(--text-primary)">Cara setup:</strong><br>
+            1. Buka <a href="https://developers.facebook.com" target="_blank" style="color:var(--accent-light)">developers.facebook.com</a><br>
+            2. Cipta App → WhatsApp → API Setup<br>
+            3. Salin Phone Number ID & Access Token<br>
+            4. Tambah ke .env anda
+          </div>
+        </div>
+
+        <div class="glass-card" style="padding:28px">
+          <div style="font-size:24px;margin-bottom:12px">💾 Storan Fail</div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:6px">File Storage</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px">Fail pelanggan disimpan di pelayan</div>
+          <div style="background:var(--bg-card);border-radius:10px;padding:16px;margin-bottom:16px">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Direktori Upload</div>
+            <div style="font-size:13px;font-weight:600;font-family:monospace">/opt/kampungcetak/uploads</div>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.7">
+            Fail disimpan secara lokal di pelayan anda. Docker volume dipetakan ke <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px">/opt/kampungcetak/uploads</code>.<br><br>
+            Had saiz fail: <strong>50MB</strong> setiap fail, maksimum 10 fail sekaligus.
+          </div>
+        </div>
+
+        <div class="glass-card" style="padding:28px">
+          <div style="font-size:24px;margin-bottom:12px">🌐 Domain</div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:6px">Konfigurasi Domain</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px">Domain untuk kedua-dua portal</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="background:var(--bg-card);border-radius:10px;padding:14px">
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px">Portal Pelanggan</div>
+              <div style="font-weight:600;color:var(--green)">🌍 kampungcetak.com</div>
+            </div>
+            <div style="background:var(--bg-card);border-radius:10px;padding:14px">
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px">Portal Admin</div>
+              <div style="font-weight:600;color:var(--accent-light)">🔧 admin.kampungcetak.com</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page-content -->
+</main>
+
+<!-- ─── ADD PARCEL MODAL ──────────────────────────────────── -->
+<div class="modal-overlay" id="add-parcel-modal">
+  <div class="modal">
+    <div class="modal-title">📦 Tambah Parcel Baru</div>
+    <div class="modal-sub">Isi maklumat penghantaran pelanggan</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Order ID *</label>
+        <input class="form-input" id="fp-orderId" placeholder="cth: ORD-2026-001" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">No. Penjejakan *</label>
+        <input class="form-input" id="fp-tracking" placeholder="cth: EPI12345678MY" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Nama Pelanggan *</label>
+        <input class="form-input" id="fp-name" placeholder="Nama penuh" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">No. Telefon (WhatsApp) *</label>
+        <input class="form-input" id="fp-phone" placeholder="cth: 0123456789" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Kurier</label>
+        <select class="form-select" id="fp-courier">
+          <option value="unknown">Tidak Diketahui</option>
+          <option value="poslaju">Pos Laju</option>
+          <option value="jnt">J&T Express</option>
+          <option value="dhl">DHL</option>
+          <option value="gdex">GDex</option>
+          <option value="citylink">City-Link</option>
+          <option value="fedex">FedEx</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Berat (kg)</label>
+        <input class="form-input" id="fp-weight" type="number" value="1" min="0.1" step="0.1" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Emel Pelanggan</label>
+      <input class="form-input" id="fp-email" type="email" placeholder="pelanggan@email.com" />
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('add-parcel-modal')">Batal</button>
+      <button class="btn btn-primary" onclick="submitAddParcel()">💾 Simpan Parcel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── CONFIRM MODAL ─────────────────────────────────────── -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title" id="confirm-title">Padam?</div>
+    <div class="modal-sub" id="confirm-body">Tindakan ini tidak boleh dibatalkan.</div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('confirm-modal')">Batal</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">Ya, Padam</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── LIGHTBOX ──────────────────────────────────────────── -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <span class="lightbox-close" onclick="closeLightbox()">✕</span>
+  <img class="lightbox-img" id="lightbox-img" src="" alt="Preview" />
+</div>
+
+<!-- ─── TOAST CONTAINER ───────────────────────────────────── -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ─── JAVASCRIPT ────────────────────────────────────────── -->
+<script>
+  const API = '';  // Same origin (admin.kampungcetak.com IS the backend)
+
+  let parcelsData = [];
+  let filesData = [];
+  let groupedFilesData = [];
+  let currentPage = 'dashboard';
+  let parcelFilterStatus = '';
+
+  // ─── NAVIGATION ──────────────────────────────────────────
+  function navigate(page) {
+    currentPage = page;
+    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(`page-${page}`).classList.add('active');
+    document.querySelector(`[data-page="${page}"]`).classList.add('active');
+
+    const titles = { dashboard: 'Dashboard', parcels: 'Pengurusan Parcel', files: 'Fail Pelanggan', settings: 'Tetapan & API' };
+    const primaryLabels = { dashboard: '+ Tambah', parcels: '+ Tambah Parcel', files: 'Refresh Fail', settings: '' };
+    document.getElementById('topbar-title').textContent = titles[page] || page;
+    document.getElementById('topbar-primary-btn').textContent = primaryLabels[page] || '';
+    document.getElementById('topbar-primary-btn').style.display = page === 'settings' ? 'none' : 'flex';
+
+    if (page === 'parcels') loadParcels();
+    if (page === 'files') loadFiles();
+    if (page === 'dashboard') loadDashboard();
+
+    // Close mobile sidebar
+    document.getElementById('sidebar').classList.remove('open');
+  }
+
+  function topbarAction() {
+    if (currentPage === 'parcels') openAddParcelModal();
+    else if (currentPage === 'files') loadFiles();
+    else if (currentPage === 'dashboard') navigate('parcels');
+  }
+
+  function refreshCurrentPage() { navigate(currentPage); }
+  function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+  // ─── DASHBOARD ────────────────────────────────────────────
+  async function loadDashboard() {
+    try {
+      const [parcelRes, fileRes] = await Promise.all([
+        fetch(`${API}/api/parcels/stats`).then(r => r.json()),
+        fetch(`${API}/api/files/stats`).then(r => r.json()),
+      ]);
+
+      if (parcelRes.success) {
+        const s = parcelRes.data;
+        document.getElementById('dash-total').textContent = s.total || 0;
+        document.getElementById('dash-transit').textContent = (s.in_transit || 0) + (s.out_for_delivery || 0);
+        document.getElementById('dash-delivered').textContent = s.delivered || 0;
+        document.getElementById('mini-pending').textContent = s.pending || 0;
+        document.getElementById('mini-transit').textContent = s.in_transit || 0;
+        document.getElementById('mini-otd').textContent = s.out_for_delivery || 0;
+        document.getElementById('mini-failed').textContent = s.failed || 0;
+        document.getElementById('active-parcels-badge').textContent =
+          (s.pending || 0) + (s.in_transit || 0) + (s.out_for_delivery || 0);
+      }
+
+      if (fileRes.success) {
+        document.getElementById('dash-pending-files').textContent = fileRes.data.pendingReview || 0;
+        document.getElementById('pending-files-badge').textContent = fileRes.data.pendingReview || 0;
+      }
+
+      // Recent activity
+      if (parcelRes.recent) {
+        const container = document.getElementById('recent-activity');
+        if (!parcelRes.recent.length) {
+          container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Tiada aktiviti</div><div class="empty-sub">Tambah parcel pertama anda</div></div>`;
+          return;
+        }
+        container.innerHTML = parcelRes.recent.map(p => `
+          <div class="activity-item">
+            <div class="activity-dot" style="background:${statusColor(p.status)}"></div>
+            <div>
+              <div class="activity-text"><strong>${p.customerName}</strong> — ${p.trackingNumber}</div>
+              <div class="activity-time">${statusLabel(p.status)} · ${formatDate(p.updatedAt)}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+    } catch(e) {
+      console.error('Dashboard load error:', e);
+    }
+  }
+
+  // ─── PARCELS ──────────────────────────────────────────────
+  async function loadParcels() {
+    document.getElementById('parcels-tbody').innerHTML =
+      `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Memuatkan...</td></tr>`;
+    try {
+      const res = await fetch(`${API}/api/parcels`).then(r => r.json());
+      if (!res.success) throw new Error(res.message);
+      parcelsData = res.data;
+      updateParcelStats(res.stats);
+      renderParcels(parcelsData);
+    } catch(e) {
+      document.getElementById('parcels-tbody').innerHTML =
+        `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--red)">Gagal memuatkan: ${e.message}</td></tr>`;
+    }
+  }
+
+  function updateParcelStats(s) {
+    if (!s) return;
+    document.getElementById('pill-total').textContent = s.total || 0;
+    document.getElementById('pill-pending').textContent = s.pending || 0;
+    document.getElementById('pill-transit').textContent = (s.in_transit || 0) + (s.out_for_delivery || 0);
+    document.getElementById('pill-delivered').textContent = s.delivered || 0;
+    document.getElementById('pill-failed').textContent = s.failed || 0;
+  }
+
+  function renderParcels(data) {
+    const tbody = document.getElementById('parcels-tbody');
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Tiada parcel dijumpai</div><div class="empty-sub">Tambah parcel baharu dengan butang di atas</div></div></td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.map(p => `
+      <tr>
+        <td><div class="td-primary">${p.orderId}</div></td>
+        <td>
+          <div class="td-primary">${p.customerName}</div>
+          <div class="td-secondary">📱 ${p.customerPhone}</div>
+        </td>
+        <td>
+          <div class="td-primary" style="font-family:monospace">${p.trackingNumber}</div>
+        </td>
+        <td><div style="font-size:13px">${p.courier || '—'}</div></td>
+        <td>${statusBadge(p.status)}</td>
+        <td><div style="font-size:12px;color:var(--text-muted)">${formatDate(p.updatedAt)}</div></td>
+        <td>
+          <div class="action-btns">
+            <button class="action-btn btn-track" onclick="trackParcel('${p._id}')" title="Refresh status dari EasyParcel">🔄 Track</button>
+            <button class="action-btn btn-awb" onclick="getAWB('${p._id}')" title="Cetak AWB">🖨️ AWB</button>
+            <button class="action-btn btn-whatsapp" onclick="sendWhatsApp('${p._id}')" title="Hantar WhatsApp">📱 WA</button>
+            <button class="action-btn btn-delete" onclick="confirmDelete('parcel','${p._id}','${p.customerName}')" title="Padam">🗑️</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function filterParcels(status) {
+    parcelFilterStatus = status;
+    document.getElementById('parcel-status-filter').value = status;
+    searchParcels();
+  }
+
+  function searchParcels() {
+    const query = document.getElementById('parcel-search').value.toLowerCase();
+    const status = document.getElementById('parcel-status-filter').value;
+    let filtered = parcelsData;
+    if (status) filtered = filtered.filter(p => p.status === status);
+    if (query) filtered = filtered.filter(p =>
+      p.customerName.toLowerCase().includes(query) ||
+      p.trackingNumber.toLowerCase().includes(query) ||
+      p.orderId.toLowerCase().includes(query)
+    );
+    renderParcels(filtered);
+  }
+
+  async function trackParcel(id) {
+    const btn = event.target;
+    btn.textContent = '⏳'; btn.disabled = true;
+    try {
+      const res = await fetch(`${API}/api/parcels/${id}/track`, { method: 'PUT' }).then(r => r.json());
+      if (!res.success) throw new Error(res.message);
+      toast('success', res.statusChanged
+        ? `✅ Status dikemas kini: ${statusLabel(res.newStatus)}`
+        : '✅ Status disahkan (tiada perubahan)');
+      await loadParcels();
+    } catch(e) {
+      toast('error', `❌ Gagal: ${e.message}`);
+    } finally {
+      btn.textContent = '🔄 Track'; btn.disabled = false;
+    }
+  }
+
+  async function getAWB(id) {
+    try {
+      const res = await fetch(`${API}/api/parcels/${id}/awb`).then(r => r.json());
+      if (!res.success) throw new Error(res.message);
+      window.open(res.awbUrl, '_blank');
+      toast('success', '✅ AWB dibuka dalam tab baharu');
+    } catch(e) {
+      toast('error', `❌ ${e.message}`);
+    }
+  }
+
+  async function sendWhatsApp(id) {
+    const btn = event.target;
+    btn.textContent = '⏳'; btn.disabled = true;
+    try {
+      const res = await fetch(`${API}/api/parcels/${id}/whatsapp`, { method: 'POST' }).then(r => r.json());
+      if (!res.success) throw new Error(res.message);
+      toast('success', '📱 WhatsApp berjaya dihantar');
+    } catch(e) {
+      toast('error', `❌ Gagal: ${e.message}`);
+    } finally {
+      btn.textContent = '📱 WA'; btn.disabled = false;
+    }
+  }
+
+  async function syncAll() {
+    toast('info', '🔄 Menyegerakkan semua parcel...');
+    try {
+      const res = await fetch(`${API}/api/parcels/sync-all`, { method: 'POST' }).then(r => r.json());
+      if (!res.success) throw new Error(res.message);
+      toast('success', `✅ ${res.message}`);
+      if (currentPage === 'parcels') await loadParcels();
+      else await loadDashboard();
+    } catch(e) {
+      toast('error', `❌ Gagal sync: ${e.message}`);
+    }
+  }
+
+  // ─── ADD PARCEL ───────────────────────────────────────────
+  function openAddParcelModal() {
+    document.getElementById('fp-orderId').value = '';
+    document.getElementById('fp-tracking').value = '';
+    document.getElementById('fp-name').value = '';
+    document.getElementById('fp-phone').value = '';
+    document.getElementById('fp-email').value = '';
+    document.getElementById('fp-weight').value = '1';
+    document.getElementById('fp-courier').value = 'unknown';
+    document.getElementById('add-parcel-modal').classList.add('open');
+  }
+
+  async function submitAddParcel() {
+    const body = {
+      orderId: document.getElementById('fp-orderId').value.trim(),
+      trackingNumber: document.getElementById('fp-tracking').value.trim(),
+      customerName: document.getElementById('fp-name').value.trim(),
+      customerPhone: document.getElementById('fp-phone').value.trim(),
+      customerEmail: document.getElementById('fp-email').value.trim(),
+      courier: document.getElementById('fp-courier').value,
+      weight: parseFloat(document.getElementById('fp-weight').value),
+    };
+
+    if (!body.orderId || !body.trackingNumber || !body.customerName || !body.customerPhone) {
+      toast('error', '❗ Sila isi semua medan yang bertanda *');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API}/api/parcels`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }).then(r => r.json());
+
+      if (!res.success) throw new Error(res.message);
+      toast('success', `✅ Parcel ${body.trackingNumber} berjaya ditambah`);
+      closeModal('add-parcel-modal');
+      await loadParcels();
+    } catch(e) {
+      toast('error', `❌ ${e.message}`);
+    }
+  }
+
+  // ─── FILES ────────────────────────────────────────────────
+  async function loadFiles() {
+    document.getElementById('files-container').innerHTML =
+      `<div class="skeleton" style="height:80px;margin-bottom:12px"></div><div class="skeleton" style="height:80px;margin-bottom:12px"></div><div class="skeleton" style="height:80px"></div>`;
+    try {
+      const [fileRes, statsRes] = await Promise.all([
+        fetch(`${API}/api/files/grouped`).then(r => r.json()),
+        fetch(`${API}/api/files/stats`).then(r => r.json()),
+      ]);
+
+      if (!fileRes.success) throw new Error(fileRes.message);
+      groupedFilesData = fileRes.data;
+      filesData = groupedFilesData.flatMap(g => g.files);
+
+      if (statsRes.success) {
+        const s = statsRes.data;
+        document.getElementById('fs-total').textContent = s.totalFiles || 0;
+        document.getElementById('fs-size').textContent = `${s.totalSizeMB} MB`;
+        document.getElementById('fs-pending').textContent = s.pendingReview || 0;
+        document.getElementById('pending-files-badge').textContent = s.pendingReview || 0;
+      }
+
+      renderFiles();
+    } catch(e) {
+      document.getElementById('files-container').innerHTML =
+        `<div class="empty-state"><div class="empty-icon">❌</div><div class="empty-title">Gagal memuatkan fail</div><div class="empty-sub">${e.message}</div></div>`;
+    }
+  }
+
+  function renderFiles() {
+    const mode = document.getElementById('file-view-mode').value;
+    const search = document.getElementById('file-search').value.toLowerCase();
+    const reviewFilter = document.getElementById('file-review-filter').value;
+    const container = document.getElementById('files-container');
+
+    if (mode === 'grouped') {
+      let groups = groupedFilesData;
+      if (!groups.length) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Tiada fail dimuat naik</div><div class="empty-sub">Pelanggan belum menghantar sebarang fail</div></div>`;
+        return;
+      }
+      container.innerHTML = groups.map(g => {
+        let files = g.files;
+        if (search) files = files.filter(f =>
+          f.originalName.toLowerCase().includes(search) ||
+          (f.orderId || '').toLowerCase().includes(search)
+        );
+        if (reviewFilter !== '') files = files.filter(f =>
+          String(f.adminReviewed) === reviewFilter
+        );
+        if (!files.length && (search || reviewFilter !== '')) return '';
+
+        return `
+          <div class="folder-section">
+            <div class="folder-header" onclick="toggleFolder('folder-${g._id}')">
+              <div class="folder-icon">📁</div>
+              <div>
+                <div class="folder-name">Pelanggan: ${g._id}</div>
+                <div class="folder-meta">${formatDate(g.lastUpload)}</div>
+              </div>
+              <div class="folder-stats">
+                <div class="folder-stat">
+                  <div class="folder-stat-val">${g.totalFiles}</div>
+                  <div class="folder-stat-lbl">fail</div>
+                </div>
+                <div class="folder-stat">
+                  <div class="folder-stat-val">${(g.totalSize / 1024 / 1024).toFixed(1)} MB</div>
+                  <div class="folder-stat-lbl">saiz</div>
+                </div>
+                <div class="folder-stat">
+                  <div class="folder-stat-val" style="color:${g.pendingReview > 0 ? 'var(--yellow)' : 'var(--green)'}">${g.pendingReview}</div>
+                  <div class="folder-stat-lbl">belum semak</div>
+                </div>
+              </div>
+            </div>
+            <div id="folder-${g._id}" style="display:none">
+              <div class="file-grid">
+                ${files.map(f => fileCard(f)).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else {
+      let files = filesData;
+      if (search) files = files.filter(f =>
+        f.originalName.toLowerCase().includes(search) ||
+        (f.orderId || '').toLowerCase().includes(search) ||
+        f.userId.toLowerCase().includes(search)
+      );
+      if (reviewFilter !== '') files = files.filter(f =>
+        String(f.adminReviewed) === reviewFilter
+      );
+      if (!files.length) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Tiada fail dijumpai</div></div>`;
+        return;
+      }
+      container.innerHTML = `<div class="file-grid">${files.map(f => fileCard(f)).join('')}</div>`;
+    }
+  }
+
+  function fileCard(f) {
+    const isImage = f.mimetype.startsWith('image/');
+    const isPdf = f.mimetype === 'application/pdf';
+    const thumbSrc = isImage ? `${API}/api/files/${f._id}/preview` : '';
+    const icon = isPdf ? '📄' : isImage ? '🖼️' : '📎';
+
+    return `
+      <div class="glass-card file-card">
+        <div class="file-thumb">
+          ${isImage
+            ? `<img src="${thumbSrc}" alt="${f.originalName}" onerror="this.style.display='none';this.parentElement.innerHTML='🖼️'" loading="lazy" />`
+            : `<span>${icon}</span>`
+          }
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="overflow:hidden">
+            <div class="file-name" title="${f.originalName}">${f.originalName}</div>
+            <div class="file-meta">${formatSize(f.size)} · ${formatDate(f.uploadedAt)}</div>
+            ${f.orderId ? `<div class="file-meta">Order: ${f.orderId}</div>` : ''}
+            ${f.notes ? `<div class="file-meta" style="color:var(--accent-light)">"${f.notes}"</div>` : ''}
+          </div>
+          <span class="badge ${f.adminReviewed ? 'badge-reviewed' : 'badge-pending-review'}" style="flex-shrink:0;margin-left:6px">
+            ${f.adminReviewed ? '✅' : '⏳'}
+          </span>
+        </div>
+        <div class="file-card-actions">
+          ${isImage ? `<button class="action-btn btn-preview" onclick="previewFile('${API}/api/files/${f._id}/preview')">👁️</button>` : ''}
+          <button class="action-btn btn-download" onclick="window.open('${API}/api/files/${f._id}/download','_blank')">⬇️</button>
+          <button class="action-btn btn-review" onclick="markReviewed('${f._id}', ${!f.adminReviewed})" title="${f.adminReviewed ? 'Tandakan belum semak' : 'Tandakan sudah semak'}">
+            ${f.adminReviewed ? '↩️' : '✅'}
+          </button>
+          <button class="action-btn btn-delete" onclick="confirmDelete('file','${f._id}','${f.originalName}')">🗑️</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function toggleFolder(id) {
+    const el = document.getElementById(id);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function searchFiles() { renderFiles(); }
+
+  async function markReviewed(id, reviewed) {
+    try {
+      const res = await fetch(`${API}/api/files/${id}/review`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewed }),
+      }).then(r => r.json());
+      if (!res.success) throw new Error(res.message);
+      toast('success', reviewed ? '✅ Fail ditandakan sebagai disemak' : '↩️ Fail ditandakan belum disemak');
+      await loadFiles();
+    } catch(e) {
+      toast('error', `❌ ${e.message}`);
+    }
+  }
+
+  function previewFile(url) {
+    document.getElementById('lightbox-img').src = url;
+    document.getElementById('lightbox').classList.add('open');
+  }
+  function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+
+  // ─── DELETE ───────────────────────────────────────────────
+  function confirmDelete(type, id, name) {
+    document.getElementById('confirm-title').textContent = type === 'parcel' ? '🗑️ Padam Parcel?' : '🗑️ Padam Fail?';
+    document.getElementById('confirm-body').textContent = `Anda akan memadam "${name}". Tindakan ini tidak boleh dibatalkan.`;
+    document.getElementById('confirm-ok-btn').onclick = () => doDelete(type, id);
+    document.getElementById('confirm-modal').classList.add('open');
+  }
+
+  async function doDelete(type, id) {
+    closeModal('confirm-modal');
+    const endpoint = type === 'parcel' ? `/api/parcels/${id}` : `/api/files/${id}`;
+    try {
+      const res = await fetch(`${API}${endpoint}`, { method: 'DELETE' }).then(r => r.json());
+      if (!res.success) throw new Error(res.message);
+      toast('success', `✅ Berjaya dipadam`);
+      if (type === 'parcel') await loadParcels();
+      else await loadFiles();
+    } catch(e) {
+      toast('error', `❌ ${e.message}`);
+    }
+  }
+
+  // ─── MODAL HELPERS ────────────────────────────────────────
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+  // Close on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+  });
+
+  // ─── TOAST ───────────────────────────────────────────────
+  function toast(type, message) {
+    const container = document.getElementById('toast-container');
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.innerHTML = `<span>${message}</span>`;
+    container.appendChild(el);
+    setTimeout(() => {
+      el.style.animation = 'none';
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(100%)';
+      el.style.transition = 'all 0.3s ease';
+      setTimeout(() => el.remove(), 300);
+    }, 4000);
+  }
+
+  // ─── HELPERS ──────────────────────────────────────────────
+  function statusBadge(status) {
+    return `<span class="badge badge-${status}"><span class="badge-dot"></span>${statusLabel(status)}</span>`;
+  }
+
+  function statusLabel(status) {
+    const labels = {
+      pending: 'Menunggu',
+      picked_up: 'Dikutip',
+      in_transit: 'Dalam Perjalanan',
+      out_for_delivery: 'Penghantaran',
+      delivered: 'Dihantar',
+      failed: 'Gagal',
+    };
+    return labels[status] || status;
+  }
+
+  function statusColor(status) {
+    const colors = {
+      pending: '#f59e0b',
+      picked_up: '#3b82f6',
+      in_transit: '#a78bfa',
+      out_for_delivery: '#f97316',
+      delivered: '#10b981',
+      failed: '#ef4444',
+    };
+    return colors[status] || '#94a3b8';
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleString('ms-MY', {
+      day: 'numeric', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', () => {
+    loadDashboard();
+  });
+</script>
+</body>
+</html>

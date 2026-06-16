@@ -15,8 +15,8 @@ import orderRoutes from '../presentation/routes/order.route';
 import deliveryBoyRoutes from '../presentation/routes/deliveryBoy.route';
 import adminRoutes from '../presentation/routes/admin.route';
 import notificationRoutes from '../presentation/routes/notification.route';
-import parcelRoutes from '../presentation/routes/parcelRoutes';
-import fileUploadRoutes from '../presentation/routes/fileUploadRoutes';
+import parcelRoutes from '../presentation/routes/parcel.route';
+import fileStoreRoutes from '../presentation/routes/filestore.route';
 
 dotenv.config();
 const app = express();
@@ -57,18 +57,9 @@ app.use(apiRoutes.ORDER, orderRoutes);
 app.use(apiRoutes.DELIVERY_BOY, deliveryBoyRoutes);
 app.use(apiRoutes.ADMIN, adminRoutes);
 app.use(apiRoutes.NOTIFICATION, notificationRoutes);
-
-// ─── Kampung Cetak: Parcel Tracking & File Upload ────────
-app.use('/api/parcels', parcelRoutes);
-app.use('/api/files', fileUploadRoutes);
-
-// ─── Admin Panel (served at admin.kampungcetak.com) ──────
-app.use('/admin', express.static(path.join(__dirname, '../../../admin')));
-app.get('/admin', (_req, res) => {
-    res.sendFile(path.join(__dirname, '../../../admin/index.html'));
-});
-
-app.get('/health', (_req, res) => {
+app.use(apiRoutes.PARCEL, parcelRoutes);
+app.use(apiRoutes.FILESTORE, fileStoreRoutes);
+app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok' });
 });
 

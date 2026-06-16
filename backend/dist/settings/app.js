@@ -19,6 +19,8 @@ const order_route_1 = __importDefault(require("../presentation/routes/order.rout
 const deliveryBoy_route_1 = __importDefault(require("../presentation/routes/deliveryBoy.route"));
 const admin_route_1 = __importDefault(require("../presentation/routes/admin.route"));
 const notification_route_1 = __importDefault(require("../presentation/routes/notification.route"));
+const parcelRoutes_1 = __importDefault(require("../presentation/routes/parcelRoutes"));
+const fileUploadRoutes_1 = __importDefault(require("../presentation/routes/fileUploadRoutes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 app.use((0, cookie_parser_1.default)());
@@ -50,7 +52,15 @@ app.use(api_constant_1.apiRoutes.ORDER, order_route_1.default);
 app.use(api_constant_1.apiRoutes.DELIVERY_BOY, deliveryBoy_route_1.default);
 app.use(api_constant_1.apiRoutes.ADMIN, admin_route_1.default);
 app.use(api_constant_1.apiRoutes.NOTIFICATION, notification_route_1.default);
-app.get('/health', (req, res) => {
+// ─── Kampung Cetak: Parcel Tracking & File Upload ────────
+app.use('/api/parcels', parcelRoutes_1.default);
+app.use('/api/files', fileUploadRoutes_1.default);
+// ─── Admin Panel (served at admin.kampungcetak.com) ──────
+app.use('/admin', express_1.default.static(path_1.default.join(__dirname, '../../../admin')));
+app.get('/admin', (_req, res) => {
+    res.sendFile(path_1.default.join(__dirname, '../../../admin/index.html'));
+});
+app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'ok' });
 });
 // -------------------------  error middleware-------------------------------

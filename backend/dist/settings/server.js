@@ -23,6 +23,7 @@ const socket_config_1 = __importDefault(require("../config/socket.config"));
 const redis_1 = require("../infrastructure/redis/redis");
 const redisMessagesHandler_1 = require("../infrastructure/redis/redisMessagesHandler");
 const socketHandler_1 = require("../infrastructure/socket/socketHandler");
+const TrackingCronJob_1 = require("../infrastructure/jobs/TrackingCronJob");
 process.on("uncaughtException", (err) => {
     console.log("UNCAUGHT Exception! Ignoring ...");
     console.error(err);
@@ -50,6 +51,7 @@ function main() {
         (0, redisMessagesHandler_1.handleRedisAndSocketMessageAdmin)(redisService, adminNameSpace);
         server.listen(constants_1.PORT, () => {
             console.log(`🎉 Server running on port ${constants_1.PORT}`);
+            (0, TrackingCronJob_1.startTrackingCronJob)(); // Auto-sync parcels every 15 min
         });
     });
 }
