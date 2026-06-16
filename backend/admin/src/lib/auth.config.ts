@@ -45,35 +45,7 @@ export const authConfig: AuthOptions = {
   session: {
     strategy: "jwt"
   },
-  cookies: {
-    // Add custom cookie configuration
-    sessionToken: {
-      name: `admin-session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-      },
-    },
-    callbackUrl: {
-      name: `admin-callback-url`,
-      options: {
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-      },
-    },
-    csrfToken: {
-      name: `admin-csrf-token`,
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-      },
-    },
-  },
+  // Removed custom cookie configuration because next-auth/middleware does not support it
   callbacks: {
     jwt({ token, user, trigger, session }) {
       if (user) {
@@ -87,8 +59,8 @@ export const authConfig: AuthOptions = {
       return token;
     },
     redirect({ url, baseUrl }) {
-      baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL as string;
-      return url.startsWith(baseUrl) ? url : `${baseUrl}/`;
+      const frontendUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || baseUrl;
+      return url.startsWith(frontendUrl) ? url : `${frontendUrl}/`;
     },
     session({ session, token }) {
       session.user.token = token.token as string;
