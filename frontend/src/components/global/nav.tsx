@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { navItems, printingCategories } from "@/constants";
@@ -7,8 +7,7 @@ import { Input } from "../ui/input";
 import { IoCloseCircle, IoNotifications, IoSearch } from "react-icons/io5";
 import { IoIosArrowDroprightCircle } from "react-icons/io";
 import { Button } from "@heroui/button";
-import { FaCartShopping } from "react-icons/fa6";
-import { CgProfile } from "react-icons/cg";
+import { FaCartShopping, FaChevronDown } from "react-icons/fa6";
 import { FaBars } from "react-icons/fa";
 import { usePathname } from "next/navigation";
 import { Drawer } from "vaul";
@@ -17,40 +16,17 @@ import { Badge } from "../ui/badge";
 import NotificationsDrawer from "./notifications-drawer";
 import { useNav } from "@/hooks/useNav";
 import AuthModal from "../page-sections/auth/authModal";
+import { CgProfile } from "react-icons/cg";
 
-// Mock notification data
-const mockNotifications = [
-  {
-    id: 1,
-    title: "Order Shipped",
-    message: "Your order #12345 has been shipped and is on its way!",
-    time: "5 minutes ago",
-    read: false,
-  },
-  {
-    id: 2,
-    title: "Special Offer",
-    message: "Get 20% off on all summer collection items!",
-    time: "2 hours ago",
-    read: false,
-  },
-  {
-    id: 3,
-    title: "Cart Reminder",
-    message: "You have items waiting in your cart. Complete your purchase now!",
-    time: "1 day ago",
-    read: true,
-  },
-  {
-    id: 4,
-    title: "Order Delivered",
-    message: "Your order #10987 has been delivered successfully.",
-    time: "3 days ago",
-    read: true,
-  },
-];
-
-const MobileNavSheetContent = ({ closeDrawer }: { closeDrawer: Function }) => {
+const MobileNavSheetContent = ({
+  closeDrawer,
+  session,
+  router,
+}: {
+  closeDrawer: Function;
+  session: any;
+  router: any;
+}) => {
   const pathname = usePathname();
   return (
     <Drawer.Portal>
@@ -61,17 +37,17 @@ const MobileNavSheetContent = ({ closeDrawer }: { closeDrawer: Function }) => {
           { "--initial-transform": "calc(100% + 8px)" } as React.CSSProperties
         }
       >
-        <div className="bg-gray-200 h-full w-full grow px-3 py-1 flex flex-col rounded-[16px]">
-          <Drawer.Title className="font-medium px-0 border-b border-dashed border-zinc-900/20 justify-between flex items-center mb-2 text-white">
+        <div className="bg-gray-200 h-full w-full grow px-3 py-1 flex flex-col rounded-[16px] overflow-y-auto">
+          <Drawer.Title className="font-medium px-0 border-b border-dashed border-zinc-900/20 justify-between flex items-center mb-3 text-white">
             {/* ── MOBILE LOGO ── */}
             <div className="top-0 -translate-x-1 left-0 py-2">
               <Link href="/" className="flex items-center gap-2">
                 <Image
                   src="/images/kampung-cetak-logo.png"
                   alt="Kampung Cetak"
-                  width={56}
-                  height={56}
-                  className="object-contain rounded-2xl"
+                  width={36}
+                  height={36}
+                  className="object-contain rounded-full"
                 />
                 <span className="text-lg text-black font-bold">Kampung Cetak</span>
               </Link>
@@ -86,7 +62,25 @@ const MobileNavSheetContent = ({ closeDrawer }: { closeDrawer: Function }) => {
               <IoCloseCircle />
             </Button>
           </Drawer.Title>
-          <Drawer.Description className="mb-2 flex flex-col gap-4">
+
+          {/* ── MOBILE USER PROFILE CHIP ── */}
+          {session?.user?.id && (
+            <button
+              onClick={() => { router.push("/home/profile"); closeDrawer(); }}
+              className="flex items-center gap-3 mb-3 px-3 py-2 bg-white rounded-xl shadow-sm hover:bg-gray-50 transition-colors text-left"
+            >
+              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                {session.user.name ? session.user.name.charAt(0).toUpperCase() : <CgProfile size={16} />}
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-sm font-semibold text-gray-900 truncate">{session.user.name || "My Profile"}</p>
+                <p className="text-xs text-gray-400 truncate">{session.user.email || ""}</p>
+              </div>
+            </button>
+          )}
+
+          {/* ── MOBILE NAV LINKS ── */}
+          <Drawer.Description className="mb-3 flex flex-col gap-4">
             {navItems.map((e, i) => (
               <Link
                 className={cn(
@@ -95,6 +89,7 @@ const MobileNavSheetContent = ({ closeDrawer }: { closeDrawer: Function }) => {
                 )}
                 key={e.href + "mobile" + i}
                 href={e.href}
+                onClick={() => closeDrawer()}
               >
                 <span className="">{e.label}</span>
                 <IoIosArrowDroprightCircle
@@ -106,6 +101,41 @@ const MobileNavSheetContent = ({ closeDrawer }: { closeDrawer: Function }) => {
               </Link>
             ))}
           </Drawer.Description>
+
+          {/* ── MOBILE CATEGORIES ── */}
+          <div className="border-t border-dashed border-zinc-900/20 pt-3">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Categories</p>
+            <div className="flex flex-col gap-1">
+              {printingCategories.map((item, index) => (
+                <div key={index}>
+                  <Link
+                    href={item.href}
+                    onClick={() => closeDrawer()}
+                    className="flex items-center justify-between w-full py-2 px-1 text-sm font-semibold text-primary hover:bg-white rounded-lg transition-colors"
+                  >
+                    <span>{item.label}</span>
+                    {item.subItems && item.subItems.length > 0 && (
+                      <FaChevronDown className="text-xs text-gray-400" />
+                    )}
+                  </Link>
+                  {item.subItems && item.subItems.length > 0 && (
+                    <div className="pl-3 flex flex-col gap-1 mb-2">
+                      {item.subItems.map((sub, idx) => (
+                        <Link
+                          key={idx}
+                          href={sub.href}
+                          onClick={() => closeDrawer()}
+                          className="text-xs text-gray-600 py-1 hover:text-primary transition-colors"
+                        >
+                          {sub.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </Drawer.Content>
     </Drawer.Portal>
@@ -130,135 +160,159 @@ const Nav = () => {
   return (
     <>
       <div className="w-full flex flex-col bg-gray-200">
-      {/* ── MAIN HEADER (LOGO, SEARCH, ICONS) ── */}
-      <div className="w-full px-7 py-4 flex justify-between items-center gap-6">
-        <Drawer.Root
-          shouldScaleBackground
-          open={isOpen}
-          onOpenChange={setIsOpen}
-          direction="left"
-        >
-          <Drawer.Trigger className="md:hidden block">
-            <FaBars />
-          </Drawer.Trigger>
-          <MobileNavSheetContent closeDrawer={closeDrawer} />
-        </Drawer.Root>
+        {/* ── MAIN HEADER (LOGO, SEARCH, ICONS) ── */}
+        <div className="w-full px-4 md:px-7 py-3 md:py-4 flex justify-between items-center gap-3 md:gap-6">
 
-        {/* ── DESKTOP LOGO ── */}
-        <div className="flex items-center gap-4 shrink-0">
-          <Link href="/" className="flex items-center gap-2">
-            <Image
-              src="/images/kampung-cetak-logo.png"
-              alt="Kampung Cetak"
-              width={64}
-              height={64}
-              className="object-contain rounded-2xl"
-            />
-            <h1 className="text-2xl font-bold tracking-tight text-primary">Kampung Cetak</h1>
-          </Link>
-        </div>
-
-        {/* ── BIG SEARCH BAR (MIDDLE) ── */}
-        <div className="hidden md:flex flex-1 max-w-2xl mx-auto relative items-center bg-white rounded-full border border-gray-300 shadow-sm overflow-hidden px-4 py-1">
-          <IoSearch className="text-gray-500 text-xl mr-2 shrink-0" />
-          <Input
-            className="w-full focus-visible:ring-0 text-md bg-transparent border-none shadow-none ring-0 focus-visible:ring-offset-0 px-0 h-10"
-            type="text"
-            placeholder="Search products, services, or categories..."
-          />
-          <Button className="bg-primary text-white rounded-full px-6 h-9 shrink-0 ml-2">
-            Search
-          </Button>
-        </div>
-
-        {/* ── ICONS & AUTH ── */}
-        <div className="flex gap-3 items-center shrink-0">
-          {session?.user?.id ? (
-            <>
-              <div className="relative">
-                <Button
-                  onPress={() => router.push("/home/cart")}
-                  isIconOnly
-                  variant="ghost"
-                  className="rounded-full p-2 cursor-pointer hover:bg-gray-300 transition-colors"
-                >
-                  <FaCartShopping className="text-xl text-gray-700" />
-                </Button>
-                <Badge className="absolute top-0 right-0 bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-gray-200">
-                  {cartCount}
-                </Badge>
-              </div>
-              <div className="relative">
-                <Button
-                  onPress={() => setIsNotificationsOpen(true)}
-                  isIconOnly
-                  variant="ghost"
-                  className="rounded-full p-2 cursor-pointer hover:bg-gray-300 transition-colors hidden md:flex"
-                >
-                  <IoNotifications className="text-xl text-gray-700" />
-                </Button>
-                <Badge className="absolute top-0 right-0 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full md:flex items-center justify-center border-2 border-gray-200 hidden">
-                  {notification
-                    ? notification.filter((n) => !n.read).length
-                    : 0}
-                </Badge>
-              </div>
-              <Button
-                onPress={() => router.push("/home/profile")}
-                isIconOnly
-                variant="ghost"
-                className="rounded-full p-2 cursor-pointer hover:bg-gray-300 transition-colors hidden sm:flex"
-              >
-                <CgProfile className="text-xl text-gray-700" />
-              </Button>
-            </>
-          ) : (
-            <Button
-              onPress={() => setIsAuthModalOpen(true)}
-              className="rounded-full px-6 font-semibold cursor-pointer border-primary border text-sm bg-primary hover:bg-primary/90 transition-all duration-300 text-white"
+          {/* ── HAMBURGER (mobile) + LOGO ── */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Drawer.Root
+              shouldScaleBackground
+              open={isOpen}
+              onOpenChange={setIsOpen}
+              direction="left"
             >
-              Login
-            </Button>
-          )}
-        </div>
-      </div>
+              <Drawer.Trigger className="md:hidden block p-1">
+                <FaBars className="text-xl text-gray-700" />
+              </Drawer.Trigger>
+              <MobileNavSheetContent
+                closeDrawer={closeDrawer}
+                session={session}
+                router={router}
+              />
+            </Drawer.Root>
 
-      {/* ── SECONDARY NAVBAR (MEGA MENU / CATEGORIES) ── */}
-      <div className="w-full bg-white border-y border-gray-200 hidden md:block relative z-50">
-        <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
-          {printingCategories.map((item, index) => (
-            <div key={index} className="relative group">
-              <Link
-                href={item.href}
-                className="text-primary font-bold uppercase tracking-wide inline-block py-2"
-              >
-                <p className="relative text-sm inline-block overflow-hidden transition-colors">
-                  <span className="inline-block transition-all duration-300 opacity-100 group-hover:-translate-y-6">
-                    {item.label}
-                  </span>
-                  <span className="absolute left-0 inline-block translate-y-5 transition-all duration-300 group-hover:scale-[.9] group-hover:translate-y-0">
-                    {item.label}
-                  </span>
-                </p>
-              </Link>
-              
-              {/* Dropdown Menu */}
-              <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white border border-gray-200 shadow-xl rounded-md min-w-[220px] py-2 z-50 transition-all duration-300">
-                {item.subItems?.map((sub, idx) => (
-                  <Link
-                    key={idx}
-                    href={sub.href}
-                    className="px-4 py-2 text-sm text-black font-medium hover:bg-gray-100 hover:text-primary transition-colors whitespace-nowrap"
+            {/* ── LOGO ── */}
+            <Link href="/" className="flex items-center gap-2">
+              <Image
+                src="/images/kampung-cetak-logo.png"
+                alt="Kampung Cetak"
+                width={36}
+                height={36}
+                className="object-contain rounded-full md:w-10 md:h-10"
+              />
+              <h1 className="text-lg md:text-2xl font-bold tracking-tight text-primary">
+                Kampung Cetak
+              </h1>
+            </Link>
+          </div>
+
+          {/* ── BIG SEARCH BAR (middle, desktop only) ── */}
+          <div className="hidden md:flex flex-1 max-w-2xl mx-auto relative items-center bg-white rounded-full border border-gray-300 shadow-sm overflow-hidden px-4 py-1">
+            <IoSearch className="text-gray-500 text-xl mr-2 shrink-0" />
+            <Input
+              className="w-full focus-visible:ring-0 text-md bg-transparent border-none shadow-none ring-0 focus-visible:ring-offset-0 px-0 h-10"
+              type="text"
+              placeholder="Search products, services, or categories..."
+            />
+            <Button className="bg-primary text-white rounded-full px-6 h-9 shrink-0 ml-2">
+              Search
+            </Button>
+          </div>
+
+          {/* ── ICONS & AUTH ── */}
+          <div className="flex gap-2 md:gap-3 items-center shrink-0">
+            {session?.user?.id ? (
+              <>
+                {/* Cart — always visible */}
+                <div className="relative">
+                  <Button
+                    onPress={() => router.push("/home/cart")}
+                    isIconOnly
+                    variant="ghost"
+                    className="rounded-full p-2 cursor-pointer hover:bg-gray-300 transition-colors"
                   >
-                    {sub.label}
-                  </Link>
-                ))}
+                    <FaCartShopping className="text-xl text-gray-700" />
+                  </Button>
+                  <Badge className="absolute top-0 right-0 bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-gray-200">
+                    {cartCount}
+                  </Badge>
+                </div>
+
+                {/* Notifications — desktop only */}
+                <div className="relative hidden md:block">
+                  <Button
+                    onPress={() => setIsNotificationsOpen(true)}
+                    isIconOnly
+                    variant="ghost"
+                    className="rounded-full p-2 cursor-pointer hover:bg-gray-300 transition-colors"
+                  >
+                    <IoNotifications className="text-xl text-gray-700" />
+                  </Button>
+                  <Badge className="absolute top-0 right-0 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-gray-200">
+                    {notification ? notification.filter((n) => !n.read).length : 0}
+                  </Badge>
+                </div>
+
+                {/* ── PROFILE CHIP — shows name beside icon ── */}
+                <Button
+                  onPress={() => router.push("/home/profile")}
+                  variant="ghost"
+                  className="rounded-full px-2 md:px-3 py-1 cursor-pointer hover:bg-gray-300 transition-colors flex items-center gap-2"
+                >
+                  {/* Avatar circle with initial */}
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold shrink-0">
+                    {session.user.name
+                      ? session.user.name.charAt(0).toUpperCase()
+                      : <CgProfile size={16} />}
+                  </div>
+                  {/* Name — hidden on very small screens */}
+                  <div className="hidden sm:flex flex-col items-start leading-tight">
+                    <span className="text-sm font-semibold text-gray-800 max-w-[100px] truncate">
+                      {session.user.name || "Profile"}
+                    </span>
+                    <span className="text-[10px] text-gray-500 max-w-[100px] truncate">
+                      {session.user.email || ""}
+                    </span>
+                  </div>
+                </Button>
+              </>
+            ) : (
+              <Button
+                onPress={() => setIsAuthModalOpen(true)}
+                className="rounded-full px-4 md:px-6 font-semibold cursor-pointer border-primary border text-sm bg-primary hover:bg-primary/90 transition-all duration-300 text-white"
+              >
+                Login
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* ── SECONDARY NAVBAR (categories, desktop only) ── */}
+        <div className="w-full bg-white border-y border-gray-200 hidden md:block relative z-50">
+          <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
+            {printingCategories.map((item, index) => (
+              <div key={index} className="relative group">
+                <Link
+                  href={item.href}
+                  className="text-primary font-bold uppercase tracking-wide inline-block py-2"
+                >
+                  <p className="relative text-sm inline-block overflow-hidden transition-colors">
+                    <span className="inline-block transition-all duration-300 opacity-100 group-hover:-translate-y-6">
+                      {item.label}
+                    </span>
+                    <span className="absolute left-0 inline-block translate-y-5 transition-all duration-300 group-hover:scale-[.9] group-hover:translate-y-0">
+                      {item.label}
+                    </span>
+                  </p>
+                </Link>
+
+                {/* Dropdown Menu */}
+                <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white border border-gray-200 shadow-xl rounded-md min-w-[220px] py-2 z-50 transition-all duration-300">
+                  {item.subItems?.map((sub, idx) => (
+                    <Link
+                      key={idx}
+                      href={sub.href}
+                      className="px-4 py-2 text-sm text-black font-medium hover:bg-gray-100 hover:text-primary transition-colors whitespace-nowrap"
+                    >
+                      {sub.label}
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
-    </div>
       <AuthModal nowProp={"login"} />
       <NotificationsDrawer
         isOpen={isNotificationsOpen}
