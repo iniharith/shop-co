@@ -42,6 +42,14 @@ export class AdminUsecase {
         return await this.userRepository.updateById(userId, user);
     }
 
+    async deleteUser(userId: string): Promise<void> {
+        const user = await this.userRepository.findById(userId);
+        if (!user) {
+            throw new Error("User not found");
+        }
+        await this.userRepository.deleteById(userId);
+    }
+
     async adminLogin(email: string, password: string): Promise<{ user: IUserDocument, accessToken: string, refreshToken: string }> {
         const adminEmail = process.env.ADMIN_EMAIL;
         const adminPassword = process.env.ADMIN_PASSWORD;

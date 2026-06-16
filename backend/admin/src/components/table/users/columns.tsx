@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-// import { useDeleteUser } from "@/hooks/useUser"; // optional hook for deletion
+import { CellAction } from "./cell-action";
 
 export interface IUser {
   _id: string;
@@ -65,7 +65,9 @@ export const userColumns: ColumnDef<IUser>[] = [
         {row.original.role}
       </Badge>
     ),
-    
   },
-
+  {
+    id: "actions",
+    cell: ({ row }) => <CellAction data={row.original} />,
+  },
 ];

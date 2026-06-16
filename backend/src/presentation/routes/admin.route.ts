@@ -7,6 +7,7 @@ const adminController = new AdminController();
 
 
 router.get("/users", authMiddilware, adminController.getUsers.bind(adminController));
+router.delete("/users/:id", authMiddilware, adminController.deleteUser.bind(adminController));
 
 router.get("/delivery-boys", authMiddilware, adminController.getDeliveryBoys.bind(adminController));
 

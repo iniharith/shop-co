@@ -42,6 +42,28 @@ export class AdminController {
     }
 
     /**
+     * @description Delete user
+     * @Method DELETE
+     * @Route /api/admin/users/:id
+     * @Response 200 - User deleted successfully
+     * @Response 400 - User not found
+     */
+    async deleteUser(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            if (req.role !== Roles.ADMIN) {
+                throw new Error(messages.UNAUTHORIZED)
+            }
+            const { id } = req.params;
+            await this.adminUsecase.deleteUser(id);
+            res.status(statusCodes.OK).json({
+                message: "User deleted successfully"
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
      * @description Get delivery boys
      * @Method GET
      * @Route /api/admin/delivery-boys

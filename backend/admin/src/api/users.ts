@@ -20,5 +20,7 @@ export const updateDeliveryBoy = async (token: string, id: string, status: boole
     return response.data;
 }
 
-
-
+export const deleteUser = async (token: string, id: string) => {
+    const response = await AxiosInstance(token).delete(`${ADMIN_URL}/users/${id}`);
+    return response.data;
+}

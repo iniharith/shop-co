@@ -20,13 +20,6 @@ export const AdminNavItems: NavItem[] = [
 
     },
     {
-        title: 'Delivery Boys',
-        url: '/admin/superAdmin/deliveryBoys',
-        icon: 'deliveryBoy',
-        shortcut: ['b', 'b'],
-        isActive: false,
-    },
-    {
         title: 'Orders',
         url: '/admin/orders',
         icon: 'box',
