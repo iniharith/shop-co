@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { navItems, printingCategories } from "@/constants";
@@ -7,7 +7,7 @@ import { Input } from "../ui/input";
 import { IoCloseCircle, IoNotifications, IoSearch } from "react-icons/io5";
 import { IoIosArrowDroprightCircle } from "react-icons/io";
 import { Button } from "@heroui/button";
-import { FaCartShopping, FaChevronDown } from "react-icons/fa6";
+import { FaCartShopping, FaChevronDown, FaChevronUp } from "react-icons/fa6";
 import { FaBars } from "react-icons/fa";
 import { usePathname } from "next/navigation";
 import { Drawer } from "vaul";
@@ -18,6 +18,7 @@ import { useNav } from "@/hooks/useNav";
 import AuthModal from "../page-sections/auth/authModal";
 import { CgProfile } from "react-icons/cg";
 
+// ── Mobile Drawer Content ────────────────────────────────────────────────────
 const MobileNavSheetContent = ({
   closeDrawer,
   session,
@@ -28,6 +29,13 @@ const MobileNavSheetContent = ({
   router: any;
 }) => {
   const pathname = usePathname();
+  // Track which category accordion is open (by index, null = none)
+  const [openCategory, setOpenCategory] = useState<number | null>(null);
+
+  const toggleCategory = (index: number) => {
+    setOpenCategory((prev) => (prev === index ? null : index));
+  };
+
   return (
     <Drawer.Portal>
       <Drawer.Overlay className="fixed z-50 inset-0 bg-black/10 backdrop-blur-sm" />
@@ -38,10 +46,11 @@ const MobileNavSheetContent = ({
         }
       >
         <div className="bg-gray-200 h-full w-full grow px-3 py-1 flex flex-col rounded-[16px] overflow-y-auto">
+
+          {/* ── HEADER: Logo + Close ── */}
           <Drawer.Title className="font-medium px-0 border-b border-dashed border-zinc-900/20 justify-between flex items-center mb-3 text-white">
-            {/* ── MOBILE LOGO ── */}
             <div className="top-0 -translate-x-1 left-0 py-2">
-              <Link href="/" className="flex items-center gap-2">
+              <Link href="/" className="flex items-center gap-2" onClick={() => closeDrawer()}>
                 <Image
                   src="/images/kampung-cetak-logo.png"
                   alt="Kampung Cetak"
@@ -63,77 +72,105 @@ const MobileNavSheetContent = ({
             </Button>
           </Drawer.Title>
 
-          {/* ── MOBILE USER PROFILE CHIP ── */}
+          {/* ── USER PROFILE CHIP ── */}
           {session?.user?.id && (
             <button
               onClick={() => { router.push("/home/profile"); closeDrawer(); }}
               className="flex items-center gap-3 mb-3 px-3 py-2 bg-white rounded-xl shadow-sm hover:bg-gray-50 transition-colors text-left"
             >
-              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
-                {session.user.name ? session.user.name.charAt(0).toUpperCase() : <CgProfile size={16} />}
+              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shrink-0">
+                {session.user.name
+                  ? session.user.name.charAt(0).toUpperCase()
+                  : <CgProfile size={16} />}
               </div>
               <div className="overflow-hidden">
-                <p className="text-sm font-semibold text-gray-900 truncate">{session.user.name || "My Profile"}</p>
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  {session.user.name || "My Profile"}
+                </p>
                 <p className="text-xs text-gray-400 truncate">{session.user.email || ""}</p>
               </div>
             </button>
           )}
 
-          {/* ── MOBILE NAV LINKS ── */}
-          <Drawer.Description className="mb-3 flex flex-col gap-4">
+          {/* ── MAIN NAV LINKS ── */}
+          <Drawer.Description className="mb-3 flex flex-col gap-3">
             {navItems.map((e, i) => (
               <Link
                 className={cn(
-                  "w-full flex items-center justify-between",
-                  pathname == e.href && "text-primary"
+                  "w-full flex items-center justify-between py-1",
+                  pathname === e.href && "text-primary"
                 )}
                 key={e.href + "mobile" + i}
                 href={e.href}
                 onClick={() => closeDrawer()}
               >
-                <span className="">{e.label}</span>
+                <span className="font-medium text-sm">{e.label}</span>
                 <IoIosArrowDroprightCircle
                   className={cn(
                     "text-primary text-lg",
-                    pathname != e.href && "opacity-50"
+                    pathname !== e.href && "opacity-40"
                   )}
                 />
               </Link>
             ))}
           </Drawer.Description>
 
-          {/* ── MOBILE CATEGORIES ── */}
-          <div className="border-t border-dashed border-zinc-900/20 pt-3">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Categories</p>
+          {/* ── CATEGORIES (accordion) ── */}
+          <div className="border-t border-dashed border-zinc-900/20 pt-3 flex-1">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">
+              Categories
+            </p>
             <div className="flex flex-col gap-1">
-              {printingCategories.map((item, index) => (
-                <div key={index}>
-                  <Link
-                    href={item.href}
-                    onClick={() => closeDrawer()}
-                    className="flex items-center justify-between w-full py-2 px-1 text-sm font-semibold text-primary hover:bg-white rounded-lg transition-colors"
-                  >
-                    <span>{item.label}</span>
-                    {item.subItems && item.subItems.length > 0 && (
-                      <FaChevronDown className="text-xs text-gray-400" />
+              {printingCategories.map((item, index) => {
+                const hasSubItems = item.subItems && item.subItems.length > 0;
+                const isOpen = openCategory === index;
+
+                return (
+                  <div key={index} className="rounded-xl overflow-hidden">
+                    {/* Category Header Row */}
+                    <button
+                      className={cn(
+                        "w-full flex items-center justify-between px-3 py-2.5 text-sm font-semibold transition-colors rounded-xl",
+                        isOpen
+                          ? "bg-primary text-white"
+                          : "text-primary hover:bg-white"
+                      )}
+                      onClick={() => {
+                        if (hasSubItems) {
+                          toggleCategory(index);
+                        } else {
+                          router.push(item.href);
+                          closeDrawer();
+                        }
+                      }}
+                    >
+                      <span>{item.label}</span>
+                      {hasSubItems && (
+                        isOpen
+                          ? <FaChevronUp className="text-xs" />
+                          : <FaChevronDown className="text-xs opacity-50" />
+                      )}
+                    </button>
+
+                    {/* Sub-items — only visible when accordion is open */}
+                    {hasSubItems && isOpen && (
+                      <div className="bg-white rounded-b-xl px-2 pb-2 flex flex-col gap-0.5 animate-in slide-in-from-top-1 duration-150">
+                        {item.subItems!.map((sub, idx) => (
+                          <Link
+                            key={idx}
+                            href={sub.href}
+                            onClick={() => closeDrawer()}
+                            className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:text-primary hover:bg-gray-50 rounded-lg transition-colors"
+                          >
+                            <span className="w-1 h-1 rounded-full bg-primary/40 shrink-0" />
+                            {sub.label}
+                          </Link>
+                        ))}
+                      </div>
                     )}
-                  </Link>
-                  {item.subItems && item.subItems.length > 0 && (
-                    <div className="pl-3 flex flex-col gap-1 mb-2">
-                      {item.subItems.map((sub, idx) => (
-                        <Link
-                          key={idx}
-                          href={sub.href}
-                          onClick={() => closeDrawer()}
-                          className="text-xs text-gray-600 py-1 hover:text-primary transition-colors"
-                        >
-                          {sub.label}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -142,6 +179,7 @@ const MobileNavSheetContent = ({
   );
 };
 
+// ── Main Nav Component ───────────────────────────────────────────────────────
 const Nav = () => {
   const {
     isOpen,
@@ -160,10 +198,10 @@ const Nav = () => {
   return (
     <>
       <div className="w-full flex flex-col bg-gray-200">
-        {/* ── MAIN HEADER (LOGO, SEARCH, ICONS) ── */}
+        {/* ── MAIN HEADER ── */}
         <div className="w-full px-4 md:px-7 py-3 md:py-4 flex justify-between items-center gap-3 md:gap-6">
 
-          {/* ── HAMBURGER (mobile) + LOGO ── */}
+          {/* Left: Hamburger + Logo */}
           <div className="flex items-center gap-2 shrink-0">
             <Drawer.Root
               shouldScaleBackground
@@ -181,7 +219,7 @@ const Nav = () => {
               />
             </Drawer.Root>
 
-            {/* ── LOGO ── */}
+            {/* Logo */}
             <Link href="/" className="flex items-center gap-2">
               <Image
                 src="/images/kampung-cetak-logo.png"
@@ -196,7 +234,7 @@ const Nav = () => {
             </Link>
           </div>
 
-          {/* ── BIG SEARCH BAR (middle, desktop only) ── */}
+          {/* Center: Search (desktop only) */}
           <div className="hidden md:flex flex-1 max-w-2xl mx-auto relative items-center bg-white rounded-full border border-gray-300 shadow-sm overflow-hidden px-4 py-1">
             <IoSearch className="text-gray-500 text-xl mr-2 shrink-0" />
             <Input
@@ -209,7 +247,7 @@ const Nav = () => {
             </Button>
           </div>
 
-          {/* ── ICONS & AUTH ── */}
+          {/* Right: Icons & Auth */}
           <div className="flex gap-2 md:gap-3 items-center shrink-0">
             {session?.user?.id ? (
               <>
@@ -243,19 +281,17 @@ const Nav = () => {
                   </Badge>
                 </div>
 
-                {/* ── PROFILE CHIP — shows name beside icon ── */}
+                {/* Profile Chip — avatar initial + name + email */}
                 <Button
                   onPress={() => router.push("/home/profile")}
                   variant="ghost"
                   className="rounded-full px-2 md:px-3 py-1 cursor-pointer hover:bg-gray-300 transition-colors flex items-center gap-2"
                 >
-                  {/* Avatar circle with initial */}
                   <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold shrink-0">
                     {session.user.name
                       ? session.user.name.charAt(0).toUpperCase()
                       : <CgProfile size={16} />}
                   </div>
-                  {/* Name — hidden on very small screens */}
                   <div className="hidden sm:flex flex-col items-start leading-tight">
                     <span className="text-sm font-semibold text-gray-800 max-w-[100px] truncate">
                       {session.user.name || "Profile"}
@@ -277,7 +313,7 @@ const Nav = () => {
           </div>
         </div>
 
-        {/* ── SECONDARY NAVBAR (categories, desktop only) ── */}
+        {/* ── DESKTOP CATEGORY NAV ── */}
         <div className="w-full bg-white border-y border-gray-200 hidden md:block relative z-50">
           <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
             {printingCategories.map((item, index) => (
@@ -296,8 +332,8 @@ const Nav = () => {
                   </p>
                 </Link>
 
-                {/* Dropdown Menu */}
-                <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white border border-gray-200 shadow-xl rounded-md min-w-[220px] py-2 z-50 transition-all duration-300">
+                {/* Dropdown */}
+                <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white border border-gray-200 shadow-xl rounded-md min-w-[220px] py-2 z-50">
                   {item.subItems?.map((sub, idx) => (
                     <Link
                       key={idx}
@@ -313,6 +349,7 @@ const Nav = () => {
           </div>
         </div>
       </div>
+
       <AuthModal nowProp={"login"} />
       <NotificationsDrawer
         isOpen={isNotificationsOpen}
