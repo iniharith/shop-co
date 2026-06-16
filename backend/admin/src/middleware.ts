@@ -51,12 +51,6 @@ export default withAuth(
      
         return true;
       },
-    },
-
-    cookies: {
-      sessionToken: {
-        name: `admin-session-token`
-      }
     }
   }
 );
