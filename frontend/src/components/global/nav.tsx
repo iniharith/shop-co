@@ -227,13 +227,34 @@ const Nav = () => {
       <div className="w-full bg-white border-y border-gray-200 hidden md:block">
         <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
           {printingCategories.map((item, index) => (
-            <Link
-              href={item.href}
-              key={index}
-              className="text-gray-700 font-medium hover:text-primary transition-colors text-sm uppercase tracking-wide"
-            >
-              {item.label}
-            </Link>
+            <div key={index} className="relative group/navitem z-50">
+              <Link
+                href={item.href}
+                className="text-primary font-bold uppercase tracking-wide inline-block py-2"
+              >
+                <p className="relative text-sm inline-block overflow-hidden transition-colors">
+                  <span className="inline-block transition-all duration-300 opacity-100 group-hover/navitem:-translate-y-6">
+                    {item.label}
+                  </span>
+                  <span className="absolute left-0 inline-block translate-y-5 transition-all duration-300 group-hover/navitem:scale-[.9] group-hover/navitem:translate-y-0">
+                    {item.label}
+                  </span>
+                </p>
+              </Link>
+              
+              {/* Dropdown Menu */}
+              <div className="absolute left-0 top-full hidden group-hover/navitem:flex flex-col bg-white border border-gray-200 shadow-xl rounded-md min-w-[220px] py-2 z-50 transition-all duration-300">
+                {item.subItems?.map((sub, idx) => (
+                  <Link
+                    key={idx}
+                    href={sub.href}
+                    className="px-4 py-2 text-sm text-black font-medium hover:bg-gray-100 hover:text-primary transition-colors whitespace-nowrap"
+                  >
+                    {sub.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
           ))}
           <div className="w-[1px] h-4 bg-gray-300 mx-2"></div>
           {navItems.map((item, index) => (
