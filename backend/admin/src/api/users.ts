@@ -24,3 +24,8 @@ export const deleteUser = async (token: string, id: string) => {
     const response = await AxiosInstance(token).delete(`${ADMIN_URL}/users/${id}`);
     return response.data;
 }
+
+export const seedTestData = async (token: string) => {
+    const response = await AxiosInstance(token).post(`${ADMIN_URL}/seed-test-data`);
+    return response.data;
+}

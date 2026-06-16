@@ -6,8 +6,8 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 
 export const metadata: Metadata = {
-  title: "Kampung Cetak",
-  description: "Kampung Cetak",
+  title: "Kampung Cetak Admin Console",
+  description: "Kampung Cetak Admin Console",
 };
 
 export default async function DashboardLayout({

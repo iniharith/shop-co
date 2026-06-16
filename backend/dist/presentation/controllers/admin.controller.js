@@ -46,6 +46,30 @@ class AdminController {
         });
     }
     /**
+     * @description Delete user
+     * @Method DELETE
+     * @Route /api/admin/users/:id
+     * @Response 200 - User deleted successfully
+     * @Response 400 - User not found
+     */
+    deleteUser(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (req.role !== user_type_1.Roles.ADMIN) {
+                    throw new Error(api_constant_1.messages.UNAUTHORIZED);
+                }
+                const { id } = req.params;
+                yield this.adminUsecase.deleteUser(id);
+                res.status(api_constant_1.statusCodes.OK).json({
+                    message: "User deleted successfully"
+                });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    /**
      * @description Get delivery boys
      * @Method GET
      * @Route /api/admin/delivery-boys
@@ -138,6 +162,27 @@ class AdminController {
                 res.status(api_constant_1.statusCodes.OK).json({
                     message: "Orders fetched successfully",
                     orders: orders
+                });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    /**
+     * @description Seed test data
+     * @Method POST
+     * @Route /api/admin/seed-test-data
+     */
+    seedTestData(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (req.role !== user_type_1.Roles.ADMIN) {
+                    throw new Error(api_constant_1.messages.UNAUTHORIZED);
+                }
+                yield this.adminUsecase.seedTestData();
+                res.status(api_constant_1.statusCodes.OK).json({
+                    message: "Test data seeded successfully"
                 });
             }
             catch (error) {

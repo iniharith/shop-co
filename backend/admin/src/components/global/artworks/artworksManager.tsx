@@ -135,6 +135,11 @@ export default function ArtworksManager() {
               <CardTitle className="text-base text-center truncate w-full">
                 {group.user?.name || "Unknown Customer"}
               </CardTitle>
+              {group.user?._id && (
+                <div className="text-xs text-muted-foreground truncate w-full text-center">
+                  ID: {group.user._id.toString().slice(-6).toUpperCase()}
+                </div>
+              )}
               <CardDescription>
                 {group.count} file{group.count !== 1 && 's'}
               </CardDescription>

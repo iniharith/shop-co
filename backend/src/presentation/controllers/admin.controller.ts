@@ -158,5 +158,24 @@ export class AdminController {
 
 
 
+    /**
+     * @description Seed test data
+     * @Method POST
+     * @Route /api/admin/seed-test-data
+     */
+    async seedTestData(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            if (req.role !== Roles.ADMIN) {
+                throw new Error(messages.UNAUTHORIZED)
+            }
+            await this.adminUsecase.seedTestData();
+            res.status(statusCodes.OK).json({
+                message: "Test data seeded successfully"
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
 }
 

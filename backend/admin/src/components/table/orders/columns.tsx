@@ -60,7 +60,7 @@ export const orderColumns: ColumnDef<IOrder>[] = [
   },
   {
     accessorKey: "deliveryBoy",
-    header: "Delivery Boy",
+    header: "Delivery Provider",
     cell: ({ row }) => {
       const deliveryBoy = row.original.deliveryBoy as any;
       return (
@@ -72,7 +72,7 @@ export const orderColumns: ColumnDef<IOrder>[] = [
           )}
           variant={!!deliveryBoy ? "default" : "destructive"}
         >
-          {!!deliveryBoy ? "asigned " : "not"}
+          {!!deliveryBoy ? "Assigned" : "Unassigned"}
         </Badge>
       );
     },

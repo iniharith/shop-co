@@ -17,4 +17,6 @@ router.get("/orders", authMiddilware, adminController.getOrders.bind(adminContro
 
 router.get("/orders/delivery-boy/:id", authMiddilware, adminController.getOrdersByDeliveryBoy.bind(adminController));
 
+router.post("/seed-test-data", authMiddilware, adminController.seedTestData.bind(adminController));
+
 export default router;

@@ -9,7 +9,7 @@ import { authConfig } from "@/lib/auth.config";
 import { getServerSession } from "next-auth/next";
 
 export const metadata: Metadata = {
-  title: "Kampung Cetak Admin",
+  title: "Kampung Cetak Admin Console",
   description: "Admin dashboard for Kampung Cetak",
 };
 
