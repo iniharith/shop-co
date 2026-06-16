@@ -48,9 +48,17 @@ export class AdminUsecase {
         if (email !== adminEmail || password !== adminPassword) {
             throw new Error("Invalid email or password");
         }
-        const user = await this.userRepository.findByEmail(email);
+        let user = await this.userRepository.findByEmail(email);
         if (!user) {
-            throw new Error("User not found");
+            // Auto-create admin user on first login
+            user = await this.userRepository.create({
+                name: "Super Admin",
+                email: email,
+                password: password, // will be hashed by mongoose hook
+                role: Roles.ADMIN,
+                verified: true,
+                phone: "0000000000"
+            } as any);
         }
         const accessToken = this.jwtService.generateAccessToken({ userId: user._id });
         const refreshToken = this.jwtService.generateRefreshToken({ userId: user._id });
