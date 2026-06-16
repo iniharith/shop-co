@@ -14,21 +14,70 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.easyParcelService = void 0;
 const axios_1 = __importDefault(require("axios"));
-const BASE_URL = process.env.EASYPARCEL_BASE_URL || 'https://api.easyparcel.com';
-const API_KEY = process.env.EASYPARCEL_API_KEY || '';
+// ─── EasyParcel Marketplace OAuth2 Configuration ─────────────────────────────
+// Uses Client Credentials grant — token is obtained server-to-server.
+// No user login or redirect needed.
+const CLIENT_ID = process.env.EASYPARCEL_CLIENT_ID || '';
+const CLIENT_SECRET = process.env.EASYPARCEL_CLIENT_SECRET || '';
+const BASE_URL = process.env.EASYPARCEL_BASE_URL || 'https://connect.easyparcel.my';
+const TOKEN_URL = `${BASE_URL}/oauth/token`;
 class EasyParcelService {
-    /**
-     * Track parcel by tracking number using EasyParcel v3 API
-     */
+    constructor() {
+        this.accessToken = null;
+        this.tokenExpiresAt = 0;
+        this.http = axios_1.default.create({ baseURL: BASE_URL, timeout: 15000 });
+    }
+    // ─── OAuth2: Client Credentials Token ──────────────────
+    // Automatically called before every API request.
+    // Caches the token in memory and refreshes when it expires.
+    getAccessToken() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const now = Date.now();
+            // Return cached token if still valid (with 60s buffer)
+            if (this.accessToken && now < this.tokenExpiresAt - 60000) {
+                return this.accessToken;
+            }
+            if (!CLIENT_ID || !CLIENT_SECRET) {
+                throw new Error('EASYPARCEL_CLIENT_ID and EASYPARCEL_CLIENT_SECRET must be set in environment variables');
+            }
+            console.log('[EasyParcel] 🔑 Fetching new OAuth2 access token...');
+            const response = yield axios_1.default.post(TOKEN_URL, new URLSearchParams({
+                grant_type: 'client_credentials',
+                client_id: CLIENT_ID,
+                client_secret: CLIENT_SECRET,
+            }), {
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                timeout: 10000,
+            });
+            const { access_token, expires_in } = response.data;
+            this.accessToken = access_token;
+            // expires_in is in seconds; store as ms timestamp
+            this.tokenExpiresAt = now + (expires_in !== null && expires_in !== void 0 ? expires_in : 3600) * 1000;
+            console.log(`[EasyParcel] ✅ Token acquired, expires in ${expires_in}s`);
+            return this.accessToken;
+        });
+    }
+    // ─── Helper: authorized POST request ───────────────────
+    post(action, body) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const token = yield this.getAccessToken();
+            const response = yield this.http.post(`/?ac=${action}`, body, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            return response.data;
+        });
+    }
+    // ─── Track Parcel ───────────────────────────────────────
     trackParcel(trackingNumber) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
             try {
-                const response = yield axios_1.default.post(`${BASE_URL}/v3.0/submitted/parcel-tracking/`, {
-                    api_key: API_KEY,
+                const data = yield this.post('EPParcelStatusBulk', {
                     bulk: [{ tracking_no: trackingNumber }],
-                }, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
-                const data = response.data;
+                });
                 if (!((_a = data === null || data === void 0 ? void 0 : data.result) === null || _a === void 0 ? void 0 : _a[0]))
                     return null;
                 const result = data.result[0];
@@ -41,7 +90,7 @@ class EasyParcelService {
                 return {
                     trackingNumber,
                     status: this.normalizeStatus(result.status || 'pending'),
-                    courier: result.courier_name || 'Unknown Courier',
+                    courier: result.courier_name || 'Unknown',
                     events,
                 };
             }
@@ -51,35 +100,38 @@ class EasyParcelService {
             }
         });
     }
-    /**
-     * Get AWB PDF URL for a booked shipment
-     */
-    getAWB(shipmentId) {
+    // ─── Get Shipping Rates ─────────────────────────────────
+    getRates(params) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a, _b;
             try {
-                const response = yield axios_1.default.post(`${BASE_URL}/v3.0/submitted/shipment/awb/`, {
-                    api_key: API_KEY,
-                    bulk: [{ shipment_id: shipmentId }],
-                }, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
-                const data = response.data;
-                return ((_b = (_a = data === null || data === void 0 ? void 0 : data.result) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.awb_url) || null;
+                const data = yield this.post('EPRateCheckingBulk', {
+                    bulk: [
+                        {
+                            pick_code: params.fromPostcode,
+                            pick_state: params.fromState,
+                            pick_country: 'MY',
+                            send_code: params.toPostcode,
+                            send_state: params.toState,
+                            send_country: 'MY',
+                            weight: params.weight,
+                        },
+                    ],
+                });
+                return ((_b = (_a = data === null || data === void 0 ? void 0 : data.result) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.rates) || [];
             }
             catch (error) {
-                console.error('[EasyParcel] getAWB error:', error === null || error === void 0 ? void 0 : error.message);
-                return null;
+                console.error('[EasyParcel] getRates error:', error === null || error === void 0 ? void 0 : error.message);
+                return [];
             }
         });
     }
-    /**
-     * Book a new shipment on EasyParcel, returns shipment ID
-     */
+    // ─── Create Shipment ────────────────────────────────────
     createShipment(input) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a, _b;
             try {
-                const response = yield axios_1.default.post(`${BASE_URL}/v3.0/submitted/make-shipment/`, {
-                    api_key: API_KEY,
+                const data = yield this.post('EPSubmitOrderBulk', {
                     bulk: [
                         {
                             service_id: input.courier,
@@ -101,9 +153,8 @@ class EasyParcelService {
                             send_date: new Date().toISOString().split('T')[0],
                         },
                     ],
-                }, { headers: { 'Content-Type': 'application/json' }, timeout: 15000 });
-                const data = response.data;
-                return ((_b = (_a = data === null || data === void 0 ? void 0 : data.result) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.shipment_id) || null;
+                });
+                return ((_b = (_a = data === null || data === void 0 ? void 0 : data.result) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.order_id) || null;
             }
             catch (error) {
                 console.error('[EasyParcel] createShipment error:', error === null || error === void 0 ? void 0 : error.message);
@@ -111,34 +162,23 @@ class EasyParcelService {
             }
         });
     }
-    /**
-     * Get available courier rates for a shipment
-     */
-    getRates(params) {
+    // ─── Get AWB PDF URL ────────────────────────────────────
+    getAWB(orderId) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b, _c;
+            var _a, _b;
             try {
-                const response = yield axios_1.default.post(`${BASE_URL}/v3.0/submitted/get-rates/`, {
-                    api_key: API_KEY,
-                    bulk: [
-                        {
-                            pick_code: params.fromPostcode,
-                            send_code: params.toPostcode,
-                            weight: params.weight,
-                        },
-                    ],
-                }, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
-                return ((_c = (_b = (_a = response.data) === null || _a === void 0 ? void 0 : _a.result) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.rates) || [];
+                const data = yield this.post('EPGetOrderAWBBulk', {
+                    bulk: [{ order_id: orderId }],
+                });
+                return ((_b = (_a = data === null || data === void 0 ? void 0 : data.result) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.awb_url) || null;
             }
             catch (error) {
-                console.error('[EasyParcel] getRates error:', error === null || error === void 0 ? void 0 : error.message);
-                return [];
+                console.error('[EasyParcel] getAWB error:', error === null || error === void 0 ? void 0 : error.message);
+                return null;
             }
         });
     }
-    /**
-     * Normalize raw EasyParcel status strings to our standard statuses
-     */
+    // ─── Normalize Status ───────────────────────────────────
     normalizeStatus(rawStatus) {
         const s = rawStatus.toLowerCase();
         if (s.includes('deliver') && s.includes('out'))
@@ -149,7 +189,10 @@ class EasyParcelService {
             return 'in_transit';
         if (s.includes('pick') || s.includes('collect') || s.includes('pickup'))
             return 'picked_up';
-        if (s.includes('fail') || s.includes('return') || s.includes('exception') || s.includes('undeliver'))
+        if (s.includes('fail') ||
+            s.includes('return') ||
+            s.includes('exception') ||
+            s.includes('undeliver'))
             return 'failed';
         return 'pending';
     }
