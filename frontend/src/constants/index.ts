@@ -1,22 +1,4 @@
-export const navItems = [
-    {
-        label: "Shop",
-        href: "/home/shop",
-    },
-    {
-       label: "About",
-       href: "/home/about",
-    },
-    {
-        label: "Contact",
-        href: "/home/contact",
-    },
-    {
-        label: "Github",
-        href: "https://github.com/Abshar777/shop-co",
-    }
-    
-]
+export const navItems: { label: string; href: string }[] = [];
 
 export const printingCategories = [
   {

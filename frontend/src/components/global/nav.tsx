@@ -256,16 +256,6 @@ const Nav = () => {
               </div>
             </div>
           ))}
-          <div className="w-[1px] h-4 bg-gray-300 mx-2"></div>
-          {navItems.map((item, index) => (
-            <Link
-              href={item.href}
-              key={`nav-${index}`}
-              className="text-gray-500 font-medium hover:text-primary transition-colors text-sm"
-            >
-              {item.label}
-            </Link>
-          ))}
         </div>
       </div>
     </div>
