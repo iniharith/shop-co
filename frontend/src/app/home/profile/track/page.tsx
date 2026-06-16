@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Breadcrumbs } from "@/components/global/breadcrumb";
 import ProfileQuickLinks from "@/components/page-sections/profile/profileQuickLinks";
+import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
 
 interface TrackingEvent {
   status: string;
@@ -69,6 +70,7 @@ function formatDate(d: string) {
 }
 
 const API = process.env.NEXT_PUBLIC_API_URL || '';
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
 function TrackContent() {
   const searchParams = useSearchParams();
@@ -118,10 +120,13 @@ function TrackContent() {
   const isDelivered = parcel?.status === 'delivered';
   const isFailed = parcel?.status === 'failed';
 
+  // Dummy coordinate for map (Kuala Lumpur center)
+  const mapCenter = { lat: 3.1478, lng: 101.6953 };
+
   return (
     <div className="w-full py-5 md:px-10 px-5">
       <Breadcrumbs />
-      <h1 className="text-3xl mt-2">Profile</h1>
+      <h1 className="text-3xl mt-2 font-bold tracking-tight">Profile</h1>
       <div className="grid w-full grid-cols-1 gap-5 md:grid-cols-4">
         <ProfileQuickLinks />
         
@@ -135,147 +140,184 @@ function TrackContent() {
             <h1 className="text-3xl font-extrabold text-black">
               Jejak Penghantaran
             </h1>
-            <p className="text-gray-500 mt-2 text-sm">Masukkan nombor penjejakan untuk semak status parcel anda.</p>
+            <p className="text-gray-500 mt-2 text-sm">Masukkan nombor penjejakan EasyParcel untuk semak status parcel anda dalam masa nyata.</p>
           </div>
 
-          {/* Search Box */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-            <div className="flex gap-3">
-              <input
-                value={trackingInput}
-                onChange={e => setTrackingInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && searchByTracking()}
-                placeholder="cth: EPI12345678MY, JT123456789MY..."
-                className="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-black placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-              />
-              <button
-                onClick={() => searchByTracking()}
-                disabled={loading}
-                className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-white px-6 py-3 rounded-xl font-semibold text-sm transition-all flex items-center gap-2"
-              >
-                {loading ? (
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : '🔍'}
-                {loading ? 'Mencari...' : 'Jejak'}
-              </button>
-            </div>
+          {/* Search Box - Modern Redesign */}
+          <div className="bg-white border border-gray-200 rounded-3xl p-3 shadow-sm flex items-center">
+            <div className="pl-4 pr-2 text-gray-400">📦</div>
+            <input
+              value={trackingInput}
+              onChange={e => setTrackingInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && searchByTracking()}
+              placeholder="Contoh: EPI12345678MY, JT123456789MY..."
+              className="flex-1 bg-transparent px-2 py-3 text-sm text-black placeholder-gray-400 focus:outline-none"
+            />
+            <button
+              onClick={() => searchByTracking()}
+              disabled={loading}
+              className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-white px-8 py-3 rounded-2xl font-bold text-sm transition-all shadow-md flex items-center gap-2"
+            >
+              {loading ? (
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : '🔍'}
+              {loading ? 'Mencari...' : 'Jejak'}
+            </button>
           </div>
 
           {/* Error */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">
+            <div className="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 text-sm text-red-600 flex items-center gap-3 font-medium">
               ❌ {error}
-            </div>
-          )}
-
-          {/* Delivered Celebration */}
-          {isDelivered && (
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center">
-              <div className="text-5xl mb-2">🎉</div>
-              <h2 className="text-xl font-bold text-green-700 mb-1">Parcel Telah Dihantar!</h2>
-              <p className="text-green-600 text-sm">Terima kasih kerana menggunakan perkhidmatan Kampung Cetak!</p>
-            </div>
-          )}
-
-          {/* Failed Notice */}
-          {isFailed && (
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
-              <h2 className="text-base font-bold text-red-700 mb-1">❌ Penghantaran Gagal</h2>
-              <p className="text-red-600 text-sm">
-                Kurier tidak dapat menghantar parcel. Sila hubungi kami melalui WhatsApp untuk bantuan.
-              </p>
             </div>
           )}
 
           {/* Tracking Result */}
           {parcel && (
-            <div className="space-y-5">
+            <div className="flex flex-col gap-6">
 
-              {/* Info Card */}
-              <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                <div className="flex items-start justify-between mb-5">
+              {/* Status & Map Split View */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* Left Column: Info & Stepper */}
+                <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
                   <div>
-                    <div className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-1">No. Penjejakan</div>
-                    <div className="text-lg font-bold font-mono text-black">{parcel.trackingNumber}</div>
-                    <div className="text-sm text-gray-500 mt-1">Kurier: <span className="text-black font-medium">{parcel.courier}</span></div>
-                    {parcel.orderId && (
-                      <div className="text-sm text-gray-500">Order: <span className="text-black font-medium">{parcel.orderId}</span></div>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className={`text-base font-bold ${statusColor(parcel.status)}`}>
-                      {statusLabel(parcel.status)}
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-2xl">🚚</span>
+                      <div>
+                        <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-0.5">EasyParcel Tracking</div>
+                        <div className="text-xl font-black font-mono text-black">{parcel.trackingNumber}</div>
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">{formatDate(parcel.updatedAt)}</div>
+                    
+                    <div className="flex flex-col gap-2 bg-gray-50 rounded-2xl p-4 mb-6 border border-gray-100">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-500 font-medium">Kurier:</span>
+                        <span className="text-black font-bold uppercase">{parcel.courier}</span>
+                      </div>
+                      <div className="w-full h-px bg-gray-200" />
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-500 font-medium">Status Terkini:</span>
+                        <span className={`font-bold ${statusColor(parcel.status)}`}>{statusLabel(parcel.status)}</span>
+                      </div>
+                      {parcel.orderId && (
+                        <>
+                          <div className="w-full h-px bg-gray-200" />
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-500 font-medium">Pesanan:</span>
+                            <span className="text-black font-bold">{parcel.orderId}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Progress Stepper */}
+                  {!isFailed && (
+                    <div className="relative mt-4 mb-2 px-2">
+                      <div className="flex items-center justify-between relative">
+                        {/* connector line */}
+                        <div className="absolute top-4 left-0 right-0 h-1 bg-gray-100 rounded-full -z-0" />
+                        <div
+                          className="absolute top-4 left-0 h-1 bg-primary rounded-full transition-all duration-1000 ease-out -z-0"
+                          style={{ width: `${Math.min(stepIndex / (STEPS.length - 1), 1) * 100}%` }}
+                        />
+
+                        {STEPS.map((step, i) => {
+                          const done = i < stepIndex;
+                          const current = i === stepIndex;
+                          return (
+                            <div key={step.key} className="flex flex-col items-center gap-2 relative z-10 group">
+                              <div className={`
+                                w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 shadow-sm
+                                ${done
+                                  ? 'bg-primary text-white scale-100'
+                                  : current
+                                    ? 'bg-primary text-white scale-110 ring-4 ring-primary/20 animate-pulse'
+                                    : 'bg-white border-2 border-gray-200 text-gray-300 scale-90'
+                                }
+                              `}>
+                                {step.icon}
+                              </div>
+                              <div className={`absolute top-10 text-center text-[10px] font-bold max-w-16 leading-tight whitespace-nowrap
+                                ${done || current ? 'text-black' : 'text-gray-400'}
+                              `}>
+                                {step.label}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="h-6" /> {/* spacer for absolute text */}
+                    </div>
+                  )}
+
+                  {isFailed && (
+                    <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mt-4">
+                      <h2 className="text-sm font-bold text-red-700 mb-1">❌ Penghantaran Gagal</h2>
+                      <p className="text-red-600 text-xs">
+                        Kurier tidak dapat menghantar parcel. Sila hubungi khidmat pelanggan.
+                      </p>
+                    </div>
+                  )}
+                  {isDelivered && (
+                    <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mt-4 text-center">
+                      <h2 className="text-sm font-bold text-green-700">🎉 Parcel Telah Dihantar!</h2>
+                    </div>
+                  )}
                 </div>
 
-                {/* Progress Stepper */}
-                {!isFailed && (
-                  <div className="relative mt-8">
-                    <div className="flex items-center justify-between relative">
-                      {/* connector line */}
-                      <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 -z-0" />
-                      <div
-                        className="absolute top-5 left-0 h-0.5 bg-primary transition-all duration-700 -z-0"
-                        style={{ width: `${Math.min(stepIndex / (STEPS.length - 1), 1) * 100}%` }}
-                      />
-
-                      {STEPS.map((step, i) => {
-                        const done = i < stepIndex;
-                        const current = i === stepIndex;
-                        return (
-                          <div key={step.key} className="flex flex-col items-center gap-2 relative z-10">
-                            <div className={`
-                              w-10 h-10 rounded-full flex items-center justify-center text-base font-bold transition-all duration-300 border-2 bg-white
-                              ${done
-                                ? 'border-primary text-primary'
-                                : current
-                                  ? 'border-primary text-primary animate-pulse'
-                                  : 'border-gray-200 text-gray-400'
-                              }
-                            `}>
-                              {step.icon}
-                            </div>
-                            <div className={`text-center text-xs font-medium max-w-16 leading-tight
-                              ${done || current ? 'text-black' : 'text-gray-400'}
-                            `}>
-                              {step.label}
-                            </div>
-                          </div>
-                        );
-                      })}
+                {/* Right Column: Google Maps */}
+                <div className="bg-gray-100 rounded-3xl overflow-hidden shadow-sm h-[350px] lg:h-auto border border-gray-200 relative">
+                  {GOOGLE_MAPS_API_KEY ? (
+                    <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
+                      <Map
+                        defaultZoom={12}
+                        defaultCenter={mapCenter}
+                        mapId="DEMO_MAP_ID"
+                        disableDefaultUI={true}
+                      >
+                        <AdvancedMarker position={mapCenter}>
+                          <Pin background={'#ef4444'} borderColor={'#b91c1c'} glyphColor={'#fff'} />
+                        </AdvancedMarker>
+                      </Map>
+                    </APIProvider>
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gray-50">
+                      <div className="text-5xl mb-4">🗺️</div>
+                      <p className="font-bold text-gray-800 mb-1">Live Map Integrasi</p>
+                      <p className="text-xs text-gray-500 max-w-xs">Peta akan dipaparkan di sini apabila Google Maps API Key dimasukkan.</p>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+
               </div>
 
               {/* Tracking History */}
               {parcel.events && parcel.events.length > 0 && (
-                <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                  <h3 className="text-base font-bold mb-4 text-black">📋 Sejarah Penjejakan</h3>
-                  <div className="space-y-1">
+                <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm">
+                  <h3 className="text-lg font-black mb-6 text-black flex items-center gap-2">
+                    <span>📋</span> Sejarah Pergerakan
+                  </h3>
+                  <div className="space-y-0 relative before:absolute before:inset-0 before:ml-[15px] before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 before:to-transparent">
                     {parcel.events.slice().reverse().map((ev, i) => (
-                      <div key={i}>
-                        <button
-                          onClick={() => setExpandedEvent(expandedEvent === i ? null : i)}
-                          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors text-left"
-                        >
-                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${i === 0 ? 'bg-primary animate-pulse' : 'bg-gray-300'}`} />
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-semibold ${i === 0 ? 'text-black' : 'text-gray-600'}`}>
-                              {ev.status || ev.description}
-                            </p>
-                            <p className="text-xs text-gray-500">{formatDate(ev.timestamp)}</p>
+                      <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                        {/* Timeline dot */}
+                        <div className={`flex items-center justify-center w-8 h-8 rounded-full border-4 border-white shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10
+                          ${i === 0 ? 'bg-primary' : 'bg-gray-300'}
+                        `}>
+                          <div className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-white animate-pulse' : 'bg-transparent'}`} />
+                        </div>
+                        
+                        {/* Card */}
+                        <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-2xl bg-white border border-gray-100 shadow-sm mb-4 group-hover:border-primary/30 transition-colors">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className={`text-sm font-bold ${i === 0 ? 'text-primary' : 'text-gray-800'}`}>{ev.status || ev.description}</span>
                           </div>
-                          <span className="text-gray-400 text-xs">{expandedEvent === i ? '▲' : '▼'}</span>
-                        </button>
-                        {expandedEvent === i && (
-                          <div className="ml-8 px-3 pb-3 text-sm text-gray-500 space-y-1">
-                            {ev.description && <p>📝 {ev.description}</p>}
-                            {ev.location && <p>📍 {ev.location}</p>}
-                          </div>
-                        )}
+                          <div className="text-xs text-gray-500 mb-2 font-medium bg-gray-50 inline-block px-2 py-1 rounded-md">{formatDate(ev.timestamp)}</div>
+                          {ev.description && <p className="text-sm text-gray-600 mt-1">📝 {ev.description}</p>}
+                          {ev.location && <p className="text-sm text-gray-600 mt-1">📍 {ev.location}</p>}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -284,9 +326,10 @@ function TrackContent() {
 
               {/* No events */}
               {(!parcel.events || parcel.events.length === 0) && (
-                <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center shadow-sm">
-                  <div className="text-3xl mb-3">📡</div>
-                  <p className="text-gray-500 text-sm">Tiada rekod penjejakan lagi. Sila semak semula sebentar lagi.</p>
+                <div className="bg-white border border-gray-200 rounded-3xl p-10 text-center shadow-sm">
+                  <div className="text-4xl mb-4">📡</div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-1">Tiada Rekod Penjejakan</h3>
+                  <p className="text-gray-500 text-sm">Data EasyParcel belum dikemaskini. Sila semak semula sebentar lagi.</p>
                 </div>
               )}
             </div>
@@ -294,10 +337,10 @@ function TrackContent() {
 
           {/* Empty state */}
           {!parcel && !loading && !error && (
-            <div className="text-center py-16">
-              <div className="text-5xl mb-4">📦</div>
-              <p className="text-gray-600 text-base font-medium">Masukkan nombor penjejakan anda di atas</p>
-              <p className="text-gray-400 text-sm mt-2">Nombor penjejakan boleh didapati dalam emel pengesahan pesanan anda</p>
+            <div className="text-center py-20 bg-gray-50 border border-gray-200 border-dashed rounded-3xl mt-4">
+              <div className="text-5xl mb-4 opacity-50">📦</div>
+              <p className="text-gray-800 text-lg font-bold">Semak Status Bungkusan Anda</p>
+              <p className="text-gray-500 text-sm mt-2 max-w-sm mx-auto">Masukkan nombor penjejakan EasyParcel yang diberikan dalam emel pengesahan untuk menjejak pesanan anda.</p>
             </div>
           )}
         </div>
@@ -310,7 +353,7 @@ export default function TrackPage() {
   return (
     <Suspense fallback={
       <div className="w-full py-20 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
       </div>
     }>
       <TrackContent />
