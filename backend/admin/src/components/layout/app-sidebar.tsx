@@ -165,7 +165,7 @@ export default function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="data-[state=open]:bg-sidebar-accent bg-sidebar-accent hover:bg-sidebar-accent/70 data-[state=open]:text-sidebar-accent-foreground"
+                  className="data-[state=open]:bg-slate-800 bg-slate-900 hover:bg-slate-800 data-[state=open]:text-slate-100"
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
                     

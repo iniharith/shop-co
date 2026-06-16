@@ -12,10 +12,10 @@ export default function SeedDataButton() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSeed = async () => {
-    if (!session?.user?.accessToken) return;
+    if (!session?.user?.token) return;
     setIsLoading(true);
     try {
-      await seedTestData(session.user.accessToken);
+      await seedTestData(session.user.token);
       toast.success("Test Drive data injected successfully! Refreshing...");
       setTimeout(() => {
         window.location.reload();
