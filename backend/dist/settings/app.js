@@ -60,9 +60,10 @@ app.use('/api/files', fileUploadRoutes_1.default);
 // Callback URL: https://admin.kampungcetak.com/api/webhooks/whatsapp
 app.use('/api/webhooks/whatsapp', WhatsAppWebhookService_1.default);
 // ─── Admin Panel (served at admin.kampungcetak.com) ──────
-app.use('/admin', express_1.default.static(path_1.default.join(__dirname, '../../../admin')));
-app.get('/admin', (_req, res) => {
-    res.sendFile(path_1.default.join(__dirname, '../../../admin/index.html'));
+const adminPath = path_1.default.join(__dirname, '../../../admin');
+app.use('/admin', express_1.default.static(adminPath));
+app.get(['/admin', '/admin/*'], (_req, res) => {
+    res.sendFile(path_1.default.join(adminPath, 'index.html'));
 });
 app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'ok' });
