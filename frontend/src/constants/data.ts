@@ -338,8 +338,23 @@ export const profileLinks = [
   },
   {
     id: 2,
+    name: "Dashboard",
+    href: "/home/profile/dashboard",
+  },
+  {
+    id: 3,
     name: "Orders",
     href: "/home/profile/orders",
+  },
+  {
+    id: 4,
+    name: "Track Parcel",
+    href: "/home/profile/track",
+  },
+  {
+    id: 5,
+    name: "Upload Artwork",
+    href: "/home/profile/upload",
   }
 ]
 

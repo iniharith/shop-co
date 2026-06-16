@@ -86,8 +86,8 @@ const Hero = () => {
       <div className="flex relative items-center justify-end md:px-10 px-0">
         <div className="w-full h-full overflow-hidden min-h-[300px]">
           <img
-            src="/images/hero.jpeg"
-            alt="printing services"
+            src="https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+            alt="printing services products"
             className="w-full object-cover h-full"
           />
           <div className="absolute top-4 right-4 bg-white rounded-xl shadow-lg p-4 flex flex-col gap-1">
