@@ -53,9 +53,9 @@ export function Footer() {
             <Image
               src="/images/kampung-cetak-logo.png"
               alt="Kampung Cetak"
-              width={48}
-              height={48}
-              className="object-contain rounded-full"
+              width={72}
+              height={72}
+              className="object-contain rounded-2xl"
             />
             <h2 className="text-2xl font-bold tracking-tighter">
               Kampung Cetak

@@ -70,9 +70,9 @@ export default function AppSidebar() {
       
       <SidebarHeader>
        
-        <div className="flex gap-2 py-2 text-sidebar-accent-foreground">
-          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-white overflow-hidden p-1 shadow-sm">
-            <Image src={company.logo} width={28} height={28} alt="Kampung Cetak" className="object-contain" />
+        <div className="flex gap-3 py-2 text-sidebar-accent-foreground items-center">
+          <div className="flex aspect-square size-12 items-center justify-center rounded-2xl bg-white overflow-hidden shadow-sm border border-slate-100">
+            <Image src={company.logo} width={48} height={48} alt="Kampung Cetak" className="object-contain w-full h-full" />
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold">{company.name}</span>

@@ -69,9 +69,9 @@ const MobileNavSheetContent = ({ closeDrawer }: { closeDrawer: Function }) => {
                 <Image
                   src="/images/kampung-cetak-logo.png"
                   alt="Kampung Cetak"
-                  width={36}
-                  height={36}
-                  className="object-contain rounded-full"
+                  width={56}
+                  height={56}
+                  className="object-contain rounded-2xl"
                 />
                 <span className="text-lg text-black font-bold">Kampung Cetak</span>
               </Link>
@@ -150,9 +150,9 @@ const Nav = () => {
             <Image
               src="/images/kampung-cetak-logo.png"
               alt="Kampung Cetak"
-              width={40}
-              height={40}
-              className="object-contain rounded-full"
+              width={64}
+              height={64}
+              className="object-contain rounded-2xl"
             />
             <h1 className="text-2xl font-bold tracking-tight text-primary">Kampung Cetak</h1>
           </Link>

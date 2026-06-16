@@ -9,8 +9,10 @@ export const useProfile = () => {
     const token = session?.user?.token || "";
 
     const { data: profileData, isLoading, refetch } = useQueryData(
-        ['profile'], 
-        () => getProfile(token)
+        ['profile'],
+        () => getProfile(token),
+        // Only fetch when we have a token — prevents "not found api users" error
+        { enabled: !!token }
     );
 
     const { mutate: updateProfileMutation, isPending: isUpdating } = useMutationData(
