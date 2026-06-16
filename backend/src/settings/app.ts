@@ -17,6 +17,7 @@ import adminRoutes from '../presentation/routes/admin.route';
 import notificationRoutes from '../presentation/routes/notification.route';
 import parcelRoutes from '../presentation/routes/parcelRoutes';
 import fileUploadRoutes from '../presentation/routes/fileUploadRoutes';
+import whatsappWebhook from '../infrastructure/services/WhatsAppWebhookService';
 
 dotenv.config();
 const app = express();
@@ -61,6 +62,10 @@ app.use(apiRoutes.NOTIFICATION, notificationRoutes);
 // ─── Kampung Cetak: Parcel Tracking & File Upload ────────
 app.use('/api/parcels', parcelRoutes);
 app.use('/api/files', fileUploadRoutes);
+
+// ─── WhatsApp Webhook (Meta callback verification) ───────
+// Callback URL: https://admin.kampungcetak.com/api/webhooks/whatsapp
+app.use('/api/webhooks/whatsapp', whatsappWebhook);
 
 // ─── Admin Panel (served at admin.kampungcetak.com) ──────
 app.use('/admin', express.static(path.join(__dirname, '../../../admin')));
