@@ -33,10 +33,20 @@ export const AdminNavItems: NavItem[] = [
         shortcut: ['o', 'o'],
         isActive: false,
     },
-
-
-
-
+    {
+        title: 'Artworks',
+        url: '/admin/artworks',
+        icon: 'object',
+        shortcut: ['a', 'a'],
+        isActive: false,
+    },
+    {
+        title: 'Tracking',
+        url: '/admin/tracking',
+        icon: 'truck',
+        shortcut: ['t', 't'],
+        isActive: false,
+    },
 ];
 
 export const DeliveryBoyNavItems: NavItem[] = [
