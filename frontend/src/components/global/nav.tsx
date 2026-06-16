@@ -224,26 +224,26 @@ const Nav = () => {
       </div>
 
       {/* ── SECONDARY NAVBAR (MEGA MENU / CATEGORIES) ── */}
-      <div className="w-full bg-white border-y border-gray-200 hidden md:block">
-        <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <div className="w-full bg-white border-y border-gray-200 hidden md:block relative z-50">
+        <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
           {printingCategories.map((item, index) => (
-            <div key={index} className="relative group/navitem z-50">
+            <div key={index} className="relative group">
               <Link
                 href={item.href}
                 className="text-primary font-bold uppercase tracking-wide inline-block py-2"
               >
                 <p className="relative text-sm inline-block overflow-hidden transition-colors">
-                  <span className="inline-block transition-all duration-300 opacity-100 group-hover/navitem:-translate-y-6">
+                  <span className="inline-block transition-all duration-300 opacity-100 group-hover:-translate-y-6">
                     {item.label}
                   </span>
-                  <span className="absolute left-0 inline-block translate-y-5 transition-all duration-300 group-hover/navitem:scale-[.9] group-hover/navitem:translate-y-0">
+                  <span className="absolute left-0 inline-block translate-y-5 transition-all duration-300 group-hover:scale-[.9] group-hover:translate-y-0">
                     {item.label}
                   </span>
                 </p>
               </Link>
               
               {/* Dropdown Menu */}
-              <div className="absolute left-0 top-full hidden group-hover/navitem:flex flex-col bg-white border border-gray-200 shadow-xl rounded-md min-w-[220px] py-2 z-50 transition-all duration-300">
+              <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white border border-gray-200 shadow-xl rounded-md min-w-[220px] py-2 z-50 transition-all duration-300">
                 {item.subItems?.map((sub, idx) => (
                   <Link
                     key={idx}
