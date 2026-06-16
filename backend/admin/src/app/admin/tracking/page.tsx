@@ -1,25 +1,23 @@
 "use client";
 import PageContainer from "@/components/layout/page-container";
-import { Heading } from "@/components/ui/heading";
-import { Separator } from "@/components/ui/separator";
 import TrackingList from "@/components/table/tracking/trackingList";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 export default function TrackingPage() {
   return (
     <PageContainer scrollable={true}>
-      <div className="flex flex-1 flex-col space-y-4">
-        <div className="flex items-start justify-between">
-          <Heading
-            title="Customer Tracking 🚚"
-            description="Manage EasyParcel shipments and WhatsApp notifications"
-          />
+      <div className="flex flex-1 flex-col space-y-8 p-4 md:p-8">
+        <div className="flex flex-col gap-2">
+          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900">
+            Real-time Order Tracker
+          </h1>
+          <p className="text-slate-500">
+            Monitor EasyParcel shipments and trigger WhatsApp notifications.
+          </p>
         </div>
-        <Separator />
-        <ScrollArea className="md:w-[80vw] w-[92vw]">
+        
+        <div className="w-full">
           <TrackingList />
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+        </div>
       </div>
     </PageContainer>
   );

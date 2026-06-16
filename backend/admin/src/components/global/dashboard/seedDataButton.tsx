@@ -20,9 +20,10 @@ export default function SeedDataButton() {
       setTimeout(() => {
         window.location.reload();
       }, 1000);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error("Failed to inject test data");
+      const msg = error?.response?.data?.message || error.message || "Failed to inject test data";
+      toast.error(`Error: ${msg}`);
     } finally {
       setIsLoading(false);
     }

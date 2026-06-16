@@ -2,7 +2,7 @@ import Providers from "@/components/layout/providers";
 import { Toaster } from "@/components/ui/sonner";
 import type { Metadata } from "next";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 import { authConfig } from "@/lib/auth.config";
@@ -17,6 +17,14 @@ const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
   display: "swap",
+  variable: "--font-jakarta",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["500", "700"],
+  display: "swap",
+  variable: "--font-space-grotesk",
 });
 
 export default async function RootLayout({
@@ -26,7 +34,7 @@ export default async function RootLayout({
 }) {
   const session = await getServerSession(authConfig);
   return (
-    <html lang="en" className={`${jakarta.className}`} suppressHydrationWarning>
+    <html lang="en" className={`${jakarta.variable} ${spaceGrotesk.variable} ${jakarta.className}`} suppressHydrationWarning>
       <head>
         <link
           href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"
