@@ -128,7 +128,8 @@ const Nav = () => {
   } = useNav();
 
   return (
-    <div className="w-full flex flex-col bg-gray-200">
+    <>
+      <div className="w-full flex flex-col bg-gray-200">
       {/* ── MAIN HEADER (LOGO, SEARCH, ICONS) ── */}
       <div className="w-full px-7 py-4 flex justify-between items-center gap-6">
         <Drawer.Root
