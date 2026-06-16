@@ -11,6 +11,15 @@ import { getServerSession } from "next-auth/next";
 export const metadata: Metadata = {
   title: "Kampung Cetak Admin Console",
   description: "Admin dashboard for Kampung Cetak",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    shortcut: "/favicon-16x16.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 const jakarta = Plus_Jakarta_Sans({
