@@ -46,7 +46,27 @@ export class UserUsecase {
         return this.userRepository.getUsersByRole(role);
     }
 
+    async getProfile(userId: string): Promise<IUserDocument> {
+        const user = await this.userRepository.findById(userId);
+        if (!user) {
+            throw new Error("User not found");
+        }
+        return user;
+    }
 
+    async updateProfile(userId: string, data: Partial<IUser>): Promise<IUserDocument> {
+        const user = await this.userRepository.findById(userId);
+        if (!user) {
+            throw new Error("User not found");
+        }
+        
+        // Allowed fields to update
+        if (data.name) user.name = data.name;
+        if (data.phoneNumber) user.phoneNumber = data.phoneNumber;
+        if (data.address) user.address = data.address;
+
+        return await user.save();
+    }
 }
 
 export default new UserUsecase();

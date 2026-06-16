@@ -10,6 +10,14 @@ const UserSchema: Schema = new Schema({
     password: { type: String, required: true },
     avatar: { type: String },
     verified: { type: Boolean, default: false },
+    phoneNumber: { type: String },
+    address: {
+        street: { type: String },
+        city: { type: String },
+        state: { type: String },
+        zip: { type: String },
+        country: { type: String }
+    }
 }, { timestamps: true });
 
 

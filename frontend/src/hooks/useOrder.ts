@@ -4,6 +4,7 @@ import { useZodFormV2 } from "./useZodForm"
 import { useGetCart } from "./useCart";
 import { useSession } from "next-auth/react";
 import { createOrder, getOrderById, getPreviousAddress } from "@/api/order";
+import { getProfile } from "@/api/user";
 import { useEffect, useRef, useState } from "react";
 import { useMutationData } from "./useMutation";
 import { toast } from "sonner";
@@ -34,15 +35,33 @@ export const useOrder = () => {
         reset();
         router.push("/home/cart/checkout/success");
     })
+    
+    // Also fetch the user's profile to see if they have a saved address
+    const { data: profileResponse, isLoading: isProfileLoading } = useQueryData(['profile'], () => getProfile(token));
+    const profile = profileResponse as any;
+
     const { form, onFormSubmit, control, errors, } = useZodFormV2(addressSchema, (data: any) => createOrderMutation(data), {
         address: "",
         city: "",
-        country: "",
+        country: "Malaysia",
         postalCode: "",
         street: "",
     }, {
         mode: "onChange"
     })
+
+    // Pre-fill form if profile address exists
+    useEffect(() => {
+        if (profile?.data?.address) {
+            const addr = profile.data.address;
+            if (addr.street) form.setValue("street", addr.street);
+            // using state or street for 'address' field in form? Let's just put state in address field if needed
+            if (addr.state) form.setValue("address", addr.state);
+            if (addr.city) form.setValue("city", addr.city);
+            if (addr.zip) form.setValue("postalCode", addr.zip);
+            if (addr.country) form.setValue("country", addr.country);
+        }
+    }, [profile, form]);
     const handleCheckout = () => {
         if (formRef.current) {
             formRef.current.requestSubmit();

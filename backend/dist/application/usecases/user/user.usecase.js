@@ -54,6 +54,31 @@ class UserUsecase {
             return this.userRepository.getUsersByRole(role);
         });
     }
+    getProfile(userId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const user = yield this.userRepository.findById(userId);
+            if (!user) {
+                throw new Error("User not found");
+            }
+            return user;
+        });
+    }
+    updateProfile(userId, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const user = yield this.userRepository.findById(userId);
+            if (!user) {
+                throw new Error("User not found");
+            }
+            // Allowed fields to update
+            if (data.name)
+                user.name = data.name;
+            if (data.phoneNumber)
+                user.phoneNumber = data.phoneNumber;
+            if (data.address)
+                user.address = data.address;
+            return yield user.save();
+        });
+    }
 }
 exports.UserUsecase = UserUsecase;
 exports.default = new UserUsecase();

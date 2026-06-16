@@ -23,6 +23,14 @@ const UserSchema = new mongoose_2.Schema({
     password: { type: String, required: true },
     avatar: { type: String },
     verified: { type: Boolean, default: false },
+    phoneNumber: { type: String },
+    address: {
+        street: { type: String },
+        city: { type: String },
+        state: { type: String },
+        zip: { type: String },
+        country: { type: String }
+    }
 }, { timestamps: true });
 UserSchema.pre("save", function (next) {
     return __awaiter(this, void 0, void 0, function* () {

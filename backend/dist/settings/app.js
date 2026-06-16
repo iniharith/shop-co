@@ -22,6 +22,7 @@ const notification_route_1 = __importDefault(require("../presentation/routes/not
 const parcelRoutes_1 = __importDefault(require("../presentation/routes/parcelRoutes"));
 const fileUploadRoutes_1 = __importDefault(require("../presentation/routes/fileUploadRoutes"));
 const WhatsAppWebhookService_1 = __importDefault(require("../infrastructure/services/WhatsAppWebhookService"));
+const user_route_1 = __importDefault(require("../presentation/routes/user.route"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 app.use((0, cookie_parser_1.default)());
@@ -47,6 +48,7 @@ if (process.env.NODE_ENV === "development")
     app.use((0, morgan_1.default)("dev"));
 // -------------------------  routes-------------------------------
 app.use(api_constant_1.apiRoutes.AUTH, auth_route_1.default);
+app.use('/api/user', user_route_1.default);
 app.use(api_constant_1.apiRoutes.PRODUCT, product_route_1.default);
 app.use(api_constant_1.apiRoutes.CART, cart_route_1.default);
 app.use(api_constant_1.apiRoutes.ORDER, order_route_1.default);

@@ -18,6 +18,7 @@ import notificationRoutes from '../presentation/routes/notification.route';
 import parcelRoutes from '../presentation/routes/parcelRoutes';
 import fileUploadRoutes from '../presentation/routes/fileUploadRoutes';
 import whatsappWebhook from '../infrastructure/services/WhatsAppWebhookService';
+import userRoutes from '../presentation/routes/user.route';
 
 dotenv.config();
 const app = express();
@@ -52,6 +53,7 @@ if (process.env.NODE_ENV === "development") app.use(morgan("dev"));
 
 // -------------------------  routes-------------------------------
 app.use(apiRoutes.AUTH, authRoutes);
+app.use('/api/user', userRoutes);
 app.use(apiRoutes.PRODUCT, productRoutes);
 app.use(apiRoutes.CART, cartRoutes);
 app.use(apiRoutes.ORDER, orderRoutes);

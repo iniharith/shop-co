@@ -6,8 +6,16 @@ export interface IUser {
     email: string;
     role: Roles;
     password: string;
-    avatar: string;
+    avatar?: string;
     verified: boolean;
+    phoneNumber?: string;
+    address?: {
+        street?: string;
+        city?: string;
+        state?: string;
+        zip?: string;
+        country?: string;
+    };
 }
 
 
