@@ -43,7 +43,7 @@ export const AdminNavItems: NavItem[] = [
     {
         title: 'Tracking',
         url: '/admin/tracking',
-        icon: 'truck',
+        icon: 'supplier',
         shortcut: ['t', 't'],
         isActive: false,
     },
