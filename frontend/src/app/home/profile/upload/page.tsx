@@ -145,26 +145,20 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="w-full py-5 md:px-10 px-5">
-      <Breadcrumbs />
-      <h1 className="text-3xl mt-2">Profile</h1>
-      <div className="grid w-full grid-cols-1 gap-5 md:grid-cols-4">
-        <ProfileQuickLinks />
-        
-        <div className="md:col-span-3 flex flex-col gap-6 w-full mt-4">
-          
-          {/* Header */}
-          <div className="mb-2">
-            <Link href="/home/profile/dashboard" className="text-sm text-primary hover:underline transition-colors inline-flex items-center gap-2 mb-4">
-              ← Kembali ke Dashboard
-            </Link>
-            <h1 className="text-3xl font-extrabold text-black">
-              Muat Naik Fail
-            </h1>
-            <p className="text-gray-500 mt-2 text-sm">
-              Hantar artwork atau fail cetak anda. Kami akan semak dan proses pesanan anda.
-            </p>
-          </div>
+    <div className="flex flex-col gap-6 w-full">
+      
+      {/* Header */}
+      <div className="mb-2">
+        <Link href="/home/profile/dashboard" className="text-sm text-primary hover:underline transition-colors inline-flex items-center gap-2 mb-4">
+          ← Kembali ke Dashboard
+        </Link>
+        <h1 className="text-3xl font-extrabold text-black">
+          Muat Naik Fail
+        </h1>
+        <p className="text-gray-500 mt-2 text-sm">
+          Hantar artwork atau fail cetak anda. Kami akan semak dan proses pesanan anda.
+        </p>
+      </div>
 
           {/* Success State */}
           {uploadSuccess ? (
@@ -339,8 +333,6 @@ export default function UploadPage() {
               </div>
             )}
           </div>
-        </div>
-      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { IOrder } from "@/types/IOrder";
+import OrderTracker from "@/components/page-sections/profile/orderTracker";
 
 interface OrderItemProps {
   order: IOrder;
@@ -13,6 +14,7 @@ interface OrderItemProps {
 
 const OrderItem = ({ order }: OrderItemProps) => {
   const [expanded, setExpanded] = useState(false);
+  const [showTracker, setShowTracker] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -30,7 +32,7 @@ const OrderItem = ({ order }: OrderItemProps) => {
   };
   const badgeClassName = getStatusColor(order.orderStatus);
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border rounded-lg overflow-hidden transition-shadow hover:shadow-md bg-white">
       <div className="bg-gray-50 p-4 flex flex-col sm:flex-row justify-between">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3 sm:mb-0">
           <div className="flex items-center gap-2">
@@ -56,17 +58,32 @@ const OrderItem = ({ order }: OrderItemProps) => {
         </div>
       </div>
 
-      <div className="bg-white p-4">
+      <div className="p-4">
         <div className="flex justify-between items-center">
           <span className="text-sm font-medium">
             {order.products.length}{" "}
             {order.products.length === 1 ? "item" : "items"}
           </span>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowTracker(!showTracker);
+                if (!showTracker) setExpanded(false);
+              }}
+              className="text-primary border-primary/20 hover:bg-primary/5"
+            >
+              {showTracker ? "Tutup Tracker" : "📦 Jejak Parcel"}
+            </Button>
+
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setExpanded(!expanded)}
+              onClick={() => {
+                setExpanded(!expanded);
+                if (!expanded) setShowTracker(false);
+              }}
               className="text-gray-500 hover:text-gray-900"
             >
               {expanded ? (
@@ -88,8 +105,16 @@ const OrderItem = ({ order }: OrderItemProps) => {
           </div>
         </div>
 
+        {/* Tracker View */}
+        {showTracker && (
+          <div className="mt-4 animate-in slide-in-from-top-2 duration-300">
+            <OrderTracker orderId={order._id} />
+          </div>
+        )}
+
+        {/* Product Details View */}
         {expanded && (
-          <div className="mt-4 pt-4 border-t">
+          <div className="mt-4 pt-4 border-t animate-in slide-in-from-top-2 duration-300">
             <div className="space-y-4">
               {order.products.map((item) => (
                 <div key={item.product._id} className="flex items-center gap-4">
