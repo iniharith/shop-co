@@ -1,22 +1,44 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useGroupedFiles, useReviewFile, useDeleteFile } from "@/hooks/useAdminDashboard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Folder, File, FileText, Image as ImageIcon, ArrowLeft, Download, Eye, CheckCircle, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Folder, File, FileText, Image as ImageIcon, ArrowLeft, Download, Eye, CheckCircle, Trash2, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
 export default function ArtworksManager() {
   const { data: response, isPending } = useGroupedFiles();
   const [selectedFolder, setSelectedFolder] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { mutate: reviewFileMutate, isPending: isReviewing } = useReviewFile();
   const { mutate: deleteFileMutate, isPending: isDeleting } = useDeleteFile();
 
-  if (isPending) return <div className="flex justify-center p-8"><p>Loading artworks...</p></div>;
+  const groupedData: any[] = response?.data || [];
 
-  const groupedData = response?.data || [];
+  // Filter folders by customer name, order ID, or tracking number
+  const filteredData = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return groupedData;
+    return groupedData.filter((group: any) => {
+      const nameMatch = group.user?.name?.toLowerCase().includes(q);
+      const idMatch = group.user?._id?.toString().toLowerCase().includes(q);
+      // Check short ID (last 6 chars, uppercase — matches how artworksManager displays it)
+      const shortIdMatch = group.user?._id?.toString().slice(-6).toLowerCase().includes(q);
+      // Check order IDs across all files in this folder
+      const orderMatch = group.files?.some((f: any) =>
+        f.orderId?.toString().toLowerCase().includes(q) ||
+        f.orderId?.toString().slice(-6).toLowerCase().includes(q)
+      );
+      // Check tracking numbers across all files
+      const trackingMatch = group.files?.some((f: any) =>
+        f.trackingNumber?.toLowerCase().includes(q)
+      );
+      return nameMatch || idMatch || shortIdMatch || orderMatch || trackingMatch;
+    });
+  }, [groupedData, searchQuery]);
 
   const handleReview = (fileId: string, currentStatus: boolean) => {
     reviewFileMutate(
@@ -24,8 +46,7 @@ export default function ArtworksManager() {
       {
         onSuccess: () => {
           toast.success("File review status updated!");
-          // Opt: Invalidate queries to refresh list
-          window.location.reload(); 
+          window.location.reload();
         },
       }
     );
@@ -47,6 +68,9 @@ export default function ArtworksManager() {
     return <File className="w-8 h-8 text-gray-500" />;
   };
 
+  if (isPending) return <div className="flex justify-center p-8"><p>Loading artworks...</p></div>;
+
+  // ── Folder detail view ──────────────────────────────────────────────────
   if (selectedFolder) {
     return (
       <div className="space-y-4">
@@ -59,7 +83,7 @@ export default function ArtworksManager() {
             {selectedFolder.user?.name || "Unknown Customer"}
           </h3>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {selectedFolder.files.map((file: any) => (
             <Card key={file._id} className="overflow-hidden">
@@ -95,9 +119,9 @@ export default function ArtworksManager() {
                   <Button variant="secondary" size="sm" className="flex-1" onClick={() => window.open(file.path, "_blank")}>
                     <Download className="w-4 h-4 mr-1" /> Save
                   </Button>
-                  <Button 
-                    variant={file.adminReviewed ? "outline" : "default"} 
-                    size="sm" 
+                  <Button
+                    variant={file.adminReviewed ? "outline" : "default"}
+                    size="sm"
                     className="w-full"
                     onClick={() => handleReview(file._id, file.adminReviewed)}
                     disabled={isReviewing}
@@ -117,36 +141,68 @@ export default function ArtworksManager() {
     );
   }
 
+  // ── Folder grid view with search bar ───────────────────────────────────
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {groupedData.length === 0 ? (
-        <div className="col-span-full p-8 text-center text-muted-foreground">
-          No artworks found.
-        </div>
-      ) : (
-        groupedData.map((group: any) => (
-          <Card 
-            key={group._id} 
-            className="cursor-pointer hover:bg-accent/50 transition-colors"
-            onClick={() => setSelectedFolder(group)}
+    <div className="space-y-4">
+      {/* Search bar */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        <Input
+          placeholder="Search by name, order ID, or tracking number…"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9 pr-9"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
-            <CardHeader className="p-4 flex flex-col items-center justify-center space-y-2">
-              <Folder className="w-16 h-16 text-yellow-500 fill-yellow-100" />
-              <CardTitle className="text-base text-center truncate w-full">
-                {group.user?.name || "Unknown Customer"}
-              </CardTitle>
-              {group.user?._id && (
-                <div className="text-xs text-muted-foreground truncate w-full text-center">
-                  ID: {group.user._id.toString().slice(-6).toUpperCase()}
-                </div>
-              )}
-              <CardDescription>
-                {group.count} file{group.count !== 1 && 's'}
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        ))
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Result count when filtering */}
+      {searchQuery && (
+        <p className="text-sm text-muted-foreground">
+          {filteredData.length === 0
+            ? "No results found."
+            : `Showing ${filteredData.length} of ${groupedData.length} customer${groupedData.length !== 1 ? "s" : ""}`}
+        </p>
       )}
+
+      {/* Folder grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {filteredData.length === 0 && !searchQuery ? (
+          <div className="col-span-full p-8 text-center text-muted-foreground">
+            No artworks found.
+          </div>
+        ) : (
+          filteredData.map((group: any) => (
+            <Card
+              key={group._id}
+              className="cursor-pointer hover:bg-accent/50 transition-colors"
+              onClick={() => setSelectedFolder(group)}
+            >
+              <CardHeader className="p-4 flex flex-col items-center justify-center space-y-2">
+                <Folder className="w-16 h-16 text-yellow-500 fill-yellow-100" />
+                <CardTitle className="text-base text-center truncate w-full">
+                  {group.user?.name || "Unknown Customer"}
+                </CardTitle>
+                {group.user?._id && (
+                  <div className="text-xs text-muted-foreground truncate w-full text-center">
+                    ID: {group.user._id.toString().slice(-6).toUpperCase()}
+                  </div>
+                )}
+                <CardDescription>
+                  {group.count} file{group.count !== 1 && "s"}
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 }
