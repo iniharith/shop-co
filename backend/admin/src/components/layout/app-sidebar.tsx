@@ -37,7 +37,7 @@ import {
   ChevronRight,
   ChevronsUpDown,
   CreditCard,
-  GalleryVerticalEnd,
+  Printer,
   LogOut,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -50,8 +50,8 @@ import { useTheme } from "next-themes";
 import { roleByNavItems } from "@/constants/navItems";
 import { DialogTitle } from "../ui/dialog";
 export const company = {
-  name: "SHOP.CO",
-  logo: GalleryVerticalEnd,
+  name: "Kampung Cetak",
+  logo: Printer,
   plan: "Enterprise",
 };
 

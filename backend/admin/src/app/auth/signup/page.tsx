@@ -1,7 +1,7 @@
 import { SignupForm } from "@/components/forms/signUpForm";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { GalleryVerticalEnd } from "lucide-react";
+import { Printer } from "lucide-react";
 
 export default function SignUpPage({ className }: { className?: string }) {
   return (
@@ -12,11 +12,11 @@ export default function SignUpPage({ className }: { className?: string }) {
             <div className="flex flex-col items-center gap-2">
               <a href="#" className="flex flex-col items-center gap-2 font-medium">
                 <div className="flex h-8 w-8 items-center justify-center rounded-md">
-                  <GalleryVerticalEnd className="size-6" />
+                  <Printer className="size-6 text-primary" />
                 </div>
-                <span className="sr-only">SHOP.CO</span>
+                <span className="sr-only">Kampung Cetak</span>
               </a>
-              <h1 className="text-xl font-bold">Welcome to SHOP.CO</h1>
+              <h1 className="text-xl font-bold">Welcome to Kampung Cetak</h1>
               <div className="text-center text-sm text-muted-foreground">
                  SignUp Here
               </div>
