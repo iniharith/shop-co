@@ -1,7 +1,7 @@
 import { LoginForm } from "@/components/forms/loginForm";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Printer } from "lucide-react";
+import Image from "next/image";
 
 export default function LoginPage({ className }: { className?: string }) {
   return (
@@ -14,8 +14,8 @@ export default function LoginPage({ className }: { className?: string }) {
                 href="#"
                 className="flex flex-col items-center gap-2 font-medium"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-md">
-                  <Printer className="size-6 text-primary" />
+                <div className="flex h-12 items-center justify-center rounded-md">
+                  <Image src="/logo.png" width={120} height={40} alt="Kampung Cetak" className="object-contain" />
                 </div>
                 <span className="sr-only">Kampung Cetak</span>
               </a>

@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import { Icons } from "../global/icons";
@@ -51,7 +52,7 @@ import { roleByNavItems } from "@/constants/navItems";
 import { DialogTitle } from "../ui/dialog";
 export const company = {
   name: "Kampung Cetak",
-  logo: Printer,
+  logo: "/logo.png",
   plan: "Enterprise",
 };
 
@@ -70,8 +71,8 @@ export default function AppSidebar() {
       <SidebarHeader>
        
         <div className="flex gap-2 py-2 text-sidebar-accent-foreground">
-          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary   text-sidebar-primary-foreground">
-            <company.logo color="white" className="size-4  e" />
+          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-white overflow-hidden p-1 shadow-sm">
+            <Image src={company.logo} width={28} height={28} alt="Kampung Cetak" className="object-contain" />
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold">{company.name}</span>

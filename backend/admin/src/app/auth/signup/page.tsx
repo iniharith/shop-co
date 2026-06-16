@@ -1,7 +1,7 @@
 import { SignupForm } from "@/components/forms/signUpForm";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Printer } from "lucide-react";
+import Image from "next/image";
 
 export default function SignUpPage({ className }: { className?: string }) {
   return (
@@ -11,8 +11,8 @@ export default function SignUpPage({ className }: { className?: string }) {
           <div className="flex flex-col gap-6">
             <div className="flex flex-col items-center gap-2">
               <a href="#" className="flex flex-col items-center gap-2 font-medium">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md">
-                  <Printer className="size-6 text-primary" />
+                <div className="flex h-12 items-center justify-center rounded-md">
+                  <Image src="/logo.png" width={120} height={40} alt="Kampung Cetak" className="object-contain" />
                 </div>
                 <span className="sr-only">Kampung Cetak</span>
               </a>
