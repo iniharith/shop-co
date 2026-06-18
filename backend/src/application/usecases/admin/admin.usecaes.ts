@@ -128,10 +128,34 @@ export class AdminUsecase {
         const testCustomers = await User.find({ email: { $regex: /^customer[1-3]@test\.com$/ } });
         const testCustomerIds = testCustomers.map(c => c._id);
         
-        await OrderModel.deleteMany({ userId: { $in: testCustomerIds } });
-        await Parcel.deleteMany({ customerEmail: { $regex: /^customer[1-3]@test\.com$/ } });
-        await FileUpload.deleteMany({ userId: { $in: testCustomerIds.map(id => id.toString()) } });
-        await User.deleteMany({ _id: { $in: testCustomerIds } });
+        await OrderModel.deleteMany({
+            $or: [
+                { userId: { $in: testCustomerIds } },
+                { customerName: { $regex: /^Test Customer [1-3]$/ } },
+                { "address.address": "123 Jalan Test" }
+            ]
+        });
+        
+        await Parcel.deleteMany({ 
+            $or: [
+                { customerEmail: { $regex: /^customer[1-3]@test\.com$/ } },
+                { customerName: { $regex: /^Test Customer [1-3]$/ } }
+            ]
+        });
+        
+        await FileUpload.deleteMany({ 
+            $or: [
+                { userId: { $in: testCustomerIds.map(id => id.toString()) } },
+                { originalName: { $regex: /^Design_Test Customer [1-3]\.jpg$/ } }
+            ]
+        });
+        
+        await User.deleteMany({ 
+            $or: [
+                { _id: { $in: testCustomerIds } },
+                { email: { $regex: /^customer[1-3]@test\.com$/ } }
+            ]
+        });
     }
 
     async seedTestData(): Promise<void> {

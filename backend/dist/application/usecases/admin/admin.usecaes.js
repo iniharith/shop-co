@@ -137,10 +137,31 @@ class AdminUsecase {
         return __awaiter(this, void 0, void 0, function* () {
             const testCustomers = yield user_model_1.default.find({ email: { $regex: /^customer[1-3]@test\.com$/ } });
             const testCustomerIds = testCustomers.map(c => c._id);
-            yield order_model_1.default.deleteMany({ userId: { $in: testCustomerIds } });
-            yield Parcel_1.Parcel.deleteMany({ customerEmail: { $regex: /^customer[1-3]@test\.com$/ } });
-            yield FileUpload_1.FileUpload.deleteMany({ userId: { $in: testCustomerIds.map(id => id.toString()) } });
-            yield user_model_1.default.deleteMany({ _id: { $in: testCustomerIds } });
+            yield order_model_1.default.deleteMany({
+                $or: [
+                    { userId: { $in: testCustomerIds } },
+                    { customerName: { $regex: /^Test Customer [1-3]$/ } },
+                    { "address.address": "123 Jalan Test" }
+                ]
+            });
+            yield Parcel_1.Parcel.deleteMany({
+                $or: [
+                    { customerEmail: { $regex: /^customer[1-3]@test\.com$/ } },
+                    { customerName: { $regex: /^Test Customer [1-3]$/ } }
+                ]
+            });
+            yield FileUpload_1.FileUpload.deleteMany({
+                $or: [
+                    { userId: { $in: testCustomerIds.map(id => id.toString()) } },
+                    { originalName: { $regex: /^Design_Test Customer [1-3]\.jpg$/ } }
+                ]
+            });
+            yield user_model_1.default.deleteMany({
+                $or: [
+                    { _id: { $in: testCustomerIds } },
+                    { email: { $regex: /^customer[1-3]@test\.com$/ } }
+                ]
+            });
         });
     }
     seedTestData() {
