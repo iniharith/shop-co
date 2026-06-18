@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useMemo } from "react";
 import { useAllFiles, useReviewFile, useDeleteFile } from "@/hooks/useAdminDashboard";
+import { useOrders } from "@/hooks/useOrder";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ const categories = [
 export default function ArtworksManager() {
   const { data: session } = useSession();
   const { data: response, isPending } = useAllFiles();
+  const { data: ordersResponse } = useOrders();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
   const [commentModalOpen, setCommentModalOpen] = useState(false);
@@ -64,18 +66,37 @@ export default function ArtworksManager() {
   }, [allFiles, searchQuery, activeTab]);
 
   const groupedFiles = useMemo(() => {
+    const orders = ordersResponse?.orders || [];
     const groups: Record<string, any[]> = {};
     filteredFiles.forEach((file: any) => {
-      // Prioritize Order ID over User ID, fallback to 'Unassigned'
-      const key = file.orderId ? `Order: ${file.orderId}` : (file.userId ? `User: ${file.userId}` : "Unassigned");
+      let groupName = "Unassigned";
+      let orderIdStr = "";
+
+      if (file.orderId) {
+         const order = orders.find((o: any) => o._id === file.orderId);
+         const customerName = order?.customerName || (order?.userId as any)?.name || file.userId;
+         groupName = customerName;
+         orderIdStr = file.orderId;
+      } else if (file.userId) {
+         const order = orders.find((o: any) => (o.userId as any)?._id === file.userId || o.userId === file.userId);
+         const customerName = order?.customerName || (order?.userId as any)?.name || file.userId;
+         groupName = customerName;
+      }
+
+      const key = JSON.stringify({ name: groupName, orderId: orderIdStr });
       if (!groups[key]) groups[key] = [];
       groups[key].push(file);
     });
-    return Object.entries(groups).map(([folderName, files]) => ({
-      folderName,
-      files
-    }));
-  }, [filteredFiles]);
+
+    return Object.entries(groups).map(([keyStr, files]) => {
+      const parsed = JSON.parse(keyStr);
+      return {
+        folderName: parsed.name,
+        orderId: parsed.orderId,
+        files
+      };
+    });
+  }, [filteredFiles, ordersResponse]);
 
   const handleReview = (fileId: string, currentStatus: boolean, notes?: string) => {
     reviewFileMutate(
@@ -230,15 +251,16 @@ export default function ArtworksManager() {
       ) : (
         <Accordion type="multiple" className="w-full space-y-4">
           {groupedFiles.map((group) => (
-            <AccordionItem key={group.folderName} value={group.folderName} className="border rounded-lg px-4 bg-card">
+            <AccordionItem key={`${group.folderName}-${group.orderId}`} value={`${group.folderName}-${group.orderId}`} className="border rounded-lg px-4 bg-card">
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-primary/10 rounded-lg">
                     <Folder className="w-6 h-6 text-primary" />
                   </div>
-                  <div className="flex flex-col items-start">
+                  <div className="flex flex-col items-start gap-0.5">
                     <span className="font-semibold text-base">{group.folderName}</span>
-                    <span className="text-sm text-muted-foreground">{group.files.length} file(s)</span>
+                    {group.orderId && <span className="text-xs text-muted-foreground font-mono">Order: {group.orderId}</span>}
+                    <span className="text-xs text-muted-foreground mt-0.5">{group.files.length} file(s)</span>
                   </div>
                 </div>
               </AccordionTrigger>

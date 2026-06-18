@@ -94,7 +94,7 @@ export const useGetOrders = () => {
 
     const { data: session } = useSession();
     const token = session?.user?.token || "";
-    const { data: response, isLoading } = useQueryData(['orders'], () => getOrdersByUserId(token));
+    const { data: response, isLoading } = useQueryData(['orders', token], () => getOrdersByUserId(token), { enabled: !!token });
 
     const responseData = response as IOrderResponse
 
@@ -113,7 +113,7 @@ export const useGetOrderById = (id: string) => {
     
     const { data: session } = useSession();
     const token = session?.user?.token || "";
-    const { data: response, isLoading } = useQueryData(['order'], () => getOrderById(token, id));
+    const { data: response, isLoading } = useQueryData(['order', id, token], () => getOrderById(token, id), { enabled: !!token });
     const responseData = response as IOrderByIdResponse
     return { data: responseData, isLoading }
 }
