@@ -122,25 +122,30 @@ export default function ArtworksManager() {
     formData.append("notes", uploadData.notes);
     Array.from(uploadFiles).forEach(f => formData.append("files", f));
 
-    try {
-      const token = document.cookie.split('; ').find(row => row.startsWith('next-auth.session-token='))?.split('=')[1] 
-        || localStorage.getItem('token') || ""; 
-        
-      const res = await fetch("/api/files/upload", {
-        method: "POST",
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData,
-      });
+      try {
+        const token = document.cookie.split('; ').find(row => 
+          row.startsWith('next-auth.session-token='))?.split('=')[1] 
+          || localStorage.getItem('token') || ""; 
+          
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/files/upload`, {
+          method: "POST",
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData,
+        });
 
-      if (!res.ok) throw new Error("Upload failed");
-      toast.success("Artwork uploaded successfully");
-      setUploadModalOpen(false);
-      window.location.reload();
-    } catch (e) {
-      toast.error("Failed to upload artwork");
-    }
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          console.error("Upload error response:", errorData);
+          throw new Error(errorData.message || "Upload failed");
+        }
+        toast.success("Artwork uploaded successfully");
+        setUploadModalOpen(false);
+        window.location.reload();
+      } catch (e: any) {
+        toast.error(e.message || "Failed to upload artwork");
+      }
   };
 
   const getFileIcon = (mimetype: string) => {
