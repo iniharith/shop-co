@@ -12,7 +12,7 @@ export const dummyProducts: any[] = [
     "reviews": 40,
     "category": "banner",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Banner"
     ],
     "colors": [
       "Red",
@@ -131,7 +131,7 @@ export const dummyProducts: any[] = [
     "reviews": 312,
     "category": "bunting",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -250,7 +250,7 @@ export const dummyProducts: any[] = [
     "reviews": 69,
     "category": "car-sticker",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -369,7 +369,7 @@ export const dummyProducts: any[] = [
     "reviews": 45,
     "category": "board-printing",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -488,7 +488,7 @@ export const dummyProducts: any[] = [
     "reviews": 289,
     "category": "wall-sticker",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -607,7 +607,7 @@ export const dummyProducts: any[] = [
     "reviews": 266,
     "category": "glass-sticker",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -726,7 +726,7 @@ export const dummyProducts: any[] = [
     "reviews": 28,
     "category": "personalised-flag",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -845,7 +845,7 @@ export const dummyProducts: any[] = [
     "reviews": 68,
     "category": "popup-backdrop-display",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -964,7 +964,7 @@ export const dummyProducts: any[] = [
     "reviews": 57,
     "category": "roll-up-stand",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -1083,7 +1083,7 @@ export const dummyProducts: any[] = [
     "reviews": 154,
     "category": "wind-flag",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -1202,7 +1202,7 @@ export const dummyProducts: any[] = [
     "reviews": 111,
     "category": "flyers",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -1321,7 +1321,7 @@ export const dummyProducts: any[] = [
     "reviews": 91,
     "category": "booklet",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -1440,7 +1440,7 @@ export const dummyProducts: any[] = [
     "reviews": 175,
     "category": "business-card",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -1559,7 +1559,7 @@ export const dummyProducts: any[] = [
     "reviews": 110,
     "category": "corporate-folder",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -1678,7 +1678,7 @@ export const dummyProducts: any[] = [
     "reviews": 129,
     "category": "paper-bag",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -1797,7 +1797,7 @@ export const dummyProducts: any[] = [
     "reviews": 118,
     "category": "certificate",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -1916,7 +1916,7 @@ export const dummyProducts: any[] = [
     "reviews": 74,
     "category": "stamp",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -2035,7 +2035,7 @@ export const dummyProducts: any[] = [
     "reviews": 53,
     "category": "sticker",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -2154,7 +2154,7 @@ export const dummyProducts: any[] = [
     "reviews": 296,
     "category": "crystal-plaque-trophy",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -2273,7 +2273,7 @@ export const dummyProducts: any[] = [
     "reviews": 34,
     "category": "acrylic-trophy",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -2392,7 +2392,7 @@ export const dummyProducts: any[] = [
     "reviews": 235,
     "category": "acrylic-keychain",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -2511,7 +2511,7 @@ export const dummyProducts: any[] = [
     "reviews": 193,
     "category": "fridge-magnet",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -2630,7 +2630,7 @@ export const dummyProducts: any[] = [
     "reviews": 195,
     "category": "lanyard",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -2749,7 +2749,7 @@ export const dummyProducts: any[] = [
     "reviews": 178,
     "category": "mug",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -2868,7 +2868,7 @@ export const dummyProducts: any[] = [
     "reviews": 73,
     "category": "pen",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -2987,7 +2987,7 @@ export const dummyProducts: any[] = [
     "reviews": 114,
     "category": "calendar",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -3106,7 +3106,7 @@ export const dummyProducts: any[] = [
     "reviews": 189,
     "category": "notebook",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -3225,7 +3225,7 @@ export const dummyProducts: any[] = [
     "reviews": 245,
     "category": "money-packet",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -3344,7 +3344,7 @@ export const dummyProducts: any[] = [
     "reviews": 28,
     "category": "premium-gift",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -3463,7 +3463,7 @@ export const dummyProducts: any[] = [
     "reviews": 293,
     "category": "non-woven-bag",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -3582,7 +3582,7 @@ export const dummyProducts: any[] = [
     "reviews": 188,
     "category": "canvas-bag",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -3701,7 +3701,7 @@ export const dummyProducts: any[] = [
     "reviews": 150,
     "category": "sublimation-tshirt",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -3820,7 +3820,7 @@ export const dummyProducts: any[] = [
     "reviews": 21,
     "category": "cotton-t-shirt",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -3939,7 +3939,7 @@ export const dummyProducts: any[] = [
     "reviews": 167,
     "category": "islamic-khat",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -4058,7 +4058,7 @@ export const dummyProducts: any[] = [
     "reviews": 299,
     "category": "portrait",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -4177,7 +4177,7 @@ export const dummyProducts: any[] = [
     "reviews": 171,
     "category": "clock",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -4296,7 +4296,7 @@ export const dummyProducts: any[] = [
     "reviews": 252,
     "category": "wedding-bunting",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -4415,7 +4415,7 @@ export const dummyProducts: any[] = [
     "reviews": 155,
     "category": "wedding-banner",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -4534,7 +4534,7 @@ export const dummyProducts: any[] = [
     "reviews": 234,
     "category": "arrow-bunting",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -4653,7 +4653,7 @@ export const dummyProducts: any[] = [
     "reviews": 41,
     "category": "button-badge",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -4772,7 +4772,7 @@ export const dummyProducts: any[] = [
     "reviews": 260,
     "category": "cek-hantaran",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -4891,7 +4891,7 @@ export const dummyProducts: any[] = [
     "reviews": 147,
     "category": "door-gift",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -5010,7 +5010,7 @@ export const dummyProducts: any[] = [
     "reviews": 159,
     "category": "wedding-card",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -5129,7 +5129,7 @@ export const dummyProducts: any[] = [
     "reviews": 219,
     "category": "welcome-board",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -5248,7 +5248,7 @@ export const dummyProducts: any[] = [
     "reviews": 241,
     "category": "menu-book",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -5367,7 +5367,7 @@ export const dummyProducts: any[] = [
     "reviews": 81,
     "category": "table-tent",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -5486,7 +5486,7 @@ export const dummyProducts: any[] = [
     "reviews": 177,
     "category": "table-display-stand",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -5605,7 +5605,7 @@ export const dummyProducts: any[] = [
     "reviews": 171,
     "category": "stand-pouch",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
@@ -5724,7 +5724,7 @@ export const dummyProducts: any[] = [
     "reviews": 210,
     "category": "food-sticker",
     "images": [
-      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
+      "https://placehold.co/800x800/eeeeee/333333?text=Format%20%26%20Size"
     ],
     "colors": [
       "Red",
