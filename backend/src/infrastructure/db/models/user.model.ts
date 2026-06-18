@@ -6,7 +6,7 @@ import {  IUserDocument } from "../../../domain/interfaces/user.interface";
 const UserSchema: Schema = new Schema({
     name: { type: String, required: true },
     email: { type: String, unique: true, required: true },
-    role: { type: String, enum: [Roles.ADMIN, Roles.CLIENT, Roles.DELIVERY_BOY], default: Roles.CLIENT, required: true },
+    role: { type: String, enum: Object.values(Roles), default: Roles.CLIENT, required: true },
     password: { type: String, required: true },
     avatar: { type: String },
     verified: { type: Boolean, default: false },

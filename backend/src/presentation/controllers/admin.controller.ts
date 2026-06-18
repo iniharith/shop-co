@@ -28,7 +28,7 @@ export class AdminController {
      */
     async getUsers(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            if (req.role !== Roles.ADMIN) {
+            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(req.role as Roles)) {
                 throw new Error(messages.UNAUTHORIZED)
             }
             const users = await this.adminUsecase.getUsersByRole(Roles.CLIENT);
@@ -50,7 +50,7 @@ export class AdminController {
      */
     async deleteUser(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            if (req.role !== Roles.ADMIN) {
+            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(req.role as Roles)) {
                 throw new Error(messages.UNAUTHORIZED)
             }
             const { id } = req.params;
@@ -70,7 +70,7 @@ export class AdminController {
      */
     async createUser(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            if (req.role !== Roles.ADMIN) {
+            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(req.role as Roles)) {
                 throw new Error(messages.UNAUTHORIZED);
             }
             const user = await this.adminUsecase.createUser(req.body);
@@ -90,7 +90,7 @@ export class AdminController {
      */
     async updateUser(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            if (req.role !== Roles.ADMIN) {
+            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(req.role as Roles)) {
                 throw new Error(messages.UNAUTHORIZED);
             }
             const { id } = req.params;
@@ -114,7 +114,7 @@ export class AdminController {
      */
     async getDeliveryBoys(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            if (req.role !== Roles.ADMIN) {
+            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(req.role as Roles)) {
                 throw new Error(messages.UNAUTHORIZED)
             }
             const deliveryBoys = await this.adminUsecase.getUsersByRole(Roles.DELIVERY_BOY);
@@ -137,7 +137,7 @@ export class AdminController {
      */
     async updateDeliveryBoy(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            if (req.role !== Roles.ADMIN) {
+            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(req.role as Roles)) {
                 throw new Error(messages.UNAUTHORIZED)
             }
             const { id } = req.params;
@@ -161,7 +161,7 @@ export class AdminController {
      */
     async getOrders(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            if (req.role !== Roles.ADMIN && req.role !== Roles.DELIVERY_BOY) {
+            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS, Roles.DELIVERY_BOY].includes(req.role as Roles)) {
                 throw new Error(messages.UNAUTHORIZED)
             }
             const orders = await this.adminUsecase.getOrders();
@@ -183,7 +183,7 @@ export class AdminController {
      */
     async getOrdersByDeliveryBoy(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            if (req.role !== Roles.DELIVERY_BOY && req.role !== Roles.ADMIN) {
+            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS, Roles.DELIVERY_BOY].includes(req.role as Roles)) {
                 throw new Error(messages.UNAUTHORIZED)
             }
             const { id } = req.params;
@@ -206,7 +206,7 @@ export class AdminController {
      */
     async seedTestData(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            if (req.role !== Roles.ADMIN) {
+            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(req.role as Roles)) {
                 throw new Error(messages.UNAUTHORIZED)
             }
             await this.adminUsecase.seedTestData();
@@ -225,7 +225,7 @@ export class AdminController {
      */
     async createManualOrder(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            if (req.role !== Roles.ADMIN) {
+            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(req.role as Roles)) {
                 throw new Error(messages.UNAUTHORIZED);
             }
             const order = await this.adminUsecase.createManualOrder(req.body);

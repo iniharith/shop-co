@@ -10,8 +10,7 @@ export default withAuth(
     const userRole = token?.role;
     const isVerified = token?.verified;
     const isSuperAdminPage = path.startsWith("/admin/superAdmin");
-    const isAdmin = token?.role === Roles.ADMIN;
-    const isDeliveryBoy = token?.role === Roles.DELIVERY_BOY;
+    const hasAdminAccess = [Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(token?.role as Roles);
 
     console.log(path, "path 🟢")
     
@@ -38,7 +37,7 @@ export default withAuth(
         return NextResponse.redirect(new URL("/auth/signout", req.url));
       }
       console.log(userRole, "userRole")
-      if(isSuperAdminPage && !isAdmin){
+      if(isSuperAdminPage && !hasAdminAccess){
         return NextResponse.redirect(new URL("/admin/dashboard", req.url))
       }
     }

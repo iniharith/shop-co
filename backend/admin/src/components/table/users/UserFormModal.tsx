@@ -25,7 +25,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
     name: "",
     email: "",
     phoneNumber: "",
-    role: Roles.CLIENT as string,
+    role: Roles.ADMIN as string,
     password: "",
   });
 
@@ -35,7 +35,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
         name: initialData.name || "",
         email: initialData.email || "",
         phoneNumber: initialData.phoneNumber || "",
-        role: initialData.role || Roles.CLIENT,
+        role: initialData.role || Roles.ADMIN,
         password: "", // Leave blank unless changing
       });
     } else if (!initialData && open) {
@@ -43,7 +43,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
         name: "",
         email: "",
         phoneNumber: "",
-        role: Roles.CLIENT,
+        role: Roles.ADMIN,
         password: "",
       });
     }
@@ -134,9 +134,11 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
                 <SelectValue placeholder="Select role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={Roles.CLIENT}>Client</SelectItem>
+                <SelectItem value={Roles.SYSADMIN}>Sysadmin</SelectItem>
                 <SelectItem value={Roles.ADMIN}>Admin</SelectItem>
-                <SelectItem value={Roles.DELIVERY_BOY}>Delivery Boy</SelectItem>
+                <SelectItem value={Roles.DESIGNER}>Designer</SelectItem>
+                <SelectItem value={Roles.BOSS}>Boss</SelectItem>
+                <SelectItem value={Roles.PRODUCTION}>Production</SelectItem>
               </SelectContent>
             </Select>
           </div>

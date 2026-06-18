@@ -22,7 +22,10 @@ export interface IUser {
 export enum Roles {
   CLIENT = "client",
   ADMIN = "admin",
-  DELIVERY_BOY = "delivery_boy",
+  SYSADMIN = "sysadmin",
+  DESIGNER = "designer",
+  BOSS = "boss",
+  PRODUCTION = "production",
 }
 
 export const userColumns: ColumnDef<IUser>[] = [
