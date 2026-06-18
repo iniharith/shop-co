@@ -10,6 +10,7 @@ import { NotificationUsecase } from "../notification/notification.usecase";
 import User from "../../../infrastructure/db/models/user.model";
 import OrderModel from "../../../infrastructure/db/models/order.model";
 import { FileUpload } from "../../../domain/entities/FileUpload";
+import { Parcel } from "../../../domain/entities/Parcel";
 import bcrypt from "bcryptjs";
 export class AdminUsecase {
     private readonly userRepository: UserRepository;
@@ -130,7 +131,7 @@ export class AdminUsecase {
 
         // Create dummy orders for these customers
         for (const customer of customers) {
-            await OrderModel.create({
+            const order = await OrderModel.create({
                 userId: customer._id,
                 products: [], // empty or add dummy products if needed
                 totalAmount: Math.floor(Math.random() * 500) + 50,
@@ -144,6 +145,32 @@ export class AdminUsecase {
                     postalCode: "50000",
                     country: "Malaysia"
                 }
+            });
+
+            await Parcel.create({
+                orderId: order._id.toString(),
+                trackingNumber: `TRACK-${Math.floor(Math.random() * 100000)}`,
+                customerPhone: "60123456789",
+                customerName: customer.name,
+                customerEmail: customer.email,
+                courier: "J&T Express",
+                status: "in_transit",
+                lastStatus: "picked_up",
+                events: [
+                    {
+                        status: "picked_up",
+                        description: "Parcel picked up by courier",
+                        location: "Kuala Lumpur Hub",
+                        timestamp: new Date(Date.now() - 86400000)
+                    },
+                    {
+                        status: "in_transit",
+                        description: "Parcel arrived at sorting center",
+                        location: "Selangor Hub",
+                        timestamp: new Date()
+                    }
+                ],
+                weight: 1.5,
             });
 
             // Create some file uploads for this customer
