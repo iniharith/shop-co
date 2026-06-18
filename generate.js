@@ -32,7 +32,50 @@ categories.forEach(cat => {
         'https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800'
       ],
       colors: ['Red', 'Blue', 'Green', 'Black', 'White'],
-      sizes: ['Small', 'Medium', 'Large', 'Standard', 'Custom']
+      sizes: ['Small', 'Medium', 'Large', 'Standard', 'Custom'],
+      printingOptions: [
+        {
+          name: "Format & Size",
+          options: [
+            { label: "A4 (210 x 297 mm)", priceAdd: 0 },
+            { label: "A5 (148 x 210 mm)", priceAdd: -5 },
+            { label: "A3 (297 x 420 mm)", priceAdd: 15 },
+            { label: "Custom Size", priceAdd: 10 }
+          ]
+        },
+        {
+          name: "Material",
+          options: [
+            { label: "Art Paper 157g", priceAdd: 0 },
+            { label: "Art Card 260g", priceAdd: 5 },
+            { label: "Glossy Photo Paper", priceAdd: 8 },
+            { label: "Matte Premium Paper", priceAdd: 10 }
+          ]
+        },
+        {
+          name: "Printing Sides",
+          options: [
+            { label: "Single Sided", priceAdd: 0 },
+            { label: "Double Sided", priceAdd: 15 }
+          ]
+        },
+        {
+          name: "Finishing Options",
+          options: [
+            { label: "None", priceAdd: 0 },
+            { label: "Matte Lamination", priceAdd: 8 },
+            { label: "Gloss Lamination", priceAdd: 8 },
+            { label: "Spot UV", priceAdd: 20 }
+          ]
+        },
+        {
+          name: "Turnaround Time",
+          options: [
+            { label: "Standard (3-4 Working Days)", priceAdd: 0 },
+            { label: "Express (1-2 Working Days)", priceAdd: 30 }
+          ]
+        }
+      ]
     });
   });
 });

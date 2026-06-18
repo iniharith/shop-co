@@ -21,7 +21,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const { setIsAuthModalOpen } = useUIStore();
   const { mutate, isPending } = useAddtoCart();
 
-  const [quantity, setQuantity] = useState(100);
+  const [quantity, setQuantity] = useState(1);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({});
   const [designOption, setDesignOption] = useState<"upload" | "design">("upload");
 
@@ -35,7 +35,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       });
       setSelectedOptions(defaults);
     }
-    setQuantity(100);
+    setQuantity(1);
   }, [product, id]);
 
   const handleOptionChange = (optionName: string, index: number) => {
@@ -67,7 +67,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   }
 
   const basePrice = product.price + optionAddons + (designOption === "design" ? 50 : 0);
-  const subtotal = basePrice * (quantity / 100);
+  const subtotal = basePrice * quantity;
   const vat = subtotal * 0.07; // 7% VAT
   const total = subtotal + vat;
 
@@ -223,13 +223,12 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               <span className="text-sm font-medium dark:text-foreground">Total Pieces</span>
               <QuantityPicker
                 quantity={quantity}
-                onDecrement={() => setQuantity((q) => Math.max(100, q - 100))}
-                onIncrement={() => setQuantity((q) => q + 100)}
+                onDecrement={() => setQuantity((q) => Math.max(1, q - 1))}
+                onIncrement={() => setQuantity((q) => q + 1)}
                 max={10000}
                 onQuantityChange={setQuantity}
               />
             </div>
-            <p className="text-xs text-gray-500 dark:text-muted-foreground text-right">Order in multiples of 100 units.</p>
           </div>
         </div>
 

@@ -3,99 +3,99 @@ export const navItems: { label: string; href: string }[] = [];
 export const printingCategories = [
   {
     label: "DIGITAL PRINTING",
-    href: "/home/shop?category=digital-printing",
+    href: "#",
     subItems: [
-      { label: "BANNER", href: "/home/shop?category=banner" },
-      { label: "BUNTING", href: "/home/shop?category=bunting" },
-      { label: "CAR STICKER", href: "/home/shop?category=car-sticker" },
-      { label: "BOARD PRINTING", href: "/home/shop?category=board-printing" },
-      { label: "WALL STICKER", href: "/home/shop?category=wall-sticker" },
-      { label: "GLASS STICKER", href: "/home/shop?category=glass-sticker" }
+      { label: "BANNER", href: "/home/shop/prod-100" },
+      { label: "BUNTING", href: "/home/shop/prod-101" },
+      { label: "CAR STICKER", href: "/home/shop/prod-102" },
+      { label: "BOARD PRINTING", href: "/home/shop/prod-103" },
+      { label: "WALL STICKER", href: "/home/shop/prod-104" },
+      { label: "GLASS STICKER", href: "/home/shop/prod-105" }
     ]
   },
   {
     label: "DISPLAY ITEM",
-    href: "/home/shop?category=display-item",
+    href: "#",
     subItems: [
-      { label: "PERSONALISED FLAG", href: "/home/shop?category=personalised-flag" },
-      { label: "POPUP BACKDROP DISPLAY", href: "/home/shop?category=popup-backdrop-display" },
-      { label: "ROLL UP STAND", href: "/home/shop?category=roll-up-stand" },
-      { label: "WIND FLAG", href: "/home/shop?category=wind-flag" }
+      { label: "PERSONALISED FLAG", href: "/home/shop/prod-106" },
+      { label: "POPUP BACKDROP DISPLAY", href: "/home/shop/prod-107" },
+      { label: "ROLL UP STAND", href: "/home/shop/prod-108" },
+      { label: "WIND FLAG", href: "/home/shop/prod-109" }
     ]
   },
   {
     label: "DIGITAL OFFSET",
-    href: "/home/shop?category=digital-offset",
+    href: "#",
     subItems: [
-      { label: "FLYERS", href: "/home/shop?category=flyers" },
-      { label: "BOOKLET", href: "/home/shop?category=booklet" },
-      { label: "BUSINESS CARD", href: "/home/shop?category=business-card" },
-      { label: "CORPORATE FOLDER", href: "/home/shop?category=corporate-folder" },
-      { label: "PAPER BAG", href: "/home/shop?category=paper-bag" },
-      { label: "CERTIFICATE", href: "/home/shop?category=certificate" },
-      { label: "STAMP", href: "/home/shop?category=stamp" },
-      { label: "STICKER", href: "/home/shop?category=sticker" }
+      { label: "FLYERS", href: "/home/shop/prod-110" },
+      { label: "BOOKLET", href: "/home/shop/prod-111" },
+      { label: "BUSINESS CARD", href: "/home/shop/prod-112" },
+      { label: "CORPORATE FOLDER", href: "/home/shop/prod-113" },
+      { label: "PAPER BAG", href: "/home/shop/prod-114" },
+      { label: "CERTIFICATE", href: "/home/shop/prod-115" },
+      { label: "STAMP", href: "/home/shop/prod-116" },
+      { label: "STICKER", href: "/home/shop/prod-117" }
     ]
   },
   {
     label: "CORPORATE GIFT",
-    href: "/home/shop?category=corporate-gift",
+    href: "#",
     subItems: [
-      { label: "CRYSTAL PLAQUE TROPHY", href: "/home/shop?category=crystal-plaque-trophy" },
-      { label: "ARCYLIC TROPHY", href: "/home/shop?category=acrylic-trophy" },
-      { label: "ARCYLIC KEYCHAIN", href: "/home/shop?category=acrylic-keychain" },
-      { label: "FRIDGE MAGNET", href: "/home/shop?category=fridge-magnet" },
-      { label: "LANDYARD", href: "/home/shop?category=lanyard" },
-      { label: "MUG", href: "/home/shop?category=mug" },
-      { label: "PEN", href: "/home/shop?category=pen" },
-      { label: "CALANDER", href: "/home/shop?category=calendar" },
-      { label: "NOTEBOOK", href: "/home/shop?category=notebook" },
-      { label: "MONEY PACKET", href: "/home/shop?category=money-packet" },
-      { label: "PREMIUM GIFT", href: "/home/shop?category=premium-gift" }
+      { label: "CRYSTAL PLAQUE TROPHY", href: "/home/shop/prod-118" },
+      { label: "ARCYLIC TROPHY", href: "/home/shop/prod-119" },
+      { label: "ARCYLIC KEYCHAIN", href: "/home/shop/prod-120" },
+      { label: "FRIDGE MAGNET", href: "/home/shop/prod-121" },
+      { label: "LANDYARD", href: "/home/shop/prod-122" },
+      { label: "MUG", href: "/home/shop/prod-123" },
+      { label: "PEN", href: "/home/shop/prod-124" },
+      { label: "CALANDER", href: "/home/shop/prod-125" },
+      { label: "NOTEBOOK", href: "/home/shop/prod-126" },
+      { label: "MONEY PACKET", href: "/home/shop/prod-127" },
+      { label: "PREMIUM GIFT", href: "/home/shop/prod-128" }
     ]
   },
   {
     label: "APPAREL",
-    href: "/home/shop?category=apparel",
+    href: "#",
     subItems: [
-      { label: "NON WOVEN BAG", href: "/home/shop?category=non-woven-bag" },
-      { label: "CANVAS BAG", href: "/home/shop?category=canvas-bag" },
-      { label: "SUBLIMATION TSHIRT", href: "/home/shop?category=sublimation-tshirt" },
-      { label: "COTTON T SHIRT", href: "/home/shop?category=cotton-t-shirt" }
+      { label: "NON WOVEN BAG", href: "/home/shop/prod-129" },
+      { label: "CANVAS BAG", href: "/home/shop/prod-130" },
+      { label: "SUBLIMATION TSHIRT", href: "/home/shop/prod-131" },
+      { label: "COTTON T SHIRT", href: "/home/shop/prod-132" }
     ]
   },
   {
     label: "FRAME",
-    href: "/home/shop?category=frame",
+    href: "#",
     subItems: [
-      { label: "ISLAMIC KHAT", href: "/home/shop?category=islamic-khat" },
-      { label: "PORTRAIT", href: "/home/shop?category=portrait" },
-      { label: "CLOCK", href: "/home/shop?category=clock" }
+      { label: "ISLAMIC KHAT", href: "/home/shop/prod-133" },
+      { label: "PORTRAIT", href: "/home/shop/prod-134" },
+      { label: "CLOCK", href: "/home/shop/prod-135" }
     ]
   },
   {
     label: "WEDDING PRODUCT",
-    href: "/home/shop?category=wedding-product",
+    href: "#",
     subItems: [
-      { label: "BUNTING", href: "/home/shop?category=wedding-bunting" },
-      { label: "BANNER", href: "/home/shop?category=wedding-banner" },
-      { label: "ARROW BUNTING", href: "/home/shop?category=arrow-bunting" },
-      { label: "BUTTON BADGE", href: "/home/shop?category=button-badge" },
-      { label: "CEK HANTARAN", href: "/home/shop?category=cek-hantaran" },
-      { label: "DOOR GIFT", href: "/home/shop?category=door-gift" },
-      { label: "WEDDING CARD", href: "/home/shop?category=wedding-card" },
-      { label: "WELCOME BOARD", href: "/home/shop?category=welcome-board" }
+      { label: "BUNTING", href: "/home/shop/prod-136" },
+      { label: "BANNER", href: "/home/shop/prod-137" },
+      { label: "ARROW BUNTING", href: "/home/shop/prod-138" },
+      { label: "BUTTON BADGE", href: "/home/shop/prod-139" },
+      { label: "CEK HANTARAN", href: "/home/shop/prod-140" },
+      { label: "DOOR GIFT", href: "/home/shop/prod-141" },
+      { label: "WEDDING CARD", href: "/home/shop/prod-142" },
+      { label: "WELCOME BOARD", href: "/home/shop/prod-143" }
     ]
   },
   {
     label: "FOOD PACKAGING",
-    href: "/home/shop?category=food-packaging",
+    href: "#",
     subItems: [
-      { label: "MENU BOOK", href: "/home/shop?category=menu-book" },
-      { label: "TABLE TENT", href: "/home/shop?category=table-tent" },
-      { label: "TABLE DISPLAY STAND", href: "/home/shop?category=table-display-stand" },
-      { label: "STAND POUCH", href: "/home/shop?category=stand-pouch" },
-      { label: "STICKER", href: "/home/shop?category=food-sticker" }
+      { label: "MENU BOOK", href: "/home/shop/prod-144" },
+      { label: "TABLE TENT", href: "/home/shop/prod-145" },
+      { label: "TABLE DISPLAY STAND", href: "/home/shop/prod-146" },
+      { label: "STAND POUCH", href: "/home/shop/prod-147" },
+      { label: "STICKER", href: "/home/shop/prod-148" }
     ]
   }
 ];
