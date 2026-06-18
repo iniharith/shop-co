@@ -34,6 +34,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
 
     const payload = {
       userId: formData.userId,
+      customerName: formData.userId, // Sending input as customerName too
       platform: formData.platform,
       totalAmount: parseFloat(formData.totalAmount),
       status: formData.status,
@@ -70,7 +71,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>User ID / Customer ID *</Label>
+            <Label>Customer Name / User ID *</Label>
             <Input 
               value={formData.userId} 
               onChange={e => setFormData({ ...formData, userId: e.target.value })} 

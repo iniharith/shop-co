@@ -78,6 +78,28 @@ export class AdminUsecase {
     }
 
     async createManualOrder(data: any): Promise<IOrderDocument> {
+        let user;
+        const mongoose = require('mongoose');
+        
+        if (mongoose.Types.ObjectId.isValid(data.userId)) {
+             user = await User.findById(data.userId);
+        }
+
+        if (!user) {
+             const name = data.customerName || data.userId || "External Customer";
+             const email = `external_${Date.now()}@shop.co`;
+             user = await User.create({
+                 name: name,
+                 email: email,
+                 password: "password123",
+                 role: Roles.CLIENT,
+                 verified: true
+             });
+        }
+        
+        data.userId = user._id;
+        data.customerName = data.customerName || user.name;
+
         return await OrderModel.create(data);
     }
 

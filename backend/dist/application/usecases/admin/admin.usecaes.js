@@ -87,6 +87,24 @@ class AdminUsecase {
     }
     createManualOrder(data) {
         return __awaiter(this, void 0, void 0, function* () {
+            let user;
+            const mongoose = require('mongoose');
+            if (mongoose.Types.ObjectId.isValid(data.userId)) {
+                user = yield user_model_1.default.findById(data.userId);
+            }
+            if (!user) {
+                const name = data.customerName || data.userId || "External Customer";
+                const email = `external_${Date.now()}@shop.co`;
+                user = yield user_model_1.default.create({
+                    name: name,
+                    email: email,
+                    password: "password123",
+                    role: user_type_1.Roles.CLIENT,
+                    verified: true
+                });
+            }
+            data.userId = user._id;
+            data.customerName = data.customerName || user.name;
             return yield order_model_1.default.create(data);
         });
     }
@@ -150,6 +168,7 @@ class AdminUsecase {
             for (const customer of customers) {
                 const order = yield order_model_1.default.create({
                     userId: customer._id,
+                    customerName: customer.name,
                     products: [], // empty or add dummy products if needed
                     totalAmount: Math.floor(Math.random() * 500) + 50,
                     paymentMethod: "ONLINE",
