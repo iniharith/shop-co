@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useCreateManualOrder } from "@/hooks/useOrder";
 import { toast } from "sonner";
 
@@ -22,6 +23,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
     platform: "WEB",
     totalAmount: "",
     status: "pending",
+    fullAddress: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -42,10 +44,10 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
       paymentMethod: "ONLINE",
       paymentStatus: "PAID", 
       address: {
-        address: "Manual Entry",
-        street: "Manual Entry",
+        address: formData.fullAddress || "Manual Entry",
+        street: formData.fullAddress || "Manual Entry",
         city: "Manual Entry",
-        country: "Manual Entry",
+        country: "Malaysia",
         postalCode: "00000"
       }
     };
@@ -54,7 +56,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
       onSuccess: () => {
         toast.success("Manual order created successfully");
         onOpenChange(false);
-        setFormData({ userId: "", platform: "WEB", totalAmount: "", status: "pending" });
+        setFormData({ userId: "", platform: "WEB", totalAmount: "", status: "pending", fullAddress: "" });
         window.location.reload();
       },
       onError: (error: any) => {
@@ -114,6 +116,15 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
                 <SelectItem value="delivered">Delivered</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Full Address</Label>
+            <Textarea 
+              value={formData.fullAddress} 
+              onChange={e => setFormData({ ...formData, fullAddress: e.target.value })} 
+              placeholder="e.g. No 12, Jalan 3/4..." 
+              rows={3}
+            />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
