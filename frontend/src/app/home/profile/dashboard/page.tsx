@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Breadcrumbs } from "@/components/global/breadcrumb";
-import ProfileQuickLinks from "@/components/page-sections/profile/profileQuickLinks";
 import { useSession } from "next-auth/react";
 
 interface DashStats {

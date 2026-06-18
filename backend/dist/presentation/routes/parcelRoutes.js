@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
+const order_model_1 = __importDefault(require("../../infrastructure/db/models/order.model"));
 const ParcelRepository_1 = require("../../infrastructure/repositories/ParcelRepository");
 const EasyParcelService_1 = require("../../infrastructure/services/EasyParcelService");
 const WhatsAppService_1 = require("../../infrastructure/services/WhatsAppService");
@@ -82,6 +83,8 @@ router.get('/:id', (0, express_async_handler_1.default)((req, res) => __awaiter(
 router.put('/:id', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const allowed = [
         'orderId',
+        'trackingNumber',
+        'status',
         'customerPhone',
         'customerName',
         'customerEmail',
@@ -100,6 +103,19 @@ router.put('/:id', (0, express_async_handler_1.default)((req, res) => __awaiter(
     if (!updated) {
         res.status(404).json({ success: false, message: 'Parcel not found' });
         return;
+    }
+    // Sync order status if parcel status is updated manually
+    if (update.status && updated.orderId) {
+        let orderStatusStr = '';
+        if (['picked_up', 'in_transit', 'out_for_delivery'].includes(update.status))
+            orderStatusStr = 'IN_TRANSIT';
+        if (update.status === 'delivered')
+            orderStatusStr = 'DELIVERED';
+        if (update.status === 'failed')
+            orderStatusStr = 'CANCELLED';
+        if (orderStatusStr) {
+            yield order_model_1.default.findByIdAndUpdate(updated.orderId, { orderStatus: orderStatusStr });
+        }
     }
     res.json({ success: true, data: updated });
 })));
@@ -125,6 +141,18 @@ router.put('/:id/track', (0, express_async_handler_1.default)((req, res) => __aw
         courier: result.courier,
         events: result.events,
     });
+    if (statusChanged && (updated === null || updated === void 0 ? void 0 : updated.orderId)) {
+        let orderStatusStr = '';
+        if (['picked_up', 'in_transit', 'out_for_delivery'].includes(result.status))
+            orderStatusStr = 'IN_TRANSIT';
+        if (result.status === 'delivered')
+            orderStatusStr = 'DELIVERED';
+        if (result.status === 'failed')
+            orderStatusStr = 'CANCELLED';
+        if (orderStatusStr) {
+            yield order_model_1.default.findByIdAndUpdate(updated.orderId, { orderStatus: orderStatusStr });
+        }
+    }
     // Auto-notify customer if status changed
     if (statusChanged && parcel.customerPhone) {
         yield WhatsAppService_1.whatsAppService.sendStatusUpdate({
@@ -183,12 +211,24 @@ router.post('/sync-all', (0, express_async_handler_1.default)((_req, res) => __a
         if (!result)
             continue;
         const statusChanged = result.status !== parcel.status;
-        yield ParcelRepository_1.parcelRepository.update(parcel._id, {
+        const updatedParcel = yield ParcelRepository_1.parcelRepository.update(parcel._id, {
             status: result.status,
             courier: result.courier,
             events: result.events,
         });
         updated++;
+        if (statusChanged && (updatedParcel === null || updatedParcel === void 0 ? void 0 : updatedParcel.orderId)) {
+            let orderStatusStr = '';
+            if (['picked_up', 'in_transit', 'out_for_delivery'].includes(result.status))
+                orderStatusStr = 'IN_TRANSIT';
+            if (result.status === 'delivered')
+                orderStatusStr = 'DELIVERED';
+            if (result.status === 'failed')
+                orderStatusStr = 'CANCELLED';
+            if (orderStatusStr) {
+                yield order_model_1.default.findByIdAndUpdate(updatedParcel.orderId, { orderStatus: orderStatusStr });
+            }
+        }
         if (statusChanged && parcel.customerPhone) {
             const sent = yield WhatsAppService_1.whatsAppService.sendStatusUpdate({
                 phone: parcel.customerPhone,

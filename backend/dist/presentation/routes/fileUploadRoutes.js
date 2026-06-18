@@ -74,7 +74,8 @@ router.post('/upload', auth_middileware_1.default, upload.array('files', 10), (0
     const { orderId, notes, userId: bodyUserId, category } = req.body;
     const authReq = req;
     // If admin provides a userId in the body, upload on their behalf
-    const userId = (authReq.role === 'admin' && bodyUserId) ? bodyUserId : authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
+    const isAdmin = ['admin', 'system_admin', 'boss'].includes(authReq.role);
+    const userId = (isAdmin && bodyUserId) ? bodyUserId : authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
     if (!userId) {
         res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
         return;
@@ -195,12 +196,65 @@ router.put('/:id/review', (0, express_async_handler_1.default)((req, res) => __a
     }
     res.json({ success: true, data: file });
 })));
-// ─── DELETE /api/files/:id ────────────────────────────────
-// Admin deletes file from DB and Cloudinary
-router.delete('/:id', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+// 🟨🟨🟨 POST /api/files/bulk-delete 🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨
+// Admin or owner bulk deletes files
+router.post('/bulk-delete', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d;
+    const authReq = req;
+    const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
+    const isAdmin = ['admin', 'system_admin', 'boss'].includes(authReq.role);
+    if (!userId) {
+        res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
+        return;
+    }
+    const { fileIds } = req.body;
+    if (!fileIds || !Array.isArray(fileIds)) {
+        res.status(400).json({ success: false, message: 'Senarai ID fail diperlukan' });
+        return;
+    }
+    let deletedCount = 0;
+    const errors = [];
+    for (const id of fileIds) {
+        try {
+            const file = yield FileUploadRepository_1.fileUploadRepository.findById(id);
+            if (!file)
+                continue;
+            if (!isAdmin && ((_b = file.userId) === null || _b === void 0 ? void 0 : _b.toString()) !== userId.toString()) {
+                continue; // skip if unauthorized
+            }
+            yield FileUploadRepository_1.fileUploadRepository.delete(id);
+            if ((_c = file.path) === null || _c === void 0 ? void 0 : _c.includes('cloudinary.com')) {
+                const publicId = (_d = file.path.split('/').pop()) === null || _d === void 0 ? void 0 : _d.split('.')[0];
+                if (publicId)
+                    yield cloudinary_1.v2.uploader.destroy(publicId);
+            }
+            deletedCount++;
+        }
+        catch (err) {
+            errors.push({ id, error: err.message });
+        }
+    }
+    res.json({ success: true, deletedCount, errors });
+})));
+// 🟨🟨🟨 DELETE /api/files/:id 🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨
+// Admin or file owner deletes file from DB and Cloudinary
+router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    const authReq = req;
+    const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
+    const isAdmin = ['admin', 'system_admin', 'boss'].includes(authReq.role);
+    if (!userId) {
+        res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
+        return;
+    }
     const file = yield FileUploadRepository_1.fileUploadRepository.findById(req.params.id);
     if (!file) {
         res.status(404).json({ success: false, message: 'Fail tidak dijumpai' });
+        return;
+    }
+    // Only allow deletion if admin OR if the user owns the file
+    if (!isAdmin && ((_b = file.userId) === null || _b === void 0 ? void 0 : _b.toString()) !== userId.toString()) {
+        res.status(403).json({ success: false, message: 'Tiada kebenaran untuk memadam fail ini' });
         return;
     }
     // Delete from Cloudinary using the public_id extracted from the URL

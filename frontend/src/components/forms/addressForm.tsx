@@ -89,7 +89,6 @@ const AddressForm = ({
               </div>
             </div>
           )}
-        </div>
       </div>
       <Form {...form}>
         <form

@@ -277,7 +277,7 @@ router.post(
         await fileUploadRepository.delete(id);
         if (file.path?.includes('cloudinary.com')) {
           const publicId = file.path.split('/').pop()?.split('.')[0];
-          if (publicId) await deleteImageFromCloudinary(publicId);
+          if (publicId) await cloudinary.uploader.destroy(publicId);
         }
         deletedCount++;
       } catch (err: any) {

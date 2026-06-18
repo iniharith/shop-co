@@ -62,6 +62,6 @@ const ParcelSchema = new mongoose_1.Schema({
     senderPhone: { type: String, default: '' },
     senderAddress: { type: String, default: '' },
     recipientAddress: { type: String, default: '' },
-    whatsappNotified: { type: Boolean, default: false },
+    whatsappNotified: { type: Boolean, default: true },
 }, { timestamps: true });
 exports.Parcel = mongoose_1.default.model('Parcel', ParcelSchema);

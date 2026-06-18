@@ -121,25 +121,26 @@ class OrderUsecase {
     }
     updateOrderStatus(orderId, updateStatus) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
             const order = yield this.orderRepository.updateOrder(orderId, { orderStatus: updateStatus });
             if (!order)
                 throw new Error("Order not found");
-            yield this.notificationUsecase.createNotification({
-                userId: (_a = order === null || order === void 0 ? void 0 : order.userId) === null || _a === void 0 ? void 0 : _a.toString(),
-                title: "Order Status Updated",
-                message: `Your order has been ${updateStatus}`,
-                type: "ORDER",
-                orderId: order === null || order === void 0 ? void 0 : order._id.toString(),
-                read: false
-            });
-            const user = yield this.userRepository.findById(order.userId.toString());
-            if (user && user.phoneNumber) {
-                let message = `Hello ${user.name || 'Customer'}, your order (ORD-${order._id.toString().slice(-6).toUpperCase()}) status has been updated to: *${updateStatus}*.\n\nThank you for shopping with KampungCetak!`;
-                if (updateStatus === "ARTWORK_REJECTED") {
-                    message = `Hello ${user.name || 'Customer'}, unfortunately the artwork for your order (ORD-${order._id.toString().slice(-6).toUpperCase()}) was REJECTED.\n\nPlease re-upload the correct picture/file via your dashboard.`;
+            if (order.userId) {
+                yield this.notificationUsecase.createNotification({
+                    userId: order.userId.toString(),
+                    title: "Order Status Updated",
+                    message: `Your order has been ${updateStatus}`,
+                    type: "ORDER",
+                    orderId: order._id.toString(),
+                    read: false
+                });
+                const user = yield this.userRepository.findById(order.userId.toString());
+                if (user && user.phoneNumber) {
+                    let message = `Hello ${user.name || 'Customer'}, your order (ORD-${order._id.toString().slice(-6).toUpperCase()}) status has been updated to: *${updateStatus}*.\n\nThank you for shopping with KampungCetak!`;
+                    if (updateStatus === "ARTWORK_REJECTED") {
+                        message = `Hello ${user.name || 'Customer'}, unfortunately the artwork for your order (ORD-${order._id.toString().slice(-6).toUpperCase()}) was REJECTED.\n\nPlease re-upload the correct picture/file via your dashboard.`;
+                    }
+                    whatsapp_service_1.default.sendMessage(user.phoneNumber, message).catch(err => console.error("WA Error:", err));
                 }
-                whatsapp_service_1.default.sendMessage(user.phoneNumber, message).catch(err => console.error("WA Error:", err));
             }
             yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + orderId);
             return order;

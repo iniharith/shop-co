@@ -24,6 +24,7 @@ const redis_1 = require("../infrastructure/redis/redis");
 const redisMessagesHandler_1 = require("../infrastructure/redis/redisMessagesHandler");
 const socketHandler_1 = require("../infrastructure/socket/socketHandler");
 const TrackingCronJob_1 = require("../infrastructure/jobs/TrackingCronJob");
+const Parcel_1 = require("../domain/entities/Parcel");
 process.on("uncaughtException", (err) => {
     console.log("UNCAUGHT Exception! Ignoring ...");
     console.error(err);
@@ -38,6 +39,8 @@ function main() {
     return __awaiter(this, void 0, void 0, function* () {
         (0, dotenv_1.config)();
         yield (0, db_config_1.default)();
+        // Force all existing parcels to have whatsappNotified: true per user request
+        yield Parcel_1.Parcel.updateMany({}, { $set: { whatsappNotified: true } }).catch(console.error);
         yield (0, initProduct_script_1.default)();
         yield (0, initAdmin_1.initAdmin)();
         redisService.connect();

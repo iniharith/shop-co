@@ -23,7 +23,7 @@ const API = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 const ProfileCard = () => {
   const { data: session } = useSession();
   const router = useRouter();
-  const { profileData, isLoading, updateProfile, isUpdating } = useProfile();
+  const { profileData, isLoading, updateProfile, isUpdating } = useProfile() as any;
 
   const [isEditing, setIsEditing] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -43,7 +43,7 @@ const ProfileCard = () => {
 
   // Populate form when profile loads
   useEffect(() => {
-    if (profileData?.data) {
+    if ((profileData as any)?.data) {
       setFormData({
         name: profileData.data.name || session?.user?.name || "",
         phoneNumber: profileData.data.phoneNumber || "",
@@ -110,7 +110,7 @@ const ProfileCard = () => {
   };
 
   const handleCancel = () => {
-    if (profileData?.data) {
+    if ((profileData as any)?.data) {
       setFormData({
         name: profileData.data.name || session?.user?.name || "",
         phoneNumber: profileData.data.phoneNumber || "",
@@ -127,7 +127,7 @@ const ProfileCard = () => {
   };
 
   // Use API data with session as fallback
-  const profile = profileData?.data;
+  const profile = (profileData as any)?.data;
   const displayName = profile?.name || session?.user?.name || "";
   const displayEmail = profile?.email || session?.user?.email || "";
   const displayPhone = profile?.phoneNumber || "";

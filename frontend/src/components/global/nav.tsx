@@ -201,7 +201,7 @@ const Nav = () => {
 
   // Use the search products hook for live suggestions
   const { data: searchData } = useSearchProducts(searchQuery.length > 1 ? searchQuery : "");
-  const searchResults = searchData?.products || [];
+  const searchResults = (searchData as any)?.products || [];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -273,7 +273,7 @@ const Nav = () => {
             {isSearchFocused && searchQuery.length > 1 && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-card border border-gray-200 dark:border-border shadow-xl rounded-xl max-h-[300px] overflow-y-auto z-50 py-2">
                 {searchResults.length > 0 ? (
-                  searchResults.map((prod) => (
+                  searchResults.map((prod: any) => (
                     <div 
                       key={prod._id}
                       onClick={() => {

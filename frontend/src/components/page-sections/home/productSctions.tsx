@@ -1,7 +1,6 @@
 import React from "react";
 import ProductCarousel from "../../global/product-carousel";
 import { IProduct } from "@/types";
-import { IProduct } from "@/types";
 
 interface ProductSctionsProps {
   title: string;

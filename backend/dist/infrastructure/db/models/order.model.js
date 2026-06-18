@@ -98,7 +98,7 @@ const OrderSchema = new mongoose_1.Schema({
     },
     orderStatus: {
         type: String,
-        enum: ['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEW', 'ARTWORK_REJECTED', 'IN_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'DELIVERED', 'CANCELLED'],
+        enum: ['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEW', 'ARTWORK_REJECTED', 'IN_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'],
         default: 'PLACED',
     },
     platform: {
@@ -110,6 +110,10 @@ const OrderSchema = new mongoose_1.Schema({
     isDeleted: {
         type: Boolean,
         default: false,
+    },
+    trackingNumber: {
+        type: String,
+        default: '',
     },
 }, { timestamps: true });
 const OrderModel = mongoose_1.default.model('Order', OrderSchema);

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
+import OrderModel from '../../infrastructure/db/models/order.model';
 import { parcelRepository } from '../../infrastructure/repositories/ParcelRepository';
 import { easyParcelService } from '../../infrastructure/services/EasyParcelService';
 import { whatsAppService } from '../../infrastructure/services/WhatsAppService';

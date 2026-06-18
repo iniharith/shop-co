@@ -97,7 +97,7 @@ export const useFilterProducts = () => {
     }
     
     if (formats && formats.length > 0) {
-        filtered = filtered.filter(p => p.sizes && p.sizes.some(s => formats.includes(s)));
+        filtered = filtered.filter(p => p.sizes && p.sizes.some((s: any) => formats.includes(s)));
     }
     
     return { data: { products: filtered }, isPending: false, refetch };

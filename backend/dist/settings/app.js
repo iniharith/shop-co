@@ -41,6 +41,7 @@ app.options("*", (0, cors_1.default)({
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use(express_1.default.static(path_1.default.join(__dirname, '../../public')));
+app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../../uploads')));
 // -------------------- security middleware-------------------------------
 app.use((0, express_mongo_sanitize_1.default)());
 if (process.env.NODE_ENV === "development")

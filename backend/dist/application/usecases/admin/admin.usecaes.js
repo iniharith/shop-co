@@ -74,7 +74,8 @@ class AdminUsecase {
             const password = data.password
                 ? yield bcryptjs_1.default.hash(data.password, 10)
                 : yield bcryptjs_1.default.hash(Math.random().toString(36).slice(-8), 10);
-            return yield user_model_1.default.create(Object.assign(Object.assign({}, data), { password }));
+            return yield user_model_1.default.create(Object.assign(Object.assign({}, data), { password, verified: true // Automatically verify users created by admin
+             }));
         });
     }
     updateUser(userId, data) {
@@ -101,7 +102,19 @@ class AdminUsecase {
                 delete data.userId;
                 data.customerName = data.customerName || "External Customer";
             }
-            return yield order_model_1.default.create(data);
+            const order = yield order_model_1.default.create(data);
+            if (data.trackingNumber) {
+                yield Parcel_1.Parcel.create({
+                    orderId: order._id.toString(),
+                    trackingNumber: data.trackingNumber,
+                    customerName: data.customerName,
+                    customerPhone: "000000000", // Default since it's required
+                    courier: data.courier || "unknown",
+                    status: "pending",
+                    whatsappNotified: false
+                });
+            }
+            return order;
         });
     }
     adminLogin(email, password) {

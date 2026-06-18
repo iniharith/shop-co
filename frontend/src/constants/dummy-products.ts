@@ -1,6 +1,6 @@
 import { IProduct } from "@/types/IProduct";
 
-export const dummyProducts: IProduct[] = [
+export const dummyProducts: any[] = [
   {
     "_id": "prod-100",
     "name": "Banner",
