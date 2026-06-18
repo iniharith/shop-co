@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import AnimatedButton from "../globalButton";
-import { useManageOrder, useUpdateOrderStatus } from "@/hooks/useOrder";
+import { useUpdateOrderStatus } from "@/hooks/useOrder";
 import { IOrder } from "@/types/IOrder";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
