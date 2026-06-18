@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useSession } from "next-auth/react";
 
 const categories = [
   "ALL",
@@ -26,6 +27,7 @@ const categories = [
 ];
 
 export default function ArtworksManager() {
+  const { data: session } = useSession();
   const { data: response, isPending } = useAllFiles();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
@@ -123,9 +125,7 @@ export default function ArtworksManager() {
     Array.from(uploadFiles).forEach(f => formData.append("files", f));
 
       try {
-        const token = document.cookie.split('; ').find(row => 
-          row.startsWith('next-auth.session-token='))?.split('=')[1] 
-          || localStorage.getItem('token') || ""; 
+        const token = session?.user?.token || localStorage.getItem('token') || ""; 
           
         const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/files/upload`, {
           method: "POST",
