@@ -1,5 +1,5 @@
 "use client";
-import { Breadcrumbs } from "@/components/global/breadcrumb";
+import Link from "next/link";
 import { ProductDetails } from "@/components/page-sections/shop/product-details";
 import { ProductGallery } from "@/components/page-sections/shop/product-gallery";
 import ProductSctions from "@/components/page-sections/home/productSctions";
@@ -25,7 +25,24 @@ const page = () => {
     
   return (
     <div className="w-full py-5 md:px-10 px-5 max-w-[1400px] mx-auto">
-      <Breadcrumbs />
+      {/* Custom Dynamic Breadcrumbs */}
+      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-muted-foreground mb-6 bg-white dark:bg-card p-3 rounded-xl border border-gray-200 dark:border-border shadow-sm">
+         <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+         <span>/</span>
+         <Link href="/home/shop" className="hover:text-primary transition-colors">Shop</Link>
+         {product && (
+           <>
+             <span>/</span>
+             <Link href={`/home/shop?category=${product.category}`} className="hover:text-primary transition-colors capitalize">
+               {product.category.replace(/-/g, ' ')}
+             </Link>
+             <span>/</span>
+             <span className="text-gray-900 dark:text-foreground font-semibold truncate max-w-[200px] md:max-w-[400px]">
+               {product.name}
+             </span>
+           </>
+         )}
+      </div>
       {isPending && <ProductDetailSkeleton />}
       {!isPending && product && (
         <div className="grid border-b border-gray-200 pb-10 grid-cols-1 mt-6 lg:grid-cols-12 gap-8 items-start">

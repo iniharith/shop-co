@@ -6,23 +6,7 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFilterStore } from "@/store/filterStore";
 
-const dummyProducts = Array(10).fill(null).map((_, i) => ({
-    _id: `dummy-${i}`,
-    name: `Premium Print Product ${i + 1}`,
-    description: "High quality printing with premium finish.",
-    price: 50 + i * 10,
-    originalPrice: 100 + i * 20,
-    discount: 50,
-    rating: 5,
-    reviews: [],
-    category: "DIGITAL PRINTING",
-    images: ["https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=600"],
-    colors: ["#000000", "#FFFFFF"],
-    sizes: ["A4", "A3"],
-    tags: ["print", "premium"],
-    sales: 100 + i * 5,
-    stock: 1000
-}));
+import { dummyProducts } from "@/constants/dummy-products";
 
 export const useProducts = (id?: string) => {
     const client = useQueryClient()
@@ -42,9 +26,9 @@ export const useProducts = (id?: string) => {
     }
 
     // Fallback for single product if it's a dummy id
-    if (id?.startsWith('dummy-')) {
+    if (id?.startsWith('prod-')) {
         const dummy = dummyProducts.find(d => d._id === id);
-        return { data: { product: dummy }, isPending: false };
+        return { data: { ...response, product: dummy }, isPending: false };
     }
 
     return { data: response, isPending };
