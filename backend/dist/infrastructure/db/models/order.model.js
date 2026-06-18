@@ -70,7 +70,7 @@ const OrderSchema = new mongoose_1.Schema({
     userId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'User',
-        required: true,
+        required: false,
     },
     customerName: {
         type: String,

@@ -27,7 +27,7 @@ export class AdminUsecase {
     }
 
     async getAllUsers(): Promise<IUserDocument[]> {
-        return await this.userRepository.findAll();
+        return await User.find({ role: { $ne: Roles.CLIENT } }).select("-password");
     }
 
     async getUsersByRole(role: Roles): Promise<IUserDocument[]> {
@@ -81,24 +81,18 @@ export class AdminUsecase {
         let user;
         const mongoose = require('mongoose');
         
-        if (mongoose.Types.ObjectId.isValid(data.userId)) {
+        if (data.userId && mongoose.Types.ObjectId.isValid(data.userId)) {
              user = await User.findById(data.userId);
         }
 
-        if (!user) {
-             const name = data.customerName || data.userId || "External Customer";
-             const email = `external_${Date.now()}@shop.co`;
-             user = await User.create({
-                 name: name,
-                 email: email,
-                 password: "password123",
-                 role: Roles.CLIENT,
-                 verified: true
-             });
+        if (user) {
+             data.userId = user._id;
+             data.customerName = data.customerName || user.name;
+        } else {
+             // For external orders without a system user, remove the string userId so it doesn't break validation
+             delete data.userId;
+             data.customerName = data.customerName || "External Customer";
         }
-        
-        data.userId = user._id;
-        data.customerName = data.customerName || user.name;
 
         return await OrderModel.create(data);
     }

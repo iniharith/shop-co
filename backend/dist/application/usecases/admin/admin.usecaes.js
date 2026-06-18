@@ -34,7 +34,7 @@ class AdminUsecase {
     }
     getAllUsers() {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.userRepository.findAll();
+            return yield user_model_1.default.find({ role: { $ne: user_type_1.Roles.CLIENT } }).select("-password");
         });
     }
     getUsersByRole(role) {
@@ -89,22 +89,18 @@ class AdminUsecase {
         return __awaiter(this, void 0, void 0, function* () {
             let user;
             const mongoose = require('mongoose');
-            if (mongoose.Types.ObjectId.isValid(data.userId)) {
+            if (data.userId && mongoose.Types.ObjectId.isValid(data.userId)) {
                 user = yield user_model_1.default.findById(data.userId);
             }
-            if (!user) {
-                const name = data.customerName || data.userId || "External Customer";
-                const email = `external_${Date.now()}@shop.co`;
-                user = yield user_model_1.default.create({
-                    name: name,
-                    email: email,
-                    password: "password123",
-                    role: user_type_1.Roles.CLIENT,
-                    verified: true
-                });
+            if (user) {
+                data.userId = user._id;
+                data.customerName = data.customerName || user.name;
             }
-            data.userId = user._id;
-            data.customerName = data.customerName || user.name;
+            else {
+                // For external orders without a system user, remove the string userId so it doesn't break validation
+                delete data.userId;
+                data.customerName = data.customerName || "External Customer";
+            }
             return yield order_model_1.default.create(data);
         });
     }
