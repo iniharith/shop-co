@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { Breadcrumbs } from "@/components/global/breadcrumb";
 import ProfileQuickLinks from "@/components/page-sections/profile/profileQuickLinks";
+import { useSession } from "next-auth/react";
 
 interface UploadedFile {
   _id: string;
@@ -35,9 +36,11 @@ function formatDate(d: string) {
   });
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL || '';
+const API = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
 export default function UploadPage() {
+  const { data: session } = useSession();
+  const token = session?.user?.token || '';
   const [dragActive, setDragActive] = useState(false);
   const [queue, setQueue] = useState<QueuedFile[]>([]);
   const [orderId, setOrderId] = useState('');
@@ -58,7 +61,11 @@ export default function UploadPage() {
 
   async function fetchMyFiles() {
     try {
-      const res = await fetch(`${API}/api/files/my`, { credentials: 'include' });
+      if (!token) return;
+      const res = await fetch(`${API}/api/files/my`, { 
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include' 
+      });
       const data = await res.json();
       if (data.success) setMyFiles(data.data);
     } catch (e) {
@@ -122,6 +129,7 @@ export default function UploadPage() {
       const res = await fetch(`${API}/api/files/upload`, {
         method: 'POST',
         body: formData,
+        headers: { Authorization: `Bearer ${token}` },
         credentials: 'include',
       });
       const data = await res.json();

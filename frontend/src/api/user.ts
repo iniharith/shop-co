@@ -1,10 +1,12 @@
 import axios from "axios";
 
-// ── User API calls go through the Next.js proxy route (/api/user/profile)
-// so they work regardless of how NEXT_PUBLIC_BACKEND_URL is configured.
+// ── User API calls bypass Next.js proxy and hit backend directly
+// This solves the "not found api users" error caused by missing proxy routes.
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+
 const userProxy = (token: string = "") =>
   axios.create({
-    // No baseURL → calls same origin (Next.js handles proxy to backend)
+    baseURL: BACKEND,
     withCredentials: true,
     headers: {
       Authorization: `Bearer ${token}`,

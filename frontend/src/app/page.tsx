@@ -1,7 +1,6 @@
 "use client";
 
 import Hero from "@/components/page-sections/home/hero";
-import Marque from "@/components/page-sections/home/marque";
 import ProductSctions from "@/components/page-sections/home/productSctions";
 import Categorys from "@/components/page-sections/home/categorys";
 import Testimonials from "@/components/page-sections/home/testimonials";
@@ -36,7 +35,6 @@ export default function Home() {
           ))}
         </div>
       </div>
-      <Marque />
       <ProductSctions
         isLoading={isPending}
         title="Featured Products"
