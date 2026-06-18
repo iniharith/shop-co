@@ -68,8 +68,13 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
     }
 
     if (isEditing) {
+      const targetId = initialData._id || initialData.id;
+      if (!targetId) {
+        toast.error("User ID is missing! Cannot update.");
+        return;
+      }
       updateUser(
-        { id: initialData._id, data: payload },
+        { id: targetId, data: payload },
         {
           onSuccess: () => {
             toast.success("User updated successfully");

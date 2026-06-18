@@ -31,7 +31,7 @@ export class AdminController {
             if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(req.role as Roles)) {
                 throw new Error(messages.UNAUTHORIZED)
             }
-            const users = await this.adminUsecase.getUsersByRole(Roles.CLIENT);
+            const users = await this.adminUsecase.getAllUsers();
             res.status(statusCodes.OK).json({
                 message: "Users fetched successfully",
                 users: users

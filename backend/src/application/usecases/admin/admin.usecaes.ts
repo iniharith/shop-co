@@ -25,6 +25,10 @@ export class AdminUsecase {
         this.notificationUsecase = new NotificationUsecase();
     }
 
+    async getAllUsers(): Promise<IUserDocument[]> {
+        return await this.userRepository.findAll();
+    }
+
     async getUsersByRole(role: Roles): Promise<IUserDocument[]> {
         return await this.userRepository.getUsersByRole(role);
     }
