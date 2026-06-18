@@ -24,7 +24,7 @@ const statusMap: Record<string, { label: string; step: number; icon: any; color:
 };
 
 export default function TrackingCard({ parcel }: TrackingCardProps) {
-  const [autoNotify, setAutoNotify] = useState(parcel.whatsappNotified || false);
+  const [autoNotify, setAutoNotify] = useState(parcel.whatsappNotified ?? true);
   const { mutate: syncMutate, isPending: isSyncing } = useSyncParcel();
   const { mutate: whatsappMutate, isPending: isSending } = useSendWhatsApp();
 

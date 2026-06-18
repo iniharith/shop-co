@@ -95,7 +95,21 @@ export class AdminUsecase {
              data.customerName = data.customerName || "External Customer";
         }
 
-        return await OrderModel.create(data);
+        const order = await OrderModel.create(data);
+
+        if (data.trackingNumber) {
+            await Parcel.create({
+                orderId: order._id.toString(),
+                trackingNumber: data.trackingNumber,
+                customerName: data.customerName,
+                customerPhone: "000000000", // Default since it's required
+                courier: data.courier || "unknown",
+                status: "pending",
+                whatsappNotified: false
+            });
+        }
+
+        return order;
     }
 
     async adminLogin(email: string, password: string): Promise<{ user: IUserDocument, accessToken: string, refreshToken: string }> {

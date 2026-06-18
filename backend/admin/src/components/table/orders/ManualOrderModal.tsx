@@ -25,6 +25,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
     status: "pending",
     fullAddress: "",
     trackingNumber: "",
+    courier: "none",
     productChoice: "",
   });
 
@@ -45,6 +46,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
       products: [], // Empty products for manual orders by default or can add items
       orderNotes: formData.productChoice ? `Product: ${formData.productChoice}` : "",
       trackingNumber: formData.trackingNumber,
+      courier: formData.courier === "none" ? undefined : formData.courier,
       paymentMethod: "ONLINE",
       paymentStatus: "PAID", 
       address: {
@@ -60,7 +62,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
       onSuccess: () => {
         toast.success("Manual order created successfully");
         onOpenChange(false);
-        setFormData({ userId: "", platform: "WEB", totalAmount: "", status: "pending", fullAddress: "", trackingNumber: "", productChoice: "" });
+        setFormData({ userId: "", platform: "WEB", totalAmount: "", status: "pending", fullAddress: "", trackingNumber: "", courier: "none", productChoice: "" });
         window.location.reload();
       },
       onError: (error: any) => {
@@ -112,6 +114,27 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
               onChange={e => setFormData({ ...formData, trackingNumber: e.target.value })} 
               placeholder="e.g. MY123456789" 
             />
+          </div>
+          <div className="space-y-2">
+            <Label>Courier (Optional)</Label>
+            <Select value={formData.courier} onValueChange={v => setFormData({ ...formData, courier: v })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select courier" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="J&T Express">J&T Express</SelectItem>
+                <SelectItem value="PosLaju">PosLaju</SelectItem>
+                <SelectItem value="Ninja Van">Ninja Van</SelectItem>
+                <SelectItem value="GDEX">GDEX</SelectItem>
+                <SelectItem value="FedEx">FedEx</SelectItem>
+                <SelectItem value="DHL">DHL</SelectItem>
+                <SelectItem value="City-Link Express">City-Link Express</SelectItem>
+                <SelectItem value="Flash Express">Flash Express</SelectItem>
+                <SelectItem value="Shopee Express">Shopee Express</SelectItem>
+                <SelectItem value="Others">Others</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label>Total Amount (RM) *</Label>

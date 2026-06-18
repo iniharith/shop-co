@@ -6,7 +6,7 @@ import { useUsers } from "@/hooks/useUsers";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CheckCircle, Trash2, Search, X, MessageSquare, Plus } from "lucide-react";
+import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CheckCircle, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -35,6 +35,7 @@ export default function ArtworksManager() {
   const { data: usersResponse } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [commentText, setCommentText] = useState("");
@@ -198,45 +199,63 @@ export default function ArtworksManager() {
           )}
         </div>
 
-        <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="w-4 h-4 mr-2" /> Upload Artwork</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Upload Artwork for User</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>User ID / Customer ID *</Label>
-                <Input placeholder="64a1b..." value={uploadData.userId} onChange={e => setUploadData({ ...uploadData, userId: e.target.value })} />
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-muted p-1 rounded-md">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`p-1.5 rounded-sm transition-colors ${viewMode === "grid" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              title="Grid View"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`p-1.5 rounded-sm transition-colors ${viewMode === "list" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              title="List View"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+          <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="w-4 h-4 mr-2" /> Upload Artwork</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Upload Artwork for User</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>User ID / Customer ID *</Label>
+                  <Input placeholder="64a1b..." value={uploadData.userId} onChange={e => setUploadData({ ...uploadData, userId: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Order ID (Optional)</Label>
+                  <Input placeholder="Order ID if applicable" value={uploadData.orderId} onChange={e => setUploadData({ ...uploadData, orderId: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={uploadData.category} onChange={e => setUploadData({ ...uploadData, category: e.target.value })}>
+                    {categories.filter(c => c !== "ALL").map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Files *</Label>
+                  <Input type="file" multiple onChange={e => setUploadFiles(e.target.files)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Admin Notes</Label>
+                  <Textarea placeholder="Internal notes..." value={uploadData.notes} onChange={e => setUploadData({ ...uploadData, notes: e.target.value })} />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Order ID (Optional)</Label>
-                <Input placeholder="Order ID if applicable" value={uploadData.orderId} onChange={e => setUploadData({ ...uploadData, orderId: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Category</Label>
-                <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={uploadData.category} onChange={e => setUploadData({ ...uploadData, category: e.target.value })}>
-                  {categories.filter(c => c !== "ALL").map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label>Files *</Label>
-                <Input type="file" multiple onChange={e => setUploadFiles(e.target.files)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Admin Notes</Label>
-                <Textarea placeholder="Internal notes..." value={uploadData.notes} onChange={e => setUploadData({ ...uploadData, notes: e.target.value })} />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setUploadModalOpen(false)}>Cancel</Button>
-              <Button onClick={handleUploadSubmit}>Upload</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setUploadModalOpen(false)}>Cancel</Button>
+                <Button onClick={handleUploadSubmit}>Upload</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -268,67 +287,129 @@ export default function ArtworksManager() {
                 </div>
               </AccordionTrigger>
               <AccordionContent className="pt-4 pb-6 border-t mt-2">
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
                   {group.files.map((file: any) => (
-                    <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                      <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between bg-muted/20">
-                        <div className="flex items-center gap-3">
-                          {getFileIcon(file.mimetype)}
-                          <div className="overflow-hidden">
-                            <CardTitle className="text-sm truncate w-40" title={file.originalName}>
-                              {file.originalName}
-                            </CardTitle>
-                            <CardDescription className="text-xs truncate w-40">
-                              User: {group.folderName}
-                            </CardDescription>
+                    viewMode === "grid" ? (
+                      <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                        <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between bg-muted/20">
+                          <div className="flex items-center gap-3">
+                            {getFileIcon(file.mimetype)}
+                            <div className="overflow-hidden">
+                              <CardTitle className="text-sm truncate w-40" title={file.originalName}>
+                                {file.originalName}
+                              </CardTitle>
+                              <CardDescription className="text-xs truncate w-40">
+                                User: {group.folderName}
+                              </CardDescription>
+                            </div>
                           </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-3 flex flex-col gap-3">
-                        <div className="text-xs text-muted-foreground flex justify-between items-center">
-                          <span className="bg-muted px-2 py-1 rounded-md">{file.category || "Uncategorized"}</span>
-                          <span className={file.adminReviewed ? "text-green-500 font-semibold" : "text-amber-500 font-semibold"}>
-                            {file.adminReviewed ? "Reviewed" : "Pending"}
-                          </span>
-                        </div>
-                        
-                        {file.adminNotes && (
-                          <div className="text-xs bg-primary/10 text-primary p-2 rounded-md italic flex items-start gap-2">
-                            <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
-                            <span>{file.adminNotes}</span>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-3 flex flex-col gap-3">
+                          <div className="text-xs text-muted-foreground flex justify-between items-center">
+                            <span className="bg-muted px-2 py-1 rounded-md">{file.category || "Uncategorized"}</span>
+                            <span className={file.adminReviewed ? "text-green-500 font-semibold" : "text-amber-500 font-semibold"}>
+                              {file.adminReviewed ? "Reviewed" : "Pending"}
+                            </span>
                           </div>
-                        )}
-                        
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          <Button variant="secondary" size="sm" className="flex-1" onClick={() => window.open(file.path, "_blank")}>
-                            <Eye className="w-4 h-4 mr-1" /> View
-                          </Button>
                           
-                          <Button variant="outline" size="sm" className="flex-1" onClick={() => {
+                          {file.adminNotes && (
+                            <div className="text-xs bg-primary/10 text-primary p-2 rounded-md italic flex items-start gap-2">
+                              <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
+                              <span>{file.adminNotes}</span>
+                            </div>
+                          )}
+                          
+                          <div className="flex flex-col gap-2 mt-2">
+                            <div className="flex gap-2">
+                              <Button variant="secondary" size="sm" className="flex-1" onClick={() => window.open(file.path, "_blank")}>
+                                <Eye className="w-4 h-4 mr-1" /> View
+                              </Button>
+                              <Button variant="outline" size="sm" className="flex-1" onClick={() => {
+                                setSelectedFile(file);
+                                setCommentText(file.adminNotes || "");
+                                setCommentModalOpen(true);
+                              }}>
+                                <MessageSquare className="w-4 h-4 mr-1" /> Note
+                              </Button>
+                            </div>
+                            <Button variant="secondary" size="sm" className="w-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-200" onClick={() => {
+                              const link = document.createElement("a");
+                              link.href = file.path;
+                              link.download = file.originalName;
+                              link.target = "_blank";
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }}>
+                              <Download className="w-4 h-4 mr-1" /> Download
+                            </Button>
+                            <Button
+                              variant={file.adminReviewed ? "outline" : "default"}
+                              size="sm"
+                              className="w-full"
+                              onClick={() => handleReview(file._id, file.adminReviewed, file.adminNotes)}
+                              disabled={isReviewing}
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              {file.adminReviewed ? "Unmark Review" : "Mark as Reviewed"}
+                            </Button>
+                            
+                            <Button variant="destructive" size="sm" className="w-full" onClick={() => handleDelete(file._id)} disabled={isDeleting}>
+                              <Trash2 className="w-4 h-4 mr-1" /> Delete
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <div key={file._id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
+                        <div className="flex items-center gap-4 min-w-0 flex-1">
+                          {getFileIcon(file.mimetype)}
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-sm font-medium truncate" title={file.originalName}>{file.originalName}</h4>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                              <span className="bg-muted px-1.5 py-0.5 rounded">{file.category || "Uncategorized"}</span>
+                              <span className={file.adminReviewed ? "text-green-500 font-medium" : "text-amber-500 font-medium"}>
+                                {file.adminReviewed ? "Reviewed" : "Pending"}
+                              </span>
+                              {file.adminNotes && (
+                                <span className="flex items-center gap-1 text-primary truncate">
+                                  <MessageSquare className="w-3 h-3" /> {file.adminNotes}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4 shrink-0">
+                          <Button variant="ghost" size="icon" onClick={() => window.open(file.path, "_blank")} title="View">
+                            <Eye className="w-4 h-4 text-muted-foreground" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => {
+                            const link = document.createElement("a");
+                            link.href = file.path;
+                            link.download = file.originalName;
+                            link.target = "_blank";
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }} title="Download">
+                            <Download className="w-4 h-4 text-blue-500" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => {
                             setSelectedFile(file);
                             setCommentText(file.adminNotes || "");
                             setCommentModalOpen(true);
-                          }}>
-                            <MessageSquare className="w-4 h-4 mr-1" /> Note
+                          }} title="Add Note">
+                            <MessageSquare className="w-4 h-4 text-muted-foreground" />
                           </Button>
-
-                          <Button
-                            variant={file.adminReviewed ? "outline" : "default"}
-                            size="sm"
-                            className="w-full"
-                            onClick={() => handleReview(file._id, file.adminReviewed, file.adminNotes)}
-                            disabled={isReviewing}
-                          >
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            {file.adminReviewed ? "Unmark Review" : "Mark as Reviewed"}
+                          <Button variant={file.adminReviewed ? "secondary" : "default"} size="icon" onClick={() => handleReview(file._id, file.adminReviewed, file.adminNotes)} title="Toggle Review">
+                            <CheckCircle className="w-4 h-4" />
                           </Button>
-                          
-                          <Button variant="destructive" size="sm" className="w-full" onClick={() => handleDelete(file._id)} disabled={isDeleting}>
-                            <Trash2 className="w-4 h-4 mr-1" /> Delete
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(file._id)} disabled={isDeleting} title="Delete">
+                            <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    )
                   ))}
                 </div>
               </AccordionContent>
