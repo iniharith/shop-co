@@ -180,7 +180,10 @@ class AdminController {
                 if (req.role !== user_type_1.Roles.ADMIN) {
                     throw new Error(api_constant_1.messages.UNAUTHORIZED);
                 }
-                yield this.adminUsecase.seedTestData();
+                if (!req.userId) {
+                    throw new Error(api_constant_1.messages.UNAUTHORIZED);
+                }
+                yield this.adminUsecase.seedTestData(req.userId);
                 res.status(api_constant_1.statusCodes.OK).json({
                     message: "Test data seeded successfully"
                 });
