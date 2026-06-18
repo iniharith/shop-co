@@ -28,8 +28,8 @@ categories.forEach(cat => {
       reviews: Math.floor(Math.random() * 300) + 20,
       category: sub,
       images: [
-        { url: 'https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800' },
-        { url: 'https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800' }
+        'https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800',
+        'https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800'
       ],
       colors: ['Red', 'Blue', 'Green', 'Black', 'White'],
       sizes: ['Small', 'Medium', 'Large', 'Standard', 'Custom']

@@ -5,6 +5,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import { fileUploadRepository } from '../../infrastructure/repositories/FileUploadRepository';
 import { whatsAppService } from '../../infrastructure/services/WhatsAppService';
+import authMiddilware from '../middlewares/auth.middileware';
 
 const router = Router();
 
@@ -33,7 +34,7 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary,
   params: async (req: any, file: Express.Multer.File) => ({
-    folder: `kampungcetak/uploads/${req.user?.id || 'unknown'}`,
+    folder: `kampungcetak/uploads/${req.userId || req.user?.id || 'unknown'}`,
     // PDFs must be stored as 'raw', images as 'image'
     resource_type: file.mimetype === 'application/pdf' ? 'raw' : 'image',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'tiff', 'gif', 'pdf'],
@@ -62,6 +63,7 @@ const upload = multer({
 // Files are uploaded directly to Cloudinary — not stored locally.
 router.post(
   '/upload',
+  authMiddilware,
   upload.array('files', 10),
   asyncHandler(async (req: Request, res: Response) => {
     const files = req.files as (Express.Multer.File & { path: string; filename: string })[];
@@ -129,8 +131,9 @@ router.post(
 // Customer views their own uploaded files
 router.get(
   '/my',
+  authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
-    const userId = (req as any).user?.id;
+    const userId = (req as any).userId || (req as any).user?.id;
     if (!userId) {
       res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
       return;
