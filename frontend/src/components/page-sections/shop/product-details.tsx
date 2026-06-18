@@ -133,60 +133,11 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
       <div className="p-6 space-y-8">
         
-        {/* STEP 1 */}
-        {step1Options.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">1</span>
-              <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Format & Material</h2>
-            </div>
-            {renderOptions(step1Options)}
-          </div>
-        )}
-
-        {/* STEP 2 */}
-        {step2Options.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">2</span>
-              <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Printing & Options</h2>
-            </div>
-            {renderOptions(step2Options)}
-          </div>
-        )}
-
-        {/* STEP 3 */}
+        {/* STEP 1: Design Options */}
         <div className="space-y-4">
           <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
             <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
-              {step1Options.length && step2Options.length ? "3" : "2"}
-            </span>
-            <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Quantity & Turnaround</h2>
-          </div>
-          
-          {renderOptions(step3Options)}
-
-          <div className="space-y-3 pt-2">
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide">Quantity</label>
-            <div className="p-4 border-2 border-gray-200 dark:border-border rounded-xl flex items-center justify-between">
-              <span className="text-sm font-medium dark:text-foreground">Total Pieces</span>
-              <QuantityPicker
-                quantity={quantity}
-                onDecrement={() => setQuantity((q) => Math.max(100, q - 100))}
-                onIncrement={() => setQuantity((q) => q + 100)}
-                max={10000}
-                onQuantityChange={setQuantity}
-              />
-            </div>
-            <p className="text-xs text-gray-500 dark:text-muted-foreground text-right">Order in multiples of 100 units.</p>
-          </div>
-        </div>
-
-        {/* STEP 4: Design Options */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
-            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
-              {step1Options.length && step2Options.length ? "4" : "3"}
+              1
             </span>
             <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Design & Artwork</h2>
           </div>
@@ -230,6 +181,55 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               </div>
               <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">Our professional designers will create a stunning custom design for your brand.</p>
             </label>
+          </div>
+        </div>
+
+        {/* STEP 2 */}
+        {step1Options.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">2</span>
+              <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Format & Material</h2>
+            </div>
+            {renderOptions(step1Options)}
+          </div>
+        )}
+
+        {/* STEP 2 */}
+        {step2Options.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">3</span>
+              <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Printing & Options</h2>
+            </div>
+            {renderOptions(step2Options)}
+          </div>
+        )}
+
+        {/* STEP 3 */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
+            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
+              {step1Options.length && step2Options.length ? "4" : step1Options.length || step2Options.length ? "3" : "2"}
+            </span>
+            <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Quantity & Turnaround</h2>
+          </div>
+          
+          {renderOptions(step3Options)}
+
+          <div className="space-y-3 pt-2">
+            <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide">Quantity</label>
+            <div className="p-4 border-2 border-gray-200 dark:border-border rounded-xl flex items-center justify-between">
+              <span className="text-sm font-medium dark:text-foreground">Total Pieces</span>
+              <QuantityPicker
+                quantity={quantity}
+                onDecrement={() => setQuantity((q) => Math.max(100, q - 100))}
+                onIncrement={() => setQuantity((q) => q + 100)}
+                max={10000}
+                onQuantityChange={setQuantity}
+              />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-muted-foreground text-right">Order in multiples of 100 units.</p>
           </div>
         </div>
 

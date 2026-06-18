@@ -20,5 +20,6 @@ export interface IUser {
 
 
 export interface IUserDocument extends IUser, Document {
+    avatar: string;
     comparePassword(password: string): boolean;
 }

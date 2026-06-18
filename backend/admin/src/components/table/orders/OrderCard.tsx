@@ -1,0 +1,129 @@
+import React from "react";
+import { IOrder } from "@/types/IOrder";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CellAction } from "@/components/global/cell-actions";
+import OrderInfo from "@/components/global/orderInfo";
+import { cn } from "@/lib/utils";
+import { Package, UserCircle2, MapPin, CreditCard, ShoppingBag } from "lucide-react";
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "PLACED":
+      return "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800";
+    case "SHIPPED":
+      return "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800";
+    case "DELIVERED":
+      return "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800";
+    case "CANCELLED":
+      return "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800";
+    default:
+      return "bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700";
+  }
+};
+
+const getPaymentColor = (status: string) => {
+  if (status === "PAID") return "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800";
+  if (status === "FAILED") return "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800";
+  return "bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700";
+};
+
+interface OrderCardProps {
+  order: IOrder;
+}
+
+export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
+  const user = order.userId as any;
+  const userName = user && typeof user === "object" ? user.name : user || "Unknown";
+  
+  // Platform logic based on user request (Tiktok/Shopee/Website)
+  const platform = (order as any).platform || "Website";
+  
+  // Tracking number prominently displayed, fallback to ID
+  const displayId = (order as any).trackingNumber ? (order as any).trackingNumber : `ORD-${order._id.split("").reverse().splice(0, 4).reverse().join("")}`;
+
+  return (
+    <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card border border-border/50 rounded-2xl flex flex-col justify-between">
+      {/* Top Gradient Bar */}
+      <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-primary/60 via-primary to-primary/60 opacity-80" />
+      
+      <CardHeader className="pb-3 pt-6 px-5 flex flex-row items-start justify-between gap-4">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <Package className="w-4 h-4" /> ID:
+            </span>
+            <span className="font-mono font-bold text-foreground bg-primary/10 px-2 py-0.5 rounded-md text-primary tracking-tight">
+              {displayId}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+             <UserCircle2 className="w-5 h-5 text-muted-foreground" />
+             <div className="flex flex-col">
+               <span className="font-semibold text-base leading-tight">{userName}</span>
+               <span className="text-xs text-muted-foreground font-medium">{platform} User</span>
+             </div>
+          </div>
+        </div>
+        
+        <div className="flex flex-col items-end gap-2">
+          <Badge className={cn("px-3 py-1 text-xs font-semibold uppercase tracking-wider border", getStatusColor(order.orderStatus))} variant="outline">
+            {order.orderStatus}
+          </Badge>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="px-5 py-4 flex-1">
+        <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-sm">
+          <div className="flex items-start gap-2">
+             <ShoppingBag className="w-4 h-4 mt-0.5 text-muted-foreground" />
+             <div className="flex flex-col">
+               <span className="text-muted-foreground text-xs font-medium uppercase">Products</span>
+               <span className="font-medium">{order.products?.length || 0} Items</span>
+             </div>
+          </div>
+          
+          <div className="flex items-start gap-2">
+             <CreditCard className="w-4 h-4 mt-0.5 text-muted-foreground" />
+             <div className="flex flex-col">
+               <span className="text-muted-foreground text-xs font-medium uppercase">Payment</span>
+               <div className="flex items-center gap-1.5 mt-0.5">
+                 <span className="font-medium text-xs truncate max-w-[60px]">{order.paymentMethod}</span>
+                 <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 border leading-none h-4", getPaymentColor(order.paymentStatus))}>
+                   {order.paymentStatus}
+                 </Badge>
+               </div>
+             </div>
+          </div>
+
+          <div className="flex items-start gap-2 col-span-2">
+             <MapPin className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+             <div className="flex flex-col">
+               <span className="text-muted-foreground text-xs font-medium uppercase">Address</span>
+               <span className="font-medium line-clamp-2 text-sm leading-snug">
+                 {order.address?.address || order.address?.city || "-"}
+               </span>
+             </div>
+          </div>
+        </div>
+      </CardContent>
+      
+      <CardFooter className="px-5 py-4 border-t bg-muted/20 flex items-center justify-between">
+        <div className="flex flex-col">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Order Total</span>
+          <span className="text-xl font-bold tracking-tight text-foreground">
+             RM{Number(order.totalAmount).toFixed(2)}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <CellAction
+            info={<OrderInfo order={order as any} />}
+            id={(order as any)._id}
+          />
+        </div>
+      </CardFooter>
+    </Card>
+  );
+};
+
+export default OrderCard;

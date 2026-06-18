@@ -9,6 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCreateUser, useUpdateUser } from "@/hooks/useUsers";
 import { toast } from "sonner";
 import { Roles } from "./columns";
+import { useSession } from "next-auth/react";
+import { uploadUserAvatar } from "@/api/users";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface UserFormModalProps {
   open: boolean;
@@ -20,6 +23,10 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
   const isEditing = !!initialData;
   const { mutate: createUser, isPending: isCreating } = useCreateUser();
   const { mutate: updateUser, isPending: isUpdating } = useUpdateUser();
+  const { data: session } = useSession();
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -38,6 +45,8 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
         role: initialData.role || Roles.ADMIN,
         password: "", // Leave blank unless changing
       });
+      setAvatarPreview(initialData.avatar || null);
+      setAvatarFile(null);
     } else if (!initialData && open) {
       setFormData({
         name: "",
@@ -46,8 +55,32 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
         role: Roles.ADMIN,
         password: "",
       });
+      setAvatarPreview(null);
+      setAvatarFile(null);
     }
   }, [initialData, open]);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleUploadAvatar = async (userId: string) => {
+    if (!avatarFile || !session?.user?.token) return;
+    try {
+      setIsUploadingAvatar(true);
+      await uploadUserAvatar(session.user.token, userId, avatarFile);
+      toast.success("Avatar uploaded successfully");
+    } catch (error) {
+      toast.error("Failed to upload avatar");
+      console.error(error);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +109,10 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
       updateUser(
         { id: targetId, data: payload },
         {
-          onSuccess: () => {
+          onSuccess: async () => {
+            if (avatarFile) {
+              await handleUploadAvatar(targetId);
+            }
             toast.success("User updated successfully");
             onOpenChange(false);
             window.location.reload();
@@ -88,7 +124,12 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
       );
     } else {
       createUser(payload, {
-        onSuccess: () => {
+        onSuccess: async (data: any) => {
+          // If the API returns the created user object in `data.user` or `data`
+          const newUserId = data?.user?._id || data?._id || data?.id;
+          if (avatarFile && newUserId) {
+            await handleUploadAvatar(newUserId);
+          }
           toast.success("User created successfully");
           onOpenChange(false);
           window.location.reload();
@@ -107,6 +148,24 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
           <DialogTitle>{isEditing ? "Edit User" : "Add New User"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
+          <div className="flex flex-col items-center gap-4 mb-4">
+            <Avatar className="h-20 w-20">
+              <AvatarImage src={avatarPreview || ""} />
+              <AvatarFallback>{formData.name?.charAt(0) || "U"}</AvatarFallback>
+            </Avatar>
+            <div className="flex items-center justify-center">
+              <Label htmlFor="avatar-upload" className="cursor-pointer text-sm text-primary hover:underline">
+                {isEditing ? "Change Avatar" : "Upload Avatar"}
+              </Label>
+              <Input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+            </div>
+          </div>
           <div className="space-y-2">
             <Label>Name</Label>
             <Input 
@@ -158,8 +217,8 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={isCreating || isUpdating}>
-              {isCreating || isUpdating ? "Saving..." : "Save"}
+            <Button type="submit" disabled={isCreating || isUpdating || isUploadingAvatar}>
+              {isCreating || isUpdating || isUploadingAvatar ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
         </form>

@@ -8,7 +8,7 @@ const UserSchema: Schema = new Schema({
     email: { type: String, unique: true, required: true },
     role: { type: String, enum: Object.values(Roles), default: Roles.CLIENT, required: true },
     password: { type: String, required: true },
-    avatar: { type: String },
+    avatar: { type: String, default: "" },
     verified: { type: Boolean, default: false },
     phoneNumber: { type: String },
     address: {

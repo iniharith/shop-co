@@ -24,9 +24,9 @@ const ALLOWED_MIME_TYPES = [
 // Railway filesystem is ephemeral — files are wiped on each redeploy.
 // Cloudinary provides persistent, cloud-hosted storage for all uploads.
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dc7aun6of',
+  api_key: process.env.CLOUDINARY_API_KEY || '933197924153588',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'L8yhCjjrcV4--wTSGB-_JVY5kgg',
 });
 
 // ─── Multer + Cloudinary Storage ─────────────────────────

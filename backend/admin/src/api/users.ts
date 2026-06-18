@@ -39,3 +39,14 @@ export const seedTestData = async (token: string) => {
     const response = await AxiosInstance(token).post(`${ADMIN_URL}/seed-test-data`);
     return response.data;
 }
+
+export const uploadUserAvatar = async (token: string, id: string, file: File) => {
+    const formData = new FormData();
+    formData.append("avatar", file);
+    const response = await AxiosInstance(token).post(`${ADMIN_URL}/users/${id}/avatar`, formData, {
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    });
+    return response.data;
+}

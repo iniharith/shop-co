@@ -1,10 +1,10 @@
 "use client";
 import React, { useState, useMemo } from "react";
-import { DataTable } from "../../global/data-table";
-import { orderColumns as columns } from "./columns";
 import { DataTableSkeleton } from "../../global/table/data-table-skeleton";
 import { useOrders } from "@/hooks/useOrder";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import OrderCard from "./OrderCard";
+import { PackageX } from "lucide-react";
 
 interface Props {}
 
@@ -22,16 +22,33 @@ const OrdersList = (props: Props) => {
 
   if (data) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="flex h-auto gap-2 justify-start mb-4 bg-muted/20">
-            <TabsTrigger value="ALL">All Orders</TabsTrigger>
-            <TabsTrigger value="WEB">KampungCetak (Web)</TabsTrigger>
-            <TabsTrigger value="TIKTOK">TikTok Shop</TabsTrigger>
-            <TabsTrigger value="SHOPEE">Shopee</TabsTrigger>
+          <TabsList className="flex h-auto gap-2 justify-start mb-2 bg-muted/20 p-1 rounded-xl">
+            <TabsTrigger value="ALL" className="rounded-lg">All Orders</TabsTrigger>
+            <TabsTrigger value="WEB" className="rounded-lg">KampungCetak (Web)</TabsTrigger>
+            <TabsTrigger value="TIKTOK" className="rounded-lg">TikTok Shop</TabsTrigger>
+            <TabsTrigger value="SHOPEE" className="rounded-lg">Shopee</TabsTrigger>
           </TabsList>
         </Tabs>
-        <DataTable search={"orderId"} data={filteredOrders} columns={columns} />
+        
+        {filteredOrders.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center bg-card rounded-2xl border border-dashed border-border/60">
+            <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mb-4">
+              <PackageX className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-xl font-semibold mb-1 text-foreground">No orders found</h3>
+            <p className="text-muted-foreground text-sm max-w-sm">
+              We couldn't find any orders for the selected platform. They will appear here once placed.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 pb-10">
+            {filteredOrders.map((order: any) => (
+              <OrderCard key={order._id} order={order} />
+            ))}
+          </div>
+        )}
       </div>
     );
   }
