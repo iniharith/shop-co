@@ -238,10 +238,58 @@ router.put(
       return;
     }
     res.json({ success: true, data: file });
+    })
+);
+
+// 🟨🟨🟨 POST /api/files/bulk-delete 🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨
+// Admin or owner bulk deletes files
+router.post(
+  '/bulk-delete',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as any;
+    const userId = authReq.userId || authReq.user?.id;
+    const isAdmin = ['admin', 'system_admin', 'boss'].includes(authReq.role);
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
+      return;
+    }
+
+    const { fileIds } = req.body;
+    if (!fileIds || !Array.isArray(fileIds)) {
+      res.status(400).json({ success: false, message: 'Senarai ID fail diperlukan' });
+      return;
+    }
+
+    let deletedCount = 0;
+    const errors = [];
+
+    for (const id of fileIds) {
+      try {
+        const file = await fileUploadRepository.findById(id);
+        if (!file) continue;
+
+        if (!isAdmin && file.userId?.toString() !== userId.toString()) {
+          continue; // skip if unauthorized
+        }
+
+        await fileUploadRepository.delete(id);
+        if (file.path?.includes('cloudinary.com')) {
+          const publicId = file.path.split('/').pop()?.split('.')[0];
+          if (publicId) await deleteImageFromCloudinary(publicId);
+        }
+        deletedCount++;
+      } catch (err: any) {
+        errors.push({ id, error: err.message });
+      }
+    }
+
+    res.json({ success: true, deletedCount, errors });
   })
 );
 
-// ─── DELETE /api/files/:id ────────────────────────────────
+// 🟨🟨🟨 DELETE /api/files/:id 🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨
 // Admin or file owner deletes file from DB and Cloudinary
 router.delete(
   '/:id',

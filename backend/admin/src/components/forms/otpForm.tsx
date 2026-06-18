@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 export function OtpForm() {
   const [otp, setotp] = useState("");
-  const {otpMutation,otpPending}=useAuth()
+  const {otpMutation,otpPending}=useAuth() as any
   return (
     <div className="w-full h-full p-2 flex flex-col justify-center gap-y-2 items-center">
       <form

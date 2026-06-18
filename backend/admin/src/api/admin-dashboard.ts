@@ -50,3 +50,8 @@ export const deleteFile = async (token: string, id: string) => {
     const response = await AxiosInstance(token).delete(`${FILES_URL}/${id}`);
     return response.data;
 }
+
+export const bulkDeleteFiles = async (token: string, fileIds: string[]) => {
+    const response = await AxiosInstance(token).post(`${FILES_URL}/bulk-delete`, { fileIds });
+    return response.data;
+}

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useMemo } from "react";
-import { useAllFiles, useReviewFile, useDeleteFile } from "@/hooks/useAdminDashboard";
+import { useAllFiles, useReviewFile, useDeleteFile, useBulkDeleteFiles } from "@/hooks/useAdminDashboard";
 import { useOrders } from "@/hooks/useOrder";
 import { useUsers } from "@/hooks/useUsers";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -47,8 +47,9 @@ export default function ArtworksManager() {
 
   const { mutate: reviewFileMutate, isPending: isReviewing } = useReviewFile();
   const { mutate: deleteFileMutate, isPending: isDeleting } = useDeleteFile();
+  const { mutate: bulkDeleteMutate, isPending: isBulkDeleting } = useBulkDeleteFiles();
 
-  const allFiles: any[] = response?.data || [];
+  const allFiles: any[] = (response as any)?.data || [];
 
   const filteredFiles = useMemo(() => {
     let result = allFiles;
@@ -135,6 +136,22 @@ export default function ArtworksManager() {
         toast.success("File deleted!");
         window.location.reload();
       },
+    });
+  };
+
+  const handleDeleteFolder = (group: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm(`Are you sure you want to delete ALL ${group.files.length} files in ${group.folderName}? This cannot be undone.`)) return;
+    
+    const fileIds = group.files.map((f: any) => f._id);
+    bulkDeleteMutate(fileIds, {
+      onSuccess: () => {
+        toast.success(`Deleted ${group.files.length} files successfully!`);
+        window.location.reload();
+      },
+      onError: (err: any) => {
+        toast.error(`Failed to delete files: ${err.message || 'Unknown error'}`);
+      }
     });
   };
 
@@ -452,9 +469,19 @@ export default function ArtworksManager() {
               return (
                 <Card 
                   key={folderId} 
-                  className="cursor-pointer overflow-hidden shadow-sm hover:shadow-md hover:border-primary/50 transition-all group" 
+                  className="cursor-pointer overflow-hidden shadow-sm hover:shadow-md hover:border-primary/50 transition-all group relative" 
                   onClick={() => setSelectedFolder(folderId)}
                 >
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-red-50 hover:text-red-600"
+                    onClick={(e) => handleDeleteFolder(group, e)}
+                    disabled={isBulkDeleting}
+                    title="Delete Folder and All Files"
+                  >
+                    <Trash2 className="w-4 h-4 text-muted-foreground hover:text-red-600" />
+                  </Button>
                   <CardContent className="p-6 flex flex-col items-center justify-center gap-4 text-center">
                     <div className="w-16 h-16 rounded-2xl bg-primary/5 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
                       <Folder className="w-8 h-8 text-primary" />
@@ -487,6 +514,16 @@ export default function ArtworksManager() {
                   </div>
                   <div className="shrink-0 flex items-center gap-2">
                     <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">{group.files.length} file(s)</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 hover:bg-red-50 hover:text-red-600 ml-1"
+                      onClick={(e) => handleDeleteFolder(group, e)}
+                      disabled={isBulkDeleting}
+                      title="Delete Folder and All Files"
+                    >
+                      <Trash2 className="w-4 h-4 text-muted-foreground hover:text-red-600" />
+                    </Button>
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </div>

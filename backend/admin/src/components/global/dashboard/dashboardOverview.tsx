@@ -17,8 +17,8 @@ export default function DashboardOverview() {
   const orders = orderData?.orders || [];
   const totalOrders = orders.length;
 
-  const parcelData = parcelStats?.data || { total: 0, pending: 0, in_transit: 0, delivered: 0, failed: 0 };
-  const fileData = fileStats?.data || { totalFiles: 0, totalSize: 0, pendingReview: 0 };
+  const parcelData = (parcelStats as any)?.data || { total: 0, pending: 0, in_transit: 0, delivered: 0, failed: 0 };
+  const fileData = (fileStats as any)?.data || { totalFiles: 0, totalSize: 0, pendingReview: 0 };
 
   return (
     <div className="flex flex-1 flex-col gap-4">

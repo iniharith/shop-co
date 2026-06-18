@@ -12,7 +12,7 @@ export default function TrackingList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourier, setSelectedCourier] = useState("All");
 
-  const parcels = response?.data || [];
+  const parcels = (response as any)?.data || [];
 
   const couriers = ["All", ...Array.from(new Set(parcels.map((p: any) => p.courier).filter(Boolean)))];
 

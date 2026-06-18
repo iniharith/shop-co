@@ -11,7 +11,8 @@ import {
     getGroupedFiles, 
     getAllFiles,
     reviewFile, 
-    deleteFile 
+    deleteFile,
+    bulkDeleteFiles
 } from "@/api/admin-dashboard";
 
 export const useParcelStats = () => {
@@ -66,5 +67,11 @@ export const useReviewFile = () => {
 export const useDeleteFile = () => {
     const { data: session } = useSession();
     const { mutate, isPending } = useMutationData(['deleteFile'], (id: string) => deleteFile(session?.user?.token, id), ['groupedFiles']);
+    return { mutate, isPending };
+}
+
+export const useBulkDeleteFiles = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(['bulkDeleteFiles'], (fileIds: string[]) => bulkDeleteFiles(session?.user?.token, fileIds), ['groupedFiles']);
     return { mutate, isPending };
 }

@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { useUpdateDeliveryBoy } from "@/hooks/useUsers";
+import { useUpdateUser } from "@/hooks/useUsers";
 
 // import { useDeleteUser } from "@/hooks/useUser"; // optional hook for deletion
 
@@ -85,7 +85,7 @@ export const deliveryBoyColumns: ColumnDef<IUser>[] = [
       const [value, setValue] = React.useState(
         row.original.verified ? "true" : "false"
       );
-      const { mutate: updateDeliveryBoy, isPending } = useUpdateDeliveryBoy();
+      const { mutate: updateDeliveryBoy, isPending } = useUpdateUser();
       const handleUpdate = async (newValue: string) => {
         updateDeliveryBoy({
           id: row.original._id,

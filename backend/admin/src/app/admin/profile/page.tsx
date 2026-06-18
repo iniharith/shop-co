@@ -28,7 +28,7 @@ export default function ProfilePage() {
         name: session.user.name || "",
         email: session.user.email || "",
       });
-      setAvatarPreview(session.user.avatar || null);
+      setAvatarPreview((session.user as any).avatar || null);
     }
   }, [session]);
 

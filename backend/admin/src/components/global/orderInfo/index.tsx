@@ -31,7 +31,7 @@ interface OrderDetailsModalProps {
 }
 
 const OrderInfo = ({ order }: OrderDetailsModalProps) => {
-  const [status, setStatus] = useState(order.orderStatus);
+  const [status, setStatus] = useState<any>(order.orderStatus);
   const { data: session } = useSession();
 
   const statusOptions = [
@@ -194,7 +194,7 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
                 </Select>
               </div>
               
-              {(status === "PENDING_ARTWORK" || status === "ARTWORK_REVIEW") && (
+              {(status as string === "PENDING_ARTWORK" || status as string === "ARTWORK_REVIEW") && (
                 <div className="flex gap-2 mt-2">
                   <button 
                     disabled={statusPending}
@@ -213,7 +213,7 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
                 </div>
               )}
 
-              {status === "IN_DESIGN" && (
+              {status as string === "IN_DESIGN" && (
                 <div className="flex gap-2 mt-2">
                   <button 
                     disabled={statusPending}
