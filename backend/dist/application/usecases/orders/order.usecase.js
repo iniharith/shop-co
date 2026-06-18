@@ -83,7 +83,8 @@ class OrderUsecase {
                     product: item.product._id,
                     quantity: item.quantity,
                     price: productPrice,
-                    size: item.size
+                    size: item.size,
+                    artworkUrl: item.artworkUrl
                 });
                 totalAmount += productPrice;
             }

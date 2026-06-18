@@ -116,6 +116,18 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
                         ? (order.deliveryBoy as any).name
                         : "not asseigned"}
                     </p>
+                    {product.artworkUrl && (
+                      <div className="mt-3">
+                        <a 
+                          href={product.artworkUrl} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="bg-primary/10 text-primary px-3 py-1.5 rounded-md font-semibold text-sm hover:bg-primary/20 transition-colors inline-flex items-center gap-1.5"
+                        >
+                          View Uploaded Artwork
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CarouselItem>
@@ -126,11 +138,11 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
       <div className="flex md:flex-row  flex-col mb-2 mt-2 md:items-center justify-between gap-4 py-4 px-4 bg-muted/20 rounded-lg">
         <div className="flex gap-4">
           <Avatar>
-            <AvatarFallback>{(order.userId as any)?.name?.slice(0, 2) || "U"}</AvatarFallback>
+            <AvatarFallback>{order.customerName?.slice(0, 2) || (order.userId as any)?.name?.slice(0, 2) || "U"}</AvatarFallback>
           </Avatar>
           <div>
-            <p className="font-semibold">{order.userId?.name || "Unknown User"}</p>
-            <p className="text-gray-600">{order.userId?.email || ""}</p>
+            <p className="font-semibold">{order.customerName || (order.userId as any)?.name || "Unknown User"}</p>
+            <p className="text-gray-600">{(order.userId as any)?.email || ""}</p>
           </div>
         </div>
         <AnimatedButton

@@ -51,7 +51,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     
     // We can store the design option in the size field or metadata, but for now we append it to the size to pass it to the backend mock
     const sizeWithDesign = `Standard | Design: ${designOption === "upload" ? "Upload Artwork" : "Need Design Service"}`;
-    mutate({ productId: product._id, size: sizeWithDesign, quantity });
+    const artworkUrl = designOption === "upload" ? "https://example.com/mock-uploaded-artwork.pdf" : undefined; // Replace with actual uploaded file URL state if it exists
+    mutate({ productId: product._id, size: sizeWithDesign, quantity, artworkUrl });
     toast.success("Added to cart");
   };
 

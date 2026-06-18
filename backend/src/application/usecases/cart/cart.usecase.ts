@@ -11,7 +11,7 @@ export class CartUsecase {
         this.productRepository = new ProductRepository();
     }
 
-    async addProductToCart(userId: string, productId: Types.ObjectId, size: string, quantity: number) {
+    async addProductToCart(userId: string, productId: Types.ObjectId, size: string, quantity: number, artworkUrl?: string) {
         const product = await this.productRepository.findById(productId as unknown as string);
         if (!product) {
             throw new Error("Product not found");
@@ -19,7 +19,7 @@ export class CartUsecase {
         const cart = await this.cartRepository.getCartByUserId(userId);
 
         if (!cart) {
-            return await this.cartRepository.upsertCart(userId, productId.toString(), size, quantity);
+            return await this.cartRepository.upsertCart(userId, productId.toString(), size, quantity, artworkUrl);
         }
 
         const productExist = cart.items.find((item) => item.product._id.toString() === productId.toString() && item.size === size);
@@ -27,7 +27,7 @@ export class CartUsecase {
         if (productExist) {
             return await this.updateCartItem(userId, productId, size, quantity);
         } else {
-            cart.items.push({ product: productId as unknown as any, size, quantity });
+            cart.items.push({ product: productId as unknown as any, size, quantity, artworkUrl });
         }
 
         return await cart.save();

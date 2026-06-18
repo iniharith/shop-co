@@ -17,6 +17,10 @@ const CartItemSchema = new Schema(
       required: true,
       min: 1,
     },
+    artworkUrl: {
+      type: String,
+      default: '',
+    },
   },
   { _id: false }
 );

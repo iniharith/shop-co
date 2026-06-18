@@ -8,7 +8,7 @@ import { ICart } from "@/types/ICart";
 export const useAddtoCart = (type?: "update") => {
     const { data: session } = useSession()
 
-    const { mutate, isPending, isSuccess, error } = useMutationData(['cart'], (data: { productId: string, size: string, quantity: number }) => addToCart(data.productId, data.size, data.quantity, session?.user?.token || ""), ['cart'], () => {
+    const { mutate, isPending, isSuccess, error } = useMutationData(['cart'], (data: { productId: string, size: string, quantity: number, artworkUrl?: string }) => addToCart(data.productId, data.size, data.quantity, session?.user?.token || "", data.artworkUrl), ['cart'], () => {
         const message = type === "update" ? "Cart updated" : "Product added to cart"
         toast.success(message)
     })

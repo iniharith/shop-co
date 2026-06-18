@@ -22,6 +22,10 @@ const OrderedProductSchema = new Schema(
       required: true,
       min: 0,
     },
+    artworkUrl: {
+      type: String,
+      default: '',
+    },
   },
   { _id: false }
 );

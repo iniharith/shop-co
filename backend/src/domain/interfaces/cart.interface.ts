@@ -5,6 +5,7 @@ export interface ICartItem {
   product: IProductDocument ; 
   size: string;
   quantity: number;
+  artworkUrl?: string;
 }
 
 export interface ICart {

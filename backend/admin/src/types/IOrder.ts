@@ -6,6 +6,7 @@ export interface IOrderedProduct {
     size: string;
     quantity: number;
     price: number;
+    artworkUrl?: string;
 }
 
 

@@ -55,7 +55,6 @@ export const useOrder = () => {
     // Pre-fill form if profile address exists
     useEffect(() => {
         if (profile?.data) {
-            if (profile.data.name) form.setValue("customerName", profile.data.name);
             
             if (profile.data.address) {
                 const addr = profile.data.address;

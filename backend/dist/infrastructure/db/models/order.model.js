@@ -54,6 +54,10 @@ const OrderedProductSchema = new mongoose_1.Schema({
         required: true,
         min: 0,
     },
+    artworkUrl: {
+        type: String,
+        default: '',
+    },
 }, { _id: false });
 const AddressSchema = new mongoose_1.Schema({
     address: { type: String, required: true },

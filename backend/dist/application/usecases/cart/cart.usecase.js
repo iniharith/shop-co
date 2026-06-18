@@ -17,7 +17,7 @@ class CartUsecase {
         this.cartRepository = new cart_repository_1.CartRepository();
         this.productRepository = new product_repository_1.ProductRepository();
     }
-    addProductToCart(userId, productId, size, quantity) {
+    addProductToCart(userId, productId, size, quantity, artworkUrl) {
         return __awaiter(this, void 0, void 0, function* () {
             const product = yield this.productRepository.findById(productId);
             if (!product) {
@@ -25,14 +25,14 @@ class CartUsecase {
             }
             const cart = yield this.cartRepository.getCartByUserId(userId);
             if (!cart) {
-                return yield this.cartRepository.upsertCart(userId, productId.toString(), size, quantity);
+                return yield this.cartRepository.upsertCart(userId, productId.toString(), size, quantity, artworkUrl);
             }
             const productExist = cart.items.find((item) => item.product._id.toString() === productId.toString() && item.size === size);
             if (productExist) {
                 return yield this.updateCartItem(userId, productId, size, quantity);
             }
             else {
-                cart.items.push({ product: productId, size, quantity });
+                cart.items.push({ product: productId, size, quantity, artworkUrl });
             }
             return yield cart.save();
         });

@@ -49,6 +49,10 @@ const CartItemSchema = new mongoose_1.Schema({
         required: true,
         min: 1,
     },
+    artworkUrl: {
+        type: String,
+        default: '',
+    },
 }, { _id: false });
 const CartSchema = new mongoose_1.Schema({
     userId: {

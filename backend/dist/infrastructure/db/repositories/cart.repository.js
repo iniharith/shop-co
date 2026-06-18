@@ -20,9 +20,9 @@ class CartRepository {
             return yield cart_model_1.default.create(cart);
         });
     }
-    upsertCart(userId, productId, size, quantity) {
+    upsertCart(userId, productId, size, quantity, artworkUrl) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield cart_model_1.default.findOneAndUpdate({ userId }, { $push: { items: { product: productId, size, quantity } } }, { upsert: true, new: true }).populate('items.product');
+            return yield cart_model_1.default.findOneAndUpdate({ userId }, { $push: { items: { product: productId, size, quantity, artworkUrl } } }, { upsert: true, new: true }).populate('items.product');
         });
     }
     getCartByUserId(userId) {

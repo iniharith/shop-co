@@ -33,8 +33,8 @@ class CartController {
                 if (!req.userId) {
                     throw new Error('User ID is required');
                 }
-                const { productId, size, quantity } = req.body;
-                const cart = yield this.cartUsecase.addProductToCart(req.userId, productId, size, quantity);
+                const { productId, size, quantity, artworkUrl } = req.body;
+                const cart = yield this.cartUsecase.addProductToCart(req.userId, productId, size, quantity, artworkUrl);
                 res.status(api_constant_1.statusCodes.OK).json({ message: "Product added to cart successfully", cart });
             }
             catch (error) {

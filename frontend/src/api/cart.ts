@@ -17,7 +17,7 @@ const saveLocalCart = (cart: any[]) => {
     }
 };
 
-export const addToCart = async (productId: string, size: string, quantity: number, token: string) => {
+export const addToCart = async (productId: string, size: string, quantity: number, token: string, artworkUrl?: string) => {
     // Intercept dummy products to bypass backend verification
     if (productId.startsWith("prod-")) {
         const product = dummyProducts.find(p => p._id === productId);
@@ -27,7 +27,7 @@ export const addToCart = async (productId: string, size: string, quantity: numbe
             if (existing) {
                 existing.quantity += quantity;
             } else {
-                cart.push({ product, size, quantity });
+                cart.push({ product, size, quantity, artworkUrl });
             }
             saveLocalCart(cart);
             return { success: true, cart };
@@ -37,7 +37,8 @@ export const addToCart = async (productId: string, size: string, quantity: numbe
     const response = await AxiosInstance(token).post(`${CART_URL}/add`, {
         productId,
         size,
-        quantity
+        quantity,
+        artworkUrl
     });
     return response.data;
 };
