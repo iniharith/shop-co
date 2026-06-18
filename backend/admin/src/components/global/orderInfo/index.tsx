@@ -42,16 +42,15 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
     "IN_DESIGN",
     "IN_PRODUCTION",
     "SHIPPED",
+    "IN_TRANSIT",
     "DELIVERED",
     "CANCELLED",
   ];
 
-  const handleStatusChange = (
-    newStatus: "PLACED" | "PENDING_ARTWORK" | "ARTWORK_REVIEW" | "ARTWORK_REJECTED" | "IN_DESIGN" | "IN_PRODUCTION" | "SHIPPED" | "DELIVERED" | "CANCELLED"
-  ) => {
+  const handleStatusChange = (newStatus: string) => {
     setStatus(newStatus);
     updateStatus({
-      id: order._id,
+      id: (order as any)._id,
       status: newStatus,
     });
   };
@@ -77,6 +76,8 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
         return "bg-teal-500/20 border-teal-500/40 hover:bg-teal-500/30 cursor-pointer text-teal-700 dark:text-teal-300";
       case "SHIPPED":
         return "bg-purple-500/20 border-purple-500/40 hover:bg-purple-500/40 cursor-pointer";
+      case "IN_TRANSIT":
+        return "bg-blue-500/20 border-blue-500/40 hover:bg-blue-500/40 cursor-pointer text-blue-800 dark:text-blue-200";
       case "DELIVERED":
         return "bg-green-500/20 border-green-500/40 hover:bg-green-500/40 cursor-pointer";
       case "CANCELLED":

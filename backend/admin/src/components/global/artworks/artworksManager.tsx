@@ -174,16 +174,23 @@ export default function ArtworksManager() {
   };
 
   const getFileIcon = (mimetype: string) => {
-    if (mimetype?.includes("pdf")) return <FileText className="w-8 h-8 text-red-500" />;
     if (mimetype?.includes("image")) return <ImageIcon className="w-8 h-8 text-blue-500" />;
+    if (mimetype?.includes("pdf")) return <FileText className="w-8 h-8 text-red-500" />;
     return <File className="w-8 h-8 text-gray-500" />;
+  };
+
+  const getFileUrl = (path: string) => {
+    if (!path) return "";
+    if (path.startsWith('http')) return path;
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+    return `${backendUrl}/${path}`;
   };
 
   const getFileThumbnail = (file: any) => {
     if (file.mimetype?.includes("image")) {
       return (
         <div className="w-full h-40 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
-          <img src={file.path} alt={file.originalName} className="object-cover w-full h-full" />
+          <img src={getFileUrl(file.path)} alt={file.originalName} className="object-cover w-full h-full" />
         </div>
       );
     }
@@ -334,7 +341,7 @@ export default function ArtworksManager() {
                           
                           <div className="flex flex-col gap-2 mt-2">
                             <div className="flex gap-2">
-                              <Button variant="secondary" size="sm" className="flex-1" onClick={() => window.open(file.path, "_blank")}>
+                              <Button variant="secondary" size="sm" className="flex-1" onClick={() => window.open(getFileUrl(file.path), "_blank")}>
                                 <Eye className="w-4 h-4 mr-1" /> View
                               </Button>
                               <Button variant="outline" size="sm" className="flex-1" onClick={() => {
@@ -393,7 +400,7 @@ export default function ArtworksManager() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 ml-4 shrink-0">
-                          <Button variant="ghost" size="icon" onClick={() => window.open(file.path, "_blank")} title="View">
+                          <Button variant="ghost" size="icon" onClick={() => window.open(getFileUrl(file.path), "_blank")} title="View">
                             <Eye className="w-4 h-4 text-muted-foreground" />
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => {

@@ -125,6 +125,18 @@ router.put(
       res.status(404).json({ success: false, message: 'Parcel not found' });
       return;
     }
+
+    // Sync order status if parcel status is updated manually
+    if (update.status && updated.orderId) {
+      let orderStatusStr = '';
+      if (['picked_up', 'in_transit', 'out_for_delivery'].includes(update.status)) orderStatusStr = 'IN_TRANSIT';
+      if (update.status === 'delivered') orderStatusStr = 'DELIVERED';
+      if (update.status === 'failed') orderStatusStr = 'CANCELLED';
+      if (orderStatusStr) {
+         await OrderModel.findByIdAndUpdate(updated.orderId, { orderStatus: orderStatusStr });
+      }
+    }
+
     res.json({ success: true, data: updated });
   })
 );
@@ -156,6 +168,16 @@ router.put(
       courier: result.courier,
       events: result.events as any,
     });
+
+    if (statusChanged && updated?.orderId) {
+      let orderStatusStr = '';
+      if (['picked_up', 'in_transit', 'out_for_delivery'].includes(result.status)) orderStatusStr = 'IN_TRANSIT';
+      if (result.status === 'delivered') orderStatusStr = 'DELIVERED';
+      if (result.status === 'failed') orderStatusStr = 'CANCELLED';
+      if (orderStatusStr) {
+         await OrderModel.findByIdAndUpdate(updated.orderId, { orderStatus: orderStatusStr });
+      }
+    }
 
     // Auto-notify customer if status changed
     if (statusChanged && parcel.customerPhone) {
@@ -229,12 +251,22 @@ router.post(
       if (!result) continue;
 
       const statusChanged = result.status !== parcel.status;
-      await parcelRepository.update(parcel._id as unknown as string, {
+      const updatedParcel = await parcelRepository.update(parcel._id as unknown as string, {
         status: result.status as any,
         courier: result.courier,
         events: result.events as any,
       });
       updated++;
+
+      if (statusChanged && updatedParcel?.orderId) {
+        let orderStatusStr = '';
+        if (['picked_up', 'in_transit', 'out_for_delivery'].includes(result.status)) orderStatusStr = 'IN_TRANSIT';
+        if (result.status === 'delivered') orderStatusStr = 'DELIVERED';
+        if (result.status === 'failed') orderStatusStr = 'CANCELLED';
+        if (orderStatusStr) {
+           await OrderModel.findByIdAndUpdate(updatedParcel.orderId, { orderStatus: orderStatusStr });
+        }
+      }
 
       if (statusChanged && parcel.customerPhone) {
         const sent = await whatsAppService.sendStatusUpdate({

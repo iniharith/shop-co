@@ -58,7 +58,7 @@ const ParcelSchema = new Schema<IParcel>(
     senderPhone: { type: String, default: '' },
     senderAddress: { type: String, default: '' },
     recipientAddress: { type: String, default: '' },
-    whatsappNotified: { type: Boolean, default: false },
+    whatsappNotified: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

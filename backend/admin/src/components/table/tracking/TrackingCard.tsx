@@ -28,7 +28,10 @@ export default function TrackingCard({ parcel }: TrackingCardProps) {
   const { mutate: syncMutate, isPending: isSyncing } = useSyncParcel();
   const { mutate: whatsappMutate, isPending: isSending } = useSendWhatsApp();
   const { mutate: updateMutate, isPending: isUpdating } = useUpdateParcel();
-  const [autoNotify, setAutoNotify] = useState(parcel.whatsappNotified ?? true);
+
+  const handleAutoNotifyChange = (checked: boolean) => {
+    updateMutate({ id: parcel._id, data: { whatsappNotified: checked } });
+  };
 
   const handleSync = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -65,10 +68,28 @@ export default function TrackingCard({ parcel }: TrackingCardProps) {
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{parcel.courier}</span>
               <h3 className="font-display text-lg font-bold text-slate-900 mt-1">{parcel.trackingNumber}</h3>
             </div>
-            <Badge variant="secondary" className={`bg-slate-50 border border-slate-100 ${currentStatus.color} rounded-full px-3 py-1 flex items-center`}>
-              <StatusIcon className="w-3.5 h-3.5 mr-1.5" />
-              {currentStatus.label}
-            </Badge>
+            <div onClick={(e) => e.stopPropagation()}>
+              <Select 
+                value={parcel.status} 
+                onValueChange={(v) => updateMutate({ id: parcel._id, data: { status: v } })}
+                disabled={isUpdating}
+              >
+                <SelectTrigger className={`h-8 text-xs font-medium border-0 rounded-full bg-slate-50 border-slate-100 ${currentStatus.color}`}>
+                  <div className="flex items-center">
+                    <StatusIcon className="w-3.5 h-3.5 mr-1.5" />
+                    <SelectValue placeholder="Status" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="picked_up">Picked Up</SelectItem>
+                  <SelectItem value="in_transit">In Transit</SelectItem>
+                  <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Customer Info */}
@@ -101,7 +122,7 @@ export default function TrackingCard({ parcel }: TrackingCardProps) {
           {/* Actions Footer */}
           <div className="flex items-center justify-between pt-3 border-t border-slate-50 mt-auto">
             <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-              <Switch id={`auto-notify-${parcel._id}`} checked={autoNotify} onCheckedChange={setAutoNotify} />
+              <Switch id={`auto-notify-${parcel._id}`} checked={parcel.whatsappNotified ?? false} onCheckedChange={handleAutoNotifyChange} disabled={isUpdating} />
               <Label htmlFor={`auto-notify-${parcel._id}`} className="text-xs text-slate-600 cursor-pointer">Auto-notify</Label>
             </div>
 
@@ -188,7 +209,7 @@ export default function TrackingCard({ parcel }: TrackingCardProps) {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-slate-500">Auto-notify</span>
-              <Switch checked={autoNotify} onCheckedChange={setAutoNotify} />
+              <Switch checked={parcel.whatsappNotified ?? false} onCheckedChange={handleAutoNotifyChange} disabled={isUpdating} />
             </div>
           </div>
 

@@ -71,7 +71,8 @@ router.post(
     const authReq = req as any;
     
     // If admin provides a userId in the body, upload on their behalf
-    const userId = (authReq.role === 'admin' && bodyUserId) ? bodyUserId : authReq.userId || authReq.user?.id;
+    const isAdmin = ['admin', 'system_admin', 'boss'].includes(authReq.role);
+    const userId = (isAdmin && bodyUserId) ? bodyUserId : authReq.userId || authReq.user?.id;
 
     if (!userId) {
       res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
