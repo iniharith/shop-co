@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { CellAction } from "@/components/global/cell-actions";
 import OrderInfo from "@/components/global/orderInfo";
 import { cn } from "@/lib/utils";
-import { Package, UserCircle2, MapPin, CreditCard, ShoppingBag, Trash2 } from "lucide-react";
+import { Package, UserCircle2, MapPin, CreditCard, ShoppingBag, Trash2, Truck } from "lucide-react";
 import { useDeleteOrder } from "@/hooks/useOrder";
 import { toast } from "sonner";
 
@@ -109,12 +109,22 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
              </div>
           </div>
 
-          <div className="flex items-start gap-2 col-span-2">
+          <div className="flex items-start gap-2">
              <MapPin className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
              <div className="flex flex-col">
                <span className="text-muted-foreground text-xs font-medium uppercase">Address</span>
                <span className="font-medium line-clamp-2 text-sm leading-snug">
                  {order.address?.address || order.address?.city || "-"}
+               </span>
+             </div>
+          </div>
+
+          <div className="flex items-start gap-2">
+             <Truck className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+             <div className="flex flex-col">
+               <span className="text-muted-foreground text-xs font-medium uppercase">Tracking No.</span>
+               <span className="font-medium text-sm leading-snug break-all">
+                 {(order as any).trackingNumber || "-"}
                </span>
              </div>
           </div>

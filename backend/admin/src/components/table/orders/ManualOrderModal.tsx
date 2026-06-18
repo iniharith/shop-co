@@ -24,13 +24,15 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
     totalAmount: "",
     status: "pending",
     fullAddress: "",
+    trackingNumber: "",
+    productChoice: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.userId || !formData.totalAmount) {
-      toast.error("User ID and Total Amount are required");
+      toast.error("Customer Name/ID and Total Amount are required");
       return;
     }
 
@@ -41,6 +43,8 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
       totalAmount: parseFloat(formData.totalAmount),
       status: formData.status,
       products: [], // Empty products for manual orders by default or can add items
+      orderNotes: formData.productChoice ? `Product: ${formData.productChoice}` : "",
+      trackingNumber: formData.trackingNumber,
       paymentMethod: "ONLINE",
       paymentStatus: "PAID", 
       address: {
@@ -56,7 +60,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
       onSuccess: () => {
         toast.success("Manual order created successfully");
         onOpenChange(false);
-        setFormData({ userId: "", platform: "WEB", totalAmount: "", status: "pending", fullAddress: "" });
+        setFormData({ userId: "", platform: "WEB", totalAmount: "", status: "pending", fullAddress: "", trackingNumber: "", productChoice: "" });
         window.location.reload();
       },
       onError: (error: any) => {
@@ -92,6 +96,22 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
                 <SelectItem value="SHOPEE">Shopee</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Product Choice</Label>
+            <Input 
+              value={formData.productChoice} 
+              onChange={e => setFormData({ ...formData, productChoice: e.target.value })} 
+              placeholder="e.g. 100x Business Cards" 
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Tracking Number (Optional)</Label>
+            <Input 
+              value={formData.trackingNumber} 
+              onChange={e => setFormData({ ...formData, trackingNumber: e.target.value })} 
+              placeholder="e.g. MY123456789" 
+            />
           </div>
           <div className="space-y-2">
             <Label>Total Amount (RM) *</Label>

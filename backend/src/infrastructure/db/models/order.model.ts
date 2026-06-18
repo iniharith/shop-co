@@ -88,7 +88,10 @@ const OrderSchema: Schema = new Schema(
       type: Boolean,
       default: false,
     },
-
+    trackingNumber: {
+      type: String,
+      default: '',
+    },
   },
   { timestamps: true }
 );
