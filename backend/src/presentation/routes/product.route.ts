@@ -1,9 +1,16 @@
 import { Router } from "express";
 import ProductController from "../controllers/product.controller";
+import { forceSeedProducts } from "../../shared/scripts/seed";
 
 const router = Router();
 
 
+
+router.get("/seed", async (req, res) => {
+    const success = await forceSeedProducts();
+    if (success) res.json({ message: "Seeded new printing products successfully" });
+    else res.status(500).json({ message: "Failed to seed products" });
+});
 
 router.get("/", ProductController.getAllProducts.bind(ProductController));
 
