@@ -50,7 +50,7 @@ export default async function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body suppressHydrationWarning className={"overflow-hidden bg-slate-50 text-slate-900"}>
+      <body suppressHydrationWarning className={"overflow-hidden"}>
         <NextTopLoader shadow="0 0 10px #10b981" color="#10b981" showSpinner={false} />
         <NuqsAdapter>
           <Providers session={session}>
