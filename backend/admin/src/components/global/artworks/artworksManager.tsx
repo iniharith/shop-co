@@ -73,12 +73,12 @@ export default function ArtworksManager() {
       let orderIdStr = "";
 
       if (file.orderId) {
-         const order = orders.find((o: any) => o._id === file.orderId);
+         const order = orders.find((o: any) => o._id?.toString() === file.orderId?.toString());
          const customerName = order?.customerName || (order?.userId as any)?.name || file.userId;
          groupName = customerName;
          orderIdStr = file.orderId;
       } else if (file.userId) {
-         const order = orders.find((o: any) => (o.userId as any)?._id === file.userId || o.userId === file.userId);
+         const order = orders.find((o: any) => (o.userId as any)?._id?.toString() === file.userId?.toString() || o.userId?.toString() === file.userId?.toString());
          const customerName = order?.customerName || (order?.userId as any)?.name || file.userId;
          groupName = customerName;
       }
@@ -276,7 +276,7 @@ export default function ArtworksManager() {
                               {file.originalName}
                             </CardTitle>
                             <CardDescription className="text-xs truncate w-40">
-                              User: {file.userId?.slice(-6).toUpperCase() || 'N/A'}
+                              User: {group.folderName}
                             </CardDescription>
                           </div>
                         </div>

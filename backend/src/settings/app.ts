@@ -12,7 +12,6 @@ import path from 'path';
 import productRoutes from '../presentation/routes/product.route';
 import cartRoutes from '../presentation/routes/cart.route';
 import orderRoutes from '../presentation/routes/order.route';
-import deliveryBoyRoutes from '../presentation/routes/deliveryBoy.route';
 import adminRoutes from '../presentation/routes/admin.route';
 import notificationRoutes from '../presentation/routes/notification.route';
 import parcelRoutes from '../presentation/routes/parcelRoutes';
@@ -57,7 +56,6 @@ app.use('/api/user', userRoutes);
 app.use(apiRoutes.PRODUCT, productRoutes);
 app.use(apiRoutes.CART, cartRoutes);
 app.use(apiRoutes.ORDER, orderRoutes);
-app.use(apiRoutes.DELIVERY_BOY, deliveryBoyRoutes);
 app.use(apiRoutes.ADMIN, adminRoutes);
 app.use(apiRoutes.NOTIFICATION, notificationRoutes);
 

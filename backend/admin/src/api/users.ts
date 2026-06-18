@@ -8,18 +8,6 @@ export const getUsers = async (token: string) => {
 }
 
 
-export const getDeliveryBoys = async (token: string) => {
-    const response = await AxiosInstance(token).get(`${ADMIN_URL}/delivery-boys`);
-    return response.data;
-}
-
-
-
-export const updateDeliveryBoy = async (token: string, id: string, status: boolean) => {
-    const response = await AxiosInstance(token).put(`${ADMIN_URL}/delivery-boys/${id}`, { status });
-    return response.data;
-}
-
 export const deleteUser = async (token: string, id: string) => {
     const response = await AxiosInstance(token).delete(`${ADMIN_URL}/users/${id}`);
     return response.data;
@@ -37,6 +25,11 @@ export const updateUser = async (token: string, id: string, data: any) => {
 
 export const seedTestData = async (token: string) => {
     const response = await AxiosInstance(token).post(`${ADMIN_URL}/seed-test-data`);
+    return response.data;
+}
+
+export const clearTestData = async (token: string) => {
+    const response = await AxiosInstance(token).delete(`${ADMIN_URL}/clear-test-data`);
     return response.data;
 }
 

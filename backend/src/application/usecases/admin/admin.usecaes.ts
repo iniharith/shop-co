@@ -108,8 +108,14 @@ export class AdminUsecase {
         return await this.orderRepository.getOrders();
     }
 
-    async getOrdersByDeliveryBoy(deliveryBoyId: string): Promise<IOrderDocument[]> {
-        return await this.orderRepository.getOderByDeliveryBoy(deliveryBoyId);
+    async clearTestData(): Promise<void> {
+        const testCustomers = await User.find({ email: { $regex: /^customer[1-3]@test\.com$/ } });
+        const testCustomerIds = testCustomers.map(c => c._id);
+        
+        await OrderModel.deleteMany({ userId: { $in: testCustomerIds } });
+        await Parcel.deleteMany({ customerEmail: { $regex: /^customer[1-3]@test\.com$/ } });
+        await FileUpload.deleteMany({ userId: { $in: testCustomerIds.map(id => id.toString()) } });
+        await User.deleteMany({ _id: { $in: testCustomerIds } });
     }
 
     async seedTestData(): Promise<void> {

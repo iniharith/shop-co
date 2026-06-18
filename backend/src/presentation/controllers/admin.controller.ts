@@ -104,53 +104,7 @@ export class AdminController {
         }
     }
 
-    /**
-     * @description Get delivery boys
-     * @Method GET
-     * @Route /api/admin/delivery-boys
-     * @Response 200 - Delivery boys fetched successfully
-     * @Response 400 - Delivery boys not found
-     * @ResponseJson {success: boolean, message: string, deliveryBoys: IUserDocument[]}
-     */
-    async getDeliveryBoys(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(req.role as Roles)) {
-                throw new Error(messages.UNAUTHORIZED)
-            }
-            const deliveryBoys = await this.adminUsecase.getUsersByRole(Roles.DELIVERY_BOY);
-            res.status(statusCodes.OK).json({
-                message: "Delivery Boys fetched successfully",
-                deliveryBoys: deliveryBoys
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
 
-
-    /**
-     * @description Update delivery boy
-     * @Method PUT
-     * @Route /api/admin/delivery-boys/:id
-     * @Response 200 - Delivery boy updated successfully
-     * @Response 400 - Delivery boy not found
-     */
-    async updateDeliveryBoy(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(req.role as Roles)) {
-                throw new Error(messages.UNAUTHORIZED)
-            }
-            const { id } = req.params;
-            const { status } = req.body;
-            const deliveryBoy = await this.adminUsecase.verifyUser(id, status);
-            res.status(statusCodes.OK).json({
-                message: "Delivery boy updated successfully",
-                deliveryBoy: deliveryBoy
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
 
     /**
      * @description Get orders
@@ -161,7 +115,7 @@ export class AdminController {
      */
     async getOrders(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS, Roles.DELIVERY_BOY].includes(req.role as Roles)) {
+            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(req.role as Roles)) {
                 throw new Error(messages.UNAUTHORIZED)
             }
             const orders = await this.adminUsecase.getOrders();
@@ -174,28 +128,7 @@ export class AdminController {
         }
     }
 
-    /**
-     * @description Get orders by delivery boy
-     * @Method GET
-     * @Route /api/admin/orders/delivery-boy
-     * @Response 200 - Orders fetched successfully
-     * @Response 400 - Orders not found
-     */
-    async getOrdersByDeliveryBoy(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS, Roles.DELIVERY_BOY].includes(req.role as Roles)) {
-                throw new Error(messages.UNAUTHORIZED)
-            }
-            const { id } = req.params;
-            const orders = await this.adminUsecase.getOrdersByDeliveryBoy(id);
-            res.status(statusCodes.OK).json({
-                message: "Orders fetched successfully",
-                orders: orders
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
+
 
 
 
@@ -212,6 +145,25 @@ export class AdminController {
             await this.adminUsecase.seedTestData();
             res.status(statusCodes.OK).json({
                 message: "Test data seeded successfully"
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * @description Clear test data
+     * @Method DELETE
+     * @Route /api/admin/clear-test-data
+     */
+    async clearTestData(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(req.role as Roles)) {
+                throw new Error(messages.UNAUTHORIZED)
+            }
+            await this.adminUsecase.clearTestData();
+            res.status(statusCodes.OK).json({
+                message: "Test data cleared successfully"
             });
         } catch (error) {
             next(error);

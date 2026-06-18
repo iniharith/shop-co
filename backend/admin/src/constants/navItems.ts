@@ -42,34 +42,6 @@ export const AdminNavItems: NavItem[] = [
     },
 ];
 
-export const DeliveryBoyNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        url: '/admin/dashboard',
-        icon: 'dashboard',
-        shortcut: ['d', 'd'],
-        isActive: false,
-    },
-    {
-        title: 'Orders',
-        url: '/admin/orders',
-        icon: 'box',
-        shortcut: ['o', 'o'],
-        isActive: false,
-    },
-    {
-        title: 'My Orders',
-        url: '/admin/myOrders',
-       
-        shortcut: ['o', 'o'],
-        isActive: false,
-    }
-]
-
 export const roleByNavItems = (role: string) => {
-    if (role === 'delivery_boy') {
-        return DeliveryBoyNavItems
-    } else  {
-        return AdminNavItems
-    }
+    return AdminNavItems;
 }

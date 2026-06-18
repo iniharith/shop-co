@@ -16,16 +16,11 @@ router.post("/users", authMiddilware, adminController.createUser.bind(adminContr
 router.put("/users/:id", authMiddilware, adminController.updateUser.bind(adminController));
 router.delete("/users/:id", authMiddilware, adminController.deleteUser.bind(adminController));
 
-router.get("/delivery-boys", authMiddilware, adminController.getDeliveryBoys.bind(adminController));
-
-router.put("/delivery-boys/:id", authMiddilware, adminController.updateDeliveryBoy.bind(adminController));
-
 router.get("/orders", authMiddilware, adminController.getOrders.bind(adminController));
 router.post("/orders/manual", authMiddilware, adminController.createManualOrder.bind(adminController));
 
-router.get("/orders/delivery-boy/:id", authMiddilware, adminController.getOrdersByDeliveryBoy.bind(adminController));
-
 router.post("/seed-test-data", authMiddilware, adminController.seedTestData.bind(adminController));
+router.delete("/clear-test-data", authMiddilware, adminController.clearTestData.bind(adminController));
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dc7aun6of',

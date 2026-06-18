@@ -8,6 +8,7 @@ import { NotificationUsecase } from "../notification/notification.usecase";
 import { RedisService } from "../../../infrastructure/redis/redis";
 import { REDIS_CHANNELS, REDIS_KEYS } from "../../../shared/constants/redis.constant";
 import { IUserDocument } from "../../../domain/interfaces/user.interface";
+import WhatsAppService from "../../../infrastructure/whatsapp/whatsapp.service";
 export class OrderUsecase {
     private readonly orderRepository: OrderRepository
     private readonly productRepository: ProductRepository
@@ -110,7 +111,7 @@ export class OrderUsecase {
         return order;
     }
 
-    async updateOrderStatus(orderId: string, updateStatus: "PLACED" | "SHIPPED" | "DELIVERED" | "CANCELLED") {
+    async updateOrderStatus(orderId: string, updateStatus: "PLACED" | "PENDING_ARTWORK" | "ARTWORK_REVIEW" | "ARTWORK_REJECTED" | "IN_DESIGN" | "IN_PRODUCTION" | "SHIPPED" | "DELIVERED" | "CANCELLED") {
         const order = await this.orderRepository.updateOrder(orderId, { orderStatus: updateStatus });
         if (!order) throw new Error("Order not found");
         await this.notificationUsecase.createNotification({
@@ -121,13 +122,25 @@ export class OrderUsecase {
             orderId: order?._id.toString(),
             read: false
         })
+
+        const user = await this.userRepository.findById(order.userId.toString());
+        if (user && user.phone) {
+            let message = `Hello ${user.name || 'Customer'}, your order (ORD-${order._id.toString().slice(-6).toUpperCase()}) status has been updated to: *${updateStatus}*.\n\nThank you for shopping with KampungCetak!`;
+            
+            if (updateStatus === "ARTWORK_REJECTED") {
+                message = `Hello ${user.name || 'Customer'}, unfortunately the artwork for your order (ORD-${order._id.toString().slice(-6).toUpperCase()}) was REJECTED.\n\nPlease re-upload the correct picture/file via your dashboard.`;
+            }
+
+            WhatsAppService.sendMessage(user.phone, message).catch(err => console.error("WA Error:", err));
+        }
+
         await this.redisService.del(REDIS_KEYS.ORDERS + orderId);
         return order;
 
     }
 
 
-    async getOrdersByStatus(status: "PLACED" | "SHIPPED" | "DELIVERED" | "CANCELLED") {
+    async getOrdersByStatus(status: "PLACED" | "PENDING_ARTWORK" | "ARTWORK_REVIEW" | "ARTWORK_REJECTED" | "IN_DESIGN" | "IN_PRODUCTION" | "SHIPPED" | "DELIVERED" | "CANCELLED") {
         const cachedOrders = await this.redisService.get(REDIS_KEYS.ORDERS + status);
         if (cachedOrders) {
             return JSON.parse(cachedOrders);
@@ -138,55 +151,7 @@ export class OrderUsecase {
     }
 
 
-    async getOrdersByDeliveryBoy(deliveryBoy: string) {
-        const user = await this.userRepository.findById(deliveryBoy);
-        if (!user) throw new Error("Delivery Boy not found");
-        const cachedOrders = await this.redisService.get(REDIS_KEYS.ORDERS + deliveryBoy);
-        if (cachedOrders) {
-            return JSON.parse(cachedOrders);
-        }
-        const orders = await this.orderRepository.getOderByDeliveryBoy(deliveryBoy);
-        await this.redisService.set(REDIS_KEYS.ORDERS + deliveryBoy, JSON.stringify(orders), 60 * 60 * 24);
-        return orders;
-    }
 
-    async getOrdersByDeliveryBoyAndStatus(deliveryBoy: string, status: "PLACED" | "SHIPPED" | "DELIVERED" | "CANCELLED") {
-        const cachedOrders = await this.redisService.get(REDIS_KEYS.ORDERS + deliveryBoy + status);
-        if (cachedOrders) {
-            return JSON.parse(cachedOrders);
-        }
-        const orders = await this.orderRepository.getOderByDeliveryBoyAndStatus(deliveryBoy, status);
-        await this.redisService.set(REDIS_KEYS.ORDERS + deliveryBoy + status, JSON.stringify(orders), 60 * 60 * 24);
-        return orders;
-    }
-
-
-    async addDeliveryBoyToOrder(orderId: string, deliveryBoy: string) {
-        const user = await this.userRepository.findById(deliveryBoy);
-        if (!user) throw new Error("Delivery Boy not found");
-        const order = await this.orderRepository.updateOrder(orderId, { deliveryBoy: user._id });
-        if (!order) throw new Error("Order not found");
-        await this.notificationUsecase.createNotification({
-            userId: user._id.toString(),
-            title: "Order Assigned to You",
-            message: "You have been assigned to this order",
-            type: "DELIVERY",
-            orderId: order._id.toString(),
-            read: false
-        })
-        await this.notificationUsecase.createNotification({
-            userId: order?.userId?.toString(),
-            title: "Order Assigned to " + user.name,
-            message: "Your order has been assigned to " + user.name,
-            type: "DELIVERY",
-            orderId: order._id.toString(),
-            read: false
-        })
-        await this.redisService.del(REDIS_KEYS.ORDERS + orderId);
-        await this.redisService.del(REDIS_KEYS.ORDERS + (order?.userId as IUserDocument)?._id);
-        await this.redisService.del(REDIS_KEYS.ORDERS + deliveryBoy);
-        return order;
-    }
 
     async getDistintAddress(userId: string) {
         const cachedAddress = await this.redisService.get(REDIS_KEYS.ADDRESS + userId);

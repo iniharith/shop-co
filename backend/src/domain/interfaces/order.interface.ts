@@ -27,9 +27,8 @@ export interface IOrder {
   totalAmount: number;
   paymentMethod: 'COD' | 'ONLINE';
   paymentStatus: 'PENDING' | 'PAID' | 'FAILED';
-  orderStatus: 'PLACED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  orderStatus: 'PLACED' | 'PENDING_ARTWORK' | 'ARTWORK_REVIEW' | 'ARTWORK_REJECTED' | 'IN_DESIGN' | 'IN_PRODUCTION' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
   platform?: 'WEB' | 'TIKTOK' | 'SHOPEE';
-  deliveryBoy?: Types.ObjectId | IUser | string;
   address: IAddress;
   isDeleted?: boolean;
   createdAt: Date;

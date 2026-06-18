@@ -106,7 +106,7 @@ export class OrderController {
      */ 
     async getOrdersByStatus(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            const orders = await this.orderUsecase.getOrdersByStatus(req.params.status as "PLACED" | "SHIPPED" | "DELIVERED" | "CANCELLED");
+            const orders = await this.orderUsecase.getOrdersByStatus(req.params.status as "PLACED" | "PENDING_ARTWORK" | "ARTWORK_REVIEW" | "ARTWORK_REJECTED" | "IN_DESIGN" | "IN_PRODUCTION" | "SHIPPED" | "DELIVERED" | "CANCELLED");
             res.status(statusCodes.OK).json({ message: "Orders fetched successfully", orders });
         } catch (error: any) {
             next(error);

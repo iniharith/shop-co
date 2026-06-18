@@ -25,7 +25,6 @@ import { IOrder } from "@/types/IOrder";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { IUser, Roles } from "@/types/api";
-import { MdDeliveryDining } from "react-icons/md";
 
 interface OrderDetailsModalProps {
   order: IOrder;
@@ -35,11 +34,20 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
   const [status, setStatus] = useState(order.orderStatus);
   const { data: session } = useSession();
 
-  // "PLACED" | "SHIPPED" | "DELIVERED" | "CANCELLED"
-  const statusOptions = ["PLACED", "SHIPPED", "DELIVERED", "CANCELLED"];
+  const statusOptions = [
+    "PLACED",
+    "PENDING_ARTWORK",
+    "ARTWORK_REVIEW",
+    "ARTWORK_REJECTED",
+    "IN_DESIGN",
+    "IN_PRODUCTION",
+    "SHIPPED",
+    "DELIVERED",
+    "CANCELLED",
+  ];
 
   const handleStatusChange = (
-    newStatus: "PLACED" | "SHIPPED" | "DELIVERED" | "CANCELLED"
+    newStatus: "PLACED" | "PENDING_ARTWORK" | "ARTWORK_REVIEW" | "ARTWORK_REJECTED" | "IN_DESIGN" | "IN_PRODUCTION" | "SHIPPED" | "DELIVERED" | "CANCELLED"
   ) => {
     setStatus(newStatus);
     updateStatus({
@@ -51,19 +59,28 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
   const { mutate: updateStatus, isPending: statusPending } =
     useUpdateOrderStatus();
 
-  const { mutate: mangeOrder, isPending: orderManagePendding } =
-    useManageOrder();
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "PLACED":
         return "bg-yellow-500/20 border-yellow-500/40 hover:bg-yellow-500/30 cursor-pointer";
+      case "PENDING_ARTWORK":
+        return "bg-orange-500/20 border-orange-500/40 hover:bg-orange-500/30 cursor-pointer text-orange-700 dark:text-orange-300";
+      case "ARTWORK_REVIEW":
+        return "bg-blue-500/20 border-blue-500/40 hover:bg-blue-500/30 cursor-pointer text-blue-700 dark:text-blue-300";
+      case "ARTWORK_REJECTED":
+        return "bg-red-500/20 border-red-500/40 hover:bg-red-500/40 cursor-pointer text-red-700 dark:text-red-300";
+      case "IN_DESIGN":
+        return "bg-indigo-500/20 border-indigo-500/40 hover:bg-indigo-500/30 cursor-pointer text-indigo-700 dark:text-indigo-300";
+      case "IN_PRODUCTION":
+        return "bg-teal-500/20 border-teal-500/40 hover:bg-teal-500/30 cursor-pointer text-teal-700 dark:text-teal-300";
       case "SHIPPED":
         return "bg-purple-500/20 border-purple-500/40 hover:bg-purple-500/40 cursor-pointer";
       case "DELIVERED":
         return "bg-green-500/20 border-green-500/40 hover:bg-green-500/40 cursor-pointer";
       case "CANCELLED":
-        return "bg-red-500/20 border-red-500/40 hover:bg-red-500/40 cursor-pointer";
+        return "bg-red-500/20 border-red-500/40 hover:bg-red-500/40 cursor-pointer text-red-700 dark:text-red-300";
       default:
         return "bg-gray-500/20 border-gray-500/40 hover:bg-gray-500/40 cursor-pointer";
     }
@@ -110,12 +127,7 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
                       <Calendar size={16} /> Order Created On:{" "}
                       {new Date(order.createdAt).toLocaleDateString()}
                     </p>
-                    <p className="font-semibold flex items-center gap-2">
-                      <MdDeliveryDining size={16} /> Delivery Boy:{" "}
-                      {order.deliveryBoy
-                        ? (order.deliveryBoy as any).name
-                        : "not asseigned"}
-                    </p>
+
                     {product.artworkUrl && (
                       <div className="mt-3">
                         <a 
@@ -145,56 +157,60 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
             <p className="text-gray-600">{(order.userId as any)?.email || ""}</p>
           </div>
         </div>
-        <AnimatedButton
-          size={"sm"}
-          type="button"
-          text="accept the order"
-          loadingText=""
-          className={cn(
-            "px-4 w-min ",
-            (order.deliveryBoy || session?.user?.role == Roles.ADMIN) && "hidden"
-          )}
-          onClick={() => {
-            mangeOrder({ id: order._id });
-          }}
-          isLoading={orderManagePendding}
-          disabled={orderManagePendding}
-        />
-        {order.deliveryBoy && session?.user?.id &&
-          (order.deliveryBoy as unknown as IUser)._id.toLowerCase() ==
-            session.user.id.toLowerCase() && (
-            <div className="flex items-center gap-2 mt-2">
-              <Truck size={16} />
-              <Select
-                disabled={statusPending}
-                onValueChange={handleStatusChange}
-                defaultValue={status}
-              >
-                <SelectTrigger className="w-[130px]">
-                  <SelectValue
-                    placeholder={
-                      <Badge
-                        className={`${getStatusColor(
-                          order.orderStatus
-                        )} text-white`}
-                      >
-                        {order.orderStatus}
-                      </Badge>
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      <Badge
-                        className={`${getStatusColor(option)} text-white `}
-                      >
-                        {option}
-                      </Badge>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        {session?.user?.id && (
+            <div className="flex flex-col items-end gap-2 mt-2">
+              <div className="flex items-center gap-2">
+                <Truck size={16} />
+                <Select
+                  disabled={statusPending}
+                  onValueChange={handleStatusChange}
+                  defaultValue={status}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue
+                      placeholder={
+                        <Badge
+                          className={`${getStatusColor(
+                            order.orderStatus
+                          )} text-white`}
+                        >
+                          {order.orderStatus}
+                        </Badge>
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        <Badge
+                          className={`${getStatusColor(option)} text-white `}
+                        >
+                          {option}
+                        </Badge>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {(status === "PENDING_ARTWORK" || status === "ARTWORK_REVIEW") && (
+                <div className="flex gap-2 mt-2">
+                  <button 
+                    disabled={statusPending}
+                    onClick={() => handleStatusChange("IN_DESIGN")}
+                    className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded-md font-semibold transition-colors disabled:opacity-50"
+                  >
+                    Approve & Push to Designer
+                  </button>
+                  <button 
+                    disabled={statusPending}
+                    onClick={() => handleStatusChange("ARTWORK_REJECTED")}
+                    className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded-md font-semibold transition-colors disabled:opacity-50"
+                  >
+                    Reject Artwork
+                  </button>
+                </div>
+              )}
             </div>
           )}
       </div>
