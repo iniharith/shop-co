@@ -31,6 +31,11 @@ export const getGroupedFiles = async (token: string) => {
     return response.data;
 }
 
+export const getAllFiles = async (token: string) => {
+    const response = await AxiosInstance(token).get(`${FILES_URL}`);
+    return response.data;
+}
+
 export const reviewFile = async (token: string, id: string, reviewed: boolean, notes?: string) => {
     const response = await AxiosInstance(token).put(`${FILES_URL}/${id}/review`, { reviewed, notes });
     return response.data;

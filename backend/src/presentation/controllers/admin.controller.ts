@@ -64,6 +64,47 @@ export class AdminController {
     }
 
     /**
+     * @description Create user
+     * @Method POST
+     * @Route /api/admin/users
+     */
+    async createUser(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            if (req.role !== Roles.ADMIN) {
+                throw new Error(messages.UNAUTHORIZED);
+            }
+            const user = await this.adminUsecase.createUser(req.body);
+            res.status(statusCodes.CREATED).json({
+                message: "User created successfully",
+                user
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * @description Update user
+     * @Method PUT
+     * @Route /api/admin/users/:id
+     */
+    async updateUser(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            if (req.role !== Roles.ADMIN) {
+                throw new Error(messages.UNAUTHORIZED);
+            }
+            const { id } = req.params;
+            const user = await this.adminUsecase.updateUser(id, req.body);
+            res.status(statusCodes.OK).json({
+                message: "User updated successfully",
+                user
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
      * @description Get delivery boys
      * @Method GET
      * @Route /api/admin/delivery-boys
@@ -168,10 +209,7 @@ export class AdminController {
             if (req.role !== Roles.ADMIN) {
                 throw new Error(messages.UNAUTHORIZED)
             }
-            if (!req.userId) {
-                throw new Error(messages.UNAUTHORIZED)
-            }
-            await this.adminUsecase.seedTestData(req.userId);
+            await this.adminUsecase.seedTestData();
             res.status(statusCodes.OK).json({
                 message: "Test data seeded successfully"
             });
@@ -179,6 +217,27 @@ export class AdminController {
             next(error);
         }
     }
+
+    /**
+     * @description Create manual order
+     * @Method POST
+     * @Route /api/admin/orders/manual
+     */
+    async createManualOrder(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            if (req.role !== Roles.ADMIN) {
+                throw new Error(messages.UNAUTHORIZED);
+            }
+            const order = await this.adminUsecase.createManualOrder(req.body);
+            res.status(statusCodes.CREATED).json({
+                message: "Manual order created successfully",
+                order
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
 
 }
 

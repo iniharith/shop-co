@@ -8,6 +8,7 @@ import {
     sendWhatsAppNotification, 
     getFileStats, 
     getGroupedFiles, 
+    getAllFiles,
     reviewFile, 
     deleteFile 
 } from "@/api/admin-dashboard";
@@ -42,6 +43,11 @@ export const useFileStats = () => {
 export const useGroupedFiles = () => {
     const { data: session } = useSession();
     return useQueryData(['groupedFiles'], () => getGroupedFiles(session?.user?.token));
+}
+
+export const useAllFiles = () => {
+    const { data: session } = useSession();
+    return useQueryData(['allFiles'], () => getAllFiles(session?.user?.token));
 }
 
 export const useReviewFile = () => {

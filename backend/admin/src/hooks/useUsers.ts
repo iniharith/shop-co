@@ -26,3 +26,15 @@ export const useUpdateDeliveryBoy = () => {
     return { mutate, isPending }
 }
 
+export const useCreateUser = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(['createUser'], (data: any) => import("@/api/users").then(m => m.createUser(session?.user.token, data)), ["users"])
+    return { mutate, isPending }
+}
+
+export const useUpdateUser = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(['updateUser'], ({ id, data }: any) => import("@/api/users").then(m => m.updateUser(session?.user.token, id, data)), ["users"])
+    return { mutate, isPending }
+}
+

@@ -65,6 +65,11 @@ const OrderSchema: Schema = new Schema(
       enum: ['PLACED', 'SHIPPED', 'DELIVERED', 'CANCELLED'],
       default: 'PLACED',
     },
+    platform: {
+      type: String,
+      enum: ['WEB', 'TIKTOK', 'SHOPEE'],
+      default: 'WEB',
+    },
     deliveryBoy: {
       type: Schema.Types.ObjectId,
       ref: 'User',

@@ -25,6 +25,16 @@ export const deleteUser = async (token: string, id: string) => {
     return response.data;
 }
 
+export const createUser = async (token: string, data: any) => {
+    const response = await AxiosInstance(token).post(`${ADMIN_URL}/users`, data);
+    return response.data;
+}
+
+export const updateUser = async (token: string, id: string, data: any) => {
+    const response = await AxiosInstance(token).put(`${ADMIN_URL}/users/${id}`, data);
+    return response.data;
+}
+
 export const seedTestData = async (token: string) => {
     const response = await AxiosInstance(token).post(`${ADMIN_URL}/seed-test-data`);
     return response.data;

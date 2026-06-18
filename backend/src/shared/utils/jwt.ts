@@ -23,7 +23,7 @@ class JwtService implements IJwtService {
 
   generateAccessToken(payload: object) {
     try {
-      const token = jwt.sign(payload, this.accessSecret, { expiresIn: "1d" });
+      const token = jwt.sign(payload, this.accessSecret, { expiresIn: "30d" });
       return token;
     } catch (error) {
       throw new Error("Failed to generate access token");

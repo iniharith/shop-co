@@ -25,6 +25,7 @@ export interface IOrder {
   paymentMethod: 'COD' | 'ONLINE';
   paymentStatus: 'PENDING' | 'PAID' | 'FAILED';
   orderStatus: 'PLACED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  platform?: 'WEB' | 'TIKTOK' | 'SHOPEE';
   deliveryBoy?: Types.ObjectId | IUser | string;
   address: IAddress;
   isDeleted?: boolean;

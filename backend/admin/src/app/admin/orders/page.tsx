@@ -1,6 +1,6 @@
 "use client";
 import PageContainer from "@/components/layout/page-container";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import AnimatedButton from "@/components/global/globalButton";
 import OrdersList from "@/components/table/orders/ordersList";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { ManualOrderModal } from "@/components/table/orders/ManualOrderModal";
+
 type pageProps = {
   searchParams: Promise<SearchParams>;
 };
@@ -20,6 +22,7 @@ type pageProps = {
 export default function Page(props: pageProps) {
   const ref = useRef<HTMLInputElement>(null);
   const [sheamId, setsheamId] = useState<string>("");
+  const [manualOrderOpen, setManualOrderOpen] = useState(false);
 
   return (
     <>
@@ -31,7 +34,11 @@ export default function Page(props: pageProps) {
               description="Data Listing And Actions "
             />
             <div className="flex  w-1/2 items-center justify-end gap-2">
-              <div className="relative w-1/2"></div>
+              <div className="relative w-1/2 flex justify-end">
+                 <Button onClick={() => setManualOrderOpen(true)}>
+                   <Plus className="w-4 h-4 mr-2" /> Add External Order
+                 </Button>
+              </div>
             </div>
           </div>
           <Separator />
@@ -41,6 +48,7 @@ export default function Page(props: pageProps) {
           </ScrollArea>
         </div>
       </PageContainer>
+      <ManualOrderModal open={manualOrderOpen} onOpenChange={setManualOrderOpen} />
     </>
   );
 }

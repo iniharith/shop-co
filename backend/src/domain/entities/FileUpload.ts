@@ -3,6 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IFileUpload extends Document {
   userId: string;
   orderId?: string;
+  category?: string;
   filename: string;
   originalName: string;
   mimetype: string;
@@ -21,6 +22,7 @@ const FileUploadSchema = new Schema<IFileUpload>(
   {
     userId: { type: String, required: true, index: true },
     orderId: { type: String, index: true },
+    category: { type: String },
     filename: { type: String, required: true },
     originalName: { type: String, required: true },
     mimetype: { type: String, required: true },

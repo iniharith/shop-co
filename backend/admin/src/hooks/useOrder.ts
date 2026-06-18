@@ -33,4 +33,10 @@ export const useManageOrder = () => {
     return { mutate, isPending }
 }
 
+export const useCreateManualOrder = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(['createManualOrder'], (data: any) => import("@/api/orders").then(m => m.createManualOrder(session?.user.token, data)), ["orders"])
+    return { mutate, isPending }
+}
+
 

@@ -65,8 +65,11 @@ router.post(
   upload.array('files', 10),
   asyncHandler(async (req: Request, res: Response) => {
     const files = req.files as (Express.Multer.File & { path: string; filename: string })[];
-    const userId = (req as any).user?.id;
-    const { orderId, notes } = req.body;
+    const { orderId, notes, userId: bodyUserId, category } = req.body;
+    const authReq = req as any;
+    
+    // If admin provides a userId in the body, upload on their behalf
+    const userId = (authReq.role === 'admin' && bodyUserId) ? bodyUserId : authReq.userId || authReq.user?.id;
 
     if (!userId) {
       res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
@@ -84,6 +87,7 @@ router.post(
         fileUploadRepository.create({
           userId,
           orderId: orderId || undefined,
+          category: category || undefined,
           filename: file.filename,
           originalName: file.originalname,
           mimetype: file.mimetype,
@@ -97,8 +101,8 @@ router.post(
     );
 
     // Optionally notify customer via WhatsApp
-    const customerPhone = (req as any).user?.phone;
-    const customerName = (req as any).user?.name || 'Pelanggan';
+    const customerPhone = authReq.user?.phone;
+    const customerName = authReq.user?.name || 'Pelanggan';
     if (customerPhone) {
       whatsAppService
         .sendFileUploadConfirmation({
