@@ -6,14 +6,13 @@ import { useUsers } from "@/hooks/useUsers";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CheckCircle, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List } from "lucide-react";
+import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CheckCircle, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useSession } from "next-auth/react";
 
 const categories = [
@@ -38,6 +37,7 @@ export default function ArtworksManager() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
 
   // Upload Modal State
@@ -292,25 +292,32 @@ export default function ArtworksManager() {
         <div className="p-8 text-center text-muted-foreground border border-dashed rounded-xl">
           No artworks found in this category.
         </div>
-      ) : (
-        <Accordion type="multiple" className="w-full space-y-4">
-          {groupedFiles.map((group) => (
-            <AccordionItem key={`${group.folderName}-${group.orderId}`} value={`${group.folderName}-${group.orderId}`} className="border rounded-lg px-4 bg-card">
-              <AccordionTrigger className="hover:no-underline">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Folder className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="flex flex-col items-start gap-0.5">
-                    <span className="font-semibold text-base">{group.folderName}</span>
-                    {group.orderId && <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">Order ID: {group.orderId}</span>}
-                    <span className="text-xs text-muted-foreground mt-0.5">{group.files.length} file(s)</span>
+      ) : selectedFolder ? (
+        // --- INSIDE A FOLDER ---
+        <div className="space-y-4">
+          {(() => {
+            const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}` === selectedFolder);
+            if (!activeGroup) {
+              setTimeout(() => setSelectedFolder(null), 0);
+              return null;
+            }
+            return (
+              <>
+                <div className="flex items-center gap-4 mb-4 pb-4 border-b">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedFolder(null)}>
+                    <ChevronLeft className="w-4 h-4 mr-1" /> Back
+                  </Button>
+                  <div>
+                    <h2 className="text-lg font-bold flex items-center gap-2">
+                      <Folder className="w-5 h-5 text-primary" />
+                      {activeGroup.folderName}
+                    </h2>
+                    {activeGroup.orderId && <p className="text-sm text-muted-foreground">Order ID: {activeGroup.orderId}</p>}
                   </div>
                 </div>
-              </AccordionTrigger>
-              <AccordionContent className="pt-4 pb-6 border-t mt-2">
+                
                 <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
-                  {group.files.map((file: any) => (
+                  {activeGroup.files.map((file: any) => (
                     viewMode === "grid" ? (
                       <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                         {getFileThumbnail(file)}
@@ -320,7 +327,7 @@ export default function ArtworksManager() {
                               {file.originalName}
                             </CardTitle>
                             <CardDescription className="text-xs truncate w-full">
-                              User: {group.folderName}
+                              User: {activeGroup.folderName}
                             </CardDescription>
                           </div>
                         </CardHeader>
@@ -354,7 +361,7 @@ export default function ArtworksManager() {
                             </div>
                             <Button variant="secondary" size="sm" className="w-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-200" onClick={() => {
                               const link = document.createElement("a");
-                              link.href = file.path;
+                              link.href = getFileUrl(file.path);
                               link.download = file.originalName;
                               link.target = "_blank";
                               document.body.appendChild(link);
@@ -405,7 +412,7 @@ export default function ArtworksManager() {
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => {
                             const link = document.createElement("a");
-                            link.href = file.path;
+                            link.href = getFileUrl(file.path);
                             link.download = file.originalName;
                             link.target = "_blank";
                             document.body.appendChild(link);
@@ -432,10 +439,61 @@ export default function ArtworksManager() {
                     )
                   ))}
                 </div>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+              </>
+            );
+          })()}
+        </div>
+      ) : (
+        // --- OUTSIDE (FOLDERS) ---
+        <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
+          {groupedFiles.map((group) => {
+            const folderId = `${group.folderName}-${group.orderId}`;
+            if (viewMode === "grid") {
+              return (
+                <Card 
+                  key={folderId} 
+                  className="cursor-pointer overflow-hidden shadow-sm hover:shadow-md hover:border-primary/50 transition-all group" 
+                  onClick={() => setSelectedFolder(folderId)}
+                >
+                  <CardContent className="p-6 flex flex-col items-center justify-center gap-4 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-primary/5 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+                      <Folder className="w-8 h-8 text-primary" />
+                    </div>
+                    <div className="w-full">
+                      <h3 className="font-semibold text-base truncate" title={group.folderName}>{group.folderName}</h3>
+                      {group.orderId && (
+                        <p className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded inline-block mt-1">
+                          Order: {group.orderId}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-1 font-medium">{group.files.length} item(s)</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            } else {
+              return (
+                <div 
+                  key={folderId} 
+                  className="flex items-center gap-4 p-4 border bg-card rounded-lg hover:bg-muted/30 cursor-pointer transition-colors" 
+                  onClick={() => setSelectedFolder(folderId)}
+                >
+                  <div className="p-2.5 bg-primary/10 rounded-lg shrink-0">
+                    <Folder className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="font-semibold text-base truncate">{group.folderName}</span>
+                    {group.orderId && <span className="text-[10px] text-muted-foreground font-mono truncate">Order ID: {group.orderId}</span>}
+                  </div>
+                  <div className="shrink-0 flex items-center gap-2">
+                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">{group.files.length} file(s)</span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                </div>
+              );
+            }
+          })}
+        </div>
       )}
 
       {/* Comment Modal */}
