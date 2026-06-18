@@ -11,6 +11,7 @@ import { REDIS_CHANNELS } from '../shared/constants/redis.constant';
 import { handleRedisAndSocketMessageAdmin, handleRedisAndSocketMessageClient } from '../infrastructure/redis/redisMessagesHandler';
 import { socketIoSetup } from '../infrastructure/socket/socketHandler';
 import { startTrackingCronJob } from '../infrastructure/jobs/TrackingCronJob';
+import { Parcel } from '../domain/entities/Parcel';
 
 process.on("uncaughtException", (err) => {
     console.log("UNCAUGHT Exception! Ignoring ...");
@@ -30,6 +31,9 @@ async function main() {
     config();
 
     await connectDB();
+    
+    // Force all existing parcels to have whatsappNotified: true per user request
+    await Parcel.updateMany({}, { $set: { whatsappNotified: true } }).catch(console.error);
 
     await initProduct();
     await initAdmin();

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Breadcrumbs } from "@/components/global/breadcrumb";
 import ProfileQuickLinks from "@/components/page-sections/profile/profileQuickLinks";
+import { useSession } from "next-auth/react";
 
 interface DashStats {
   totalFiles: number;
@@ -82,12 +83,22 @@ export default function DashboardPage() {
   const [recentParcels, setRecentParcels] = useState<RecentParcel[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { data: session } = useSession();
+  const token = session?.user?.token || '';
+
   useEffect(() => {
     async function load() {
+      if (!token) return;
       try {
         const [fileRes, parcelRes] = await Promise.all([
-          fetch(`${API}/api/files/my`, { credentials: 'include' }).then(r => r.json()),
-          fetch(`${API}/api/parcels?limit=5`, { credentials: 'include' }).then(r => r.json()),
+          fetch(`${API}/api/files/my`, { 
+            headers: { Authorization: `Bearer ${token}` },
+            credentials: 'include' 
+          }).then(r => r.json()),
+          fetch(`${API}/api/parcels?limit=5`, { 
+            headers: { Authorization: `Bearer ${token}` },
+            credentials: 'include' 
+          }).then(r => r.json()),
         ]);
 
         if (fileRes.success) {
@@ -116,7 +127,7 @@ export default function DashboardPage() {
       }
     }
     load();
-  }, []);
+  }, [token]);
 
   return (
     <div className="flex flex-col gap-6 w-full">

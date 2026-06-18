@@ -18,6 +18,8 @@ import { useRouter } from "nextjs-toploader/app";
 import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
 
+const API = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+
 const ProfileCard = () => {
   const { data: session } = useSession();
   const router = useRouter();
@@ -86,7 +88,7 @@ const ProfileCard = () => {
     uploadData.append("avatar", file);
 
     try {
-      const res = await fetch("/api/user/profile/avatar", {
+      const res = await fetch(`${API}/api/user/profile/avatar`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`
@@ -131,7 +133,12 @@ const ProfileCard = () => {
   const displayPhone = profile?.phoneNumber || "";
   const displayRole = profile?.role || "Client";
   const displayVerified = profile?.verified || false;
-  const displayAvatar = profile?.avatar || null;
+  
+  let displayAvatar = profile?.avatar || null;
+  if (displayAvatar && displayAvatar.startsWith('/uploads')) {
+    displayAvatar = `${API}${displayAvatar}`;
+  }
+  
   const displayInitial = displayName ? displayName.charAt(0).toUpperCase() : "?";
 
   // Loading skeleton

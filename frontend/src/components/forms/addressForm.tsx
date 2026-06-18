@@ -56,101 +56,38 @@ const AddressForm = ({
           <p className="text-sm mb-5 text-muted-foreground font-medium">
             Please enter your address to continue
           </p>
-          {profile?.data?.address?.street && (
-            <div className="flex items-center gap-3 mb-4 bg-primary/5 p-3 rounded-xl border border-primary/20 w-max">
-              <Switch 
-                id="use-profile-address" 
-                checked={form.watch("street") === profile.data.address.street}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    const addr = profile.data.address;
-                    form.setValue("street", addr.street || "");
-                    form.setValue("city", addr.city || "");
-                    form.setValue("country", addr.country || "Malaysia");
-                    form.setValue("postalCode", addr.zip || "");
-                    form.setValue("address", addr.state || "");
-                  } else {
-                    form.setValue("street", "");
-                    form.setValue("city", "");
-                    form.setValue("country", "Malaysia");
-                    form.setValue("postalCode", "");
-                    form.setValue("address", "");
-                  }
-                }}
-              />
-              <label htmlFor="use-profile-address" className="text-sm font-semibold text-primary cursor-pointer">
-                Ship to my Profile Address
-              </label>
-            </div>
-          )}
         </div>
-        <div className="flex flex-col ">
-          <p className="text-sm md:block hidden text-muted-foreground font-medium">
-            Recent Uses Addresses
-          </p>
-
-          {!isMobile && (
-            <Select
-              onValueChange={(value) => {
-                const address = addresses.find(
-                  (address) => address.address.toString() === value
-                );
-                if (address) {
-                  form.setValue("address", address.address);
-                  form.setValue("city", address.city);
-                  form.setValue("country", address.country);
-                  form.setValue("postalCode", address.postalCode);
-                  form.setValue("street", address.street);
-                }
-              }}
-            >
-              <SelectTrigger className="md:w-[180px] w-full bg-muted-foreground/10">
-                <SelectValue placeholder="Select Address" />
-              </SelectTrigger>
-              <SelectContent className="bg-muted-foreground/10 backdrop-blur-sm">
-                {addresses.map((address) => (
-                  <SelectItem
-                    key={address.address}
-                    value={address.address.toString()}
-                  >
-                    {address.address}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          {isMobile && (
-            <Drawer open={DisOpen} onOpenChange={(open) =>setDisOpen(open)}>
-              <DrawerTrigger className="bg-gray-300/30 md:hidden flex cursor-pointer rounded-full hover:scale-105 transition-all duration-300 border-input border-1 p-1">
-                <FaAddressCard />
-              </DrawerTrigger>
-              <DrawerContent className="w-full flex  justify-center">
-                <DrawerTitle className="text-center py-2">
-                  Recent Addresses
-                </DrawerTitle>
-                {/* <ScrollArea className="h-[calc(60vh-10rem)] p-3"> */}
-                <div className="p-3 flex flex-col gap-3">
-                  {addresses.map((address) => (
-                    <Button
-                      onPress={() => {
-                        form.setValue("address", address.address);
-                        form.setValue("city", address.city);
-                        form.setValue("country", address.country);
-                        form.setValue("postalCode", address.postalCode);
-                        form.setValue("street", address.street);
-                        setDisOpen(false);
-                      }}
-                      key={address.address}
-                      variant="bordered"
-                      className="w-full bg-muted-foreground/10 rounded-lg cursor-pointer"
-                    >
-                      {address.address}
-                    </Button>
-                  ))}
-                </div>
-                {/* </ScrollArea> */}
-              </DrawerContent>
-            </Drawer>
+          {profile?.data?.address?.street && (
+            <div className="flex flex-col items-end gap-2">
+              <p className="text-sm md:block hidden text-muted-foreground font-medium">
+                Alamat Profil (Profile Address)
+              </p>
+              <div className="flex items-center gap-3 bg-primary/5 p-3 rounded-xl border border-primary/20 w-max">
+                <Switch 
+                  id="use-profile-address" 
+                  checked={form.watch("street") === profile.data.address.street}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      const addr = profile.data.address;
+                      form.setValue("street", addr.street || "");
+                      form.setValue("city", addr.city || "");
+                      form.setValue("country", addr.country || "Malaysia");
+                      form.setValue("postalCode", addr.zip || "");
+                      form.setValue("address", addr.state || "");
+                    } else {
+                      form.setValue("street", "");
+                      form.setValue("city", "");
+                      form.setValue("country", "Malaysia");
+                      form.setValue("postalCode", "");
+                      form.setValue("address", "");
+                    }
+                  }}
+                />
+                <label htmlFor="use-profile-address" className="text-sm font-semibold text-primary cursor-pointer">
+                  Guna Alamat Profil
+                </label>
+              </div>
+            </div>
           )}
         </div>
       </div>

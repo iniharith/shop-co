@@ -119,6 +119,7 @@ export default function UploadPage() {
 
   async function handleUpload() {
     if (!queue.length) { setError('Sila pilih sekurang-kurangnya satu fail.'); return; }
+    if (!orderId.trim()) { setError('No. Pesanan wajib diisi. (Order ID is mandatory).'); return; }
     setUploading(true);
     setError('');
 
@@ -211,7 +212,7 @@ export default function UploadPage() {
               {/* Order ID */}
               <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  No. Pesanan (pilihan)
+                  No. Pesanan <span className="text-red-500 text-sm">*</span>
                 </label>
                 <input
                   value={orderId}
@@ -361,13 +362,18 @@ export default function UploadPage() {
                     <button
                       onClick={() => handleDelete(f._id)}
                       disabled={deletingId === f._id}
-                      className="ml-2 text-gray-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50"
+                      className="ml-2 text-red-600 bg-red-50 hover:bg-red-100 hover:text-red-700 transition-colors px-4 py-2 rounded-lg font-bold flex items-center gap-2 text-sm border border-red-200 shadow-sm"
                       title="Padam Fail"
                     >
                       {deletingId === f._id ? (
-                        <span className="block w-4 h-4 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
+                        <>
+                          <span className="block w-4 h-4 border-2 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
+                          Memadam...
+                        </>
                       ) : (
-                        '🗑️'
+                        <>
+                          🗑️ Padam
+                        </>
                       )}
                     </button>
                   </div>
