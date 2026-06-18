@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getImageUrl } from "@/utils/getImageUrl";
 
 import { QuantityPicker } from "../../global/quantity-picker";
 import { FaTrashAlt } from "react-icons/fa";
@@ -68,7 +69,11 @@ const CartItems = ({ product, qty, size }: CartItemsProps) => {
               handleQuantityChange(quantity + 1);
             }}
             min={1}
-            max={product.sizes.find((e) => e.size === size)?.stock as number}
+            max={
+              Array.isArray(product.sizes) && typeof product.sizes[0] === 'object'
+                ? (product.sizes.find((e: any) => e.size === size)?.stock || 10000)
+                : 10000
+            }
             onQuantityChange={handleQuantityChange}
             className="md:w-auto w-1/2"
           />
