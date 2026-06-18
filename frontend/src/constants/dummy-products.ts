@@ -1,389 +1,1621 @@
 import { IProduct } from "@/types/IProduct";
 
 export const dummyProducts: IProduct[] = [
-  // DIGITAL OFFSET -> BUSINESS CARD
   {
-    _id: "prod-bc-001",
-    name: "Premium Business Cards",
-    description: "Make a lasting impression with our premium quality business cards. Printed on thick, luxurious card stock with vibrant colors and crisp details. Perfect for networking and corporate identity.",
-    price: 15.0,
-    originalPrice: 25.0,
-    discount: 40,
-    rating: 4.9,
-    category: "digital-offset",
-    images: [
-      "https://images.pexels.com/photos/8885627/pexels-photo-8885627.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/6373305/pexels-photo-6373305.jpeg?auto=compress&cs=tinysrgb&w=800"
-    ],
-    sizes: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    printingOptions: [
+    "_id": "prod-100",
+    "name": "Banner",
+    "description": "High-quality Banner with premium materials and vibrant printing. Perfect for digital printing needs.",
+    "price": 35,
+    "originalPrice": 157,
+    "discount": 9,
+    "rating": 3.5,
+    "reviews": 220,
+    "category": "banner",
+    "images": [
       {
-        name: "Format & Size",
-        options: [
-          { label: "Standard (90 x 54 mm)", priceAdd: 0 },
-          { label: "Square (54 x 54 mm)", priceAdd: 5.0 },
-          { label: "Custom Size", priceAdd: 10.0 }
-        ]
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
       },
       {
-        name: "Paper Material",
-        options: [
-          { label: "Art Card 260g (Standard)", priceAdd: 0 },
-          { label: "Art Card 310g (Thick)", priceAdd: 8.0 },
-          { label: "Textured Paper 250g", priceAdd: 15.0 }
-        ]
-      },
-      {
-        name: "Printing Sides",
-        options: [
-          { label: "Single Sided", priceAdd: 0 },
-          { label: "Double Sided", priceAdd: 10.0 }
-        ]
-      },
-      {
-        name: "Lamination / Finishing",
-        options: [
-          { label: "None", priceAdd: 0 },
-          { label: "Matte Lamination (Both Sides)", priceAdd: 8.0 },
-          { label: "Gloss Lamination (Both Sides)", priceAdd: 8.0 },
-          { label: "Soft Touch + Spot UV", priceAdd: 25.0 }
-        ]
-      },
-      {
-        name: "Turnaround Time",
-        options: [
-          { label: "Standard (3-4 Working Days)", priceAdd: 0 },
-          { label: "Express (1-2 Working Days)", priceAdd: 20.0 }
-        ]
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
       }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
     ]
   },
-  // DIGITAL OFFSET -> FLYERS
   {
-    _id: "prod-fl-001",
-    name: "Promotional Flyers (A4/A5)",
-    description: "Spread the word about your events, products, or services with high-quality, eye-catching flyers. Fast printing with excellent color reproduction.",
-    price: 35.0,
-    originalPrice: 45.0,
-    discount: 22,
-    rating: 4.7,
-    category: "digital-offset",
-    images: [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/3856033/pexels-photo-3856033.jpeg?auto=compress&cs=tinysrgb&w=800"
-    ],
-    sizes: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    printingOptions: [
+    "_id": "prod-101",
+    "name": "Bunting",
+    "description": "High-quality Bunting with premium materials and vibrant printing. Perfect for digital printing needs.",
+    "price": 13,
+    "originalPrice": 186,
+    "discount": 13,
+    "rating": 4,
+    "reviews": 282,
+    "category": "bunting",
+    "images": [
       {
-        name: "Format Size",
-        options: [
-          { label: "A5 (148 x 210 mm)", priceAdd: 0 },
-          { label: "A4 (210 x 297 mm)", priceAdd: 20.0 },
-          { label: "DL (99 x 210 mm)", priceAdd: -5.0 }
-        ]
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
       },
       {
-        name: "Paper Material",
-        options: [
-          { label: "Art Paper 128g", priceAdd: 0 },
-          { label: "Art Paper 157g", priceAdd: 10.0 },
-          { label: "Simili Paper 80g", priceAdd: -5.0 }
-        ]
-      },
-      {
-        name: "Printing Sides",
-        options: [
-          { label: "Single Sided", priceAdd: 0 },
-          { label: "Double Sided", priceAdd: 15.0 }
-        ]
-      },
-      {
-        name: "Turnaround Time",
-        options: [
-          { label: "Standard (3-4 Working Days)", priceAdd: 0 },
-          { label: "Next Day Delivery", priceAdd: 30.0 }
-        ]
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
       }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
     ]
   },
-  // DIGITAL PRINTING -> BUNTING
   {
-    _id: "prod-bt-001",
-    name: "Outdoor Display Bunting",
-    description: "Durable and weather-resistant outdoor bunting. Perfect for storefronts, events, and promotions. Printed on high-quality Tarpaulin for maximum longevity.",
-    price: 25.0,
-    originalPrice: 30.0,
-    discount: 16,
-    rating: 4.8,
-    category: "digital-printing",
-    images: [
-      "https://images.pexels.com/photos/934063/pexels-photo-934063.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1202723/pexels-photo-1202723.jpeg?auto=compress&cs=tinysrgb&w=800"
-    ],
-    sizes: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    printingOptions: [
+    "_id": "prod-102",
+    "name": "Car Sticker",
+    "description": "High-quality Car Sticker with premium materials and vibrant printing. Perfect for digital printing needs.",
+    "price": 83,
+    "originalPrice": 123,
+    "discount": 19,
+    "rating": 4.7,
+    "reviews": 216,
+    "category": "car-sticker",
+    "images": [
       {
-        name: "Size (W x H)",
-        options: [
-          { label: "2ft x 5ft", priceAdd: 0 },
-          { label: "2ft x 6ft", priceAdd: 5.0 },
-          { label: "3ft x 6ft", priceAdd: 15.0 }
-        ]
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
       },
       {
-        name: "Material",
-        options: [
-          { label: "Tarpaulin 300gsm (Standard)", priceAdd: 0 },
-          { label: "Tarpaulin 380gsm (Thick)", priceAdd: 8.0 },
-          { label: "Synthetic Paper (Indoor use)", priceAdd: 12.0 }
-        ]
-      },
-      {
-        name: "Finishing",
-        options: [
-          { label: "PVC Pipe & String", priceAdd: 0 },
-          { label: "Wood & String", priceAdd: 2.0 },
-          { label: "Eyelets Only (4 corners)", priceAdd: 0 }
-        ]
-      },
-      {
-        name: "Turnaround Time",
-        options: [
-          { label: "Standard (2-3 Working Days)", priceAdd: 0 },
-          { label: "Express (24 Hours)", priceAdd: 15.0 }
-        ]
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
       }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
     ]
   },
-  // CORPORATE GIFT -> MUG
   {
-    _id: "prod-mg-001",
-    name: "Custom Printed White Mug",
-    description: "Personalized ceramic mugs perfect for corporate gifts, events, or personal souvenirs. High-quality sublimation printing ensures the colors never fade.",
-    price: 8.0,
-    originalPrice: 12.0,
-    discount: 33,
-    rating: 4.6,
-    category: "corporate-gift",
-    images: [
-      "https://images.pexels.com/photos/1207918/pexels-photo-1207918.jpeg?auto=compress&cs=tinysrgb&w=800"
-    ],
-    sizes: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    printingOptions: [
+    "_id": "prod-103",
+    "name": "Board Printing",
+    "description": "High-quality Board Printing with premium materials and vibrant printing. Perfect for digital printing needs.",
+    "price": 61,
+    "originalPrice": 122,
+    "discount": 23,
+    "rating": 3.6,
+    "reviews": 302,
+    "category": "board-printing",
+    "images": [
       {
-        name: "Mug Type",
-        options: [
-          { label: "Standard White Mug (11oz)", priceAdd: 0 },
-          { label: "Color Inside Mug", priceAdd: 3.0 },
-          { label: "Magic Color Changing Mug", priceAdd: 8.0 }
-        ]
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
       },
       {
-        name: "Packaging",
-        options: [
-          { label: "Standard White Box", priceAdd: 0 },
-          { label: "Premium Gift Box", priceAdd: 2.5 }
-        ]
-      },
-      {
-        name: "Turnaround Time",
-        options: [
-          { label: "Standard (4-5 Working Days)", priceAdd: 0 },
-          { label: "Express (2 Working Days)", priceAdd: 15.0 }
-        ]
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
       }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
     ]
   },
-  // APPAREL -> TSHIRT
   {
-    _id: "prod-ts-001",
-    name: "Custom Printed Cotton T-Shirt",
-    description: "Comfortable 100% cotton t-shirts printed with your custom design. Available in various colors and sizes. Ideal for company events, family days, and merchandise.",
-    price: 18.0,
-    originalPrice: 25.0,
-    discount: 28,
-    rating: 4.9,
-    category: "apparel",
-    images: [
-      "https://images.pexels.com/photos/428338/pexels-photo-428338.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/991509/pexels-photo-991509.jpeg?auto=compress&cs=tinysrgb&w=800"
-    ],
-    sizes: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    printingOptions: [
+    "_id": "prod-104",
+    "name": "Wall Sticker",
+    "description": "High-quality Wall Sticker with premium materials and vibrant printing. Perfect for digital printing needs.",
+    "price": 22,
+    "originalPrice": 98,
+    "discount": 7,
+    "rating": 4.5,
+    "reviews": 79,
+    "category": "wall-sticker",
+    "images": [
       {
-        name: "Material",
-        options: [
-          { label: "100% Cotton 160gsm", priceAdd: 0 },
-          { label: "Premium Cotton 190gsm", priceAdd: 5.0 },
-          { label: "Microfiber (Dry Fit)", priceAdd: 2.0 }
-        ]
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
       },
       {
-        name: "Printing Method",
-        options: [
-          { label: "Silkscreen (1 Color)", priceAdd: 0 },
-          { label: "DTF (Full Color) - A4 Size", priceAdd: 10.0 },
-          { label: "DTF (Full Color) - A3 Size", priceAdd: 15.0 },
-          { label: "Embroidery (Logo size)", priceAdd: 12.0 }
-        ]
-      },
-      {
-        name: "Turnaround Time",
-        options: [
-          { label: "Standard (7-10 Working Days)", priceAdd: 0 },
-          { label: "Express (3-5 Working Days)", priceAdd: 30.0 }
-        ]
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
       }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
     ]
   },
-  // DISPLAY ITEM -> ROLL UP STAND
   {
-    _id: "prod-ru-001",
-    name: "Premium Roll Up Bunting Stand",
-    description: "High-quality, portable roll-up stand perfect for exhibitions, trade shows, and retail displays. Comes with a padded carrying bag and vibrant printed graphics.",
-    price: 85.0,
-    originalPrice: 110.0,
-    discount: 22,
-    rating: 4.8,
-    category: "display-item",
-    images: [
-      "https://images.pexels.com/photos/2097085/pexels-photo-2097085.jpeg?auto=compress&cs=tinysrgb&w=800"
-    ],
-    sizes: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    printingOptions: [
+    "_id": "prod-105",
+    "name": "Glass Sticker",
+    "description": "High-quality Glass Sticker with premium materials and vibrant printing. Perfect for digital printing needs.",
+    "price": 43,
+    "originalPrice": 137,
+    "discount": 20,
+    "rating": 3.4,
+    "reviews": 108,
+    "category": "glass-sticker",
+    "images": [
       {
-        name: "Size",
-        options: [
-          { label: "2.5ft x 6.5ft (Standard)", priceAdd: 0 },
-          { label: "3ft x 6.5ft (Wide)", priceAdd: 20.0 }
-        ]
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
       },
       {
-        name: "Material",
-        options: [
-          { label: "Synthetic Paper + Matte Lam", priceAdd: 0 },
-          { label: "Synthetic Paper + Gloss Lam", priceAdd: 0 }
-        ]
-      },
-      {
-        name: "Turnaround Time",
-        options: [
-          { label: "Standard (3 Working Days)", priceAdd: 0 },
-          { label: "Express (24 Hours)", priceAdd: 25.0 }
-        ]
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
       }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
     ]
   },
-  // WEDDING PRODUCT -> WEDDING CARD
   {
-    _id: "prod-wc-001",
-    name: "Elegant Wedding Invitation Cards",
-    description: "Beautifully designed and printed wedding invitation cards. Set the perfect tone for your special day with high-quality printing and exquisite finishes.",
-    price: 45.0,
-    originalPrice: 60.0,
-    discount: 25,
-    rating: 4.9,
-    category: "wedding-product",
-    images: [
-      "https://images.pexels.com/photos/1045541/pexels-photo-1045541.jpeg?auto=compress&cs=tinysrgb&w=800"
-    ],
-    sizes: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    printingOptions: [
+    "_id": "prod-106",
+    "name": "Personalised Flag",
+    "description": "High-quality Personalised Flag with premium materials and vibrant printing. Perfect for display item needs.",
+    "price": 48,
+    "originalPrice": 104,
+    "discount": 23,
+    "rating": 4.4,
+    "reviews": 90,
+    "category": "personalised-flag",
+    "images": [
       {
-        name: "Format & Size",
-        options: [
-          { label: "A5 Single Sheet (148x210mm)", priceAdd: 0 },
-          { label: "A4 Folded to A5", priceAdd: 20.0 },
-          { label: "Square (150x150mm)", priceAdd: 10.0 }
-        ]
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
       },
       {
-        name: "Material & Finish",
-        options: [
-          { label: "Art Card 260g", priceAdd: 0 },
-          { label: "Ivory Card 250g (Textured)", priceAdd: 15.0 },
-          { label: "Art Card 260g + Matte Lam + Gold Stamping", priceAdd: 50.0 }
-        ]
-      },
-      {
-        name: "Add-ons",
-        options: [
-          { label: "Cards Only", priceAdd: 0 },
-          { label: "Include White Envelopes", priceAdd: 10.0 },
-          { label: "Include Custom Printed Envelopes", priceAdd: 35.0 }
-        ]
-      },
-      {
-        name: "Turnaround Time",
-        options: [
-          { label: "Standard (7 Working Days)", priceAdd: 0 },
-          { label: "Express (3 Working Days)", priceAdd: 40.0 }
-        ]
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
       }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
     ]
   },
-  // FOOD PACKAGING -> STAND POUCH
   {
-    _id: "prod-fp-001",
-    name: "Custom Stand Up Pouch",
-    description: "Professional stand-up pouches for food, coffee, or retail products. High barrier properties to keep your products fresh with a premium printed look.",
-    price: 120.0,
-    originalPrice: 150.0,
-    discount: 20,
-    rating: 4.5,
-    category: "food-packaging",
-    images: [
-      "https://images.pexels.com/photos/1630588/pexels-photo-1630588.jpeg?auto=compress&cs=tinysrgb&w=800"
-    ],
-    sizes: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    printingOptions: [
+    "_id": "prod-107",
+    "name": "Popup Backdrop Display",
+    "description": "High-quality Popup Backdrop Display with premium materials and vibrant printing. Perfect for display item needs.",
+    "price": 81,
+    "originalPrice": 136,
+    "discount": 6,
+    "rating": 4.6,
+    "reviews": 127,
+    "category": "popup-backdrop-display",
+    "images": [
       {
-        name: "Size & Capacity",
-        options: [
-          { label: "Small (100g - 110x170mm)", priceAdd: 0 },
-          { label: "Medium (250g - 130x210mm)", priceAdd: 30.0 },
-          { label: "Large (500g - 160x260mm)", priceAdd: 60.0 }
-        ]
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
       },
       {
-        name: "Material",
-        options: [
-          { label: "Clear Front / Foil Back", priceAdd: 0 },
-          { label: "Full Aluminum Foil (Matte)", priceAdd: 20.0 },
-          { label: "Kraft Paper with Window", priceAdd: 35.0 }
-        ]
-      },
-      {
-        name: "Features",
-        options: [
-          { label: "Ziplock Only", priceAdd: 0 },
-          { label: "Ziplock + Tear Notch", priceAdd: 5.0 },
-          { label: "Ziplock + Valve (For Coffee)", priceAdd: 25.0 }
-        ]
-      },
-      {
-        name: "Turnaround Time",
-        options: [
-          { label: "Standard (14 Working Days)", priceAdd: 0 },
-          { label: "Express (7 Working Days)", priceAdd: 80.0 }
-        ]
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
       }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-108",
+    "name": "Roll Up Stand",
+    "description": "High-quality Roll Up Stand with premium materials and vibrant printing. Perfect for display item needs.",
+    "price": 20,
+    "originalPrice": 188,
+    "discount": 21,
+    "rating": 3.1,
+    "reviews": 246,
+    "category": "roll-up-stand",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-109",
+    "name": "Wind Flag",
+    "description": "High-quality Wind Flag with premium materials and vibrant printing. Perfect for display item needs.",
+    "price": 41,
+    "originalPrice": 166,
+    "discount": 16,
+    "rating": 4.1,
+    "reviews": 39,
+    "category": "wind-flag",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-110",
+    "name": "Flyers",
+    "description": "High-quality Flyers with premium materials and vibrant printing. Perfect for digital offset needs.",
+    "price": 79,
+    "originalPrice": 120,
+    "discount": 10,
+    "rating": 3.6,
+    "reviews": 278,
+    "category": "flyers",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-111",
+    "name": "Booklet",
+    "description": "High-quality Booklet with premium materials and vibrant printing. Perfect for digital offset needs.",
+    "price": 38,
+    "originalPrice": 143,
+    "discount": 5,
+    "rating": 4.5,
+    "reviews": 139,
+    "category": "booklet",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-112",
+    "name": "Business Card",
+    "description": "High-quality Business Card with premium materials and vibrant printing. Perfect for digital offset needs.",
+    "price": 20,
+    "originalPrice": 124,
+    "discount": 16,
+    "rating": 4.9,
+    "reviews": 41,
+    "category": "business-card",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-113",
+    "name": "Corporate Folder",
+    "description": "High-quality Corporate Folder with premium materials and vibrant printing. Perfect for digital offset needs.",
+    "price": 41,
+    "originalPrice": 143,
+    "discount": 23,
+    "rating": 4.1,
+    "reviews": 294,
+    "category": "corporate-folder",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-114",
+    "name": "Paper Bag",
+    "description": "High-quality Paper Bag with premium materials and vibrant printing. Perfect for digital offset needs.",
+    "price": 45,
+    "originalPrice": 165,
+    "discount": 15,
+    "rating": 4.3,
+    "reviews": 196,
+    "category": "paper-bag",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-115",
+    "name": "Certificate",
+    "description": "High-quality Certificate with premium materials and vibrant printing. Perfect for digital offset needs.",
+    "price": 44,
+    "originalPrice": 105,
+    "discount": 24,
+    "rating": 3.3,
+    "reviews": 82,
+    "category": "certificate",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-116",
+    "name": "Stamp",
+    "description": "High-quality Stamp with premium materials and vibrant printing. Perfect for digital offset needs.",
+    "price": 13,
+    "originalPrice": 101,
+    "discount": 13,
+    "rating": 3,
+    "reviews": 303,
+    "category": "stamp",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-117",
+    "name": "Sticker",
+    "description": "High-quality Sticker with premium materials and vibrant printing. Perfect for digital offset needs.",
+    "price": 10,
+    "originalPrice": 108,
+    "discount": 19,
+    "rating": 3.2,
+    "reviews": 98,
+    "category": "sticker",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-118",
+    "name": "Crystal Plaque Trophy",
+    "description": "High-quality Crystal Plaque Trophy with premium materials and vibrant printing. Perfect for corporate gift needs.",
+    "price": 51,
+    "originalPrice": 181,
+    "discount": 18,
+    "rating": 3.4,
+    "reviews": 122,
+    "category": "crystal-plaque-trophy",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-119",
+    "name": "Acrylic Trophy",
+    "description": "High-quality Acrylic Trophy with premium materials and vibrant printing. Perfect for corporate gift needs.",
+    "price": 55,
+    "originalPrice": 185,
+    "discount": 23,
+    "rating": 4.4,
+    "reviews": 150,
+    "category": "acrylic-trophy",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-120",
+    "name": "Acrylic Keychain",
+    "description": "High-quality Acrylic Keychain with premium materials and vibrant printing. Perfect for corporate gift needs.",
+    "price": 26,
+    "originalPrice": 155,
+    "discount": 8,
+    "rating": 3.2,
+    "reviews": 63,
+    "category": "acrylic-keychain",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-121",
+    "name": "Fridge Magnet",
+    "description": "High-quality Fridge Magnet with premium materials and vibrant printing. Perfect for corporate gift needs.",
+    "price": 22,
+    "originalPrice": 97,
+    "discount": 14,
+    "rating": 3.4,
+    "reviews": 41,
+    "category": "fridge-magnet",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-122",
+    "name": "Lanyard",
+    "description": "High-quality Lanyard with premium materials and vibrant printing. Perfect for corporate gift needs.",
+    "price": 49,
+    "originalPrice": 182,
+    "discount": 18,
+    "rating": 4.2,
+    "reviews": 46,
+    "category": "lanyard",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-123",
+    "name": "Mug",
+    "description": "High-quality Mug with premium materials and vibrant printing. Perfect for corporate gift needs.",
+    "price": 61,
+    "originalPrice": 160,
+    "discount": 22,
+    "rating": 4,
+    "reviews": 159,
+    "category": "mug",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-124",
+    "name": "Pen",
+    "description": "High-quality Pen with premium materials and vibrant printing. Perfect for corporate gift needs.",
+    "price": 14,
+    "originalPrice": 160,
+    "discount": 17,
+    "rating": 3.4,
+    "reviews": 217,
+    "category": "pen",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-125",
+    "name": "Calendar",
+    "description": "High-quality Calendar with premium materials and vibrant printing. Perfect for corporate gift needs.",
+    "price": 44,
+    "originalPrice": 164,
+    "discount": 12,
+    "rating": 4.6,
+    "reviews": 243,
+    "category": "calendar",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-126",
+    "name": "Notebook",
+    "description": "High-quality Notebook with premium materials and vibrant printing. Perfect for corporate gift needs.",
+    "price": 17,
+    "originalPrice": 168,
+    "discount": 7,
+    "rating": 4.3,
+    "reviews": 113,
+    "category": "notebook",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-127",
+    "name": "Money Packet",
+    "description": "High-quality Money Packet with premium materials and vibrant printing. Perfect for corporate gift needs.",
+    "price": 79,
+    "originalPrice": 90,
+    "discount": 23,
+    "rating": 4.8,
+    "reviews": 142,
+    "category": "money-packet",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-128",
+    "name": "Premium Gift",
+    "description": "High-quality Premium Gift with premium materials and vibrant printing. Perfect for corporate gift needs.",
+    "price": 38,
+    "originalPrice": 179,
+    "discount": 17,
+    "rating": 3.6,
+    "reviews": 88,
+    "category": "premium-gift",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-129",
+    "name": "Non Woven Bag",
+    "description": "High-quality Non Woven Bag with premium materials and vibrant printing. Perfect for apparel needs.",
+    "price": 48,
+    "originalPrice": 111,
+    "discount": 23,
+    "rating": 3.1,
+    "reviews": 122,
+    "category": "non-woven-bag",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-130",
+    "name": "Canvas Bag",
+    "description": "High-quality Canvas Bag with premium materials and vibrant printing. Perfect for apparel needs.",
+    "price": 33,
+    "originalPrice": 180,
+    "discount": 9,
+    "rating": 3.1,
+    "reviews": 80,
+    "category": "canvas-bag",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-131",
+    "name": "Sublimation Tshirt",
+    "description": "High-quality Sublimation Tshirt with premium materials and vibrant printing. Perfect for apparel needs.",
+    "price": 31,
+    "originalPrice": 118,
+    "discount": 5,
+    "rating": 4.5,
+    "reviews": 94,
+    "category": "sublimation-tshirt",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-132",
+    "name": "Cotton T Shirt",
+    "description": "High-quality Cotton T Shirt with premium materials and vibrant printing. Perfect for apparel needs.",
+    "price": 76,
+    "originalPrice": 180,
+    "discount": 6,
+    "rating": 4.8,
+    "reviews": 303,
+    "category": "cotton-t-shirt",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-133",
+    "name": "Islamic Khat",
+    "description": "High-quality Islamic Khat with premium materials and vibrant printing. Perfect for frame needs.",
+    "price": 65,
+    "originalPrice": 134,
+    "discount": 5,
+    "rating": 4.3,
+    "reviews": 214,
+    "category": "islamic-khat",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-134",
+    "name": "Portrait",
+    "description": "High-quality Portrait with premium materials and vibrant printing. Perfect for frame needs.",
+    "price": 87,
+    "originalPrice": 103,
+    "discount": 21,
+    "rating": 4.5,
+    "reviews": 264,
+    "category": "portrait",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-135",
+    "name": "Clock",
+    "description": "High-quality Clock with premium materials and vibrant printing. Perfect for frame needs.",
+    "price": 33,
+    "originalPrice": 180,
+    "discount": 8,
+    "rating": 3,
+    "reviews": 265,
+    "category": "clock",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-136",
+    "name": "Wedding Bunting",
+    "description": "High-quality Wedding Bunting with premium materials and vibrant printing. Perfect for wedding product needs.",
+    "price": 77,
+    "originalPrice": 134,
+    "discount": 5,
+    "rating": 3.4,
+    "reviews": 128,
+    "category": "wedding-bunting",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-137",
+    "name": "Wedding Banner",
+    "description": "High-quality Wedding Banner with premium materials and vibrant printing. Perfect for wedding product needs.",
+    "price": 81,
+    "originalPrice": 145,
+    "discount": 5,
+    "rating": 4.6,
+    "reviews": 276,
+    "category": "wedding-banner",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-138",
+    "name": "Arrow Bunting",
+    "description": "High-quality Arrow Bunting with premium materials and vibrant printing. Perfect for wedding product needs.",
+    "price": 41,
+    "originalPrice": 141,
+    "discount": 8,
+    "rating": 3.4,
+    "reviews": 34,
+    "category": "arrow-bunting",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-139",
+    "name": "Button Badge",
+    "description": "High-quality Button Badge with premium materials and vibrant printing. Perfect for wedding product needs.",
+    "price": 53,
+    "originalPrice": 122,
+    "discount": 14,
+    "rating": 3.6,
+    "reviews": 131,
+    "category": "button-badge",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-140",
+    "name": "Cek Hantaran",
+    "description": "High-quality Cek Hantaran with premium materials and vibrant printing. Perfect for wedding product needs.",
+    "price": 44,
+    "originalPrice": 104,
+    "discount": 21,
+    "rating": 4.2,
+    "reviews": 197,
+    "category": "cek-hantaran",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-141",
+    "name": "Door Gift",
+    "description": "High-quality Door Gift with premium materials and vibrant printing. Perfect for wedding product needs.",
+    "price": 33,
+    "originalPrice": 187,
+    "discount": 5,
+    "rating": 4.3,
+    "reviews": 295,
+    "category": "door-gift",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-142",
+    "name": "Wedding Card",
+    "description": "High-quality Wedding Card with premium materials and vibrant printing. Perfect for wedding product needs.",
+    "price": 65,
+    "originalPrice": 136,
+    "discount": 8,
+    "rating": 3.9,
+    "reviews": 127,
+    "category": "wedding-card",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-143",
+    "name": "Welcome Board",
+    "description": "High-quality Welcome Board with premium materials and vibrant printing. Perfect for wedding product needs.",
+    "price": 61,
+    "originalPrice": 103,
+    "discount": 11,
+    "rating": 4.9,
+    "reviews": 319,
+    "category": "welcome-board",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-144",
+    "name": "Menu Book",
+    "description": "High-quality Menu Book with premium materials and vibrant printing. Perfect for food packaging needs.",
+    "price": 43,
+    "originalPrice": 97,
+    "discount": 15,
+    "rating": 3.4,
+    "reviews": 233,
+    "category": "menu-book",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-145",
+    "name": "Table Tent",
+    "description": "High-quality Table Tent with premium materials and vibrant printing. Perfect for food packaging needs.",
+    "price": 73,
+    "originalPrice": 158,
+    "discount": 13,
+    "rating": 3.6,
+    "reviews": 130,
+    "category": "table-tent",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-146",
+    "name": "Table Display Stand",
+    "description": "High-quality Table Display Stand with premium materials and vibrant printing. Perfect for food packaging needs.",
+    "price": 70,
+    "originalPrice": 90,
+    "discount": 22,
+    "rating": 3.1,
+    "reviews": 129,
+    "category": "table-display-stand",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-147",
+    "name": "Stand Pouch",
+    "description": "High-quality Stand Pouch with premium materials and vibrant printing. Perfect for food packaging needs.",
+    "price": 37,
+    "originalPrice": 183,
+    "discount": 22,
+    "rating": 3.5,
+    "reviews": 205,
+    "category": "stand-pouch",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
+    ]
+  },
+  {
+    "_id": "prod-148",
+    "name": "Food Sticker",
+    "description": "High-quality Food Sticker with premium materials and vibrant printing. Perfect for food packaging needs.",
+    "price": 33,
+    "originalPrice": 187,
+    "discount": 16,
+    "rating": 4.6,
+    "reviews": 313,
+    "category": "food-sticker",
+    "images": [
+      {
+        "url": "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800"
+      },
+      {
+        "url": "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      }
+    ],
+    "colors": [
+      "Red",
+      "Blue",
+      "Green",
+      "Black",
+      "White"
+    ],
+    "sizes": [
+      "Small",
+      "Medium",
+      "Large",
+      "Standard",
+      "Custom"
     ]
   }
 ];

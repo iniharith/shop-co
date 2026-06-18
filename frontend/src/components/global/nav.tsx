@@ -18,6 +18,7 @@ import { useNav } from "@/hooks/useNav";
 import AuthModal from "../page-sections/auth/authModal";
 import { CgProfile } from "react-icons/cg";
 import { ThemeSwitcher } from "./ThemeSwitcher";
+import { useSearchProducts } from "@/hooks/useProducts";
 
 // ── Mobile Drawer Content ────────────────────────────────────────────────────
 const MobileNavSheetContent = ({
@@ -196,10 +197,16 @@ const Nav = () => {
     notification,
   } = useNav();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // Use the search products hook for live suggestions
+  const { data: searchData } = useSearchProducts(searchQuery.length > 1 ? searchQuery : "");
+  const searchResults = searchData?.products || [];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      setIsSearchFocused(false);
       router.push(`/home/shop?search=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
@@ -254,11 +261,42 @@ const Nav = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
               placeholder="Search products, services, or categories..."
             />
             <Button type="submit" className="bg-primary text-white rounded-full px-6 h-9 shrink-0 ml-2">
               Search
             </Button>
+
+            {/* Live Search Suggestions Dropdown */}
+            {isSearchFocused && searchQuery.length > 1 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-card border border-gray-200 dark:border-border shadow-xl rounded-xl max-h-[300px] overflow-y-auto z-50 py-2">
+                {searchResults.length > 0 ? (
+                  searchResults.map((prod) => (
+                    <div 
+                      key={prod._id}
+                      onClick={() => {
+                        setSearchQuery("");
+                        setIsSearchFocused(false);
+                        router.push(`/home/shop/${prod._id}`);
+                      }}
+                      className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-muted cursor-pointer transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 shrink-0">
+                        <Image src={prod.images[0]?.url || "/images/kampung-cetak-logo.png"} alt={prod.name} width={40} height={40} className="object-cover w-full h-full" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-gray-900 dark:text-foreground">{prod.name}</span>
+                        <span className="text-xs text-primary font-bold">RM {prod.price}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-4 py-3 text-sm text-gray-500 text-center">No products found for "{searchQuery}"</div>
+                )}
+              </div>
+            )}
           </form>
 
           {/* Right: Icons & Auth */}

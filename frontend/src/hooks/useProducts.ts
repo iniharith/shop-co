@@ -21,7 +21,7 @@ export const useProducts = (id?: string) => {
     }, [id]);
 
     // FORCE return the new printing products, completely ignoring the old clothing items in the DB
-    if (!id && !isPending) {
+    if (!id) {
         return { data: { ...response, products: dummyProducts }, isPending: false };
     }
 
@@ -37,19 +37,17 @@ export const useProducts = (id?: string) => {
 
 export const useSearchProducts = (query: string) => {
     const { data, isPending } = useQueryData(["searchProducts", query], () => searchProducts(query));
-    if (!isPending) {
-        const filtered = dummyProducts.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || p.description.toLowerCase().includes(query.toLowerCase()));
-        return { data: { products: filtered }, isPending: false };
-    }
+    // Force search mock
+    const filtered = dummyProducts.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || p.description.toLowerCase().includes(query.toLowerCase()));
+    return { data: { products: filtered }, isPending: false };
     return { data, isPending };
 }
 
 export const useGetProductByCategory = (category: string) => {
     const { data, isPending } = useQueryData(["getProductByCategory", category], () => getProductByCategory(category));
-    if (!isPending) {
-        const filtered = dummyProducts.filter(p => p.category === category);
-        return { data: { products: filtered.length > 0 ? filtered : dummyProducts }, isPending: false };
-    }
+    // Force category mock
+    const filtered = dummyProducts.filter(p => p.category === category);
+    return { data: { products: filtered.length > 0 ? filtered : dummyProducts }, isPending: false };
     return { data, isPending };
 }
 
@@ -70,13 +68,11 @@ export const useFilterProducts = () => {
     }, [categories, priceRange, sizes]);
     
     // FORCE return the new printing products, simulating frontend filtering
-    if (!isPending) {
-        let filtered = [...dummyProducts];
-        if (categories && categories.length > 0) {
-             filtered = filtered.filter(p => categories.includes(p.category));
-        }
-        return { data: { products: filtered }, isPending: false, refetch };
+    let filtered = [...dummyProducts];
+    if (categories && categories.length > 0) {
+          filtered = filtered.filter(p => categories.includes(p.category));
     }
+    return { data: { products: filtered }, isPending: false, refetch };
 
     const response = data as IProductResponse;
     return { data: response, isPending, refetch };
