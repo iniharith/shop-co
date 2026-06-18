@@ -46,7 +46,7 @@ const MobileNavSheetContent = ({
           { "--initial-transform": "calc(100% + 8px)" } as React.CSSProperties
         }
       >
-        <div className="bg-gray-200 h-full w-full grow px-3 py-1 flex flex-col rounded-[16px] overflow-y-auto">
+        <div className="bg-gray-200 dark:bg-card h-full w-full grow px-3 py-1 flex flex-col rounded-[16px] overflow-y-auto">
 
           {/* ── HEADER: Logo + Close ── */}
           <Drawer.Title className="font-medium px-0 border-b border-dashed border-zinc-900/20 justify-between flex items-center mb-3 text-white">
@@ -59,7 +59,7 @@ const MobileNavSheetContent = ({
                   height={36}
                   className="object-contain rounded-full"
                 />
-                <span className="text-lg text-black font-bold">Kampung Cetak</span>
+                <span className="text-lg text-black dark:text-foreground font-bold">Kampung Cetak</span>
               </Link>
             </div>
             <Button
@@ -77,7 +77,7 @@ const MobileNavSheetContent = ({
           {session?.user?.id && (
             <button
               onClick={() => { router.push("/home/profile"); closeDrawer(); }}
-              className="flex items-center gap-3 mb-3 px-3 py-2 bg-white rounded-xl shadow-sm hover:bg-gray-50 transition-colors text-left"
+              className="flex items-center gap-3 mb-3 px-3 py-2 bg-white dark:bg-popover rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-muted transition-colors text-left"
             >
               <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shrink-0">
                 {session.user.name
@@ -85,10 +85,10 @@ const MobileNavSheetContent = ({
                   : <CgProfile size={16} />}
               </div>
               <div className="overflow-hidden">
-                <p className="text-sm font-semibold text-gray-900 truncate">
+                <p className="text-sm font-semibold text-gray-900 dark:text-foreground truncate">
                   {session.user.name || "My Profile"}
                 </p>
-                <p className="text-xs text-gray-400 truncate">{session.user.email || ""}</p>
+                <p className="text-xs text-gray-500 dark:text-muted-foreground truncate">{session.user.email || ""}</p>
               </div>
             </button>
           )}
@@ -134,7 +134,7 @@ const MobileNavSheetContent = ({
                         "w-full flex items-center justify-between px-3 py-2.5 text-sm font-semibold transition-colors rounded-xl",
                         isOpen
                           ? "bg-primary text-white"
-                          : "text-primary hover:bg-white"
+                          : "text-primary hover:bg-white dark:hover:bg-muted"
                       )}
                       onClick={() => {
                         if (hasSubItems) {
@@ -155,13 +155,13 @@ const MobileNavSheetContent = ({
 
                     {/* Sub-items — only visible when accordion is open */}
                     {hasSubItems && isOpen && (
-                      <div className="bg-white rounded-b-xl px-2 pb-2 flex flex-col gap-0.5 animate-in slide-in-from-top-1 duration-150">
+                      <div className="bg-white dark:bg-popover rounded-b-xl px-2 pb-2 flex flex-col gap-0.5 animate-in slide-in-from-top-1 duration-150">
                         {item.subItems!.map((sub, idx) => (
                           <Link
                             key={idx}
                             href={sub.href}
                             onClick={() => closeDrawer()}
-                            className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:text-primary hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-foreground hover:text-primary hover:bg-gray-50 dark:hover:bg-muted rounded-lg transition-colors"
                           >
                             <span className="w-1 h-1 rounded-full bg-primary/40 shrink-0" />
                             {sub.label}
@@ -198,9 +198,9 @@ const Nav = () => {
 
   return (
     <>
-      <div className="w-full flex flex-col bg-gray-200">
+      <div className="w-full flex flex-col bg-gray-200 dark:bg-background">
         {/* ── MAIN HEADER ── */}
-        <div className="w-full px-4 md:px-7 py-3 md:py-4 flex justify-between items-center gap-3 md:gap-6">
+        <div className="w-full px-4 md:px-7 py-3 md:py-4 flex justify-between items-center gap-3 md:gap-6 border-b border-transparent dark:border-border">
 
           {/* Left: Hamburger + Logo */}
           <div className="flex items-center gap-2 shrink-0">
@@ -211,7 +211,7 @@ const Nav = () => {
               direction="left"
             >
               <Drawer.Trigger className="md:hidden block p-1">
-                <FaBars className="text-xl text-gray-700" />
+                <FaBars className="text-xl text-gray-700 dark:text-foreground" />
               </Drawer.Trigger>
               <MobileNavSheetContent
                 closeDrawer={closeDrawer}
@@ -236,10 +236,10 @@ const Nav = () => {
           </div>
 
           {/* Center: Search (desktop only) */}
-          <div className="hidden md:flex flex-1 max-w-2xl mx-auto relative items-center bg-white rounded-full border border-gray-300 shadow-sm overflow-hidden px-4 py-1">
-            <IoSearch className="text-gray-500 text-xl mr-2 shrink-0" />
+          <div className="hidden md:flex flex-1 max-w-2xl mx-auto relative items-center bg-white dark:bg-card rounded-full border border-gray-300 dark:border-border shadow-sm overflow-hidden px-4 py-1">
+            <IoSearch className="text-gray-500 dark:text-muted-foreground text-xl mr-2 shrink-0" />
             <Input
-              className="w-full focus-visible:ring-0 text-md bg-transparent border-none shadow-none ring-0 focus-visible:ring-offset-0 px-0 h-10"
+              className="w-full focus-visible:ring-0 text-md bg-transparent border-none shadow-none ring-0 focus-visible:ring-offset-0 px-0 h-10 dark:text-foreground"
               type="text"
               placeholder="Search products, services, or categories..."
             />
@@ -259,9 +259,9 @@ const Nav = () => {
                     onPress={() => router.push("/home/cart")}
                     isIconOnly
                     variant="ghost"
-                    className="rounded-full p-2 cursor-pointer hover:bg-gray-300 transition-colors"
+                    className="rounded-full p-2 cursor-pointer hover:bg-gray-300 dark:hover:bg-muted transition-colors"
                   >
-                    <FaCartShopping className="text-xl text-gray-700" />
+                    <FaCartShopping className="text-xl text-gray-700 dark:text-foreground" />
                   </Button>
                   <Badge className="absolute top-0 right-0 bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-gray-200">
                     {cartCount}
@@ -274,9 +274,9 @@ const Nav = () => {
                     onPress={() => setIsNotificationsOpen(true)}
                     isIconOnly
                     variant="ghost"
-                    className="rounded-full p-2 cursor-pointer hover:bg-gray-300 transition-colors"
+                    className="rounded-full p-2 cursor-pointer hover:bg-gray-300 dark:hover:bg-muted transition-colors"
                   >
-                    <IoNotifications className="text-xl text-gray-700" />
+                    <IoNotifications className="text-xl text-gray-700 dark:text-foreground" />
                   </Button>
                   <Badge className="absolute top-0 right-0 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-gray-200">
                     {notification ? notification.filter((n) => !n.read).length : 0}
@@ -287,7 +287,7 @@ const Nav = () => {
                 <Button
                   onPress={() => router.push("/home/profile")}
                   variant="ghost"
-                  className="rounded-full px-2 md:px-3 py-1 cursor-pointer hover:bg-gray-300 transition-colors flex items-center gap-2"
+                  className="rounded-full px-2 md:px-3 py-1 cursor-pointer hover:bg-gray-300 dark:hover:bg-muted transition-colors flex items-center gap-2"
                 >
                   <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold shrink-0">
                     {session.user.name
@@ -295,10 +295,10 @@ const Nav = () => {
                       : <CgProfile size={16} />}
                   </div>
                   <div className="hidden sm:flex flex-col items-start leading-tight">
-                    <span className="text-sm font-semibold text-gray-800 max-w-[100px] truncate">
+                    <span className="text-sm font-semibold text-gray-800 dark:text-foreground max-w-[100px] truncate">
                       {session.user.name || "Profile"}
                     </span>
-                    <span className="text-[10px] text-gray-500 max-w-[100px] truncate">
+                    <span className="text-[10px] text-gray-500 dark:text-muted-foreground max-w-[100px] truncate">
                       {session.user.email || ""}
                     </span>
                   </div>
@@ -316,7 +316,7 @@ const Nav = () => {
         </div>
 
         {/* ── DESKTOP CATEGORY NAV ── */}
-        <div className="w-full bg-white border-y border-gray-200 hidden md:block relative z-50">
+        <div className="w-full bg-white dark:bg-card border-y border-gray-200 dark:border-border hidden md:block relative z-50">
           <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
             {printingCategories.map((item, index) => (
               <div key={index} className="relative group">
@@ -335,12 +335,12 @@ const Nav = () => {
                 </Link>
 
                 {/* Dropdown */}
-                <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white border border-gray-200 shadow-xl rounded-md min-w-[220px] py-2 z-50">
+                <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white dark:bg-popover border border-gray-200 dark:border-border shadow-xl rounded-md min-w-[220px] py-2 z-50">
                   {item.subItems?.map((sub, idx) => (
                     <Link
                       key={idx}
                       href={sub.href}
-                      className="px-4 py-2 text-sm text-black font-medium hover:bg-gray-100 hover:text-primary transition-colors whitespace-nowrap"
+                      className="px-4 py-2 text-sm text-black dark:text-foreground font-medium hover:bg-gray-100 dark:hover:bg-muted hover:text-primary transition-colors whitespace-nowrap"
                     >
                       {sub.label}
                     </Link>

@@ -27,7 +27,7 @@ const Provider = ({
               showSpinner={false}
               zIndex={999999999999999}
             />
-            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
               <HeroUIProvider>
                 <Toaster
                   visibleToasts={1}
