@@ -17,6 +17,7 @@ import NotificationsDrawer from "./notifications-drawer";
 import { useNav } from "@/hooks/useNav";
 import AuthModal from "../page-sections/auth/authModal";
 import { CgProfile } from "react-icons/cg";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 
 // ── Mobile Drawer Content ────────────────────────────────────────────────────
 const MobileNavSheetContent = ({
@@ -249,6 +250,7 @@ const Nav = () => {
 
           {/* Right: Icons & Auth */}
           <div className="flex gap-2 md:gap-3 items-center shrink-0">
+            <ThemeSwitcher />
             {session?.user?.id ? (
               <>
                 {/* Cart — always visible */}

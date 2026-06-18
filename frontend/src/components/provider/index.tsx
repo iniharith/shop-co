@@ -1,5 +1,6 @@
 "use client";
 import { HeroUIProvider } from "@heroui/system";
+import { ThemeProvider } from "next-themes";
 import React from "react";
 import { Toaster } from "sonner";
 import NextTopLoader from "nextjs-toploader";
@@ -16,7 +17,6 @@ const Provider = ({
   session: SessionProviderProps["session"];
 }) => {
   return (
-    <>
       <SessionProvider session={session}>
         <ReactQueryProvider>
           <SocketProvider>
@@ -27,19 +27,19 @@ const Provider = ({
               showSpinner={false}
               zIndex={999999999999999}
             />
-            <HeroUIProvider>
-              <Toaster
-                visibleToasts={1}
-                position="bottom-center"
-                richColors
-                theme="light"
-              />
-              <LiveSessionMonitor>{children}</LiveSessionMonitor>
-            </HeroUIProvider>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              <HeroUIProvider>
+                <Toaster
+                  visibleToasts={1}
+                  position="bottom-center"
+                  richColors
+                />
+                <LiveSessionMonitor>{children}</LiveSessionMonitor>
+              </HeroUIProvider>
+            </ThemeProvider>
           </SocketProvider>
         </ReactQueryProvider>
       </SessionProvider>
-    </>
   );
 };
 
