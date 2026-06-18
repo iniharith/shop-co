@@ -139,6 +139,7 @@ export class AdminUsecase {
         for (const customer of customers) {
             const order = await OrderModel.create({
                 userId: customer._id,
+                customerName: customer.name,
                 products: [], // empty or add dummy products if needed
                 totalAmount: Math.floor(Math.random() * 500) + 50,
                 paymentMethod: "ONLINE",

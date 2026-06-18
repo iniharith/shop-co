@@ -211,6 +211,18 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
                   </button>
                 </div>
               )}
+
+              {status === "IN_DESIGN" && (
+                <div className="flex gap-2 mt-2">
+                  <button 
+                    disabled={statusPending}
+                    onClick={() => handleStatusChange("IN_PRODUCTION")}
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-md font-semibold transition-colors disabled:opacity-50"
+                  >
+                    Proceed to Print (Production)
+                  </button>
+                </div>
+              )}
             </div>
           )}
       </div>
