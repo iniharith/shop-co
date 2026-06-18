@@ -31,10 +31,10 @@ class AdminController {
     getUsers(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                if (req.role !== user_type_1.Roles.ADMIN) {
+                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS].includes(req.role)) {
                     throw new Error(api_constant_1.messages.UNAUTHORIZED);
                 }
-                const users = yield this.adminUsecase.getUsersByRole(user_type_1.Roles.CLIENT);
+                const users = yield this.adminUsecase.getAllUsers();
                 res.status(api_constant_1.statusCodes.OK).json({
                     message: "Users fetched successfully",
                     users: users
@@ -55,13 +55,58 @@ class AdminController {
     deleteUser(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                if (req.role !== user_type_1.Roles.ADMIN) {
+                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS].includes(req.role)) {
                     throw new Error(api_constant_1.messages.UNAUTHORIZED);
                 }
                 const { id } = req.params;
                 yield this.adminUsecase.deleteUser(id);
                 res.status(api_constant_1.statusCodes.OK).json({
                     message: "User deleted successfully"
+                });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    /**
+     * @description Create user
+     * @Method POST
+     * @Route /api/admin/users
+     */
+    createUser(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS].includes(req.role)) {
+                    throw new Error(api_constant_1.messages.UNAUTHORIZED);
+                }
+                const user = yield this.adminUsecase.createUser(req.body);
+                res.status(api_constant_1.statusCodes.CREATED).json({
+                    message: "User created successfully",
+                    user
+                });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    /**
+     * @description Update user
+     * @Method PUT
+     * @Route /api/admin/users/:id
+     */
+    updateUser(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS].includes(req.role)) {
+                    throw new Error(api_constant_1.messages.UNAUTHORIZED);
+                }
+                const { id } = req.params;
+                const user = yield this.adminUsecase.updateUser(id, req.body);
+                res.status(api_constant_1.statusCodes.OK).json({
+                    message: "User updated successfully",
+                    user
                 });
             }
             catch (error) {
@@ -80,7 +125,7 @@ class AdminController {
     getDeliveryBoys(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                if (req.role !== user_type_1.Roles.ADMIN) {
+                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS].includes(req.role)) {
                     throw new Error(api_constant_1.messages.UNAUTHORIZED);
                 }
                 const deliveryBoys = yield this.adminUsecase.getUsersByRole(user_type_1.Roles.DELIVERY_BOY);
@@ -104,7 +149,7 @@ class AdminController {
     updateDeliveryBoy(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                if (req.role !== user_type_1.Roles.ADMIN) {
+                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS].includes(req.role)) {
                     throw new Error(api_constant_1.messages.UNAUTHORIZED);
                 }
                 const { id } = req.params;
@@ -130,7 +175,7 @@ class AdminController {
     getOrders(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                if (req.role !== user_type_1.Roles.ADMIN && req.role !== user_type_1.Roles.DELIVERY_BOY) {
+                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS, user_type_1.Roles.DELIVERY_BOY].includes(req.role)) {
                     throw new Error(api_constant_1.messages.UNAUTHORIZED);
                 }
                 const orders = yield this.adminUsecase.getOrders();
@@ -154,7 +199,7 @@ class AdminController {
     getOrdersByDeliveryBoy(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                if (req.role !== user_type_1.Roles.DELIVERY_BOY && req.role !== user_type_1.Roles.ADMIN) {
+                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS, user_type_1.Roles.DELIVERY_BOY].includes(req.role)) {
                     throw new Error(api_constant_1.messages.UNAUTHORIZED);
                 }
                 const { id } = req.params;
@@ -177,15 +222,34 @@ class AdminController {
     seedTestData(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                if (req.role !== user_type_1.Roles.ADMIN) {
+                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS].includes(req.role)) {
                     throw new Error(api_constant_1.messages.UNAUTHORIZED);
                 }
-                if (!req.userId) {
-                    throw new Error(api_constant_1.messages.UNAUTHORIZED);
-                }
-                yield this.adminUsecase.seedTestData(req.userId);
+                yield this.adminUsecase.seedTestData();
                 res.status(api_constant_1.statusCodes.OK).json({
                     message: "Test data seeded successfully"
+                });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    /**
+     * @description Create manual order
+     * @Method POST
+     * @Route /api/admin/orders/manual
+     */
+    createManualOrder(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS].includes(req.role)) {
+                    throw new Error(api_constant_1.messages.UNAUTHORIZED);
+                }
+                const order = yield this.adminUsecase.createManualOrder(req.body);
+                res.status(api_constant_1.statusCodes.CREATED).json({
+                    message: "Manual order created successfully",
+                    order
                 });
             }
             catch (error) {

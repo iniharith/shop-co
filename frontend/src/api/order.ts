@@ -3,8 +3,11 @@ import AxiosInstance from "@/utils/axios";
 
 export const createOrder = async (data: any, token: string) => {
     console.log("ajja")
+    const { customerName, orderNotes, ...addressData } = data;
     const response = await AxiosInstance(token).post(ORDER_URL, {
-        address: data,
+        address: addressData,
+        customerName,
+        orderNotes
     });
     return response.data;
 };

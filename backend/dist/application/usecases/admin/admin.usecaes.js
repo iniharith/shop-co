@@ -23,6 +23,7 @@ const user_model_1 = __importDefault(require("../../../infrastructure/db/models/
 const order_model_1 = __importDefault(require("../../../infrastructure/db/models/order.model"));
 const FileUpload_1 = require("../../../domain/entities/FileUpload");
 const Parcel_1 = require("../../../domain/entities/Parcel");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 class AdminUsecase {
     constructor() {
         this.userRepository = new user_repository_1.UserRepository();
@@ -30,6 +31,11 @@ class AdminUsecase {
         this.orderRepository = new order_repository_1.OrderRepository();
         this.notificationRepository = new notification_repository_1.NotificationRepository();
         this.notificationUsecase = new notification_usecase_1.NotificationUsecase();
+    }
+    getAllUsers() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.userRepository.findAll();
+        });
     }
     getUsersByRole(role) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -61,6 +67,27 @@ class AdminUsecase {
                 throw new Error("User not found");
             }
             yield this.userRepository.deleteById(userId);
+        });
+    }
+    createUser(data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const password = data.password
+                ? yield bcryptjs_1.default.hash(data.password, 10)
+                : yield bcryptjs_1.default.hash(Math.random().toString(36).slice(-8), 10);
+            return yield user_model_1.default.create(Object.assign(Object.assign({}, data), { password }));
+        });
+    }
+    updateUser(userId, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (data.password) {
+                data.password = yield bcryptjs_1.default.hash(data.password, 10);
+            }
+            return yield user_model_1.default.findByIdAndUpdate(userId, data, { new: true });
+        });
+    }
+    createManualOrder(data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield order_model_1.default.create(data);
         });
     }
     adminLogin(email, password) {
@@ -97,93 +124,76 @@ class AdminUsecase {
             return yield this.orderRepository.getOderByDeliveryBoy(deliveryBoyId);
         });
     }
-    seedTestData(userId) {
+    seedTestData() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!userId) {
-                throw new Error("Admin User ID is required to generate Test Drive data");
-            }
-            const adminUser = yield user_model_1.default.findById(userId);
-            if (!adminUser) {
-                throw new Error("Admin user not found");
-            }
-            // 1. Create a highly realistic Test Order
-            const testOrder = yield order_model_1.default.create({
-                userId: adminUser._id,
-                products: [{
-                        productId: "demo-product-123",
-                        name: "Premium Business Cards",
-                        quantity: 500,
-                        price: 150
-                    }],
-                totalAmount: 150,
-                paymentMethod: "ONLINE",
-                paymentStatus: "PAID",
-                orderStatus: "PLACED",
-                address: {
-                    address: "Test Drive Ave, Suite 100",
-                    street: "Demo Street",
-                    city: "Kuala Lumpur",
-                    postalCode: "50000",
-                    country: "Malaysia"
+            // Create 3 dummy customers
+            const customers = [];
+            for (let i = 1; i <= 3; i++) {
+                let u = yield user_model_1.default.findOne({ email: `customer${i}@test.com` });
+                if (!u) {
+                    u = yield user_model_1.default.create({
+                        name: `Test Customer ${i}`,
+                        email: `customer${i}@test.com`,
+                        password: "password123",
+                        role: user_type_1.Roles.CLIENT,
+                        verified: true
+                    });
                 }
-            });
-            // 2. Fire Real-time Notification for Artwork
-            yield this.notificationUsecase.createNotification({
-                userId: adminUser._id.toString(),
-                title: "Action Required: Upload Artwork",
-                message: `Please upload your design artwork for Test Order #${testOrder._id.toString().substring(0, 8).toUpperCase()}.`,
-                type: "ORDER",
-                orderId: testOrder._id.toString(),
-                read: false
-            });
-            // 3. Create a Dummy Parcel Tracking Record
-            const trackingNumber = `TRK-TEST-${Math.floor(Math.random() * 90000) + 10000}`;
-            yield Parcel_1.Parcel.create({
-                orderId: testOrder._id.toString(),
-                trackingNumber: trackingNumber,
-                customerPhone: adminUser.phoneNumber || "60123456789",
-                customerName: adminUser.name,
-                customerEmail: adminUser.email,
-                courier: "J&T Express",
-                status: "in_transit",
-                lastStatus: "picked_up",
-                events: [{
-                        status: "picked_up",
-                        description: "Parcel picked up by courier",
-                        location: "Selangor Hub",
-                        timestamp: new Date(Date.now() - 3600000) // 1 hour ago
-                    }, {
-                        status: "in_transit",
-                        description: "Parcel is in transit to destination facility",
-                        location: "Kuala Lumpur Hub",
-                        timestamp: new Date()
-                    }],
-                weight: 1.5,
-                senderName: "Kampung Cetak (Demo)",
-                senderPhone: "6031234567",
-                senderAddress: "HQ Print Shop",
-                recipientAddress: "Test Drive Ave, Suite 100",
-            });
-            // 4. Fire Real-time Notification for Tracking
-            yield this.notificationUsecase.createNotification({
-                userId: adminUser._id.toString(),
-                title: "Order Shipped!",
-                message: `Your Test Order #${testOrder._id.toString().substring(0, 8).toUpperCase()} is now in transit. Tracking: ${trackingNumber}`,
-                type: "DELIVERY",
-                orderId: testOrder._id.toString(),
-                read: false
-            });
-            // Optional: Create a dummy FileUpload to simulate an already uploaded file for UI testing
-            yield FileUpload_1.FileUpload.create({
-                userId: adminUser._id.toString(),
-                orderId: testOrder._id.toString(),
-                filename: `demo-artwork-${testOrder._id}.pdf`,
-                originalName: `BusinessCard_Demo.pdf`,
-                mimetype: "application/pdf",
-                size: 4500000,
-                path: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-                adminReviewed: false
-            });
+                customers.push(u);
+            }
+            // Create dummy orders for these customers
+            for (const customer of customers) {
+                const order = yield order_model_1.default.create({
+                    userId: customer._id,
+                    products: [], // empty or add dummy products if needed
+                    totalAmount: Math.floor(Math.random() * 500) + 50,
+                    paymentMethod: "ONLINE",
+                    paymentStatus: "PAID",
+                    orderStatus: "PLACED",
+                    address: {
+                        address: "123 Jalan Test",
+                        street: "Test Street",
+                        city: "Kuala Lumpur",
+                        postalCode: "50000",
+                        country: "Malaysia"
+                    }
+                });
+                yield Parcel_1.Parcel.create({
+                    orderId: order._id.toString(),
+                    trackingNumber: `TRACK-${Math.floor(Math.random() * 100000)}`,
+                    customerPhone: "60123456789",
+                    customerName: customer.name,
+                    customerEmail: customer.email,
+                    courier: "J&T Express",
+                    status: "in_transit",
+                    lastStatus: "picked_up",
+                    events: [
+                        {
+                            status: "picked_up",
+                            description: "Parcel picked up by courier",
+                            location: "Kuala Lumpur Hub",
+                            timestamp: new Date(Date.now() - 86400000)
+                        },
+                        {
+                            status: "in_transit",
+                            description: "Parcel arrived at sorting center",
+                            location: "Selangor Hub",
+                            timestamp: new Date()
+                        }
+                    ],
+                    weight: 1.5,
+                });
+                // Create some file uploads for this customer
+                yield FileUpload_1.FileUpload.create({
+                    userId: customer._id.toString(),
+                    filename: `test-artwork-${customer._id}.jpg`,
+                    originalName: `Design_${customer.name}.jpg`,
+                    mimetype: "image/jpeg",
+                    size: 2048000,
+                    path: "https://via.placeholder.com/500", // dummy URL
+                    adminReviewed: false
+                });
+            }
         });
     }
 }

@@ -68,6 +68,14 @@ const OrderSchema = new mongoose_1.Schema({
         ref: 'User',
         required: true,
     },
+    customerName: {
+        type: String,
+        required: true,
+    },
+    orderNotes: {
+        type: String,
+        default: '',
+    },
     products: [OrderedProductSchema],
     totalAmount: {
         type: Number,
@@ -88,6 +96,11 @@ const OrderSchema = new mongoose_1.Schema({
         type: String,
         enum: ['PLACED', 'SHIPPED', 'DELIVERED', 'CANCELLED'],
         default: 'PLACED',
+    },
+    platform: {
+        type: String,
+        enum: ['WEB', 'TIKTOK', 'SHOPEE'],
+        default: 'WEB',
     },
     deliveryBoy: {
         type: mongoose_1.Schema.Types.ObjectId,

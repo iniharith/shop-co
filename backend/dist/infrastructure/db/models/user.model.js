@@ -19,9 +19,9 @@ const user_type_1 = require("../../../domain/types/user.type");
 const UserSchema = new mongoose_2.Schema({
     name: { type: String, required: true },
     email: { type: String, unique: true, required: true },
-    role: { type: String, enum: [user_type_1.Roles.ADMIN, user_type_1.Roles.CLIENT, user_type_1.Roles.DELIVERY_BOY], default: user_type_1.Roles.CLIENT, required: true },
+    role: { type: String, enum: Object.values(user_type_1.Roles), default: user_type_1.Roles.CLIENT, required: true },
     password: { type: String, required: true },
-    avatar: { type: String },
+    avatar: { type: String, default: "" },
     verified: { type: Boolean, default: false },
     phoneNumber: { type: String },
     address: {

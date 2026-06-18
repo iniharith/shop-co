@@ -61,7 +61,7 @@ class OrderUsecase {
             return order;
         });
     }
-    createOrder(address, userId) {
+    createOrder(address, userId, customerName, orderNotes) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
             const cart = yield this.cartRepository.getCartByUserId(userId);
@@ -94,6 +94,8 @@ class OrderUsecase {
             yield this.redisService.del(redis_constant_1.REDIS_KEYS.ADDRESS + userId);
             const order = yield this.orderRepository.createOrder({
                 userId,
+                customerName,
+                orderNotes,
                 address,
                 paymentMethod: "COD",
                 products: orderItems,

@@ -18,7 +18,7 @@ class JwtService {
     }
     generateAccessToken(payload) {
         try {
-            const token = jsonwebtoken_1.default.sign(payload, this.accessSecret, { expiresIn: "1d" });
+            const token = jsonwebtoken_1.default.sign(payload, this.accessSecret, { expiresIn: "30d" });
             return token;
         }
         catch (error) {

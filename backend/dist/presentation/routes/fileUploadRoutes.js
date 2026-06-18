@@ -19,6 +19,7 @@ const cloudinary_1 = require("cloudinary");
 const multer_storage_cloudinary_1 = require("multer-storage-cloudinary");
 const FileUploadRepository_1 = require("../../infrastructure/repositories/FileUploadRepository");
 const WhatsAppService_1 = require("../../infrastructure/services/WhatsAppService");
+const auth_middileware_1 = __importDefault(require("../middlewares/auth.middileware"));
 const router = (0, express_1.Router)();
 const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB || '50', 10);
 const ALLOWED_MIME_TYPES = [
@@ -34,9 +35,9 @@ const ALLOWED_MIME_TYPES = [
 // Railway filesystem is ephemeral — files are wiped on each redeploy.
 // Cloudinary provides persistent, cloud-hosted storage for all uploads.
 cloudinary_1.v2.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dc7aun6of',
+    api_key: process.env.CLOUDINARY_API_KEY || '933197924153588',
+    api_secret: process.env.CLOUDINARY_API_SECRET || 'L8yhCjjrcV4--wTSGB-_JVY5kgg',
 });
 // ─── Multer + Cloudinary Storage ─────────────────────────
 const storage = new multer_storage_cloudinary_1.CloudinaryStorage({
@@ -44,7 +45,7 @@ const storage = new multer_storage_cloudinary_1.CloudinaryStorage({
     params: (req, file) => __awaiter(void 0, void 0, void 0, function* () {
         var _a;
         return ({
-            folder: `kampungcetak/uploads/${((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || 'unknown'}`,
+            folder: `kampungcetak/uploads/${req.userId || ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || 'unknown'}`,
             // PDFs must be stored as 'raw', images as 'image'
             resource_type: file.mimetype === 'application/pdf' ? 'raw' : 'image',
             allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'tiff', 'gif', 'pdf'],
@@ -67,11 +68,13 @@ const upload = (0, multer_1.default)({
 // ─── POST /api/files/upload ───────────────────────────────
 // Customer uploads one or more files (requires auth middleware upstream)
 // Files are uploaded directly to Cloudinary — not stored locally.
-router.post('/upload', upload.array('files', 10), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/upload', auth_middileware_1.default, upload.array('files', 10), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
     const files = req.files;
-    const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
-    const { orderId, notes } = req.body;
+    const { orderId, notes, userId: bodyUserId, category } = req.body;
+    const authReq = req;
+    // If admin provides a userId in the body, upload on their behalf
+    const userId = (authReq.role === 'admin' && bodyUserId) ? bodyUserId : authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
     if (!userId) {
         res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
         return;
@@ -84,6 +87,7 @@ router.post('/upload', upload.array('files', 10), (0, express_async_handler_1.de
     const savedFiles = yield Promise.all(files.map((file) => FileUploadRepository_1.fileUploadRepository.create({
         userId,
         orderId: orderId || undefined,
+        category: category || undefined,
         filename: file.filename,
         originalName: file.originalname,
         mimetype: file.mimetype,
@@ -94,8 +98,8 @@ router.post('/upload', upload.array('files', 10), (0, express_async_handler_1.de
         adminReviewed: false,
     })));
     // Optionally notify customer via WhatsApp
-    const customerPhone = (_b = req.user) === null || _b === void 0 ? void 0 : _b.phone;
-    const customerName = ((_c = req.user) === null || _c === void 0 ? void 0 : _c.name) || 'Pelanggan';
+    const customerPhone = (_b = authReq.user) === null || _b === void 0 ? void 0 : _b.phone;
+    const customerName = ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.name) || 'Pelanggan';
     if (customerPhone) {
         WhatsAppService_1.whatsAppService
             .sendFileUploadConfirmation({
@@ -115,9 +119,9 @@ router.post('/upload', upload.array('files', 10), (0, express_async_handler_1.de
 })));
 // ─── GET /api/files/my ────────────────────────────────────
 // Customer views their own uploaded files
-router.get('/my', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get('/my', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+    const userId = req.userId || ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id);
     if (!userId) {
         res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
         return;

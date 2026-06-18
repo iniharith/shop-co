@@ -3,7 +3,6 @@ import { Geist, Geist_Mono, DM_Sans } from "next/font/google";
 import "./globals.css";
 import Provider from "@/components/provider";
 import Nav from "@/components/global/nav";
-import TopBar from "@/components/global/topBar";
 import { Footer } from "@/components/global/footer";
 import Cta from "@/components/global/cta";
 import { getServerSession } from "next-auth";
@@ -63,7 +62,6 @@ export default async function RootLayout({
       >
         <Provider session={session}>
           <div className="sticky z-50 top-0">
-            <TopBar />
             <Nav />
           </div>
           <div className="w-full min-h-[50vh]">{children}</div>

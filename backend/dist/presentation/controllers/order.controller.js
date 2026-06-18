@@ -82,8 +82,8 @@ class OrderController {
     createOrder(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const { address } = req.body;
-                const order = yield this.orderUsecase.createOrder(address, req.userId);
+                const { address, customerName, orderNotes } = req.body;
+                const order = yield this.orderUsecase.createOrder(address, req.userId, customerName, orderNotes);
                 res.status(api_constant_1.statusCodes.OK).json({ message: "Order created successfully", order });
             }
             catch (error) {

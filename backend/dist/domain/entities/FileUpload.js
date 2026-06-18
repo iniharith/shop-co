@@ -38,6 +38,7 @@ const mongoose_1 = __importStar(require("mongoose"));
 const FileUploadSchema = new mongoose_1.Schema({
     userId: { type: String, required: true, index: true },
     orderId: { type: String, index: true },
+    category: { type: String },
     filename: { type: String, required: true },
     originalName: { type: String, required: true },
     mimetype: { type: String, required: true },

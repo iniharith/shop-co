@@ -20,6 +20,8 @@ export interface IAddress {
 export interface IOrder {
     _id: string;
     userId: IUser;
+    customerName: string;
+    orderNotes?: string;
     products: IOrderedProduct[];
     totalAmount: number;
     paymentMethod: 'COD' | 'ONLINE';

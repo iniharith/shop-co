@@ -17,7 +17,7 @@ import { FaAddressCard } from "react-icons/fa";
 import { FaMapLocationDot } from "react-icons/fa6";
 import { LuMapPinHouse } from "react-icons/lu";
 import { IoEarthSharp } from "react-icons/io5";
-import { FaFlag } from "react-icons/fa";
+import { FaFlag, FaUser, FaStickyNote } from "react-icons/fa";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Drawer,
@@ -134,6 +134,24 @@ const AddressForm = ({
         >
           <FormField
             control={control}
+            name="customerName"
+            render={({ field }) => (
+              <FormGeneratorV2
+                field={field}
+                type="text"
+                label="Full Name"
+                placeholder="Enter your full name"
+                inputType="input"
+                errors={errors}
+                Icon={FaUser}
+                className={{
+                  input: "w-full",
+                }}
+              />
+            )}
+          />
+          <FormField
+            control={control}
             name="address"
             render={({ field }) => (
               <FormGeneratorV2
@@ -222,6 +240,26 @@ const AddressForm = ({
               />
             )}
           />
+          <div className="md:col-span-2">
+            <FormField
+              control={control}
+              name="orderNotes"
+              render={({ field }) => (
+                <FormGeneratorV2
+                  field={field}
+                  type="text"
+                  label="Order Notes (Optional)"
+                  placeholder="E.g. specific instructions for delivery or printing..."
+                  inputType="textarea"
+                  errors={errors}
+                  Icon={FaStickyNote}
+                  className={{
+                    input: "w-full min-h-[80px]",
+                  }}
+                />
+              )}
+            />
+          </div>
         </form>
       </Form>
     </div>

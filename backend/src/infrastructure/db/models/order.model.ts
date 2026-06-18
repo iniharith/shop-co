@@ -44,6 +44,14 @@ const OrderSchema: Schema = new Schema(
       ref: 'User',
       required: true,
     },
+    customerName: {
+      type: String,
+      required: true,
+    },
+    orderNotes: {
+      type: String,
+      default: '',
+    },
     products: [OrderedProductSchema],
     totalAmount: {
       type: Number,

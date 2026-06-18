@@ -48,20 +48,16 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
       <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-primary/60 via-primary to-primary/60 opacity-80" />
       
       <CardHeader className="pb-3 pt-6 px-5 flex flex-row items-start justify-between gap-4">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Package className="w-4 h-4" /> ID:
-            </span>
-            <span className="font-mono font-bold text-foreground bg-primary/10 px-2 py-0.5 rounded-md text-primary tracking-tight">
-              {displayId}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 mt-2">
-             <UserCircle2 className="w-5 h-5 text-muted-foreground" />
+          <div className="flex items-start gap-3">
+             <UserCircle2 className="w-8 h-8 text-muted-foreground mt-0.5" />
              <div className="flex flex-col">
-               <span className="font-semibold text-base leading-tight">{userName}</span>
-               <span className="text-xs text-muted-foreground font-medium">{platform} User</span>
+               <span className="font-semibold text-lg leading-tight">{order.customerName || userName}</span>
+               <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5 mt-0.5">
+                 <span className="bg-primary/10 px-1.5 py-0.5 rounded text-primary tracking-tight font-mono font-bold">
+                   ORD-{order._id.split("").reverse().splice(0, 4).reverse().join("")}
+                 </span>
+                 • {platform}
+               </span>
              </div>
           </div>
         </div>
@@ -105,6 +101,18 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
                </span>
              </div>
           </div>
+
+          {order.orderNotes && (
+            <div className="flex items-start gap-2 col-span-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mt-2">
+               <Package className="w-4 h-4 mt-0.5 text-yellow-600 shrink-0" />
+               <div className="flex flex-col">
+                 <span className="text-yellow-700 text-xs font-bold uppercase tracking-wider">Order Notes</span>
+                 <span className="font-medium text-sm text-yellow-800 italic mt-0.5">
+                   "{order.orderNotes}"
+                 </span>
+               </div>
+            </div>
+          )}
         </div>
       </CardContent>
       

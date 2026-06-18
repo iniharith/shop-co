@@ -41,25 +41,31 @@ export const useOrder = () => {
     const profile = profileResponse as any;
 
     const { form, onFormSubmit, control, errors, } = useZodFormV2(addressSchema, (data: any) => createOrderMutation(data), {
+        customerName: "",
         address: "",
         city: "",
         country: "Malaysia",
         postalCode: "",
         street: "",
+        orderNotes: "",
     }, {
         mode: "onChange"
     })
 
     // Pre-fill form if profile address exists
     useEffect(() => {
-        if (profile?.data?.address) {
-            const addr = profile.data.address;
-            if (addr.street) form.setValue("street", addr.street);
-            // using state or street for 'address' field in form? Let's just put state in address field if needed
-            if (addr.state) form.setValue("address", addr.state);
-            if (addr.city) form.setValue("city", addr.city);
-            if (addr.zip) form.setValue("postalCode", addr.zip);
-            if (addr.country) form.setValue("country", addr.country);
+        if (profile?.data) {
+            if (profile.data.name) form.setValue("customerName", profile.data.name);
+            
+            if (profile.data.address) {
+                const addr = profile.data.address;
+                if (addr.street) form.setValue("street", addr.street);
+                // using state or street for 'address' field in form? Let's just put state in address field if needed
+                if (addr.state) form.setValue("address", addr.state);
+                if (addr.city) form.setValue("city", addr.city);
+                if (addr.zip) form.setValue("postalCode", addr.zip);
+                if (addr.country) form.setValue("country", addr.country);
+            }
         }
     }, [profile, form]);
     const handleCheckout = () => {

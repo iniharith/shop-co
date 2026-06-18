@@ -6,6 +6,8 @@ export interface IAddress {
     country: string;
     postalCode: string;
     address: string;
+    customerName: string;
+    orderNotes?: string;
 }
 
 export const addressSchema = z.object({
@@ -31,7 +33,9 @@ export const addressSchema = z.object({
         })
         .regex(/^\d+$/, {
             message: "Please enter a valid pincode",
-        })
-
-
+        }),
+    customerName: z.string().min(1, {
+        message: "Please enter your full name",
+    }),
+    orderNotes: z.string().optional(),
 });

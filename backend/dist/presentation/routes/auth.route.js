@@ -7,5 +7,6 @@ const express_1 = require("express");
 const auth_controller_1 = __importDefault(require("../controllers/auth.controller"));
 const router = (0, express_1.Router)();
 router.post("/login", auth_controller_1.default.login.bind(auth_controller_1.default));
-router.post("/register", auth_controller_1.default.register.bind(auth_controller_1.default));
+// Registration is disabled by admin request
+// router.post("/register", authController.register.bind(authController));
 exports.default = router;

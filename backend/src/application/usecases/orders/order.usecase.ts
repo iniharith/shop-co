@@ -56,7 +56,7 @@ export class OrderUsecase {
         return order;
     }
 
-    async createOrder(address: IAddress, userId: string): Promise<IOrderDocument> {
+    async createOrder(address: IAddress, userId: string, customerName: string, orderNotes: string): Promise<IOrderDocument> {
 
         const cart = await this.cartRepository.getCartByUserId(userId);
         if (!cart || !cart.items || !cart?.items?.length) {
@@ -89,6 +89,8 @@ export class OrderUsecase {
 
         const order = await this.orderRepository.createOrder({
             userId,
+            customerName,
+            orderNotes,
             address,
             paymentMethod: "COD",
             products: orderItems,

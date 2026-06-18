@@ -40,22 +40,24 @@ export const orderColumns: ColumnDef<IOrder>[] = [
     cell: ({ row }) => <div>{row.index + 1}</div>,
   },
   {
-    accessorKey: "orderId",
-    header: "id",
-
-    cell: ({ row }) => (
-      <div>
-        ORD-{" "}
-        {row.original._id.split("").reverse().splice(0, 4).reverse().join("")}
-      </div>
-    ),
+    accessorKey: "customerName",
+    header: "Customer",
+    cell: ({ row }) => {
+      const orderId = row.original._id.split("").reverse().splice(0, 4).reverse().join("");
+      return (
+        <div className="flex flex-col">
+          <span className="font-semibold">{row.original.customerName || "Unknown"}</span>
+          <span className="text-xs text-muted-foreground">ORD-{orderId}</span>
+        </div>
+      );
+    },
   },
   {
-    accessorKey: "userId",
-    header: "User",
+    accessorKey: "orderNotes",
+    header: "Notes",
     cell: ({ row }) => {
-      const user = row.original.userId as any;
-      return <div>{typeof user === "object" ? user.name : user}</div>;
+      const notes = row.original.orderNotes;
+      return <div className="max-w-[150px] truncate text-xs">{notes ? notes : "-"}</div>;
     },
   },
   {

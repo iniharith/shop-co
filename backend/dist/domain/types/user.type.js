@@ -5,5 +5,9 @@ var Roles;
 (function (Roles) {
     Roles["CLIENT"] = "client";
     Roles["ADMIN"] = "admin";
+    Roles["SYSADMIN"] = "sysadmin";
+    Roles["DESIGNER"] = "designer";
+    Roles["BOSS"] = "boss";
+    Roles["PRODUCTION"] = "production";
     Roles["DELIVERY_BOY"] = "delivery_boy";
 })(Roles || (exports.Roles = Roles = {}));
