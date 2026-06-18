@@ -124,6 +124,14 @@ export class AdminUsecase {
         return await this.orderRepository.getOrders();
     }
 
+    async deleteOrder(orderId: string): Promise<void> {
+        const order = await this.orderRepository.getOrderById(orderId);
+        if (!order) {
+            throw new Error("Order not found");
+        }
+        await this.orderRepository.deleteOrder(orderId);
+    }
+
     async clearTestData(): Promise<void> {
         const testCustomers = await User.find({ email: { $regex: /^customer[1-3]@test\.com$/ } });
         const testCustomerIds = testCustomers.map(c => c._id);

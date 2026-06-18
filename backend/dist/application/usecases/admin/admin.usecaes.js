@@ -133,6 +133,15 @@ class AdminUsecase {
             return yield this.orderRepository.getOrders();
         });
     }
+    deleteOrder(orderId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const order = yield this.orderRepository.getOrderById(orderId);
+            if (!order) {
+                throw new Error("Order not found");
+            }
+            yield this.orderRepository.deleteOrder(orderId);
+        });
+    }
     clearTestData() {
         return __awaiter(this, void 0, void 0, function* () {
             const testCustomers = yield user_model_1.default.find({ email: { $regex: /^customer[1-3]@test\.com$/ } });

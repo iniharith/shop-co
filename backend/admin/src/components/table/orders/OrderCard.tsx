@@ -5,7 +5,9 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { CellAction } from "@/components/global/cell-actions";
 import OrderInfo from "@/components/global/orderInfo";
 import { cn } from "@/lib/utils";
-import { Package, UserCircle2, MapPin, CreditCard, ShoppingBag } from "lucide-react";
+import { Package, UserCircle2, MapPin, CreditCard, ShoppingBag, Trash2 } from "lucide-react";
+import { useDeleteOrder } from "@/hooks/useOrder";
+import { toast } from "sonner";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -41,6 +43,22 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
   
   // Tracking number prominently displayed, fallback to ID
   const displayId = (order as any).trackingNumber ? (order as any).trackingNumber : `ORD-${order._id.split("").reverse().splice(0, 4).reverse().join("")}`;
+
+  const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder();
+
+  const handleDelete = () => {
+    if (window.confirm("Are you sure you want to delete this order? This action cannot be undone.")) {
+      deleteOrder(order._id as string, {
+        onSuccess: () => {
+          toast.success("Order deleted successfully");
+          window.location.reload();
+        },
+        onError: (err: any) => {
+          toast.error(err.response?.data?.message || "Failed to delete order");
+        }
+      });
+    }
+  };
 
   return (
     <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card border border-border/50 rounded-2xl flex flex-col justify-between">
@@ -123,6 +141,16 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
           </span>
         </div>
         <div className="flex items-center gap-3">
+          {(!order.userId || platform !== "WEB") && (
+            <button 
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+              title="Delete External Order"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          )}
           <CellAction
             info={<OrderInfo order={order as any} />}
             id={(order as any)._id}

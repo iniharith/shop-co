@@ -30,6 +30,10 @@ export class OrderRepository {
         return await this.orderModel.findByIdAndUpdate(orderId, order, { new: true });
     }
 
+    async deleteOrder(orderId: string): Promise<IOrderDocument | null> {
+        return await this.orderModel.findByIdAndDelete(orderId);
+    }
+
 
     async getDistintValues(userId: string, field: string): Promise<IOrderDocument[]> {
         return await this.orderModel.distinct(field, { userId });

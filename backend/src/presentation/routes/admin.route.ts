@@ -18,6 +18,7 @@ router.delete("/users/:id", authMiddilware, adminController.deleteUser.bind(admi
 
 router.get("/orders", authMiddilware, adminController.getOrders.bind(adminController));
 router.post("/orders/manual", authMiddilware, adminController.createManualOrder.bind(adminController));
+router.delete("/orders/:id", authMiddilware, adminController.deleteOrder.bind(adminController));
 
 router.post("/seed-test-data", authMiddilware, adminController.seedTestData.bind(adminController));
 router.delete("/clear-test-data", authMiddilware, adminController.clearTestData.bind(adminController));

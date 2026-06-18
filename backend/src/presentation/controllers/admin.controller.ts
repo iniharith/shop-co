@@ -128,6 +128,26 @@ export class AdminController {
         }
     }
 
+    /**
+     * @description Delete order
+     * @Method DELETE
+     * @Route /api/admin/orders/:id
+     */
+    async deleteOrder(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(req.role as Roles)) {
+                throw new Error(messages.UNAUTHORIZED)
+            }
+            const { id } = req.params;
+            await this.adminUsecase.deleteOrder(id);
+            res.status(statusCodes.OK).json({
+                message: "Order deleted successfully"
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
 
 
 

@@ -139,6 +139,28 @@ class AdminController {
         });
     }
     /**
+     * @description Delete order
+     * @Method DELETE
+     * @Route /api/admin/orders/:id
+     */
+    deleteOrder(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS].includes(req.role)) {
+                    throw new Error(api_constant_1.messages.UNAUTHORIZED);
+                }
+                const { id } = req.params;
+                yield this.adminUsecase.deleteOrder(id);
+                res.status(api_constant_1.statusCodes.OK).json({
+                    message: "Order deleted successfully"
+                });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    /**
      * @description Seed test data
      * @Method POST
      * @Route /api/admin/seed-test-data

@@ -43,6 +43,11 @@ class OrderRepository {
             return yield this.orderModel.findByIdAndUpdate(orderId, order, { new: true });
         });
     }
+    deleteOrder(orderId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.orderModel.findByIdAndDelete(orderId);
+        });
+    }
     getDistintValues(userId, field) {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.orderModel.distinct(field, { userId });

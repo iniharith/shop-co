@@ -20,6 +20,11 @@ export const createManualOrder = async (token: string, data: any) => {
     return response.data;
 }
 
+export const deleteOrder = async (token: string, orderId: string) => {
+    const response = await AxiosInstance(token).delete(`${ADMIN_URL}/orders/${orderId}`);
+    return response.data;
+}
+
 
 
 

@@ -23,4 +23,10 @@ export const useCreateManualOrder = () => {
     return { mutate, isPending }
 }
 
+export const useDeleteOrder = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(['deleteOrder'], (orderId: string) => import("@/api/orders").then(m => m.deleteOrder(session?.user.token, orderId)), ["orders"])
+    return { mutate, isPending }
+}
+
 
