@@ -21,7 +21,7 @@ export default function GlobalCard({  imageUrl ,onClick}: GlobalCardProps) {
         <h2 className="text-xl font-semibold text-gray-800 mb-2">{name}</h2>
         <p className="text-gray-600 text-sm mb-4 line-clamp-2">{description}</p>
         <div className="flex justify-between items-center">
-          <span className="text-2xl font-bold text-primary">${price.toFixed(2)}</span>
+          <span className="text-2xl font-bold text-primary">RM{price.toFixed(2)}</span>
           <div className="flex items-center">
             <Star className="w-5 h-5 text-yellow-400 fill-current" />
             <span className="ml-1 text-sm text-gray-600">{rating.toFixed(1)}</span>

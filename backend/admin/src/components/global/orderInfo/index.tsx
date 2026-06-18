@@ -101,8 +101,7 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
                       {product.product.name}
                     </p>
                     <p className="text-gray-600 flex items-center gap-1">
-                      {product.price}
-                      INR
+                      RM{product.price}
                     </p>
                     <p>
                       <strong>Quantity:</strong> {product.quantity}
@@ -127,11 +126,11 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
       <div className="flex md:flex-row  flex-col mb-2 mt-2 md:items-center justify-between gap-4 py-4 px-4 bg-muted/20 rounded-lg">
         <div className="flex gap-4">
           <Avatar>
-            <AvatarFallback>{(order.userId as any).name}</AvatarFallback>
+            <AvatarFallback>{(order.userId as any)?.name?.slice(0, 2) || "U"}</AvatarFallback>
           </Avatar>
           <div>
-            <p className="font-semibold">{order.userId.name}</p>
-            <p className="text-gray-600">{order.userId.email}</p>
+            <p className="font-semibold">{order.userId?.name || "Unknown User"}</p>
+            <p className="text-gray-600">{order.userId?.email || ""}</p>
           </div>
         </div>
         <AnimatedButton
@@ -141,7 +140,7 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
           loadingText=""
           className={cn(
             "px-4 w-min ",
-            (order.deliveryBoy || session.user.role == Roles.ADMIN) && "hidden"
+            (order.deliveryBoy || session?.user?.role == Roles.ADMIN) && "hidden"
           )}
           onClick={() => {
             mangeOrder({ id: order._id });
@@ -149,7 +148,7 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
           isLoading={orderManagePendding}
           disabled={orderManagePendding}
         />
-        {order.deliveryBoy &&
+        {order.deliveryBoy && session?.user?.id &&
           (order.deliveryBoy as unknown as IUser)._id.toLowerCase() ==
             session.user.id.toLowerCase() && (
             <div className="flex items-center gap-2 mt-2">
@@ -193,12 +192,12 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
           <MapPin size={16} /> Shipping Address
         </h3>
         <p className="px-1 text-muted-foreground">
-          {order.address.address}, {order.address.postalCode}
+          {order.address?.address}, {order.address?.postalCode}
         </p>
       </div>
 
       <p className="font-semibold text-lg flex items-center gap-1">
-        Grand Total: {order.totalAmount} INR
+        Grand Total: RM{order.totalAmount}
       </p>
     </ScrollArea>
   );
