@@ -142,7 +142,7 @@ const FormGeneratorV2 = ({
               )}
             >
               {label && label}
-              {label && <span className="text-primary">*</span>}
+              {label && !label.toLowerCase().includes("optional") && <span className="text-primary">*</span>}
             </FormLabel>
             <FormControl className="flex relative items-center justify-end">
               <div className="flex relative items-center justify-end">
@@ -228,7 +228,7 @@ const FormGeneratorV2 = ({
               )}
             >
               {label && label}
-              {label && <span className="text-primary">*</span>}
+              {label && !label.toLowerCase().includes("optional") && <span className="text-primary">*</span>}
             </FormLabel>
             <FormControl>
               <Select value={field.value} onValueChange={field.onChange}>
@@ -286,7 +286,7 @@ const FormGeneratorV2 = ({
               )}
             >
               {label && label}
-              {label && <span className="text-primary">*</span>}
+              {label && !label.toLowerCase().includes("optional") && <span className="text-primary">*</span>}
             </FormLabel>
             <FormControl>
               <div className="w-full">
@@ -391,7 +391,7 @@ const FormGeneratorV2 = ({
               )}
             >
               {label && label}
-              {label && <span className="text-primary">*</span>}
+              {label && !label.toLowerCase().includes("optional") && <span className="text-primary">*</span>}
             </FormLabel>
             <FormControl>
               <div className="relative flex items-start">
@@ -409,7 +409,7 @@ const FormGeneratorV2 = ({
                   rows={lines || 4}
                   maxLength={maxLength}
                   className={cn(
-                    `bg-foreground px-[1.7rem] rounded-xl text-secondary resize-none ${
+                    `bg-muted-foreground/10 focus-visible:ring-transparent border-input border-1 text-primary px-[1.7rem] py-3 rounded-xl resize-none ${
                       errors[field.name] && "errInput"
                     }`,
                     className?.input

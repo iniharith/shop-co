@@ -242,13 +242,29 @@ router.put(
 );
 
 // ─── DELETE /api/files/:id ────────────────────────────────
-// Admin deletes file from DB and Cloudinary
+// Admin or file owner deletes file from DB and Cloudinary
 router.delete(
   '/:id',
+  authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as any;
+    const userId = authReq.userId || authReq.user?.id;
+    const isAdmin = ['admin', 'system_admin', 'boss'].includes(authReq.role);
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
+      return;
+    }
+
     const file = await fileUploadRepository.findById(req.params.id);
     if (!file) {
       res.status(404).json({ success: false, message: 'Fail tidak dijumpai' });
+      return;
+    }
+
+    // Only allow deletion if admin OR if the user owns the file
+    if (!isAdmin && file.userId?.toString() !== userId.toString()) {
+      res.status(403).json({ success: false, message: 'Tiada kebenaran untuk memadam fail ini' });
       return;
     }
 

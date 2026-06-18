@@ -24,6 +24,9 @@ const ProfileCard = () => {
   const { profileData, isLoading, updateProfile, isUpdating } = useProfile();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
   const [formData, setFormData] = useState({
     name: "",
     phoneNumber: "",
@@ -59,8 +62,49 @@ const ProfileCard = () => {
   }, [profileData, session]);
 
   const handleSave = () => {
+    if (!formData.phoneNumber) {
+      toast.error("Nombor Telefon tidak boleh kosong. (Phone Number is required)");
+      return;
+    }
+    
+    if (!formData.address.street || !formData.address.city || !formData.address.state || !formData.address.zip) {
+      toast.error("Alamat penuh diperlukan. (Full address is required)");
+      return;
+    }
+    
     updateProfile(formData);
     setIsEditing(false);
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setIsUploadingAvatar(true);
+    const token = session?.user?.token;
+    const uploadData = new FormData();
+    uploadData.append("avatar", file);
+
+    try {
+      const res = await fetch("/api/user/profile/avatar", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: uploadData
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Gambar profil berjaya ditukar!");
+        window.location.reload(); 
+      } else {
+        toast.error(data.message || "Gagal menukar gambar profil");
+      }
+    } catch (err) {
+      toast.error("Ralat memuat naik gambar");
+    } finally {
+      setIsUploadingAvatar(false);
+    }
   };
 
   const handleCancel = () => {
@@ -121,7 +165,25 @@ const ProfileCard = () => {
         {/* Avatar — overlapping the banner */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-12 mb-5">
           <div className="relative w-fit">
-            <div className="w-24 h-24 rounded-full border-4 border-white bg-primary shadow-md flex items-center justify-center overflow-hidden">
+            <div 
+              className="group w-24 h-24 rounded-full border-4 border-white bg-primary shadow-md flex items-center justify-center overflow-hidden cursor-pointer relative"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*"
+                onChange={handleAvatarChange}
+              />
+              {isUploadingAvatar && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <Edit2 size={20} className="text-white" />
+              </div>
               {displayAvatar ? (
                 <img
                   src={displayAvatar}

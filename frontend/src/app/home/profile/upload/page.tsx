@@ -55,6 +55,8 @@ export default function UploadPage() {
   const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/tiff', 'application/pdf'];
   const MAX_MB = 50;
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   useEffect(() => {
     fetchMyFiles();
   }, []);
@@ -144,6 +146,26 @@ export default function UploadPage() {
       setError(e.message || 'Muat naik gagal. Cuba lagi.');
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Adakah anda pasti ingin memadam fail ini?')) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`${API}/api/files/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      toast.success("Fail berjaya dipadam");
+      await fetchMyFiles();
+    } catch (e: any) {
+      toast.error(e.message || "Gagal memadam fail");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -336,6 +358,18 @@ export default function UploadPage() {
                     }`}>
                       {f.adminReviewed ? '✅ Disemak' : '⏳ Menunggu'}
                     </span>
+                    <button
+                      onClick={() => handleDelete(f._id)}
+                      disabled={deletingId === f._id}
+                      className="ml-2 text-gray-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50"
+                      title="Padam Fail"
+                    >
+                      {deletingId === f._id ? (
+                        <span className="block w-4 h-4 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
+                      ) : (
+                        '🗑️'
+                      )}
+                    </button>
                   </div>
                 ))}
               </div>

@@ -19,6 +19,7 @@ import { LuMapPinHouse } from "react-icons/lu";
 import { IoEarthSharp } from "react-icons/io5";
 import { FaFlag, FaUser, FaStickyNote } from "react-icons/fa";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Switch } from "@/components/ui/switch";
 import {
   Drawer,
   DrawerTitle,
@@ -43,7 +44,7 @@ const AddressForm = ({
   errors: FieldErrors<any>;
   formRef: RefObject<HTMLFormElement>;
 }) => {
-  const { previousAddressData, previousAddressLoading, DisOpen, setDisOpen } =
+  const { previousAddressData, previousAddressLoading, DisOpen, setDisOpen, profile } =
     useOrder();
   const addresses = previousAddressData?.address || [];
   const isMobile = useIsMobile();
@@ -55,6 +56,33 @@ const AddressForm = ({
           <p className="text-sm mb-5 text-muted-foreground font-medium">
             Please enter your address to continue
           </p>
+          {profile?.data?.address?.street && (
+            <div className="flex items-center gap-3 mb-4 bg-primary/5 p-3 rounded-xl border border-primary/20 w-max">
+              <Switch 
+                id="use-profile-address" 
+                checked={form.watch("street") === profile.data.address.street}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    const addr = profile.data.address;
+                    form.setValue("street", addr.street || "");
+                    form.setValue("city", addr.city || "");
+                    form.setValue("country", addr.country || "Malaysia");
+                    form.setValue("postalCode", addr.zip || "");
+                    form.setValue("address", addr.state || "");
+                  } else {
+                    form.setValue("street", "");
+                    form.setValue("city", "");
+                    form.setValue("country", "Malaysia");
+                    form.setValue("postalCode", "");
+                    form.setValue("address", "");
+                  }
+                }}
+              />
+              <label htmlFor="use-profile-address" className="text-sm font-semibold text-primary cursor-pointer">
+                Ship to my Profile Address
+              </label>
+            </div>
+          )}
         </div>
         <div className="flex flex-col ">
           <p className="text-sm md:block hidden text-muted-foreground font-medium">

@@ -59,12 +59,12 @@ export const useAllFiles = () => {
 
 export const useReviewFile = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['reviewFile'], ({ id, reviewed, notes }: any) => reviewFile(session?.user?.token, id, reviewed, notes));
+    const { mutate, isPending } = useMutationData(['reviewFile'], ({ id, reviewed, notes }: any) => reviewFile(session?.user?.token, id, reviewed, notes), ['groupedFiles']);
     return { mutate, isPending };
 }
 
 export const useDeleteFile = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['deleteFile'], (id: string) => deleteFile(session?.user?.token, id));
+    const { mutate, isPending } = useMutationData(['deleteFile'], (id: string) => deleteFile(session?.user?.token, id), ['groupedFiles']);
     return { mutate, isPending };
 }

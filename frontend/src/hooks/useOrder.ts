@@ -52,21 +52,7 @@ export const useOrder = () => {
         mode: "onChange"
     })
 
-    // Pre-fill form if profile address exists
-    useEffect(() => {
-        if (profile?.data) {
-            
-            if (profile.data.address) {
-                const addr = profile.data.address;
-                if (addr.street) form.setValue("street", addr.street);
-                // using state or street for 'address' field in form? Let's just put state in address field if needed
-                if (addr.state) form.setValue("address", addr.state);
-                if (addr.city) form.setValue("city", addr.city);
-                if (addr.zip) form.setValue("postalCode", addr.zip);
-                if (addr.country) form.setValue("country", addr.country);
-            }
-        }
-    }, [profile, form]);
+    // Removed auto-prefill to allow manual selection via switch
     const handleCheckout = () => {
         if (formRef.current) {
             formRef.current.requestSubmit();
@@ -74,7 +60,7 @@ export const useOrder = () => {
     };
 
     const previousAddressData = previousAddress as IPreviousAddressResponse
-    return { form, onFormSubmit, control, errors, formRef, handleCheckout, previousAddressData, previousAddressLoading,DisOpen,setDisOpen }
+    return { form, onFormSubmit, control, errors, formRef, handleCheckout, previousAddressData, previousAddressLoading,DisOpen,setDisOpen, profile }
 }
 
 

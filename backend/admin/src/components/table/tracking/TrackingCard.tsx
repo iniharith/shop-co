@@ -29,7 +29,10 @@ export default function TrackingCard({ parcel }: TrackingCardProps) {
   const { mutate: whatsappMutate, isPending: isSending } = useSendWhatsApp();
   const { mutate: updateMutate, isPending: isUpdating } = useUpdateParcel();
 
+  const [autoNotify, setAutoNotify] = useState(parcel.whatsappNotified ?? true);
+
   const handleAutoNotifyChange = (checked: boolean) => {
+    setAutoNotify(checked);
     updateMutate({ id: parcel._id, data: { whatsappNotified: checked } });
   };
 
@@ -122,7 +125,7 @@ export default function TrackingCard({ parcel }: TrackingCardProps) {
           {/* Actions Footer */}
           <div className="flex items-center justify-between pt-3 border-t border-slate-50 mt-auto">
             <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-              <Switch id={`auto-notify-${parcel._id}`} checked={parcel.whatsappNotified ?? false} onCheckedChange={handleAutoNotifyChange} disabled={isUpdating} />
+              <Switch id={`auto-notify-${parcel._id}`} checked={autoNotify} onCheckedChange={handleAutoNotifyChange} disabled={isUpdating} />
               <Label htmlFor={`auto-notify-${parcel._id}`} className="text-xs text-slate-600 cursor-pointer">Auto-notify</Label>
             </div>
 
@@ -209,7 +212,7 @@ export default function TrackingCard({ parcel }: TrackingCardProps) {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-slate-500">Auto-notify</span>
-              <Switch checked={parcel.whatsappNotified ?? false} onCheckedChange={handleAutoNotifyChange} disabled={isUpdating} />
+              <Switch checked={autoNotify} onCheckedChange={handleAutoNotifyChange} disabled={isUpdating} />
             </div>
           </div>
 
