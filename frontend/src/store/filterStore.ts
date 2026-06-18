@@ -1,27 +1,40 @@
 import { create } from "zustand";
 
 interface FilterState {
-  categories: string[];
+  serviceCategories: string[];
+  turnarounds: string[];
+  formats: string[];
+  materials: string[];
   priceRange: [number, number];
-  sizes: string[];
-
 }
 
 interface FilterActions {
-  setCategories: (categories: string[]) => void;
+  setServiceCategories: (categories: string[]) => void;
+  setTurnarounds: (turnarounds: string[]) => void;
+  setFormats: (formats: string[]) => void;
+  setMaterials: (materials: string[]) => void;
   setPriceRange: (priceRange: [number, number]) => void;
-  setSizes: (sizes: string[]) => void;
   resetFilters: () => void;
 }
 
 export const useFilterStore = create<FilterState & FilterActions>((set) => ({
-  categories: [],
+  serviceCategories: [],
+  turnarounds: [],
+  formats: [],
+  materials: [],
   priceRange: [0, 1000],
-  sizes: [],
 
-  setCategories: (categories: string[]) => set({ categories }),
+  setServiceCategories: (serviceCategories: string[]) => set({ serviceCategories }),
+  setTurnarounds: (turnarounds: string[]) => set({ turnarounds }),
+  setFormats: (formats: string[]) => set({ formats }),
+  setMaterials: (materials: string[]) => set({ materials }),
   setPriceRange: (priceRange: [number, number]) => set({ priceRange }),
-  setSizes: (sizes: string[]) => set({ sizes }),
-  resetFilters: () => set({ categories: [], priceRange: [0, 1000], sizes: [] }),
+  resetFilters: () => set({ 
+    serviceCategories: [], 
+    turnarounds: [], 
+    formats: [], 
+    materials: [], 
+    priceRange: [0, 1000] 
+  }),
 }));
 

@@ -5,6 +5,7 @@ import { getProductByCategory, getProductById, getProducts, getAvailableCategori
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFilterStore } from "@/store/filterStore";
+import { useSearchParams } from "next/navigation";
 
 import { dummyProducts } from "@/constants/dummy-products";
 
@@ -61,17 +62,44 @@ export const useGetAvailableCategories = () => {
 
 
 export const useFilterProducts = () => {
-    const { categories, priceRange, sizes } = useFilterStore();
-    const { data, isPending, refetch } = useQueryData(["filterProducts", categories, priceRange, sizes], () => filterProducts({ category: categories, minPrice: priceRange[0], maxPrice: priceRange[1], size: sizes }));
+    const searchParams = useSearchParams();
+    const searchQuery = searchParams.get('search') || '';
+    
+    const { serviceCategories, turnarounds, formats, materials, priceRange } = useFilterStore();
+    const { data, isPending, refetch } = useQueryData(["filterProducts", serviceCategories, turnarounds, formats, materials, priceRange], () => filterProducts({ 
+        category: serviceCategories, 
+        minPrice: priceRange[0], 
+        maxPrice: priceRange[1], 
+        size: formats 
+    }));
+    
     useEffect(() => {
         refetch();
-    }, [categories, priceRange, sizes]);
+    }, [serviceCategories, turnarounds, formats, materials, priceRange]);
     
     // FORCE return the new printing products, simulating frontend filtering
     let filtered = [...dummyProducts];
-    if (categories && categories.length > 0) {
-          filtered = filtered.filter(p => categories.includes(p.category));
+    
+    if (searchQuery) {
+        filtered = filtered.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description.toLowerCase().includes(searchQuery.toLowerCase()));
     }
+    
+    if (priceRange) {
+        filtered = filtered.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
+    }
+    
+    if (serviceCategories && serviceCategories.length > 0) {
+        // Mock matching top-level category label with dummy products nested categories by keyword
+        filtered = filtered.filter(p => {
+             const lowerP = p.category.toLowerCase().replace('-', ' ');
+             return serviceCategories.some(c => lowerP.includes(c.toLowerCase().split(' ')[1] || c.toLowerCase().split(' ')[0]));
+        });
+    }
+    
+    if (formats && formats.length > 0) {
+        filtered = filtered.filter(p => p.sizes && p.sizes.some(s => formats.includes(s)));
+    }
+    
     return { data: { products: filtered }, isPending: false, refetch };
 
     const response = data as IProductResponse;
