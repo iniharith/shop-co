@@ -20,8 +20,8 @@ export const useProducts = (id?: string) => {
         if (id) client.invalidateQueries({ queryKey: [queryKey], exact: true })
     }, [id]);
 
-    // Fallback to dummy products if DB is empty
-    if (!id && !isPending && (!response?.products || response.products.length === 0)) {
+    // FORCE return the new printing products, completely ignoring the old clothing items in the DB
+    if (!id && !isPending) {
         return { data: { ...response, products: dummyProducts }, isPending: false };
     }
 
