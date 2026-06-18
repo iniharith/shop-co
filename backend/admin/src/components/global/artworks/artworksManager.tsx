@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const categories = [
   "ALL",
@@ -59,6 +60,20 @@ export default function ArtworksManager() {
       return nameMatch || idMatch || shortIdMatch || orderMatch;
     });
   }, [allFiles, searchQuery, activeTab]);
+
+  const groupedFiles = useMemo(() => {
+    const groups: Record<string, any[]> = {};
+    filteredFiles.forEach((file: any) => {
+      // Prioritize Order ID over User ID, fallback to 'Unassigned'
+      const key = file.orderId ? `Order: ${file.orderId}` : (file.userId ? `User: ${file.userId}` : "Unassigned");
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(file);
+    });
+    return Object.entries(groups).map(([folderName, files]) => ({
+      folderName,
+      files
+    }));
+  }, [filteredFiles]);
 
   const handleReview = (fileId: string, currentStatus: boolean, notes?: string) => {
     reviewFileMutate(
@@ -203,75 +218,94 @@ export default function ArtworksManager() {
         </TabsList>
       </Tabs>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-        {filteredFiles.length === 0 ? (
-          <div className="col-span-full p-8 text-center text-muted-foreground border border-dashed rounded-xl">
-            No artworks found in this category.
-          </div>
-        ) : (
-          filteredFiles.map((file: any) => (
-            <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-              <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between bg-muted/20">
+      {groupedFiles.length === 0 ? (
+        <div className="p-8 text-center text-muted-foreground border border-dashed rounded-xl">
+          No artworks found in this category.
+        </div>
+      ) : (
+        <Accordion type="multiple" className="w-full space-y-4">
+          {groupedFiles.map((group) => (
+            <AccordionItem key={group.folderName} value={group.folderName} className="border rounded-lg px-4 bg-card">
+              <AccordionTrigger className="hover:no-underline">
                 <div className="flex items-center gap-3">
-                  {getFileIcon(file.mimetype)}
-                  <div className="overflow-hidden">
-                    <CardTitle className="text-sm truncate w-40" title={file.originalName}>
-                      {file.originalName}
-                    </CardTitle>
-                    <CardDescription className="text-xs truncate w-40">
-                      User: {file.userId?.slice(-6).toUpperCase() || 'N/A'}
-                    </CardDescription>
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Folder className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="font-semibold text-base">{group.folderName}</span>
+                    <span className="text-sm text-muted-foreground">{group.files.length} file(s)</span>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="p-4 pt-3 flex flex-col gap-3">
-                <div className="text-xs text-muted-foreground flex justify-between items-center">
-                  <span className="bg-muted px-2 py-1 rounded-md">{file.category || "Uncategorized"}</span>
-                  <span className={file.adminReviewed ? "text-green-500 font-semibold" : "text-amber-500 font-semibold"}>
-                    {file.adminReviewed ? "Reviewed" : "Pending"}
-                  </span>
-                </div>
-                
-                {file.adminNotes && (
-                  <div className="text-xs bg-primary/10 text-primary p-2 rounded-md italic flex items-start gap-2">
-                    <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
-                    <span>{file.adminNotes}</span>
-                  </div>
-                )}
-                
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <Button variant="secondary" size="sm" className="flex-1" onClick={() => window.open(file.path, "_blank")}>
-                    <Eye className="w-4 h-4 mr-1" /> View
-                  </Button>
-                  
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => {
-                    setSelectedFile(file);
-                    setCommentText(file.adminNotes || "");
-                    setCommentModalOpen(true);
-                  }}>
-                    <MessageSquare className="w-4 h-4 mr-1" /> Note
-                  </Button>
+              </AccordionTrigger>
+              <AccordionContent className="pt-4 pb-6 border-t mt-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                  {group.files.map((file: any) => (
+                    <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between bg-muted/20">
+                        <div className="flex items-center gap-3">
+                          {getFileIcon(file.mimetype)}
+                          <div className="overflow-hidden">
+                            <CardTitle className="text-sm truncate w-40" title={file.originalName}>
+                              {file.originalName}
+                            </CardTitle>
+                            <CardDescription className="text-xs truncate w-40">
+                              User: {file.userId?.slice(-6).toUpperCase() || 'N/A'}
+                            </CardDescription>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-4 pt-3 flex flex-col gap-3">
+                        <div className="text-xs text-muted-foreground flex justify-between items-center">
+                          <span className="bg-muted px-2 py-1 rounded-md">{file.category || "Uncategorized"}</span>
+                          <span className={file.adminReviewed ? "text-green-500 font-semibold" : "text-amber-500 font-semibold"}>
+                            {file.adminReviewed ? "Reviewed" : "Pending"}
+                          </span>
+                        </div>
+                        
+                        {file.adminNotes && (
+                          <div className="text-xs bg-primary/10 text-primary p-2 rounded-md italic flex items-start gap-2">
+                            <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
+                            <span>{file.adminNotes}</span>
+                          </div>
+                        )}
+                        
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <Button variant="secondary" size="sm" className="flex-1" onClick={() => window.open(file.path, "_blank")}>
+                            <Eye className="w-4 h-4 mr-1" /> View
+                          </Button>
+                          
+                          <Button variant="outline" size="sm" className="flex-1" onClick={() => {
+                            setSelectedFile(file);
+                            setCommentText(file.adminNotes || "");
+                            setCommentModalOpen(true);
+                          }}>
+                            <MessageSquare className="w-4 h-4 mr-1" /> Note
+                          </Button>
 
-                  <Button
-                    variant={file.adminReviewed ? "outline" : "default"}
-                    size="sm"
-                    className="w-full"
-                    onClick={() => handleReview(file._id, file.adminReviewed, file.adminNotes)}
-                    disabled={isReviewing}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-1" />
-                    {file.adminReviewed ? "Unmark Review" : "Mark as Reviewed"}
-                  </Button>
-                  
-                  <Button variant="destructive" size="sm" className="w-full" onClick={() => handleDelete(file._id)} disabled={isDeleting}>
-                    <Trash2 className="w-4 h-4 mr-1" /> Delete
-                  </Button>
+                          <Button
+                            variant={file.adminReviewed ? "outline" : "default"}
+                            size="sm"
+                            className="w-full"
+                            onClick={() => handleReview(file._id, file.adminReviewed, file.adminNotes)}
+                            disabled={isReviewing}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            {file.adminReviewed ? "Unmark Review" : "Mark as Reviewed"}
+                          </Button>
+                          
+                          <Button variant="destructive" size="sm" className="w-full" onClick={() => handleDelete(file._id)} disabled={isDeleting}>
+                            <Trash2 className="w-4 h-4 mr-1" /> Delete
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      )}
 
       {/* Comment Modal */}
       <Dialog open={commentModalOpen} onOpenChange={setCommentModalOpen}>
