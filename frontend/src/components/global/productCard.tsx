@@ -91,11 +91,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
             </span>
           </div>
           <div className="mt-auto flex items-center">
-            <span className="font-bold text-lg">${product.price}</span>
+            <span className="font-bold text-lg">RM {product.price}</span>
             {product.discount > 0 && (
               <>
                 <span className="text-gray-400 dark:text-muted-foreground line-through ml-2">
-                  ${product.originalPrice}
+                  RM {product.originalPrice}
                 </span>
                 <span className="ml-2 text-sm bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded">
                   -{product.discount}%

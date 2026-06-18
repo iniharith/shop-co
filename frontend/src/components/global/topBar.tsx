@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const messages = [
-  "Free shipping on all orders over $100 🎉",
+  "Free shipping on all orders over RM 100 🎉",
   "New arrivals just dropped 🔥",
   "Sign up and get 10% off your first order 🎁",
 ];

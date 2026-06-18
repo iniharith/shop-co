@@ -23,6 +23,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
   const [quantity, setQuantity] = useState(100);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({});
+  const [designOption, setDesignOption] = useState<"upload" | "design">("upload");
 
   useEffect(() => {
     if (product.printingOptions) {
@@ -47,7 +48,10 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       setIsAuthModalOpen(true);
       return;
     }
-    mutate({ productId: product._id, size: "Standard", quantity });
+    
+    // We can store the design option in the size field or metadata, but for now we append it to the size to pass it to the backend mock
+    const sizeWithDesign = `Standard | Design: ${designOption === "upload" ? "Upload Artwork" : "Need Design Service"}`;
+    mutate({ productId: product._id, size: sizeWithDesign, quantity });
     toast.success("Added to cart");
   };
 
@@ -62,7 +66,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     });
   }
 
-  const basePrice = product.price + optionAddons;
+  const basePrice = product.price + optionAddons + (designOption === "design" ? 50 : 0);
   const subtotal = basePrice * (quantity / 100);
   const vat = subtotal * 0.07; // 7% VAT
   const total = subtotal + vat;
@@ -105,7 +109,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               </div>
               {val.priceAdd !== 0 && (
                 <span className={`text-sm font-semibold ${val.priceAdd > 0 ? "text-primary" : "text-green-500"}`}>
-                  {val.priceAdd > 0 ? "+" : ""}${val.priceAdd.toFixed(2)}
+                  {val.priceAdd > 0 ? "+" : ""}RM {val.priceAdd.toFixed(2)}
                 </span>
               )}
             </label>
@@ -178,21 +182,72 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           </div>
         </div>
 
+        {/* STEP 4: Design Options */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
+            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
+              {step1Options.length && step2Options.length ? "4" : "3"}
+            </span>
+            <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Design & Artwork</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-2">
+            <label className={`flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+              designOption === "upload" 
+                ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-sm" 
+                : "border-gray-200 dark:border-border hover:border-primary/50"
+            }`}>
+              <div className="flex items-center gap-3">
+                <input 
+                  type="radio" 
+                  name="designOption" 
+                  className="w-4 h-4 text-primary focus:ring-primary accent-primary"
+                  checked={designOption === "upload"}
+                  onChange={() => setDesignOption("upload")}
+                />
+                <span className="text-sm font-bold text-gray-800 dark:text-foreground">I have my own design</span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">Upload your print-ready artwork (PDF, AI, PSD) during checkout or in your dashboard.</p>
+            </label>
+
+            <label className={`flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+              designOption === "design" 
+                ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-sm" 
+                : "border-gray-200 dark:border-border hover:border-primary/50"
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <input 
+                    type="radio" 
+                    name="designOption" 
+                    className="w-4 h-4 text-primary focus:ring-primary accent-primary"
+                    checked={designOption === "design"}
+                    onChange={() => setDesignOption("design")}
+                  />
+                  <span className="text-sm font-bold text-gray-800 dark:text-foreground">Let KampungCetak design for you</span>
+                </div>
+                <span className="text-sm font-semibold text-primary">+RM 50.00</span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">Our professional designers will create a stunning custom design for your brand.</p>
+            </label>
+          </div>
+        </div>
+
         {/* ── PRICE SUMMARY ── */}
         <div className="bg-gray-100 dark:bg-black/40 rounded-xl p-5 space-y-3 mt-8 border border-gray-200 dark:border-border">
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
             <span>Subtotal</span>
-            <span>${subtotal.toFixed(2)}</span>
+            <span>RM {subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
             <span>VAT (7%)</span>
-            <span>${vat.toFixed(2)}</span>
+            <span>RM {vat.toFixed(2)}</span>
           </div>
           <div className="w-full h-px bg-gray-300 dark:bg-border my-2"></div>
           <div className="flex justify-between items-end">
             <span className="text-base font-semibold text-gray-900 dark:text-foreground">Total Price</span>
             <div className="text-right">
-              <span className="text-3xl font-extrabold text-primary">${total.toFixed(2)}</span>
+              <span className="text-3xl font-extrabold text-primary">RM {total.toFixed(2)}</span>
               <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">Includes delivery to Malaysia</p>
             </div>
           </div>

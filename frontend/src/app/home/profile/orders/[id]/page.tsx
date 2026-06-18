@@ -10,6 +10,7 @@ import { useGetOrderById } from "@/hooks/useOrder"
 import OrderDetailsSkeleton from "@/components/loading/OrderDetailsSkeleton"
 import { OrderProgressTracker } from "@/components/global/order-progress-tracker"
 import { OrderStatusBadge } from "@/components/global/order-status-badge"
+import { getImageUrl } from "@/utils/getImageUrl"
 
 const OrderDetail = () => {
   const { id } = useParams()
@@ -118,7 +119,7 @@ const OrderDetail = () => {
                 <div key={item.product._id} className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden">
                     <img
-                      src={process.env.NEXT_PUBLIC_BACKEND_URL + item.product.images[0] || "/placeholder.svg"}
+                      src={getImageUrl(item.product.images[0])}
                       alt={item.product.name}
                       className="w-full h-full object-cover"
                     />

@@ -50,11 +50,11 @@ const page = () => {
                       {item.product.name}
                     </p>
                     <p className="text-sm text-muted-foreground font-medium">
-                      ${item.product.price}x{item.quantity}
+                      RM {item.product.price}x{item.quantity}
                     </p>
                   </div>
                   <p className="text-base text-muted-foreground font-medium">
-                    ${(item.product.price * item.quantity).toFixed(2)}
+                    RM {(item.product.price * item.quantity).toFixed(2)}
                   </p>
                 </div>
               ))}
@@ -64,7 +64,7 @@ const page = () => {
               <div className="w-full  flex items-center text-primary/90 justify-between">
                 <p className="text-lg  font-medium">Subtotal</p>
                 <p className="text-lg  font-medium">
-                  $
+                  RM 
                   {cartItems
                     .reduce(
                       (acc, item) => acc + item.product.price * item.quantity,
@@ -86,7 +86,7 @@ const page = () => {
               <div className="w-full mt-3 border-t border-b border-dashed flex items-center justify-between">
                 <p className="text-xl  font-medium">Total</p>
                 <p className="text-lg   font-medium">
-                  $
+                  RM 
                   {cartItems
                     .reduce(
                       (acc, item) => acc + item.product.price * item.quantity,

@@ -135,8 +135,8 @@ export default function FilterSidebar() {
                     className="my-4"
                   />
                   <div className="flex justify-between">
-                    <span className="text-sm">${selectedPriceRange[0]}</span>
-                    <span className="text-sm">${selectedPriceRange[1]}</span>
+                    <span className="text-sm">RM {selectedPriceRange[0]}</span>
+                    <span className="text-sm">RM {selectedPriceRange[1]}</span>
                   </div>
                 </div>
               </div>

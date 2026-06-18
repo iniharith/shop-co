@@ -72,7 +72,7 @@ const page = () => {
                     Subtotal
                   </p>
                   <p className="text-lg text-muted-foreground font-medium">
-                    $
+                    RM 
                     {cartItems.reduce(
                       (acc, item) => acc + item.product.price * item.quantity,
                       0
@@ -90,7 +90,7 @@ const page = () => {
                 <div className="w-full mt-3 border-t border-b border-dashed flex items-center justify-between">
                   <p className="text-lg  font-medium">Total</p>
                   <p className="text-lg   font-medium">
-                    $
+                    RM 
                     {cartItems.reduce(
                       (acc, item) => acc + item.product.price * item.quantity,
                       0

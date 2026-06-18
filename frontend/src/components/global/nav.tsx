@@ -195,6 +195,14 @@ const Nav = () => {
     setIsAuthModalOpen,
     notification,
   } = useNav();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/home/shop?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
   return (
     <>
@@ -236,17 +244,22 @@ const Nav = () => {
           </div>
 
           {/* Center: Search (desktop only) */}
-          <div className="hidden md:flex flex-1 max-w-2xl mx-auto relative items-center bg-white dark:bg-card rounded-full border border-gray-300 dark:border-border shadow-sm overflow-hidden px-4 py-1">
+          <form 
+            onSubmit={handleSearch}
+            className="hidden md:flex flex-1 max-w-2xl mx-auto relative items-center bg-white dark:bg-card rounded-full border border-gray-300 dark:border-border shadow-sm overflow-hidden px-4 py-1"
+          >
             <IoSearch className="text-gray-500 dark:text-muted-foreground text-xl mr-2 shrink-0" />
             <Input
               className="w-full focus-visible:ring-0 text-md bg-transparent border-none shadow-none ring-0 focus-visible:ring-offset-0 px-0 h-10 dark:text-foreground"
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search products, services, or categories..."
             />
-            <Button className="bg-primary text-white rounded-full px-6 h-9 shrink-0 ml-2">
+            <Button type="submit" className="bg-primary text-white rounded-full px-6 h-9 shrink-0 ml-2">
               Search
             </Button>
-          </div>
+          </form>
 
           {/* Right: Icons & Auth */}
           <div className="flex gap-2 md:gap-3 items-center shrink-0">
@@ -320,9 +333,8 @@ const Nav = () => {
           <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
             {printingCategories.map((item, index) => (
               <div key={index} className="relative group">
-                <Link
-                  href={item.href}
-                  className="text-primary font-bold uppercase tracking-wide inline-block py-2"
+                <div
+                  className="text-primary font-bold uppercase tracking-wide inline-block py-2 cursor-default"
                 >
                   <p className="relative text-sm inline-block overflow-hidden transition-colors">
                     <span className="inline-block transition-all duration-300 opacity-100 group-hover:-translate-y-6">
@@ -332,7 +344,7 @@ const Nav = () => {
                       {item.label}
                     </span>
                   </p>
-                </Link>
+                </div>
 
                 {/* Dropdown */}
                 <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white dark:bg-popover border border-gray-200 dark:border-border shadow-xl rounded-md min-w-[220px] py-2 z-50">

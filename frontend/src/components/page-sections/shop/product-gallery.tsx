@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { getImageUrl } from "@/utils/getImageUrl";
 
 interface ProductGalleryProps {
   images: string[];
@@ -25,24 +26,19 @@ export function ProductGallery({ images }: ProductGalleryProps) {
             )}
             onClick={() => setSelectedImage(index)}
           >
-            <Image
-              src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/${image}`}
-              alt={image}
-              fill
-              className="object-cover object-center"
-              sizes="80px"
+            <img
+              src={getImageUrl(image)}
+              alt={`Product thumbnail ${index + 1}`}
+              className="w-full h-full object-cover"
             />
           </button>
         ))}
       </div>
       <div className="relative aspect-square w-full overflow-hidden rounded-md bg-gray-400/30">
-        <Image
-          src={`${process.env.NEXT_PUBLIC_BACKEND_URL}/${images[selectedImage]}`}
-          alt={images[selectedImage]}
-          fill
-          className="object-cover object-center"
-          sizes="(min-width: 1024px) 50vw, 100vw"
-          priority
+        <img
+          src={getImageUrl(images[selectedImage])}
+          alt="Product image"
+          className="w-full h-full object-cover rounded-2xl"
         />
       </div>
     </div>

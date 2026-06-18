@@ -54,7 +54,7 @@ const OrderItem = ({ order }: OrderItemProps) => {
           >
             {order.orderStatus}
           </Badge>
-          <span className="font-medium">${order.totalAmount.toFixed(2)}</span>
+          <span className="font-medium">RM {order.totalAmount.toFixed(2)}</span>
         </div>
       </div>
 
@@ -134,7 +134,7 @@ const OrderItem = ({ order }: OrderItemProps) => {
                       Quantity: {item.quantity}
                     </p>
                   </div>
-                  <div className="font-medium">${item.price.toFixed(2)}</div>
+                  <div className="font-medium">RM {item.price.toFixed(2)}</div>
                 </div>
               ))}
             </div>

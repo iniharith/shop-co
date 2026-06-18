@@ -41,7 +41,7 @@ const CartItems = ({ product, qty, size }: CartItemsProps) => {
       <div className="flex flex-1  w-full items-center gap-2">
         <div className="w-[5rem] h-[5rem] bg-zinc-700  rounded-lg overflow-hidden">
           <img
-            src={process.env.NEXT_PUBLIC_BACKEND_URL + product.images[0]}
+            src={getImageUrl(product.images[0])}
             alt=""
             className="w-full h-full"
           />
@@ -51,7 +51,7 @@ const CartItems = ({ product, qty, size }: CartItemsProps) => {
           <p className="text-sm font-medium">
             Size: <span className="font-normal text-zinc-500">{size}</span>
           </p>
-          <p className="text-base font-medium">${product.price}</p>
+          <p className="text-base font-medium">RM {product.price}</p>
         </div>
       </div>
       <div className="flex flex-col gap-2 h-full">
@@ -85,7 +85,7 @@ const CartItems = ({ product, qty, size }: CartItemsProps) => {
           <p className="text-sm font-medium">
             Total:{" "}
             <span className="font-normal text-zinc-500">
-              ${product.price * quantity}
+              RM {product.price * quantity}
             </span>
           </p>
         </div>
