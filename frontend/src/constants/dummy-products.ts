@@ -12,8 +12,7 @@ export const dummyProducts: any[] = [
     "reviews": 40,
     "category": "banner",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -132,8 +131,7 @@ export const dummyProducts: any[] = [
     "reviews": 312,
     "category": "bunting",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -252,8 +250,7 @@ export const dummyProducts: any[] = [
     "reviews": 69,
     "category": "car-sticker",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -372,8 +369,7 @@ export const dummyProducts: any[] = [
     "reviews": 45,
     "category": "board-printing",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -492,8 +488,7 @@ export const dummyProducts: any[] = [
     "reviews": 289,
     "category": "wall-sticker",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -612,8 +607,7 @@ export const dummyProducts: any[] = [
     "reviews": 266,
     "category": "glass-sticker",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -732,8 +726,7 @@ export const dummyProducts: any[] = [
     "reviews": 28,
     "category": "personalised-flag",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -852,8 +845,7 @@ export const dummyProducts: any[] = [
     "reviews": 68,
     "category": "popup-backdrop-display",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -972,8 +964,7 @@ export const dummyProducts: any[] = [
     "reviews": 57,
     "category": "roll-up-stand",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -1092,8 +1083,7 @@ export const dummyProducts: any[] = [
     "reviews": 154,
     "category": "wind-flag",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -1212,8 +1202,7 @@ export const dummyProducts: any[] = [
     "reviews": 111,
     "category": "flyers",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -1332,8 +1321,7 @@ export const dummyProducts: any[] = [
     "reviews": 91,
     "category": "booklet",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -1452,8 +1440,7 @@ export const dummyProducts: any[] = [
     "reviews": 175,
     "category": "business-card",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -1572,8 +1559,7 @@ export const dummyProducts: any[] = [
     "reviews": 110,
     "category": "corporate-folder",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -1692,8 +1678,7 @@ export const dummyProducts: any[] = [
     "reviews": 129,
     "category": "paper-bag",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -1812,8 +1797,7 @@ export const dummyProducts: any[] = [
     "reviews": 118,
     "category": "certificate",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -1932,8 +1916,7 @@ export const dummyProducts: any[] = [
     "reviews": 74,
     "category": "stamp",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -2052,8 +2035,7 @@ export const dummyProducts: any[] = [
     "reviews": 53,
     "category": "sticker",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -2172,8 +2154,7 @@ export const dummyProducts: any[] = [
     "reviews": 296,
     "category": "crystal-plaque-trophy",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -2292,8 +2273,7 @@ export const dummyProducts: any[] = [
     "reviews": 34,
     "category": "acrylic-trophy",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -2412,8 +2392,7 @@ export const dummyProducts: any[] = [
     "reviews": 235,
     "category": "acrylic-keychain",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -2532,8 +2511,7 @@ export const dummyProducts: any[] = [
     "reviews": 193,
     "category": "fridge-magnet",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -2652,8 +2630,7 @@ export const dummyProducts: any[] = [
     "reviews": 195,
     "category": "lanyard",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -2772,8 +2749,7 @@ export const dummyProducts: any[] = [
     "reviews": 178,
     "category": "mug",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -2892,8 +2868,7 @@ export const dummyProducts: any[] = [
     "reviews": 73,
     "category": "pen",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -3012,8 +2987,7 @@ export const dummyProducts: any[] = [
     "reviews": 114,
     "category": "calendar",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -3132,8 +3106,7 @@ export const dummyProducts: any[] = [
     "reviews": 189,
     "category": "notebook",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -3252,8 +3225,7 @@ export const dummyProducts: any[] = [
     "reviews": 245,
     "category": "money-packet",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -3372,8 +3344,7 @@ export const dummyProducts: any[] = [
     "reviews": 28,
     "category": "premium-gift",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -3492,8 +3463,7 @@ export const dummyProducts: any[] = [
     "reviews": 293,
     "category": "non-woven-bag",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -3612,8 +3582,7 @@ export const dummyProducts: any[] = [
     "reviews": 188,
     "category": "canvas-bag",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -3732,8 +3701,7 @@ export const dummyProducts: any[] = [
     "reviews": 150,
     "category": "sublimation-tshirt",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -3852,8 +3820,7 @@ export const dummyProducts: any[] = [
     "reviews": 21,
     "category": "cotton-t-shirt",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -3972,8 +3939,7 @@ export const dummyProducts: any[] = [
     "reviews": 167,
     "category": "islamic-khat",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -4092,8 +4058,7 @@ export const dummyProducts: any[] = [
     "reviews": 299,
     "category": "portrait",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -4212,8 +4177,7 @@ export const dummyProducts: any[] = [
     "reviews": 171,
     "category": "clock",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -4332,8 +4296,7 @@ export const dummyProducts: any[] = [
     "reviews": 252,
     "category": "wedding-bunting",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -4452,8 +4415,7 @@ export const dummyProducts: any[] = [
     "reviews": 155,
     "category": "wedding-banner",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -4572,8 +4534,7 @@ export const dummyProducts: any[] = [
     "reviews": 234,
     "category": "arrow-bunting",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -4692,8 +4653,7 @@ export const dummyProducts: any[] = [
     "reviews": 41,
     "category": "button-badge",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -4812,8 +4772,7 @@ export const dummyProducts: any[] = [
     "reviews": 260,
     "category": "cek-hantaran",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -4932,8 +4891,7 @@ export const dummyProducts: any[] = [
     "reviews": 147,
     "category": "door-gift",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -5052,8 +5010,7 @@ export const dummyProducts: any[] = [
     "reviews": 159,
     "category": "wedding-card",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -5172,8 +5129,7 @@ export const dummyProducts: any[] = [
     "reviews": 219,
     "category": "welcome-board",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -5292,8 +5248,7 @@ export const dummyProducts: any[] = [
     "reviews": 241,
     "category": "menu-book",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -5412,8 +5367,7 @@ export const dummyProducts: any[] = [
     "reviews": 81,
     "category": "table-tent",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -5532,8 +5486,7 @@ export const dummyProducts: any[] = [
     "reviews": 177,
     "category": "table-display-stand",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -5652,8 +5605,7 @@ export const dummyProducts: any[] = [
     "reviews": 171,
     "category": "stand-pouch",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",
@@ -5772,8 +5724,7 @@ export const dummyProducts: any[] = [
     "reviews": 210,
     "category": "food-sticker",
     "images": [
-      "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800",
-      "https://images.pexels.com/photos/1036396/pexels-photo-1036396.jpeg?auto=compress&cs=tinysrgb&w=800"
+      "https://placehold.co/800x800/eeeeee/333333?text=" + encodedName + ""
     ],
     "colors": [
       "Red",

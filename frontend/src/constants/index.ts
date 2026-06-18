@@ -3,7 +3,7 @@ export const navItems: { label: string; href: string }[] = [];
 export const printingCategories = [
   {
     label: "DIGITAL PRINTING",
-    href: "#",
+    href: "/home/shop",
     subItems: [
       { label: "BANNER", href: "/home/shop/prod-100" },
       { label: "BUNTING", href: "/home/shop/prod-101" },
@@ -15,7 +15,7 @@ export const printingCategories = [
   },
   {
     label: "DISPLAY ITEM",
-    href: "#",
+    href: "/home/shop",
     subItems: [
       { label: "PERSONALISED FLAG", href: "/home/shop/prod-106" },
       { label: "POPUP BACKDROP DISPLAY", href: "/home/shop/prod-107" },
@@ -25,7 +25,7 @@ export const printingCategories = [
   },
   {
     label: "DIGITAL OFFSET",
-    href: "#",
+    href: "/home/shop",
     subItems: [
       { label: "FLYERS", href: "/home/shop/prod-110" },
       { label: "BOOKLET", href: "/home/shop/prod-111" },
@@ -39,7 +39,7 @@ export const printingCategories = [
   },
   {
     label: "CORPORATE GIFT",
-    href: "#",
+    href: "/home/shop",
     subItems: [
       { label: "CRYSTAL PLAQUE TROPHY", href: "/home/shop/prod-118" },
       { label: "ARCYLIC TROPHY", href: "/home/shop/prod-119" },
