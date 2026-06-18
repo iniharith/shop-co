@@ -132,12 +132,12 @@ export const orderColumns: ColumnDef<IOrder>[] = [
   {
     accessorKey: "address",
     header: "City",
-    cell: ({ row }) => <div>{row.original.address.city}</div>,
+    cell: ({ row }) => <div>{row.original.address?.city || "-"}</div>,
   },
   {
     accessorKey: "fullAddress",
     header: "Address",
-    cell: ({ row }) => <div>{row.original.address.address}</div>,
+    cell: ({ row }) => <div>{row.original.address?.address || "-"}</div>,
   },
   {
     accessorKey: "actions",

@@ -38,15 +38,14 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
       totalAmount: parseFloat(formData.totalAmount),
       status: formData.status,
       products: [], // Empty products for manual orders by default or can add items
-      paymentMethod: "manual",
-      paymentStatus: "paid", // Assuming manual orders are paid
-      paymentDetails: {},
-      shippingAddress: {
+      paymentMethod: "ONLINE",
+      paymentStatus: "PAID", 
+      address: {
+        address: "Manual Entry",
         street: "Manual Entry",
         city: "Manual Entry",
-        state: "Manual Entry",
         country: "Manual Entry",
-        zipCode: "00000"
+        postalCode: "00000"
       }
     };
 
