@@ -66,7 +66,8 @@ export class AdminUsecase {
         
         return await User.create({
             ...data,
-            password
+            password,
+            verified: true // Automatically verify users created by admin
         });
     }
 

@@ -32,11 +32,19 @@ export default withAuth(
       if (!isLoggedIn) {
         return NextResponse.redirect(new URL("/auth/login", req.url))
       }
-      console.log(token, "token")
-      if (isLoggedIn && isVerified == "false") {
+      
+      // Block CLIENT role from accessing admin panel
+      if (userRole === Roles.CLIENT) {
         return NextResponse.redirect(new URL("/auth/signout", req.url));
       }
-      console.log(userRole, "userRole")
+
+      // Allow verified users or ANY internal staff role to bypass verified check
+      const isInternalStaff = [Roles.ADMIN, Roles.SYSADMIN, Roles.DESIGNER, Roles.BOSS, Roles.PRODUCTION].includes(userRole as Roles);
+      
+      if (isLoggedIn && !isInternalStaff && isVerified === "false") {
+        return NextResponse.redirect(new URL("/auth/signout", req.url));
+      }
+
       if(isSuperAdminPage && !hasAdminAccess){
         return NextResponse.redirect(new URL("/admin/dashboard", req.url))
       }
