@@ -60,7 +60,6 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
                </span>
              </div>
           </div>
-        </div>
         
         <div className="flex flex-col items-end gap-2">
           <Badge className={cn("px-3 py-1 text-xs font-semibold uppercase tracking-wider border", getStatusColor(order.orderStatus))} variant="outline">
