@@ -129,60 +129,6 @@ class OrderController {
         });
     }
     /**
-     * @description Get orders by delivery boy
-     * @Method GET
-     * @Access PRIVATE
-     * @Route /api/orders/delivery-boy/:deliveryBoyId
-     * @Response 200 - Orders fetched successfully
-     */
-    getOrdersByDeliveryBoy(req, res, next) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const orders = yield this.orderUsecase.getOrdersByDeliveryBoy(req.params.deliveryBoyId);
-                res.status(api_constant_1.statusCodes.OK).json({ message: "Orders fetched successfully", orders });
-            }
-            catch (error) {
-                next(error);
-            }
-        });
-    }
-    /**
-     * @description Get orders by delivery boy and status
-     * @Method GET
-     * @Access PRIVATE
-     * @Route /api/orders/delivery-boy/:deliveryBoyId/status/:status
-     * @Response 200 - Orders fetched successfully
-     */
-    getOrdersByDeliveryBoyAndStatus(req, res, next) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const orders = yield this.orderUsecase.getOrdersByDeliveryBoyAndStatus(req.params.deliveryBoyId, req.params.status);
-                res.status(api_constant_1.statusCodes.OK).json({ message: "Orders fetched successfully", orders });
-            }
-            catch (error) {
-                next(error);
-            }
-        });
-    }
-    /**
-     * @description Add delivery boy to order
-     * @Method POST
-     * @Access PRIVATE
-     * @Route /api/orders/delivery-boy/:deliveryBoyId
-     * @Response 200 - Delivery boy added to order successfully
-     */
-    addDeliveryBoyToOrder(req, res, next) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const order = yield this.orderUsecase.addDeliveryBoyToOrder(req.params.orderId, req.params.deliveryBoyId);
-                res.status(api_constant_1.statusCodes.OK).json({ message: "Delivery boy added to order successfully", order });
-            }
-            catch (error) {
-                next(error);
-            }
-        });
-    }
-    /**
      * @description Get distinct address
      * @Method GET
      * @Access PRIVATE

@@ -113,54 +113,7 @@ export class OrderController {
         }
     }
 
-    /**
-     * @description Get orders by delivery boy
-     * @Method GET
-     * @Access PRIVATE
-     * @Route /api/orders/delivery-boy/:deliveryBoyId
-     * @Response 200 - Orders fetched successfully
-     */
-    async getOrdersByDeliveryBoy(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const orders = await this.orderUsecase.getOrdersByDeliveryBoy(req.params.deliveryBoyId);
-            res.status(statusCodes.OK).json({ message: "Orders fetched successfully", orders });
-        } catch (error: any) {
-            next(error);
-        }
-    }
 
-    /**
-     * @description Get orders by delivery boy and status
-     * @Method GET
-     * @Access PRIVATE
-     * @Route /api/orders/delivery-boy/:deliveryBoyId/status/:status
-     * @Response 200 - Orders fetched successfully
-     */
-    async getOrdersByDeliveryBoyAndStatus(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const orders = await this.orderUsecase.getOrdersByDeliveryBoyAndStatus(req.params.deliveryBoyId, req.params.status as "PLACED" | "SHIPPED" | "DELIVERED" | "CANCELLED");
-            res.status(statusCodes.OK).json({ message: "Orders fetched successfully", orders });
-        } catch (error: any) {
-            next(error);
-        }
-    }
-
-
-    /**
-     * @description Add delivery boy to order
-     * @Method POST
-     * @Access PRIVATE
-     * @Route /api/orders/delivery-boy/:deliveryBoyId
-     * @Response 200 - Delivery boy added to order successfully
-     */
-    async addDeliveryBoyToOrder(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const order = await this.orderUsecase.addDeliveryBoyToOrder(req.params.orderId, req.params.deliveryBoyId);
-            res.status(statusCodes.OK).json({ message: "Delivery boy added to order successfully", order });
-        } catch (error: any) {
-            next(error);
-        }
-    }
 
 
     /**

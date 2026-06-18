@@ -8,6 +8,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrderUsecase = void 0;
 const cart_repository_1 = require("../../../infrastructure/db/repositories/cart.repository");
@@ -17,6 +20,7 @@ const user_repository_1 = require("../../../infrastructure/db/repositories/user.
 const notification_usecase_1 = require("../notification/notification.usecase");
 const redis_1 = require("../../../infrastructure/redis/redis");
 const redis_constant_1 = require("../../../shared/constants/redis.constant");
+const whatsapp_service_1 = __importDefault(require("../../../infrastructure/whatsapp/whatsapp.service"));
 class OrderUsecase {
     constructor() {
         this.orderRepository = new order_repository_1.OrderRepository();
@@ -129,6 +133,14 @@ class OrderUsecase {
                 orderId: order === null || order === void 0 ? void 0 : order._id.toString(),
                 read: false
             });
+            const user = yield this.userRepository.findById(order.userId.toString());
+            if (user && user.phoneNumber) {
+                let message = `Hello ${user.name || 'Customer'}, your order (ORD-${order._id.toString().slice(-6).toUpperCase()}) status has been updated to: *${updateStatus}*.\n\nThank you for shopping with KampungCetak!`;
+                if (updateStatus === "ARTWORK_REJECTED") {
+                    message = `Hello ${user.name || 'Customer'}, unfortunately the artwork for your order (ORD-${order._id.toString().slice(-6).toUpperCase()}) was REJECTED.\n\nPlease re-upload the correct picture/file via your dashboard.`;
+                }
+                whatsapp_service_1.default.sendMessage(user.phoneNumber, message).catch(err => console.error("WA Error:", err));
+            }
             yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + orderId);
             return order;
         });
@@ -142,62 +154,6 @@ class OrderUsecase {
             const orders = yield this.orderRepository.getOrderByStatus(status);
             yield this.redisService.set(redis_constant_1.REDIS_KEYS.ORDERS + status, JSON.stringify(orders), 60 * 60 * 24);
             return orders;
-        });
-    }
-    getOrdersByDeliveryBoy(deliveryBoy) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const user = yield this.userRepository.findById(deliveryBoy);
-            if (!user)
-                throw new Error("Delivery Boy not found");
-            const cachedOrders = yield this.redisService.get(redis_constant_1.REDIS_KEYS.ORDERS + deliveryBoy);
-            if (cachedOrders) {
-                return JSON.parse(cachedOrders);
-            }
-            const orders = yield this.orderRepository.getOderByDeliveryBoy(deliveryBoy);
-            yield this.redisService.set(redis_constant_1.REDIS_KEYS.ORDERS + deliveryBoy, JSON.stringify(orders), 60 * 60 * 24);
-            return orders;
-        });
-    }
-    getOrdersByDeliveryBoyAndStatus(deliveryBoy, status) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const cachedOrders = yield this.redisService.get(redis_constant_1.REDIS_KEYS.ORDERS + deliveryBoy + status);
-            if (cachedOrders) {
-                return JSON.parse(cachedOrders);
-            }
-            const orders = yield this.orderRepository.getOderByDeliveryBoyAndStatus(deliveryBoy, status);
-            yield this.redisService.set(redis_constant_1.REDIS_KEYS.ORDERS + deliveryBoy + status, JSON.stringify(orders), 60 * 60 * 24);
-            return orders;
-        });
-    }
-    addDeliveryBoyToOrder(orderId, deliveryBoy) {
-        return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b;
-            const user = yield this.userRepository.findById(deliveryBoy);
-            if (!user)
-                throw new Error("Delivery Boy not found");
-            const order = yield this.orderRepository.updateOrder(orderId, { deliveryBoy: user._id });
-            if (!order)
-                throw new Error("Order not found");
-            yield this.notificationUsecase.createNotification({
-                userId: user._id.toString(),
-                title: "Order Assigned to You",
-                message: "You have been assigned to this order",
-                type: "DELIVERY",
-                orderId: order._id.toString(),
-                read: false
-            });
-            yield this.notificationUsecase.createNotification({
-                userId: (_a = order === null || order === void 0 ? void 0 : order.userId) === null || _a === void 0 ? void 0 : _a.toString(),
-                title: "Order Assigned to " + user.name,
-                message: "Your order has been assigned to " + user.name,
-                type: "DELIVERY",
-                orderId: order._id.toString(),
-                read: false
-            });
-            yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + orderId);
-            yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + ((_b = order === null || order === void 0 ? void 0 : order.userId) === null || _b === void 0 ? void 0 : _b._id));
-            yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + deliveryBoy);
-            return order;
         });
     }
     getDistintAddress(userId) {

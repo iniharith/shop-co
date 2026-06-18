@@ -17,11 +17,7 @@ router.get("/previous-address", authMiddilware, orderController.getDistintAddres
 
 router.get("/status/:status", authMiddilware, orderController.getOrdersByStatus.bind(orderController));
 
-router.get("/delivery-boy/:deliveryBoyId", authMiddilware, orderController.getOrdersByDeliveryBoy.bind(orderController));
 
-router.get("/delivery-boy/:deliveryBoyId/status/:status", authMiddilware, orderController.getOrdersByDeliveryBoyAndStatus.bind(orderController));
-
-router.post("/delivery-boy/:deliveryBoyId", authMiddilware, orderController.addDeliveryBoyToOrder.bind(orderController));
 
 router.get("/:orderId", authMiddilware, orderController.getOrderById.bind(orderController));
 

@@ -9,5 +9,4 @@ var Roles;
     Roles["DESIGNER"] = "designer";
     Roles["BOSS"] = "boss";
     Roles["PRODUCTION"] = "production";
-    Roles["DELIVERY_BOY"] = "delivery_boy";
 })(Roles || (exports.Roles = Roles = {}));

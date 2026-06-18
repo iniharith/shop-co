@@ -16,7 +16,6 @@ const path_1 = __importDefault(require("path"));
 const product_route_1 = __importDefault(require("../presentation/routes/product.route"));
 const cart_route_1 = __importDefault(require("../presentation/routes/cart.route"));
 const order_route_1 = __importDefault(require("../presentation/routes/order.route"));
-const deliveryBoy_route_1 = __importDefault(require("../presentation/routes/deliveryBoy.route"));
 const admin_route_1 = __importDefault(require("../presentation/routes/admin.route"));
 const notification_route_1 = __importDefault(require("../presentation/routes/notification.route"));
 const parcelRoutes_1 = __importDefault(require("../presentation/routes/parcelRoutes"));
@@ -52,7 +51,6 @@ app.use('/api/user', user_route_1.default);
 app.use(api_constant_1.apiRoutes.PRODUCT, product_route_1.default);
 app.use(api_constant_1.apiRoutes.CART, cart_route_1.default);
 app.use(api_constant_1.apiRoutes.ORDER, order_route_1.default);
-app.use(api_constant_1.apiRoutes.DELIVERY_BOY, deliveryBoy_route_1.default);
 app.use(api_constant_1.apiRoutes.ADMIN, admin_route_1.default);
 app.use(api_constant_1.apiRoutes.NOTIFICATION, notification_route_1.default);
 // ─── Kampung Cetak: Parcel Tracking & File Upload ────────

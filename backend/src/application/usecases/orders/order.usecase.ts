@@ -124,14 +124,14 @@ export class OrderUsecase {
         })
 
         const user = await this.userRepository.findById(order.userId.toString());
-        if (user && user.phone) {
+        if (user && user.phoneNumber) {
             let message = `Hello ${user.name || 'Customer'}, your order (ORD-${order._id.toString().slice(-6).toUpperCase()}) status has been updated to: *${updateStatus}*.\n\nThank you for shopping with KampungCetak!`;
             
             if (updateStatus === "ARTWORK_REJECTED") {
                 message = `Hello ${user.name || 'Customer'}, unfortunately the artwork for your order (ORD-${order._id.toString().slice(-6).toUpperCase()}) was REJECTED.\n\nPlease re-upload the correct picture/file via your dashboard.`;
             }
 
-            WhatsAppService.sendMessage(user.phone, message).catch(err => console.error("WA Error:", err));
+            WhatsAppService.sendMessage(user.phoneNumber, message).catch(err => console.error("WA Error:", err));
         }
 
         await this.redisService.del(REDIS_KEYS.ORDERS + orderId);

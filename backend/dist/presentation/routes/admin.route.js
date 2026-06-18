@@ -26,12 +26,10 @@ router.get("/users", auth_middileware_1.default, adminController.getUsers.bind(a
 router.post("/users", auth_middileware_1.default, adminController.createUser.bind(adminController));
 router.put("/users/:id", auth_middileware_1.default, adminController.updateUser.bind(adminController));
 router.delete("/users/:id", auth_middileware_1.default, adminController.deleteUser.bind(adminController));
-router.get("/delivery-boys", auth_middileware_1.default, adminController.getDeliveryBoys.bind(adminController));
-router.put("/delivery-boys/:id", auth_middileware_1.default, adminController.updateDeliveryBoy.bind(adminController));
 router.get("/orders", auth_middileware_1.default, adminController.getOrders.bind(adminController));
 router.post("/orders/manual", auth_middileware_1.default, adminController.createManualOrder.bind(adminController));
-router.get("/orders/delivery-boy/:id", auth_middileware_1.default, adminController.getOrdersByDeliveryBoy.bind(adminController));
 router.post("/seed-test-data", auth_middileware_1.default, adminController.seedTestData.bind(adminController));
+router.delete("/clear-test-data", auth_middileware_1.default, adminController.clearTestData.bind(adminController));
 cloudinary_1.v2.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dc7aun6of',
     api_key: process.env.CLOUDINARY_API_KEY || '933197924153588',

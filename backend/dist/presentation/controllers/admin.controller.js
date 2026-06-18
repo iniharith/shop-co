@@ -115,57 +115,6 @@ class AdminController {
         });
     }
     /**
-     * @description Get delivery boys
-     * @Method GET
-     * @Route /api/admin/delivery-boys
-     * @Response 200 - Delivery boys fetched successfully
-     * @Response 400 - Delivery boys not found
-     * @ResponseJson {success: boolean, message: string, deliveryBoys: IUserDocument[]}
-     */
-    getDeliveryBoys(req, res, next) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS].includes(req.role)) {
-                    throw new Error(api_constant_1.messages.UNAUTHORIZED);
-                }
-                const deliveryBoys = yield this.adminUsecase.getUsersByRole(user_type_1.Roles.DELIVERY_BOY);
-                res.status(api_constant_1.statusCodes.OK).json({
-                    message: "Delivery Boys fetched successfully",
-                    deliveryBoys: deliveryBoys
-                });
-            }
-            catch (error) {
-                next(error);
-            }
-        });
-    }
-    /**
-     * @description Update delivery boy
-     * @Method PUT
-     * @Route /api/admin/delivery-boys/:id
-     * @Response 200 - Delivery boy updated successfully
-     * @Response 400 - Delivery boy not found
-     */
-    updateDeliveryBoy(req, res, next) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS].includes(req.role)) {
-                    throw new Error(api_constant_1.messages.UNAUTHORIZED);
-                }
-                const { id } = req.params;
-                const { status } = req.body;
-                const deliveryBoy = yield this.adminUsecase.verifyUser(id, status);
-                res.status(api_constant_1.statusCodes.OK).json({
-                    message: "Delivery boy updated successfully",
-                    deliveryBoy: deliveryBoy
-                });
-            }
-            catch (error) {
-                next(error);
-            }
-        });
-    }
-    /**
      * @description Get orders
      * @Method GET
      * @Route /api/admin/orders
@@ -175,35 +124,10 @@ class AdminController {
     getOrders(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS, user_type_1.Roles.DELIVERY_BOY].includes(req.role)) {
+                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS].includes(req.role)) {
                     throw new Error(api_constant_1.messages.UNAUTHORIZED);
                 }
                 const orders = yield this.adminUsecase.getOrders();
-                res.status(api_constant_1.statusCodes.OK).json({
-                    message: "Orders fetched successfully",
-                    orders: orders
-                });
-            }
-            catch (error) {
-                next(error);
-            }
-        });
-    }
-    /**
-     * @description Get orders by delivery boy
-     * @Method GET
-     * @Route /api/admin/orders/delivery-boy
-     * @Response 200 - Orders fetched successfully
-     * @Response 400 - Orders not found
-     */
-    getOrdersByDeliveryBoy(req, res, next) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS, user_type_1.Roles.DELIVERY_BOY].includes(req.role)) {
-                    throw new Error(api_constant_1.messages.UNAUTHORIZED);
-                }
-                const { id } = req.params;
-                const orders = yield this.adminUsecase.getOrdersByDeliveryBoy(id);
                 res.status(api_constant_1.statusCodes.OK).json({
                     message: "Orders fetched successfully",
                     orders: orders
@@ -228,6 +152,27 @@ class AdminController {
                 yield this.adminUsecase.seedTestData();
                 res.status(api_constant_1.statusCodes.OK).json({
                     message: "Test data seeded successfully"
+                });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    /**
+     * @description Clear test data
+     * @Method DELETE
+     * @Route /api/admin/clear-test-data
+     */
+    clearTestData(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS].includes(req.role)) {
+                    throw new Error(api_constant_1.messages.UNAUTHORIZED);
+                }
+                yield this.adminUsecase.clearTestData();
+                res.status(api_constant_1.statusCodes.OK).json({
+                    message: "Test data cleared successfully"
                 });
             }
             catch (error) {

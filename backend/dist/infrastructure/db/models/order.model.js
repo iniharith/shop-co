@@ -98,17 +98,13 @@ const OrderSchema = new mongoose_1.Schema({
     },
     orderStatus: {
         type: String,
-        enum: ['PLACED', 'SHIPPED', 'DELIVERED', 'CANCELLED'],
+        enum: ['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEW', 'ARTWORK_REJECTED', 'IN_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'DELIVERED', 'CANCELLED'],
         default: 'PLACED',
     },
     platform: {
         type: String,
         enum: ['WEB', 'TIKTOK', 'SHOPEE'],
         default: 'WEB',
-    },
-    deliveryBoy: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'User',
     },
     address: AddressSchema,
     isDeleted: {
