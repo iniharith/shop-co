@@ -67,9 +67,9 @@ export const DeliveryBoyNavItems: NavItem[] = [
 ]
 
 export const roleByNavItems = (role: string) => {
-    if (role === 'admin') {
-        return AdminNavItems
-    } else  {
+    if (role === 'delivery_boy') {
         return DeliveryBoyNavItems
+    } else  {
+        return AdminNavItems
     }
 }
