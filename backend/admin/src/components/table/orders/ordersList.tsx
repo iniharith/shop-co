@@ -27,6 +27,7 @@ const OrdersList = (props: Props) => {
       const lowerQuery = searchQuery.toLowerCase();
       orders = orders.filter((o: any) => 
         o.trackingNumber?.toLowerCase().includes(lowerQuery) ||
+        o.customerName?.toLowerCase().includes(lowerQuery) ||
         o.userId?.name?.toLowerCase().includes(lowerQuery) ||
         o.userId?.email?.toLowerCase().includes(lowerQuery) ||
         o._id?.toLowerCase().includes(lowerQuery)

@@ -20,17 +20,17 @@ class OrderRepository {
     }
     getOrders() {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.orderModel.find().populate("products.product").populate("deliveryBoy").populate("userId");
+            return yield this.orderModel.find().populate("products.product").populate("userId");
         });
     }
     getOrdersByUserId(userId) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.orderModel.find({ userId }).populate("products.product").populate("deliveryBoy").populate("userId");
+            return yield this.orderModel.find({ userId }).populate("products.product").populate("userId");
         });
     }
     getOrderById(orderId) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.orderModel.findById(orderId).populate("products.product").populate("deliveryBoy").populate("userId");
+            return yield this.orderModel.findById(orderId).populate("products.product").populate("userId");
         });
     }
     createOrder(order) {
@@ -50,17 +50,17 @@ class OrderRepository {
     }
     getOrderByStatus(status) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.orderModel.find({ status }).populate("products.product").populate("deliveryBoy").populate("userId");
+            return yield this.orderModel.find({ status }).populate("products.product").populate("userId");
         });
     }
     getOderByDeliveryBoy(deliveryBoy) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.orderModel.find({ deliveryBoy }).populate("products.product").populate("deliveryBoy").populate("userId");
+            return yield this.orderModel.find({ deliveryBoy }).populate("products.product").populate("userId");
         });
     }
     getOderByDeliveryBoyAndStatus(deliveryBoy, status) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.orderModel.find({ deliveryBoy, status }).populate("products.product").populate("deliveryBoy").populate("userId");
+            return yield this.orderModel.find({ deliveryBoy, status }).populate("products.product").populate("userId");
         });
     }
 }
