@@ -59,7 +59,7 @@ export default async function RootLayout({
     <html lang="en">
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${dmSans.variable} overflow-x-hidden w-screen ${geistMono.variable} bg-gray-100 antialiased`}
+        className={`${geistSans.variable} ${dmSans.variable} overflow-x-hidden w-screen ${geistMono.variable} bg-gray-100 dark:bg-background antialiased`}
       >
         <Provider session={session}>
           <div className="sticky z-50 top-0">

@@ -9,7 +9,7 @@ const Hero = () => {
   const router = useRouter();
   const text = "AFFORDABLE PRINTING SERVICES IN MALAYSIA";
   return (
-    <div className="relative grid md:grid-cols-2 w-full bg-[#F2F0F1] min-h-[500px]">
+    <div className="relative grid md:grid-cols-2 w-full bg-[#F2F0F1] dark:bg-background min-h-[500px]">
       <div className="flex md:py-0 py-10 flex-col gap-4 items-start px-5 md:px-20 justify-center">
         <motion.div
           initial="hidden"
@@ -46,7 +46,7 @@ const Hero = () => {
           initial="hidden"
           animate="visible"
           variants={item_variants}
-          className="text-gray-500 md:text-base text-sm w-[90%]"
+          className="text-gray-500 dark:text-muted-foreground md:text-base text-sm w-[90%]"
         >
           High-quality printing for business cards, flyers, stickers, banners and more.
           Fast delivery across Malaysia with best price guarantee.
@@ -59,13 +59,13 @@ const Hero = () => {
         >
           <Button
             onClick={() => router.push("/home/shop")}
-            className="bg-black text-white px-7 rounded-full cursor-pointer active:scale-95 transition-all duration-300"
+            className="bg-black dark:bg-primary text-white dark:text-primary-foreground px-7 rounded-full cursor-pointer active:scale-95 transition-all duration-300"
           >
             Order Now
           </Button>
           <Button
             onClick={() => router.push("/home/shop")}
-            className="bg-white border border-black text-black px-7 rounded-full cursor-pointer active:scale-95 transition-all duration-300"
+            className="bg-white dark:bg-card border border-black dark:border-border text-black dark:text-foreground px-7 rounded-full cursor-pointer active:scale-95 transition-all duration-300"
           >
             View Products
           </Button>
@@ -78,7 +78,7 @@ const Hero = () => {
           ].map((item, index) => (
             <div key={index} className="flex flex-col gap-1">
               <p className="font-bold text-2xl md:text-4xl">{item.count}</p>
-              <p className="text-gray-500 text-sm">{item.label}</p>
+              <p className="text-gray-500 dark:text-muted-foreground text-sm">{item.label}</p>
             </div>
           ))}
         </div>
@@ -90,9 +90,9 @@ const Hero = () => {
             alt="printing services products"
             className="w-full object-cover h-full"
           />
-          <div className="absolute top-4 right-4 bg-white rounded-xl shadow-lg p-4 flex flex-col gap-1">
-            <p className="font-bold text-sm">⭐ Best Price Guarantee</p>
-            <p className="text-gray-500 text-xs">Lowest price in Malaysia</p>
+          <div className="absolute top-4 right-4 bg-white dark:bg-card rounded-xl shadow-lg p-4 flex flex-col gap-1">
+            <p className="font-bold text-sm dark:text-foreground">⭐ Best Price Guarantee</p>
+            <p className="text-gray-500 dark:text-muted-foreground text-xs">Lowest price in Malaysia</p>
           </div>
         </div>
       </div>

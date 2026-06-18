@@ -54,11 +54,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
   return (
     <div
       onClick={() => router.push(`/home/shop/${product._id}`)}
-      className="bg-gray-200/50 shrink-0 hover:bg-gray-400/20 transition-all cursor-pointer hover:scale-95 duration-300 rounded-lg p-1 h-full flex flex-col"
+      className="bg-gray-200/50 dark:bg-card shrink-0 hover:bg-gray-400/20 transition-all cursor-pointer hover:scale-95 duration-300 rounded-lg p-1 h-full flex flex-col"
     >
       <div className="relative mb-4 w-full aspect-square">
         {imageLoading ? (
-          <Skeleton className="w-full bg-gray-400/30 h-full rounded-lg" />
+          <Skeleton className="w-full bg-gray-400/30 dark:bg-muted h-full rounded-lg" />
         ) : (
           <Image
             src={image || "/placeholder.svg"}
@@ -82,11 +82,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
                     ? "text-yellow-400"
                     : i < product.rating
                     ? "text-yellow-400 fill-yellow-400"
-                    : "text-gray-300"
+                    : "text-gray-300 dark:text-muted"
                 )}
               />
             ))}
-            <span className="text-sm text-gray-600 ml-1">
+            <span className="text-sm text-gray-600 dark:text-muted-foreground ml-1">
               {product.rating}/5
             </span>
           </div>
@@ -94,10 +94,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
             <span className="font-bold text-lg">${product.price}</span>
             {product.discount > 0 && (
               <>
-                <span className="text-gray-400 line-through ml-2">
+                <span className="text-gray-400 dark:text-muted-foreground line-through ml-2">
                   ${product.originalPrice}
                 </span>
-                <span className="ml-2 text-sm bg-red-100 text-red-600 px-2 py-0.5 rounded">
+                <span className="ml-2 text-sm bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded">
                   -{product.discount}%
                 </span>
               </>
