@@ -151,16 +151,14 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
           </span>
         </div>
         <div className="flex items-center gap-3">
-          {(!order.userId || platform !== "WEB") && (
-            <button 
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-              title="Delete External Order"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
-          )}
+          <button 
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+            title="Delete Order"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
           <CellAction
             info={<OrderInfo order={order as any} />}
             id={(order as any)._id}

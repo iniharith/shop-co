@@ -16,6 +16,11 @@ export const syncParcelTracking = async (token: string, id: string) => {
     return response.data;
 }
 
+export const updateParcel = async (token: string, id: string, updateData: any) => {
+    const response = await AxiosInstance(token).put(`${PARCELS_URL}/${id}`, updateData);
+    return response.data;
+}
+
 export const sendWhatsAppNotification = async (token: string, id: string) => {
     const response = await AxiosInstance(token).post(`${PARCELS_URL}/${id}/whatsapp`);
     return response.data;

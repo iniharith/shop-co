@@ -104,6 +104,8 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     const allowed = [
       'orderId',
+      'trackingNumber',
+      'status',
       'customerPhone',
       'customerName',
       'customerEmail',

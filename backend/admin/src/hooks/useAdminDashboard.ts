@@ -5,6 +5,7 @@ import {
     getParcelStats, 
     getParcels, 
     syncParcelTracking, 
+    updateParcel,
     sendWhatsAppNotification, 
     getFileStats, 
     getGroupedFiles, 
@@ -26,6 +27,12 @@ export const useParcels = (filters?: any) => {
 export const useSyncParcel = () => {
     const { data: session } = useSession();
     const { mutate, isPending } = useMutationData(['syncParcelTracking'], (id: string) => syncParcelTracking(session?.user?.token, id));
+    return { mutate, isPending };
+}
+
+export const useUpdateParcel = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(['updateParcelTracking'], ({ id, data }: { id: string, data: any }) => updateParcel(session?.user?.token, id, data));
     return { mutate, isPending };
 }
 

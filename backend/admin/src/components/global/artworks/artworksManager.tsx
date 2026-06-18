@@ -179,6 +179,21 @@ export default function ArtworksManager() {
     return <File className="w-8 h-8 text-gray-500" />;
   };
 
+  const getFileThumbnail = (file: any) => {
+    if (file.mimetype?.includes("image")) {
+      return (
+        <div className="w-full h-40 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
+          <img src={file.path} alt={file.originalName} className="object-cover w-full h-full" />
+        </div>
+      );
+    }
+    return (
+      <div className="w-full h-40 bg-muted/50 rounded-t-lg flex items-center justify-center">
+        {getFileIcon(file.mimetype)}
+      </div>
+    );
+  };
+
   if (isPending) return <div className="flex justify-center p-8"><p>Loading artworks...</p></div>;
 
   return (
@@ -204,7 +219,7 @@ export default function ArtworksManager() {
             <button
               onClick={() => setViewMode("grid")}
               className={`p-1.5 rounded-sm transition-colors ${viewMode === "grid" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              title="Grid View"
+              title="Large Thumbnail View"
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
@@ -291,17 +306,15 @@ export default function ArtworksManager() {
                   {group.files.map((file: any) => (
                     viewMode === "grid" ? (
                       <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                        <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between bg-muted/20">
-                          <div className="flex items-center gap-3">
-                            {getFileIcon(file.mimetype)}
-                            <div className="overflow-hidden">
-                              <CardTitle className="text-sm truncate w-40" title={file.originalName}>
-                                {file.originalName}
-                              </CardTitle>
-                              <CardDescription className="text-xs truncate w-40">
-                                User: {group.folderName}
-                              </CardDescription>
-                            </div>
+                        {getFileThumbnail(file)}
+                        <CardHeader className="p-4 pb-2 flex flex-col items-start justify-between bg-muted/5 border-b">
+                          <div className="overflow-hidden w-full">
+                            <CardTitle className="text-sm truncate w-full" title={file.originalName}>
+                              {file.originalName}
+                            </CardTitle>
+                            <CardDescription className="text-xs truncate w-full">
+                              User: {group.folderName}
+                            </CardDescription>
                           </div>
                         </CardHeader>
                         <CardContent className="p-4 pt-3 flex flex-col gap-3">

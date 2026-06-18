@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { useSyncParcel, useSendWhatsApp } from "@/hooks/useAdminDashboard";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSyncParcel, useSendWhatsApp, useUpdateParcel } from "@/hooks/useAdminDashboard";
 import { RefreshCw, MessageSquare, Download, AlertCircle, Package, Truck, CheckCircle2, XCircle, Clock, MapPin, Calendar } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,9 +25,10 @@ const statusMap: Record<string, { label: string; step: number; icon: any; color:
 };
 
 export default function TrackingCard({ parcel }: TrackingCardProps) {
-  const [autoNotify, setAutoNotify] = useState(parcel.whatsappNotified ?? true);
   const { mutate: syncMutate, isPending: isSyncing } = useSyncParcel();
   const { mutate: whatsappMutate, isPending: isSending } = useSendWhatsApp();
+  const { mutate: updateMutate, isPending: isUpdating } = useUpdateParcel();
+  const [autoNotify, setAutoNotify] = useState(parcel.whatsappNotified ?? true);
 
   const handleSync = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -166,9 +168,23 @@ export default function TrackingCard({ parcel }: TrackingCardProps) {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-slate-500">Status</span>
-              <Badge variant="secondary" className={`bg-slate-100 border border-slate-200 ${currentStatus.color}`}>
-                {currentStatus.label}
-              </Badge>
+              <Select 
+                value={parcel.status} 
+                onValueChange={(v) => updateMutate({ id: parcel._id, data: { status: v } })}
+                disabled={isUpdating}
+              >
+                <SelectTrigger className={`w-[180px] h-8 text-xs font-medium border-0 ${currentStatus.color}`}>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="picked_up">Picked Up</SelectItem>
+                  <SelectItem value="in_transit">In Transit</SelectItem>
+                  <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-slate-500">Auto-notify</span>
