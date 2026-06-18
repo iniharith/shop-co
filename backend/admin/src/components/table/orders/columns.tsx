@@ -55,7 +55,7 @@ export const orderColumns: ColumnDef<IOrder>[] = [
     header: "User",
     cell: ({ row }) => {
       const user = row.original.userId as any;
-      return <div>{typeof user === "object" ? user.name : user}</div>;
+      return <div>{user && typeof user === "object" ? user.name : user || "Unknown"}</div>;
     },
   },
   {
@@ -81,7 +81,7 @@ export const orderColumns: ColumnDef<IOrder>[] = [
     accessorKey: "products",
     header: "Products",
     cell: ({ row }) => {
-      const products = row.original.products;
+      const products = row.original.products || [];
       return <div className="max-w-[200px] truncate">{products.length}</div>;
     },
   },

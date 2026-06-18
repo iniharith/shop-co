@@ -72,15 +72,6 @@ export default function LoginPage({ className }: { className?: string }) {
             </div>
           </div>
 
-          <div className="text-center text-sm text-muted-foreground mt-4">
-            Don’t have an account?{" "}
-            <a
-              href="/auth/signup"
-              className="text-primary font-medium hover:underline"
-            >
-              Sign Up
-            </a>
-          </div>
         </div>
       </div>
     </div>
