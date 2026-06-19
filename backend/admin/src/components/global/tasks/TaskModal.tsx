@@ -4,9 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useUpdateTask, useAddTaskComment } from "@/hooks/useTasks";
+import { useUpdateTask, useAddTaskComment, useUploadTaskFile } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
-import { CalendarIcon, UserIcon, LinkIcon, Send, MessageSquare } from "lucide-react";
+import { CalendarIcon, UserIcon, LinkIcon, Send, MessageSquare, Paperclip, FileIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +20,7 @@ interface TaskModalProps {
 export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { mutate: updateTask, isPending: isUpdating } = useUpdateTask();
   const { mutate: addComment, isPending: isCommenting } = useAddTaskComment();
+  const { mutate: uploadFile, isPending: isUploading } = useUploadTaskFile();
   const { data: usersData } = useUsers();
   const admins = usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss'].includes(u.role)) || [];
   
@@ -50,10 +51,17 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     });
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      uploadFile({ id: task._id, file });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-3xl p-0 overflow-hidden bg-background border-border shadow-xl">
-        <div className="grid grid-cols-1 md:grid-cols-3 min-h-[600px]">
+        <div className="grid grid-cols-1 md:grid-cols-3 h-[85vh] max-h-[85vh]">
           
           {/* Main Content (Left, 2/3 width) */}
           <div className="md:col-span-2 flex flex-col border-r border-border/50 bg-background">
@@ -78,6 +86,22 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               </div>
 
               <div className="space-y-4 pt-4 border-t border-border/50">
+                {task.files && task.files.length > 0 && (
+                  <div className="mb-6 space-y-3">
+                    <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {task.files.map((file: any, idx: number) => (
+                        <a key={idx} href={file.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/40 transition-colors">
+                          <FileIcon className="w-5 h-5 text-primary shrink-0" />
+                          <span className="text-xs font-medium truncate">{file.name}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 <label className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-muted-foreground" /> Comments
                 </label>
@@ -112,6 +136,22 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
             
             <div className="p-4 border-t border-border/50 bg-muted/10">
               <div className="flex gap-2">
+                <input 
+                  type="file" 
+                  id="task-file-upload" 
+                  className="hidden" 
+                  onChange={handleFileUpload}
+                  disabled={isUploading}
+                />
+                <Button 
+                  onClick={() => document.getElementById('task-file-upload')?.click()} 
+                  disabled={isUploading} 
+                  variant="outline"
+                  size="icon" 
+                  className="shrink-0 shadow-sm"
+                >
+                  {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+                </Button>
                 <Input 
                   placeholder="Ask a question or post an update..." 
                   value={commentText} 

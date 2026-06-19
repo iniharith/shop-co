@@ -13,15 +13,27 @@ import { toast } from "sonner";
 const getStatusColor = (status: string) => {
   switch (status) {
     case "PLACED":
-      return "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800";
+      return "bg-yellow-500/20 border-yellow-500/40 hover:bg-yellow-500/30 text-black dark:text-white";
+    case "PENDING_ARTWORK":
+      return "bg-orange-500/20 border-orange-500/40 hover:bg-orange-500/30 text-black dark:text-white";
+    case "ARTWORK_REVIEW":
+      return "bg-blue-500/20 border-blue-500/40 hover:bg-blue-500/30 text-black dark:text-white";
+    case "ARTWORK_REJECTED":
+      return "bg-red-500/20 border-red-500/40 hover:bg-red-500/40 text-black dark:text-white";
+    case "IN_DESIGN":
+      return "bg-indigo-500/20 border-indigo-500/40 hover:bg-indigo-500/30 text-black dark:text-white";
+    case "IN_PRODUCTION":
+      return "bg-teal-500/20 border-teal-500/40 hover:bg-teal-500/30 text-black dark:text-white";
     case "SHIPPED":
-      return "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800";
+      return "bg-purple-500/20 border-purple-500/40 hover:bg-purple-500/40 text-black dark:text-white";
+    case "IN_TRANSIT":
+      return "bg-blue-500/20 border-blue-500/40 hover:bg-blue-500/40 text-black dark:text-white";
     case "DELIVERED":
-      return "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800";
+      return "bg-green-500/20 border-green-500/40 hover:bg-green-500/40 text-black dark:text-white";
     case "CANCELLED":
-      return "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800";
+      return "bg-red-500/20 border-red-500/40 hover:bg-red-500/40 text-black dark:text-white";
     default:
-      return "bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700";
+      return "bg-gray-500/20 border-gray-500/40 hover:bg-gray-500/40 text-black dark:text-white";
   }
 };
 
@@ -94,7 +106,13 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="PLACED">Placed</SelectItem>
+              <SelectItem value="PENDING_ARTWORK">Pending Artwork</SelectItem>
+              <SelectItem value="ARTWORK_REVIEW">Artwork Review</SelectItem>
+              <SelectItem value="ARTWORK_REJECTED">Artwork Rejected</SelectItem>
+              <SelectItem value="IN_DESIGN">In Design</SelectItem>
+              <SelectItem value="IN_PRODUCTION">In Production</SelectItem>
               <SelectItem value="SHIPPED">Shipped</SelectItem>
+              <SelectItem value="IN_TRANSIT">In Transit</SelectItem>
               <SelectItem value="DELIVERED">Delivered</SelectItem>
               <SelectItem value="CANCELLED">Cancelled</SelectItem>
             </SelectContent>

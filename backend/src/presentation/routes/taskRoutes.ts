@@ -2,6 +2,18 @@ import { Router, Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { taskRepository } from '../../infrastructure/repositories/TaskRepository';
 import authMiddilware from '../middlewares/auth.middileware';
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import cloudinary from "../../../infrastructure/config/cloudinary";
+import multer from "multer";
+
+const taskStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "kampungcetak/tasks",
+    allowed_formats: ["jpg", "png", "jpeg", "webp", "pdf", "docx", "zip"]
+  } as any,
+});
+const taskUpload = multer({ storage: taskStorage });
 
 const router = Router();
 
@@ -92,6 +104,28 @@ router.post(
     }
 
     const task = await taskRepository.addComment(req.params.id, userId, userName, text, role);
+    if (!task) {
+      res.status(404).json({ success: false, message: 'Task not found' });
+      return;
+    }
+    res.json({ success: true, task });
+  })
+);
+
+// POST /api/tasks/:id/files
+router.post(
+  '/:id/files',
+  authMiddilware,
+  taskUpload.single('file'),
+  asyncHandler(async (req: Request, res: Response) => {
+    if (!req.file) {
+      res.status(400).json({ success: false, message: 'No file uploaded' });
+      return;
+    }
+    const fileUrl = req.file.path;
+    const fileName = req.file.originalname || 'Attached File';
+
+    const task = await taskRepository.addFile(req.params.id, fileUrl, fileName);
     if (!task) {
       res.status(404).json({ success: false, message: 'Task not found' });
       return;

@@ -33,6 +33,14 @@ export class TaskRepository {
       { new: true }
     );
   }
+
+  async addFile(taskId: string, url: string, name: string): Promise<ITask | null> {
+    return Task.findByIdAndUpdate(
+      taskId,
+      { $push: { files: { url, name } } },
+      { new: true }
+    );
+  }
 }
 
 export const taskRepository = new TaskRepository();

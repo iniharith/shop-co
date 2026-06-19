@@ -137,7 +137,11 @@ export class OrderUsecase {
             }
         }
 
+        await this.redisService.del(REDIS_KEYS.ORDERS);
         await this.redisService.del(REDIS_KEYS.ORDERS + orderId);
+        if (order.userId) {
+            await this.redisService.del(REDIS_KEYS.ORDERS + order.userId.toString());
+        }
         return order;
 
     }

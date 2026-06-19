@@ -16,6 +16,7 @@ export interface ITask extends Document {
   orderId?: string; // Linked Order ID
   customerUsername?: string; // Linked Customer Username
   status: 'TODO' | 'IN_PROGRESS' | 'DONE';
+  files: { url: string; name: string }[];
   comments: ITaskComment[];
   createdAt: Date;
   updatedAt: Date;
@@ -38,6 +39,10 @@ const TaskSchema = new Schema<ITask>(
     orderId: { type: String, default: null },
     customerUsername: { type: String, default: '' },
     status: { type: String, enum: ['TODO', 'IN_PROGRESS', 'DONE'], default: 'TODO' },
+    files: [{
+      url: { type: String, required: true },
+      name: { type: String, required: true }
+    }],
     comments: [TaskCommentSchema],
   },
   { timestamps: true }

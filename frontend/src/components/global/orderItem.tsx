@@ -157,8 +157,9 @@ const OrderItem = ({ order }: OrderItemProps) => {
                     <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden">
                       <img
                         src={
-                          process.env.NEXT_PUBLIC_BACKEND_URL +
-                          item.product.images[0]
+                          item.product.images[0]?.startsWith("/")
+                            ? process.env.NEXT_PUBLIC_BACKEND_URL + item.product.images[0]
+                            : item.product.images[0]
                         }
                         alt={item.product.name}
                         className="w-full h-full object-cover"

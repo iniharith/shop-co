@@ -66,7 +66,7 @@ export default function AppSidebar() {
   const navItems = roleByNavItems(session?.user?.role)
 
   return (
-    <Sidebar collapsible="icon" variant="floating" className="shadow-lg border-0 m-4 rounded-xl h-[calc(100svh-2rem)]">
+    <Sidebar collapsible="icon" variant="floating" className="shadow-lg border-0 rounded-xl">
       
       <SidebarHeader>
        
