@@ -6,7 +6,8 @@ export const createRedisClient = (clientType: 'subscriber' | 'publisher' | 'stan
     const redisUrl = process.env.REDIS_PUBLIC_URL || process.env.REDIS_URL;
     
     if (!redisUrl) {
-        throw new Error("REDIS_URL environment variable is required");
+        console.warn(`[Warning] REDIS_URL environment variable is missing. Redis ${clientType} client will be disabled.`);
+        return null;
     }
 
     const client = new Redis(redisUrl, {

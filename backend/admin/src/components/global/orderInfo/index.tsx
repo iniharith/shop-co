@@ -227,6 +227,67 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
             </div>
           )}
       </div>
+      
+      {/* Progress Bar Timeline */}
+      <div className="py-5 px-5 bg-white dark:bg-black/20 rounded-lg mt-4 mb-4 border border-gray-100 dark:border-border/50 shadow-sm">
+        <h3 className="text-sm font-semibold mb-4 text-slate-700 dark:text-slate-300 flex items-center gap-2">
+          <Truck className="w-4 h-4" /> Order Tracking Progress
+        </h3>
+        <div className="relative w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+          {status !== "CANCELLED" ? (() => {
+            const getProgressStep = (currentStatus: string) => {
+              switch (currentStatus) {
+                case "PLACED":
+                case "PENDING_ARTWORK":
+                case "ARTWORK_REJECTED": return 0; // Placed
+                case "ARTWORK_REVIEW":
+                case "IN_DESIGN": return 1; // Design
+                case "IN_PRODUCTION": return 2; // Print
+                case "SHIPPED":
+                case "IN_TRANSIT": return 3; // Transit
+                case "DELIVERED": return 4; // Delivered
+                default: return 0;
+              }
+            };
+            const step = getProgressStep(status);
+            return (
+              <div 
+                className={`absolute top-0 left-0 h-full rounded-full transition-all duration-500 ${step === 4 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                style={{ width: `${(step / 4) * 100}%` }}
+              />
+            );
+          })() : (
+            <div className="absolute top-0 left-0 h-full w-full rounded-full bg-rose-500" />
+          )}
+        </div>
+        <div className="flex justify-between mt-3 text-[10px] uppercase font-bold tracking-wider text-slate-400">
+          {(() => {
+            const step = status === "CANCELLED" ? -1 : (() => {
+              switch (status) {
+                case "PLACED":
+                case "PENDING_ARTWORK":
+                case "ARTWORK_REJECTED": return 0;
+                case "ARTWORK_REVIEW":
+                case "IN_DESIGN": return 1;
+                case "IN_PRODUCTION": return 2;
+                case "SHIPPED":
+                case "IN_TRANSIT": return 3;
+                case "DELIVERED": return 4;
+                default: return 0;
+              }
+            })();
+            return (
+              <>
+                <span className={step >= 0 ? "text-blue-600 dark:text-blue-400" : ""}>Placed</span>
+                <span className={step >= 1 ? "text-blue-600 dark:text-blue-400" : ""}>Design</span>
+                <span className={step >= 2 ? "text-blue-600 dark:text-blue-400" : ""}>Print</span>
+                <span className={step >= 3 ? "text-blue-600 dark:text-blue-400" : ""}>Transit</span>
+                <span className={step >= 4 ? "text-emerald-600 dark:text-emerald-400" : ""}>Delivered</span>
+              </>
+            );
+          })()}
+        </div>
+      </div>
 
       <div className="p-4 mb-2  bg-muted/20 rounded-lg">
         <h3 className="font-semibold flex items-center gap-2">

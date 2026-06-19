@@ -93,13 +93,24 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                     <label className="text-sm font-semibold text-foreground flex items-center gap-2">
                       <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {task.files.map((file: any, idx: number) => (
-                        <a key={idx} href={file.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/40 transition-colors">
-                          <FileIcon className="w-5 h-5 text-primary shrink-0" />
-                          <span className="text-xs font-medium truncate">{file.name}</span>
-                        </a>
-                      ))}
+                    <div className="grid grid-cols-2 gap-3">
+                      {task.files.map((file: any, idx: number) => {
+                        const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(file.url);
+                        return (
+                          <a key={idx} href={file.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/40 transition-colors overflow-hidden relative group">
+                            {isImage ? (
+                              <div className="w-12 h-12 shrink-0 rounded overflow-hidden">
+                                <img src={file.url} alt={file.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                              </div>
+                            ) : (
+                              <div className="w-12 h-12 shrink-0 bg-muted flex items-center justify-center rounded">
+                                <FileIcon className="w-5 h-5 text-primary" />
+                              </div>
+                            )}
+                            <span className="text-xs font-medium truncate">{file.name}</span>
+                          </a>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -247,6 +258,10 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                 </div>
               </div>
             )}
+            
+            <div className="pt-6 mt-auto border-t border-border/50">
+              <Button onClick={onClose} className="w-full font-bold">Done</Button>
+            </div>
             
           </div>
         </div>

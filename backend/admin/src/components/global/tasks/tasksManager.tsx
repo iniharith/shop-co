@@ -136,23 +136,33 @@ export default function TasksManager() {
                         </Button>
                       </div>
                       
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
-                        {task.dueDate && (
-                          <span className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md">
-                            <Calendar className="w-3 h-3" /> {format(new Date(task.dueDate), "MMM d")}
-                          </span>
-                        )}
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-2">
                         {task.comments?.length > 0 && (
                           <span className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md">
                             <MessageSquare className="w-3 h-3" /> {task.comments.length}
                           </span>
                         )}
-                        {task.assignee && (
-                          <span className="flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded-md max-w-[100px] truncate" title="Assignee">
-                            <UserIcon className="w-3 h-3 shrink-0" /> 
-                            <span className="truncate">{usersData?.users?.find((u: any) => u._id === task.assignee)?.name || "Assigned"}</span>
-                          </span>
-                        )}
+                      </div>
+                      
+                      {/* Interactive Assignee, DueDate, and Status for Board View */}
+                      <div className="grid grid-cols-2 gap-2" onClick={e => e.stopPropagation()}>
+                        <Input 
+                          type="date" 
+                          value={task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ""} 
+                          onChange={e => updateTask({ id: task._id, data: { dueDate: e.target.value ? new Date(e.target.value) : null } })}
+                          className="h-7 text-[10px] bg-muted/50 border-0 focus:ring-0 w-full px-2"
+                        />
+                        <Select value={task.assignee || "unassigned"} onValueChange={(v) => updateTask({ id: task._id, data: { assignee: v === "unassigned" ? null : v } })}>
+                          <SelectTrigger className="h-7 text-[10px] bg-muted/50 border-0 focus:ring-0">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="unassigned">Unassigned</SelectItem>
+                            {usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss'].includes(u.role)).map((admin: any) => (
+                              <SelectItem key={admin._id} value={admin._id}>{admin.name || admin.email}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       
                       {/* Move Status inline for Board View */}
@@ -192,14 +202,26 @@ export default function TasksManager() {
                   <div className={`w-2 h-2 rounded-full ${task.status === 'DONE' ? 'bg-emerald-500' : task.status === 'IN_PROGRESS' ? 'bg-blue-500' : 'bg-amber-500'}`} />
                   {task.title}
                 </div>
-                <div className="col-span-2 text-sm flex items-center gap-2 text-muted-foreground">
-                  <UserIcon className="w-4 h-4" /> 
-                  <span className="truncate">
-                    {task.assignee ? (usersData?.users?.find((u: any) => u._id === task.assignee)?.name || "Assigned") : "Unassigned"}
-                  </span>
+                <div className="col-span-2 text-sm flex items-center gap-2 text-muted-foreground" onClick={e => e.stopPropagation()}>
+                  <Select value={task.assignee || "unassigned"} onValueChange={(v) => updateTask({ id: task._id, data: { assignee: v === "unassigned" ? null : v } })}>
+                    <SelectTrigger className="h-8 text-xs bg-background border border-border/50 shadow-sm focus:ring-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss'].includes(u.role)).map((admin: any) => (
+                        <SelectItem key={admin._id} value={admin._id}>{admin.name || admin.email}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="col-span-2 text-sm text-muted-foreground flex items-center gap-2">
-                  <Calendar className="w-4 h-4" /> {task.dueDate ? format(new Date(task.dueDate), "MMM d, yyyy") : "-"}
+                <div className="col-span-2 text-sm text-muted-foreground flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                  <Input 
+                    type="date" 
+                    value={task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ""} 
+                    onChange={e => updateTask({ id: task._id, data: { dueDate: e.target.value ? new Date(e.target.value) : null } })}
+                    className="h-8 text-xs bg-background border border-border/50 shadow-sm w-full"
+                  />
                 </div>
                 <div className="col-span-2" onClick={e => e.stopPropagation()}>
                   <Select value={task.status} onValueChange={(v) => handleStatusChange(task._id, v)}>
@@ -222,7 +244,7 @@ export default function TasksManager() {
       {/* Task Detail Modal */}
       {selectedTask && (
         <TaskModal 
-          task={selectedTask} 
+          task={tasks.find((t: any) => t._id === selectedTask._id) || selectedTask} 
           isOpen={!!selectedTask} 
           onClose={() => setSelectedTask(null)} 
         />

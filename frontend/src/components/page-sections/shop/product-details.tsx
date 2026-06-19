@@ -216,10 +216,68 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Quantity & Turnaround</h2>
           </div>
           
-          {renderOptions(step3Options)}
+          {step3Options.length > 0 ? (() => {
+            const turnaroundOpt = step3Options[0];
+            const standardQuantities = [100, 200, 300, 500, 1000, 2000];
+            
+            let optionAddonsWithoutTurnaround = 0;
+            if (product.printingOptions) {
+              product.printingOptions.forEach(opt => {
+                if (opt.name === turnaroundOpt.name) return;
+                const selectedIdx = selectedOptions[opt.name];
+                if (selectedIdx !== undefined && opt.options[selectedIdx]) {
+                  optionAddonsWithoutTurnaround += opt.options[selectedIdx].priceAdd;
+                }
+              });
+            }
+
+            return (
+              <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-border mt-4">
+                <table className="w-full text-sm text-center">
+                  <thead className="bg-gray-50 dark:bg-black/20 border-b border-gray-200 dark:border-border">
+                    <tr>
+                      <th className="p-3 text-left font-semibold text-gray-700 dark:text-gray-200">Quantity</th>
+                      {turnaroundOpt.options.map((opt, idx) => (
+                        <th key={idx} className="p-3 font-semibold text-gray-700 dark:text-gray-200">{opt.label}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-border">
+                    {standardQuantities.map((q) => (
+                      <tr key={q} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                        <td className="p-3 text-left font-semibold text-gray-800 dark:text-foreground">{q}</td>
+                        {turnaroundOpt.options.map((opt, idx) => {
+                          const cellBasePrice = product.price + optionAddonsWithoutTurnaround + opt.priceAdd + (designOption === "design" ? 50 : 0);
+                          const cellSubtotal = cellBasePrice * q;
+                          const cellTotal = cellSubtotal * 1.07;
+                          const isSelected = quantity === q && selectedOptions[turnaroundOpt.name] === idx;
+                          
+                          return (
+                            <td 
+                              key={idx} 
+                              onClick={() => {
+                                setQuantity(q);
+                                handleOptionChange(turnaroundOpt.name, idx);
+                              }}
+                              className={`p-3 cursor-pointer transition-all border-l border-gray-200 dark:border-border ${isSelected ? "bg-primary/10 border-2 border-primary font-bold text-primary shadow-inner" : "text-gray-600 dark:text-gray-400 hover:bg-primary/5"}`}
+                            >
+                              RM {cellTotal.toFixed(2)}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })() : null}
+
+          {/* Fallback rendering if there are multiple step 3 options (rare) or if no turnaround opt */}
+          {step3Options.length > 1 && renderOptions(step3Options.slice(1))}
 
           <div className="space-y-3 pt-2">
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide">Quantity</label>
+            <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide">Custom Quantity</label>
             <div className="p-4 border-2 border-gray-200 dark:border-border rounded-xl flex items-center justify-between">
               <span className="text-sm font-medium dark:text-foreground">Total Pieces</span>
               <QuantityPicker

@@ -45,79 +45,41 @@ import { useStaff } from "@/hooks/useProfile";
 export const ChatBox = ({ userId }: { userId: string }) => {
   const { data: convData, isPending: convLoading } = useConversations();
   const { mutate: createConv, isPending: isCreating } = useCreateConversation();
-  const { staff, isLoading: staffLoading } = useStaff();
   
-  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const conversations = convData?.conversations || [];
   
-  const handleSelectStaff = (staffId: string) => {
-    setSelectedStaffId(staffId);
-    
-    // Check if conversation exists
-    const existing = conversations.find((c: any) => 
-      c.participants.some((p: any) => p._id === staffId)
-    );
-    
-    if (!existing) {
+  const activeConversation = conversations.find((c: any) => c.type === 'admin_customer');
+
+  useEffect(() => {
+    // Auto-create a conversation if none exists
+    if (!convLoading && !isCreating && conversations.length > 0 && !activeConversation) {
       createConv({
-        participantIds: [userId, staffId],
+        participantIds: [userId],
         type: 'admin_customer'
       });
     }
-  };
-
-  const activeConversation = conversations.find((c: any) => 
-    c.participants.some((p: any) => p._id === selectedStaffId)
-  );
-
-  if (selectedStaffId) {
-    if (convLoading || isCreating || !activeConversation) {
-      return (
-        <div className="flex-1 flex flex-col items-center justify-center text-sm text-gray-500 relative bg-gray-50">
-          <button onClick={() => setSelectedStaffId(null)} className="absolute top-4 left-4 text-xs font-semibold text-gray-500 hover:text-black">← Back</button>
-          Connecting...
-        </div>
-      );
+    if (!convLoading && conversations.length === 0 && !isCreating) {
+      createConv({
+        participantIds: [userId],
+        type: 'admin_customer'
+      });
     }
+  }, [convLoading, conversations, activeConversation, isCreating, userId, createConv]);
+
+  if (convLoading || isCreating || !activeConversation) {
     return (
-      <div className="flex-1 flex flex-col relative h-full">
-        <div className="bg-gray-100 p-2.5 px-4 text-xs border-b border-gray-200 flex items-center justify-between shadow-sm z-10">
-           <span className="font-semibold text-gray-700">Chatting with {staff.find((s:any) => s._id === selectedStaffId)?.name || 'Admin'}</span>
-           <button onClick={() => setSelectedStaffId(null)} className="text-gray-500 hover:text-black font-medium">Change</button>
-        </div>
-        <ChatMessages conversationId={activeConversation._id} currentUserId={userId} />
+      <div className="flex-1 flex flex-col items-center justify-center text-sm text-gray-500 relative bg-gray-50">
+        Connecting...
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 bg-gray-50 flex flex-col gap-3">
-      <h4 className="text-sm font-semibold text-gray-700 mb-2">Select staff to chat with:</h4>
-      {staffLoading ? (
-        <div className="text-sm text-gray-500 text-center py-4">Loading staff...</div>
-      ) : staff.length === 0 ? (
-        <div className="text-sm text-gray-500 text-center py-4">No staff available.</div>
-      ) : (
-        staff.map((s: any) => (
-          <button 
-            key={s._id} 
-            onClick={() => handleSelectStaff(s._id)}
-            className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:border-black transition-colors text-left shadow-sm hover:shadow"
-          >
-            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 border border-gray-200">
-              {s.avatar ? (
-                <img src={s.avatar} alt={s.name} className="w-full h-full object-cover" />
-              ) : (
-                <UserIcon size={20} className="text-gray-400" />
-              )}
-            </div>
-            <div>
-              <p className="font-semibold text-sm text-gray-900">{s.name || s.email}</p>
-              <p className="text-xs text-gray-500 capitalize">{s.role}</p>
-            </div>
-          </button>
-        ))
-      )}
+    <div className="flex-1 flex flex-col relative h-full">
+      <div className="bg-gray-100 p-2.5 px-4 text-xs border-b border-gray-200 flex items-center justify-between shadow-sm z-10">
+         <span className="font-semibold text-gray-700">Chatting with Admin Support</span>
+      </div>
+      <ChatMessages conversationId={activeConversation._id} currentUserId={userId} />
     </div>
   );
 };
@@ -148,7 +110,7 @@ const ChatMessages = ({ conversationId, currentUserId }: { conversationId: strin
           Chat started. An admin will reply shortly.
         </div>
         {messages.map((msg: any) => {
-          const isMe = msg.senderId?._id === currentUserId || msg.senderRole === 'client';
+          const isMe = msg.senderId?._id === currentUserId || msg.senderRole === 'client' || msg.senderId === currentUserId;
           return (
             <div key={msg._id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] p-3 rounded-2xl ${isMe ? 'bg-black text-white rounded-tr-sm' : 'bg-white border border-gray-200 text-gray-900 rounded-tl-sm shadow-sm'}`}>
