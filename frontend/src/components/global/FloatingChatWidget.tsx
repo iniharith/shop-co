@@ -40,7 +40,7 @@ const FloatingChatWidget = () => {
   );
 };
 
-const ChatBox = ({ userId }: { userId: string }) => {
+export const ChatBox = ({ userId }: { userId: string }) => {
   const { data: convData, isPending: convLoading } = useConversations();
   const { mutate: createConv, isPending: isCreating } = useCreateConversation();
   

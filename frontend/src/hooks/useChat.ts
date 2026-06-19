@@ -20,7 +20,7 @@ export const useMessages = (conversationId: string) => {
         if (!conversationId || !token) return { messages: [] };
         const res = await AxiosInstance(token).get(`/api/chat/conversations/${conversationId}/messages`);
         return res.data;
-    });
+    }, { refetchInterval: 3000 });
 }
 
 export const useSendMessage = (conversationId: string) => {

@@ -71,13 +71,15 @@ export default function AppSidebar() {
       <SidebarHeader>
        
         <div className="flex gap-3 py-2 text-sidebar-accent-foreground items-center">
-          <div className="flex aspect-square size-12 items-center justify-center rounded-2xl bg-white overflow-hidden shadow-sm border border-slate-100">
+          <div className={`flex aspect-square items-center justify-center bg-white overflow-hidden shadow-sm border border-slate-100 transition-all ${state === "collapsed" ? "size-8 rounded-lg" : "size-12 rounded-2xl"}`}>
             <Image src={company.logo} width={48} height={48} alt="Kampung Cetak" className="object-contain w-full h-full" />
           </div>
-          <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-semibold">{company.name}</span>
-            <span className="truncate text-xs">{company.plan}</span>
-          </div>
+          {state !== "collapsed" && (
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-semibold">{company.name}</span>
+              <span className="truncate text-xs">{company.plan}</span>
+            </div>
+          )}
         </div>
       </SidebarHeader>
       <SidebarContent className="overflow-x-hidden">

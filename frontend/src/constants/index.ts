@@ -56,7 +56,7 @@ export const printingCategories = [
   },
   {
     label: "APPAREL",
-    href: "#",
+    href: "/home/shop",
     subItems: [
       { label: "NON WOVEN BAG", href: "/home/shop/prod-129" },
       { label: "CANVAS BAG", href: "/home/shop/prod-130" },
@@ -66,7 +66,7 @@ export const printingCategories = [
   },
   {
     label: "FRAME",
-    href: "#",
+    href: "/home/shop",
     subItems: [
       { label: "ISLAMIC KHAT", href: "/home/shop/prod-133" },
       { label: "PORTRAIT", href: "/home/shop/prod-134" },
@@ -75,7 +75,7 @@ export const printingCategories = [
   },
   {
     label: "WEDDING PRODUCT",
-    href: "#",
+    href: "/home/shop",
     subItems: [
       { label: "BUNTING", href: "/home/shop/prod-136" },
       { label: "BANNER", href: "/home/shop/prod-137" },
@@ -89,7 +89,7 @@ export const printingCategories = [
   },
   {
     label: "FOOD PACKAGING",
-    href: "#",
+    href: "/home/shop",
     subItems: [
       { label: "MENU BOOK", href: "/home/shop/prod-144" },
       { label: "TABLE TENT", href: "/home/shop/prod-145" },

@@ -2,8 +2,10 @@ import { Router, Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { chatRepository } from '../../infrastructure/repositories/ChatRepository';
 import authMiddilware from '../middlewares/auth.middileware';
+import { RedisService } from '../../infrastructure/redis/redis';
 
 const router = Router();
+const redisService = new RedisService();
 
 // GET /api/chat/conversations
 router.get(
@@ -109,6 +111,9 @@ router.post(
     }
     
     await chatRepository.updateLastMessage(req.params.id);
+    
+    // Publish to redis so websockets broadcast to clients
+    await redisService.publish('chat_messages', JSON.stringify(message));
     
     res.json({ success: true, message });
   })

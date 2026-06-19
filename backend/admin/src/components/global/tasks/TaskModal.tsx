@@ -29,9 +29,10 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "");
   const [orderId, setOrderId] = useState(task.orderId || "");
   const [customerUsername, setCustomerUsername] = useState(task.customerUsername || "");
-  const [assignee, setAssignee] = useState(task.assignee || "");
+  const getAssigneeId = (val: any) => typeof val === 'object' && val !== null ? val._id : (val || "");
+  const [assignee, setAssignee] = useState(getAssigneeId(task.assignee));
 
-  const handleSaveDetails = () => {
+  const handleSaveDetails = (overrides?: any) => {
     updateTask({
       id: task._id,
       data: {
@@ -39,7 +40,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
         dueDate: dueDate ? new Date(dueDate) : null,
         orderId,
         customerUsername,
-        assignee: assignee === "unassigned" ? null : assignee
+        assignee: assignee === "unassigned" ? null : assignee,
+        ...overrides
       }
     });
   };
@@ -175,7 +177,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                 <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
                   <UserIcon className="w-3.5 h-3.5" /> Assignee
                 </label>
-                <Select value={assignee} onValueChange={(v) => { setAssignee(v); handleSaveDetails(); }}>
+                <Select value={assignee} onValueChange={(v) => { setAssignee(v); handleSaveDetails({ assignee: v === "unassigned" ? null : v }); }}>
                   <SelectTrigger className="h-9 bg-background shadow-sm border-border/50">
                     <SelectValue placeholder="Unassigned" />
                   </SelectTrigger>

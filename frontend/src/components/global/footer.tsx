@@ -4,7 +4,8 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { Twitter, Facebook, Instagram, Github } from "lucide-react";
+import { Instagram } from "lucide-react";
+import { SiTiktok, SiShopee } from "react-icons/si";
 
 const FooterLink = ({
   href,
@@ -67,17 +68,14 @@ export function Footer() {
             sticker & lebih lagi. Penghantaran pantas seluruh Malaysia.
           </p>
           <div className="flex space-x-2">
-            <SocialIcon href="https://twitter.com">
-              <Twitter className="h-4 w-4" />
-            </SocialIcon>
-            <SocialIcon href="https://facebook.com">
-              <Facebook className="h-4 w-4" />
-            </SocialIcon>
-            <SocialIcon href="https://instagram.com/kampungcetak.my">
+            <SocialIcon href="https://www.instagram.com/kampungcetak.my/">
               <Instagram className="h-4 w-4" />
             </SocialIcon>
-            <SocialIcon href="https://github.com">
-              <Github className="h-4 w-4" />
+            <SocialIcon href="https://www.tiktok.com/@kampungcetaksolutions">
+              <SiTiktok className="h-4 w-4" />
+            </SocialIcon>
+            <SocialIcon href="https://shopee.com.my/printvillage">
+              <SiShopee className="h-4 w-4" />
             </SocialIcon>
           </div>
         </div>
@@ -120,17 +118,7 @@ export function Footer() {
               </ul>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold uppercase tracking-wider">
-                Resources
-              </h3>
-              <ul className="space-y-2">
-                <li><FooterLink href="/ebooks">Free eBooks</FooterLink></li>
-                <li><FooterLink href="/tutorial">Development Tutorial</FooterLink></li>
-                <li><FooterLink href="/blog">How to - Blog</FooterLink></li>
-                <li><FooterLink href="/playlist">YouTube Playlist</FooterLink></li>
-              </ul>
-            </div>
+
           </div>
         </div>
       </div>

@@ -167,28 +167,28 @@ export const testimonials: Testimonial[] = [
     id: 1,
     name: "Sarah M.",
     stars: 5,
-    text: "\"I'm blown away by the quality and style of the clothes I received from Shop.co. From casual wear to elegant dresses, every piece I've bought has exceeded my expectations.\"",
+    text: "\"I'm blown away by the quality of the banners and flyers I received from Kampung Cetak. The colors are incredibly vibrant and the material is top-notch!\"",
     verified: true,
   },
   {
     id: 2,
     name: "Alex K.",
     stars: 5,
-    text: '"Finding clothes that align with my personal style used to be a challenge until I discovered Shop.co. The range of options they offer is truly remarkable, catering to a variety of tastes and occasions."',
+    text: '"Finding a reliable printing service for my business used to be a challenge until I discovered Kampung Cetak. Their fast delivery and premium business cards are exactly what I needed."',
     verified: true,
   },
   {
     id: 3,
     name: "James L.",
     stars: 5,
-    text: "\"As someone who's always on the lookout for unique fashion pieces, I'm thrilled to have stumbled upon Shop.co. The selection of clothes is not only diverse but also on-point with the latest trends.\"",
+    text: "\"As an event organizer, I'm thrilled to have stumbled upon Kampung Cetak. Their personalized flags and bunting always make our events look incredibly professional.\"",
     verified: true,
   },
   {
     id: 4,
     name: "Moody S.",
     stars: 5,
-    text: '"The customer service at Shop.co is exceptional! They went above and beyond to help me find the perfect outfit for a special event. I\'ll definitely be a returning customer."',
+    text: '"The customer service at Kampung Cetak is exceptional! They helped me adjust my food packaging artwork to ensure it printed perfectly. I\'ll definitely be a returning customer."',
     verified: true,
   },
 ]
@@ -350,6 +350,16 @@ export const profileLinks = [
     id: 5,
     name: "Upload Artwork",
     href: "/home/profile/upload",
+  },
+  {
+    id: 6,
+    name: "Chat",
+    href: "/home/profile/chat",
+  },
+  {
+    id: 7,
+    name: "Support",
+    href: "/home/profile/support",
   }
 ]
 

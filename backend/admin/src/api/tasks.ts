@@ -33,8 +33,6 @@ export const addTaskComment = async (token: string, id: string, text: string) =>
 export const uploadTaskFile = async (token: string, taskId: string, file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await AxiosInstance(token).post(`/api/tasks/${taskId}/files`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-    });
+    const response = await AxiosInstance(token).post(`/api/tasks/${taskId}/files`, formData);
     return response.data;
 }

@@ -7,8 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useCreateManualOrder } from "@/hooks/useOrder";
+import { useProducts } from "@/hooks/useProducts";
 import { toast } from "sonner";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ManualOrderModalProps {
   open: boolean;
@@ -17,6 +22,9 @@ interface ManualOrderModalProps {
 
 export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpenChange }) => {
   const { mutate: createOrder, isPending } = useCreateManualOrder();
+  const { data: productsData } = useProducts();
+  const products = productsData?.products || [];
+  const [openProductBox, setOpenProductBox] = useState(false);
 
   const [formData, setFormData] = useState({
     userId: "",
@@ -99,13 +107,51 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 flex flex-col">
             <Label>Product Choice</Label>
-            <Input 
-              value={formData.productChoice} 
-              onChange={e => setFormData({ ...formData, productChoice: e.target.value })} 
-              placeholder="e.g. 100x Business Cards" 
-            />
+            <Popover open={openProductBox} onOpenChange={setOpenProductBox}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openProductBox}
+                  className="w-full justify-between font-normal"
+                >
+                  {formData.productChoice
+                    ? formData.productChoice
+                    : "Select product..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[400px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search product..." />
+                  <CommandList>
+                    <CommandEmpty>No product found.</CommandEmpty>
+                    <CommandGroup>
+                      {products.map((product: any) => (
+                        <CommandItem
+                          key={product._id}
+                          value={product.name}
+                          onSelect={(currentValue) => {
+                            setFormData({ ...formData, productChoice: currentValue });
+                            setOpenProductBox(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              formData.productChoice === product.name ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {product.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="space-y-2">
             <Label>Tracking Number (Optional)</Label>

@@ -25,10 +25,22 @@ const MobileNavSheetContent = ({
   closeDrawer,
   session,
   router,
+  searchQuery,
+  setSearchQuery,
+  searchResults,
+  isSearchFocused,
+  setIsSearchFocused,
+  handleSearch,
 }: {
   closeDrawer: Function;
   session: any;
   router: any;
+  searchQuery: string;
+  setSearchQuery: (val: string) => void;
+  searchResults: any[];
+  isSearchFocused: boolean;
+  setIsSearchFocused: (val: boolean) => void;
+  handleSearch: (e: React.FormEvent) => void;
 }) => {
   const pathname = usePathname();
   // Track which category accordion is open (by index, null = none)
@@ -93,6 +105,53 @@ const MobileNavSheetContent = ({
               </div>
             </button>
           )}
+
+          {/* ── MOBILE SEARCH ── */}
+          <form 
+            onSubmit={(e) => { handleSearch(e); closeDrawer(); }}
+            className="flex flex-col relative bg-white dark:bg-card rounded-xl border border-gray-300 dark:border-border shadow-sm overflow-visible mb-3 px-3 py-1"
+          >
+            <div className="flex items-center w-full">
+              <IoSearch className="text-gray-500 dark:text-muted-foreground text-lg mr-2 shrink-0" />
+              <Input
+                className="w-full focus-visible:ring-0 text-sm bg-transparent border-none shadow-none ring-0 focus-visible:ring-offset-0 px-0 h-10 dark:text-foreground"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                placeholder="Search products..."
+              />
+            </div>
+            {isSearchFocused && searchQuery.length > 1 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-card border border-gray-200 dark:border-border shadow-xl rounded-xl max-h-[250px] overflow-y-auto z-50 py-2">
+                {searchResults.length > 0 ? (
+                  searchResults.map((prod: any) => (
+                    <div 
+                      key={prod._id}
+                      onClick={() => {
+                        setSearchQuery("");
+                        setIsSearchFocused(false);
+                        closeDrawer();
+                        router.push(`/home/shop/${prod._id}`);
+                      }}
+                      className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 dark:hover:bg-muted cursor-pointer transition-colors"
+                    >
+                      <div className="w-8 h-8 rounded-md overflow-hidden bg-gray-100 shrink-0">
+                        <Image src={prod.images[0]?.url || "/images/kampung-cetak-logo.png"} alt={prod.name} width={32} height={32} className="object-cover w-full h-full" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-semibold text-gray-900 dark:text-foreground">{prod.name}</span>
+                        <span className="text-[10px] text-primary font-bold">RM {prod.price}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-3 py-3 text-xs text-gray-500 text-center">No products found</div>
+                )}
+              </div>
+            )}
+          </form>
 
           {/* ── MAIN NAV LINKS ── */}
           <Drawer.Description className="mb-3 flex flex-col gap-3">
@@ -232,6 +291,12 @@ const Nav = () => {
                 closeDrawer={closeDrawer}
                 session={session}
                 router={router}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                searchResults={searchResults}
+                isSearchFocused={isSearchFocused}
+                setIsSearchFocused={setIsSearchFocused}
+                handleSearch={handleSearch}
               />
             </Drawer.Root>
 

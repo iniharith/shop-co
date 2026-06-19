@@ -4,14 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { profileLinks } from "@/constants/data";
-import { User, LayoutDashboard, ShoppingBag, Upload, CheckSquare } from "lucide-react";
+import { User, LayoutDashboard, ShoppingBag, Upload, CheckSquare, MessageCircle, Headset } from "lucide-react";
 
 const iconMap: Record<string, React.ReactNode> = {
   "Profile": <User size={20} />,
   "Dashboard": <LayoutDashboard size={20} />,
   "Orders": <ShoppingBag size={20} />,
   "Tasks": <CheckSquare size={20} />,
-  "Upload Artwork": <Upload size={20} />
+  "Upload Artwork": <Upload size={20} />,
+  "Chat": <MessageCircle size={20} />,
+  "Support": <Headset size={20} />
 };
 
 const ProfileSidebar = () => {

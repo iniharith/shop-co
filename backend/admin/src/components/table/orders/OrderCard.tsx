@@ -59,6 +59,12 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
 
   const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder();
   const { mutate: updateStatus, isPending: isUpdating } = useUpdateOrderStatus();
+  
+  const [localStatus, setLocalStatus] = React.useState(order.orderStatus);
+
+  React.useEffect(() => {
+    setLocalStatus(order.orderStatus);
+  }, [order.orderStatus]);
 
   const handleDelete = () => {
     if (window.confirm("Are you sure you want to delete this order? This action cannot be undone.")) {
@@ -95,11 +101,20 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
         
         <div className="flex flex-col items-end gap-2" onClick={(e) => e.stopPropagation()}>
           <Select 
-            value={order.orderStatus} 
-            onValueChange={(v) => updateStatus({ id: order._id as string, status: v })}
+            value={localStatus} 
+            onValueChange={(v) => {
+              setLocalStatus(v);
+              updateStatus({ id: order._id as string, status: v }, {
+                onSuccess: () => toast.success("Order status updated!"),
+                onError: () => {
+                  toast.error("Failed to update status");
+                  setLocalStatus(order.orderStatus); // Revert on failure
+                }
+              });
+            }}
             disabled={isUpdating}
           >
-            <SelectTrigger className={cn("h-8 text-xs font-semibold uppercase tracking-wider border-0 rounded-full", getStatusColor(order.orderStatus))}>
+            <SelectTrigger className={cn("h-8 text-xs font-semibold uppercase tracking-wider border-0 rounded-full", getStatusColor(localStatus))}>
               <div className="flex items-center">
                 <SelectValue placeholder="Status" />
               </div>

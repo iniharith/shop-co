@@ -36,8 +36,18 @@ const Categorys = () => {
               >
                 <span className="text-4xl drop-shadow-sm">{style.icon}</span>
                 <h2 className="font-bold text-sm dark:text-foreground">{category.label}</h2>
-                <p className="text-gray-500 dark:text-muted-foreground text-xs leading-relaxed">
-                  {category.subItems?.map(s => s.label).slice(0, 3).join(", ")}
+                <p className="text-gray-500 dark:text-muted-foreground text-xs leading-relaxed z-10 relative">
+                  {category.subItems?.slice(0, 3).map((s, i) => (
+                    <span key={i}>
+                      <span 
+                        onClick={(e) => { e.stopPropagation(); router.push(s.href); }}
+                        className="hover:text-primary hover:underline transition-colors"
+                      >
+                        {s.label}
+                      </span>
+                      {i < 2 && category.subItems && category.subItems.length > 1 ? ", " : ""}
+                    </span>
+                  ))}
                   {category.subItems && category.subItems.length > 3 ? ", and more." : "."}
                 </p>
               </div>
