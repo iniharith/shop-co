@@ -74,8 +74,10 @@ class UserUsecase {
                 user.name = data.name;
             if (data.phoneNumber)
                 user.phoneNumber = data.phoneNumber;
-            if (data.address)
+            if (data.address) {
                 user.address = data.address;
+                user.markModified('address');
+            }
             return yield user.save();
         });
     }

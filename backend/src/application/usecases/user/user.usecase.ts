@@ -63,7 +63,10 @@ export class UserUsecase {
         // Allowed fields to update
         if (data.name) user.name = data.name;
         if (data.phoneNumber) user.phoneNumber = data.phoneNumber;
-        if (data.address) user.address = data.address;
+        if (data.address) {
+            user.address = data.address;
+            user.markModified('address');
+        }
 
         return await user.save();
     }
