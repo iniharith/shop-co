@@ -18,6 +18,8 @@ export default function TasksManager() {
   const { data: response, isPending } = useTasks();
   const tasks = response?.tasks || [];
   
+  const { data: usersData } = useUsers();
+  
   const [viewMode, setViewMode] = useState<"board" | "list">("board");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
