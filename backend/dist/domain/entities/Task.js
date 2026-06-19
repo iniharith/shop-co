@@ -39,6 +39,7 @@ const TaskCommentSchema = new mongoose_1.Schema({
     userId: { type: String, required: true },
     userName: { type: String, required: true },
     text: { type: String, required: true },
+    role: { type: String, default: 'admin' },
     createdAt: { type: Date, default: Date.now },
 });
 const TaskSchema = new mongoose_1.Schema({

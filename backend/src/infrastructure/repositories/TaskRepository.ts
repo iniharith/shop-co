@@ -26,10 +26,10 @@ export class TaskRepository {
     await Task.findByIdAndDelete(id);
   }
 
-  async addComment(taskId: string, userId: string, userName: string, text: string): Promise<ITask | null> {
+  async addComment(taskId: string, userId: string, userName: string, text: string, role?: string): Promise<ITask | null> {
     return Task.findByIdAndUpdate(
       taskId,
-      { $push: { comments: { userId, userName, text, createdAt: new Date() } } },
+      { $push: { comments: { userId, userName, text, role: role || 'admin', createdAt: new Date() } } },
       { new: true }
     );
   }

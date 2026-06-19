@@ -134,7 +134,7 @@ export default function TasksManager() {
                         </Button>
                       </div>
                       
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
                         {task.dueDate && (
                           <span className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md">
                             <Calendar className="w-3 h-3" /> {format(new Date(task.dueDate), "MMM d")}
@@ -143,6 +143,12 @@ export default function TasksManager() {
                         {task.comments?.length > 0 && (
                           <span className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md">
                             <MessageSquare className="w-3 h-3" /> {task.comments.length}
+                          </span>
+                        )}
+                        {task.assignee && (
+                          <span className="flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded-md max-w-[100px] truncate" title="Assignee">
+                            <UserIcon className="w-3 h-3 shrink-0" /> 
+                            <span className="truncate">{usersData?.users?.find((u: any) => u._id === task.assignee)?.name || "Assigned"}</span>
                           </span>
                         )}
                       </div>
@@ -185,7 +191,10 @@ export default function TasksManager() {
                   {task.title}
                 </div>
                 <div className="col-span-2 text-sm flex items-center gap-2 text-muted-foreground">
-                  <UserIcon className="w-4 h-4" /> {task.assignee ? "Assigned" : "Unassigned"}
+                  <UserIcon className="w-4 h-4" /> 
+                  <span className="truncate">
+                    {task.assignee ? (usersData?.users?.find((u: any) => u._id === task.assignee)?.name || "Assigned") : "Unassigned"}
+                  </span>
                 </div>
                 <div className="col-span-2 text-sm text-muted-foreground flex items-center gap-2">
                   <Calendar className="w-4 h-4" /> {task.dueDate ? format(new Date(task.dueDate), "MMM d, yyyy") : "-"}

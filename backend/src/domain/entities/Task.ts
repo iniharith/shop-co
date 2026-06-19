@@ -4,6 +4,7 @@ export interface ITaskComment {
   userId: string;
   userName: string;
   text: string;
+  role?: string;
   createdAt: Date;
 }
 
@@ -24,6 +25,7 @@ const TaskCommentSchema = new Schema<ITaskComment>({
   userId: { type: String, required: true },
   userName: { type: String, required: true },
   text: { type: String, required: true },
+  role: { type: String, default: 'admin' },
   createdAt: { type: Date, default: Date.now },
 });
 

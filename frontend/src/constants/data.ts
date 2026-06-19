@@ -347,11 +347,6 @@ export const profileLinks = [
     href: "/home/profile/orders",
   },
   {
-    id: 4,
-    name: "Tasks",
-    href: "/home/profile/tasks",
-  },
-  {
     id: 5,
     name: "Upload Artwork",
     href: "/home/profile/upload",

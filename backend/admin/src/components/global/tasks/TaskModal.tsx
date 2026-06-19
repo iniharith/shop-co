@@ -38,7 +38,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
         dueDate: dueDate ? new Date(dueDate) : null,
         orderId,
         customerUsername,
-        assignee
+        assignee: assignee === "unassigned" ? null : assignee
       }
     });
   };
@@ -89,8 +89,13 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                         <AvatarFallback className="text-xs">{comment.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 bg-muted/40 rounded-xl rounded-tl-none p-3 border border-border/50">
-                        <div className="flex items-baseline justify-between mb-1">
-                          <span className="text-xs font-semibold">{comment.userName}</span>
+                        <div className="flex justify-between items-baseline mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold">{comment.userName}</span>
+                            {comment.role === 'client' && (
+                              <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-primary/20 text-primary">Customer</Badge>
+                            )}
+                          </div>
                           <span className="text-[10px] text-muted-foreground">{format(new Date(comment.createdAt), "MMM d, h:mm a")}</span>
                         </div>
                         <p className="text-sm text-foreground leading-relaxed">{comment.text}</p>
@@ -135,7 +140,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                     <SelectValue placeholder="Unassigned" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
                     {admins.map((admin: any) => (
                       <SelectItem key={admin._id} value={admin._id}>{admin.name || admin.email}</SelectItem>
                     ))}

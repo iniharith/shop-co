@@ -43,11 +43,24 @@ router.put(
   '/:id',
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
+    const oldTask = await taskRepository.findById(req.params.id);
     const task = await taskRepository.update(req.params.id, req.body);
     if (!task) {
       res.status(404).json({ success: false, message: 'Task not found' });
       return;
     }
+    
+    if (req.body.assignee && oldTask?.assignee?.toString() !== req.body.assignee) {
+        const { NotificationRepository } = await import('../../infrastructure/db/repositories/notification.repository');
+        const notifRepo = new NotificationRepository();
+        await notifRepo.createNotification({
+            userId: req.body.assignee,
+            message: `You have been assigned a new task: ${task.title}`,
+            type: 'system',
+            read: false
+        } as any);
+    }
+    
     res.json({ success: true, task });
   })
 );
@@ -70,6 +83,7 @@ router.post(
     const authReq = req as any;
     const userId = authReq.userId || authReq.user?.id;
     const userName = authReq.user?.name || authReq.user?.email || 'Admin';
+    const role = authReq.role;
     const { text } = req.body;
 
     if (!text) {
@@ -77,7 +91,7 @@ router.post(
       return;
     }
 
-    const task = await taskRepository.addComment(req.params.id, userId, userName, text);
+    const task = await taskRepository.addComment(req.params.id, userId, userName, text, role);
     if (!task) {
       res.status(404).json({ success: false, message: 'Task not found' });
       return;

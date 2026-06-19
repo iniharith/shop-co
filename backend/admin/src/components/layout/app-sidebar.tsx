@@ -66,7 +66,7 @@ export default function AppSidebar() {
   const navItems = roleByNavItems(session?.user?.role)
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" variant="floating" className="shadow-lg border-0 m-4 rounded-xl h-[calc(100svh-2rem)]">
       
       <SidebarHeader>
        
@@ -100,8 +100,9 @@ export default function AppSidebar() {
                       <SidebarMenuButton
                         tooltip={item.title}
                         isActive={pathname === item.url}
+                        className="text-base font-bold py-6"
                       >
-                        <div className="inherit">
+                        <div className="inherit flex items-center gap-2">
                           {item.icon && <Icon />}
                           <span>{item.title}</span>
                         </div>
@@ -146,8 +147,9 @@ export default function AppSidebar() {
                     asChild
                     tooltip={item.title}
                     isActive={pathname === item.url}
+                    className="text-base font-bold py-6"
                   >
-                    <Link href={item.url}>
+                    <Link href={item.url} className="flex items-center gap-2">
                       <Icon />
                       <span>{item.title}</span>
                     </Link>

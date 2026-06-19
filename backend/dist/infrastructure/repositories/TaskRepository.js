@@ -46,9 +46,9 @@ class TaskRepository {
             yield Task_1.Task.findByIdAndDelete(id);
         });
     }
-    addComment(taskId, userId, userName, text) {
+    addComment(taskId, userId, userName, text, role) {
         return __awaiter(this, void 0, void 0, function* () {
-            return Task_1.Task.findByIdAndUpdate(taskId, { $push: { comments: { userId, userName, text, createdAt: new Date() } } }, { new: true });
+            return Task_1.Task.findByIdAndUpdate(taskId, { $push: { comments: { userId, userName, text, role: role || 'admin', createdAt: new Date() } } }, { new: true });
         });
     }
 }
