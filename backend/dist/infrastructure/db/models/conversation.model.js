@@ -33,35 +33,30 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Parcel = void 0;
+exports.ConversationModel = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const TrackingEventSchema = new mongoose_1.Schema({
-    status: { type: String, default: '' },
-    description: { type: String, default: '' },
-    location: { type: String, default: '' },
-    timestamp: { type: Date, default: Date.now },
-});
-const ParcelSchema = new mongoose_1.Schema({
-    orderId: { type: String, required: true, index: true },
-    trackingNumber: { type: String, required: true, unique: true, index: true },
-    customerPhone: { type: String, required: true },
-    customerName: { type: String, required: true },
-    customerEmail: { type: String },
-    courier: { type: String, default: 'unknown' },
-    status: {
+const ConversationSchema = new mongoose_1.Schema({
+    participants: [
+        {
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'User',
+        },
+    ],
+    type: {
         type: String,
-        enum: ['pending', 'picked_up', 'in_transit', 'out_for_delivery', 'delivered', 'failed'],
-        default: 'pending',
+        enum: ['admin_customer', 'admin_admin'],
+        required: true,
     },
-    lastStatus: { type: String, default: '' },
-    events: { type: [TrackingEventSchema], default: [] },
-    easyparcelShipmentId: { type: String },
-    awbUrl: { type: String },
-    weight: { type: Number, default: 1 },
-    senderName: { type: String, default: 'Kampung Cetak' },
-    senderPhone: { type: String, default: '' },
-    senderAddress: { type: String, default: '' },
-    recipientAddress: { type: String, default: '' },
-    whatsappNotified: { type: Boolean, default: true },
+    orderId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Order',
+    },
+    whatsappPhone: {
+        type: String,
+    },
+    lastMessageAt: {
+        type: Date,
+        default: Date.now,
+    },
 }, { timestamps: true });
-exports.Parcel = mongoose_1.default.model('Parcel', ParcelSchema);
+exports.ConversationModel = mongoose_1.default.model('Conversation', ConversationSchema);

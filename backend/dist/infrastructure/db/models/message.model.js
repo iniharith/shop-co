@@ -33,35 +33,35 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Parcel = void 0;
+exports.MessageModel = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const TrackingEventSchema = new mongoose_1.Schema({
-    status: { type: String, default: '' },
-    description: { type: String, default: '' },
-    location: { type: String, default: '' },
-    timestamp: { type: Date, default: Date.now },
-});
-const ParcelSchema = new mongoose_1.Schema({
-    orderId: { type: String, required: true, index: true },
-    trackingNumber: { type: String, required: true, unique: true, index: true },
-    customerPhone: { type: String, required: true },
-    customerName: { type: String, required: true },
-    customerEmail: { type: String },
-    courier: { type: String, default: 'unknown' },
-    status: {
-        type: String,
-        enum: ['pending', 'picked_up', 'in_transit', 'out_for_delivery', 'delivered', 'failed'],
-        default: 'pending',
+const MessageSchema = new mongoose_1.Schema({
+    conversationId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Conversation',
+        required: true,
     },
-    lastStatus: { type: String, default: '' },
-    events: { type: [TrackingEventSchema], default: [] },
-    easyparcelShipmentId: { type: String },
-    awbUrl: { type: String },
-    weight: { type: Number, default: 1 },
-    senderName: { type: String, default: 'Kampung Cetak' },
-    senderPhone: { type: String, default: '' },
-    senderAddress: { type: String, default: '' },
-    recipientAddress: { type: String, default: '' },
-    whatsappNotified: { type: Boolean, default: true },
+    senderId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'User',
+    },
+    senderRole: {
+        type: String,
+        enum: ['admin', 'sysadmin', 'boss', 'client', 'system'],
+        default: 'client',
+    },
+    text: {
+        type: String,
+        required: true,
+    },
+    isRead: {
+        type: Boolean,
+        default: false,
+    },
+    source: {
+        type: String,
+        enum: ['web', 'whatsapp'],
+        default: 'web',
+    },
 }, { timestamps: true });
-exports.Parcel = mongoose_1.default.model('Parcel', ParcelSchema);
+exports.MessageModel = mongoose_1.default.model('Message', MessageSchema);
