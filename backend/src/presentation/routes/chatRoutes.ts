@@ -68,6 +68,16 @@ router.get(
   })
 );
 
+// DELETE /api/chat/conversations/:id
+router.delete(
+  '/conversations/:id',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    await chatRepository.deleteConversation(req.params.id);
+    res.json({ success: true });
+  })
+);
+
 // POST /api/chat/conversations/:id/messages
 router.post(
   '/conversations/:id/messages',

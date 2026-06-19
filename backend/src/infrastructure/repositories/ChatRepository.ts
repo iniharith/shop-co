@@ -25,6 +25,11 @@ export class ChatRepository {
     return ConversationModel.findByIdAndUpdate(id, { lastMessageAt: new Date() }, { new: true });
   }
 
+  async deleteConversation(id: string) {
+    await MessageModel.deleteMany({ conversationId: id });
+    return ConversationModel.findByIdAndDelete(id);
+  }
+
   async getMessages(conversationId: string) {
     return MessageModel.find({ conversationId }).populate('senderId', 'name email role').sort({ createdAt: 1 });
   }

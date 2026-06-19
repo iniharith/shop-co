@@ -98,9 +98,7 @@ const ChatMessages = ({ conversationId, currentUserId }: { conversationId: strin
 
   const handleSend = () => {
     if (!text.trim()) return;
-    sendMessage(text, {
-      onSuccess: () => setText("")
-    });
+    sendMessage(text, { onSuccess: () => setText("") });
   };
 
   return (

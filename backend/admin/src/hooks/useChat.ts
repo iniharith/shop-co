@@ -41,3 +41,13 @@ export const useCreateConversation = () => {
     }, ['conversations']);
     return { mutate, isPending };
 }
+
+export const useDeleteConversation = () => {
+    const { data: session } = useSession();
+    const token = session?.user?.token;
+    const { mutate, isPending } = useMutationData(['deleteConversation'], async (id: string) => {
+        const res = await AxiosInstance(token).delete(`/api/chat/conversations/${id}`);
+        return res.data;
+    }, ['conversations']);
+    return { mutate, isPending };
+}

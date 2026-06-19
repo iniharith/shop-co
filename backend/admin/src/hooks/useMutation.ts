@@ -14,13 +14,11 @@ export const useMutationData = (mutationKey: MutationKey,
         onError(error) {
             const data = (error as unknown as AxiosError).response?.data as { message?: string } 
             console.log(data || error, "error")
-            if (data?.message) toast.error(data.message,)
+            if (data?.message) toast.error(data.message)
+            else if (error.message === 'Network Error') toast.error("Network Error", { description: "Please check your internet connection." })
             else toast.error("An unexpected error occurred.", {
                 description: error.message?.toString()
-            })
-
-
-        },
+            })        },
         onSuccess(data) {
             toast.success(data.message)
             if (onSuccess) onSuccess(data);

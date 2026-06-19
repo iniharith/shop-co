@@ -172,7 +172,7 @@ export default function AppSidebar() {
                   className="data-[state=open]:bg-slate-800 bg-slate-900 hover:bg-slate-800 data-[state=open]:text-slate-100"
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
-                    
+                    <AvatarImage src={((session?.user as any)?.avatar || (session?.user as any)?.image)?.startsWith('http') ? ((session?.user as any)?.avatar || (session?.user as any)?.image) : ((session?.user as any)?.avatar || (session?.user as any)?.image) ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${(session?.user as any)?.avatar || (session?.user as any)?.image}` : ''} alt={session?.user?.name || ''} />
                     <AvatarFallback className="rounded-lg text-white">
                       {session?.user?.name?.slice(0, 2)?.toUpperCase() || "CN"}
                     </AvatarFallback>
@@ -197,7 +197,7 @@ export default function AppSidebar() {
                 <DropdownMenuLabel className="p-0  font-normal">
                   <div className="flex items-center  gap-2 px-1 py-1.5 text-left text-sm">
                     <Avatar className="h-8 w-8 rounded-lg">
-                     
+                      <AvatarImage src={((session?.user as any)?.avatar || (session?.user as any)?.image)?.startsWith('http') ? ((session?.user as any)?.avatar || (session?.user as any)?.image) : ((session?.user as any)?.avatar || (session?.user as any)?.image) ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${(session?.user as any)?.avatar || (session?.user as any)?.image}` : ''} alt={session?.user?.name || ''} />
                       <AvatarFallback className="rounded-lg text-white">
                         {session?.user?.name?.slice(0, 2)?.toUpperCase() ||
                           "CN"}

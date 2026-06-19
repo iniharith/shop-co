@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useConversations, useMessages, useSendMessage, useCreateConversation } from "@/hooks/useChat";
+import { useConversations, useMessages, useSendMessage, useCreateConversation, useDeleteConversation } from "@/hooks/useChat";
 import { useUsers } from "@/hooks/useUsers";
 import { useSession } from "next-auth/react";
 import { Card } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
-import { Check, ChevronsUpDown, Plus, Send, User as UserIcon, MessageCircle } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Send, User as UserIcon, MessageCircle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function ChatManager() {
@@ -24,6 +24,7 @@ export default function ChatManager() {
   const { data: msgData, isPending: msgLoading } = useMessages(activeConvId || "");
   const { mutate: sendMessage, isPending: isSending } = useSendMessage(activeConvId || "");
   const { mutate: createConv, isPending: isCreating } = useCreateConversation();
+  const { mutate: deleteConv, isPending: isDeleting } = useDeleteConversation();
   
   const { data: usersData } = useUsers();
   const backendUsers = usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss'].includes(u.role)) || [];
@@ -41,9 +42,7 @@ export default function ChatManager() {
 
   const handleSend = () => {
     if (!text.trim() || !activeConvId) return;
-    sendMessage(text, {
-      onSuccess: () => setText("")
-    });
+    sendMessage(text, { onSuccess: () => setText("") });
   };
 
   const getParticipantName = (conv: any) => {
@@ -110,9 +109,28 @@ export default function ChatManager() {
                 <AvatarFallback>{getParticipantName(conv).substring(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-baseline mb-1">
-                  <h3 className="font-semibold text-sm truncate">{getParticipantName(conv)}</h3>
-                  <span className="text-[10px] text-muted-foreground shrink-0">{format(new Date(conv.lastMessageAt), "MMM d, h:mm a")}</span>
+                <div className="flex justify-between items-center mb-1">
+                  <h3 className="font-semibold text-sm truncate pr-2">{getParticipantName(conv)}</h3>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="text-[10px] text-muted-foreground">{format(new Date(conv.lastMessageAt || new Date()), "MMM d, h:mm a")}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-red-500 hover:bg-red-50 shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if(confirm("Are you sure you want to delete this chat?")) {
+                          deleteConv(conv._id, {
+                            onSuccess: () => {
+                              if (activeConvId === conv._id) setActiveConvId(null);
+                            }
+                          });
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground truncate">
                   {conv.type === 'admin_customer' ? 'Customer Support' : 'Admin Chat'}
@@ -131,6 +149,16 @@ export default function ChatManager() {
               <h3 className="font-semibold text-lg">
                 {getParticipantName(conversations.find((c: any) => c._id === activeConvId))}
               </h3>
+              <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600" onClick={() => {
+                if(confirm("Are you sure you want to delete this chat?")) {
+                  deleteConv(activeConvId, {
+                    onSuccess: () => setActiveConvId(null)
+                  });
+                }
+              }}>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Chat
+              </Button>
             </div>
             
             <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col bg-muted/5">
