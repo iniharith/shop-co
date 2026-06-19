@@ -42,6 +42,10 @@ export class UserUsecase {
         return { user: newUser, accessToken, refreshToken };
     }
 
+    async getStaff(): Promise<IUserDocument[]> {
+        return this.userRepository.getStaff();
+    }
+
     async getUsersByRole(role: Roles): Promise<IUserDocument[]> {
         return this.userRepository.getUsersByRole(role);
     }

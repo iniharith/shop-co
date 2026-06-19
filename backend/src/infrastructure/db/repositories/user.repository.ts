@@ -14,6 +14,10 @@ export class UserRepository extends BaseRepository<IUserDocument> {
         return await this.model.findOne({ email });
     }
 
+    async getStaff(): Promise<IUserDocument[]> {
+        return await this.model.find({ role: { $in: ['admin', 'sysadmin', 'boss'] } }).select("-password");
+    }
+
     async getUsersByRole(role: Roles): Promise<IUserDocument[]> {
         return await this.model.find({ role }).select("-password");
     }

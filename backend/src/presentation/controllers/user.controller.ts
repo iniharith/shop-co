@@ -5,6 +5,11 @@ import userUsecase from "../../application/usecases/user/user.usecase";
 import { AuthRequest } from "../../domain/types/api";
 
 class UserController {
+    public getStaff = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+        const staff = await userUsecase.getStaff();
+        res.status(statusCodes.OK).json({ success: true, data: staff });
+    });
+
     public getProfile = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
         const userId = req.userId;
         if (!userId) {

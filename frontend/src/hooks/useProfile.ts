@@ -1,5 +1,5 @@
 import { useSession } from "next-auth/react";
-import { getProfile, updateProfile } from "@/api/user";
+import { getProfile, updateProfile, getStaff } from "@/api/user";
 import { useQueryData } from "./useQueryData";
 import { useMutationData } from "./useMutation";
 import { toast } from "sonner";
@@ -31,4 +31,17 @@ export const useProfile = () => {
         updateProfile: updateProfileMutation,
         isUpdating
     };
+};
+
+export const useStaff = () => {
+    const { data: session } = useSession();
+    const token = session?.user?.token || "";
+
+    const { data, isLoading, refetch } = useQueryData(
+        ['staff'],
+        () => getStaff(token),
+        { enabled: !!token }
+    );
+
+    return { staff: data?.data || [], isLoading, refetch };
 };

@@ -23,3 +23,8 @@ export const updateProfile = async (data: any, token: string) => {
   const response = await userProxy(token).put("/api/user/profile", data);
   return response.data;
 };
+
+export const getStaff = async (token: string) => {
+  const response = await userProxy(token).get("/api/user/staff");
+  return response.data;
+};

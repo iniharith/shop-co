@@ -9,6 +9,9 @@ import asyncHandler from "express-async-handler";
 
 const router = Router();
 
+// Get staff users
+router.get("/staff", authMiddleware, userController.getStaff);
+
 // Get the user's profile
 router.get("/profile", authMiddleware, userController.getProfile);
 
