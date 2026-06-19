@@ -17,10 +17,10 @@ const AboutPage = () => {
             />
           </div>
           <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl tracking-tight mb-4">
-            About <span className="text-primary">Kampung Cetak</span>
+            About <span className="text-[#E00000]">Kampung Cetak</span>
           </h1>
-          <p className="max-w-2xl mx-auto text-xl text-gray-500">
-            Your Trusted Printing Partner in Malaysia
+          <p className="max-w-2xl mx-auto text-xl text-gray-500 italic">
+            "We take pride in our work and customer satisfaction is what sets KAMPUNG CETAK apart from the competition."
           </p>
         </div>
 
@@ -30,13 +30,13 @@ const AboutPage = () => {
             <div className="md:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center">
               <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Story</h2>
               <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                Welcome to Kampung Cetak, where high-quality printing meets exceptional customer service. We understand that every print matters, whether it's for a growing business, an event, or personal use.
+                Established in 2004, KAMPUNG CETAK is one of the nation's leading printing companies. We are a one-stop center for business promotional item solutions. We provide a wide range of services in the printing industry.
               </p>
               <p className="text-lg text-gray-600 leading-relaxed">
-                Our mission is to provide fast, reliable, and affordable printing solutions without compromising on quality. From business cards and flyers to large banners and custom stickers, we've got you covered.
+                Our passionate team, integrated services, and turnkey solutions are what clients require today. We don't talk about quality. We prove it. We stand behind our commitment to results. Whether you are looking to promote a product or advertise a service, we can help you to design and produce an impactful visual presentation that will reach your audience and facilitate your business growth nationwide.
               </p>
             </div>
-            <div className="md:w-1/2 bg-primary/5 flex items-center justify-center p-12">
+            <div className="md:w-1/2 bg-[#E00000]/5 flex items-center justify-center p-12">
                <Image
                 src="/images/kampung-cetak-logo.png"
                 alt="Kampung Cetak Printing"
@@ -48,33 +48,69 @@ const AboutPage = () => {
           </div>
         </div>
 
-        {/* Why Choose Us */}
+        {/* Strength Section */}
         <div className="mb-16">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-10">Why Choose Us?</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Feature 1 */}
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-10">Our Strengths</h2>
+          <p className="text-center text-gray-600 mb-12 max-w-3xl mx-auto text-lg">
+            Kampung Cetak offers a one-stop center for printing solutions to our clients in business essentials, events, promotional items, display & advertising, packaging & labeling, and creative visuals. No matter how small or big your business is, KAMPUNG CETAK has the flexibility to help you promote and improve your company or business brand.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
-              <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Fast Turnaround</h3>
-              <p className="text-gray-600">We prioritize speed without sacrificing quality. Get your prints delivered on time, every time.</p>
+              <h3 className="text-xl font-bold text-[#E00000] mb-3">More than 20 Years of Excellence</h3>
+              <p className="text-gray-600">With 20 years of excellent experience, we have sufficient capabilities to resolve customer inquiries.</p>
             </div>
-            {/* Feature 2 */}
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
-              <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Premium Quality</h3>
-              <p className="text-gray-600">Using state-of-the-art printing technology and premium materials for results that impress.</p>
+              <h3 className="text-xl font-bold text-[#E00000] mb-3">Expert Team</h3>
+              <p className="text-gray-600">KAMPUNG CETAK has an expert and dedicated team to cater to your inquiries up to design, production, and delivery.</p>
             </div>
-            {/* Feature 3 */}
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
-              <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Affordable Pricing</h3>
-              <p className="text-gray-600">Competitive pricing tailored to fit your budget, ensuring great value for your investment.</p>
+              <h3 className="text-xl font-bold text-[#E00000] mb-3">One-Stop Centre Production</h3>
+              <p className="text-gray-600">We are a one-stop center for printing solutions to provide impactful promotional items to facilitate your business growth.</p>
+            </div>
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
+              <h3 className="text-xl font-bold text-[#E00000] mb-3">Quality Product</h3>
+              <p className="text-gray-600">KAMPUNG CETAK puts quality as our top priority. We provide bright inks, precise cuts, and outstanding finishing.</p>
+            </div>
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
+              <h3 className="text-xl font-bold text-[#E00000] mb-3">Timely Delivery</h3>
+              <p className="text-gray-600">Customer satisfaction is our priority. KAMPUNG CETAK will make sure your order is completed on time with no compromise.</p>
+            </div>
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
+              <h3 className="text-xl font-bold text-[#E00000] mb-3">Customer Gratification</h3>
+              <p className="text-gray-600">We guarantee a quality product that satisfies your investment. We are dedicated to providing the best quality products to our valuable customers.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Mission & Vision Section */}
+        <div className="bg-gray-900 text-white rounded-3xl overflow-hidden mb-16">
+          <div className="md:flex">
+            <div className="md:w-1/2 p-8 md:p-12 lg:p-16 border-b md:border-b-0 md:border-r border-gray-800">
+              <h2 className="text-3xl font-bold mb-8 text-[#E00000]">Our Mission</h2>
+              <ul className="space-y-6">
+                <li className="flex items-start">
+                  <span className="text-[#E00000] font-bold text-xl mr-4">01</span>
+                  <p className="text-gray-300">We are a business promotional item provider through printing methods.</p>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-[#E00000] font-bold text-xl mr-4">02</span>
+                  <p className="text-gray-300">We provide a wide-range of business promotional items that focus on entrepreneurs and organizations to empower their business nationwide.</p>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-[#E00000] font-bold text-xl mr-4">03</span>
+                  <p className="text-gray-300">Our primary responsibility is to facilitate business growth through impactful visual presentations.</p>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-[#E00000] font-bold text-xl mr-4">04</span>
+                  <p className="text-gray-300">We strive to empower the nation with knowledge and skills to achieve success.</p>
+                </li>
+              </ul>
+            </div>
+            <div className="md:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center items-center text-center">
+              <h2 className="text-3xl font-bold mb-6 text-[#E00000]">Our Vision</h2>
+              <p className="text-2xl text-gray-300 italic font-medium leading-relaxed">
+                "To be a preferred integrated printing solution for business promotional items in Malaysia."
+              </p>
             </div>
           </div>
         </div>

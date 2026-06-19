@@ -9,7 +9,7 @@ export const useProfile = () => {
     const token = session?.user?.token || "";
 
     const { data: profileData, isLoading, refetch } = useQueryData(
-        ['profile'],
+        ['profile', token],
         () => getProfile(token),
         // Only fetch when we have a token — prevents "not found api users" error
         { enabled: !!token }
@@ -18,7 +18,7 @@ export const useProfile = () => {
     const { mutate: updateProfileMutation, isPending: isUpdating } = useMutationData(
         ['profileUpdate'],
         (data: any) => updateProfile(data, token),
-        ['profile'],
+        ['profile', token],
         () => {
             toast.success("Profil berjaya dikemaskini");
             refetch();

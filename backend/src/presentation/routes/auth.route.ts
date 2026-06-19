@@ -5,8 +5,7 @@ const router = Router();
 
 router.post("/login", authController.login.bind(authController));
 
-// Registration is disabled by admin request
-// router.post("/register", authController.register.bind(authController));
+router.post("/register", authController.register.bind(authController));
 
 export default router;
 
