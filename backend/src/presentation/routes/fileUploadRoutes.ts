@@ -249,7 +249,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as any;
     const userId = authReq.userId || authReq.user?.id;
-    const isAdmin = ['admin', 'system_admin', 'boss'].includes(authReq.role);
+    const isAdmin = ['admin', 'sysadmin', 'boss'].includes(authReq.role);
 
     if (!userId) {
       res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
@@ -276,8 +276,15 @@ router.post(
 
         await fileUploadRepository.delete(id);
         if (file.path?.includes('cloudinary.com')) {
-          const publicId = file.path.split('/').pop()?.split('.')[0];
-          if (publicId) await cloudinary.uploader.destroy(publicId);
+          const urlParts = file.path.split('/');
+          const uploadIndex = urlParts.indexOf('upload');
+          if (uploadIndex !== -1) {
+            const publicIdWithVersion = urlParts.slice(uploadIndex + 2).join('/');
+            const publicId = publicIdWithVersion.replace(/\.[^/.]+$/, ''); // remove extension
+            const resourceType = file.mimetype === 'application/pdf' ? 'raw' : 'image';
+            await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+            console.log(`[FileUpload] Deleted from Cloudinary: ${publicId}`);
+          }
         }
         deletedCount++;
       } catch (err: any) {
@@ -297,7 +304,7 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as any;
     const userId = authReq.userId || authReq.user?.id;
-    const isAdmin = ['admin', 'system_admin', 'boss'].includes(authReq.role);
+    const isAdmin = ['admin', 'sysadmin', 'boss'].includes(authReq.role);
 
     if (!userId) {
       res.status(401).json({ success: false, message: 'Log masuk diperlukan' });

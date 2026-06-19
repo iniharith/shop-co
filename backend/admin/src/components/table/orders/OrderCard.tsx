@@ -6,7 +6,8 @@ import { CellAction } from "@/components/global/cell-actions";
 import OrderInfo from "@/components/global/orderInfo";
 import { cn } from "@/lib/utils";
 import { Package, UserCircle2, MapPin, CreditCard, ShoppingBag, Trash2, Truck } from "lucide-react";
-import { useDeleteOrder } from "@/hooks/useOrder";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useDeleteOrder, useUpdateOrderStatus } from "@/hooks/useOrder";
 import { toast } from "sonner";
 
 const getStatusColor = (status: string) => {
@@ -45,6 +46,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
   const displayId = (order as any).trackingNumber ? (order as any).trackingNumber : `ORD-${order._id.split("").reverse().splice(0, 4).reverse().join("")}`;
 
   const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder();
+  const { mutate: updateStatus, isPending: isUpdating } = useUpdateOrderStatus();
 
   const handleDelete = () => {
     if (window.confirm("Are you sure you want to delete this order? This action cannot be undone.")) {
@@ -79,10 +81,24 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
              </div>
           </div>
         
-        <div className="flex flex-col items-end gap-2">
-          <Badge className={cn("px-3 py-1 text-xs font-semibold uppercase tracking-wider border", getStatusColor(order.orderStatus))} variant="outline">
-            {order.orderStatus}
-          </Badge>
+        <div className="flex flex-col items-end gap-2" onClick={(e) => e.stopPropagation()}>
+          <Select 
+            value={order.orderStatus} 
+            onValueChange={(v) => updateStatus({ id: order._id as string, status: v })}
+            disabled={isUpdating}
+          >
+            <SelectTrigger className={cn("h-8 text-xs font-semibold uppercase tracking-wider border-0 rounded-full", getStatusColor(order.orderStatus))}>
+              <div className="flex items-center">
+                <SelectValue placeholder="Status" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="PLACED">Placed</SelectItem>
+              <SelectItem value="SHIPPED">Shipped</SelectItem>
+              <SelectItem value="DELIVERED">Delivered</SelectItem>
+              <SelectItem value="CANCELLED">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       

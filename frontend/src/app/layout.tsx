@@ -48,6 +48,8 @@ export const metadata: Metadata = {
   },
 };
 
+import FloatingChatWidget from "@/components/global/FloatingChatWidget";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -67,6 +69,7 @@ export default async function RootLayout({
           <div className="w-full min-h-[50vh]">{children}</div>
           <Cta />
           <Footer />
+          <FloatingChatWidget />
         </Provider>
       </body>
     </html>

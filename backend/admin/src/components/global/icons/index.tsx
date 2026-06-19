@@ -18,6 +18,8 @@ import {
   LucideIcon,
   LucideProps,
   LucideShoppingBag,
+  ListTodo,
+  MessageSquare,
   Moon,
   MoreVertical,
   Pizza,
@@ -98,6 +100,8 @@ export const Icons = {
   data: FaDatabase,
   deliveryBoy: MdDeliveryDining,
   box: LuBox,
+  listTodo: ListTodo,
+  message: MessageSquare,
   gitHub: ({ ...props }: LucideProps) => (
     <svg
       aria-hidden="true"

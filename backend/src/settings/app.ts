@@ -16,6 +16,7 @@ import adminRoutes from '../presentation/routes/admin.route';
 import notificationRoutes from '../presentation/routes/notification.route';
 import parcelRoutes from '../presentation/routes/parcelRoutes';
 import fileUploadRoutes from '../presentation/routes/fileUploadRoutes';
+import taskRoutes from '../presentation/routes/taskRoutes';
 import whatsappWebhook from '../infrastructure/services/WhatsAppWebhookService';
 import userRoutes from '../presentation/routes/user.route';
 
@@ -60,9 +61,13 @@ app.use(apiRoutes.ORDER, orderRoutes);
 app.use(apiRoutes.ADMIN, adminRoutes);
 app.use(apiRoutes.NOTIFICATION, notificationRoutes);
 
+import chatRoutes from '../presentation/routes/chatRoutes';
+
 // ─── Kampung Cetak: Parcel Tracking & File Upload ────────
 app.use('/api/parcels', parcelRoutes);
 app.use('/api/files', fileUploadRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/chat', chatRoutes);
 
 // ─── WhatsApp Webhook (Meta callback verification) ───────
 // Callback URL: https://admin.kampungcetak.com/api/webhooks/whatsapp

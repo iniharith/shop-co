@@ -16,6 +16,7 @@ interface TrackingCardProps {
 }
 
 const statusMap: Record<string, { label: string; step: number; icon: any; color: string }> = {
+  order_placed: { label: "Order Placed", step: 0, icon: Package, color: "text-slate-500" },
   pending: { label: "Pending", step: 0, icon: Package, color: "text-slate-500" },
   picked_up: { label: "Picked Up", step: 1, icon: Package, color: "text-blue-500" },
   in_transit: { label: "In Transit", step: 2, icon: Truck, color: "text-indigo-500" },
@@ -84,6 +85,7 @@ export default function TrackingCard({ parcel }: TrackingCardProps) {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="order_placed">Order Placed</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="picked_up">Picked Up</SelectItem>
                   <SelectItem value="in_transit">In Transit</SelectItem>
@@ -201,6 +203,7 @@ export default function TrackingCard({ parcel }: TrackingCardProps) {
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="order_placed">Order Placed</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="picked_up">Picked Up</SelectItem>
                   <SelectItem value="in_transit">In Transit</SelectItem>

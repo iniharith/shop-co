@@ -40,6 +40,20 @@ export const AdminNavItems: NavItem[] = [
         shortcut: ['t', 't'],
         isActive: false,
     },
+    {
+        title: 'Tasks',
+        url: '/admin/tasks',
+        icon: 'listTodo',
+        shortcut: ['k', 'k'],
+        isActive: false,
+    },
+    {
+        title: 'Chat',
+        url: '/admin/chat',
+        icon: 'message',
+        shortcut: ['c', 'c'],
+        isActive: false,
+    },
 ];
 
 export const roleByNavItems = (role: string) => {

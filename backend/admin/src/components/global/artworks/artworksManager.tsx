@@ -134,7 +134,6 @@ export default function ArtworksManager() {
     deleteFileMutate(fileId, {
       onSuccess: () => {
         toast.success("File deleted!");
-        window.location.reload();
       },
     });
   };
@@ -147,7 +146,6 @@ export default function ArtworksManager() {
     bulkDeleteMutate(fileIds, {
       onSuccess: () => {
         toast.success(`Deleted ${group.files.length} files successfully!`);
-        window.location.reload();
       },
       onError: (err: any) => {
         toast.error(`Failed to delete files: ${err.message || 'Unknown error'}`);
@@ -307,7 +305,7 @@ export default function ArtworksManager() {
 
       {groupedFiles.length === 0 ? (
         <div className="p-8 text-center text-muted-foreground border border-dashed rounded-xl">
-          No artworks found in this category.
+          No artwork for now to view.
         </div>
       ) : selectedFolder ? (
         // --- INSIDE A FOLDER ---

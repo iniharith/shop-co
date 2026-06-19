@@ -65,6 +65,7 @@ router.post('/', async (req: Request, res: Response) => {
             // Auto-reply: if customer sends a tracking number keyword
             if (type === 'text') {
               const text = (message.text?.body || '').trim().toLowerCase();
+              const originalText = message.text?.body || '';
 
               // Handle "track XXXXX" command
               if (text.startsWith('track ') || text.startsWith('jejak ')) {
@@ -96,6 +97,31 @@ router.post('/', async (req: Request, res: Response) => {
                     );
                   }
                 }
+              } else {
+                // Not a tracking command, so treat it as a chat message
+                const { chatRepository } = await import('../../infrastructure/repositories/ChatRepository');
+                let conversation = await chatRepository.findConversationByWhatsApp(from);
+                
+                if (!conversation) {
+                   // Try to find if we have a user with this phone number
+                   const { default: UserModel } = await import('../../infrastructure/db/models/user.model');
+                   // the DB phone might or might not have '+' or country code. Let's assume standard format matching
+                   const user = await UserModel.findOne({ phone: { $regex: new RegExp(from + '$') } });
+                   
+                   conversation = await chatRepository.createConversation({
+                     participants: user ? [user._id] : [],
+                     type: 'admin_customer',
+                     whatsappPhone: from
+                   });
+                }
+                
+                await chatRepository.createMessage({
+                  conversationId: conversation._id,
+                  senderRole: 'client', // Since it's from WhatsApp
+                  text: originalText,
+                  source: 'whatsapp'
+                });
+                await chatRepository.updateLastMessage(conversation._id.toString());
               }
             }
 

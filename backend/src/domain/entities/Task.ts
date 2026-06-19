@@ -1,0 +1,44 @@
+import mongoose, { Document, Schema } from 'mongoose';
+
+export interface ITaskComment {
+  userId: string;
+  userName: string;
+  text: string;
+  createdAt: Date;
+}
+
+export interface ITask extends Document {
+  title: string;
+  description?: string;
+  assignee?: string; // Admin User ID
+  dueDate?: Date;
+  orderId?: string; // Linked Order ID
+  customerUsername?: string; // Linked Customer Username
+  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
+  comments: ITaskComment[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const TaskCommentSchema = new Schema<ITaskComment>({
+  userId: { type: String, required: true },
+  userName: { type: String, required: true },
+  text: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
+
+const TaskSchema = new Schema<ITask>(
+  {
+    title: { type: String, required: true },
+    description: { type: String, default: '' },
+    assignee: { type: String, default: null }, // Mongoose ObjectId string
+    dueDate: { type: Date, default: null },
+    orderId: { type: String, default: null },
+    customerUsername: { type: String, default: '' },
+    status: { type: String, enum: ['TODO', 'IN_PROGRESS', 'DONE'], default: 'TODO' },
+    comments: [TaskCommentSchema],
+  },
+  { timestamps: true }
+);
+
+export const Task = mongoose.model<ITask>('Task', TaskSchema);
