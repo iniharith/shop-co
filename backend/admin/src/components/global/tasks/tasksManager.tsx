@@ -57,7 +57,7 @@ export default function TasksManager() {
     }
   };
 
-  const columns = ["TODO", "IN_PROGRESS", "DONE"];
+  const columns = ['TODO', 'IN_PROGRESS', 'DONE', 'PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEW', 'ARTWORK_REJECTED', 'IN_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'];
 
   if (isPending) return <div className="p-8 text-center text-muted-foreground">Loading tasks...</div>;
 
@@ -113,12 +113,12 @@ export default function TasksManager() {
 
       {/* Board View */}
       {viewMode === "board" && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+        <div className="flex overflow-x-auto pb-4 gap-6 items-start">
           {columns.map(status => (
-            <div key={status} className="bg-muted/30 rounded-2xl p-4 border border-border/50 flex flex-col gap-4">
+            <div key={status} className="bg-muted/30 rounded-2xl p-4 border border-border/50 flex flex-col gap-4 min-w-[320px] w-[320px] shrink-0">
               <div className="flex items-center justify-between px-2">
                 <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">
-                  {status.replace("_", " ")}
+                  {status.replace(/_/g, " ")}
                 </h3>
                 <Badge variant="secondary" className="rounded-full bg-background border border-border/50">
                   {tasks.filter((t: any) => t.status === status).length}
@@ -153,13 +153,13 @@ export default function TasksManager() {
                           className="h-7 text-[10px] bg-muted/50 border-0 focus:ring-0 w-full px-2"
                         />
                         <Select value={task.assignee || "unassigned"} onValueChange={(v) => updateTask({ id: task._id, data: { assignee: v === "unassigned" ? null : v } })}>
-                          <SelectTrigger className="h-7 text-[10px] bg-muted/50 border-0 focus:ring-0">
+                          <SelectTrigger className="h-7 text-xs font-bold bg-muted/50 border-0 focus:ring-0">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="unassigned">Unassigned</SelectItem>
                             {usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss'].includes(u.role)).map((admin: any) => (
-                              <SelectItem key={admin._id} value={admin._id}>{admin.name || admin.email}</SelectItem>
+                              <SelectItem key={admin._id} value={admin._id} className="font-bold">{admin.name || admin.email}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -171,9 +171,9 @@ export default function TasksManager() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="TODO">To Do</SelectItem>
-                          <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                          <SelectItem value="DONE">Done</SelectItem>
+                          {columns.map(s => (
+                            <SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </CardContent>
@@ -202,15 +202,15 @@ export default function TasksManager() {
                   <div className={`w-2 h-2 rounded-full ${task.status === 'DONE' ? 'bg-emerald-500' : task.status === 'IN_PROGRESS' ? 'bg-blue-500' : 'bg-amber-500'}`} />
                   {task.title}
                 </div>
-                <div className="col-span-2 text-sm flex items-center gap-2 text-muted-foreground" onClick={e => e.stopPropagation()}>
+                <div className="col-span-2 text-sm flex items-center gap-2 text-muted-foreground font-bold" onClick={e => e.stopPropagation()}>
                   <Select value={task.assignee || "unassigned"} onValueChange={(v) => updateTask({ id: task._id, data: { assignee: v === "unassigned" ? null : v } })}>
-                    <SelectTrigger className="h-8 text-xs bg-background border border-border/50 shadow-sm focus:ring-0">
+                    <SelectTrigger className="h-8 text-sm font-bold bg-background border border-border/50 shadow-sm focus:ring-0">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="unassigned">Unassigned</SelectItem>
                       {usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss'].includes(u.role)).map((admin: any) => (
-                        <SelectItem key={admin._id} value={admin._id}>{admin.name || admin.email}</SelectItem>
+                        <SelectItem key={admin._id} value={admin._id} className="font-bold">{admin.name || admin.email}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -229,9 +229,9 @@ export default function TasksManager() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="TODO">To Do</SelectItem>
-                      <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                      <SelectItem value="DONE">Done</SelectItem>
+                      {columns.map(s => (
+                        <SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

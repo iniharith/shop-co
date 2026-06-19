@@ -15,7 +15,7 @@ export interface ITask extends Document {
   dueDate?: Date;
   orderId?: string; // Linked Order ID
   customerUsername?: string; // Linked Customer Username
-  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
+  status: 'PLACED' | 'PENDING_ARTWORK' | 'ARTWORK_REVIEW' | 'ARTWORK_REJECTED' | 'IN_DESIGN' | 'IN_PRODUCTION' | 'SHIPPED' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED' | 'FAILED' | 'TODO' | 'IN_PROGRESS' | 'DONE';
   files: { url: string; name: string }[];
   comments: ITaskComment[];
   createdAt: Date;
@@ -38,7 +38,7 @@ const TaskSchema = new Schema<ITask>(
     dueDate: { type: Date, default: null },
     orderId: { type: String, default: null },
     customerUsername: { type: String, default: '' },
-    status: { type: String, enum: ['TODO', 'IN_PROGRESS', 'DONE'], default: 'TODO' },
+    status: { type: String, enum: ['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEW', 'ARTWORK_REJECTED', 'IN_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED', 'TODO', 'IN_PROGRESS', 'DONE'], default: 'TODO' },
     files: [{
       url: { type: String, required: true },
       name: { type: String, required: true }

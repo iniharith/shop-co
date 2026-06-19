@@ -10,6 +10,11 @@ import { CalendarIcon, UserIcon, LinkIcon, Send, MessageSquare, Paperclip, FileI
 import { format } from "date-fns";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import { useOrders } from "@/hooks/useOrder";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TaskModalProps {
   task: any;
@@ -22,7 +27,13 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { mutate: addComment, isPending: isCommenting } = useAddTaskComment();
   const { mutate: uploadFile, isPending: isUploading } = useUploadTaskFile();
   const { data: usersData } = useUsers();
+  const { data: ordersData } = useOrders();
   const admins = usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss'].includes(u.role)) || [];
+  const customers = usersData?.users?.filter((u: any) => u.role === 'client') || [];
+  const orders = ordersData?.orders || [];
+  
+  const [openOrderBox, setOpenOrderBox] = useState(false);
+  const [openUserBox, setOpenUserBox] = useState(false);
   
   const [description, setDescription] = useState(task.description || "");
   const [commentText, setCommentText] = useState("");
@@ -218,26 +229,87 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                 <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
                   <LinkIcon className="w-3.5 h-3.5" /> Link Order ID
                 </label>
-                <Input 
-                  placeholder="E.g., 60d5ecb..." 
-                  value={orderId} 
-                  onChange={e => setOrderId(e.target.value)} 
-                  onBlur={() => handleSaveDetails()}
-                  className="h-9 bg-background shadow-sm border-border/50"
-                />
+                <Popover open={openOrderBox} onOpenChange={setOpenOrderBox}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openOrderBox}
+                      className="w-full justify-between h-9 bg-background shadow-sm border-border/50 text-xs font-normal"
+                    >
+                      {orderId ? (orders.find((o: any) => o._id === orderId) ? `Order #${orders.find((o: any) => o._id === orderId)?.orderId}` : orderId) : "Select order..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search order ID..." className="h-9" />
+                      <CommandList>
+                        <CommandEmpty>No order found.</CommandEmpty>
+                        <CommandGroup>
+                          {orders.map((o: any) => (
+                            <CommandItem
+                              key={o._id}
+                              value={o.orderId || o._id}
+                              onSelect={(currentValue) => {
+                                setOrderId(currentValue === orderId ? "" : o._id);
+                                handleSaveDetails({ orderId: currentValue === orderId ? "" : o._id });
+                                setOpenOrderBox(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", orderId === o._id ? "opacity-100" : "opacity-0")} />
+                              Order #{o.orderId}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
                   <LinkIcon className="w-3.5 h-3.5" /> Link Username
                 </label>
-                <Input 
-                  placeholder="E.g., johndoe" 
-                  value={customerUsername} 
-                  onChange={e => setCustomerUsername(e.target.value)} 
-                  onBlur={() => handleSaveDetails()}
-                  className="h-9 bg-background shadow-sm border-border/50"
-                />
+                <Popover open={openUserBox} onOpenChange={setOpenUserBox}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openUserBox}
+                      className="w-full justify-between h-9 bg-background shadow-sm border-border/50 text-xs font-normal truncate"
+                    >
+                      {customerUsername ? customerUsername : "Select customer..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search customer name or email..." className="h-9" />
+                      <CommandList>
+                        <CommandEmpty>No customer found.</CommandEmpty>
+                        <CommandGroup>
+                          {customers.map((c: any) => (
+                            <CommandItem
+                              key={c._id}
+                              value={c.name + ' ' + c.email}
+                              onSelect={(currentValue) => {
+                                const newUsername = c.name || c.email;
+                                setCustomerUsername(newUsername === customerUsername ? "" : newUsername);
+                                handleSaveDetails({ customerUsername: newUsername === customerUsername ? "" : newUsername });
+                                setOpenUserBox(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", customerUsername === (c.name || c.email) ? "opacity-100" : "opacity-0")} />
+                              {c.name} ({c.email})
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
             

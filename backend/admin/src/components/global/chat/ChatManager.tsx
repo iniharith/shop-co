@@ -7,8 +7,11 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, User as UserIcon, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import { Check, ChevronsUpDown, Plus, Send, User as UserIcon, MessageCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function ChatManager() {
   const { data: session } = useSession();
@@ -23,6 +26,8 @@ export default function ChatManager() {
   const { mutate: createConv, isPending: isCreating } = useCreateConversation();
   
   const { data: usersData } = useUsers();
+  const backendUsers = usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss'].includes(u.role)) || [];
+  const [openNewChat, setOpenNewChat] = useState(false);
 
   const conversations = convData?.conversations || [];
   const messages = msgData?.messages || [];
@@ -43,7 +48,7 @@ export default function ChatManager() {
 
   const getParticipantName = (conv: any) => {
     if (conv.whatsappPhone) return `WhatsApp: ${conv.whatsappPhone}`;
-    const otherParticipant = conv.participants?.find((p: any) => p._id !== currentUserId);
+    const otherParticipant = conv.participants?.find((p: any) => p._id?.toString() !== currentUserId);
     return otherParticipant?.name || otherParticipant?.email || "Unknown User";
   };
 
@@ -55,6 +60,40 @@ export default function ChatManager() {
           <h2 className="font-semibold text-lg flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-primary" /> Inbox
           </h2>
+          <Popover open={openNewChat} onOpenChange={setOpenNewChat}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-primary/10 text-primary hover:bg-primary/20">
+                <Plus className="w-4 h-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[250px] p-0" align="end">
+              <Command>
+                <CommandInput placeholder="Search admin..." className="h-9" />
+                <CommandList>
+                  <CommandEmpty>No admin found.</CommandEmpty>
+                  <CommandGroup>
+                    {backendUsers.map((u: any) => (
+                      <CommandItem
+                        key={u._id}
+                        value={u.name || u.email}
+                        onSelect={() => {
+                          createConv({ participantIds: [u._id], type: 'admin_admin' }, {
+                            onSuccess: (res: any) => {
+                              if(res.conversation) setActiveConvId(res.conversation._id);
+                              setOpenNewChat(false);
+                            }
+                          });
+                        }}
+                      >
+                        <UserIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                        {u.name || u.email}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
         <div className="flex-1 overflow-y-auto">
           {convLoading && <div className="p-4 text-sm text-muted-foreground text-center">Loading...</div>}
@@ -96,7 +135,7 @@ export default function ChatManager() {
             
             <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col bg-muted/5">
               {messages.map((msg: any) => {
-                const isMe = msg.senderId?._id === currentUserId || (msg.senderRole && ['admin','sysadmin','boss'].includes(msg.senderRole));
+                const isMe = msg.senderId?._id?.toString() === currentUserId || (msg.senderRole && ['admin','sysadmin','boss'].includes(msg.senderRole) && msg.senderId?._id?.toString() === currentUserId) || msg.senderId === currentUserId;
                 return (
                   <div key={msg._id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[70%] p-3 rounded-2xl ${isMe ? 'bg-primary text-primary-foreground rounded-tr-sm' : 'bg-muted border border-border/50 rounded-tl-sm'}`}>
