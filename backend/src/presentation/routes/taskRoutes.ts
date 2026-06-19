@@ -2,9 +2,15 @@ import { Router, Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { taskRepository } from '../../infrastructure/repositories/TaskRepository';
 import authMiddilware from '../middlewares/auth.middileware';
+import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
-import cloudinary from "../../../infrastructure/config/cloudinary";
 import multer from "multer";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dc7aun6of',
+  api_key: process.env.CLOUDINARY_API_KEY || '933197924153588',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'L8yhCjjrcV4--wTSGB-_JVY5kgg',
+});
 
 const taskStorage = new CloudinaryStorage({
   cloudinary: cloudinary,

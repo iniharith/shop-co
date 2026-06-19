@@ -142,7 +142,11 @@ class OrderUsecase {
                     whatsapp_service_1.default.sendMessage(user.phoneNumber, message).catch(err => console.error("WA Error:", err));
                 }
             }
+            yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS);
             yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + orderId);
+            if (order.userId) {
+                yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + order.userId.toString());
+            }
             return order;
         });
     }

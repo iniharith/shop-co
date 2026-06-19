@@ -50,6 +50,10 @@ const TaskSchema = new mongoose_1.Schema({
     orderId: { type: String, default: null },
     customerUsername: { type: String, default: '' },
     status: { type: String, enum: ['TODO', 'IN_PROGRESS', 'DONE'], default: 'TODO' },
+    files: [{
+            url: { type: String, required: true },
+            name: { type: String, required: true }
+        }],
     comments: [TaskCommentSchema],
 }, { timestamps: true });
 exports.Task = mongoose_1.default.model('Task', TaskSchema);

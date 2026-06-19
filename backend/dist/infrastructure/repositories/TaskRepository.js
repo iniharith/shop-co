@@ -51,6 +51,11 @@ class TaskRepository {
             return Task_1.Task.findByIdAndUpdate(taskId, { $push: { comments: { userId, userName, text, role: role || 'admin', createdAt: new Date() } } }, { new: true });
         });
     }
+    addFile(taskId, url, name) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return Task_1.Task.findByIdAndUpdate(taskId, { $push: { files: { url, name } } }, { new: true });
+        });
+    }
 }
 exports.TaskRepository = TaskRepository;
 exports.taskRepository = new TaskRepository();

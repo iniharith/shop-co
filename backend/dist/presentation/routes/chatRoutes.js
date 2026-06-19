@@ -49,7 +49,9 @@ const express_1 = require("express");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const ChatRepository_1 = require("../../infrastructure/repositories/ChatRepository");
 const auth_middileware_1 = __importDefault(require("../middlewares/auth.middileware"));
+const redis_1 = require("../../infrastructure/redis/redis");
 const router = (0, express_1.Router)();
+const redisService = new redis_1.RedisService();
 // GET /api/chat/conversations
 router.get('/conversations', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -128,6 +130,8 @@ router.post('/conversations/:id/messages', auth_middileware_1.default, (0, expre
         }
     }
     yield ChatRepository_1.chatRepository.updateLastMessage(req.params.id);
+    // Publish to redis so websockets broadcast to clients
+    yield redisService.publish('chat_messages', JSON.stringify(message));
     res.json({ success: true, message });
 })));
 exports.default = router;

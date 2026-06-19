@@ -49,6 +49,22 @@ const express_1 = require("express");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const TaskRepository_1 = require("../../infrastructure/repositories/TaskRepository");
 const auth_middileware_1 = __importDefault(require("../middlewares/auth.middileware"));
+const cloudinary_1 = require("cloudinary");
+const multer_storage_cloudinary_1 = require("multer-storage-cloudinary");
+const multer_1 = __importDefault(require("multer"));
+cloudinary_1.v2.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dc7aun6of',
+    api_key: process.env.CLOUDINARY_API_KEY || '933197924153588',
+    api_secret: process.env.CLOUDINARY_API_SECRET || 'L8yhCjjrcV4--wTSGB-_JVY5kgg',
+});
+const taskStorage = new multer_storage_cloudinary_1.CloudinaryStorage({
+    cloudinary: cloudinary_1.v2,
+    params: {
+        folder: "kampungcetak/tasks",
+        allowed_formats: ["jpg", "png", "jpeg", "webp", "pdf", "docx", "zip"]
+    },
+});
+const taskUpload = (0, multer_1.default)({ storage: taskStorage });
 const router = (0, express_1.Router)();
 // GET /api/tasks
 router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -111,6 +127,21 @@ router.post('/:id/comments', auth_middileware_1.default, (0, express_async_handl
         return;
     }
     const task = yield TaskRepository_1.taskRepository.addComment(req.params.id, userId, userName, text, role);
+    if (!task) {
+        res.status(404).json({ success: false, message: 'Task not found' });
+        return;
+    }
+    res.json({ success: true, task });
+})));
+// POST /api/tasks/:id/files
+router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!req.file) {
+        res.status(400).json({ success: false, message: 'No file uploaded' });
+        return;
+    }
+    const fileUrl = req.file.path;
+    const fileName = req.file.originalname || 'Attached File';
+    const task = yield TaskRepository_1.taskRepository.addFile(req.params.id, fileUrl, fileName);
     if (!task) {
         res.status(404).json({ success: false, message: 'Task not found' });
         return;
