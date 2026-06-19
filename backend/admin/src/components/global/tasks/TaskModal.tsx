@@ -83,7 +83,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   value={description} 
                   onChange={(e) => setDescription(e.target.value)} 
                   placeholder="Add more details to this task..."
-                  onBlur={handleSaveDetails}
+                  onBlur={() => handleSaveDetails()}
                 />
               </div>
 
@@ -198,7 +198,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   type="date" 
                   value={dueDate} 
                   onChange={e => setDueDate(e.target.value)} 
-                  onBlur={handleSaveDetails}
+                  onBlur={() => handleSaveDetails()}
                   className="h-9 bg-background shadow-sm border-border/50"
                 />
               </div>
@@ -211,7 +211,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   placeholder="E.g., 60d5ecb..." 
                   value={orderId} 
                   onChange={e => setOrderId(e.target.value)} 
-                  onBlur={handleSaveDetails}
+                  onBlur={() => handleSaveDetails()}
                   className="h-9 bg-background shadow-sm border-border/50"
                 />
               </div>
@@ -224,7 +224,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   placeholder="E.g., johndoe" 
                   value={customerUsername} 
                   onChange={e => setCustomerUsername(e.target.value)} 
-                  onBlur={handleSaveDetails}
+                  onBlur={() => handleSaveDetails()}
                   className="h-9 bg-background shadow-sm border-border/50"
                 />
               </div>
