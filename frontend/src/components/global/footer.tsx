@@ -111,9 +111,9 @@ export function Footer() {
                 FAQ
               </h3>
               <ul className="space-y-2">
-                <li><FooterLink href="/account">Account</FooterLink></li>
-                <li><FooterLink href="/deliveries">Manage Deliveries</FooterLink></li>
-                <li><FooterLink href="/orders">Orders</FooterLink></li>
+                <li><FooterLink href="/home/profile">Account</FooterLink></li>
+                <li><FooterLink href="/home/profile/orders">Manage Deliveries</FooterLink></li>
+                <li><FooterLink href="/home/profile/dashboard">Orders</FooterLink></li>
                 <li><FooterLink href="/payments">Payments</FooterLink></li>
               </ul>
             </div>
