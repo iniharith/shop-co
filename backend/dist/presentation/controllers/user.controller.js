@@ -17,6 +17,10 @@ const api_constant_1 = require("../../shared/constants/api.constant");
 const user_usecase_1 = __importDefault(require("../../application/usecases/user/user.usecase"));
 class UserController {
     constructor() {
+        this.getStaff = (0, express_async_handler_1.default)((req, res) => __awaiter(this, void 0, void 0, function* () {
+            const staff = yield user_usecase_1.default.getStaff();
+            res.status(api_constant_1.statusCodes.OK).json({ success: true, data: staff });
+        }));
         this.getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(this, void 0, void 0, function* () {
             const userId = req.userId;
             if (!userId) {

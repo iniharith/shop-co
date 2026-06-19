@@ -96,6 +96,11 @@ router.get('/conversations/:id/messages', auth_middileware_1.default, (0, expres
     yield ChatRepository_1.chatRepository.markAsRead(req.params.id, userId);
     res.json({ success: true, messages });
 })));
+// DELETE /api/chat/conversations/:id
+router.delete('/conversations/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    yield ChatRepository_1.chatRepository.deleteConversation(req.params.id);
+    res.json({ success: true });
+})));
 // POST /api/chat/conversations/:id/messages
 router.post('/conversations/:id/messages', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;

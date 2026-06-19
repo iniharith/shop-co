@@ -41,6 +41,12 @@ class ChatRepository {
             return conversation_model_1.ConversationModel.findByIdAndUpdate(id, { lastMessageAt: new Date() }, { new: true });
         });
     }
+    deleteConversation(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield message_model_1.MessageModel.deleteMany({ conversationId: id });
+            return conversation_model_1.ConversationModel.findByIdAndDelete(id);
+        });
+    }
     getMessages(conversationId) {
         return __awaiter(this, void 0, void 0, function* () {
             return message_model_1.MessageModel.find({ conversationId }).populate('senderId', 'name email role').sort({ createdAt: 1 });

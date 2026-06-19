@@ -21,6 +21,8 @@ const multer_storage_cloudinary_1 = require("multer-storage-cloudinary");
 const user_model_1 = __importDefault(require("../../infrastructure/db/models/user.model"));
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const router = (0, express_1.Router)();
+// Get staff users
+router.get("/staff", auth_middileware_1.default, user_controller_1.default.getStaff);
 // Get the user's profile
 router.get("/profile", auth_middileware_1.default, user_controller_1.default.getProfile);
 // Update the user's profile

@@ -49,6 +49,11 @@ class UserUsecase {
             return { user: newUser, accessToken, refreshToken };
         });
     }
+    getStaff() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.userRepository.getStaff();
+        });
+    }
     getUsersByRole(role) {
         return __awaiter(this, void 0, void 0, function* () {
             return this.userRepository.getUsersByRole(role);

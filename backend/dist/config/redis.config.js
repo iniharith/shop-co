@@ -10,7 +10,8 @@ const dotenv_1 = require("dotenv");
 const createRedisClient = (clientType = 'standard') => {
     const redisUrl = process.env.REDIS_PUBLIC_URL || process.env.REDIS_URL;
     if (!redisUrl) {
-        throw new Error("REDIS_URL environment variable is required");
+        console.warn(`[Warning] REDIS_URL environment variable is missing. Redis ${clientType} client will be disabled.`);
+        return null;
     }
     const client = new ioredis_1.default(redisUrl, {
         retryStrategy(times) {
