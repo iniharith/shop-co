@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { seedTestData, clearTestData } from "@/api/users";
-import { DatabaseBackup, Trash2 } from "lucide-react";
+import { Database, Trash2 } from "lucide-react";
 
 export default function SeedDataButton() {
   const { data: session } = useSession();
@@ -57,7 +57,7 @@ export default function SeedDataButton() {
         disabled={isLoading || isClearing}
         className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700"
       >
-        <DatabaseBackup className="w-4 h-4 mr-2" />
+        <Database className="w-4 h-4 mr-2" />
         {isLoading ? "Generating..." : "Test Drive (Seed Data)"}
       </Button>
       

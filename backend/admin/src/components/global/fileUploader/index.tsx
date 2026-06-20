@@ -1,6 +1,6 @@
 'use client';
 
-import { CrossIcon, UploadIcon } from 'lucide-react';
+import { X as CrossIcon, UploadIcon } from 'lucide-react';
 import Image from 'next/image';
 import * as React from 'react';
 import Dropzone, {
