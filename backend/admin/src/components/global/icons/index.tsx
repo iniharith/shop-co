@@ -24,6 +24,7 @@ import {
   MoreVertical,
   Pizza,
   Plus,
+  Printer,
   Settings,
   SunMedium,
   Trash,
@@ -102,6 +103,8 @@ export const Icons = {
   box: LuBox,
   listTodo: ListTodo,
   message: MessageSquare,
+  printer: Printer,
+  history: History,
   gitHub: ({ ...props }: LucideProps) => (
     <svg
       aria-hidden="true"
