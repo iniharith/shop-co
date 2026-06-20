@@ -11,6 +11,7 @@ export const authConfig: AuthOptions = {
                 name: { label: "Password", type: "password" },
                 id: { label: "Id", type: "id" },
                 token: { label: "Token", type: "token" },
+                avatar: { label: "Avatar", type: "text" },
             },
             authorize(credentials) {
                 console.log("authorize", credentials)
@@ -19,11 +20,12 @@ export const authConfig: AuthOptions = {
                     return null;
                 }
 
-                const user: User = {
+                const user: User & { avatar?: string } = {
                     id: credentials.id,
                     name: credentials.name,
                     email: credentials.email as string,
                     token: credentials.token as string,
+                    avatar: credentials.avatar as string,
                 };
 
                 return user;
@@ -108,6 +110,7 @@ declare module "next-auth" {
             name: string;
             email: string;
             orderSuccesPageAccess: boolean;
+            avatar?: string;
         };
     }
 }
@@ -129,5 +132,6 @@ declare module "next-auth" {
         id: string;
         name: string;
         email: string;
+        avatar?: string;
     }
 }

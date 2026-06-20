@@ -44,6 +44,7 @@ export const useAuth = (type: "login" | "signup" = "login") => {
         token: data.accessToken,
         id: data.user._id,
         name: data.user.name,
+        avatar: data.user.avatar || "",
         redirect: false
       })
       const message = type === "login" ? "Login successful" : "Signup successful";
