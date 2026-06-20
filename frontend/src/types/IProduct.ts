@@ -17,6 +17,14 @@ export interface IProduct {
     rating: number;
     discount: number;
     originalPrice: number;
+    matrixPricing?: {
+        enabled: boolean;
+        pricingData: {
+            laminate: string;
+            material: string;
+            quantityPrices: Record<number, number>;
+        }[];
+    };
 }
 
 export interface ISize {

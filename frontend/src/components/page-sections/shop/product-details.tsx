@@ -56,19 +56,55 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     toast.success("Added to cart");
   };
 
+  const options = product.printingOptions || [];
+
   // Calculate prices
-  let optionAddons = 0;
-  if (product.printingOptions) {
-    product.printingOptions.forEach(opt => {
-      const selectedIdx = selectedOptions[opt.name];
-      if (selectedIdx !== undefined && opt.options[selectedIdx]) {
-        optionAddons += opt.options[selectedIdx].priceAdd;
+  let subtotal = 0;
+  let availableQuantities: number[] = [];
+  
+  if (product.matrixPricing?.enabled) {
+    const materialOptName = options.find(o => o.name.toLowerCase().includes('material'))?.name;
+    const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination'))?.name;
+    
+    const selectedMaterial = materialOptName && selectedOptions[materialOptName] !== undefined 
+      ? options.find(o => o.name === materialOptName)?.options[selectedOptions[materialOptName]]?.label 
+      : "";
+    const selectedLamination = laminationOptName && selectedOptions[laminationOptName] !== undefined 
+      ? options.find(o => o.name === laminationOptName)?.options[selectedOptions[laminationOptName]]?.label 
+      : "";
+
+    const matrixRow = product.matrixPricing.pricingData.find(row => 
+      row.material === selectedMaterial && row.laminate === selectedLamination
+    );
+
+    if (matrixRow) {
+      availableQuantities = Object.keys(matrixRow.quantityPrices).map(Number).sort((a,b) => a-b);
+      // Auto-adjust quantity if it's not valid for this matrix row
+      if (!availableQuantities.includes(quantity) && availableQuantities.length > 0) {
+        // We use setTimeout to avoid React state warning during render
+        setTimeout(() => setQuantity(availableQuantities[0]), 0);
       }
-    });
+      
+      const exactPrice = matrixRow.quantityPrices[quantity] || matrixRow.quantityPrices[availableQuantities[0]] || 0;
+      subtotal = exactPrice + (designOption === "design" ? 50 : 0);
+    } else {
+      subtotal = product.price * quantity + (designOption === "design" ? 50 : 0); // fallback if no combination exists
+    }
+  } else {
+    let optionAddons = 0;
+    if (product.printingOptions) {
+      product.printingOptions.forEach(opt => {
+        const selectedIdx = selectedOptions[opt.name];
+        if (selectedIdx !== undefined && opt.options[selectedIdx]) {
+          optionAddons += opt.options[selectedIdx].priceAdd;
+        }
+      });
+    }
+
+    const basePrice = product.price + optionAddons + (designOption === "design" ? 50 : 0);
+    subtotal = basePrice * quantity;
   }
 
-  const basePrice = product.price + optionAddons + (designOption === "design" ? 50 : 0);
-  const subtotal = basePrice * quantity;
   const vat = subtotal * 0.07; // 7% VAT
   const total = subtotal + vat;
 
@@ -277,17 +313,35 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           {step3Options.length > 1 && renderOptions(step3Options.slice(1))}
 
           <div className="space-y-3 pt-2">
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide">Custom Quantity</label>
-            <div className="p-4 border-2 border-gray-200 dark:border-border rounded-xl flex items-center justify-between">
-              <span className="text-sm font-medium dark:text-foreground">Total Pieces</span>
-              <QuantityPicker
-                quantity={quantity}
-                onDecrement={() => setQuantity((q) => Math.max(1, q - 1))}
-                onIncrement={() => setQuantity((q) => q + 1)}
-                max={10000}
-                onQuantityChange={setQuantity}
-              />
-            </div>
+            <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide">Quantity</label>
+            {product.matrixPricing?.enabled && availableQuantities.length > 0 ? (
+              <div className="grid grid-cols-3 gap-2">
+                {availableQuantities.map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => setQuantity(q)}
+                    className={`py-3 rounded-xl border-2 text-sm font-bold transition-all ${
+                      quantity === q 
+                        ? "border-primary bg-primary/10 text-primary" 
+                        : "border-gray-200 dark:border-border hover:border-primary/50 text-gray-700 dark:text-gray-300"
+                    }`}
+                  >
+                    {q} pcs
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 border-2 border-gray-200 dark:border-border rounded-xl flex items-center justify-between">
+                <span className="text-sm font-medium dark:text-foreground">Total Pieces</span>
+                <QuantityPicker
+                  quantity={quantity}
+                  onDecrement={() => setQuantity((q) => Math.max(1, q - 1))}
+                  onIncrement={() => setQuantity((q) => q + 1)}
+                  max={10000}
+                  onQuantityChange={setQuantity}
+                />
+              </div>
+            )}
           </div>
         </div>
 

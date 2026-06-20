@@ -5,8 +5,19 @@ const nextConfig = {
     },
     typescript: {
         ignoreBuildErrors: true,
-    }
-    
+    },
+    images: {
+        remotePatterns: [
+            {
+                hostname: "api.studioivory.art",
+                protocol: "https",
+            },
+            {
+                hostname: "res.cloudinary.com",
+                protocol: "https",
+            },
+        ],
+    },
 };
 
 module.exports = nextConfig;

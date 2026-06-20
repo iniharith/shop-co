@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
         hostname: "api.studioivory.art",
         protocol: "https",
       },
+      {
+        hostname: "res.cloudinary.com",
+        protocol: "https",
+      },
     ],
   },
   typescript: {
