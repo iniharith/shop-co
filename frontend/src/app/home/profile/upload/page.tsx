@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import Link from 'next/link';
 import { Breadcrumbs } from "@/components/global/breadcrumb";
 import { useSession } from "next-auth/react";
+import { useGetOrders } from "@/hooks/useOrder";
 
 interface UploadedFile {
   _id: string;
@@ -41,6 +42,9 @@ const API = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 export default function UploadPage() {
   const { data: session } = useSession();
   const token = session?.user?.token || '';
+  const { data: ordersResponse, isLoading: loadingOrders } = useGetOrders();
+  const orders = ordersResponse?.orders || [];
+  
   const [dragActive, setDragActive] = useState(false);
   const [queue, setQueue] = useState<QueuedFile[]>([]);
   const [orderId, setOrderId] = useState('');
@@ -214,12 +218,22 @@ export default function UploadPage() {
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   No. Pesanan <span className="text-red-500 text-sm">*</span>
                 </label>
-                <input
+                <select
                   value={orderId}
                   onChange={e => setOrderId(e.target.value)}
-                  placeholder="cth: ORD-2026-001"
-                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-black placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                />
+                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                >
+                  <option value="" disabled>Pilih Pesanan</option>
+                  {orders.length === 0 && !loadingOrders ? (
+                    <option value="" disabled>NO ORDER PLACED YET</option>
+                  ) : (
+                    orders.map((o: any) => (
+                      <option key={o._id} value={o._id}>
+                        {o._id} - {new Date(o.createdAt).toLocaleDateString('ms-MY')}
+                      </option>
+                    ))
+                  )}
+                </select>
               </div>
 
               {/* Drop Zone */}

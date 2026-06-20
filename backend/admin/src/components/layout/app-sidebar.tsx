@@ -47,6 +47,7 @@ import { usePathname } from "next/navigation";
 import * as React from "react";
 import { Icons } from "../global/icons";
 import { useTheme } from "next-themes";
+import { useNotifications } from "@/hooks/useNotification";
 
 import { roleByNavItems } from "@/constants/navItems";
 import { DialogTitle } from "../ui/dialog";
@@ -61,7 +62,8 @@ export default function AppSidebar() {
   const pathname = usePathname();
   const { state, isMobile, setOpenMobile, openMobile } = useSidebar();
   const { theme } = useTheme();
-
+  const { data: notificationsResponse } = useNotifications();
+  const unreadCount = notificationsResponse?.notifications?.filter((n: any) => !n.read).length || 0;
  
   const navItems = roleByNavItems(session?.user?.role)
 
@@ -169,10 +171,15 @@ export default function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="data-[state=open]:bg-slate-800 bg-slate-900 hover:bg-slate-800 data-[state=open]:text-slate-100"
+                  className="data-[state=open]:bg-slate-800 bg-slate-900 hover:bg-slate-800 data-[state=open]:text-slate-100 relative"
                 >
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage src={((session?.user as any)?.avatar || (session?.user as any)?.image)?.startsWith('http') ? ((session?.user as any)?.avatar || (session?.user as any)?.image) : ((session?.user as any)?.avatar || (session?.user as any)?.image) ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${(session?.user as any)?.avatar || (session?.user as any)?.image}` : ''} alt={session?.user?.name || ''} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 p-0 flex items-center justify-center rounded-full z-10 shadow-sm">
+                      {unreadCount}
+                    </span>
+                  )}
+                  <Avatar className="h-8 w-8 rounded-lg relative">
+                    <AvatarImage src={((session?.user as any)?.avatar || (session?.user as any)?.image)?.startsWith('http') ? ((session?.user as any)?.avatar || (session?.user as any)?.image) : ((session?.user as any)?.avatar || (session?.user as any)?.image) ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${((session?.user as any)?.avatar || (session?.user as any)?.image).replace(/^\//, '')}` : ""} />
                     <AvatarFallback className="rounded-lg text-white">
                       {session?.user?.name?.slice(0, 2)?.toUpperCase() || "CN"}
                     </AvatarFallback>
@@ -197,7 +204,7 @@ export default function AppSidebar() {
                 <DropdownMenuLabel className="p-0  font-normal">
                   <div className="flex items-center  gap-2 px-1 py-1.5 text-left text-sm">
                     <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage src={((session?.user as any)?.avatar || (session?.user as any)?.image)?.startsWith('http') ? ((session?.user as any)?.avatar || (session?.user as any)?.image) : ((session?.user as any)?.avatar || (session?.user as any)?.image) ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${(session?.user as any)?.avatar || (session?.user as any)?.image}` : ''} alt={session?.user?.name || ''} />
+                      <AvatarImage src={((session?.user as any)?.avatar || (session?.user as any)?.image)?.startsWith('http') ? ((session?.user as any)?.avatar || (session?.user as any)?.image) : ((session?.user as any)?.avatar || (session?.user as any)?.image) ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${((session?.user as any)?.avatar || (session?.user as any)?.image).replace(/^\//, '')}` : ""} />
                       <AvatarFallback className="rounded-lg text-white">
                         {session?.user?.name?.slice(0, 2)?.toUpperCase() ||
                           "CN"}

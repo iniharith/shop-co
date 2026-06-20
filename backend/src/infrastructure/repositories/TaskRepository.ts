@@ -22,6 +22,10 @@ export class TaskRepository {
     return Task.findByIdAndUpdate(id, { $set: data }, { new: true });
   }
 
+  async updateByOrderId(orderId: string, data: Partial<ITask>): Promise<void> {
+    await Task.updateMany({ orderId }, { $set: data });
+  }
+
   async delete(id: string): Promise<void> {
     await Task.findByIdAndDelete(id);
   }

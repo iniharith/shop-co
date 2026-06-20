@@ -25,7 +25,7 @@ export function UserNav() {
         <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
           <Avatar className='h-8 w-8'>
             <AvatarImage
-              src={((session.user as any)?.avatar || (session.user as any)?.image)?.startsWith('http') ? ((session.user as any)?.avatar || (session.user as any)?.image) : ((session.user as any)?.avatar || (session.user as any)?.image) ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${(session.user as any)?.avatar || (session.user as any)?.image}` : ''}
+              src={((session.user as any)?.avatar || (session.user as any)?.image)?.startsWith('http') ? ((session.user as any)?.avatar || (session.user as any)?.image) : ((session.user as any)?.avatar || (session.user as any)?.image) ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${((session.user as any)?.avatar || (session.user as any)?.image).replace(/^\//, '')}` : ''}
               alt={session.user?.name ?? ''}
             />
             <AvatarFallback>{session.user?.name?.[0]}</AvatarFallback>

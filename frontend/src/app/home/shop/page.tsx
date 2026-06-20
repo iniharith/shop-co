@@ -13,14 +13,24 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Suspense } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useFilterProducts, useProducts } from "@/hooks/useProducts";
 import ProductCardSkeleton from "@/components/loading/ProductCardSkeleton";
 import { motion } from "framer-motion";
 import { container_variants, item_variants } from "@/constants/framer-motion";
+
+const ITEMS_PER_PAGE = 8;
+
 const page = () => {
   const { data, isPending } = useFilterProducts();
   const products = data?.products || [];
+  
+  const searchParams = useSearchParams();
+  const pageParam = searchParams.get("page");
+  const currentPage = pageParam ? parseInt(pageParam) : 1;
+  const totalPages = Math.max(1, Math.ceil(products.length / ITEMS_PER_PAGE));
+  const paginatedProducts = products.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
   return (
     <div
     
@@ -58,8 +68,8 @@ const page = () => {
             className="grid md:grid-cols-4 grid-cols-2 gap-5"
           >
             {!isPending &&
-              products.length > 0 &&
-              products.map((product, index) => (
+              paginatedProducts.length > 0 &&
+              paginatedProducts.map((product: any, index: number) => (
                 <motion.div
                   variants={item_variants}
                   key={product._id + "product"}
@@ -87,9 +97,9 @@ const page = () => {
           <div className="w-full border-t border-border pt-5">
             <Suspense fallback={<div>Loading...</div>}>
               <PaginationDemo
-                totalPages={10}
-                currentPage={1}
-                onPageChange={() => {}}
+                totalPages={totalPages}
+                currentPage={currentPage}
+                onPageChange={(page) => setCurrentPage(page)}
               />
             </Suspense>
           </div>

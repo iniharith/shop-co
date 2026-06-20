@@ -98,7 +98,8 @@ const ChatMessages = ({ conversationId, currentUserId }: { conversationId: strin
 
   const handleSend = () => {
     if (!text.trim()) return;
-    sendMessage(text, { onSuccess: () => setText("") });
+    sendMessage(text);
+    setText("");
   };
 
   return (
@@ -136,7 +137,7 @@ const ChatMessages = ({ conversationId, currentUserId }: { conversationId: strin
           <button 
             onClick={handleSend} 
             disabled={isSending || !text.trim()} 
-            className="w-10 h-10 shrink-0 bg-black text-white rounded-full flex items-center justify-center disabled:opacity-50 hover:bg-gray-800 transition-colors"
+            className="w-10 h-10 shrink-0 bg-green-600 text-white rounded-full flex items-center justify-center disabled:opacity-50 hover:bg-green-700 transition-colors"
           >
             <Send size={16} className="ml-1" />
           </button>

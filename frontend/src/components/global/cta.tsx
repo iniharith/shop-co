@@ -21,7 +21,7 @@ const Cta = () => {
       <div className="w-[90%] md:w-[70%] rounded-lg bg-black px-4 py-7 grid md:grid-cols-2 ">
         <div className="flex flex-col justify-center gap-2 md:px-10 px-4">
           <h1 className="text-white text-3xl ">
-            stay upto to date about our latest offers
+            stay up to date about our latest offers
           </h1>
         </div>
         <div className="flex md:mt-0 md:px-0 px-4 mt-10 flex-col items-center justify-center gap-2">

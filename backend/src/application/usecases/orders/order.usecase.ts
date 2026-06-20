@@ -5,6 +5,7 @@ import { OrderRepository } from "../../../infrastructure/db/repositories/order.r
 import { ProductRepository } from "../../../infrastructure/db/repositories/product.repository";
 import { UserRepository } from "../../../infrastructure/db/repositories/user.repository";
 import { NotificationUsecase } from "../notification/notification.usecase";
+import { TaskRepository } from "../../../infrastructure/repositories/TaskRepository";
 import { RedisService } from "../../../infrastructure/redis/redis";
 import { REDIS_CHANNELS, REDIS_KEYS } from "../../../shared/constants/redis.constant";
 import { IUserDocument } from "../../../domain/interfaces/user.interface";
@@ -16,6 +17,7 @@ export class OrderUsecase {
     private readonly userRepository: UserRepository
     private readonly notificationUsecase: NotificationUsecase
     private readonly redisService: RedisService
+    private readonly taskRepository: TaskRepository
     constructor() {
         this.orderRepository = new OrderRepository();
         this.productRepository = new ProductRepository();
@@ -23,6 +25,7 @@ export class OrderUsecase {
         this.userRepository = new UserRepository();
         this.notificationUsecase = new NotificationUsecase();
         this.redisService = new RedisService();
+        this.taskRepository = new TaskRepository();
     }
 
     async getOrders() {
@@ -107,6 +110,20 @@ export class OrderUsecase {
             read: false
         })
         await this.cartRepository.clearCart(userId);
+        
+        // Auto-create Task for this order
+        try {
+            await this.taskRepository.create({
+                title: `Order: ${order._id.toString().slice(-6).toUpperCase()} - ${customerName}`,
+                description: `Auto-generated task for Order ${order._id.toString()}.\nNotes: ${orderNotes}`,
+                orderId: order._id.toString(),
+                customerUsername: customerName,
+                status: 'TODO',
+            });
+        } catch (e) {
+            console.error('Failed to auto-create task for order:', e);
+        }
+
         await this.redisService.publish(REDIS_CHANNELS.ORDER_PLACED, 'order placed');
         return order;
     }
@@ -142,6 +159,14 @@ export class OrderUsecase {
         if (order.userId) {
             await this.redisService.del(REDIS_KEYS.ORDERS + order.userId.toString());
         }
+        
+        // Sync Order status back to Task
+        try {
+            await this.taskRepository.updateByOrderId(orderId, { status: updateStatus as any });
+        } catch (e) {
+            console.error('Failed to sync order status to task:', e);
+        }
+
         return order;
 
     }

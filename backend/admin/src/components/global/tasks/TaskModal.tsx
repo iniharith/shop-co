@@ -318,9 +318,44 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                 <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Quick Links</h3>
                 <div className="flex flex-col gap-2">
                   {orderId && (
-                    <a href={`/admin/orders?search=${orderId}`} target="_blank" className="text-xs text-primary hover:underline flex items-center gap-1 bg-primary/10 px-2 py-1.5 rounded-md w-fit font-medium">
-                      View Order
-                    </a>
+                    <div className="flex flex-col gap-2">
+                      <a href={`/admin/orders?search=${orderId}`} target="_blank" className="text-xs text-primary hover:underline flex items-center gap-1 bg-primary/10 px-2 py-1.5 rounded-md w-fit font-medium">
+                        View Order
+                      </a>
+                      
+                      {orders.find((o: any) => o._id === orderId)?.awbUrl ? (
+                        <div className="flex gap-2 mt-2">
+                          <Button 
+                            variant="default" 
+                            size="sm" 
+                            className="text-xs h-8"
+                            onClick={() => window.open(orders.find((o: any) => o._id === orderId)?.awbUrl, "_blank")}
+                          >
+                            View AWB
+                          </Button>
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            className="text-xs h-8"
+                            onClick={() => {
+                                const win = window.open(orders.find((o: any) => o._id === orderId)?.awbUrl, "_blank");
+                                win?.print();
+                            }}
+                          >
+                            Print AWB
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-xs h-8 w-fit mt-2 border-primary/50 text-primary hover:bg-primary/10"
+                          onClick={() => alert("EasyParcel integration: AWB will be automatically assigned here.")}
+                        >
+                          Assign AWB
+                        </Button>
+                      )}
+                    </div>
                   )}
                   {customerUsername && (
                     <a href={`/admin/artworks?search=${customerUsername}`} target="_blank" className="text-xs text-primary hover:underline flex items-center gap-1 bg-primary/10 px-2 py-1.5 rounded-md w-fit font-medium">

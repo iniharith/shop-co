@@ -100,7 +100,7 @@ export function Footer() {
               </h3>
               <ul className="space-y-2">
                 <li><FooterLink href="/support">Customer Support</FooterLink></li>
-                <li><FooterLink href="/delivery">Delivery Details</FooterLink></li>
+                <li><FooterLink href="/delivery-details">Delivery Details</FooterLink></li>
                 <li><FooterLink href="/terms">Terms & Conditions</FooterLink></li>
                 <li><FooterLink href="/privacy">Privacy Policy</FooterLink></li>
               </ul>
@@ -114,7 +114,7 @@ export function Footer() {
                 <li><FooterLink href="/home/profile">Account</FooterLink></li>
                 <li><FooterLink href="/home/profile/orders">Manage Deliveries</FooterLink></li>
                 <li><FooterLink href="/home/profile/dashboard">Orders</FooterLink></li>
-                <li><FooterLink href="/payments">Payments</FooterLink></li>
+                <li><FooterLink href="/payment">Payments</FooterLink></li>
               </ul>
             </div>
 
@@ -125,7 +125,7 @@ export function Footer() {
 
       <div className="flex flex-col md:flex-row justify-between items-center mt-12 pt-8 border-t">
         <p className="text-xs text-muted-foreground mb-4 md:mb-0">
-          Kampung Cetak © 2025, All Rights Reserved
+          Kampung Cetak © 2026, All Rights Reserved
         </p>
         <div className="flex items-center space-x-4">
           <img

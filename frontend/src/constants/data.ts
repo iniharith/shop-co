@@ -165,28 +165,28 @@ export const products = [
 export const testimonials: Testimonial[] = [
   {
     id: 1,
-    name: "Sarah M.",
+    name: "Siti Nurhaliza M.",
     stars: 5,
     text: "\"I'm blown away by the quality of the banners and flyers I received from Kampung Cetak. The colors are incredibly vibrant and the material is top-notch!\"",
     verified: true,
   },
   {
     id: 2,
-    name: "Alex K.",
+    name: "Ahmad Faizal K.",
     stars: 5,
     text: '"Finding a reliable printing service for my business used to be a challenge until I discovered Kampung Cetak. Their fast delivery and premium business cards are exactly what I needed."',
     verified: true,
   },
   {
     id: 3,
-    name: "James L.",
+    name: "Lim Wei Jie",
     stars: 5,
     text: "\"As an event organizer, I'm thrilled to have stumbled upon Kampung Cetak. Their personalized flags and bunting always make our events look incredibly professional.\"",
     verified: true,
   },
   {
     id: 4,
-    name: "Moody S.",
+    name: "Muthu S.",
     stars: 5,
     text: '"The customer service at Kampung Cetak is exceptional! They helped me adjust my food packaging artwork to ensure it printed perfectly. I\'ll definitely be a returning customer."',
     verified: true,

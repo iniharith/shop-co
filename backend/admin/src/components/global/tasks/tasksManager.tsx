@@ -62,7 +62,7 @@ export default function TasksManager() {
   if (isPending) return <div className="p-8 text-center text-muted-foreground">Loading tasks...</div>;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 w-full max-w-[100vw] overflow-hidden px-1">
       {/* Top Toolbar */}
       <div className="flex justify-between items-center bg-card p-4 rounded-xl border border-border/50 shadow-sm">
         <div className="flex items-center gap-4">
@@ -113,8 +113,9 @@ export default function TasksManager() {
 
       {/* Board View */}
       {viewMode === "board" && (
-        <div className="flex overflow-x-auto pb-4 gap-6 items-start">
-          {columns.map(status => (
+        <div className="w-full overflow-x-auto pb-4">
+          <div className="flex gap-6 items-start w-max">
+            {columns.map(status => (
             <div key={status} className="bg-muted/30 rounded-2xl p-4 border border-border/50 flex flex-col gap-4 min-w-[320px] w-[320px] shrink-0">
               <div className="flex items-center justify-between px-2">
                 <h3 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">
@@ -181,7 +182,8 @@ export default function TasksManager() {
                 ))}
               </div>
             </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 

@@ -92,10 +92,14 @@ const MobileNavSheetContent = ({
               onClick={() => { router.push("/home/profile"); closeDrawer(); }}
               className="flex items-center gap-3 mb-3 px-3 py-2 bg-white dark:bg-popover rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-muted transition-colors text-left"
             >
-              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shrink-0">
-                {session.user.name
-                  ? session.user.name.charAt(0).toUpperCase()
-                  : <CgProfile size={16} />}
+              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden">
+                {(session.user as any)?.avatar || (session.user as any)?.image ? (
+                  <Image src={((session.user as any)?.avatar || (session.user as any)?.image).startsWith('http') ? ((session.user as any)?.avatar || (session.user as any)?.image) : `${process.env.NEXT_PUBLIC_BACKEND_URL}/${((session.user as any)?.avatar || (session.user as any)?.image).replace(/^\//, '')}`} alt={session.user.name || "Profile"} width={36} height={36} className="object-cover w-full h-full" />
+                ) : session.user.name ? (
+                  session.user.name.charAt(0).toUpperCase()
+                ) : (
+                  <CgProfile size={16} />
+                )}
               </div>
               <div className="overflow-hidden">
                 <p className="text-sm font-semibold text-gray-900 dark:text-foreground truncate">
@@ -405,10 +409,14 @@ const Nav = () => {
                   variant="ghost"
                   className="rounded-full px-2 md:px-3 py-1 cursor-pointer hover:bg-gray-300 dark:hover:bg-muted transition-colors flex items-center gap-2"
                 >
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold shrink-0">
-                    {session.user.name
-                      ? session.user.name.charAt(0).toUpperCase()
-                      : <CgProfile size={16} />}
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold shrink-0 overflow-hidden">
+                    {(session.user as any)?.avatar || (session.user as any)?.image ? (
+                      <Image src={((session.user as any)?.avatar || (session.user as any)?.image).startsWith('http') ? ((session.user as any)?.avatar || (session.user as any)?.image) : `${process.env.NEXT_PUBLIC_BACKEND_URL}/${((session.user as any)?.avatar || (session.user as any)?.image).replace(/^\//, '')}`} alt={session.user.name || "Profile"} width={32} height={32} className="object-cover w-full h-full" />
+                    ) : session.user.name ? (
+                      session.user.name.charAt(0).toUpperCase()
+                    ) : (
+                      <CgProfile size={16} />
+                    )}
                   </div>
                   <div className="hidden sm:flex flex-col items-start leading-tight">
                     <span className="text-sm font-semibold text-gray-800 dark:text-foreground max-w-[100px] truncate">

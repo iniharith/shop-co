@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { taskRepository } from '../../infrastructure/repositories/TaskRepository';
+import { OrderUsecase } from '../../application/usecases/orders/order.usecase';
 import authMiddilware from '../middlewares/auth.middileware';
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
@@ -77,6 +78,16 @@ router.put(
             type: 'system',
             read: false
         } as any);
+    }
+    
+    // Sync status to Order if it changed
+    if (req.body.status && req.body.status !== oldTask?.status && task.orderId) {
+        try {
+            const orderUsecase = new OrderUsecase();
+            await orderUsecase.updateOrderStatus(task.orderId, req.body.status as any);
+        } catch (e) {
+            console.error('Failed to sync status to order:', e);
+        }
     }
     
     res.json({ success: true, task });

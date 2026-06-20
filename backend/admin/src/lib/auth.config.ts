@@ -55,6 +55,11 @@ export const authConfig: AuthOptions = {
         token.email = user.email;
         token.role = user.role;
         token.verified = user.verified;
+        token.avatar = (user as any).avatar;
+      }
+      if (trigger === "update" && session) {
+        if (session.name !== undefined) token.name = session.name;
+        if (session.avatar !== undefined) token.avatar = session.avatar;
       }
       return token;
     },
@@ -69,6 +74,7 @@ export const authConfig: AuthOptions = {
       session.user.email = token.email as string;
       session.user.role = token.role as string;
       session.user.verified = token.verified as string;
+      (session.user as any).avatar = token.avatar as string;
 
       return session;
     },
@@ -97,6 +103,7 @@ declare module "next-auth/jwt" {
     email: string;
     role: string;
     verified: string;
+    avatar?: string;
   }
 }
 

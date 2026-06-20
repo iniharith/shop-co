@@ -54,6 +54,20 @@ export const AdminNavItems: NavItem[] = [
         shortcut: ['c', 'c'],
         isActive: false,
     },
+    {
+        title: 'Production',
+        url: '/admin/production',
+        icon: 'printer',
+        shortcut: ['p', 'p'],
+        isActive: false,
+    },
+    {
+        title: 'History',
+        url: '/admin/history',
+        icon: 'history',
+        shortcut: ['h', 'h'],
+        isActive: false,
+    },
 ];
 
 export const roleByNavItems = (role: string) => {

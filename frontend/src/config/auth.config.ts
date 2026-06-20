@@ -69,10 +69,15 @@ export const authConfig: AuthOptions = {
                 token.token = user.token;
                 token.name = user.name;
                 token.email = user.email;
+                token.avatar = (user as any).avatar;
             }
 
-            if (trigger === "update") {
-                token.orderSuccesPageAccess = session?.user?.orderSuccesPageAccess as boolean;
+            if (trigger === "update" && session) {
+                if (session.orderSuccesPageAccess !== undefined) {
+                    token.orderSuccesPageAccess = session.orderSuccesPageAccess;
+                }
+                if (session.name !== undefined) token.name = session.name;
+                if (session.avatar !== undefined) token.avatar = session.avatar;
             }
 
             return token;
@@ -87,6 +92,7 @@ export const authConfig: AuthOptions = {
             session.user.name = token.name as string;
             session.user.email = token.email as string;
             session.user.orderSuccesPageAccess = token.orderSuccesPageAccess as boolean;
+            (session.user as any).avatar = token.avatar as string;
 
             return session;
         },
@@ -113,6 +119,7 @@ declare module "next-auth/jwt" {
         name: string;
         email: string;
         orderSuccesPageAccess: boolean;
+        avatar?: string;
     }
 }
 
