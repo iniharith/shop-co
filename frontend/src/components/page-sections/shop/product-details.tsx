@@ -109,8 +109,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const total = subtotal + vat;
 
   // Group printing options logically if available
-  const options = product.printingOptions || [];
-  
   // Try to group options into steps intelligently. 
   // Step 1: Format/Size & Material
   // Step 2: Printing sides, finishing, add-ons
