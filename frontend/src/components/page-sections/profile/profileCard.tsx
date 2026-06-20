@@ -222,12 +222,9 @@ const ProfileCard = () => {
               </Button>
             )}
             <Button
-              onClick={() =>
-                signOut().then(() => {
-                  toast.success("Logged out successfully");
-                  router.push("/");
-                })
-              }
+              onClick={() => {
+                signOut({ callbackUrl: "/" });
+              }}
               variant="destructive"
               className="gap-2 rounded-full px-5"
             >

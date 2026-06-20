@@ -25,9 +25,9 @@ const AboutPage = () => {
                 />
               </div>
               <h1 className="text-4xl md:text-6xl font-bold mb-6 text-gray-900 tracking-tight">
-                About <span className="text-[#E00000]">Kampung Cetak</span>
+                About <span className="text-[#16a34a]">Kampung Cetak</span>
               </h1>
-              <p className="text-gray-600 text-xl italic mb-8 border-l-4 border-[#E00000] pl-4">
+              <p className="text-gray-600 text-xl italic mb-8 border-l-4 border-[#16a34a] pl-4">
                 "We take pride in our work and customer satisfaction is what sets KAMPUNG CETAK apart from the competition."
               </p>
               <div className="flex items-center space-x-8">
@@ -71,7 +71,7 @@ const AboutPage = () => {
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
               viewport={{ once: true }}
-              className="order-2 md:order-1 bg-[#E00000]/5 flex items-center justify-center p-12 rounded-3xl"
+              className="order-2 md:order-1 bg-[#16a34a]/5 flex items-center justify-center p-12 rounded-3xl"
             >
                <Image
                 src="/images/kampung-cetak-logo.png"
@@ -127,7 +127,7 @@ const AboutPage = () => {
                 viewport={{ once: true }}
                 className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
               >
-                <div className="bg-[#E00000]/10 text-[#E00000] w-12 h-12 rounded-full flex items-center justify-center mb-6">
+                <div className="bg-[#16a34a]/10 text-[#16a34a] w-12 h-12 rounded-full flex items-center justify-center mb-6">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
@@ -150,7 +150,7 @@ const AboutPage = () => {
               transition={{ duration: 0.5 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-4xl font-bold mb-8 text-[#E00000]">Our Mission</h2>
+              <h2 className="text-4xl font-bold mb-8 text-[#16a34a]">Our Mission</h2>
               <ul className="space-y-6">
                 {[
                   "We are a business promotional item provider through printing methods.",
@@ -159,7 +159,7 @@ const AboutPage = () => {
                   "We strive to empower the nation with knowledge and skills to achieve success."
                 ].map((text, i) => (
                   <li key={i} className="flex items-start">
-                    <span className="text-[#E00000] font-bold text-xl mr-4">0{i+1}</span>
+                    <span className="text-[#16a34a] font-bold text-xl mr-4">0{i+1}</span>
                     <p className="text-gray-300 text-lg">{text}</p>
                   </li>
                 ))}
@@ -173,7 +173,7 @@ const AboutPage = () => {
               viewport={{ once: true }}
               className="flex flex-col justify-center items-center text-center bg-gray-800 rounded-3xl p-12 border border-gray-700"
             >
-              <h2 className="text-4xl font-bold mb-6 text-[#E00000]">Our Vision</h2>
+              <h2 className="text-4xl font-bold mb-6 text-[#16a34a]">Our Vision</h2>
               <p className="text-2xl text-gray-300 italic font-medium leading-relaxed">
                 "To be a preferred integrated printing solution for business promotional items in Malaysia."
               </p>
