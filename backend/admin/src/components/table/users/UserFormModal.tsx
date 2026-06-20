@@ -145,7 +145,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit User" : "Add New User"}</DialogTitle>
+          <DialogTitle>{isEditing ? "Pencil User" : "Add New User"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="flex flex-col items-center gap-4 mb-4">

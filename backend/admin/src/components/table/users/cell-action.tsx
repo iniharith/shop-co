@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Trash2, Edit } from "lucide-react";
+import { Trash2, Pencil } from "lucide-react";
 import { useState } from "react";
 import { deleteUser } from "@/api/users";
 import { toast } from "sonner";
@@ -36,7 +36,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
     <>
       <div className="flex gap-2">
         <Button disabled={loading} variant="outline" size="icon" onClick={() => setEditModalOpen(true)}>
-          <Edit className="h-4 w-4" />
+          <Pencil className="h-4 w-4" />
         </Button>
         <Button disabled={loading} variant="destructive" size="icon" onClick={() => {
             if(confirm("Are you sure you want to completely remove this user?")) {

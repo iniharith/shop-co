@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpdateTask, useAddTaskComment, useUploadTaskFile } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
-import { CalendarIcon, UserIcon, LinkIcon, Send, MessageSquare, Paperclip, FileIcon, Loader2 } from "lucide-react";
+import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle } from "lucide-react";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -115,7 +115,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                               </div>
                             ) : (
                               <div className="w-12 h-12 shrink-0 bg-muted flex items-center justify-center rounded">
-                                <FileIcon className="w-5 h-5 text-primary" />
+                                <File className="w-5 h-5 text-primary" />
                               </div>
                             )}
                             <span className="text-xs font-medium truncate">{file.name}</span>
@@ -174,7 +174,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   size="icon" 
                   className="shrink-0 shadow-sm"
                 >
-                  {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+                  {isUploading ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
                 </Button>
                 <Input 
                   placeholder="Ask a question or post an update..." 
@@ -197,7 +197,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-                  <UserIcon className="w-3.5 h-3.5" /> Assignee
+                  <User className="w-3.5 h-3.5" /> Assignee
                 </label>
                 <Select value={assignee} onValueChange={(v) => { setAssignee(v); handleSaveDetails({ assignee: v === "unassigned" ? null : v }); }}>
                   <SelectTrigger className="h-9 bg-background shadow-sm border-border/50">
@@ -214,7 +214,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-                  <CalendarIcon className="w-3.5 h-3.5" /> Due Date
+                  <Calendar className="w-3.5 h-3.5" /> Due Date
                 </label>
                 <Input 
                   type="date" 
@@ -227,7 +227,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
               <div className="space-y-1.5 pt-4 border-t border-border/50">
                 <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-                  <LinkIcon className="w-3.5 h-3.5" /> Link Order ID
+                  <Link className="w-3.5 h-3.5" /> Link Order ID
                 </label>
                 <Popover open={openOrderBox} onOpenChange={setOpenOrderBox}>
                   <PopoverTrigger asChild>
@@ -270,7 +270,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-                  <LinkIcon className="w-3.5 h-3.5" /> Link Username
+                  <Link className="w-3.5 h-3.5" /> Link Username
                 </label>
                 <Popover open={openUserBox} onOpenChange={setOpenUserBox}>
                   <PopoverTrigger asChild>

@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useSyncParcel, useSendWhatsApp } from "@/hooks/useAdminDashboard";
-import { RefreshCw, MessageSquare, Download, AlertCircle } from "lucide-react";
+import { RefreshCw, MessageSquare, Download, CircleAlert } from "lucide-react";
 import { toast } from "sonner";
 
 export const columns: ColumnDef<any>[] = [
@@ -95,7 +95,7 @@ export const columns: ColumnDef<any>[] = [
             </Button>
           ) : (
             <Button variant="outline" size="sm" disabled title="No AWB Available">
-              <AlertCircle className="w-4 h-4 text-muted-foreground" />
+              <CircleAlert className="w-4 h-4 text-muted-foreground" />
             </Button>
           )}
         </div>

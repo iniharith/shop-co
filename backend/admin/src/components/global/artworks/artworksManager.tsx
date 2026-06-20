@@ -6,7 +6,7 @@ import { useUsers } from "@/hooks/useUsers";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CheckCircle, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight } from "lucide-react";
+import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -392,7 +392,7 @@ export default function ArtworksManager() {
                               onClick={() => handleReview(file._id, file.adminReviewed, file.adminNotes)}
                               disabled={isReviewing}
                             >
-                              <CheckCircle className="w-4 h-4 mr-1" />
+                              <CircleCheck className="w-4 h-4 mr-1" />
                               {file.adminReviewed ? "Unmark Review" : "Mark as Reviewed"}
                             </Button>
                             
@@ -444,7 +444,7 @@ export default function ArtworksManager() {
                             <MessageSquare className="w-4 h-4 text-muted-foreground" />
                           </Button>
                           <Button variant={file.adminReviewed ? "secondary" : "default"} size="icon" onClick={() => handleReview(file._id, file.adminReviewed, file.adminNotes)} title="Toggle Review">
-                            <CheckCircle className="w-4 h-4" />
+                            <CircleCheck className="w-4 h-4" />
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => handleDelete(file._id)} disabled={isDeleting} title="Delete">
                             <Trash2 className="w-4 h-4 text-red-500" />

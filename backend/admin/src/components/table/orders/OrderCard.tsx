@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { CellAction } from "@/components/global/cell-actions";
 import OrderInfo from "@/components/global/orderInfo";
 import { cn } from "@/lib/utils";
-import { Package, UserCircle2, MapPin, CreditCard, ShoppingBag, Trash2, Truck } from "lucide-react";
+import { Package, CircleUserRound, MapPin, CreditCard, ShoppingBag, Trash2, Truck } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDeleteOrder, useUpdateOrderStatus } from "@/hooks/useOrder";
 import { toast } from "sonner";
@@ -87,7 +87,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
       
       <CardHeader className="pb-3 pt-6 px-5 flex flex-row items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-             <UserCircle2 className="w-8 h-8 text-muted-foreground mt-0.5" />
+             <CircleUserRound className="w-8 h-8 text-muted-foreground mt-0.5" />
              <div className="flex flex-col">
                <span className="font-semibold text-lg leading-tight">{order.customerName || userName}</span>
                <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5 mt-0.5">

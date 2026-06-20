@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSyncParcel, useSendWhatsApp, useUpdateParcel } from "@/hooks/useAdminDashboard";
-import { RefreshCw, MessageSquare, Download, AlertCircle, Package, Truck, CheckCircle2, XCircle, Clock, MapPin, Calendar } from "lucide-react";
+import { RefreshCw, MessageSquare, Download, CircleAlert, Package, Truck, CircleCheckBig, CircleX, Clock, MapPin, Calendar } from "lucide-react";
 import { toast } from "sonner";
 
 interface TrackingCardProps {
@@ -21,8 +21,8 @@ const statusMap: Record<string, { label: string; step: number; icon: any; color:
   picked_up: { label: "Picked Up", step: 1, icon: Package, color: "text-blue-500" },
   in_transit: { label: "In Transit", step: 2, icon: Truck, color: "text-indigo-500" },
   out_for_delivery: { label: "Out for Delivery", step: 3, icon: Truck, color: "text-orange-500" },
-  delivered: { label: "Delivered", step: 4, icon: CheckCircle2, color: "text-emerald-500" },
-  failed: { label: "Failed", step: 0, icon: XCircle, color: "text-rose-500" },
+  delivered: { label: "Delivered", step: 4, icon: CircleCheckBig, color: "text-emerald-500" },
+  failed: { label: "Failed", step: 0, icon: CircleX, color: "text-rose-500" },
 };
 
 export default function TrackingCard({ parcel }: TrackingCardProps) {
@@ -166,7 +166,7 @@ export default function TrackingCard({ parcel }: TrackingCardProps) {
                 </Button>
               ) : (
                 <Button variant="ghost" size="sm" disabled className="rounded-full h-8 w-8 p-0" title="No AWB">
-                  <AlertCircle className="w-4 h-4 text-slate-300" />
+                  <CircleAlert className="w-4 h-4 text-slate-300" />
                 </Button>
               )}
             </div>
@@ -229,7 +229,7 @@ export default function TrackingCard({ parcel }: TrackingCardProps) {
                 parcel.events.map((event: any, index: number) => (
                   <div key={index} className="flex gap-4 relative z-10">
                     <div className="w-6 h-6 rounded-full bg-white border-2 border-blue-500 flex items-center justify-center shrink-0">
-                      {index === 0 ? <CheckCircle2 className="w-3 h-3 text-blue-500" /> : <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
+                      {index === 0 ? <CircleCheckBig className="w-3 h-3 text-blue-500" /> : <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
                     </div>
                     <div className="flex flex-col pb-4 border-b border-slate-100 last:border-0 last:pb-0 w-full">
                       <span className="text-sm font-medium text-slate-900">{event.description || event.status}</span>

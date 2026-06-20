@@ -3,7 +3,7 @@ import React from "react";
 import { useParcelStats, useFileStats } from "@/hooks/useAdminDashboard";
 import { useOrders } from "@/hooks/useOrder";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Box, Truck, FileText, CheckCircle2, AlertCircle } from "lucide-react";
+import { Box, Truck, FileText, CircleCheckBig, CircleAlert } from "lucide-react";
 
 export default function DashboardOverview() {
   const { data: orderData, isPending: ordersPending } = useOrders();
@@ -69,7 +69,7 @@ export default function DashboardOverview() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Reviews</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+            <CircleAlert className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{fileData.pendingReview}</div>
@@ -90,7 +90,7 @@ export default function DashboardOverview() {
           <CardContent>
             <div className="flex flex-col space-y-3">
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500"/> Delivered</span>
+                <span className="flex items-center gap-2"><CircleCheckBig className="w-4 h-4 text-green-500"/> Delivered</span>
                 <span className="font-semibold">{parcelData.delivered || 0}</span>
               </div>
               <div className="flex items-center justify-between">
@@ -102,7 +102,7 @@ export default function DashboardOverview() {
                 <span className="font-semibold">{parcelData.pending || 0}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2"><AlertCircle className="w-4 h-4 text-red-500"/> Failed</span>
+                <span className="flex items-center gap-2"><CircleAlert className="w-4 h-4 text-red-500"/> Failed</span>
                 <span className="font-semibold">{parcelData.failed || 0}</span>
               </div>
             </div>

@@ -4,7 +4,7 @@ import { Drawer } from "vaul";
 import { IoCloseCircle } from "react-icons/io5";
 import { Button } from "@heroui/button";
 import { cn } from "@/lib/utils";
-import { Bell, Package, Tag, CheckCircle, Truck } from "lucide-react";
+import { Bell, Package, Tag, CircleCheck, Truck } from "lucide-react";
 import type { INotification } from "@/types/INotification";
 import { useMarkAllNotificationsAsRead } from "@/hooks/useNotification";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,7 +21,7 @@ const getNotificationIcon = (type: INotification["type"]) => {
     case "SYSTEM":
       return <Bell className="h-4 w-4" />;
     case "VERIFICATION":
-      return <CheckCircle className="h-4 w-4" />;
+      return <CircleCheck className="h-4 w-4" />;
     default:
       return <Package className="h-4 w-4" />;
   }

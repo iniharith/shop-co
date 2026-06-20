@@ -28,7 +28,7 @@ import {
   PaginationState,
   useReactTable
 } from '@tanstack/react-table';
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { parseAsInteger, useQueryState } from 'nuqs';
 
 interface DataTableProps<TData, TValue> {
@@ -215,7 +215,7 @@ export function DataTable<TData, TValue>({
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
-              <ChevronLeftIcon className='h-4 w-4' aria-hidden='true' />
+              <ChevronLeft className='h-4 w-4' aria-hidden='true' />
             </Button>
             <Button
               aria-label='Go to next page'
@@ -224,7 +224,7 @@ export function DataTable<TData, TValue>({
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
-              <ChevronRightIcon className='h-4 w-4' aria-hidden='true' />
+              <ChevronRight className='h-4 w-4' aria-hidden='true' />
             </Button>
             <Button
               aria-label='Go to last page'

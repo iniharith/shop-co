@@ -12,11 +12,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  BookTemplate,
-  Edit,
-  BadgeIcon as IdCard,
+  BookOpen,
+  Pencil,
+  Badge as IdCard,
   Info,
-  MoreHorizontal,
+  Ellipsis,
   Trash,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -89,7 +89,7 @@ export const CellAction = ({
       )}
       {updateForm && (
         <SheetReuse
-          title="Edit "
+          title="Pencil "
           description="this action it will remark the date also"
           open={showEdit}
           closeFn={closeSheet}
@@ -129,7 +129,7 @@ export const CellAction = ({
             <DrawerTrigger asChild>
               <Button variant="outline" className="h-8 w-8  p-0">
                 <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
+                <Ellipsis className="h-4 w-4" />
               </Button>
             </DrawerTrigger>
             <DrawerContent>
@@ -162,7 +162,7 @@ export const CellAction = ({
                       setDrawerOpen(false);
                     }}
                   >
-                    <Edit className="mr-2 h-4 w-4" /> Update
+                    <Pencil className="mr-2 h-4 w-4" /> Update
                   </Button>
                 )}
                 {deletFn && (
@@ -198,7 +198,7 @@ export const CellAction = ({
                       setDrawerOpen(false);
                     }}
                   >
-                    <BookTemplate className="mr-2 h-4 w-4" /> Template
+                    <BookOpen className="mr-2 h-4 w-4" /> Template
                   </Button>
                 )}
               </div>
@@ -219,7 +219,7 @@ export const CellAction = ({
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
                 <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
+                <Ellipsis className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -237,7 +237,7 @@ export const CellAction = ({
                     updateFn && updateFn();
                   }}
                 >
-                  <Edit className="mr-2 h-4 w-4" /> Update
+                  <Pencil className="mr-2 h-4 w-4" /> Update
                 </DropdownMenuItem>
               )}
               {deletFn && (
@@ -252,7 +252,7 @@ export const CellAction = ({
               )}
               {!!template && (
                 <DropdownMenuItem onClick={() => template()}>
-                  <BookTemplate className="mr-2 h-4 w-4" /> Template
+                  <BookOpen className="mr-2 h-4 w-4" /> Template
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>

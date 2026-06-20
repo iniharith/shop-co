@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
-import { Check, ChevronsUpDown, Plus, Send, User as UserIcon, MessageCircle, Trash2 } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Send, User as User, MessageCircle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function ChatManager() {
@@ -84,7 +84,7 @@ export default function ChatManager() {
                           });
                         }}
                       >
-                        <UserIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <User className="mr-2 h-4 w-4 text-muted-foreground" />
                         {u.name || u.email}
                       </CommandItem>
                     ))}

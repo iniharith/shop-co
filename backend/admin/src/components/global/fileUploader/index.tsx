@@ -1,6 +1,6 @@
 'use client';
 
-import { X as CrossIcon, UploadIcon } from 'lucide-react';
+import { X as CrossIcon, Upload } from 'lucide-react';
 import Image from 'next/image';
 import * as React from 'react';
 import Dropzone, {
@@ -210,7 +210,7 @@ export function FileUploader(props: FileUploaderProps) {
             {isDragActive ? (
               <div className='flex flex-col items-center justify-center gap-4 sm:px-5'>
                 <div className='rounded-full border border-dashed p-3'>
-                  <UploadIcon
+                  <Upload
                     className='size-7 text-muted-foreground'
                     aria-hidden='true'
                   />
@@ -222,7 +222,7 @@ export function FileUploader(props: FileUploaderProps) {
             ) : (
               <div className='flex flex-col items-center justify-center gap-4 sm:px-5'>
                 <div className='rounded-full border border-dashed p-3'>
-                  <UploadIcon
+                  <Upload
                     className='size-7 text-muted-foreground'
                     aria-hidden='true'
                   />
