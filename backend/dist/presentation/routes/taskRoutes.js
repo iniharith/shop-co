@@ -48,6 +48,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const TaskRepository_1 = require("../../infrastructure/repositories/TaskRepository");
+const order_usecase_1 = require("../../application/usecases/orders/order.usecase");
 const auth_middileware_1 = __importDefault(require("../middlewares/auth.middileware"));
 const cloudinary_1 = require("cloudinary");
 const multer_storage_cloudinary_1 = require("multer-storage-cloudinary");
@@ -106,6 +107,16 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
             type: 'system',
             read: false
         });
+    }
+    // Sync status to Order if it changed
+    if (req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status) && task.orderId) {
+        try {
+            const orderUsecase = new order_usecase_1.OrderUsecase();
+            yield orderUsecase.updateOrderStatus(task.orderId, req.body.status);
+        }
+        catch (e) {
+            console.error('Failed to sync status to order:', e);
+        }
     }
     res.json({ success: true, task });
 })));

@@ -41,6 +41,11 @@ class TaskRepository {
             return Task_1.Task.findByIdAndUpdate(id, { $set: data }, { new: true });
         });
     }
+    updateByOrderId(orderId, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield Task_1.Task.updateMany({ orderId }, { $set: data });
+        });
+    }
     delete(id) {
         return __awaiter(this, void 0, void 0, function* () {
             yield Task_1.Task.findByIdAndDelete(id);

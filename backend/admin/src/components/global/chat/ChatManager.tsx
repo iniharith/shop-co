@@ -30,8 +30,8 @@ export default function ChatManager() {
   const backendUsers = usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss'].includes(u.role)) || [];
   const [openNewChat, setOpenNewChat] = useState(false);
 
-  const conversations = convData?.conversations || [];
-  const messages = msgData?.messages || [];
+  const conversations = (convData as any)?.conversations || [];
+  const messages = (msgData as any)?.messages || [];
   
   // Set initial active conversation
   useEffect(() => {

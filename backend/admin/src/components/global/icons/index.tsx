@@ -25,6 +25,7 @@ import {
   Pizza,
   Plus,
   Printer,
+  History,
   Settings,
   SunMedium,
   Trash,
@@ -121,6 +122,5 @@ export const Icons = {
       ></path>
     </svg>
   ),
-  twitter: Twitter,
   check: Check,
 };

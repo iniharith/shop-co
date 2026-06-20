@@ -1,4 +1,5 @@
 "use client";
+import { Badge } from "@/components/ui/badge";
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -250,7 +251,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                           {orders.map((o: any) => (
                             <CommandItem
                               key={o._id}
-                              value={o.orderId || o._id}
+                              value={(o as any).orderId || o._id}
                               onSelect={(currentValue) => {
                                 setOrderId(currentValue === orderId ? "" : o._id);
                                 handleSaveDetails({ orderId: currentValue === orderId ? "" : o._id });
@@ -258,7 +259,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                               }}
                             >
                               <Check className={cn("mr-2 h-4 w-4", orderId === o._id ? "opacity-100" : "opacity-0")} />
-                              Order #{o.orderId}
+                              Order #{(o as any).orderId}
                             </CommandItem>
                           ))}
                         </CommandGroup>

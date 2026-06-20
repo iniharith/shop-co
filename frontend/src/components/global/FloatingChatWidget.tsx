@@ -46,7 +46,7 @@ export const ChatBox = ({ userId }: { userId: string }) => {
   const { data: convData, isPending: convLoading } = useConversations();
   const { mutate: createConv, isPending: isCreating } = useCreateConversation();
   
-  const conversations = convData?.conversations || [];
+  const conversations = (convData as any)?.conversations || [];
   
   const activeConversation = conversations.find((c: any) => c.type === 'admin_customer');
 
@@ -90,7 +90,7 @@ const ChatMessages = ({ conversationId, currentUserId }: { conversationId: strin
   const [text, setText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const messages = msgData?.messages || [];
+  const messages = (msgData as any)?.messages || [];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

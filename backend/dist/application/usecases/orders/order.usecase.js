@@ -18,6 +18,7 @@ const order_repository_1 = require("../../../infrastructure/db/repositories/orde
 const product_repository_1 = require("../../../infrastructure/db/repositories/product.repository");
 const user_repository_1 = require("../../../infrastructure/db/repositories/user.repository");
 const notification_usecase_1 = require("../notification/notification.usecase");
+const TaskRepository_1 = require("../../../infrastructure/repositories/TaskRepository");
 const redis_1 = require("../../../infrastructure/redis/redis");
 const redis_constant_1 = require("../../../shared/constants/redis.constant");
 const whatsapp_service_1 = __importDefault(require("../../../infrastructure/whatsapp/whatsapp.service"));
@@ -29,6 +30,7 @@ class OrderUsecase {
         this.userRepository = new user_repository_1.UserRepository();
         this.notificationUsecase = new notification_usecase_1.NotificationUsecase();
         this.redisService = new redis_1.RedisService();
+        this.taskRepository = new TaskRepository_1.TaskRepository();
     }
     getOrders() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -115,6 +117,19 @@ class OrderUsecase {
                 read: false
             });
             yield this.cartRepository.clearCart(userId);
+            // Auto-create Task for this order
+            try {
+                yield this.taskRepository.create({
+                    title: `Order: ${order._id.toString().slice(-6).toUpperCase()} - ${customerName}`,
+                    description: `Auto-generated task for Order ${order._id.toString()}.\nNotes: ${orderNotes}`,
+                    orderId: order._id.toString(),
+                    customerUsername: customerName,
+                    status: 'TODO',
+                });
+            }
+            catch (e) {
+                console.error('Failed to auto-create task for order:', e);
+            }
             yield this.redisService.publish(redis_constant_1.REDIS_CHANNELS.ORDER_PLACED, 'order placed');
             return order;
         });
@@ -146,6 +161,13 @@ class OrderUsecase {
             yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + orderId);
             if (order.userId) {
                 yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + order.userId.toString());
+            }
+            // Sync Order status back to Task
+            try {
+                yield this.taskRepository.updateByOrderId(orderId, { status: updateStatus });
+            }
+            catch (e) {
+                console.error('Failed to sync order status to task:', e);
             }
             return order;
         });

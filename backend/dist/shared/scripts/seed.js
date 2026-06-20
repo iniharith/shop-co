@@ -22,7 +22,7 @@ const data = [
         description: "Make a lasting impression with our premium quality business cards.",
         price: 15.0,
         originalPrice: 25.0,
-        discount: 40,
+        discount: 0,
         rating: 4.9,
         category: "digital-offset",
         images: ["https://images.pexels.com/photos/8885627/pexels-photo-8885627.jpeg?auto=compress&cs=tinysrgb&w=800", "https://images.pexels.com/photos/6373305/pexels-photo-6373305.jpeg?auto=compress&cs=tinysrgb&w=800"],

@@ -23,7 +23,7 @@ interface ManualOrderModalProps {
 export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpenChange }) => {
   const { mutate: createOrder, isPending } = useCreateManualOrder();
   const { data: productsData } = useProducts();
-  const products = productsData?.products || [];
+  const products = (productsData as any)?.products || [];
   const [openProductBox, setOpenProductBox] = useState(false);
 
   const [formData, setFormData] = useState({

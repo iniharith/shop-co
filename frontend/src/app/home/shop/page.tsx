@@ -99,7 +99,7 @@ const page = () => {
               <PaginationDemo
                 totalPages={totalPages}
                 currentPage={currentPage}
-                onPageChange={(page) => setCurrentPage(page)}
+                onPageChange={(page) => {}}
               />
             </Suspense>
           </div>
