@@ -28,6 +28,7 @@ export default function TasksManager() {
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [hiddenColumns, setHiddenColumns] = useState<string[]>([]);
   const [collapsedSections, setCollapsedSections] = useState<string[]>([]);
+  const [collapsedColumns, setCollapsedColumns] = useState<string[]>([]);
   const [columnsPopoverOpen, setColumnsPopoverOpen] = useState(false);
   
   const { mutate: createTask, isPending: isCreating } = useCreateTask();
@@ -73,6 +74,10 @@ export default function TasksManager() {
 
   const toggleSectionCollapse = (status: string) => {
     setCollapsedSections(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]);
+  };
+
+  const toggleColumnCollapse = (status: string) => {
+    setCollapsedColumns(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]);
   };
 
   if (isPending) return <div className="p-8 text-center text-muted-foreground">Loading tasks...</div>;
@@ -175,19 +180,28 @@ export default function TasksManager() {
       {viewMode === "board" && (
         <div className="w-full overflow-x-auto pb-4">
           <div className="flex gap-4 items-start w-max">
-            {visibleColumns.map(status => (
-            <div key={status} className="bg-muted/30 rounded-2xl p-3 border border-border/50 flex flex-col gap-3 min-w-[230px] w-[230px] shrink-0">
-              <div className="flex items-center justify-between px-1">
-                <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground truncate">
-                  {status.replace(/_/g, " ")}
-                </h3>
-                <Badge variant="secondary" className="rounded-full bg-background border border-border/50 shrink-0">
-                  {tasks.filter((t: any) => t.status === status).length}
-                </Badge>
-              </div>
-              
-              <div className="flex flex-col gap-2">
-                {tasks.filter((t: any) => t.status === status).map((task: any) => (
+            {visibleColumns.map(status => {
+              const columnTasks = tasks.filter((t: any) => t.status === status);
+              const isCollapsed = collapsedColumns.includes(status);
+              return (
+              <div key={status} className="bg-muted/30 rounded-2xl p-3 border border-border/50 flex flex-col gap-3 min-w-[270px] w-[270px] shrink-0">
+                <button
+                  type="button"
+                  onClick={() => toggleColumnCollapse(status)}
+                  className="flex items-center gap-2 self-start rounded-full bg-card border border-border/50 shadow-sm pl-3 pr-2 py-1.5 hover:bg-muted/60 transition-colors"
+                >
+                  <span className="font-semibold text-xs uppercase tracking-wider text-foreground/80">
+                    {status.replace(/_/g, " ")}
+                  </span>
+                  <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold">
+                    {columnTasks.length}
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isCollapsed ? "-rotate-90" : ""}`} />
+                </button>
+
+                {!isCollapsed && (
+                <div className="flex flex-col gap-2">
+                  {columnTasks.map((task: any) => (
                   <Card key={task._id} className="cursor-pointer hover:shadow-md transition-shadow group border border-border/50" onClick={() => setSelectedTask(task)}>
                     <CardContent className="p-3 flex flex-col gap-2">
                       <div className="flex justify-between items-start gap-2">
@@ -239,10 +253,12 @@ export default function TasksManager() {
                       </Select>
                     </CardContent>
                   </Card>
-                ))}
+                  ))}
+                </div>
+                )}
               </div>
-            </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
