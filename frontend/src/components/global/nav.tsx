@@ -93,13 +93,12 @@ const MobileNavSheetContent = ({
               className="flex items-center gap-3 mb-3 px-3 py-2 bg-white dark:bg-popover rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-muted transition-colors text-left"
             >
               <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden">
-                {(session.user as any)?.avatar || (session.user as any)?.image ? (
-                  <Image src={((session.user as any)?.avatar || (session.user as any)?.image).startsWith('http') ? ((session.user as any)?.avatar || (session.user as any)?.image) : `${process.env.NEXT_PUBLIC_BACKEND_URL}/${((session.user as any)?.avatar || (session.user as any)?.image).replace(/^\//, '')}`} alt={session.user.name || "Profile"} width={36} height={36} className="object-cover w-full h-full" />
-                ) : session.user.name ? (
-                  session.user.name.charAt(0).toUpperCase()
-                ) : (
-                  <CgProfile size={16} />
-                )}
+                {(() => {
+                  const avatar = (session?.user as any)?.avatar || (session?.user as any)?.image;
+                  if (!avatar) return session?.user?.name ? session.user.name.charAt(0).toUpperCase() : <CgProfile size={16} />;
+                  const url = avatar.startsWith('http') ? avatar : `${process.env.NEXT_PUBLIC_BACKEND_URL}/${avatar.replace(/\\/g, '/').replace(/^\/?/, '')}`;
+                  return <Image src={url} alt={session.user.name || "Profile"} width={36} height={36} className="object-cover w-full h-full" />;
+                })()}
               </div>
               <div className="overflow-hidden">
                 <p className="text-sm font-semibold text-gray-900 dark:text-foreground truncate">
@@ -262,6 +261,13 @@ const Nav = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
+  const getAvatarUrl = () => {
+    const avatar = (session?.user as any)?.avatar || (session?.user as any)?.image;
+    if (!avatar) return null;
+    if (avatar.startsWith('http')) return avatar;
+    return `${process.env.NEXT_PUBLIC_BACKEND_URL}/${avatar.replace(/\\/g, '/').replace(/^\/?/, '')}`;
+  };
+
   // Use the search products hook for live suggestions
   const { data: searchData } = useSearchProducts(searchQuery.length > 1 ? searchQuery : "");
   const searchResults = (searchData as any)?.products || [];
@@ -410,8 +416,8 @@ const Nav = () => {
                   className="rounded-full px-2 md:px-3 py-1 cursor-pointer hover:bg-gray-300 dark:hover:bg-muted transition-colors flex items-center gap-2"
                 >
                   <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold shrink-0 overflow-hidden">
-                    {(session.user as any)?.avatar || (session.user as any)?.image ? (
-                      <Image src={((session.user as any)?.avatar || (session.user as any)?.image).startsWith('http') ? ((session.user as any)?.avatar || (session.user as any)?.image) : `${process.env.NEXT_PUBLIC_BACKEND_URL}/${((session.user as any)?.avatar || (session.user as any)?.image).replace(/^\//, '')}`} alt={session.user.name || "Profile"} width={32} height={32} className="object-cover w-full h-full" />
+                    {getAvatarUrl() ? (
+                      <Image src={getAvatarUrl()} alt={session.user.name || "Profile"} width={32} height={32} className="object-cover w-full h-full" />
                     ) : session.user.name ? (
                       session.user.name.charAt(0).toUpperCase()
                     ) : (

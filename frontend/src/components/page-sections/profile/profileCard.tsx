@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 const API = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
 const ProfileCard = () => {
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const router = useRouter();
   const { profileData, isLoading, updateProfile, isUpdating } = useProfile() as any;
 
@@ -97,6 +97,7 @@ const ProfileCard = () => {
       });
       const data = await res.json();
       if (data.success) {
+        await updateSession({ avatar: data.avatarUrl });
         toast.success("Gambar profil berjaya ditukar!");
         window.location.reload(); 
       } else {
@@ -135,8 +136,8 @@ const ProfileCard = () => {
   const displayVerified = profile?.verified || false;
   
   let displayAvatar = profile?.avatar || null;
-  if (displayAvatar && displayAvatar.startsWith('/uploads')) {
-    displayAvatar = `${API}${displayAvatar}`;
+  if (displayAvatar && !displayAvatar.startsWith('http')) {
+    displayAvatar = `${API}/${displayAvatar.replace(/\\/g, '/').replace(/^\/?/, '')}`;
   }
   
   const displayInitial = displayName ? displayName.charAt(0).toUpperCase() : "?";

@@ -76,6 +76,7 @@ export default function ProductionManager() {
     const productionOrders = orders.filter((o: any) => o.orderStatus === 'IN_PRODUCTION');
     const productionOrderIds = productionOrders.map((o: any) => o._id.toString());
     const productionUserIds = productionOrders.map((o: any) => o.userId?.toString());
+    const users = (usersResponse as any)?.data || [];
 
     const groups: Record<string, any[]> = {};
     filteredFiles.forEach((file: any) => {
