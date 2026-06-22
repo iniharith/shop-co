@@ -76,12 +76,12 @@ export default function ProductionManager() {
 
   const groupedFiles = useMemo(() => {
     const orders = ordersResponse?.orders || [];
-    const productionOrders = orders.filter((o: any) => o.orderStatus === 'IN_PRODUCTION' || o.orderStatus === 'DONE DESIGN');
+    const productionOrders = orders.filter((o: any) => o.orderStatus === 'IN_PRODUCTION');
     const productionOrderIds = productionOrders.map((o: any) => o._id.toString());
     const productionUserIds = productionOrders.map((o: any) => o.userId?.toString());
     const users = (usersResponse as any)?.data || [];
     const tasks = tasksResponse?.tasks || [];
-    const productionTasks = tasks.filter((t: any) => t.status === 'IN_PRODUCTION' || t.status === 'DONE DESIGN');
+    const productionTasks = tasks.filter((t: any) => t.status === 'IN_PRODUCTION');
     const productionTaskIds = productionTasks.map((t: any) => t._id.toString());
 
     const groups: Record<string, any[]> = {};
@@ -108,7 +108,7 @@ export default function ProductionManager() {
         if (file.orderId) {
            orderIdStr = file.orderId;
         } else {
-           const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString() && (o.orderStatus === 'IN_PRODUCTION' || o.orderStatus === 'DONE DESIGN'));
+           const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString() && o.orderStatus === 'IN_PRODUCTION');
            if (order) orderIdStr = order._id;
         }
       }

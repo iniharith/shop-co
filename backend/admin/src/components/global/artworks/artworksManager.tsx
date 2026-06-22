@@ -93,7 +93,7 @@ export default function ArtworksManager() {
         orderIdStr = task?.orderId || "";
         taskIdStr = file.taskId;
         
-        if (task && (task.status === 'IN_PRODUCTION' || task.status === 'DONE DESIGN' || task.status === 'CANCELLED' || task.status === 'FAILED')) {
+        if (task && (task.status === 'IN_PRODUCTION' || task.status === 'CANCELLED' || task.status === 'FAILED')) {
             shouldExclude = true;
         }
       } else {
@@ -111,7 +111,7 @@ export default function ArtworksManager() {
       
       if (orderIdStr) {
           const order = orders.find((o: any) => o._id === orderIdStr);
-          if (order && (order.orderStatus === 'DONE DESIGN' || order.orderStatus === 'IN_PRODUCTION' || order.orderStatus === 'SHIPPED' || order.orderStatus === 'DELIVERED' || order.orderStatus === 'CANCELLED' || order.orderStatus === 'FAILED')) {
+          if (order && (order.orderStatus === 'IN_PRODUCTION' || order.orderStatus === 'SHIPPED' || order.orderStatus === 'DELIVERED' || order.orderStatus === 'CANCELLED' || order.orderStatus === 'FAILED')) {
               shouldExclude = true;
           }
       }
@@ -127,7 +127,7 @@ export default function ArtworksManager() {
 
     // explicitly add empty folders for any Tasks that don't have files yet
     tasks.forEach((task: any) => {
-      if (task.status !== 'DONE DESIGN' && task.status !== 'CANCELLED' && task.status !== 'FAILED') {
+      if (task.status !== 'IN_PRODUCTION' && task.status !== 'CANCELLED' && task.status !== 'FAILED') {
         const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id });
         if (!groups[key]) {
           groups[key] = [];
