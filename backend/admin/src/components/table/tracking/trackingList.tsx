@@ -18,6 +18,10 @@ export default function TrackingList() {
 
   const filteredParcels = useMemo(() => {
     return parcels.filter((parcel: any) => {
+      // Exclude done or cancelled orders from tracking view
+      const excludeStatuses = ["DELIVERED", "DONE", "CANCELLED", "FAILED"];
+      if (excludeStatuses.includes(parcel.orderStatus)) return false;
+
       const matchesSearch = 
         parcel.trackingNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         parcel.customerName?.toLowerCase().includes(searchQuery.toLowerCase());
