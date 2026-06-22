@@ -80,7 +80,7 @@ export default function ProductionManager() {
     const productionOrderIds = productionOrders.map((o: any) => o._id.toString());
     const productionUserIds = productionOrders.map((o: any) => o.userId?.toString());
     const users = (usersResponse as any)?.data || [];
-    const tasks = tasksResponse?.tasks || [];
+    const tasks = (tasksResponse as any)?.tasks || [];
     const productionTasks = tasks.filter((t: any) => t.status === 'IN_PRODUCTION');
     const productionTaskIds = productionTasks.map((t: any) => t._id.toString());
 

@@ -255,7 +255,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                       aria-expanded={openOrderBox}
                       className="w-full justify-between h-9 bg-background shadow-sm border-border/50 text-xs font-normal"
                     >
-                      {orderId ? (orders.find((o: any) => o._id === orderId) ? `Order #${orders.find((o: any) => o._id === orderId)?.orderId}` : orderId) : "Select order..."}
+                      {orderId ? ((orders.find((o: any) => o._id === orderId) as any) ? `Order #${(orders.find((o: any) => o._id === orderId) as any)?.orderId}` : orderId) : "Select order..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
@@ -341,13 +341,13 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                         View Order
                       </a>
                       
-                      {orders.find((o: any) => o._id === orderId)?.awbUrl ? (
+                      {(orders.find((o: any) => o._id === orderId) as any)?.awbUrl ? (
                         <div className="flex gap-2 mt-2">
                           <Button 
                             variant="default" 
                             size="sm" 
                             className="text-xs h-8"
-                            onClick={() => window.open(orders.find((o: any) => o._id === orderId)?.awbUrl, "_blank")}
+                            onClick={() => window.open((orders.find((o: any) => o._id === orderId) as any)?.awbUrl, "_blank")}
                           >
                             View AWB
                           </Button>
@@ -356,7 +356,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                             size="sm" 
                             className="text-xs h-8"
                             onClick={() => {
-                                const win = window.open(orders.find((o: any) => o._id === orderId)?.awbUrl, "_blank");
+                                const win = window.open((orders.find((o: any) => o._id === orderId) as any)?.awbUrl, "_blank");
                                 win?.print();
                             }}
                           >

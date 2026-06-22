@@ -77,7 +77,7 @@ export default function ArtworksManager() {
   const groupedFiles = useMemo(() => {
     const orders = ordersResponse?.orders || [];
     const users = usersResponse?.users || [];
-    const tasks = tasksResponse?.tasks || [];
+    const tasks = (tasksResponse as any)?.tasks || [];
     const groups: Record<string, any[]> = {};
     filteredFiles.forEach((file: any) => {
       let groupName = "Unassigned";
@@ -111,7 +111,7 @@ export default function ArtworksManager() {
       
       if (orderIdStr) {
           const order = orders.find((o: any) => o._id === orderIdStr);
-          if (order && (order.orderStatus === 'IN_PRODUCTION' || order.orderStatus === 'SHIPPED' || order.orderStatus === 'DELIVERED' || order.orderStatus === 'CANCELLED' || order.orderStatus === 'FAILED')) {
+          if (order && ((order as any).orderStatus === 'IN_PRODUCTION' || (order as any).orderStatus === 'SHIPPED' || (order as any).orderStatus === 'DELIVERED' || (order as any).orderStatus === 'CANCELLED' || (order as any).orderStatus === 'FAILED')) {
               shouldExclude = true;
           }
       }

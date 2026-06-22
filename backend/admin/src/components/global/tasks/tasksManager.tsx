@@ -266,6 +266,7 @@ export default function TasksManager() {
               </div>
               );
             })}
+            </div>
           </div>
         </div>
       )}

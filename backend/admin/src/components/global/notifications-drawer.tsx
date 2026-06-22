@@ -5,12 +5,12 @@ import { IoCloseCircle } from "react-icons/io5";
 import { Button } from "@heroui/button";
 import { cn } from "@/lib/utils";
 import { Bell, Package, Tag, CircleCheck, Truck } from "lucide-react";
-import type { INotification } from "@/types/INotification";
+
 import { useMarkAllNotificationsAsRead } from "@/hooks/useNotification";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 
-const getNotificationIcon = (type: INotification["type"]) => {
+const getNotificationIcon = (type: string) => {
   switch (type) {
     case "ORDER":
       return <Package className="h-4 w-4" />;
@@ -30,7 +30,7 @@ const getNotificationIcon = (type: INotification["type"]) => {
 interface NotificationsDrawerProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
-  notifications: INotification[];
+  notifications: any[];
 }
 
 const NotificationsDrawer = ({

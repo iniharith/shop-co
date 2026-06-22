@@ -2,14 +2,14 @@
 import { useQueryData } from "./useQueryData";
 import { useSession } from "next-auth/react";
 import { getNotifications, markAllNotificationsAsRead } from "@/api/notification";
-import { INotificationResponse } from "@/types/api";
+
 import { useMutationData } from "./useMutation";
 import { queryClient } from "@/components/providers/react-query";
 
 export const useNotifications = () => {
     const { data: session } = useSession();
     const { data, isPending } = useQueryData(["notifications"], () => getNotifications(session?.user?.token as string));
-    const response = data as INotificationResponse;
+    const response = data as any;
     return { data: response, isPending };
 }
 

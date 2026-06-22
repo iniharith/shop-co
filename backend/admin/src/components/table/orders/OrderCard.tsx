@@ -60,7 +60,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
   const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder();
   const { mutate: updateStatus, isPending: isUpdating } = useUpdateOrderStatus();
   
-  const [localStatus, setLocalStatus] = React.useState(order.orderStatus);
+  const [localStatus, setLocalStatus] = React.useState<string>(order.orderStatus as string);
 
   React.useEffect(() => {
     setLocalStatus(order.orderStatus);
