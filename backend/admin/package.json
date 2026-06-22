@@ -53,6 +53,7 @@
     "framer-motion": "^12.4.4",
     "heroui-cli": "^1.0.0",
     "input-otp": "^1.4.2",
+    "jszip": "^3.10.1",
     "kbar": "^0.1.0-beta.45",
     "ldrs": "^1.0.2",
     "lottie-react": "^2.4.1",

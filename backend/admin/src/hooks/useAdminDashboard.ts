@@ -75,3 +75,14 @@ export const useBulkDeleteFiles = () => {
     const { mutate, isPending } = useMutationData(['bulkDeleteFiles'], (fileIds: string[]) => bulkDeleteFiles(session?.user?.token, fileIds), ['groupedFiles', 'allFiles']);
     return { mutate, isPending };
 }
+
+
+export const useRenameFile = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(
+        ['renameFile'],
+        (data: { id: string, originalName: string }) => AxiosInstance(session?.user?.token).put(`/api/files//name`, { originalName: data.originalName }),
+        ['allFiles', 'groupedFiles', 'tasks']
+    );
+    return { mutate, isPending };
+}

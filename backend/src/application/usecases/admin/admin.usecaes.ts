@@ -97,6 +97,22 @@ export class AdminUsecase {
 
         const order = await OrderModel.create(data);
 
+        // Auto-create Task for this order
+        try {
+            const { TaskRepository } = require('../../../infrastructure/repositories/TaskRepository');
+            const taskRepository = new TaskRepository();
+            await taskRepository.create({
+                title: `Order: ${order._id.toString().slice(-6).toUpperCase()} - ${data.customerName}`,
+                description: `Manual order task for Order ${order._id.toString()}.`,
+                orderId: order._id.toString(),
+                customerUsername: data.customerName,
+                category: data.productChoice || 'UNASSIGNED',
+                status: 'TODO',
+            });
+        } catch (e) {
+            console.error('Failed to auto-create task for manual order:', e);
+        }
+
         if (data.trackingNumber) {
             await Parcel.create({
                 orderId: order._id.toString(),

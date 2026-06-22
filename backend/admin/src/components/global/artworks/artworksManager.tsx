@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useMemo } from "react";
-import { useAllFiles, useReviewFile, useDeleteFile, useBulkDeleteFiles } from "@/hooks/useAdminDashboard";
+import { useAllFiles, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile } from "@/hooks/useAdminDashboard";
+import JSZip from "jszip";
 import { useOrders } from "@/hooks/useOrder";
 import { useUsers } from "@/hooks/useUsers";
 import { useTasks } from "@/hooks/useTasks";
@@ -53,6 +54,10 @@ export default function ArtworksManager() {
   const { mutate: reviewFileMutate, isPending: isReviewing } = useReviewFile();
   const { mutate: deleteFileMutate, isPending: isDeleting } = useDeleteFile();
   const { mutate: bulkDeleteMutate, isPending: isBulkDeleting } = useBulkDeleteFiles();
+  const { mutate: renameFileMutate } = useRenameFile();
+
+  const [editingFileId, setEditingFileId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string>("");
 
   const allFiles: any[] = (response as any)?.data || [];
 
@@ -189,6 +194,34 @@ export default function ArtworksManager() {
         window.location.reload();
       },
     });
+  };
+
+  const handleDownloadAll = async (group: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    toast.loading(`Preparing ZIP with ${group.files.length} files...`);
+    try {
+      const zip = new JSZip();
+      const filePromises = group.files.map(async (file: any) => {
+        const response = await fetch(getFileUrl(file.path));
+        const blob = await response.blob();
+        zip.file(file.originalName || "file", blob);
+      });
+      await Promise.all(filePromises);
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${group.folderName || "artworks"}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.dismiss();
+      toast.success("Download started!");
+    } catch (error) {
+      toast.dismiss();
+      toast.error("Failed to create ZIP");
+    }
   };
 
   const handleDeleteFolder = (group: any, e: React.MouseEvent) => {
@@ -381,6 +414,11 @@ export default function ArtworksManager() {
                         {activeGroup.orderId && <p className="text-sm text-muted-foreground">Order ID: {activeGroup.orderId}</p>}
                       </div>
                     </div>
+                    {activeGroup.files.length > 0 && (
+                      <Button variant="secondary" size="sm" onClick={(e) => handleDownloadAll(activeGroup, e)}>
+                        <Download className="w-4 h-4 mr-2" /> Download All
+                      </Button>
+                    )}
                     {activeGroup.files.length === 0 && (
                        <Button 
                          onClick={() => {
@@ -419,9 +457,16 @@ export default function ArtworksManager() {
                         {getFileThumbnail(file)}
                         <CardHeader className="p-4 pb-2 flex flex-col items-start justify-between bg-muted/5 border-b">
                           <div className="overflow-hidden w-full">
-                            <CardTitle className="text-sm truncate w-full" title={file.originalName}>
-                              {file.originalName}
-                            </CardTitle>
+                            {editingFileId === file._id ? (
+                                <Input autoFocus value={editingName} onChange={(e) => setEditingName(e.target.value)} onBlur={() => {
+                                  if (editingName !== file.originalName) { renameFileMutate({ id: file._id, originalName: editingName }, { onSuccess: () => window.location.reload() }); }
+                                  setEditingFileId(null);
+                                }} onKeyDown={(e) => { if(e.key === 'Enter') e.currentTarget.blur(); }} className="h-7 text-sm" />
+                              ) : (
+                                <CardTitle className="text-sm truncate w-full cursor-pointer hover:underline" title={file.originalName} onClick={() => { setEditingFileId(file._id); setEditingName(file.originalName); }}>
+                                  {file.originalName}
+                                </CardTitle>
+                              )}
                             <CardDescription className="text-xs truncate w-full">
                               User: {activeGroup.folderName}
                             </CardDescription>
@@ -488,7 +533,14 @@ export default function ArtworksManager() {
                         <div className="flex items-center gap-4 min-w-0 flex-1">
                           {getFileIcon(file.mimetype)}
                           <div className="min-w-0 flex-1">
-                            <h4 className="text-sm font-medium truncate" title={file.originalName}>{file.originalName}</h4>
+                            {editingFileId === file._id ? (
+                                <Input autoFocus value={editingName} onChange={(e) => setEditingName(e.target.value)} onBlur={() => {
+                                  if (editingName !== file.originalName) { renameFileMutate({ id: file._id, originalName: editingName }, { onSuccess: () => window.location.reload() }); }
+                                  setEditingFileId(null);
+                                }} onKeyDown={(e) => { if(e.key === 'Enter') e.currentTarget.blur(); }} className="h-7 text-sm w-1/2" />
+                              ) : (
+                                <h4 className="text-sm font-medium truncate cursor-pointer hover:underline" title={file.originalName} onClick={() => { setEditingFileId(file._id); setEditingName(file.originalName); }}>{file.originalName}</h4>
+                              )}
                             <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                               <span className="bg-muted px-1.5 py-0.5 rounded">{file.category || "Uncategorized"}</span>
                               <span className={file.adminReviewed ? "text-green-500 font-medium" : "text-amber-500 font-medium"}>

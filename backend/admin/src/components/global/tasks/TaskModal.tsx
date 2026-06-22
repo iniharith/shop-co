@@ -43,6 +43,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [orderId, setOrderId] = useState(task.orderId || "");
   const [customerUsername, setCustomerUsername] = useState(task.customerUsername || "");
   const [category, setCategory] = useState(task.category || "UNASSIGNED");
+  const [title, setTitle] = useState(task.title || "");
   const getAssigneeId = (val: any) => typeof val === 'object' && val !== null ? val._id : (val || "");
   const [assignee, setAssignee] = useState(getAssigneeId(task.assignee));
 
@@ -50,6 +51,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     updateTask({
       id: task._id,
       data: {
+        title,
         description,
         dueDate: dueDate ? new Date(dueDate) : null,
         orderId,
@@ -84,7 +86,14 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
           <div className="md:col-span-2 flex flex-col border-r border-border/50 bg-background">
             <div className="p-6 border-b border-border/50">
               <DialogHeader>
-                <DialogTitle className="text-xl font-semibold leading-tight">{task.title}</DialogTitle>
+                <DialogTitle className="sr-only">Task Details
+                  <Input 
+                    value={title} 
+                    onChange={(e) => setTitle(e.target.value)} 
+                    onBlur={() => handleSaveDetails()}
+                    className="text-xl font-semibold leading-tight border-none shadow-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                  />
+                
               </DialogHeader>
             </div>
             

@@ -7,10 +7,10 @@ export default function TrackingPage() {
     <PageContainer scrollable={true}>
       <div className="flex flex-1 flex-col space-y-8 p-4 md:p-8">
         <div className="flex flex-col gap-2">
-          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
             Real-time Order Tracker
           </h1>
-          <p className="text-slate-500">
+          <p className="text-muted-foreground">
             Monitor EasyParcel shipments and trigger WhatsApp notifications.
           </p>
         </div>

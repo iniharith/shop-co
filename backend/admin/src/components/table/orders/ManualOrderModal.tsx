@@ -144,7 +144,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
                     value={productSearch}
                     onValueChange={setProductSearch}
                   />
-                  <CommandList>
+                  <CommandList className="max-h-[250px] overflow-y-auto">
                     <CommandEmpty>
                        {productSearch ? (
                          <div

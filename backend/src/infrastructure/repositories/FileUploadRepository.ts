@@ -30,6 +30,14 @@ export class FileUploadRepository {
     return FileUpload.findById(id);
   }
 
+  async updateFilename(id: string, originalName: string): Promise<IFileUpload | null> {
+    return FileUpload.findByIdAndUpdate(
+      id,
+      { $set: { originalName } },
+      { new: true }
+    );
+  }
+
   async updateAdminReview(
     id: string,
     reviewed: boolean,
