@@ -67,15 +67,15 @@ router.post(
   upload.array('files', 10),
   asyncHandler(async (req: Request, res: Response) => {
     const files = req.files as (Express.Multer.File & { path: string; filename: string })[];
-    const { orderId, notes, userId: bodyUserId, category } = req.body;
+    const { orderId, taskId, notes, userId: bodyUserId, category } = req.body;
     const authReq = req as any;
     
     // If admin provides a userId in the body, upload on their behalf
     const isAdmin = ['admin', 'system_admin', 'boss'].includes(authReq.role);
     const userId = (isAdmin && bodyUserId) ? bodyUserId : authReq.userId || authReq.user?.id;
 
-    if (!userId) {
-      res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
+    if (!userId && !taskId) {
+      res.status(401).json({ success: false, message: 'Log masuk atau Task diperlukan' });
       return;
     }
 
@@ -88,8 +88,9 @@ router.post(
     const savedFiles = await Promise.all(
       files.map((file) =>
         fileUploadRepository.create({
-          userId,
+          userId: userId || 'admin',
           orderId: orderId || undefined,
+          taskId: taskId || undefined,
           category: category || undefined,
           filename: file.filename,
           originalName: file.originalname,

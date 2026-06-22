@@ -71,13 +71,13 @@ const upload = (0, multer_1.default)({
 router.post('/upload', auth_middileware_1.default, upload.array('files', 10), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
     const files = req.files;
-    const { orderId, notes, userId: bodyUserId, category } = req.body;
+    const { orderId, taskId, notes, userId: bodyUserId, category } = req.body;
     const authReq = req;
     // If admin provides a userId in the body, upload on their behalf
     const isAdmin = ['admin', 'system_admin', 'boss'].includes(authReq.role);
     const userId = (isAdmin && bodyUserId) ? bodyUserId : authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
-    if (!userId) {
-        res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
+    if (!userId && !taskId) {
+        res.status(401).json({ success: false, message: 'Log masuk atau Task diperlukan' });
         return;
     }
     if (!files || files.length === 0) {
@@ -86,8 +86,9 @@ router.post('/upload', auth_middileware_1.default, upload.array('files', 10), (0
     }
     // Cloudinary multer-storage-cloudinary puts the secure URL in file.path
     const savedFiles = yield Promise.all(files.map((file) => FileUploadRepository_1.fileUploadRepository.create({
-        userId,
+        userId: userId || 'admin',
         orderId: orderId || undefined,
+        taskId: taskId || undefined,
         category: category || undefined,
         filename: file.filename,
         originalName: file.originalname,

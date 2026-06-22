@@ -133,12 +133,26 @@ export default function ProductionManager() {
       { id: selectedFile._id, reviewed: selectedFile.adminReviewed, notes: commentText },
       {
         onSuccess: () => {
-          toast.success("Comment saved!");
+          toast.success("Note saved successfully!");
           setCommentModalOpen(false);
           window.location.reload();
         },
       }
     );
+  };
+
+  const handleStatusChange = (group: any, newStatus: string) => {
+    if (group.isTask) {
+      updateTask({ id: group.taskId, data: { status: newStatus } }, {
+        onSuccess: () => toast.success("Task status updated!"),
+        onError: () => toast.error("Failed to update task status")
+      });
+    } else {
+      updateOrderStatus({ id: group.orderId, status: newStatus }, {
+        onSuccess: () => toast.success("Order status updated!"),
+        onError: () => toast.error("Failed to update order status")
+      });
+    }
   };
 
   const handleDelete = (fileId: string) => {
