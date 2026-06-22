@@ -184,8 +184,9 @@ export default function TasksManager() {
 
       {/* Board View */}
       {viewMode === "board" && (
-        <div className="w-full overflow-x-auto pb-4">
-          <div className="flex gap-4 items-start w-max">
+        <div className="relative w-full flex-1 min-h-[60vh]">
+          <div className="absolute inset-0 overflow-x-auto pb-4">
+            <div className="flex gap-4 items-start w-max">
             {visibleColumns.map(status => {
               const columnTasks = tasks.filter((t: any) => t.status === status);
               const isCollapsed = collapsedColumns.includes(status);

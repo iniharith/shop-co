@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from "react";
 import { useAllFiles, useReviewFile, useDeleteFile, useBulkDeleteFiles } from "@/hooks/useAdminDashboard";
 import { useOrders, useUpdateOrderStatus } from "@/hooks/useOrder";
+import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,8 @@ export default function ProductionManager() {
   const { data: session } = useSession();
   const { data: response, isPending, refetch, isFetching } = useAllFiles();
   const { data: ordersResponse } = useOrders();
+  const { data: tasksResponse } = useTasks();
+  const { mutate: updateTask } = useUpdateTask();
   const { data: usersResponse } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
@@ -77,39 +80,60 @@ export default function ProductionManager() {
     const productionOrderIds = productionOrders.map((o: any) => o._id.toString());
     const productionUserIds = productionOrders.map((o: any) => o.userId?.toString());
     const users = (usersResponse as any)?.data || [];
+    const tasks = tasksResponse?.tasks || [];
+    const productionTasks = tasks.filter((t: any) => t.status === 'IN_PRODUCTION' || t.status === 'DONE DESIGN');
+    const productionTaskIds = productionTasks.map((t: any) => t._id.toString());
 
     const groups: Record<string, any[]> = {};
     filteredFiles.forEach((file: any) => {
       let groupName = "Unassigned";
       let orderIdStr = "";
+      let taskIdStr = "";
+      let isTask = false;
       
-      const fileOrder = orders.find((o: any) => o._id === file.orderId);
+      const isProductionOrder = productionOrderIds.includes(file.orderId?.toString()) || productionUserIds.includes(file.userId?.toString());
+      const isProductionTask = file.category === 'TASK' && file.taskId && productionTaskIds.includes(file.taskId?.toString());
       
-      // Keep file only if it is explicitly linked to an IN_PRODUCTION/DONE DESIGN order, or its user has one.
-      const isProduction = productionOrderIds.includes(file.orderId?.toString()) || productionUserIds.includes(file.userId?.toString());
-      if (!isProduction) return;
+      if (!isProductionOrder && !isProductionTask) return;
 
-      const user = users.find((u: any) => u._id?.toString() === file.userId?.toString());
-      groupName = user?.name || file.userId;
-      if (file.orderId) {
-         orderIdStr = file.orderId;
+      if (isProductionTask) {
+        const task = tasks.find((t: any) => t._id === file.taskId);
+        groupName = task?.title || "Deleted Task";
+        taskIdStr = file.taskId;
+        orderIdStr = task?.orderId || "";
+        isTask = true;
       } else {
-         const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString() && (o.orderStatus === 'IN_PRODUCTION' || o.orderStatus === 'DONE DESIGN'));
-         if (order) orderIdStr = order._id;
+        const user = users.find((u: any) => u._id?.toString() === file.userId?.toString());
+        groupName = user?.name || file.userId;
+        if (file.orderId) {
+           orderIdStr = file.orderId;
+        } else {
+           const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString() && (o.orderStatus === 'IN_PRODUCTION' || o.orderStatus === 'DONE DESIGN'));
+           if (order) orderIdStr = order._id;
+        }
       }
 
-      const key = JSON.stringify({ name: groupName, orderId: orderIdStr });
+      const key = JSON.stringify({ name: groupName, orderId: orderIdStr, taskId: taskIdStr, isTask });
       if (!groups[key]) groups[key] = [];
       groups[key].push(file);
     });
 
     return Object.entries(groups).map(([keyStr, files]) => {
       const parsed = JSON.parse(keyStr);
-      const order = orders.find((o: any) => o._id === parsed.orderId);
+      let orderStatus = "IN_PRODUCTION";
+      if (parsed.isTask) {
+         const task = tasks.find((t: any) => t._id === parsed.taskId);
+         orderStatus = task?.status || "IN_PRODUCTION";
+      } else {
+         const order = orders.find((o: any) => o._id === parsed.orderId);
+         orderStatus = order?.orderStatus || "IN_PRODUCTION";
+      }
       return {
         folderName: parsed.name,
         orderId: parsed.orderId,
-        orderStatus: order?.orderStatus || "IN_PRODUCTION",
+        taskId: parsed.taskId,
+        isTask: parsed.isTask,
+        orderStatus: orderStatus,
         files
       };
     });

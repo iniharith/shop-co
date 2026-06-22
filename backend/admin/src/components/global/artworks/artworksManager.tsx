@@ -93,7 +93,7 @@ export default function ArtworksManager() {
         orderIdStr = task?.orderId || "";
         taskIdStr = file.taskId;
         
-        if (task && (task.status === 'DONE DESIGN' || task.status === 'CANCELLED' || task.status === 'FAILED')) {
+        if (task && (task.status === 'IN_PRODUCTION' || task.status === 'DONE DESIGN' || task.status === 'CANCELLED' || task.status === 'FAILED')) {
             shouldExclude = true;
         }
       } else {
