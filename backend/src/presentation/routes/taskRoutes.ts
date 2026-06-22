@@ -57,6 +57,32 @@ router.post(
   })
 );
 
+// Helper function to delete all files for a task
+const deleteAllTaskFiles = async (task: any) => {
+  if (task.files && task.files.length > 0) {
+    try {
+      const { FileUpload } = await import('../../domain/entities/FileUpload');
+      
+      for (const file of task.files) {
+        // Delete from Cloudinary
+        const parts = file.url.split('/');
+        const filenameWithExtension = parts[parts.length - 1];
+        const publicId = `kampungcetak/tasks/${filenameWithExtension.split('.')[0]}`;
+        await cloudinary.uploader.destroy(publicId);
+        
+        // Delete from FileUpload collection
+        await FileUpload.findOneAndDelete({ path: file.url, taskId: task._id });
+      }
+      
+      // Clear files array in task document
+      task.files = [];
+      await task.save();
+    } catch (e) {
+      console.error('Failed to delete task files:', e);
+    }
+  }
+};
+
 // PUT /api/tasks/:id
 router.put(
   '/:id',
@@ -81,12 +107,19 @@ router.put(
     }
     
     // Sync status to Order if it changed
-    if (req.body.status && req.body.status !== oldTask?.status && task.orderId) {
-        try {
-            const orderUsecase = new OrderUsecase();
-            await orderUsecase.updateOrderStatus(task.orderId, req.body.status as any);
-        } catch (e) {
-            console.error('Failed to sync status to order:', e);
+    if (req.body.status && req.body.status !== oldTask?.status) {
+        if (task.orderId) {
+            try {
+                const orderUsecase = new OrderUsecase();
+                await orderUsecase.updateOrderStatus(task.orderId, req.body.status as any);
+            } catch (e) {
+                console.error('Failed to sync status to order:', e);
+            }
+        }
+        
+        // Delete all files if status changes to DONE DESIGN
+        if (req.body.status === 'DONE DESIGN') {
+            await deleteAllTaskFiles(task);
         }
     }
     
@@ -99,7 +132,11 @@ router.delete(
   '/:id',
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
-    await taskRepository.delete(req.params.id);
+    const task = await taskRepository.findById(req.params.id);
+    if (task) {
+      await deleteAllTaskFiles(task);
+      await taskRepository.delete(req.params.id);
+    }
     res.json({ success: true, message: 'Task deleted' });
   })
 );
@@ -147,7 +184,76 @@ router.post(
       res.status(404).json({ success: false, message: 'Task not found' });
       return;
     }
+
+    // Also sync the file to the general FileUpload collection
+    try {
+      const { FileUpload } = await import('../../domain/entities/FileUpload');
+      const authReq = req as any;
+      const userId = authReq.userId || authReq.user?.id || 'admin';
+
+      await FileUpload.create({
+        userId: userId,
+        taskId: task._id,
+        orderId: task.orderId || undefined,
+        category: 'TASK',
+        filename: req.file.filename,
+        originalName: fileName,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        path: fileUrl,
+      });
+    } catch (e) {
+      console.error('Failed to sync task file to FileUpload:', e);
+    }
+
     res.json({ success: true, task });
+  })
+);
+
+// DELETE /api/tasks/:id/files/:fileId
+router.delete(
+  '/:id/files/:fileId',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id, fileId } = req.params;
+    const task = await taskRepository.findById(id);
+    if (!task) {
+      res.status(404).json({ success: false, message: 'Task not found' });
+      return;
+    }
+
+    // Find the file in the task's array
+    const fileIndex = task.files.findIndex((f: any) => f._id?.toString() === fileId || f.url.includes(fileId));
+    if (fileIndex === -1) {
+      res.status(404).json({ success: false, message: 'File not found in task' });
+      return;
+    }
+
+    const fileUrl = task.files[fileIndex].url;
+
+    // Delete from Cloudinary
+    try {
+      const parts = fileUrl.split('/');
+      const filenameWithExtension = parts[parts.length - 1];
+      const publicId = `kampungcetak/tasks/${filenameWithExtension.split('.')[0]}`;
+      await cloudinary.uploader.destroy(publicId);
+    } catch (e) {
+      console.error('Failed to delete file from Cloudinary:', e);
+    }
+
+    // Delete from task document
+    task.files.splice(fileIndex, 1);
+    await task.save();
+
+    // Delete from FileUpload collection
+    try {
+      const { FileUpload } = await import('../../domain/entities/FileUpload');
+      await FileUpload.findOneAndDelete({ path: fileUrl, taskId: id });
+    } catch (e) {
+      console.error('Failed to delete task file from FileUpload:', e);
+    }
+
+    res.json({ success: true, message: 'File deleted from task', task });
   })
 );
 

@@ -17,17 +17,21 @@ const getStatusColor = (status: string) => {
     case "PENDING_ARTWORK":
       return "bg-orange-500/20 border-orange-500/40 hover:bg-orange-500/30 text-black dark:text-white";
     case "ARTWORK_REVIEW":
-      return "bg-blue-500/20 border-blue-500/40 hover:bg-blue-500/30 text-black dark:text-white";
+      return "bg-blue-400/20 border-blue-400/40 hover:bg-blue-400/30 text-black dark:text-white";
     case "ARTWORK_REJECTED":
-      return "bg-red-500/20 border-red-500/40 hover:bg-red-500/40 text-black dark:text-white";
+      return "bg-red-400/20 border-red-400/40 hover:bg-red-400/30 text-black dark:text-white";
     case "IN_DESIGN":
       return "bg-indigo-500/20 border-indigo-500/40 hover:bg-indigo-500/30 text-black dark:text-white";
+    case "DONE DESIGN":
+      return "bg-emerald-500/20 border-emerald-500/40 hover:bg-emerald-500/30 text-black dark:text-white";
+    case "PEMBETULAN":
+      return "bg-rose-500/20 border-rose-500/40 hover:bg-rose-500/30 text-black dark:text-white";
     case "IN_PRODUCTION":
-      return "bg-teal-500/20 border-teal-500/40 hover:bg-teal-500/30 text-black dark:text-white";
-    case "SHIPPED":
       return "bg-purple-500/20 border-purple-500/40 hover:bg-purple-500/40 text-black dark:text-white";
-    case "IN_TRANSIT":
+    case "SHIPPED":
       return "bg-blue-500/20 border-blue-500/40 hover:bg-blue-500/40 text-black dark:text-white";
+    case "IN_TRANSIT":
+      return "bg-cyan-500/20 border-cyan-500/40 hover:bg-cyan-500/40 text-black dark:text-white";
     case "DELIVERED":
       return "bg-green-500/20 border-green-500/40 hover:bg-green-500/40 text-black dark:text-white";
     case "CANCELLED":
@@ -51,12 +55,8 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
   const user = order.userId as any;
   const userName = user && typeof user === "object" ? user.name : user || "Unknown";
   
-  // Platform logic based on user request (Tiktok/Shopee/Website)
   const platform = (order as any).platform || "Website";
   
-  // Tracking number prominently displayed, fallback to ID
-  const displayId = (order as any).trackingNumber ? (order as any).trackingNumber : `ORD-${order._id.split("").reverse().splice(0, 4).reverse().join("")}`;
-
   const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder();
   const { mutate: updateStatus, isPending: isUpdating } = useUpdateOrderStatus();
   
@@ -108,7 +108,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
                 onSuccess: () => toast.success("Order status updated!"),
                 onError: () => {
                   toast.error("Failed to update status");
-                  setLocalStatus(order.orderStatus); // Revert on failure
+                  setLocalStatus(order.orderStatus);
                 }
               });
             }}
@@ -125,6 +125,8 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
               <SelectItem value="ARTWORK_REVIEW">Artwork Review</SelectItem>
               <SelectItem value="ARTWORK_REJECTED">Artwork Rejected</SelectItem>
               <SelectItem value="IN_DESIGN">In Design</SelectItem>
+              <SelectItem value="DONE DESIGN">Done Design</SelectItem>
+              <SelectItem value="PEMBETULAN">Pembetulan</SelectItem>
               <SelectItem value="IN_PRODUCTION">In Production</SelectItem>
               <SelectItem value="SHIPPED">Shipped</SelectItem>
               <SelectItem value="IN_TRANSIT">In Transit</SelectItem>

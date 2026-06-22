@@ -17,7 +17,7 @@ const HistoryManager = () => {
     let orders = data?.orders || [];
     
     if (activeTab === "DONE") {
-      orders = orders.filter((o: any) => o.orderStatus === "DELIVERED" || o.orderStatus === "DONE" || o.orderStatus === "SHIPPED");
+      orders = orders.filter((o: any) => o.orderStatus === "DELIVERED" || o.orderStatus === "DONE DESIGN" || o.orderStatus === "SHIPPED");
     } else if (activeTab === "CANCELLED") {
       orders = orders.filter((o: any) => o.orderStatus === "CANCELLED" || o.orderStatus === "FAILED");
     }

@@ -65,7 +65,7 @@ export default function TasksManager() {
     }
   };
 
-  const columns = ['TODO', 'IN_PROGRESS', 'DONE', 'PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEW', 'ARTWORK_REJECTED', 'IN_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'];
+  const columns = ['TODO', 'IN_PROGRESS', 'DONE DESIGN', 'PEMBETULAN', 'PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEW', 'ARTWORK_REJECTED', 'IN_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'];
 
   const visibleColumns = columns.filter(s => !hiddenColumns.includes(s));
 
@@ -307,7 +307,7 @@ export default function TasksManager() {
                     {sectionTasks.map((task: any) => (
                       <div key={task._id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-muted/20 cursor-pointer" onClick={() => setSelectedTask(task)}>
                         <div className="col-span-6 font-medium text-sm flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${task.status === 'DONE' ? 'bg-emerald-500' : task.status === 'IN_PROGRESS' ? 'bg-blue-500' : 'bg-amber-500'}`} />
+                          <div className={`w-2 h-2 rounded-full ${task.status === 'DONE DESIGN' ? 'bg-emerald-500' : task.status === 'IN_PROGRESS' ? 'bg-blue-500' : task.status === 'PEMBETULAN' ? 'bg-red-500' : 'bg-amber-500'}`} />
                           {task.title}
                         </div>
                         <div className="col-span-2 text-sm flex items-center gap-2 text-muted-foreground font-bold" onClick={e => e.stopPropagation()}>

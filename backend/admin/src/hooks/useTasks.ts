@@ -36,6 +36,16 @@ export const useUploadTaskFile = () => {
     return { mutate, isPending }
 }
 
+export const useDeleteTaskFile = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(
+        ['deleteTaskFile'],
+        (data: { id: string, fileId: string }) => import("@/api/tasks").then(m => m.deleteTaskFile(session?.user.token, data.id, data.fileId)),
+        ["tasks"]
+    )
+    return { mutate, isPending }
+}
+
 export const useAddTaskComment = () => {
     const { data: session } = useSession();
     const { mutate, isPending } = useMutationData(['addTaskComment'], ({ id, text }: any) => addTaskComment(session?.user?.token, id, text), ['tasks']);

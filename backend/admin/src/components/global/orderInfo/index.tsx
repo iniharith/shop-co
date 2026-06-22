@@ -40,6 +40,8 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
     "ARTWORK_REVIEW",
     "ARTWORK_REJECTED",
     "IN_DESIGN",
+    "DONE DESIGN",
+    "PEMBETULAN",
     "IN_PRODUCTION",
     "SHIPPED",
     "IN_TRANSIT",
@@ -72,18 +74,22 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
         return "bg-red-500/20 border-red-500/40 hover:bg-red-500/40 cursor-pointer text-red-700 dark:text-red-300";
       case "IN_DESIGN":
         return "bg-indigo-500/20 border-indigo-500/40 hover:bg-indigo-500/30 cursor-pointer text-indigo-700 dark:text-indigo-300";
+      case "DONE DESIGN":
+        return "bg-emerald-500/20 border-emerald-500/40 hover:bg-emerald-500/30 cursor-pointer text-emerald-700 dark:text-emerald-300";
+      case "PEMBETULAN":
+        return "bg-rose-500/20 border-rose-500/40 hover:bg-rose-500/30 cursor-pointer text-rose-700 dark:text-rose-300";
       case "IN_PRODUCTION":
         return "bg-teal-500/20 border-teal-500/40 hover:bg-teal-500/30 cursor-pointer text-teal-700 dark:text-teal-300";
       case "SHIPPED":
-        return "bg-purple-500/20 border-purple-500/40 hover:bg-purple-500/40 cursor-pointer";
+        return "bg-purple-500/20 border-purple-500/40 hover:bg-purple-500/40 cursor-pointer text-purple-700 dark:text-purple-300";
       case "IN_TRANSIT":
-        return "bg-blue-500/20 border-blue-500/40 hover:bg-blue-500/40 cursor-pointer text-blue-800 dark:text-blue-200";
+        return "bg-blue-500/20 border-blue-500/40 hover:bg-blue-500/40 cursor-pointer text-blue-700 dark:text-blue-300";
       case "DELIVERED":
-        return "bg-green-500/20 border-green-500/40 hover:bg-green-500/40 cursor-pointer";
+        return "bg-green-500/20 border-green-500/40 hover:bg-green-500/40 cursor-pointer text-green-700 dark:text-green-300";
       case "CANCELLED":
         return "bg-red-500/20 border-red-500/40 hover:bg-red-500/40 cursor-pointer text-red-700 dark:text-red-300";
       default:
-        return "bg-gray-500/20 border-gray-500/40 hover:bg-gray-500/40 cursor-pointer";
+        return "bg-gray-500/20 border-gray-500/40 hover:bg-gray-500/40 cursor-pointer text-gray-700 dark:text-gray-300";
     }
   };
 

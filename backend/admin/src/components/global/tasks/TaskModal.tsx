@@ -5,9 +5,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useUpdateTask, useAddTaskComment, useUploadTaskFile } from "@/hooks/useTasks";
+import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
-import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle } from "lucide-react";
+import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,6 +27,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { mutate: updateTask, isPending: isUpdating } = useUpdateTask();
   const { mutate: addComment, isPending: isCommenting } = useAddTaskComment();
   const { mutate: uploadFile, isPending: isUploading } = useUploadTaskFile();
+  const { mutate: deleteFile, isPending: isDeletingFile } = useDeleteTaskFile();
   const { data: usersData } = useUsers();
   const { data: ordersData } = useOrders();
   const admins = usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss'].includes(u.role)) || [];
@@ -109,18 +110,34 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                       {task.files.map((file: any, idx: number) => {
                         const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(file.url);
                         return (
-                          <a key={idx} href={file.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/40 transition-colors overflow-hidden relative group">
-                            {isImage ? (
-                              <div className="w-12 h-12 shrink-0 rounded overflow-hidden">
-                                <img src={file.url} alt={file.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                              </div>
-                            ) : (
-                              <div className="w-12 h-12 shrink-0 bg-muted flex items-center justify-center rounded">
-                                <File className="w-5 h-5 text-primary" />
-                              </div>
-                            )}
-                            <span className="text-xs font-medium truncate">{file.name}</span>
-                          </a>
+                          <div key={idx} className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/40 transition-colors overflow-hidden relative group">
+                            <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 flex-1 min-w-0">
+                              {isImage ? (
+                                <div className="w-12 h-12 shrink-0 rounded overflow-hidden">
+                                  <img src={file.url} alt={file.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                </div>
+                              ) : (
+                                <div className="w-12 h-12 shrink-0 bg-muted flex items-center justify-center rounded">
+                                  <File className="w-5 h-5 text-primary" />
+                                </div>
+                              )}
+                              <span className="text-xs font-medium truncate">{file.name}</span>
+                            </a>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="w-8 h-8 shrink-0 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (confirm('Are you sure you want to delete this file?')) {
+                                  deleteFile({ id: task._id, fileId: file._id || file.url.split('/').pop() });
+                                }
+                              }}
+                              disabled={isDeletingFile}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         );
                       })}
                     </div>

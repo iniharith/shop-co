@@ -89,6 +89,29 @@ router.post('/', auth_middileware_1.default, (0, express_async_handler_1.default
     const task = yield TaskRepository_1.taskRepository.create(req.body);
     res.json({ success: true, task });
 })));
+// Helper function to delete all files for a task
+const deleteAllTaskFiles = (task) => __awaiter(void 0, void 0, void 0, function* () {
+    if (task.files && task.files.length > 0) {
+        try {
+            const { FileUpload } = yield Promise.resolve().then(() => __importStar(require('../../domain/entities/FileUpload')));
+            for (const file of task.files) {
+                // Delete from Cloudinary
+                const parts = file.url.split('/');
+                const filenameWithExtension = parts[parts.length - 1];
+                const publicId = `kampungcetak/tasks/${filenameWithExtension.split('.')[0]}`;
+                yield cloudinary_1.v2.uploader.destroy(publicId);
+                // Delete from FileUpload collection
+                yield FileUpload.findOneAndDelete({ path: file.url, taskId: task._id });
+            }
+            // Clear files array in task document
+            task.files = [];
+            yield task.save();
+        }
+        catch (e) {
+            console.error('Failed to delete task files:', e);
+        }
+    }
+});
 // PUT /api/tasks/:id
 router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -109,20 +132,30 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
         });
     }
     // Sync status to Order if it changed
-    if (req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status) && task.orderId) {
-        try {
-            const orderUsecase = new order_usecase_1.OrderUsecase();
-            yield orderUsecase.updateOrderStatus(task.orderId, req.body.status);
+    if (req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status)) {
+        if (task.orderId) {
+            try {
+                const orderUsecase = new order_usecase_1.OrderUsecase();
+                yield orderUsecase.updateOrderStatus(task.orderId, req.body.status);
+            }
+            catch (e) {
+                console.error('Failed to sync status to order:', e);
+            }
         }
-        catch (e) {
-            console.error('Failed to sync status to order:', e);
+        // Delete all files if status changes to DONE DESIGN
+        if (req.body.status === 'DONE DESIGN') {
+            yield deleteAllTaskFiles(task);
         }
     }
     res.json({ success: true, task });
 })));
 // DELETE /api/tasks/:id
 router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    yield TaskRepository_1.taskRepository.delete(req.params.id);
+    const task = yield TaskRepository_1.taskRepository.findById(req.params.id);
+    if (task) {
+        yield deleteAllTaskFiles(task);
+        yield TaskRepository_1.taskRepository.delete(req.params.id);
+    }
     res.json({ success: true, message: 'Task deleted' });
 })));
 // POST /api/tasks/:id/comments
@@ -146,6 +179,7 @@ router.post('/:id/comments', auth_middileware_1.default, (0, express_async_handl
 })));
 // POST /api/tasks/:id/files
 router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     if (!req.file) {
         res.status(400).json({ success: false, message: 'No file uploaded' });
         return;
@@ -157,6 +191,64 @@ router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'),
         res.status(404).json({ success: false, message: 'Task not found' });
         return;
     }
+    // Also sync the file to the general FileUpload collection
+    try {
+        const { FileUpload } = yield Promise.resolve().then(() => __importStar(require('../../domain/entities/FileUpload')));
+        const authReq = req;
+        const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id) || 'admin';
+        yield FileUpload.create({
+            userId: userId,
+            taskId: task._id,
+            orderId: task.orderId || undefined,
+            category: 'TASK',
+            filename: req.file.filename,
+            originalName: fileName,
+            mimetype: req.file.mimetype,
+            size: req.file.size,
+            path: fileUrl,
+        });
+    }
+    catch (e) {
+        console.error('Failed to sync task file to FileUpload:', e);
+    }
     res.json({ success: true, task });
+})));
+// DELETE /api/tasks/:id/files/:fileId
+router.delete('/:id/files/:fileId', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id, fileId } = req.params;
+    const task = yield TaskRepository_1.taskRepository.findById(id);
+    if (!task) {
+        res.status(404).json({ success: false, message: 'Task not found' });
+        return;
+    }
+    // Find the file in the task's array
+    const fileIndex = task.files.findIndex((f) => { var _a; return ((_a = f._id) === null || _a === void 0 ? void 0 : _a.toString()) === fileId || f.url.includes(fileId); });
+    if (fileIndex === -1) {
+        res.status(404).json({ success: false, message: 'File not found in task' });
+        return;
+    }
+    const fileUrl = task.files[fileIndex].url;
+    // Delete from Cloudinary
+    try {
+        const parts = fileUrl.split('/');
+        const filenameWithExtension = parts[parts.length - 1];
+        const publicId = `kampungcetak/tasks/${filenameWithExtension.split('.')[0]}`;
+        yield cloudinary_1.v2.uploader.destroy(publicId);
+    }
+    catch (e) {
+        console.error('Failed to delete file from Cloudinary:', e);
+    }
+    // Delete from task document
+    task.files.splice(fileIndex, 1);
+    yield task.save();
+    // Delete from FileUpload collection
+    try {
+        const { FileUpload } = yield Promise.resolve().then(() => __importStar(require('../../domain/entities/FileUpload')));
+        yield FileUpload.findOneAndDelete({ path: fileUrl, taskId: id });
+    }
+    catch (e) {
+        console.error('Failed to delete task file from FileUpload:', e);
+    }
+    res.json({ success: true, message: 'File deleted from task', task });
 })));
 exports.default = router;

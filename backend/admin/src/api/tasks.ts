@@ -36,3 +36,8 @@ export const uploadTaskFile = async (token: string, taskId: string, file: File) 
     const response = await AxiosInstance(token).post(`/api/tasks/${taskId}/files`, formData);
     return response.data;
 }
+
+export const deleteTaskFile = async (token: string, taskId: string, fileId: string) => {
+    const response = await AxiosInstance(token).delete(`/api/tasks/${taskId}/files/${fileId}`);
+    return response.data;
+}

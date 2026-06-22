@@ -3,6 +3,7 @@ import React, { useState, useMemo } from "react";
 import { useAllFiles, useReviewFile, useDeleteFile, useBulkDeleteFiles } from "@/hooks/useAdminDashboard";
 import { useOrders } from "@/hooks/useOrder";
 import { useUsers } from "@/hooks/useUsers";
+import { useTasks } from "@/hooks/useTasks";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,9 +30,13 @@ const categories = [
 
 export default function ArtworksManager() {
   const { data: session } = useSession();
-  const { data: response, isPending, refetch, isFetching } = useAllFiles();
-  const { data: ordersResponse } = useOrders();
-  const { data: usersResponse } = useUsers();
+  const { data: response, isPending, refetch, isFetching: isFetchingFiles } = useAllFiles();
+  const { data: ordersResponse, isFetching: isFetchingOrders } = useOrders();
+  const { data: usersResponse, isPending: usersPending } = useUsers();
+  const { data: tasksResponse, isPending: tasksPending } = useTasks();
+
+  const isFetching = isFetchingFiles || isFetchingOrders;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -72,25 +77,42 @@ export default function ArtworksManager() {
   const groupedFiles = useMemo(() => {
     const orders = ordersResponse?.orders || [];
     const users = usersResponse?.users || [];
+    const tasks = tasksResponse?.tasks || [];
     const groups: Record<string, any[]> = {};
     filteredFiles.forEach((file: any) => {
       let groupName = "Unassigned";
       let orderIdStr = "";
 
-      const user = users.find((u: any) => u._id?.toString() === file.userId?.toString());
-      groupName = user?.name || file.userId;
-
-      if (file.orderId) {
-         orderIdStr = file.orderId;
+      if (file.category === 'TASK' && file.taskId) {
+        const task = tasks.find((t: any) => t._id === file.taskId);
+        groupName = task ? task.title : "Deleted Task";
+        orderIdStr = task?.orderId || "";
       } else {
-         // fallback to see if we can find an order matching this file's userId
-         const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString());
-         if (order) orderIdStr = order._id;
+        const user = users.find((u: any) => u._id?.toString() === file.userId?.toString());
+        groupName = user?.name || file.userId;
+
+        if (file.orderId) {
+          orderIdStr = file.orderId;
+        } else {
+          // fallback to see if we can find an order matching this file's userId
+          const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString());
+          if (order) orderIdStr = order._id;
+        }
       }
 
       const key = JSON.stringify({ name: groupName, orderId: orderIdStr });
       if (!groups[key]) groups[key] = [];
       groups[key].push(file);
+    });
+
+    // explicitly add empty folders for any Tasks that don't have files yet
+    tasks.forEach((task: any) => {
+      if (task.status !== 'DONE DESIGN' && task.status !== 'CANCELLED' && task.status !== 'FAILED') {
+        const key = JSON.stringify({ name: task.title, orderId: task.orderId || "" });
+        if (!groups[key]) {
+          groups[key] = [];
+        }
+      }
     });
 
     return Object.entries(groups).map(([keyStr, files]) => {
@@ -101,7 +123,7 @@ export default function ArtworksManager() {
         files
       };
     });
-  }, [filteredFiles, ordersResponse, usersResponse]);
+  }, [filteredFiles, ordersResponse, usersResponse, tasksResponse]);
 
   const handleReview = (fileId: string, currentStatus: boolean, notes?: string) => {
     reviewFileMutate(
