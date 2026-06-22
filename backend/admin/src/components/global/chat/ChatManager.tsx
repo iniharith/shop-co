@@ -10,18 +10,18 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
-import { Check, ChevronsUpDown, Plus, Send, User as User, MessageCircle, Trash2 } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, Send, User as User, MessageCircle, Trash2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function ChatManager() {
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
   
-  const { data: convData, isPending: convLoading } = useConversations();
+  const { data: convData, isPending: convLoading, refetch: refetchConvs, isFetching: isFetchingConvs } = useConversations();
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [text, setText] = useState("");
   
-  const { data: msgData, isPending: msgLoading } = useMessages(activeConvId || "");
+  const { data: msgData, isPending: msgLoading, refetch: refetchMsgs, isFetching: isFetchingMsgs } = useMessages(activeConvId || "");
   const { mutate: sendMessage, isPending: isSending } = useSendMessage(activeConvId || "");
   const { mutate: createConv, isPending: isCreating } = useCreateConversation();
   const { mutate: deleteConv, isPending: isDeleting } = useDeleteConversation();
@@ -59,12 +59,16 @@ export default function ChatManager() {
           <h2 className="font-semibold text-lg flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-primary" /> Inbox
           </h2>
-          <Popover open={openNewChat} onOpenChange={setOpenNewChat}>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-primary/10 text-primary hover:bg-primary/20">
-                <Plus className="w-4 h-4" />
-              </Button>
-            </PopoverTrigger>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => { refetchConvs(); refetchMsgs(); }} disabled={isFetchingConvs || isFetchingMsgs} className="h-8 w-8 rounded-full shadow-sm" title="Refresh Chats">
+              <RefreshCw className={`w-4 h-4 text-muted-foreground ${isFetchingConvs || isFetchingMsgs ? 'animate-spin' : ''}`} />
+            </Button>
+            <Popover open={openNewChat} onOpenChange={setOpenNewChat}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-primary/10 text-primary hover:bg-primary/20">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </PopoverTrigger>
             <PopoverContent className="w-[250px] p-0" align="end">
               <Command>
                 <CommandInput placeholder="Search admin..." className="h-9" />
@@ -93,6 +97,7 @@ export default function ChatManager() {
               </Command>
             </PopoverContent>
           </Popover>
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto">
           {convLoading && <div className="p-4 text-sm text-muted-foreground text-center">Loading...</div>}

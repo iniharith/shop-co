@@ -6,9 +6,9 @@ import { IOrderApiResponse } from "@/types/api";
 
 export const useOrders = () => {
     const { data: session } = useSession();
-    const { data, isPending } = useQueryData(['orders'], () => getOrders(session?.user.token))
+    const { data, isPending, refetch, isFetching } = useQueryData(['orders'], () => getOrders(session?.user.token))
     const response = data as IOrderApiResponse
-    return { data: response, isPending }
+    return { data: response, isPending, refetch, isFetching }
 }
 
 export const useUpdateOrderStatus = () => {

@@ -3,12 +3,20 @@ import React from "react";
 import { useParcelStats, useFileStats } from "@/hooks/useAdminDashboard";
 import { useOrders } from "@/hooks/useOrder";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Box, Truck, FileText, CircleCheckBig, CircleAlert } from "lucide-react";
+import { Box, Truck, FileText, CircleCheckBig, CircleAlert, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardOverview() {
-  const { data: orderData, isPending: ordersPending } = useOrders();
-  const { data: parcelStats, isPending: parcelsPending } = useParcelStats();
-  const { data: fileStats, isPending: filesPending } = useFileStats();
+  const { data: orderData, isPending: ordersPending, refetch: refetchOrders, isFetching: isFetchingOrders } = useOrders();
+  const { data: parcelStats, isPending: parcelsPending, refetch: refetchParcels, isFetching: isFetchingParcels } = useParcelStats();
+  const { data: fileStats, isPending: filesPending, refetch: refetchFiles, isFetching: isFetchingFiles } = useFileStats();
+
+  const isFetching = isFetchingOrders || isFetchingParcels || isFetchingFiles;
+  const handleRefresh = () => {
+    refetchOrders();
+    refetchParcels();
+    refetchFiles();
+  };
 
   if (ordersPending || parcelsPending || filesPending) {
     return <div className="flex justify-center p-8"><p>Loading dashboard...</p></div>;
@@ -22,6 +30,12 @@ export default function DashboardOverview() {
 
   return (
     <div className="flex flex-1 flex-col gap-4">
+      <div className="flex justify-end w-full mb-2">
+        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isFetching} className="flex items-center gap-2">
+          <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+          Refresh Dashboard
+        </Button>
+      </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Orders Card */}
         <Card>

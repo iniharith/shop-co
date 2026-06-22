@@ -6,9 +6,9 @@ import { IUserApiResponse } from "@/types/api";
 import { useMutationData } from "./useMutation";
 export const useUsers = () => {
     const { data: session } = useSession();
-    const { data, isPending } = useQueryData(['users'], () => getUsers(session?.user.token))
+    const { data, isPending, refetch, isFetching } = useQueryData(['users'], () => getUsers(session?.user.token))
     const response = data as IUserApiResponse
-    return { data: response, isPending }
+    return { data: response, isPending, refetch, isFetching }
 }
 export const useCreateUser = () => {
     const { data: session } = useSession();
