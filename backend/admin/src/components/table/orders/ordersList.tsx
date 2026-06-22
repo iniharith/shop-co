@@ -17,6 +17,10 @@ const OrdersList = (props: Props) => {
   const filteredOrders = useMemo(() => {
     let orders = data?.orders || [];
     
+    // Exclude completed or cancelled orders from the active orders view
+    const excludeStatuses = ["DELIVERED", "DONE", "CANCELLED", "FAILED"];
+    orders = orders.filter((o: any) => !excludeStatuses.includes(o.orderStatus));
+
     // Filter by platform
     if (activeTab !== "ALL") {
       orders = orders.filter((o: any) => (o.platform || "WEB") === activeTab);
