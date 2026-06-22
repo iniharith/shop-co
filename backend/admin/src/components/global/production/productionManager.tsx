@@ -58,8 +58,15 @@ export default function ProductionManager() {
 
   const filteredFiles = useMemo(() => {
     let result = allFiles;
+    const tasks = (tasksResponse as any)?.tasks || [];
     if (activeTab !== "ALL") {
-      result = result.filter(f => f.category === activeTab);
+      result = result.filter((f: any) => {
+        if (f.category === 'TASK' && f.taskId) {
+          const task = tasks.find((t: any) => t._id === f.taskId);
+          return task?.category === activeTab;
+        }
+        return f.category === activeTab;
+      });
     }
 
     const q = searchQuery.trim().toLowerCase();
@@ -118,15 +125,23 @@ export default function ProductionManager() {
       groups[key].push(file);
     });
 
+    productionTasks.forEach((task: any) => {
+      if (activeTab !== "ALL" && task.category !== activeTab) return; // respect active tab for empty folders
+      const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id, isTask: true });
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+    });
+
     return Object.entries(groups).map(([keyStr, files]) => {
       const parsed = JSON.parse(keyStr);
-      let orderStatus = "IN_PRODUCTION";
-      if (parsed.isTask) {
+      let orderStatus = "N/A";
+      if (!parsed.isTask && parsed.orderId) {
+        const order = orders.find((o: any) => o._id === parsed.orderId);
+        if (order) orderStatus = order.orderStatus;
+      } else if (parsed.isTask) {
          const task = tasks.find((t: any) => t._id === parsed.taskId);
          orderStatus = task?.status || "IN_PRODUCTION";
-      } else {
-         const order = orders.find((o: any) => o._id === parsed.orderId);
-         orderStatus = order?.orderStatus || "IN_PRODUCTION";
       }
       return {
         folderName: parsed.name,
@@ -137,7 +152,7 @@ export default function ProductionManager() {
         files
       };
     });
-  }, [filteredFiles, ordersResponse, usersResponse]);
+  }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab]);
 
   const handleReview = (fileId: string, currentStatus: boolean, notes?: string) => {
     reviewFileMutate(
@@ -366,7 +381,7 @@ export default function ProductionManager() {
         // --- INSIDE A FOLDER ---
         <div className="space-y-4">
           {(() => {
-            const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}` === selectedFolder);
+            const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId || ""}` === selectedFolder);
             if (!activeGroup) {
               setTimeout(() => setSelectedFolder(null), 0);
               return null;
@@ -382,26 +397,25 @@ export default function ProductionManager() {
                       <Folder className="w-5 h-5 text-primary" />
                       {activeGroup.folderName}
                     </h2>
-                    {activeGroup.orderId && <p className="text-sm text-muted-foreground">Order ID: {activeGroup.orderId}</p>}
-                    
-                    {activeGroup.orderId && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <span className="text-xs font-semibold">Change Status:</span>
-                        <select 
-                          className="h-8 text-xs bg-background border border-border/50 rounded px-2 focus:ring-0"
-                          value={activeGroup.orderStatus}
-                          onChange={(e) => updateOrderStatus({ id: activeGroup.orderId, status: e.target.value }, {
-                            onSuccess: () => toast.success("Order status updated!"),
-                            onError: () => toast.error("Failed to update order status")
-                          })}
-                          disabled={isUpdatingStatus}
-                        >
-                          {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEW', 'ARTWORK_REJECTED', 'IN_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'].map(s => (
-                            <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
-                          ))}
-                        </select>
-                      </div>
+                    {(activeGroup.orderId || activeGroup.taskId) && (
+                      <p className="text-sm text-muted-foreground">
+                        {activeGroup.taskId ? `Task ID: ${activeGroup.taskId}` : `Order ID: ${activeGroup.orderId}`}
+                      </p>
                     )}
+                    
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-xs font-semibold">Change Status:</span>
+                      <select 
+                        className="h-8 text-xs bg-background border border-border/50 rounded px-2 focus:ring-0"
+                        value={activeGroup.orderStatus}
+                        onChange={(e) => handleStatusChange(activeGroup, e.target.value)}
+                        disabled={isUpdatingStatus}
+                      >
+                        {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEW', 'ARTWORK_REJECTED', 'IN_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'].map(s => (
+                          <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
                 
@@ -536,7 +550,7 @@ export default function ProductionManager() {
         // --- OUTSIDE (FOLDERS) ---
         <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
           {groupedFiles.map((group) => {
-            const folderId = `${group.folderName}-${group.orderId}`;
+            const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
             if (viewMode === "grid") {
               return (
                 <Card 

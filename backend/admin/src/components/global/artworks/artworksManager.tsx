@@ -58,8 +58,15 @@ export default function ArtworksManager() {
 
   const filteredFiles = useMemo(() => {
     let result = allFiles;
+    const tasks = (tasksResponse as any)?.tasks || [];
     if (activeTab !== "ALL") {
-      result = result.filter(f => f.category === activeTab);
+      result = result.filter((f: any) => {
+        if (f.category === 'TASK' && f.taskId) {
+          const task = tasks.find((t: any) => t._id === f.taskId);
+          return task?.category === activeTab;
+        }
+        return f.category === activeTab;
+      });
     }
 
     const q = searchQuery.trim().toLowerCase();
@@ -128,6 +135,7 @@ export default function ArtworksManager() {
     // explicitly add empty folders for any Tasks that don't have files yet
     tasks.forEach((task: any) => {
       if (task.status !== 'IN_PRODUCTION' && task.status !== 'CANCELLED' && task.status !== 'FAILED') {
+        if (activeTab !== "ALL" && task.category !== activeTab) return; // respect active tab for empty folders
         const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id });
         if (!groups[key]) {
           groups[key] = [];
@@ -144,7 +152,7 @@ export default function ArtworksManager() {
         files
       };
     });
-  }, [filteredFiles, ordersResponse, usersResponse, tasksResponse]);
+  }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab]);
 
   const handleReview = (fileId: string, currentStatus: boolean, notes?: string) => {
     reviewFileMutate(
@@ -361,7 +369,7 @@ export default function ArtworksManager() {
         // --- INSIDE A FOLDER ---
         <div className="space-y-4">
           {(() => {
-            const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}` === selectedFolder);
+            const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
             if (!activeGroup) {
               setTimeout(() => setSelectedFolder(null), 0);
               return null;
@@ -544,7 +552,7 @@ export default function ArtworksManager() {
         // --- OUTSIDE (FOLDERS) ---
         <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
           {groupedFiles.map((group) => {
-            const folderId = `${group.folderName}-${group.orderId}`;
+            const folderId = `${group.folderName}-${group.orderId}-${group.taskId}`;
             if (viewMode === "grid") {
               return (
                 <Card 

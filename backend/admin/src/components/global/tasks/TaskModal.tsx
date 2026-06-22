@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
-import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2 } from "lucide-react";
+import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag } from "lucide-react";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -42,6 +42,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "");
   const [orderId, setOrderId] = useState(task.orderId || "");
   const [customerUsername, setCustomerUsername] = useState(task.customerUsername || "");
+  const [category, setCategory] = useState(task.category || "UNASSIGNED");
   const getAssigneeId = (val: any) => typeof val === 'object' && val !== null ? val._id : (val || "");
   const [assignee, setAssignee] = useState(getAssigneeId(task.assignee));
 
@@ -53,6 +54,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
         dueDate: dueDate ? new Date(dueDate) : null,
         orderId,
         customerUsername,
+        category,
         assignee: assignee === "unassigned" ? null : assignee,
         ...overrides
       }
@@ -230,6 +232,28 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                 </Select>
               </div>
               
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                  <Tag className="w-3.5 h-3.5" /> Category
+                </label>
+                <Select value={category} onValueChange={(v) => { setCategory(v); handleSaveDetails({ category: v }); }}>
+                  <SelectTrigger className="h-9 bg-background shadow-sm border-border/50">
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UNASSIGNED">Unassigned</SelectItem>
+                    <SelectItem value="DIGITAL PRINTING">Digital Printing</SelectItem>
+                    <SelectItem value="DISPLAY ITEM">Display Item</SelectItem>
+                    <SelectItem value="DIGITAL OFFSET">Digital Offset</SelectItem>
+                    <SelectItem value="CORPORATE GIFT">Corporate Gift</SelectItem>
+                    <SelectItem value="APPAREL">Apparel</SelectItem>
+                    <SelectItem value="FRAME">Frame</SelectItem>
+                    <SelectItem value="WEDDING PRODUCT">Wedding Product</SelectItem>
+                    <SelectItem value="FOOD PACKAGING">Food Packaging</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
                   <Calendar className="w-3.5 h-3.5" /> Due Date

@@ -36,7 +36,7 @@ export default function TasksManager() {
   const { mutate: updateTask } = useUpdateTask();
   const { mutate: deleteTask } = useDeleteTask();
 
-  const [newTask, setNewTask] = useState({ title: "", description: "", status: "TODO" });
+  const [newTask, setNewTask] = useState({ title: "", description: "", status: "TODO", category: "UNASSIGNED" });
 
   const handleCreateTask = () => {
     if (!newTask.title) {
@@ -47,7 +47,7 @@ export default function TasksManager() {
       onSuccess: () => {
         toast.success("Task created!");
         setIsCreateOpen(false);
-        setNewTask({ title: "", description: "", status: "TODO" });
+        setNewTask({ title: "", description: "", status: "TODO", category: "UNASSIGNED" });
       }
     });
   };
@@ -166,17 +166,36 @@ export default function TasksManager() {
             <DialogHeader>
               <DialogTitle>Create New Task</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Task Title</label>
-                <Input placeholder="E.g., Review artwork for Order #123" value={newTask.title} onChange={(e) => setNewTask({...newTask, title: e.target.value})} />
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Task Title</label>
+                  <Input placeholder="E.g., Review artwork for Order #123" value={newTask.title} onChange={(e) => setNewTask({...newTask, title: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Description</label>
+                  <Textarea placeholder="Task details..." value={newTask.description} onChange={(e) => setNewTask({...newTask, description: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Category</label>
+                  <Select value={newTask.category} onValueChange={(v) => setNewTask({...newTask, category: v})}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="UNASSIGNED">Unassigned</SelectItem>
+                      <SelectItem value="DIGITAL PRINTING">Digital Printing</SelectItem>
+                      <SelectItem value="DISPLAY ITEM">Display Item</SelectItem>
+                      <SelectItem value="DIGITAL OFFSET">Digital Offset</SelectItem>
+                      <SelectItem value="CORPORATE GIFT">Corporate Gift</SelectItem>
+                      <SelectItem value="APPAREL">Apparel</SelectItem>
+                      <SelectItem value="FRAME">Frame</SelectItem>
+                      <SelectItem value="WEDDING PRODUCT">Wedding Product</SelectItem>
+                      <SelectItem value="FOOD PACKAGING">Food Packaging</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={handleCreateTask} disabled={isCreating} className="w-full">Create Task</Button>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Description</label>
-                <Textarea placeholder="Task details..." value={newTask.description} onChange={(e) => setNewTask({...newTask, description: e.target.value})} />
-              </div>
-              <Button onClick={handleCreateTask} disabled={isCreating} className="w-full">Create Task</Button>
-            </div>
           </DialogContent>
         </Dialog>
         </div>

@@ -22,7 +22,7 @@ export const useUpdateTask = () => {
 
 export const useDeleteTask = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['deleteTask'], (id: string) => deleteTask(session?.user.token, id), ["tasks"]);
+    const { mutate, isPending } = useMutationData(['deleteTask'], (id: string) => deleteTask(session?.user.token, id), ["tasks", "allFiles", "groupedFiles"]);
     return { mutate, isPending };
 }
 
@@ -31,7 +31,7 @@ export const useUploadTaskFile = () => {
     const { mutate, isPending } = useMutationData(
         ['uploadTaskFile'],
         (data: { id: string, file: File }) => import("@/api/tasks").then(m => m.uploadTaskFile(session?.user.token, data.id, data.file)),
-        ["tasks"]
+        ["tasks", "allFiles", "groupedFiles"]
     )
     return { mutate, isPending }
 }
@@ -41,7 +41,7 @@ export const useDeleteTaskFile = () => {
     const { mutate, isPending } = useMutationData(
         ['deleteTaskFile'],
         (data: { id: string, fileId: string }) => import("@/api/tasks").then(m => m.deleteTaskFile(session?.user.token, data.id, data.fileId)),
-        ["tasks"]
+        ["tasks", "allFiles", "groupedFiles"]
     )
     return { mutate, isPending }
 }
