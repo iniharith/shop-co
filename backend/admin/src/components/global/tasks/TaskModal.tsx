@@ -86,7 +86,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
           <div className="md:col-span-2 flex flex-col border-r border-border/50 bg-background">
             <div className="p-6 border-b border-border/50">
               <DialogHeader>
-                <DialogTitle className="sr-only">Task Details
+                <DialogTitle className="sr-only">Task Details</DialogTitle>
                   <Input 
                     value={title} 
                     onChange={(e) => setTitle(e.target.value)} 
