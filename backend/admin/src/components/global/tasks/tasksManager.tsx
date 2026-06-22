@@ -19,7 +19,7 @@ import { format } from "date-fns";
 import TaskModal from "./TaskModal";
 
 export default function TasksManager() {
-  const { data: response, isPending } = useTasks();
+  const { data: response, isPending, refetch, isFetching } = useTasks();
   const tasks = response?.tasks || [];
   
   const { data: usersData } = useUsers();
@@ -152,12 +152,16 @@ export default function TasksManager() {
           )}
         </div>
         
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button className="rounded-full px-6 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md">
-              <Plus className="w-4 h-4 mr-2" /> New Task
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="rounded-full h-10 w-10 shadow-sm border-slate-200" title="Refresh Tasks">
+            <RefreshCw className={`w-4 h-4 text-slate-500 ${isFetching ? 'animate-spin' : ''}`} />
+          </Button>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="rounded-full px-6 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md">
+                <Plus className="w-4 h-4 mr-2" /> New Task
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create New Task</DialogTitle>
@@ -175,6 +179,7 @@ export default function TasksManager() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Board View */}

@@ -4,13 +4,14 @@ import { DataTableSkeleton } from "../../global/table/data-table-skeleton";
 import { useOrders } from "@/hooks/useOrder";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import OrderCard from "./OrderCard";
-import { Search, PackageX } from "lucide-react";
+import { Search, PackageX, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface Props {}
 
 const OrdersList = (props: Props) => {
-  const { data, isPending } = useOrders();
+  const { data, isPending, refetch, isFetching } = useOrders();
   const [activeTab, setActiveTab] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -56,14 +57,19 @@ const OrdersList = (props: Props) => {
             </TabsList>
           </Tabs>
           
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search by Tracking No, ID, or Customer..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-10 w-full rounded-xl bg-background border-border"
-            />
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search by Tracking No, ID, or Customer..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-10 w-full rounded-xl bg-background border-border"
+              />
+            </div>
+            <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="rounded-xl h-10 w-10 shadow-sm border-border shrink-0" title="Refresh Orders">
+              <RefreshCw className={`w-4 h-4 text-muted-foreground ${isFetching ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
         </div>
         
