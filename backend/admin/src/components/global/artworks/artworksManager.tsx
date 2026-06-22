@@ -47,7 +47,7 @@ export default function ArtworksManager() {
 
   // Upload Modal State
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [uploadData, setUploadData] = useState({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "" });
+  const [uploadData, setUploadData] = useState({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "" });
   const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
 
   const { mutate: reviewFileMutate, isPending: isReviewing } = useReviewFile();
@@ -85,10 +85,13 @@ export default function ArtworksManager() {
       
       let shouldExclude = false;
 
+      let taskIdStr = "";
+
       if (file.category === 'TASK' && file.taskId) {
         const task = tasks.find((t: any) => t._id === file.taskId);
         groupName = task ? task.title : "Deleted Task";
         orderIdStr = task?.orderId || "";
+        taskIdStr = file.taskId;
         
         if (task && (task.status === 'DONE DESIGN' || task.status === 'CANCELLED' || task.status === 'FAILED')) {
             shouldExclude = true;
@@ -115,7 +118,7 @@ export default function ArtworksManager() {
       
       if (shouldExclude) return;
 
-      const key = JSON.stringify({ name: groupName, orderId: orderIdStr });
+      const key = JSON.stringify({ name: groupName, orderId: orderIdStr, taskId: taskIdStr });
       if (!groups[key]) {
         groups[key] = [];
       }
@@ -125,7 +128,7 @@ export default function ArtworksManager() {
     // explicitly add empty folders for any Tasks that don't have files yet
     tasks.forEach((task: any) => {
       if (task.status !== 'DONE DESIGN' && task.status !== 'CANCELLED' && task.status !== 'FAILED') {
-        const key = JSON.stringify({ name: task.title, orderId: task.orderId || "" });
+        const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id });
         if (!groups[key]) {
           groups[key] = [];
         }
@@ -137,6 +140,7 @@ export default function ArtworksManager() {
       return {
         folderName: parsed.name,
         orderId: parsed.orderId,
+        taskId: parsed.taskId,
         files
       };
     });
@@ -169,10 +173,11 @@ export default function ArtworksManager() {
   };
 
   const handleDelete = (fileId: string) => {
-    if (!confirm("Are you sure you want to delete this file?")) return;
+    if (!confirm("Are you sure you want to delete this file? This action cannot be undone.")) return;
     deleteFileMutate(fileId, {
       onSuccess: () => {
-        toast.success("File deleted!");
+        toast.success("File deleted successfully!");
+        window.location.reload();
       },
     });
   };
@@ -193,14 +198,15 @@ export default function ArtworksManager() {
   };
 
   const handleUploadSubmit = async () => {
-    if (!uploadData.userId) return toast.error("User ID is required");
+    if (!uploadData.userId && !uploadData.taskId) return toast.error("User ID or Task is required");
     if (!uploadFiles || uploadFiles.length === 0) return toast.error("Please select a file");
 
     const formData = new FormData();
-    formData.append("userId", uploadData.userId);
-    formData.append("orderId", uploadData.orderId);
+    if (uploadData.userId) formData.append("userId", uploadData.userId);
+    if (uploadData.orderId) formData.append("orderId", uploadData.orderId);
     formData.append("category", uploadData.category);
     formData.append("notes", uploadData.notes);
+    if (uploadData.taskId) formData.append("taskId", uploadData.taskId);
     Array.from(uploadFiles).forEach(f => formData.append("files", f));
 
       try {
@@ -362,21 +368,52 @@ export default function ArtworksManager() {
             }
             return (
               <>
-                <div className="flex items-center gap-4 mb-4 pb-4 border-b">
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedFolder(null)}>
-                    <ChevronLeft className="w-4 h-4 mr-1" /> Back
-                  </Button>
-                  <div>
-                    <h2 className="text-lg font-bold flex items-center gap-2">
-                      <Folder className="w-5 h-5 text-primary" />
-                      {activeGroup.folderName}
-                    </h2>
-                    {activeGroup.orderId && <p className="text-sm text-muted-foreground">Order ID: {activeGroup.orderId}</p>}
+                  <div className="flex items-center gap-4 mb-4 pb-4 border-b justify-between">
+                    <div className="flex items-center gap-4">
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedFolder(null)}>
+                        <ChevronLeft className="w-4 h-4 mr-1" /> Back
+                      </Button>
+                      <div>
+                        <h2 className="text-lg font-bold flex items-center gap-2">
+                          <Folder className="w-5 h-5 text-primary" />
+                          {activeGroup.folderName}
+                        </h2>
+                        {activeGroup.orderId && <p className="text-sm text-muted-foreground">Order ID: {activeGroup.orderId}</p>}
+                      </div>
+                    </div>
+                    {activeGroup.files.length === 0 && (
+                       <Button 
+                         onClick={() => {
+                           setUploadData({ userId: "", orderId: activeGroup.orderId || "", category: "TASK", notes: "", taskId: activeGroup.taskId || "" });
+                           setUploadModalOpen(true);
+                         }}
+                       >
+                         <Plus className="w-4 h-4 mr-2" /> Add Artwork
+                       </Button>
+                    )}
                   </div>
-                </div>
-                
-                <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
-                  {activeGroup.files.map((file: any) => (
+                  
+                  {activeGroup.files.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-12 border border-dashed rounded-xl bg-muted/20">
+                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                        <Folder className="w-8 h-8 text-primary" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground mb-2">Folder is empty</h3>
+                      <p className="text-sm text-muted-foreground text-center max-w-sm mb-6">
+                        There are no artworks in this folder yet. Click the button below to add one.
+                      </p>
+                      <Button 
+                         onClick={() => {
+                           setUploadData({ userId: "", orderId: activeGroup.orderId || "", category: "TASK", notes: "", taskId: activeGroup.taskId || "" });
+                           setUploadModalOpen(true);
+                         }}
+                       >
+                         <Plus className="w-4 h-4 mr-2" /> Add Artwork
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
+                      {activeGroup.files.map((file: any) => (
                     viewMode === "grid" ? (
                       <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                         {getFileThumbnail(file)}
@@ -498,6 +535,7 @@ export default function ArtworksManager() {
                     )
                   ))}
                 </div>
+                )}
               </>
             );
           })()}

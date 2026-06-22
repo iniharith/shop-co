@@ -12,7 +12,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { useCreateManualOrder } from "@/hooks/useOrder";
 import { useProducts } from "@/hooks/useProducts";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ManualOrderModalProps {
@@ -25,6 +25,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
   const { data: productsData } = useProducts();
   const products = (productsData as any)?.products || [];
   const [openProductBox, setOpenProductBox] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
 
   const [formData, setFormData] = useState({
     userId: "",
@@ -119,23 +120,57 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
                 >
                   {formData.productChoice
                     ? formData.productChoice
-                    : "Select product..."}
+                    : "Select or type product..."}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[400px] p-0" align="start">
                 <Command>
-                  <CommandInput placeholder="Search product..." />
+                  <CommandInput 
+                    placeholder="Search or type product..." 
+                    value={productSearch}
+                    onValueChange={setProductSearch}
+                  />
                   <CommandList>
-                    <CommandEmpty>No product found.</CommandEmpty>
+                    <CommandEmpty>
+                       {productSearch ? (
+                         <div
+                           className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-muted rounded-sm text-sm"
+                           onClick={() => {
+                             setFormData({ ...formData, productChoice: productSearch });
+                             setOpenProductBox(false);
+                             setProductSearch("");
+                           }}
+                         >
+                           <Plus className="h-4 w-4 text-primary" />
+                           Use "{productSearch}"
+                         </div>
+                       ) : (
+                         "No matching product found."
+                       )}
+                    </CommandEmpty>
                     <CommandGroup>
+                      {productSearch && !products.some((p: any) => p.name.toLowerCase() === productSearch.toLowerCase()) && (
+                        <CommandItem
+                          value={productSearch}
+                          onSelect={() => {
+                            setFormData({ ...formData, productChoice: productSearch });
+                            setOpenProductBox(false);
+                            setProductSearch("");
+                          }}
+                        >
+                          <Plus className="mr-2 h-4 w-4 text-primary" />
+                          Use "{productSearch}"
+                        </CommandItem>
+                      )}
                       {products.map((product: any) => (
                         <CommandItem
                           key={product._id}
                           value={product.name}
-                          onSelect={(currentValue) => {
-                            setFormData({ ...formData, productChoice: currentValue });
+                          onSelect={() => {
+                            setFormData({ ...formData, productChoice: product.name });
                             setOpenProductBox(false);
+                            setProductSearch("");
                           }}
                         >
                           <Check
