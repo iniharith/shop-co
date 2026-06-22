@@ -607,6 +607,16 @@ export default function ArtworksManager() {
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="absolute top-2 right-10 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-blue-50 hover:text-blue-600"
+                    onClick={(e) => handleDownloadAll(group, e)}
+                    disabled={group.files.length === 0}
+                    title="Download All Files"
+                  >
+                    <Download className="w-4 h-4 text-muted-foreground hover:text-blue-600" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-red-50 hover:text-red-600"
                     onClick={(e) => handleDeleteFolder(group, e)}
                     disabled={isBulkDeleting}
@@ -646,6 +656,16 @@ export default function ArtworksManager() {
                   </div>
                   <div className="shrink-0 flex items-center gap-2">
                     <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">{group.files.length} file(s)</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600 ml-1"
+                      onClick={(e) => handleDownloadAll(group, e)}
+                      disabled={group.files.length === 0}
+                      title="Download All Files"
+                    >
+                      <Download className="w-4 h-4 text-muted-foreground hover:text-blue-600" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
