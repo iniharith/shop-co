@@ -149,6 +149,7 @@ export default function ArtworksManager() {
         folderName: parsed.name,
         orderId: parsed.orderId,
         taskId: parsed.taskId,
+        userId: files.length > 0 ? files[0].userId : "",
         files
       };
     });
@@ -206,7 +207,6 @@ export default function ArtworksManager() {
   };
 
   const handleUploadSubmit = async () => {
-    if (!uploadData.userId && !uploadData.taskId) return toast.error("User ID or Task is required");
     if (!uploadFiles || uploadFiles.length === 0) return toast.error("Please select a file");
 
     const formData = new FormData();
@@ -321,14 +321,6 @@ export default function ArtworksManager() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label>User ID / Customer ID *</Label>
-                  <Input placeholder="64a1b..." value={uploadData.userId} onChange={e => setUploadData({ ...uploadData, userId: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Order ID (Optional)</Label>
-                  <Input placeholder="Order ID if applicable" value={uploadData.orderId} onChange={e => setUploadData({ ...uploadData, orderId: e.target.value })} />
-                </div>
-                <div className="space-y-2">
                   <Label>Category</Label>
                   <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
                     value={uploadData.category} onChange={e => setUploadData({ ...uploadData, category: e.target.value })}>
@@ -392,7 +384,7 @@ export default function ArtworksManager() {
                     {activeGroup.files.length === 0 && (
                        <Button 
                          onClick={() => {
-                           setUploadData({ userId: "", orderId: activeGroup.orderId || "", category: "TASK", notes: "", taskId: activeGroup.taskId || "" });
+                           setUploadData({ userId: activeGroup.userId || "", orderId: activeGroup.orderId || "", category: "TASK", notes: "", taskId: activeGroup.taskId || "" });
                            setUploadModalOpen(true);
                          }}
                        >
@@ -412,7 +404,7 @@ export default function ArtworksManager() {
                       </p>
                       <Button 
                          onClick={() => {
-                           setUploadData({ userId: "", orderId: activeGroup.orderId || "", category: "TASK", notes: "", taskId: activeGroup.taskId || "" });
+                           setUploadData({ userId: activeGroup.userId || "", orderId: activeGroup.orderId || "", category: "TASK", notes: "", taskId: activeGroup.taskId || "" });
                            setUploadModalOpen(true);
                          }}
                        >
