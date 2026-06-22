@@ -84,7 +84,7 @@ export default function TasksManager() {
   if (isPending) return <div className="p-8 text-center text-muted-foreground">Loading tasks...</div>;
 
   return (
-    <div className="flex flex-col gap-6 w-full min-w-0 overflow-hidden px-1">
+    <div className="flex flex-col gap-6 w-full max-w-full min-w-0 overflow-hidden px-1">
       {/* Top Toolbar */}
       <div className="flex justify-between items-center bg-card p-4 rounded-xl border border-border/50 shadow-sm flex-wrap gap-4">
         <div className="flex items-center gap-4">

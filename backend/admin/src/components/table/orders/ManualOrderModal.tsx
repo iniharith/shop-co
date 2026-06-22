@@ -23,7 +23,20 @@ interface ManualOrderModalProps {
 export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpenChange }) => {
   const { mutate: createOrder, isPending } = useCreateManualOrder();
   const { data: productsData } = useProducts();
-  const products = (productsData as any)?.products || [];
+  const fetchedProducts = (productsData as any)?.products || [];
+  const defaultProducts = [
+    { _id: 'dp-1', name: "Banner" }, { _id: 'dp-2', name: "Bunting" }, { _id: 'dp-3', name: "Car Sticker" },
+    { _id: 'dp-4', name: "Board Printing" }, { _id: 'dp-5', name: "Wall Sticker" }, { _id: 'dp-6', name: "Glass Sticker" },
+    { _id: 'dp-7', name: "Personalised Flag" }, { _id: 'dp-8', name: "Popup Backdrop Display" }, { _id: 'dp-9', name: "Roll Up Stand" },
+    { _id: 'dp-10', name: "Name Card" }, { _id: 'dp-11', name: "Flyer / Brochure" }, { _id: 'dp-12', name: "Postcard" },
+    { _id: 'dp-13', name: "Greeting Card" }, { _id: 'dp-14', name: "Booklet" }, { _id: 'dp-15', name: "Letterhead" },
+    { _id: 'dp-16', name: "Envelope" }, { _id: 'dp-17', name: "Folded Business Card" }, { _id: 'dp-18', name: "Poster" },
+    { _id: 'dp-19', name: "Ticket" }, { _id: 'dp-20', name: "Wobbler" }, { _id: 'dp-21', name: "Tag" },
+    { _id: 'dp-22', name: "Paper Bag" }, { _id: 'dp-23', name: "Non Woven Bag" }, { _id: 'dp-24', name: "Canvas Bag" },
+    { _id: 'dp-25', name: "Label Sticker" }, { _id: 'dp-26', name: "Paper Box" }, { _id: 'dp-27', name: "Mug" },
+    { _id: 'dp-28', name: "T-Shirt" }, { _id: 'dp-29', name: "Uniform" }, { _id: 'dp-30', name: "Lanyard" }
+  ];
+  const products = fetchedProducts.length > 0 ? fetchedProducts : defaultProducts;
   const [openProductBox, setOpenProductBox] = useState(false);
   const [productSearch, setProductSearch] = useState("");
 

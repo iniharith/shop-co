@@ -30,15 +30,37 @@ export default function ChatManager() {
   const backendUsers = usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss'].includes(u.role)) || [];
   const [openNewChat, setOpenNewChat] = useState(false);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [platformFilter, setPlatformFilter] = useState("all");
+
   const conversations = (convData as any)?.conversations || [];
   const messages = (msgData as any)?.messages || [];
   
+  const filteredConversations = conversations.filter((conv: any) => {
+    let matchesPlatform = true;
+    if (platformFilter !== 'all') {
+      if (platformFilter === 'internal') {
+        matchesPlatform = !conv.source || conv.source === 'internal';
+      } else {
+        matchesPlatform = conv.source === platformFilter;
+      }
+    }
+    
+    let matchesSearch = true;
+    if (searchQuery.trim()) {
+      const name = getParticipantName(conv).toLowerCase();
+      matchesSearch = name.includes(searchQuery.toLowerCase());
+    }
+    
+    return matchesPlatform && matchesSearch;
+  });
+  
   // Set initial active conversation
   useEffect(() => {
-    if (!activeConvId && conversations.length > 0) {
-      setActiveConvId(conversations[0]._id);
+    if (!activeConvId && filteredConversations.length > 0) {
+      setActiveConvId(filteredConversations[0]._id);
     }
-  }, [conversations, activeConvId]);
+  }, [filteredConversations, activeConvId]);
 
   const handleSend = () => {
     if (!text.trim() || !activeConvId) return;
@@ -46,6 +68,8 @@ export default function ChatManager() {
   };
 
   const getParticipantName = (conv: any) => {
+    if (conv.source === 'tiktok') return `TikTok: ${conv.tiktokUsername || 'User'}`;
+    if (conv.source === 'shopee') return `Shopee: ${conv.shopeeUsername || 'User'}`;
     if (conv.whatsappPhone) return `WhatsApp: ${conv.whatsappPhone}`;
     const otherParticipant = conv.participants?.find((p: any) => p._id?.toString() !== currentUserId);
     return otherParticipant?.name || otherParticipant?.email || "Unknown User";
@@ -99,12 +123,35 @@ export default function ChatManager() {
           </Popover>
           </div>
         </div>
+        
+        <div className="p-3 border-b border-border/50 bg-muted/5 flex flex-col gap-3">
+          <Input 
+            placeholder="Search username..." 
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="h-9 bg-background text-sm"
+          />
+          <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+            {['all', 'internal', 'whatsapp', 'tiktok', 'shopee'].map(pf => (
+              <Button
+                key={pf}
+                variant={platformFilter === pf ? 'default' : 'outline'}
+                size="sm"
+                className="h-7 text-[10px] uppercase font-bold tracking-wider rounded-full shrink-0"
+                onClick={() => setPlatformFilter(pf)}
+              >
+                {pf}
+              </Button>
+            ))}
+          </div>
+        </div>
+
         <div className="flex-1 overflow-y-auto">
           {convLoading && <div className="p-4 text-sm text-muted-foreground text-center">Loading...</div>}
-          {!convLoading && conversations.length === 0 && (
-            <div className="p-8 text-center text-muted-foreground text-sm">No conversations yet</div>
+          {!convLoading && filteredConversations.length === 0 && (
+            <div className="p-8 text-center text-muted-foreground text-sm">No conversations found</div>
           )}
-          {conversations.map((conv: any) => (
+          {filteredConversations.map((conv: any) => (
             <div
               key={conv._id}
               onClick={() => setActiveConvId(conv._id)}
