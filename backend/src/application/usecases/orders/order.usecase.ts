@@ -163,6 +163,33 @@ export class OrderUsecase {
         // Sync Order status back to Task
         try {
             await this.taskRepository.updateByOrderId(orderId, { status: updateStatus as any });
+            
+            if (updateStatus === 'DELIVERED') {
+                const { Task } = await import('../../../domain/entities/Task');
+                const { FileUpload } = await import('../../../domain/entities/FileUpload');
+                const { v2: cloudinary } = await import('cloudinary');
+                
+                cloudinary.config({
+                  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dc7aun6of',
+                  api_key: process.env.CLOUDINARY_API_KEY || '933197924153588',
+                  api_secret: process.env.CLOUDINARY_API_SECRET || 'L8yhCjjrcV4--wTSGB-_JVY5kgg',
+                });
+
+                const tasks = await Task.find({ orderId });
+                for (const task of tasks) {
+                    if (task.files && task.files.length > 0) {
+                        for (const file of task.files) {
+                            const parts = file.url.split('/');
+                            const filenameWithExtension = parts[parts.length - 1];
+                            const publicId = `kampungcetak/tasks/${filenameWithExtension.split('.')[0]}`;
+                            await cloudinary.uploader.destroy(publicId).catch(() => {});
+                            await FileUpload.findOneAndDelete({ path: file.url, taskId: task._id });
+                        }
+                        task.files = [];
+                        await task.save();
+                    }
+                }
+            }
         } catch (e) {
             console.error('Failed to sync order status to task:', e);
         }

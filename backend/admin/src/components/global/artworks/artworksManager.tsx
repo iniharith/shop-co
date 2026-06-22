@@ -82,11 +82,17 @@ export default function ArtworksManager() {
     filteredFiles.forEach((file: any) => {
       let groupName = "Unassigned";
       let orderIdStr = "";
+      
+      let shouldExclude = false;
 
       if (file.category === 'TASK' && file.taskId) {
         const task = tasks.find((t: any) => t._id === file.taskId);
         groupName = task ? task.title : "Deleted Task";
         orderIdStr = task?.orderId || "";
+        
+        if (task && (task.status === 'DONE DESIGN' || task.status === 'CANCELLED' || task.status === 'FAILED')) {
+            shouldExclude = true;
+        }
       } else {
         const user = users.find((u: any) => u._id?.toString() === file.userId?.toString());
         groupName = user?.name || file.userId;
@@ -99,9 +105,20 @@ export default function ArtworksManager() {
           if (order) orderIdStr = order._id;
         }
       }
+      
+      if (orderIdStr) {
+          const order = orders.find((o: any) => o._id === orderIdStr);
+          if (order && (order.orderStatus === 'DONE DESIGN' || order.orderStatus === 'IN_PRODUCTION' || order.orderStatus === 'SHIPPED' || order.orderStatus === 'DELIVERED' || order.orderStatus === 'CANCELLED' || order.orderStatus === 'FAILED')) {
+              shouldExclude = true;
+          }
+      }
+      
+      if (shouldExclude) return;
 
       const key = JSON.stringify({ name: groupName, orderId: orderIdStr });
-      if (!groups[key]) groups[key] = [];
+      if (!groups[key]) {
+        groups[key] = [];
+      }
       groups[key].push(file);
     });
 

@@ -142,10 +142,6 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
                 console.error('Failed to sync status to order:', e);
             }
         }
-        // Delete all files if status changes to DONE DESIGN
-        if (req.body.status === 'DONE DESIGN') {
-            yield deleteAllTaskFiles(task);
-        }
     }
     res.json({ success: true, task });
 })));

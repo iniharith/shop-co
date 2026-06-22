@@ -73,7 +73,7 @@ export default function ProductionManager() {
 
   const groupedFiles = useMemo(() => {
     const orders = ordersResponse?.orders || [];
-    const productionOrders = orders.filter((o: any) => o.orderStatus === 'IN_PRODUCTION');
+    const productionOrders = orders.filter((o: any) => o.orderStatus === 'IN_PRODUCTION' || o.orderStatus === 'DONE DESIGN');
     const productionOrderIds = productionOrders.map((o: any) => o._id.toString());
     const productionUserIds = productionOrders.map((o: any) => o.userId?.toString());
     const users = (usersResponse as any)?.data || [];
@@ -85,17 +85,16 @@ export default function ProductionManager() {
       
       const fileOrder = orders.find((o: any) => o._id === file.orderId);
       
-      // Keep file only if it is explicitly linked to an IN_PRODUCTION order, or its user has an IN_PRODUCTION order.
+      // Keep file only if it is explicitly linked to an IN_PRODUCTION/DONE DESIGN order, or its user has one.
       const isProduction = productionOrderIds.includes(file.orderId?.toString()) || productionUserIds.includes(file.userId?.toString());
       if (!isProduction) return;
 
       const user = users.find((u: any) => u._id?.toString() === file.userId?.toString());
       groupName = user?.name || file.userId;
-
       if (file.orderId) {
          orderIdStr = file.orderId;
       } else {
-         const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString() && o.orderStatus === 'IN_PRODUCTION');
+         const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString() && (o.orderStatus === 'IN_PRODUCTION' || o.orderStatus === 'DONE DESIGN'));
          if (order) orderIdStr = order._id;
       }
 

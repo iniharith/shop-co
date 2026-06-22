@@ -116,11 +116,6 @@ router.put(
                 console.error('Failed to sync status to order:', e);
             }
         }
-        
-        // Delete all files if status changes to DONE DESIGN
-        if (req.body.status === 'DONE DESIGN') {
-            await deleteAllTaskFiles(task);
-        }
     }
     
     res.json({ success: true, task });
