@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import url('https://fonts.cdnfonts.com/css/fonarto');
 
 @custom-variant dark (&:is(.dark *));
 
@@ -9,11 +8,24 @@
   src: url("/integrCf.ttf");
 }
 
+@font-face {
+  font-family: "Fonarto";
+  src: url("/fonts/fonarto.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@layer base {
+  html, body {
+    font-family: "Fonarto", sans-serif;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: 'Fonarto', sans-serif;
-  --font-mono: 'Fonarto', sans-serif;
+  --font-sans: "Fonarto", sans-serif;
+  --font-mono: "Fonarto", sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
