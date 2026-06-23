@@ -90,19 +90,21 @@ const ProductCard = ({ product }: ProductCardProps) => {
               {product.rating}/5
             </span>
           </div>
-          <div className="mt-auto flex items-center">
-            <span className="font-bold text-lg">RM {product.price}</span>
-            {product.discount > 0 && (
-              <>
-                <span className="text-gray-400 dark:text-muted-foreground line-through ml-2">
-                  RM {product.originalPrice}
-                </span>
-                <span className="ml-2 text-sm bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded">
-                  -{product.discount}%
-                </span>
-              </>
-            )}
-          </div>
+          {product.category?.toLowerCase() !== "islamic khat" && (
+            <div className="mt-auto flex items-center">
+              <span className="font-bold text-lg">RM {product.price}</span>
+              {product.discount > 0 && (
+                <>
+                  <span className="text-gray-400 dark:text-muted-foreground line-through ml-2">
+                    RM {product.originalPrice}
+                  </span>
+                  <span className="ml-2 text-sm bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded">
+                    -{product.discount}%
+                  </span>
+                </>
+              )}
+            </div>
+          )}
         </div>
         <div className="col-span-1 md:flex hidden items-center justify-end">
           <Button

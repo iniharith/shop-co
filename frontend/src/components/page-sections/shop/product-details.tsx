@@ -229,7 +229,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       <div className="p-6 space-y-8">
         
         {/* STEP 1: Design Options */}
-        <div className="space-y-4">
+        {product.category?.toLowerCase() !== "islamic khat" && (
+          <div className="space-y-4">
           <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
             <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
               1
@@ -291,6 +292,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             )}
           </div>
         </div>
+        )}
 
         {/* STEP 2 */}
         {step1Options.length > 0 && (
