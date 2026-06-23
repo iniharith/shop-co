@@ -14,19 +14,13 @@ const fonarto = localFont({
   variable: "--font-fonarto",
 });
 
-const fonartoAmpersand = localFont({
-  src: "./fonts/fonarto.woff",
-  variable: "--font-fonarto-ampersand",
+const cocogooseAmpersand = localFont({
+  src: "./fonts/cocogoose-pro-regular.woff",
+  variable: "--font-cocogoose-ampersand",
   weight: "100 900",
   declarations: [
     { prop: "unicode-range", value: "U+0026" }
   ]
-});
-
-const cocogoose = localFont({
-  src: "./fonts/cocogoose-pro-regular.woff",
-  variable: "--font-heading",
-  weight: "100 900",
 });
 
 const geistSans = Geist({
@@ -82,7 +76,7 @@ export default async function RootLayout({
     <html lang="en">
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${dmSans.variable} overflow-x-hidden w-screen ${geistMono.variable} ${fonarto.variable} ${fonartoAmpersand.variable} ${cocogoose.variable} bg-gray-100 dark:bg-background antialiased`}
+        className={`${geistSans.variable} ${dmSans.variable} overflow-x-hidden w-screen ${geistMono.variable} ${fonarto.variable} ${cocogooseAmpersand.variable} bg-gray-100 dark:bg-background antialiased`}
       >
         <Provider session={session}>
           <div className="sticky z-50 top-0">

@@ -13,17 +13,11 @@
   src: url("/integrCf.ttf");
 }
 
-@layer base {
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading), sans-serif;
-  }
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-fonarto-ampersand), var(--font-geist-sans);
-  --font-mono: var(--font-fonarto-ampersand), var(--font-geist-mono);
+  --font-sans: var(--font-cocogoose-ampersand), var(--font-geist-sans);
+  --font-mono: var(--font-cocogoose-ampersand), var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

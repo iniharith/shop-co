@@ -68,8 +68,8 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			fontFamily: {
-				primary: ['var(--font-fonarto-ampersand)', 'var(--font-dm-sans)', 'sans-serif'],
-				secondary: ['var(--font-fonarto-ampersand)', 'var(--font-work-sans)', 'sans-serif'],
+				primary: ['var(--font-cocogoose-ampersand)', 'var(--font-dm-sans)', 'sans-serif'],
+				secondary: ['var(--font-cocogoose-ampersand)', 'var(--font-work-sans)', 'sans-serif'],
 			},
 
 		},
