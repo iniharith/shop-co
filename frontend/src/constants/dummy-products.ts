@@ -3292,7 +3292,7 @@ export const dummyProducts: any[] = [
     ]
   },
   {
-      "_id": "prod-141",
+      "_id": "prod-114",
       "name": "Paper Bag",
       "description": "Premium paper bags with your custom design, perfect for retail, events, and corporate gifts. Available in various sizes and materials.",
       "price": 0,
