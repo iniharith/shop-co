@@ -486,33 +486,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           </div>
         </div>
         )}
-        {/* ── PRICE SUMMARY ── */}
-        {/* End of conditional */}
-        <div className="bg-gray-100 dark:bg-black/40 rounded-xl p-5 space-y-3 mt-8 border border-gray-200 dark:border-border">
-          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-            <span>Subtotal</span>
-            <span>RM {subtotal.toFixed(2)}</span>
-          </div>
-          <div className="w-full h-px bg-gray-300 dark:bg-border my-2"></div>
-          <div className="flex justify-between items-end">
-            <span className="text-base font-semibold text-gray-900 dark:text-foreground">Total Price</span>
-            <div className="text-right">
-              <span className="text-3xl font-extrabold text-primary">RM {total.toFixed(2)}</span>
-              <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">Delivery price will be shown at checkout</p>
-            </div>
-          </div>
-        </div>
 
-        <AnimatedButton
-          text="Add to Cart"
-          type="submit"
-          isLoading={isPending}
-          className="w-full bg-primary text-primary-foreground py-4 font-bold text-lg rounded-xl active:scale-95 transition-all cursor-pointer shadow-lg shadow-primary/20 hover:shadow-primary/40"
-          onClick={handleAddToCart}
-        />
-      </div>
-
-      {(product.category === 'flyers' || product.category === 'kad-kahwin') && portalEl && (() => {
+{(product.category === 'flyers' || product.category === 'kad-kahwin') && (() => {
         let matrixRow: any = null;
         if (product.matrixPricing?.enabled) {
           const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format'))?.name;
@@ -532,8 +507,9 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
         if (!matrixRow) return null;
 
-        return createPortal(
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mt-6 overflow-x-auto w-full mb-10">
+        
+          const PricingTable = ({ className }: { className: string }) => (
+            <div className={`bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mt-6 overflow-x-auto w-full mb-10 ${className}`}>
             <h2 className="text-xl font-bold tracking-tight text-primary mb-4">{product.category === 'kad-kahwin' ? 'Package Pricing' : 'Format & Size Pricing'}</h2>
             <table className="w-full text-sm text-center border-collapse">
               <thead className="bg-gray-50 border-b border-gray-200">
@@ -600,10 +576,48 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 })}
               </tbody>
             </table>
-          </div>,
-          portalEl
-        );
+          </div>
+          );
+
+          return (
+            <>
+              {/* Mobile inline render (hidden on desktop) */}
+              <PricingTable className="lg:hidden" />
+              
+              {/* Desktop portal render (hidden on mobile) */}
+              {portalEl && createPortal(<PricingTable className="hidden lg:block" />, portalEl)}
+            </>
+          );
       })()}
+
+
+        {/* ── PRICE SUMMARY ── */}
+        {/* End of conditional */}
+        <div className="bg-gray-100 dark:bg-black/40 rounded-xl p-5 space-y-3 mt-8 border border-gray-200 dark:border-border">
+          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+            <span>Subtotal</span>
+            <span>RM {subtotal.toFixed(2)}</span>
+          </div>
+          <div className="w-full h-px bg-gray-300 dark:bg-border my-2"></div>
+          <div className="flex justify-between items-end">
+            <span className="text-base font-semibold text-gray-900 dark:text-foreground">Total Price</span>
+            <div className="text-right">
+              <span className="text-3xl font-extrabold text-primary">RM {total.toFixed(2)}</span>
+              <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">Delivery price will be shown at checkout</p>
+            </div>
+          </div>
+        </div>
+
+        <AnimatedButton
+          text="Add to Cart"
+          type="submit"
+          isLoading={isPending}
+          className="w-full bg-primary text-primary-foreground py-4 font-bold text-lg rounded-xl active:scale-95 transition-all cursor-pointer shadow-lg shadow-primary/20 hover:shadow-primary/40"
+          onClick={handleAddToCart}
+        />
+      </div>
+
+      
 
     </div>
   );
