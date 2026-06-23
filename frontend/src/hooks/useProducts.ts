@@ -28,7 +28,7 @@ export const useProducts = (id?: string) => {
 
     // Fallback for single product if it's a dummy id
     if (id?.startsWith('prod-')) {
-        const dummy = dummyProducts.find(d => d._id === id);
+        const dummy = dummyProducts.find(d => d?._id === id);
         return { data: { ...response, product: dummy }, isPending: false };
     }
 
@@ -39,7 +39,7 @@ export const useProducts = (id?: string) => {
 export const useSearchProducts = (query: string) => {
     const { data, isPending } = useQueryData(["searchProducts", query], () => searchProducts(query));
     // Force search mock
-    const filtered = dummyProducts.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || p.description.toLowerCase().includes(query.toLowerCase()));
+    const filtered = dummyProducts.filter(p => p?.name?.toLowerCase().includes(query.toLowerCase()) || p?.description?.toLowerCase().includes(query.toLowerCase()));
     return { data: { products: filtered }, isPending: false };
     return { data, isPending };
 }
@@ -47,8 +47,8 @@ export const useSearchProducts = (query: string) => {
 export const useGetProductByCategory = (category: string) => {
     const { data, isPending } = useQueryData(["getProductByCategory", category], () => getProductByCategory(category));
     // Force category mock
-    const filtered = dummyProducts.filter(p => p.category === category);
-    return { data: { products: filtered.length > 0 ? filtered : dummyProducts }, isPending: false };
+    const filtered = dummyProducts.filter(p => p?.category === category);
+    return { data: { products: filtered.length > 0 ? filtered : dummyProducts.filter(p=>p) }, isPending: false };
     return { data, isPending };
 }
 
@@ -78,26 +78,26 @@ export const useFilterProducts = () => {
     }, [serviceCategories, turnarounds, formats, materials, priceRange]);
     
     // FORCE return the new printing products, simulating frontend filtering
-    let filtered = [...dummyProducts];
+    let filtered = [...dummyProducts.filter(p=>p)];
     
     if (searchQuery) {
-        filtered = filtered.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description.toLowerCase().includes(searchQuery.toLowerCase()));
+        filtered = filtered.filter(p => p?.name?.toLowerCase().includes(searchQuery.toLowerCase()) || p?.description?.toLowerCase().includes(searchQuery.toLowerCase()));
     }
     
     if (priceRange) {
-        filtered = filtered.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
+        filtered = filtered.filter(p => p?.price >= priceRange[0] && p?.price <= priceRange[1]);
     }
     
     if (serviceCategories && serviceCategories.length > 0) {
         // Mock matching top-level category label with dummy products nested categories by keyword
         filtered = filtered.filter(p => {
-             const lowerP = p.category.toLowerCase().replace('-', ' ');
+             const lowerP = p?.category?.toLowerCase().replace('-', ' ') || '';
              return serviceCategories.some(c => lowerP.includes(c.toLowerCase().split(' ')[1] || c.toLowerCase().split(' ')[0]));
         });
     }
     
     if (formats && formats.length > 0) {
-        filtered = filtered.filter(p => p.sizes && p.sizes.some((s: any) => formats.includes(s)));
+        filtered = filtered.filter(p => p?.sizes && p.sizes.some((s: any) => formats.includes(s)));
     }
     
     return { data: { products: filtered }, isPending: false, refetch };

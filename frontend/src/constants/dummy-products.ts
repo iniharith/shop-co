@@ -5267,9 +5267,7 @@ export const dummyProducts: any[] = [
         ],
       },
     ],
-  },
-
-,  {
+  }, {
     _id: "prod-eeecbece-0c2a-4e06-b888-9df700ff4966",
     name: "A-DESIGN 2025-2026",
     description: "Islamic Khat Canvas - A-DESIGN 2025-2026",
