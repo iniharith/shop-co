@@ -9,6 +9,13 @@
 }
 
 @font-face {
+  font-family: "Fonarto";
+  src: url("/fonts/fonarto.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
   font-family: "FonartoAmpersand";
   src: url("/fonts/fonarto.woff") format("woff");
   unicode-range: U+0026;
@@ -19,6 +26,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --font-brand: "Fonarto", sans-serif;
   --font-sans: "FonartoAmpersand", var(--font-geist-sans);
   --font-mono: "FonartoAmpersand", var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
