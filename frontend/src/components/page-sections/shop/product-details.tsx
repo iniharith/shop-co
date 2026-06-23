@@ -238,44 +238,57 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           </div>
           
           <div className="grid grid-cols-1 gap-2">
-            <label className={`flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
-              designOption === "upload" 
-                ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-sm" 
-                : "border-gray-200 dark:border-border hover:border-primary/50"
-            }`}>
-              <div className="flex items-center gap-3">
-                <input 
-                  type="radio" 
-                  name="designOption" 
-                  className="w-4 h-4 text-primary focus:ring-primary accent-primary"
-                  checked={designOption === "upload"}
-                  onChange={() => setDesignOption("upload")}
-                />
-                <span className="text-sm font-bold text-gray-800 dark:text-foreground">I have my own design</span>
+            {product.category?.toLowerCase() === "portrait" ? (
+              <div className="flex flex-col p-6 border-2 border-primary bg-primary/5 dark:bg-primary/10 rounded-xl shadow-sm text-center">
+                <h3 className="text-xl font-black text-gray-900 dark:text-foreground uppercase mb-2">
+                  UPLOAD YOUR PICTURE AT DASHBOARD
+                </h3>
+                <p className="text-base text-gray-600 dark:text-muted-foreground">
+                  AFTER YOU HAVE PLACED THE ORDER
+                </p>
               </div>
-              <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">Upload your print-ready artwork (PDF, AI, PSD) during checkout or in your dashboard.</p>
-            </label>
+            ) : (
+              <>
+                <label className={`flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+                  designOption === "upload" 
+                    ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-sm" 
+                    : "border-gray-200 dark:border-border hover:border-primary/50"
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="radio" 
+                      name="designOption" 
+                      className="w-4 h-4 text-primary focus:ring-primary accent-primary"
+                      checked={designOption === "upload"}
+                      onChange={() => setDesignOption("upload")}
+                    />
+                    <span className="text-sm font-bold text-gray-800 dark:text-foreground">I have my own design</span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">Upload your print-ready artwork (PDF, AI, PSD) during checkout or in your dashboard.</p>
+                </label>
 
-            <label className={`flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
-              designOption === "design" 
-                ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-sm" 
-                : "border-gray-200 dark:border-border hover:border-primary/50"
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <input 
-                    type="radio" 
-                    name="designOption" 
-                    className="w-4 h-4 text-primary focus:ring-primary accent-primary"
-                    checked={designOption === "design"}
-                    onChange={() => setDesignOption("design")}
-                  />
-                  <span className="text-sm font-bold text-gray-800 dark:text-foreground">Let KampungCetak design for you</span>
-                </div>
-                <span className="text-sm font-semibold text-primary">+RM 100.00</span>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">Our professional designers will create a stunning custom design for your brand.</p>
-            </label>
+                <label className={`flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+                  designOption === "design" 
+                    ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-sm" 
+                    : "border-gray-200 dark:border-border hover:border-primary/50"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="radio" 
+                        name="designOption" 
+                        className="w-4 h-4 text-primary focus:ring-primary accent-primary"
+                        checked={designOption === "design"}
+                        onChange={() => setDesignOption("design")}
+                      />
+                      <span className="text-sm font-bold text-gray-800 dark:text-foreground">Let KampungCetak design for you</span>
+                    </div>
+                    <span className="text-sm font-semibold text-primary">+RM 100.00</span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">Our professional designers will create a stunning custom design for your brand.</p>
+                </label>
+              </>
+            )}
           </div>
         </div>
 
