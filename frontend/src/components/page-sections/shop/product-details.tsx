@@ -335,7 +335,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
           <div className="space-y-3 pt-2">
             <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide">Quantity</label>
-            {product.matrixPricing?.enabled && availableQuantities.length > 0 ? (
+            {product.matrixPricing?.enabled && !product.matrixPricing.hideQuantityGrid && availableQuantities.length > 0 ? (
               <div className="grid grid-cols-3 gap-2">
                 {availableQuantities.map((q) => (
                   <button

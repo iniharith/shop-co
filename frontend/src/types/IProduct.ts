@@ -19,6 +19,7 @@ export interface IProduct {
     originalPrice: number;
     matrixPricing?: {
         enabled: boolean;
+        hideQuantityGrid?: boolean;
         pricingData: {
             laminate: string;
             material: string;
