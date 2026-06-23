@@ -56,7 +56,7 @@ export default function ProfilePage() {
       toast.success("Avatar uploaded successfully");
       setAvatarFile(null);
       // Optional: trigger session update
-      await update({ avatar: res.data?.avatar });
+      await update({ avatar: res.data?.avatarUrl });
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to upload avatar");
       console.error(error);

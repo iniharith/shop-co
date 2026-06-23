@@ -43,8 +43,8 @@ export const useAuth = (type: "login" | "signup" = "login") => {
       token: response.accessToken,
       refreshToken: response.refreshToken,
       redirect: false,
-      verified: response.user.verified
-
+      verified: response.user.verified,
+      avatar: response.user.avatar
     }).then(() => {
       setIsLoading(false)
       localStorage.setItem("loginId", getValues("email"))

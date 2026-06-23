@@ -13,6 +13,7 @@ export const authConfig: AuthOptions = {
         role: { label: "Role", type: "role" },
         token: { label: "Token", type: "token" },
         verified: { label: "Verified", type: "boolean" },
+        avatar: { label: "Avatar", type: "text" },
       },
       async authorize(credentials) {
         console.log("authorize", credentials)
@@ -28,7 +29,8 @@ export const authConfig: AuthOptions = {
           name: credentials.name,
           email: credentials.email as string,
           role: credentials.role as string,
-          verified: credentials.verified as any
+          verified: credentials.verified as any,
+          avatar: credentials.avatar as string
         };
 
         if (user) {
