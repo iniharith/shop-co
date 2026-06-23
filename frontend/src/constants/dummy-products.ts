@@ -5859,7 +5859,7 @@ export const dummyProducts: any[] = [
     "_id": "prod-134",
     "name": "Portrait",
     "description": "High-quality Portrait with premium materials and vibrant printing. Perfect for frame needs.",
-    "price": 85,
+    "price": 38,
     "originalPrice": 175,
     "discount": 24,
     "rating": 3.3,
@@ -5884,91 +5884,79 @@ export const dummyProducts: any[] = [
     ],
     "printingOptions": [
       {
-        "name": "Format & Size",
+        "name": "Size",
         "options": [
           {
-            "label": "A4 (210 x 297 mm)",
+            "label": "8X8",
             "priceAdd": 0
           },
           {
-            "label": "A5 (148 x 210 mm)",
-            "priceAdd": -5
-          },
-          {
-            "label": "A3 (297 x 420 mm)",
-            "priceAdd": 15
-          },
-          {
-            "label": "Custom Size",
-            "priceAdd": 10
-          }
-        ]
-      },
-      {
-        "name": "Material",
-        "options": [
-          {
-            "label": "Art Paper 157g",
+            "label": "8X12",
             "priceAdd": 0
           },
           {
-            "label": "Art Card 260g",
-            "priceAdd": 5
-          },
-          {
-            "label": "Glossy Photo Paper",
-            "priceAdd": 8
-          },
-          {
-            "label": "Matte Premium Paper",
-            "priceAdd": 10
-          }
-        ]
-      },
-      {
-        "name": "Printing Sides",
-        "options": [
-          {
-            "label": "Single Sided",
+            "label": "10X10",
             "priceAdd": 0
           },
           {
-            "label": "Double Sided",
-            "priceAdd": 15
-          }
-        ]
-      },
-      {
-        "name": "Finishing Options",
-        "options": [
-          {
-            "label": "None",
+            "label": "12X12",
             "priceAdd": 0
           },
           {
-            "label": "Matte Lamination",
-            "priceAdd": 8
+            "label": "12X18",
+            "priceAdd": 14
           },
           {
-            "label": "Gloss Lamination",
-            "priceAdd": 8
+            "label": "12X24",
+            "priceAdd": 34
           },
           {
-            "label": "Spot UV",
-            "priceAdd": 20
-          }
-        ]
-      },
-      {
-        "name": "Turnaround Time",
-        "options": [
-          {
-            "label": "Standard (3-4 Working Days)",
-            "priceAdd": 0
+            "label": "12X36",
+            "priceAdd": 38
           },
           {
-            "label": "Express (1-2 Working Days)",
-            "priceAdd": 30
+            "label": "12X48",
+            "priceAdd": 66
+          },
+          {
+            "label": "18X18",
+            "priceAdd": 42
+          },
+          {
+            "label": "18X24",
+            "priceAdd": 42
+          },
+          {
+            "label": "18X36",
+            "priceAdd": 50
+          },
+          {
+            "label": "18X48",
+            "priceAdd": 94
+          },
+          {
+            "label": "24X24",
+            "priceAdd": 46
+          },
+          {
+            "label": "24X36",
+            "priceAdd": 86
+          },
+          {
+            "label": "24X48",
+            "priceAdd": 94
+          },
+          {
+            "label": "36X36",
+            "priceAdd": 130
+          },
+          {
+            "label": "36X48",
+            "priceAdd": 142
+          },
+          {
+            "label": "48X48",
+            "priceAdd": 158
           }
         ]
       }
@@ -7684,720 +7672,6 @@ export const dummyProducts: any[] = [
     ]
   },
   {
-    "_id": "prod-eeecbece-0c2a-4e06-b888-9df700ff4966",
-    "name": "A-DESIGN 2025-2026",
-    "description": "Islamic Khat Canvas - A-DESIGN 2025-2026",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-0d69dd9e-82ad-4f48-b744-8837aaf91cc7",
-    "name": "D-4 QUL (1 PANEL)",
-    "description": "Islamic Khat Canvas - D-4 QUL (1 PANEL)",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-574384df-6a08-48c4-a299-b5d4c0651d6a",
-    "name": "D-4 QUL (SET)",
-    "description": "Islamic Khat Canvas - D-4 QUL (SET)",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-4e88824b-00a4-4bb8-976e-2378285b46d7",
-    "name": "D-1000 DINAR",
-    "description": "Islamic Khat Canvas - D-1000 DINAR",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-74d80c27-d2e8-42cf-8acb-bf9d1356058b",
-    "name": "D-AD DHUHA",
-    "description": "Islamic Khat Canvas - D-AD DHUHA",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-ce353cd9-7112-4faf-91bc-3643b7f9b1bc",
-    "name": "D-AL FATIHAH",
-    "description": "Islamic Khat Canvas - D-AL FATIHAH",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-af46ba3d-893f-42c2-a44c-cc9e811d3a0a",
-    "name": "D-AL MULK",
-    "description": "Islamic Khat Canvas - D-AL MULK",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-0d309afb-5ff7-49cf-a63f-2007feb00c0f",
-    "name": "D-ALLAH MUHAMMAD",
-    "description": "Islamic Khat Canvas - D-ALLAH MUHAMMAD",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-63bdb778-30c0-465d-b4fe-c0614d90c49c",
-    "name": "D-ASMA UL HUSNA",
-    "description": "Islamic Khat Canvas - D-ASMA UL HUSNA",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-d778cfe7-f426-4b36-af14-eb7a219ebcd8",
-    "name": "D-ASMA UL HUSNA JAM",
-    "description": "Islamic Khat Canvas - D-ASMA UL HUSNA JAM",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-2c6abe7f-1aa0-42b6-b9aa-63e84a192693",
-    "name": "D-ASSALAMMU ALAIKUM",
-    "description": "Islamic Khat Canvas - D-ASSALAMMU ALAIKUM",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-c18d3ebe-149b-424f-938f-41f9c9af8aa8",
-    "name": "D-AT TAUBAH",
-    "description": "Islamic Khat Canvas - D-AT TAUBAH",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-4a49acaf-8d40-4601-9e94-dbe4b810eb51",
-    "name": "D-AYAT KURSI",
-    "description": "Islamic Khat Canvas - D-AYAT KURSI",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-96e7cc3c-ce1b-4f56-9067-9c727f24e4be",
-    "name": "D-AYAT KURSI KAABAH",
-    "description": "Islamic Khat Canvas - D-AYAT KURSI KAABAH",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-38e471b7-591d-4dc0-ab91-a90c43c5ea70",
-    "name": "D-BISMILLAH",
-    "description": "Islamic Khat Canvas - D-BISMILLAH",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-50f420ca-b5d7-4240-9c90-339060b9ed89",
-    "name": "D-DEKO DAPUR",
-    "description": "Islamic Khat Canvas - D-DEKO DAPUR",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-47e82376-d5fa-455a-b212-1a2a33f787a2",
-    "name": "D-DOA MAKAN",
-    "description": "Islamic Khat Canvas - D-DOA MAKAN",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-7f8bb90d-2919-4a17-b49d-91c898cf7374",
-    "name": "D-HASBUNALLAH",
-    "description": "Islamic Khat Canvas - D-HASBUNALLAH",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-e7ed7736-df09-4c18-8a32-2dfe3e9d90d8",
-    "name": "D-JAM 1 2 3 PANEL",
-    "description": "Islamic Khat Canvas - D-JAM 1 2 3 PANEL",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-68830c98-4f43-40c2-8963-3299a392611c",
-    "name": "D-KAABAH",
-    "description": "Islamic Khat Canvas - D-KAABAH",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-37c01d83-a041-437e-a040-4c031311efee",
-    "name": "D-KHAT 3 PANEL",
-    "description": "Islamic Khat Canvas - D-KHAT 3 PANEL",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-0869dc0d-4382-4df1-9041-638862e2b9c3",
-    "name": "D-KISWAH KAABAH",
-    "description": "Islamic Khat Canvas - D-KISWAH KAABAH",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-037e1bc3-d0f8-4347-b75a-ddd0b9882710",
-    "name": "D-LA ILAHAILLALLAH",
-    "description": "Islamic Khat Canvas - D-LA ILAHAILLALLAH",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-bcc61f0c-67bb-47da-9e2d-6507d01f3557",
-    "name": "D-MASYAALLAH",
-    "description": "Islamic Khat Canvas - D-MASYAALLAH",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-233d58f3-ea01-426d-b729-f4ce8d1d8a7d",
-    "name": "D-NIAT IKTKAF MASJID",
-    "description": "Islamic Khat Canvas - D-NIAT IKTKAF MASJID",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-7a16aa5f-3818-4850-82ef-fea6466c20f9",
-    "name": "D-PERJANJIAN NABI SULAIMAN",
-    "description": "Islamic Khat Canvas - D-PERJANJIAN NABI SULAIMAN",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-7add20a3-7ae2-4759-b5d0-1e69b5456efd",
-    "name": "D-PETA DUNIA",
-    "description": "Islamic Khat Canvas - D-PETA DUNIA",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-89b99cb4-66f5-4873-aa7e-753253920bd0",
-    "name": "D-PETA DUNIA ADA NAMA NEGARA",
-    "description": "Islamic Khat Canvas - D-PETA DUNIA ADA NAMA NEGARA",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-5e08d1e1-9dca-4558-88c4-4f7a498ffa49",
-    "name": "D-PHOTO VIEW 1 PANEL",
-    "description": "Islamic Khat Canvas - D-PHOTO VIEW 1 PANEL",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-0798cc7a-4153-457e-91c3-01041e5054fd",
-    "name": "D-SSDI",
-    "description": "Islamic Khat Canvas - D-SSDI",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-5e321b15-5c05-4eb7-aa70-cb532bcc26cc",
-    "name": "D-SURAH AL KHAF",
-    "description": "Islamic Khat Canvas - D-SURAH AL KHAF",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-c649fe66-57ec-47b7-b313-1ebba154fbb2",
-    "name": "D-YASSIN",
-    "description": "Islamic Khat Canvas - D-YASSIN",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-4b276b53-d2aa-4def-bb19-8194ce7cf201",
-    "name": "D-ZIKIR 3 PANEL",
-    "description": "Islamic Khat Canvas - D-ZIKIR 3 PANEL",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
-    "_id": "prod-dae3b779-d7dd-460a-bceb-52f12047e935",
-    "name": "D-ZIKIR 4 PANEL",
-    "description": "Islamic Khat Canvas - D-ZIKIR 4 PANEL",
-    "price": 150,
-    "originalPrice": 150,
-    "discount": 0,
-    "rating": 5,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "sizes": [
-      {
-        "size": "Standard",
-        "stock": 1000
-      }
-    ],
-    "printingOptions": [],
-    "reviews": []
-  },
-  {
     "_id": "prod-149",
     "name": "Human Standee",
     "description": "High-quality Human Standee with premium materials and vibrant printing. Perfect for display item needs.",
@@ -8548,71 +7822,1250 @@ export const dummyProducts: any[] = [
         ]
       }
     ]
+  },
+  {
+    "_id": "prod-153",
+    "name": "Photobook",
+    "description": "High-quality Photobook with premium materials and vibrant printing. Perfect for preserving your wedding memories.",
+    "price": 49,
+    "originalPrice": 80,
+    "discount": 38,
+    "rating": 4.9,
+    "reviews": 215,
+    "category": "photobook",
+    "images": [
+      "/images/products/photobook.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ],
+    "printingOptions": [
+      {
+        "name": "Material",
+        "options": [
+          {
+            "label": "HARDCOVER",
+            "priceAdd": 0
+          },
+          {
+            "label": "SOFTCOVER",
+            "priceAdd": 0
+          }
+        ]
+      },
+      {
+        "name": "Size",
+        "options": [
+          {
+            "label": "6X6",
+            "priceAdd": 0
+          },
+          {
+            "label": "8X6",
+            "priceAdd": 0
+          }
+        ]
+      },
+      {
+        "name": "Pages",
+        "options": [
+          {
+            "label": "40 PAGES",
+            "priceAdd": 0
+          },
+          {
+            "label": "60 PAGES",
+            "priceAdd": 0
+          },
+          {
+            "label": "100 PAGES",
+            "priceAdd": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "prod-200",
+    "name": "KISWAH",
+    "description": "High-quality Islamic Khat - KISWAH",
+    "price": 130,
+    "originalPrice": 150,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 100,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-201",
+    "name": "4QUL 24X48",
+    "description": "High-quality Islamic Khat - 4QUL 24X48",
+    "price": 130,
+    "originalPrice": 150,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 64,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-202",
+    "name": "4 QUL 24X48 + (24X18)2PCS",
+    "description": "High-quality Islamic Khat - 4 QUL 24X48 + (24X18)2PCS",
+    "price": 239,
+    "originalPrice": 259,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 15,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-203",
+    "name": "AYAT KURSI MASJID",
+    "description": "High-quality Islamic Khat - AYAT KURSI MASJID",
+    "price": 149,
+    "originalPrice": 169,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 97,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-204",
+    "name": "KAABAH SYAHADAH 48X48",
+    "description": "High-quality Islamic Khat - KAABAH SYAHADAH 48X48",
+    "price": 216,
+    "originalPrice": 236,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 104,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-205",
+    "name": "KAABAH SYAHADAH 36X36",
+    "description": "High-quality Islamic Khat - KAABAH SYAHADAH 36X36",
+    "price": 157,
+    "originalPrice": 177,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 13,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-206",
+    "name": "FRAME JAM 24X24 + (12X24)2PCS",
+    "description": "High-quality Islamic Khat - FRAME JAM 24X24 + (12X24)2PCS",
+    "price": 197,
+    "originalPrice": 217,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 35,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-207",
+    "name": "ASMAUL HUSNA 24X48",
+    "description": "High-quality Islamic Khat - ASMAUL HUSNA 24X48",
+    "price": 129,
+    "originalPrice": 149,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 83,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-208",
+    "name": "KAABAH 36X36 + (24X24)2PCS",
+    "description": "High-quality Islamic Khat - KAABAH 36X36 + (24X24)2PCS",
+    "price": 337,
+    "originalPrice": 357,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 75,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-209",
+    "name": "KAABAH 36x36 + (18x18)2pcs",
+    "description": "High-quality Islamic Khat - KAABAH 36x36 + (18x18)2pcs",
+    "price": 249,
+    "originalPrice": 269,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 90,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-210",
+    "name": "KAABAH 24X24 + (18X18)2PCS",
+    "description": "High-quality Islamic Khat - KAABAH 24X24 + (18X18)2PCS",
+    "price": 182,
+    "originalPrice": 202,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 42,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-211",
+    "name": "KAABAH 24X24 + (12X12)2PCS",
+    "description": "High-quality Islamic Khat - KAABAH 24X24 + (12X12)2PCS",
+    "price": 154,
+    "originalPrice": 174,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 104,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-212",
+    "name": "PETA DUNIA 36X36 + (24X24)2PCS",
+    "description": "High-quality Islamic Khat - PETA DUNIA 36X36 + (24X24)2PCS",
+    "price": 365,
+    "originalPrice": 385,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 68,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-213",
+    "name": "PETA DUNIA 24X24 + (12X12)2PCS",
+    "description": "High-quality Islamic Khat - PETA DUNIA 24X24 + (12X12)2PCS",
+    "price": 182,
+    "originalPrice": 202,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 36,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-214",
+    "name": "PETA DUNIA 48X48",
+    "description": "High-quality Islamic Khat - PETA DUNIA 48X48",
+    "price": 216,
+    "originalPrice": 236,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 81,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-215",
+    "name": "PETA DUNIA 36X48",
+    "description": "High-quality Islamic Khat - PETA DUNIA 36X48",
+    "price": 185,
+    "originalPrice": 205,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 12,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-216",
+    "name": "PETA UNIA 36X36",
+    "description": "High-quality Islamic Khat - PETA UNIA 36X36",
+    "price": 159,
+    "originalPrice": 179,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 52,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-217",
+    "name": "ASMAUL HUSNA 36X36",
+    "description": "High-quality Islamic Khat - ASMAUL HUSNA 36X36",
+    "price": 159,
+    "originalPrice": 179,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 79,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-218",
+    "name": "JAM ASMAULHUSNA 48X48 +(24X48)2PCS",
+    "description": "High-quality Islamic Khat - JAM ASMAULHUSNA 48X48 +(24X48)2PCS",
+    "price": 450,
+    "originalPrice": 470,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 108,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-219",
+    "name": "JAM ASMAULHUSNA 36X36 +(18X36)2PCS",
+    "description": "High-quality Islamic Khat - JAM ASMAULHUSNA 36X36 +(18X36)2PCS",
+    "price": 320,
+    "originalPrice": 340,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 60,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-220",
+    "name": "AYAT SERIBU DINAR 24X36 + (18X18)2PCS",
+    "description": "High-quality Islamic Khat - AYAT SERIBU DINAR 24X36 + (18X18)2PCS",
+    "price": 199,
+    "originalPrice": 219,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 25,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-221",
+    "name": "DECO PINTU 12X36 +(12X12)2PCS",
+    "description": "High-quality Islamic Khat - DECO PINTU 12X36 +(12X12)2PCS",
+    "price": 115,
+    "originalPrice": 135,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 51,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-222",
+    "name": "AYAT KURSI 24X48",
+    "description": "High-quality Islamic Khat - AYAT KURSI 24X48",
+    "price": 130,
+    "originalPrice": 150,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 108,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-223",
+    "name": "JAM 3 PANEL 12X18",
+    "description": "High-quality Islamic Khat - JAM 3 PANEL 12X18",
+    "price": 135,
+    "originalPrice": 155,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 55,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-224",
+    "name": "ZIKIR 3 PAEL 12X24",
+    "description": "High-quality Islamic Khat - ZIKIR 3 PAEL 12X24",
+    "price": 128,
+    "originalPrice": 148,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 53,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-225",
+    "name": "SURAH ALKAHFI 24X48",
+    "description": "High-quality Islamic Khat - SURAH ALKAHFI 24X48",
+    "price": 248,
+    "originalPrice": 268,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 51,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-226",
+    "name": "AL KHFI 36X36",
+    "description": "High-quality Islamic Khat - AL KHFI 36X36",
+    "price": 148,
+    "originalPrice": 168,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 20,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-227",
+    "name": "ASMAULHUSNA 36X36",
+    "description": "High-quality Islamic Khat - ASMAULHUSNA 36X36",
+    "price": 148,
+    "originalPrice": 168,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 11,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-228",
+    "name": "4 QUL 4 PANEL 18X24",
+    "description": "High-quality Islamic Khat - 4 QUL 4 PANEL 18X24",
+    "price": 239,
+    "originalPrice": 259,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 101,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-229",
+    "name": "AYAT KURSI KAABAH 36X48",
+    "description": "High-quality Islamic Khat - AYAT KURSI KAABAH 36X48",
+    "price": 189,
+    "originalPrice": 209,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 91,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-230",
+    "name": "ASMAULHUSNA 36X48",
+    "description": "High-quality Islamic Khat - ASMAULHUSNA 36X48",
+    "price": 189,
+    "originalPrice": 209,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 44,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-231",
+    "name": "JAM 3 PANEL 18X24",
+    "description": "High-quality Islamic Khat - JAM 3 PANEL 18X24",
+    "price": 199,
+    "originalPrice": 219,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 106,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-232",
+    "name": "AYAT KURSI 24X24 + (12X24)2PCS",
+    "description": "High-quality Islamic Khat - AYAT KURSI 24X24 + (12X24)2PCS",
+    "price": 220,
+    "originalPrice": 240,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 47,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-233",
+    "name": "JAM KABAH 3PANEL 12X18",
+    "description": "High-quality Islamic Khat - JAM KABAH 3PANEL 12X18",
+    "price": 129,
+    "originalPrice": 149,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 107,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-234",
+    "name": "SURRAH ASSIN 36X48",
+    "description": "High-quality Islamic Khat - SURRAH ASSIN 36X48",
+    "price": 189,
+    "originalPrice": 209,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 100,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-235",
+    "name": "FRAME ALLAH MUHAMMMAD 20X30",
+    "description": "High-quality Islamic Khat - FRAME ALLAH MUHAMMMAD 20X30",
+    "price": 199,
+    "originalPrice": 219,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 66,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-236",
+    "name": "SURAH ATTAUBAH 36X48",
+    "description": "High-quality Islamic Khat - SURAH ATTAUBAH 36X48",
+    "price": 189,
+    "originalPrice": 209,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 10,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-237",
+    "name": "SURAH ATTAUBAH 24X24 + (12X24)2PCS",
+    "description": "High-quality Islamic Khat - SURAH ATTAUBAH 24X24 + (12X24)2PCS",
+    "price": 189,
+    "originalPrice": 209,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 13,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-238",
+    "name": "HSBUNALLAH 18X30 + ( 18X18)2PCS",
+    "description": "High-quality Islamic Khat - HSBUNALLAH 18X30 + ( 18X18)2PCS",
+    "price": 199,
+    "originalPrice": 219,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 44,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-239",
+    "name": "KUFI SYAHADAH 20X30",
+    "description": "High-quality Islamic Khat - KUFI SYAHADAH 20X30",
+    "price": 199,
+    "originalPrice": 219,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 108,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-240",
+    "name": "4 QUL 3 PANEL 36X48 + (18X48)2PCS",
+    "description": "High-quality Islamic Khat - 4 QUL 3 PANEL 36X48 + (18X48)2PCS",
+    "price": 389,
+    "originalPrice": 409,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 70,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-241",
+    "name": "ASSALAMUALIKUM 10X24",
+    "description": "High-quality Islamic Khat - ASSALAMUALIKUM 10X24",
+    "price": 49,
+    "originalPrice": 69,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 14,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-242",
+    "name": "ASSALAMUALIKUM 10X24 + (10X10)2PCS",
+    "description": "High-quality Islamic Khat - ASSALAMUALIKUM 10X24 + (10X10)2PCS",
+    "price": 99,
+    "originalPrice": 119,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 27,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-243",
+    "name": "DECO WORD MAP CLOCK 36X48",
+    "description": "High-quality Islamic Khat - DECO WORD MAP CLOCK 36X48",
+    "price": 239,
+    "originalPrice": 259,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 43,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-244",
+    "name": "24x36 + 12x24(2pcs)",
+    "description": "High-quality Islamic Khat - 24x36 + 12x24(2pcs)",
+    "price": 199,
+    "originalPrice": 219,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 32,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-245",
+    "name": "24x48 (jam)",
+    "description": "High-quality Islamic Khat - 24x48 (jam)",
+    "price": 149,
+    "originalPrice": 169,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 78,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-246",
+    "name": "24x36 (jam) + 12x24(2pcs)",
+    "description": "High-quality Islamic Khat - 24x36 (jam) + 12x24(2pcs)",
+    "price": 250,
+    "originalPrice": 270,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 80,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-247",
+    "name": "Ayat kursi masjid 18x24 + 12x24(2pcs)",
+    "description": "High-quality Islamic Khat - Ayat kursi masjid 18x24 + 12x24(2pcs)",
+    "price": 169,
+    "originalPrice": 189,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 102,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-248",
+    "name": "18X36 + 18X18 (2PCS)",
+    "description": "High-quality Islamic Khat - 18X36 + 18X18 (2PCS)",
+    "price": 199,
+    "originalPrice": 219,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 34,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-249",
+    "name": "18x30 + 12x18(2pcs)",
+    "description": "High-quality Islamic Khat - 18x30 + 12x18(2pcs)",
+    "price": 169,
+    "originalPrice": 189,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 102,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-250",
+    "name": "12x24 + 12x12(2pcs)",
+    "description": "High-quality Islamic Khat - 12x24 + 12x12(2pcs)",
+    "price": 99,
+    "originalPrice": 119,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 70,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-251",
+    "name": "12x12 3pcs",
+    "description": "High-quality Islamic Khat - 12x12 3pcs",
+    "price": 66,
+    "originalPrice": 86,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 84,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-252",
+    "name": "Frame Zikir 8x8 inch (4 panel)",
+    "description": "High-quality Islamic Khat - Frame Zikir 8x8 inch (4 panel)",
+    "price": 80,
+    "originalPrice": 100,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 107,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-253",
+    "name": "Frame Zikir 10x10 inch (4 panel)",
+    "description": "High-quality Islamic Khat - Frame Zikir 10x10 inch (4 panel)",
+    "price": 94,
+    "originalPrice": 114,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 89,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-254",
+    "name": "Niat Iktikaf (12x36 inch)",
+    "description": "High-quality Islamic Khat - Niat Iktikaf (12x36 inch)",
+    "price": 72,
+    "originalPrice": 92,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 94,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-255",
+    "name": "Frame Peta dunia 3 panel (48x48 , 24x24)",
+    "description": "High-quality Islamic Khat - Frame Peta dunia 3 panel (48x48 , 24x24)",
+    "price": 436,
+    "originalPrice": 456,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 53,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-256",
+    "name": "Frame Ayat kursi 3 panel (48x48 , 24x24)",
+    "description": "High-quality Islamic Khat - Frame Ayat kursi 3 panel (48x48 , 24x24)",
+    "price": 436,
+    "originalPrice": 456,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 75,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-257",
+    "name": "Frame Ayat 1000 dinar (24x36 , 18x24)",
+    "description": "High-quality Islamic Khat - Frame Ayat 1000 dinar (24x36 , 18x24)",
+    "price": 244,
+    "originalPrice": 264,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 59,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
+  },
+  {
+    "_id": "prod-258",
+    "name": "Frame Asma Ul Husna 36x48 (Ada Jam)",
+    "description": "High-quality Islamic Khat - Frame Asma Ul Husna 36x48 (Ada Jam)",
+    "price": 244,
+    "originalPrice": 264,
+    "discount": 0,
+    "rating": 5,
+    "reviews": 43,
+    "category": "Islamic Khat",
+    "images": [
+      "/images/products/logo-black.png"
+    ],
+    "colors": [
+      "Standard"
+    ],
+    "sizes": [
+      "Standard"
+    ]
   }
-,
-{
-  "_id": "prod-153",
-  "name": "Photobook",
-  "description": "High-quality Photobook with premium materials and vibrant printing. Perfect for preserving your wedding memories.",
-  "price": 49,
-  "originalPrice": 80,
-  "discount": 38,
-  "rating": 4.9,
-  "reviews": 215,
-  "category": "photobook",
-  "images": [
-    "/images/products/photobook.png"
-  ],
-  "colors": [
-    "Standard"
-  ],
-  "sizes": [
-    "Standard"
-  ],
-  "printingOptions": [
-    {
-      "name": "Material",
-      "options": [
-        {
-          "label": "HARDCOVER",
-          "priceAdd": 0
-        },
-        {
-          "label": "SOFTCOVER",
-          "priceAdd": 0
-        }
-      ]
-    },
-    {
-      "name": "Size",
-      "options": [
-        {
-          "label": "6X6",
-          "priceAdd": 0
-        },
-        {
-          "label": "8X6",
-          "priceAdd": 0
-        }
-      ]
-    },
-    {
-      "name": "Pages",
-      "options": [
-        {
-          "label": "40 PAGES",
-          "priceAdd": 0
-        },
-        {
-          "label": "60 PAGES",
-          "priceAdd": 0
-        },
-        {
-          "label": "100 PAGES",
-          "priceAdd": 0
-        }
-      ]
-    }
-  ]
-}
 ];
