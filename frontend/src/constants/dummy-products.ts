@@ -1005,13 +1005,6 @@ export const dummyProducts: any[] = [
           { label: "Full Set - Cross Stand (1 Side Printing)", priceAdd: 0 },
         ],
       },
-      {
-        name: "Turnaround Time",
-        options: [
-          { label: "Standard (3-4 Working Days)", priceAdd: 0 },
-          { label: "Express (1-2 Working Days)", priceAdd: 30 },
-        ],
-      },
     ],
   },
   {

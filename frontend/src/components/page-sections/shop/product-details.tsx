@@ -270,7 +270,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
               {step1Options.length && step2Options.length ? "4" : step1Options.length || step2Options.length ? "3" : "2"}
             </span>
-            <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Quantity & Turnaround</h2>
+            <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">{step3Options.length > 0 ? 'Quantity & Turnaround' : 'Quantity'}</h2>
           </div>
           
           {step3Options.length > 0 ? (() => {
