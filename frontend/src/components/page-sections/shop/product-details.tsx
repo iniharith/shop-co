@@ -71,8 +71,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   let availableQuantities: number[] = [];
   
   if (product.matrixPricing?.enabled) {
-    const materialOptName = options.find(o => o.name.toLowerCase().includes('material'))?.name;
-    const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides'))?.name;
+    const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format'))?.name;
+    const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides') || o.name.toLowerCase().includes('packaging'))?.name;
     
     const selectedMaterial = materialOptName && selectedOptions[materialOptName] !== undefined 
       ? options.find(o => o.name === materialOptName)?.options[selectedOptions[materialOptName]]?.label 
@@ -395,8 +395,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       {product.category === 'flyers' && portalEl && (() => {
         let matrixRow: any = null;
         if (product.matrixPricing?.enabled) {
-          const materialOptName = options.find(o => o.name.toLowerCase().includes('material'))?.name;
-          const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides'))?.name;
+          const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format'))?.name;
+          const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides') || o.name.toLowerCase().includes('packaging'))?.name;
           
           const selectedMaterial = materialOptName && selectedOptions[materialOptName] !== undefined 
             ? options.find(o => o.name === materialOptName)?.options[selectedOptions[materialOptName]]?.label 
