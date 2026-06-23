@@ -152,7 +152,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   // Step 3: Turnaround (and quantity is added manually to step 3)
   const step1Options = options.filter(o => /format|size|material/i.test(o.name));
   const step2Options = options.filter(o => !/format|size|material|turnaround/i.test(o.name));
-  const step3Options = options.filter(o => /turnaround/i.test(o.name));
+  const stepTurnaround = options.filter(o => /turnaround/i.test(o.name));
 
   // Fallback if regex matching didn't catch things evenly (some products may have different names)
   const renderOptions = (opts: typeof options) => {
@@ -278,17 +278,30 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           </div>
         )}
 
-        {/* STEP 3 */}
+        {/* STEP 3 (ADDONS) */}
+        {step3Addons.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
+                {[step1Options.length, step2Options.length].filter(Boolean).length + 1}
+              </span>
+              <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Addons</h2>
+            </div>
+            {renderOptions(step3Addons)}
+          </div>
+        )}
+
+        {/* QUANTITY / TURNAROUND */}
         {product.category !== "flyers" && (<div className="space-y-4">
           <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
             <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
-              {step1Options.length && step2Options.length ? "4" : step1Options.length || step2Options.length ? "3" : "2"}
+              {[step1Options.length, step2Options.length, step3Addons.length].filter(Boolean).length + 1}
             </span>
-            <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">{step3Options.length > 0 ? 'Quantity & Turnaround' : 'Quantity'}</h2>
+            <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">{stepTurnaround.length > 0 ? 'Quantity & Turnaround' : 'Quantity'}</h2>
           </div>
           
-          {step3Options.length > 0 ? (() => {
-            const turnaroundOpt = step3Options[0];
+          {stepTurnaround.length > 0 ? (() => {
+            const turnaroundOpt = stepTurnaround[0];
             const standardQuantities = [100, 200, 300, 500, 1000, 2000];
             
             let optionAddonsWithoutTurnaround = 0;
@@ -349,7 +362,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           })() : null}
 
           {/* Fallback rendering if there are multiple step 3 options (rare) or if no turnaround opt */}
-          {step3Options.length > 1 && renderOptions(step3Options.slice(1))}
+          {stepTurnaround.length > 1 && renderOptions(stepTurnaround.slice(1))}
 
           <div className="space-y-3 pt-2">
             <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide">Quantity</label>
