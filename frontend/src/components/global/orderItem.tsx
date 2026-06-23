@@ -24,7 +24,7 @@ const OrderItem = ({ order }: OrderItemProps) => {
   const [expanded, setExpanded] = useState(false);
   const [showTracker, setShowTracker] = useState(false);
   const { data: response } = useCustomerTasks();
-  const tasks = response?.tasks?.filter((t: any) => t.orderId === order._id) || [];
+  const tasks = (response as { tasks?: any[] })?.tasks?.filter((t: any) => t.orderId === order._id) || [];
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [commentText, setCommentText] = useState("");
   const { mutate: addComment, isPending: isCommenting } = useAddCustomerTaskComment();

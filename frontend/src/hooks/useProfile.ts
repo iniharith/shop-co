@@ -43,5 +43,5 @@ export const useStaff = () => {
         { enabled: !!token }
     );
 
-    return { staff: data?.data || [], isLoading, refetch };
+    return { staff: (data as any)?.data || [], isLoading, refetch };
 };

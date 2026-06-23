@@ -24,7 +24,7 @@ const ITEMS_PER_PAGE = 8;
 
 const IslamicKhatPage = () => {
   const { data, isPending } = useGetProductByCategory("Islamic Khat");
-  const products = data?.products || [];
+  const products = (data as { products?: any[] })?.products || [];
   
   const searchParams = useSearchParams();
   const pageParam = searchParams.get("page");

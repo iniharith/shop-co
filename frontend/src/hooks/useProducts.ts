@@ -27,7 +27,16 @@ export const useProducts = (id?: string) => {
     }
 
     // Fallback for single product if it's a dummy id
+    
+    if (response?.product?.name) {
+        const dummy = dummyProducts.find(d => d.name === response.product.name);
+        if (dummy && dummy.matrixPricing?.enabled) {
+            return { data: { ...response, product: { ...response.product, matrixPricing: dummy.matrixPricing, printingOptions: dummy.printingOptions } }, isPending: false };
+        }
+    }
+
     if (id?.startsWith('prod-')) {
+
         const dummy = dummyProducts.find(d => d?._id === id);
         return { data: { ...response, product: dummy }, isPending: false };
     }
