@@ -80,7 +80,29 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   let subtotal = 0;
   let availableQuantities: number[] = [];
   
-  if (product.matrixPricing?.enabled) {
+  if (product.category === "photobook") {
+    const matName = options.find(o => o.name.toLowerCase().includes('material'))?.name;
+    const sizeName = options.find(o => o.name.toLowerCase().includes('size'))?.name;
+    const pagesName = options.find(o => o.name.toLowerCase().includes('pages'))?.name;
+
+    const mat = matName && typeof selectedOptions[matName] === 'number' ? options.find(o => o.name === matName)?.options[selectedOptions[matName] as number]?.label : "";
+    const size = sizeName && typeof selectedOptions[sizeName] === 'number' ? options.find(o => o.name === sizeName)?.options[selectedOptions[sizeName] as number]?.label : "";
+    const pages = pagesName && typeof selectedOptions[pagesName] === 'number' ? options.find(o => o.name === pagesName)?.options[selectedOptions[pagesName] as number]?.label : "";
+
+    const pricingDB: any = {
+      "HARDCOVER": {
+        "6X6": { "40 PAGES": 109, "60 PAGES": 119, "100 PAGES": 129 },
+        "8X6": { "40 PAGES": 129, "60 PAGES": 139, "100 PAGES": 149 }
+      },
+      "SOFTCOVER": {
+        "6X6": { "40 PAGES": 49, "60 PAGES": 59, "100 PAGES": 69 },
+        "8X6": { "40 PAGES": 55, "60 PAGES": 65, "100 PAGES": 75 }
+      }
+    };
+    
+    const unitPrice = pricingDB[mat || ""]?.[size || ""]?.[pages || ""] || 0;
+    subtotal = unitPrice * quantity + (designOption === "design" ? 100 : 0);
+  } else if (product.matrixPricing?.enabled) {
     const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format') || o.name.toLowerCase().includes('package'))?.name;
     const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides') || o.name.toLowerCase().includes('packaging'))?.name;
     

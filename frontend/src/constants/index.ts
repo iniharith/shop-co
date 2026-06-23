@@ -88,7 +88,8 @@ export const printingCategories = [
       { label: "CEK HANTARAN", href: "/home/shop/prod-140" },
       { label: "DOOR GIFT", href: "/home/shop/prod-141" },
       { label: "WEDDING CARD", href: "/home/shop/prod-142" },
-      { label: "WELCOME BOARD", href: "/home/shop/prod-143" }
+      { label: "WELCOME BOARD", href: "/home/shop/prod-143" },
+      { label: "PHOTOBOOK", href: "/home/shop/prod-153" }
     ]
   },
   {
