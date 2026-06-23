@@ -238,7 +238,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           </div>
           
           <div className="grid grid-cols-1 gap-2">
-            {product.category?.toLowerCase() === "portrait" ? (
+            {product.name?.toLowerCase() === "portrait" ? (
               <div className="flex flex-col p-6 border-2 border-primary bg-primary/5 dark:bg-primary/10 rounded-xl shadow-sm text-center">
                 <h3 className="text-xl font-black text-gray-900 dark:text-foreground uppercase mb-2">
                   UPLOAD YOUR PICTURE AT DASHBOARD
