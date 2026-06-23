@@ -150,8 +150,9 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   // Step 1: Format/Size & Material
   // Step 2: Printing sides, finishing, add-ons
   // Step 3: Turnaround (and quantity is added manually to step 3)
-  const step1Options = options.filter(o => /format|size|material/i.test(o.name));
-  const step2Options = options.filter(o => !/format|size|material|turnaround/i.test(o.name));
+  const step1Options = options.filter(o => /format|size|material|package/i.test(o.name));
+  const step2Options = options.filter(o => !/format|size|material|package|turnaround|addon/i.test(o.name));
+  const step3Addons = options.filter(o => /addon/i.test(o.name));
   const stepTurnaround = options.filter(o => /turnaround/i.test(o.name));
 
   // Fallback if regex matching didn't catch things evenly (some products may have different names)
@@ -164,18 +165,18 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             <label 
               key={idx}
               className={`flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
-                selectedOptions[opt.name] === idx 
+                opt.isMultiSelect ? (Array.isArray(selectedOptions[opt.name]) && (selectedOptions[opt.name] as number[]).includes(idx)) : selectedOptions[opt.name] === idx
                   ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-sm" 
                   : "border-gray-200 dark:border-border hover:border-primary/50 dark:hover:border-primary/50"
               }`}
             >
               <div className="flex items-center gap-3">
                 <input 
-                  type="radio" 
+                  type={opt.isMultiSelect ? "checkbox" : "radio"} 
                   name={opt.name} 
                   className="w-4 h-4 text-primary focus:ring-primary accent-primary"
-                  checked={selectedOptions[opt.name] === idx}
-                  onChange={() => handleOptionChange(opt.name, idx)}
+                  checked={opt.isMultiSelect ? Array.isArray(selectedOptions[opt.name]) && (selectedOptions[opt.name] as number[]).includes(idx) : selectedOptions[opt.name] === idx}
+                  onChange={() => handleOptionChange(opt.name, idx, opt.isMultiSelect)}
                 />
                 <span className="text-sm font-medium text-gray-800 dark:text-foreground">{val.label}</span>
               </div>
