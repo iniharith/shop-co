@@ -175,7 +175,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
     let matrixRow: any = null;
     if (product.category === 'paper-bag') {
-      const designOptName = options.find(o => o.name.toLowerCase().includes('design'))?.name;
+      const designOptName = options.find(o => o.name.toLowerCase().includes('design') || o.name.toLowerCase().includes('size'))?.name;
       const selectedDesign = designOptName && typeof selectedOptions[designOptName] === 'number' 
         ? options.find(o => o.name === designOptName)?.options[selectedOptions[designOptName] as number]?.label 
         : "";
