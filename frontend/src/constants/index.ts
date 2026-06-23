@@ -42,7 +42,7 @@ export const printingCategories = [
     ]
   },
   {
-    label: "CORPORATE GIFT",
+    label: "PREMIUM GIFT",
     href: "/home/shop",
     subItems: [
       { label: "CRYSTAL PLAQUE TROPHY", href: "/home/shop/prod-118" },
@@ -52,7 +52,7 @@ export const printingCategories = [
       { label: "LANDYARD", href: "/home/shop/prod-122" },
       { label: "MUG", href: "/home/shop/prod-123" },
       { label: "PEN", href: "/home/shop/prod-124" },
-      { label: "CALANDER", href: "/home/shop/prod-125" },
+      { label: "CALENDER", href: "/home/shop/prod-125" },
       { label: "NOTEBOOK", href: "/home/shop/prod-126" },
       { label: "MONEY PACKET", href: "/home/shop/prod-127" },
       { label: "PREMIUM GIFT", href: "/home/shop/prod-128" }

@@ -8,7 +8,7 @@ const categoryStyles: Record<string, { icon: string; color: string }> = {
   "DIGITAL PRINTING": { icon: "🖨️", color: "bg-blue-50 dark:bg-blue-900/20" },
   "DISPLAY ITEM": { icon: "🚩", color: "bg-red-50 dark:bg-red-900/20" },
   "DIGITAL OFFSET": { icon: "📄", color: "bg-yellow-50 dark:bg-yellow-900/20" },
-  "CORPORATE GIFT": { icon: "🎁", color: "bg-green-50 dark:bg-green-900/20" },
+  "PREMIUM GIFT": { icon: "🎁", color: "bg-green-50 dark:bg-green-900/20" },
   "APPAREL": { icon: "👕", color: "bg-purple-50 dark:bg-purple-900/20" },
   "FRAME": { icon: "🖼️", color: "bg-orange-50 dark:bg-orange-900/20" },
   "WEDDING PRODUCT": { icon: "💍", color: "bg-pink-50 dark:bg-pink-900/20" },

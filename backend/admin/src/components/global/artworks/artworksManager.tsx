@@ -22,7 +22,7 @@ const categories = [
   "DIGITAL PRINTING",
   "DISPLAY ITEM",
   "DIGITAL OFFSET",
-  "CORPORATE GIFT",
+  "PREMIUM GIFT",
   "APPAREL",
   "FRAME",
   "WEDDING PRODUCT",

@@ -254,7 +254,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                     <SelectItem value="DIGITAL PRINTING">Digital Printing</SelectItem>
                     <SelectItem value="DISPLAY ITEM">Display Item</SelectItem>
                     <SelectItem value="DIGITAL OFFSET">Digital Offset</SelectItem>
-                    <SelectItem value="CORPORATE GIFT">Corporate Gift</SelectItem>
+                    <SelectItem value="PREMIUM GIFT">Premium Gift</SelectItem>
                     <SelectItem value="APPAREL">Apparel</SelectItem>
                     <SelectItem value="FRAME">Frame</SelectItem>
                     <SelectItem value="WEDDING PRODUCT">Wedding Product</SelectItem>
