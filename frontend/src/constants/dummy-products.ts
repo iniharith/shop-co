@@ -12,7 +12,7 @@ export const dummyProducts: any[] = [
     rating: 4.6,
     reviews: 40,
     category: "banner",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -118,7 +118,7 @@ export const dummyProducts: any[] = [
     rating: 4.6,
     reviews: 312,
     category: "bunting",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -224,7 +224,7 @@ export const dummyProducts: any[] = [
     rating: 3.8,
     reviews: 69,
     category: "car-sticker",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -330,7 +330,7 @@ export const dummyProducts: any[] = [
     rating: 3.3,
     reviews: 45,
     category: "board-printing",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -436,7 +436,7 @@ export const dummyProducts: any[] = [
     rating: 4.4,
     reviews: 289,
     category: "wall-sticker",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -542,7 +542,7 @@ export const dummyProducts: any[] = [
     rating: 4.8,
     reviews: 266,
     category: "glass-sticker",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -648,7 +648,7 @@ export const dummyProducts: any[] = [
     rating: 3.9,
     reviews: 28,
     category: "personalised-flag",
-    images: ["/images/products/display_item.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -754,7 +754,7 @@ export const dummyProducts: any[] = [
     rating: 4.9,
     reviews: 68,
     category: "popup-backdrop-display",
-    images: ["/images/products/display_item.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -860,7 +860,7 @@ export const dummyProducts: any[] = [
     rating: 3.4,
     reviews: 57,
     category: "roll-up-stand",
-    images: ["/images/products/display_item.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -966,7 +966,7 @@ export const dummyProducts: any[] = [
     rating: 3.6,
     reviews: 154,
     category: "wind-flag",
-    images: ["/images/products/display_item.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -1072,7 +1072,7 @@ export const dummyProducts: any[] = [
     rating: 4.1,
     reviews: 111,
     category: "flyers",
-    images: ["/images/products/digital_offset.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -1178,7 +1178,7 @@ export const dummyProducts: any[] = [
     rating: 4.9,
     reviews: 91,
     category: "booklet",
-    images: ["/images/products/digital_offset.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -1284,7 +1284,7 @@ export const dummyProducts: any[] = [
     rating: 4.6,
     reviews: 175,
     category: "business-card",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     matrixPricing: {
@@ -1463,7 +1463,7 @@ export const dummyProducts: any[] = [
     rating: 4.1,
     reviews: 110,
     category: "corporate-folder",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -1569,7 +1569,7 @@ export const dummyProducts: any[] = [
     rating: 3.4,
     reviews: 129,
     category: "paper-bag",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -1675,7 +1675,7 @@ export const dummyProducts: any[] = [
     rating: 3.9,
     reviews: 118,
     category: "certificate",
-    images: ["/images/products/digital_offset.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -1781,7 +1781,7 @@ export const dummyProducts: any[] = [
     rating: 3.7,
     reviews: 74,
     category: "stamp",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -1887,7 +1887,7 @@ export const dummyProducts: any[] = [
     rating: 3.4,
     reviews: 53,
     category: "sticker",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -1993,7 +1993,7 @@ export const dummyProducts: any[] = [
     rating: 5,
     reviews: 296,
     category: "crystal-plaque-trophy",
-    images: ["/images/products/corporate_gift.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -2099,7 +2099,7 @@ export const dummyProducts: any[] = [
     rating: 4.4,
     reviews: 34,
     category: "acrylic-trophy",
-    images: ["/images/products/corporate_gift.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -2205,7 +2205,7 @@ export const dummyProducts: any[] = [
     rating: 4,
     reviews: 235,
     category: "acrylic-keychain",
-    images: ["/images/products/corporate_gift.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -2311,7 +2311,7 @@ export const dummyProducts: any[] = [
     rating: 4.2,
     reviews: 193,
     category: "fridge-magnet",
-    images: ["/images/products/corporate_gift.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -2417,7 +2417,7 @@ export const dummyProducts: any[] = [
     rating: 3.6,
     reviews: 195,
     category: "lanyard",
-    images: ["/images/products/corporate_gift.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -2523,7 +2523,7 @@ export const dummyProducts: any[] = [
     rating: 4.8,
     reviews: 178,
     category: "mug",
-    images: ["/images/products/corporate_gift.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -2629,7 +2629,7 @@ export const dummyProducts: any[] = [
     rating: 4.3,
     reviews: 73,
     category: "pen",
-    images: ["/images/products/corporate_gift.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -2735,7 +2735,7 @@ export const dummyProducts: any[] = [
     rating: 4.9,
     reviews: 114,
     category: "calendar",
-    images: ["/images/products/corporate_gift.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -2841,7 +2841,7 @@ export const dummyProducts: any[] = [
     rating: 3.7,
     reviews: 189,
     category: "notebook",
-    images: ["/images/products/corporate_gift.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -2947,7 +2947,7 @@ export const dummyProducts: any[] = [
     rating: 4.3,
     reviews: 245,
     category: "money-packet",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -3053,7 +3053,7 @@ export const dummyProducts: any[] = [
     rating: 3.8,
     reviews: 28,
     category: "premium-gift",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -3159,7 +3159,7 @@ export const dummyProducts: any[] = [
     rating: 4.9,
     reviews: 293,
     category: "non-woven-bag",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -3265,7 +3265,7 @@ export const dummyProducts: any[] = [
     rating: 4.2,
     reviews: 188,
     category: "canvas-bag",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -3371,7 +3371,7 @@ export const dummyProducts: any[] = [
     rating: 3.5,
     reviews: 150,
     category: "sublimation-tshirt",
-    images: ["/images/products/apparel.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -3477,7 +3477,7 @@ export const dummyProducts: any[] = [
     rating: 3.5,
     reviews: 21,
     category: "cotton-t-shirt",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -3583,7 +3583,7 @@ export const dummyProducts: any[] = [
     rating: 4,
     reviews: 167,
     category: "islamic-khat",
-    images: ["/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -3689,7 +3689,7 @@ export const dummyProducts: any[] = [
     rating: 3.3,
     reviews: 299,
     category: "portrait",
-    images: ["/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -3795,7 +3795,7 @@ export const dummyProducts: any[] = [
     rating: 3.8,
     reviews: 171,
     category: "clock",
-    images: ["/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -3901,7 +3901,7 @@ export const dummyProducts: any[] = [
     rating: 4.8,
     reviews: 252,
     category: "wedding-bunting",
-    images: ["/images/products/wedding_product.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -4007,7 +4007,7 @@ export const dummyProducts: any[] = [
     rating: 3.7,
     reviews: 155,
     category: "wedding-banner",
-    images: ["/images/products/wedding_product.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -4113,7 +4113,7 @@ export const dummyProducts: any[] = [
     rating: 3.5,
     reviews: 234,
     category: "arrow-bunting",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -4219,7 +4219,7 @@ export const dummyProducts: any[] = [
     rating: 5,
     reviews: 41,
     category: "button-badge",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -4325,7 +4325,7 @@ export const dummyProducts: any[] = [
     rating: 3.2,
     reviews: 260,
     category: "cek-hantaran",
-    images: ["/images/products/wedding_product.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -4431,7 +4431,7 @@ export const dummyProducts: any[] = [
     rating: 4.9,
     reviews: 147,
     category: "door-gift",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -4537,7 +4537,7 @@ export const dummyProducts: any[] = [
     rating: 3.9,
     reviews: 159,
     category: "wedding-card",
-    images: ["/images/products/wedding_product.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -4643,7 +4643,7 @@ export const dummyProducts: any[] = [
     rating: 4,
     reviews: 219,
     category: "welcome-board",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -4749,7 +4749,7 @@ export const dummyProducts: any[] = [
     rating: 3.4,
     reviews: 241,
     category: "menu-book",
-    images: ["/images/products/food_packaging.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -4855,7 +4855,7 @@ export const dummyProducts: any[] = [
     rating: 3.3,
     reviews: 81,
     category: "table-tent",
-    images: ["/images/products/digital_printing.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -4961,7 +4961,7 @@ export const dummyProducts: any[] = [
     rating: 3.2,
     reviews: 177,
     category: "table-display-stand",
-    images: ["/images/products/display_item.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -5067,7 +5067,7 @@ export const dummyProducts: any[] = [
     rating: 3.8,
     reviews: 171,
     category: "stand-pouch",
-    images: ["/images/products/display_item.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -5173,7 +5173,7 @@ export const dummyProducts: any[] = [
     rating: 4,
     reviews: 210,
     category: "food-sticker",
-    images: ["/images/products/food_packaging.png"],
+    images: ["/images/products/logo-black.png"],
     colors: ["Red", "Blue", "Green", "Black", "White"],
     sizes: ["Small", "Medium", "Large", "Standard", "Custom"],
     printingOptions: [
@@ -5278,7 +5278,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5291,7 +5291,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5304,7 +5304,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5317,7 +5317,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5330,7 +5330,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5343,7 +5343,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5356,7 +5356,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5369,7 +5369,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5382,7 +5382,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5395,7 +5395,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5408,7 +5408,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5421,7 +5421,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5434,7 +5434,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5447,7 +5447,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5460,7 +5460,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5473,7 +5473,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5486,7 +5486,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5499,7 +5499,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5512,7 +5512,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5525,7 +5525,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5538,7 +5538,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5551,7 +5551,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5564,7 +5564,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5577,7 +5577,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5590,7 +5590,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5603,7 +5603,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5616,7 +5616,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5629,7 +5629,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5642,7 +5642,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5655,7 +5655,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5668,7 +5668,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5681,7 +5681,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5694,7 +5694,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
@@ -5707,7 +5707,7 @@ export const dummyProducts: any[] = [
     discount: 0,
     rating: 5.0,
     category: "Islamic Khat",
-    images: ["https://kampungcetak.com/images/products/frame.png"],
+    images: ["/images/products/logo-black.png"],
     sizes: [{ size: "Standard", stock: 1000 }],
     printingOptions: [],
     reviews: []
