@@ -174,9 +174,22 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       : "";
 
     let matrixRow: any = null;
-    matrixRow = product.matrixPricing.pricingData.find((row: any) => 
-      row.material === selectedMaterial && row.laminate === selectedLamination
-    );
+    if (product.category === 'paper-bag') {
+      const designOptName = options.find(o => o.name.toLowerCase().includes('design'))?.name;
+      const selectedDesign = designOptName && typeof selectedOptions[designOptName] === 'number' 
+        ? options.find(o => o.name === designOptName)?.options[selectedOptions[designOptName] as number]?.label 
+        : "";
+        
+      matrixRow = product.matrixPricing.pricingData.find((row: any) => 
+        row.material === selectedMaterial && 
+        row.lamination === selectedLamination && 
+        row.design === selectedDesign
+      );
+    } else {
+      matrixRow = product.matrixPricing.pricingData.find((row: any) => 
+        row.material === selectedMaterial && row.laminate === selectedLamination
+      );
+    }
 
     if (matrixRow) {
       availableQuantities = Object.keys(matrixRow.quantityPrices).map(Number).sort((a,b) => a-b);
