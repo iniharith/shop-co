@@ -1080,7 +1080,7 @@ export const dummyProducts: any[] = [
         pricingData: [
         {
                 "material": "80gsm Simili Paper",
-                "laminate": "4C + 0C",
+                "laminate": "Single Side",
                 "quantityPrices": {
                         "300": {
                                 "A3": 219.6,
@@ -1198,7 +1198,7 @@ export const dummyProducts: any[] = [
               },
         {
                 "material": "80gsm Simili Paper",
-                "laminate": "4C + 4C",
+                "laminate": "Front and Back",
                 "quantityPrices": {
                         "300": {
                                 "A3": 354.2,
@@ -1316,7 +1316,7 @@ export const dummyProducts: any[] = [
               },
         {
                 "material": "100gsm Simili Paper",
-                "laminate": "4C + 0C",
+                "laminate": "Single Side",
                 "quantityPrices": {
                         "300": {
                                 "A4": 150.2
@@ -1385,7 +1385,7 @@ export const dummyProducts: any[] = [
               },
         {
                 "material": "100gsm Simili Paper",
-                "laminate": "4C + 4C",
+                "laminate": "Front and Back",
                 "quantityPrices": {
                         "300": {
                                 "A4": 223.4
@@ -1454,7 +1454,7 @@ export const dummyProducts: any[] = [
               },
         {
                 "material": "85gsm Art Paper",
-                "laminate": "4C + 0C",
+                "laminate": "Single Side",
                 "quantityPrices": {
                         "300": {
                                 "A4": 136.8
@@ -1520,7 +1520,7 @@ export const dummyProducts: any[] = [
               },
         {
                 "material": "85gsm Art Paper",
-                "laminate": "4C + 4C",
+                "laminate": "Front and Back",
                 "quantityPrices": {
                         "105": {
                                 "A3": 4
@@ -1556,7 +1556,7 @@ export const dummyProducts: any[] = [
               },
         {
                 "material": "105gsm Art Paper",
-                "laminate": "4C + 0C",
+                "laminate": "Single Side",
                 "quantityPrices": {
                         "4": {
                                 "A5": 4
@@ -1645,7 +1645,7 @@ export const dummyProducts: any[] = [
               },
         {
                 "material": "105gsm Art Paper",
-                "laminate": "4C + 4C",
+                "laminate": "Front and Back",
                 "quantityPrices": {
                         "4": {
                                 "A5": 4
@@ -1734,7 +1734,7 @@ export const dummyProducts: any[] = [
               },
         {
                 "material": "128gsm Art Paper",
-                "laminate": "4C + 0C",
+                "laminate": "Single Side",
                 "quantityPrices": {
                         "4": {
                                 "A5": 4
@@ -1884,7 +1884,7 @@ export const dummyProducts: any[] = [
               },
         {
                 "material": "128gsm Art Paper",
-                "laminate": "4C + 4C",
+                "laminate": "Front and Back",
                 "quantityPrices": {
                         "157": {
                                 "A3": 4
@@ -2031,7 +2031,7 @@ export const dummyProducts: any[] = [
               },
         {
                 "material": "157gsm Art Paper",
-                "laminate": "4C + 0C",
+                "laminate": "Single Side",
                 "quantityPrices": {
                         "4": {
                                 "A5": 4
@@ -2222,7 +2222,7 @@ export const dummyProducts: any[] = [
               },
         {
                 "material": "157gsm Art Paper",
-                "laminate": "4C + 4C",
+                "laminate": "Front and Back",
                 "quantityPrices": {
                         "300": {
                                 "A3": 410,
@@ -2410,7 +2410,7 @@ export const dummyProducts: any[] = [
               },
         {
                 "material": "260gsm Art Card",
-                "laminate": "4C + 0C",
+                "laminate": "Single Side",
                 "quantityPrices": {
                         "4": {
                                 "A5": 4
@@ -2467,7 +2467,7 @@ export const dummyProducts: any[] = [
               },
         {
                 "material": "260gsm Art Card",
-                "laminate": "4C + 4C",
+                "laminate": "Front and Back",
                 "quantityPrices": {
                         "4": {
                                 "A5": 4
@@ -2524,7 +2524,7 @@ export const dummyProducts: any[] = [
               },
         {
                 "material": "310gsm Art Card",
-                "laminate": "4C + 0C",
+                "laminate": "Single Side",
                 "quantityPrices": {
                         "4": {
                                 "A5": 4
@@ -2581,7 +2581,7 @@ export const dummyProducts: any[] = [
               },
         {
                 "material": "310gsm Art Card",
-                "laminate": "4C + 4C",
+                "laminate": "Front and Back",
                 "quantityPrices": {
                         "4": {
                                 "A5": 4
@@ -2655,8 +2655,8 @@ export const dummyProducts: any[] = [
         {
           name: "Printing Sides",
           options: [
-            { label: "4C + 0C", priceAdd: 0 },
-            { label: "4C + 4C", priceAdd: 0 }
+            { label: "Single Side", priceAdd: 0 },
+            { label: "Front and Back", priceAdd: 0 }
           ]
         }
       ]

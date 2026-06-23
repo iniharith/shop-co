@@ -72,7 +72,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   
   if (product.matrixPricing?.enabled) {
     const materialOptName = options.find(o => o.name.toLowerCase().includes('material'))?.name;
-    const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination'))?.name;
+    const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides'))?.name;
     
     const selectedMaterial = materialOptName && selectedOptions[materialOptName] !== undefined 
       ? options.find(o => o.name === materialOptName)?.options[selectedOptions[materialOptName]]?.label 

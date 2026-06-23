@@ -1,7 +1,7 @@
 export const flyerMatrixPricing = [
   {
     "material": "80gsm Simili Paper",
-    "laminate": "4C + 0C",
+    "laminate": "Single Side",
     "quantityPrices": {
       "300": {
         "A3": 219.6,
@@ -119,7 +119,7 @@ export const flyerMatrixPricing = [
   },
   {
     "material": "80gsm Simili Paper",
-    "laminate": "4C + 4C",
+    "laminate": "Front and Back",
     "quantityPrices": {
       "300": {
         "A3": 354.2,
@@ -237,7 +237,7 @@ export const flyerMatrixPricing = [
   },
   {
     "material": "100gsm Simili Paper",
-    "laminate": "4C + 0C",
+    "laminate": "Single Side",
     "quantityPrices": {
       "300": {
         "A4": 150.2
@@ -306,7 +306,7 @@ export const flyerMatrixPricing = [
   },
   {
     "material": "100gsm Simili Paper",
-    "laminate": "4C + 4C",
+    "laminate": "Front and Back",
     "quantityPrices": {
       "300": {
         "A4": 223.4
@@ -375,7 +375,7 @@ export const flyerMatrixPricing = [
   },
   {
     "material": "85gsm Art Paper",
-    "laminate": "4C + 0C",
+    "laminate": "Single Side",
     "quantityPrices": {
       "300": {
         "A4": 136.8
@@ -441,7 +441,7 @@ export const flyerMatrixPricing = [
   },
   {
     "material": "85gsm Art Paper",
-    "laminate": "4C + 4C",
+    "laminate": "Front and Back",
     "quantityPrices": {
       "105": {
         "A3": 4
@@ -477,7 +477,7 @@ export const flyerMatrixPricing = [
   },
   {
     "material": "105gsm Art Paper",
-    "laminate": "4C + 0C",
+    "laminate": "Single Side",
     "quantityPrices": {
       "4": {
         "A5": 4
@@ -566,7 +566,7 @@ export const flyerMatrixPricing = [
   },
   {
     "material": "105gsm Art Paper",
-    "laminate": "4C + 4C",
+    "laminate": "Front and Back",
     "quantityPrices": {
       "4": {
         "A5": 4
@@ -655,7 +655,7 @@ export const flyerMatrixPricing = [
   },
   {
     "material": "128gsm Art Paper",
-    "laminate": "4C + 0C",
+    "laminate": "Single Side",
     "quantityPrices": {
       "4": {
         "A5": 4
@@ -805,7 +805,7 @@ export const flyerMatrixPricing = [
   },
   {
     "material": "128gsm Art Paper",
-    "laminate": "4C + 4C",
+    "laminate": "Front and Back",
     "quantityPrices": {
       "157": {
         "A3": 4
@@ -952,7 +952,7 @@ export const flyerMatrixPricing = [
   },
   {
     "material": "157gsm Art Paper",
-    "laminate": "4C + 0C",
+    "laminate": "Single Side",
     "quantityPrices": {
       "4": {
         "A5": 4
@@ -1143,7 +1143,7 @@ export const flyerMatrixPricing = [
   },
   {
     "material": "157gsm Art Paper",
-    "laminate": "4C + 4C",
+    "laminate": "Front and Back",
     "quantityPrices": {
       "300": {
         "A3": 410,
@@ -1331,7 +1331,7 @@ export const flyerMatrixPricing = [
   },
   {
     "material": "260gsm Art Card",
-    "laminate": "4C + 0C",
+    "laminate": "Single Side",
     "quantityPrices": {
       "4": {
         "A5": 4
@@ -1388,7 +1388,7 @@ export const flyerMatrixPricing = [
   },
   {
     "material": "260gsm Art Card",
-    "laminate": "4C + 4C",
+    "laminate": "Front and Back",
     "quantityPrices": {
       "4": {
         "A5": 4
@@ -1445,7 +1445,7 @@ export const flyerMatrixPricing = [
   },
   {
     "material": "310gsm Art Card",
-    "laminate": "4C + 0C",
+    "laminate": "Single Side",
     "quantityPrices": {
       "4": {
         "A5": 4
@@ -1502,7 +1502,7 @@ export const flyerMatrixPricing = [
   },
   {
     "material": "310gsm Art Card",
-    "laminate": "4C + 4C",
+    "laminate": "Front and Back",
     "quantityPrices": {
       "4": {
         "A5": 4
