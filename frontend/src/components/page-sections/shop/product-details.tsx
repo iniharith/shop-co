@@ -29,15 +29,15 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   useEffect(() => {
     setPortalEl(document.getElementById("flyer-pricing-portal"));
   }, []);
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({});
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, number | number[]>>({});
   const [designOption, setDesignOption] = useState<"upload" | "design">("upload");
 
   useEffect(() => {
     if (product.printingOptions) {
-      const defaults: Record<string, number> = {};
+      const defaults: Record<string, number | number[]> = {};
       product.printingOptions.forEach(opt => {
         if (opt.options.length > 0) {
-          defaults[opt.name] = 0;
+          defaults[opt.name] = opt.isMultiSelect ? [] : 0;
         }
       });
       setSelectedOptions(defaults);
@@ -45,8 +45,18 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     setQuantity(1);
   }, [product, id]);
 
-  const handleOptionChange = (optionName: string, index: number) => {
-    setSelectedOptions(prev => ({ ...prev, [optionName]: index }));
+  const handleOptionChange = (optionName: string, index: number, isMultiSelect?: boolean) => {
+    setSelectedOptions(prev => {
+      if (isMultiSelect) {
+        const current = Array.isArray(prev[optionName]) ? (prev[optionName] as number[]) : [];
+        if (current.includes(index)) {
+          return { ...prev, [optionName]: current.filter(i => i !== index) };
+        } else {
+          return { ...prev, [optionName]: [...current, index] };
+        }
+      }
+      return { ...prev, [optionName]: index };
+    });
   };
 
   const handleAddToCart = () => {
@@ -74,11 +84,11 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format'))?.name;
     const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides') || o.name.toLowerCase().includes('packaging'))?.name;
     
-    const selectedMaterial = materialOptName && selectedOptions[materialOptName] !== undefined 
-      ? options.find(o => o.name === materialOptName)?.options[selectedOptions[materialOptName]]?.label 
+    const selectedMaterial = materialOptName && typeof selectedOptions[materialOptName] === 'number' 
+      ? options.find(o => o.name === materialOptName)?.options[selectedOptions[materialOptName] as number]?.label 
       : "";
-    const selectedLamination = laminationOptName && selectedOptions[laminationOptName] !== undefined 
-      ? options.find(o => o.name === laminationOptName)?.options[selectedOptions[laminationOptName]]?.label 
+    const selectedLamination = laminationOptName && typeof selectedOptions[laminationOptName] === 'number' 
+      ? options.find(o => o.name === laminationOptName)?.options[selectedOptions[laminationOptName] as number]?.label 
       : "";
 
     let matrixRow: any = null;
@@ -118,9 +128,13 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     let optionAddons = 0;
     if (product.printingOptions) {
       product.printingOptions.forEach(opt => {
-        const selectedIdx = selectedOptions[opt.name];
-        if (selectedIdx !== undefined && opt.options[selectedIdx]) {
-          optionAddons += opt.options[selectedIdx].priceAdd;
+        const selectedVal = selectedOptions[opt.name];
+        if (Array.isArray(selectedVal)) {
+          selectedVal.forEach(idx => {
+            if (opt.options[idx]) optionAddons += opt.options[idx].priceAdd;
+          });
+        } else if (selectedVal !== undefined && opt.options[selectedVal as number]) {
+          optionAddons += opt.options[selectedVal as number].priceAdd;
         }
       });
     }
@@ -281,9 +295,13 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             if (product.printingOptions) {
               product.printingOptions.forEach(opt => {
                 if (opt.name === turnaroundOpt.name) return;
-                const selectedIdx = selectedOptions[opt.name];
-                if (selectedIdx !== undefined && opt.options[selectedIdx]) {
-                  optionAddonsWithoutTurnaround += opt.options[selectedIdx].priceAdd;
+                const selectedVal = selectedOptions[opt.name];
+                if (Array.isArray(selectedVal)) {
+                  selectedVal.forEach(idx => {
+                    if (opt.options[idx]) optionAddonsWithoutTurnaround += opt.options[idx].priceAdd;
+                  });
+                } else if (selectedVal !== undefined && opt.options[selectedVal as number]) {
+                  optionAddonsWithoutTurnaround += opt.options[selectedVal as number].priceAdd;
                 }
               });
             }
@@ -398,12 +416,12 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format'))?.name;
           const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides') || o.name.toLowerCase().includes('packaging'))?.name;
           
-          const selectedMaterial = materialOptName && selectedOptions[materialOptName] !== undefined 
-            ? options.find(o => o.name === materialOptName)?.options[selectedOptions[materialOptName]]?.label 
-            : "";
-          const selectedLamination = laminationOptName && selectedOptions[laminationOptName] !== undefined 
-            ? options.find(o => o.name === laminationOptName)?.options[selectedOptions[laminationOptName]]?.label 
-            : "";
+          const selectedMaterial = materialOptName && typeof selectedOptions[materialOptName] === 'number' 
+      ? options.find(o => o.name === materialOptName)?.options[selectedOptions[materialOptName] as number]?.label 
+      : "";
+          const selectedLamination = laminationOptName && typeof selectedOptions[laminationOptName] === 'number' 
+      ? options.find(o => o.name === laminationOptName)?.options[selectedOptions[laminationOptName] as number]?.label 
+      : "";
       
           matrixRow = product.matrixPricing.pricingData.find((row: any) => 
             row.material === selectedMaterial && row.laminate === selectedLamination

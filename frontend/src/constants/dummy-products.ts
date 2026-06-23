@@ -6810,117 +6810,160 @@ export const dummyProducts: any[] = [
   {
     "_id": "prod-142",
     "name": "Wedding Card",
-    "description": "High-quality Wedding Card with premium materials and vibrant printing. Perfect for wedding product needs.",
-    "price": 66,
-    "originalPrice": 174,
-    "discount": 15,
-    "rating": 3.9,
-    "reviews": 159,
-    "category": "wedding-card",
+    "description": "High-quality Wedding Card with premium materials and vibrant printing. Perfect for your special day.",
+    "price": 88,
+    "originalPrice": 150,
+    "discount": 41,
+    "rating": 4.9,
+    "reviews": 312,
+    "category": "kad-kahwin",
     "images": [
-      "/images/products/wedding_product.png"
+      "/images/products/wedding_card.png"
     ],
     "colors": [
-      "Red",
-      "Blue",
-      "Green",
-      "Black",
-      "White"
+      "Standard"
     ],
     "sizes": [
-      "Small",
-      "Medium",
-      "Large",
-      "Standard",
-      "Custom"
+      "Standard"
     ],
+    "matrixPricing": {
+      "enabled": true,
+      "pricingData": [
+        {
+          "material": "PAKEJ SIMPLE",
+          "laminate": "",
+          "quantityPrices": {
+            "50": 88,
+            "100": 129,
+            "200": 188,
+            "300": 288,
+            "500": 388,
+            "1000": 777
+          }
+        },
+        {
+          "material": "PAKEJ A",
+          "laminate": "",
+          "quantityPrices": {
+            "50": 99,
+            "100": 149,
+            "200": 199,
+            "300": 299,
+            "500": 399,
+            "1000": 799
+          }
+        },
+        {
+          "material": "PAKEJ B",
+          "laminate": "",
+          "quantityPrices": {
+            "50": 119,
+            "100": 159,
+            "200": 210,
+            "300": 310,
+            "500": 410,
+            "1000": 810
+          }
+        },
+        {
+          "material": "PAKEJ C",
+          "laminate": "",
+          "quantityPrices": {
+            "50": 129,
+            "100": 188,
+            "200": 229,
+            "300": 329,
+            "500": 429,
+            "1000": 829
+          }
+        },
+        {
+          "material": "PAKEJ D",
+          "laminate": "",
+          "quantityPrices": {
+            "50": 139,
+            "100": 199,
+            "200": 249,
+            "300": 349,
+            "500": 449,
+            "1000": 849
+          }
+        },
+        {
+          "material": "PAKEJ E",
+          "laminate": "",
+          "quantityPrices": {
+            "50": 169,
+            "100": 229,
+            "200": 299,
+            "300": 349,
+            "500": 499,
+            "1000": 799
+          }
+        }
+      ]
+    },
     "printingOptions": [
       {
-        "name": "Format & Size",
+        "name": "Package",
         "options": [
           {
-            "label": "A4 (210 x 297 mm)",
+            "label": "PAKEJ SIMPLE",
             "priceAdd": 0
           },
           {
-            "label": "A5 (148 x 210 mm)",
-            "priceAdd": -5
+            "label": "PAKEJ A",
+            "priceAdd": 0
           },
           {
-            "label": "A3 (297 x 420 mm)",
-            "priceAdd": 15
+            "label": "PAKEJ B",
+            "priceAdd": 0
           },
           {
-            "label": "Custom Size",
-            "priceAdd": 10
+            "label": "PAKEJ C",
+            "priceAdd": 0
+          },
+          {
+            "label": "PAKEJ D",
+            "priceAdd": 0
+          },
+          {
+            "label": "PAKEJ E",
+            "priceAdd": 0
           }
         ]
       },
       {
-        "name": "Material",
+        "name": "Addons",
+        "isMultiSelect": true,
         "options": [
           {
-            "label": "Art Paper 157g",
-            "priceAdd": 0
-          },
-          {
-            "label": "Art Card 260g",
-            "priceAdd": 5
-          },
-          {
-            "label": "Glossy Photo Paper",
-            "priceAdd": 8
-          },
-          {
-            "label": "Matte Premium Paper",
-            "priceAdd": 10
-          }
-        ]
-      },
-      {
-        "name": "Printing Sides",
-        "options": [
-          {
-            "label": "Single Sided",
-            "priceAdd": 0
-          },
-          {
-            "label": "Double Sided",
-            "priceAdd": 15
-          }
-        ]
-      },
-      {
-        "name": "Finishing Options",
-        "options": [
-          {
-            "label": "None",
-            "priceAdd": 0
-          },
-          {
-            "label": "Matte Lamination",
-            "priceAdd": 8
-          },
-          {
-            "label": "Gloss Lamination",
-            "priceAdd": 8
-          },
-          {
-            "label": "Spot UV",
-            "priceAdd": 20
-          }
-        ]
-      },
-      {
-        "name": "Turnaround Time",
-        "options": [
-          {
-            "label": "Standard (3-4 Working Days)",
-            "priceAdd": 0
-          },
-          {
-            "label": "Express (1-2 Working Days)",
+            "label": "Bunting",
             "priceAdd": 30
+          },
+          {
+            "label": "Arrow Bunting",
+            "priceAdd": 10
+          },
+          {
+            "label": "Banner",
+            "priceAdd": 40
+          },
+          {
+            "label": "Sticker",
+            "priceAdd": 70
+          },
+          {
+            "label": "Guestbook",
+            "priceAdd": 50
+          },
+          {
+            "label": "Backdrop",
+            "priceAdd": 100
+          },
+          {
+            "label": "Button Badge",
+            "priceAdd": 3
           }
         ]
       }

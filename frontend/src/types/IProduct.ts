@@ -1,5 +1,6 @@
 export interface IPrintingOption {
     name: string;
+    isMultiSelect?: boolean;
     options: { label: string; priceAdd: number }[];
 }
 
