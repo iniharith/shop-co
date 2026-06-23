@@ -58,9 +58,9 @@ export function Footer() {
               height={72}
               className="object-contain rounded-2xl"
             />
-            <h1 className="text-3xl font-brand font-bold text-gray-900 dark:text-foreground mb-4 uppercase tracking-wider">
+            <h2 className="text-2xl font-bold tracking-tighter">
               Kampung Cetak
-            </h1>
+            </h2>
           </Link>
 
           <p className="text-sm text-muted-foreground">
@@ -125,7 +125,7 @@ export function Footer() {
 
       <div className="flex flex-col md:flex-row justify-between items-center mt-12 pt-8 border-t">
         <p className="text-xs text-muted-foreground mb-4 md:mb-0">
-          <span className="font-brand text-lg font-bold">Kampung Cetak</span> &copy; 2026, All Rights Reserved
+          Kampung Cetak © 2026, All Rights Reserved
         </p>
         <div className="flex items-center space-x-4">
           <img

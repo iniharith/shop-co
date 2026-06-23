@@ -68,9 +68,8 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			fontFamily: {
-				primary: ['FonartoAmpersand', 'var(--font-dm-sans)', 'sans-serif'],
-				secondary: ['FonartoAmpersand', 'var(--font-work-sans)', 'sans-serif'],
-				brand: ['Fonarto', 'sans-serif'],
+				primary: ['var(--font-fonarto-ampersand)', 'var(--font-dm-sans)', 'sans-serif'],
+				secondary: ['var(--font-fonarto-ampersand)', 'var(--font-work-sans)', 'sans-serif'],
 			},
 
 		},

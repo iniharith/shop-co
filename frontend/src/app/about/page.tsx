@@ -25,10 +25,10 @@ const AboutPage = () => {
                 />
               </div>
               <h1 className="text-4xl md:text-6xl font-bold mb-6 text-gray-900 tracking-tight">
-                About <span className="text-[#D4AF37] font-brand">Kampung Cetak</span>
+                About <span className="text-[#D4AF37]">Kampung Cetak</span>
               </h1>
               <p className="text-gray-600 text-xl italic mb-8 border-l-4 border-[#D4AF37] pl-4">
-                "We take pride in our work and customer satisfaction is what sets <span className="font-brand">KAMPUNG CETAK</span> apart from the competition."
+                "We take pride in our work and customer satisfaction is what sets KAMPUNG CETAK apart from the competition."
               </p>
               <div className="flex items-center space-x-8">
                 <div>
@@ -90,7 +90,7 @@ const AboutPage = () => {
             >
               <h2 className="text-4xl font-bold text-gray-900 mb-6">Our Story</h2>
               <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                Established in 2004, <span className="font-brand">KAMPUNG CETAK</span> is one of the nation's leading printing companies. We are a one-stop center for business promotional item solutions. We provide a wide range of services in the printing industry.
+                Established in 2004, KAMPUNG CETAK is one of the nation's leading printing companies. We are a one-stop center for business promotional item solutions. We provide a wide range of services in the printing industry.
               </p>
               <p className="text-lg text-gray-600 leading-relaxed">
                 Our passionate team, integrated services, and turnkey solutions are what clients require today. We don't talk about quality. We prove it. We stand behind our commitment to results. Whether you are looking to promote a product or advertise a service, we can help you to design and produce an impactful visual presentation that will reach your audience and facilitate your business growth nationwide.
@@ -106,7 +106,7 @@ const AboutPage = () => {
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">Our Strengths</h2>
             <p className="text-gray-600 max-w-3xl mx-auto text-lg">
-              <span className="font-brand">Kampung Cetak</span> offers a one-stop center for printing solutions to our clients in business essentials, events, promotional items, display & advertising, packaging & labeling, and creative visuals.
+              Kampung Cetak offers a one-stop center for printing solutions to our clients in business essentials, events, promotional items, display & advertising, packaging & labeling, and creative visuals.
             </p>
           </div>
 

@@ -9,26 +9,15 @@
 }
 
 @font-face {
-  font-family: "Fonarto";
-  src: url("/fonts/fonarto.woff") format("woff");
-  font-weight: normal;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "FonartoAmpersand";
-  src: url("/fonts/fonarto.woff") format("woff");
-  unicode-range: U+0026;
-  font-weight: normal;
-  font-style: normal;
+  font-family: "integral";
+  src: url("/integrCf.ttf");
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-brand: "Fonarto", sans-serif;
-  --font-sans: "FonartoAmpersand", var(--font-geist-sans);
-  --font-mono: "FonartoAmpersand", var(--font-geist-mono);
+  --font-sans: var(--font-fonarto-ampersand), var(--font-geist-sans);
+  --font-mono: var(--font-fonarto-ampersand), var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

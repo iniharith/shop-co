@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import { Geist, Geist_Mono, DM_Sans } from "next/font/google";
 import "./globals.css";
 import Provider from "@/components/provider";
@@ -7,6 +8,20 @@ import { Footer } from "@/components/global/footer";
 import Cta from "@/components/global/cta";
 import { getServerSession } from "next-auth";
 import { authConfig } from "@/config/auth.config";
+
+const fonarto = localFont({
+  src: "./fonts/fonarto.woff",
+  variable: "--font-fonarto",
+});
+
+const fonartoAmpersand = localFont({
+  src: "./fonts/fonarto.woff",
+  variable: "--font-fonarto-ampersand",
+  declarations: [
+    { prop: "unicode-range", value: "U+0026" }
+  ]
+});
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -60,7 +75,7 @@ export default async function RootLayout({
     <html lang="en">
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${dmSans.variable} overflow-x-hidden w-screen ${geistMono.variable} bg-gray-100 dark:bg-background antialiased`}
+        className={`${geistSans.variable} ${dmSans.variable} overflow-x-hidden w-screen ${geistMono.variable} ${fonarto.variable} ${fonartoAmpersand.variable} bg-gray-100 dark:bg-background antialiased`}
       >
         <Provider session={session}>
           <div className="sticky z-50 top-0">

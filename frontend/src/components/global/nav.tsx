@@ -72,7 +72,7 @@ const MobileNavSheetContent = ({
                   height={36}
                   className="object-contain rounded-full"
                 />
-                <span className="text-lg text-black dark:text-foreground font-brand font-bold tracking-wider">Kampung Cetak</span>
+                <span className="text-lg text-black dark:text-foreground font-bold">Kampung Cetak</span>
               </Link>
             </div>
             <Button
