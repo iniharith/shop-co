@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { QuantityPicker } from "@/components/global/quantity-picker";
 import { StarRating } from "@/components/global/star-rating";
 import { IProduct } from "@/types/IProduct";
@@ -22,6 +23,12 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const { mutate, isPending } = useAddtoCart();
 
   const [quantity, setQuantity] = useState(1);
+  const [selectedGridSize, setSelectedGridSize] = useState<string>("A4");
+  const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setPortalEl(document.getElementById("flyer-pricing-portal"));
+  }, []);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>({});
   const [designOption, setDesignOption] = useState<"upload" | "design">("upload");
 
@@ -50,7 +57,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     }
     
     // We can store the design option in the size field or metadata, but for now we append it to the size to pass it to the backend mock
-    const sizeWithDesign = `Standard | Design: ${designOption === "upload" ? "Upload Artwork" : "Need Design Service"}`;
+    const baseSize = product.category === "flyers" ? selectedGridSize : "Standard";
+      const sizeWithDesign = `${baseSize} | Design: ${designOption === "upload" ? "Upload Artwork" : "Need Design Service"}`;
     const artworkUrl = designOption === "upload" ? "https://example.com/mock-uploaded-artwork.pdf" : undefined; // Replace with actual uploaded file URL state if it exists
     mutate({ productId: product._id, size: sizeWithDesign, quantity, artworkUrl });
     toast.success("Added to cart");
@@ -73,19 +81,35 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       ? options.find(o => o.name === laminationOptName)?.options[selectedOptions[laminationOptName]]?.label 
       : "";
 
-    const matrixRow = product.matrixPricing.pricingData.find(row => 
+    let matrixRow: any = null;
+    matrixRow = product.matrixPricing.pricingData.find((row: any) => 
       row.material === selectedMaterial && row.laminate === selectedLamination
     );
 
     if (matrixRow) {
       availableQuantities = Object.keys(matrixRow.quantityPrices).map(Number).sort((a,b) => a-b);
-      // Auto-adjust quantity if it's not valid for this matrix row
+      
+      let qPrices: any = matrixRow.quantityPrices[quantity] || matrixRow.quantityPrices[availableQuantities[0]];
+      let exactPrice = 0;
+      
+      if (typeof qPrices === 'object') {
+        // Flyer Grid Pricing
+        if (!qPrices[selectedGridSize]) {
+          const availableSizesForQ = Object.keys(qPrices);
+          if (availableSizesForQ.length > 0) {
+            setTimeout(() => setSelectedGridSize(availableSizesForQ[0]), 0);
+          }
+        }
+        exactPrice = qPrices[selectedGridSize] || Object.values(qPrices)[0] || 0;
+      } else {
+        // Normal Matrix Pricing
+        exactPrice = qPrices || 0;
+      }
+
       if (!availableQuantities.includes(quantity) && availableQuantities.length > 0) {
-        // We use setTimeout to avoid React state warning during render
         setTimeout(() => setQuantity(availableQuantities[0]), 0);
       }
       
-      const exactPrice = matrixRow.quantityPrices[quantity] || matrixRow.quantityPrices[availableQuantities[0]] || 0;
       subtotal = exactPrice + (designOption === "design" ? 50 : 0);
     } else {
       subtotal = product.price * quantity + (designOption === "design" ? 50 : 0); // fallback if no combination exists
@@ -241,7 +265,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         )}
 
         {/* STEP 3 */}
-        <div className="space-y-4">
+        {product.category !== "flyers" && (<div className="space-y-4">
           <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
             <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
               {step1Options.length && step2Options.length ? "4" : step1Options.length || step2Options.length ? "3" : "2"}
@@ -341,8 +365,9 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             )}
           </div>
         </div>
-
+        )}
         {/* ── PRICE SUMMARY ── */}
+        {/* End of conditional */}
         <div className="bg-gray-100 dark:bg-black/40 rounded-xl p-5 space-y-3 mt-8 border border-gray-200 dark:border-border">
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
             <span>Subtotal</span>
@@ -366,6 +391,73 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           onClick={handleAddToCart}
         />
       </div>
+
+      {product.category === 'flyers' && portalEl && (() => {
+        let matrixRow: any = null;
+        if (product.matrixPricing?.enabled) {
+          const materialOptName = options.find(o => o.name.toLowerCase().includes('material'))?.name;
+          const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides'))?.name;
+          
+          const selectedMaterial = materialOptName && selectedOptions[materialOptName] !== undefined 
+            ? options.find(o => o.name === materialOptName)?.options[selectedOptions[materialOptName]]?.label 
+            : "";
+          const selectedLamination = laminationOptName && selectedOptions[laminationOptName] !== undefined 
+            ? options.find(o => o.name === laminationOptName)?.options[selectedOptions[laminationOptName]]?.label 
+            : "";
+      
+          matrixRow = product.matrixPricing.pricingData.find((row: any) => 
+            row.material === selectedMaterial && row.laminate === selectedLamination
+          );
+        }
+
+        if (!matrixRow) return null;
+
+        return createPortal(
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mt-6 overflow-x-auto w-full mb-10">
+            <h2 className="text-xl font-bold tracking-tight text-primary mb-4">Format & Size Pricing</h2>
+            <table className="w-full text-sm text-center border-collapse">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="p-3 text-left font-semibold text-gray-700 border border-gray-200">Quantity</th>
+                  <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A3</th>
+                  <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A4</th>
+                  <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A5</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {availableQuantities.map((q) => {
+                  const qPrices = matrixRow.quantityPrices[q];
+                  return (
+                    <tr key={q} className="hover:bg-gray-50 transition-colors">
+                      <td className="p-3 text-left font-semibold text-gray-800 border border-gray-200">{q}</td>
+                      {['A3', 'A4', 'A5'].map((size) => {
+                        const price = qPrices[size];
+                        const isSelected = quantity === q && selectedGridSize === size;
+                        return (
+                          <td 
+                            key={size}
+                            onClick={() => {
+                              if (price) {
+                                setQuantity(q);
+                                setSelectedGridSize(size);
+                              }
+                            }}
+                            className={`p-3 border border-gray-200 transition-all ${!price ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'cursor-pointer'} ${isSelected ? 'bg-primary/10 border-2 border-primary font-bold text-primary shadow-inner' : 'text-gray-600 hover:bg-primary/5'}`}
+                          >
+                            {price ? `RM ${price.toFixed(2)}` : 'N/A'}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>,
+          portalEl
+        );
+      })()}
+
     </div>
   );
 }

@@ -59,6 +59,8 @@ const page = () => {
                 {product.description || "High quality printing service offering excellent results with vibrant colors and durability. Ideal for professional and personal use."}
               </p>
             </div>
+            
+            <div id="flyer-pricing-portal"></div>
           </div>
           
           {/* ── RIGHT COLUMN: CONFIGURATOR (Sticky) ── */}
