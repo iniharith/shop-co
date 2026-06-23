@@ -5627,10 +5627,6 @@ export const dummyProducts: any[] = [
           {
             "label": "6XL-10XL",
             "priceAdd": 20
-          },
-          {
-            "label": "New Design",
-            "priceAdd": 100
           }
         ]
       }

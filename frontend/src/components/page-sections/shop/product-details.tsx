@@ -129,7 +129,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     const unitPrice = tshirtPrices[type || "Round Neck"]?.[applicableTier.toString()] || tshirtPrices["Round Neck"]["1"];
 
     let optionAddonsPerPiece = 0;
-    let flatAddons = 0;
     
     if (product.printingOptions) {
       product.printingOptions.forEach(opt => {
@@ -138,11 +137,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           if (Array.isArray(selectedVal)) {
             selectedVal.forEach(idx => {
               if (opt.options[idx]) {
-                if (opt.options[idx].label.toLowerCase() === 'new design') {
-                  flatAddons += opt.options[idx].priceAdd;
-                } else {
-                  optionAddonsPerPiece += opt.options[idx].priceAdd;
-                }
+                optionAddonsPerPiece += opt.options[idx].priceAdd;
               }
             });
           }
@@ -150,7 +145,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       });
     }
 
-    subtotal = ((unitPrice + optionAddonsPerPiece) * quantity) + flatAddons + (designOption === "design" ? 100 : 0);
+    subtotal = ((unitPrice + optionAddonsPerPiece) * quantity) + (designOption === "design" ? 100 : 0);
   } else if (product.matrixPricing?.enabled) {
     const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format') || o.name.toLowerCase().includes('package'))?.name;
     const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides') || o.name.toLowerCase().includes('packaging'))?.name;

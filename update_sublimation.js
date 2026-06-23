@@ -52,7 +52,7 @@ if (prod) {
         { label: "4XL", "priceAdd": 10 },
         { label: "5XL", "priceAdd": 16 },
         { label: "6XL-10XL", "priceAdd": 20 },
-        { label: "New Design", priceAdd: 100 }
+
       ]
     }
   ];
