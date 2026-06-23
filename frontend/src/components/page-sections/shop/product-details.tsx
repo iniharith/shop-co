@@ -249,7 +249,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             {product.name?.toLowerCase() === "portrait" ? (
               <div className="flex flex-col p-6 border-2 border-primary bg-primary/5 dark:bg-primary/10 rounded-xl shadow-sm text-center">
                 <h3 className="text-xl font-black text-gray-900 dark:text-foreground uppercase mb-2">
-                  UPLOAD YOUR PICTURE AT DASHBOARD
+                  UPLOAD YOUR PICTURE AT PROFILE PAGE
                 </h3>
                 <p className="text-base text-gray-600 dark:text-muted-foreground">
                   AFTER YOU HAVE PLACED THE ORDER
