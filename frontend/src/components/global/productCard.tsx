@@ -22,7 +22,7 @@ interface ProductCardProps {
 const ProductCard = ({ product }: ProductCardProps) => {
   const router = useRouter();
   const image =
-    product.images?.length && product.images[0].startsWith("/")
+    product.images?.length && product.images[0].startsWith("/") && !product.images[0].startsWith("/images/") && !product.images[0].startsWith("/placeholder")
       ? process.env.NEXT_PUBLIC_BACKEND_URL + product.images[0]
       : product.images[0];
   const [imageLoading, setImageLoading] = useState(false);
