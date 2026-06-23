@@ -3,39 +3,49 @@ const fs = require('fs');
 
 const workbook = xlsx.readFile('../prices.xlsx');
 const sheet = workbook.Sheets['PAPER BAG'];
-const csv = xlsx.utils.sheet_to_csv(sheet);
-const lines = csv.split('\n');
+// Generate a 2D array of rows
+const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
 
 let pricingData = [];
 let currentMaterial = '';
 let currentLamination = '';
 let designs = [];
 
-lines.forEach((line, i) => {
-  const parts = line.split(',');
-  if (parts[1] && (parts[1].includes('157gsm') || parts[1].includes('210gsm'))) {
-    currentMaterial = parts[1].trim();
-  } else if (parts[1] && parts[1].includes('Lamination')) {
-    // Remove the "(4C + 0C)" or "(4c)" part and clean up extra spaces
-    currentLamination = parts[1].replace(/\(4C \+ 0C\)/gi, '').replace(/\(4c\)/gi, '').trim();
-    // Also remove the extra non-breaking space if it exists
+rows.forEach((row, i) => {
+  if (!row || row.length === 0) return;
+  
+  const col0 = row[0];
+  const col1 = row[1];
+  
+  if (col1 && typeof col1 === 'string' && (col1.includes('157gsm') || col1.includes('210gsm'))) {
+    currentMaterial = col1.trim();
+  } else if (col1 && typeof col1 === 'string' && col1.includes('Lamination')) {
+    currentLamination = col1.replace(/\(4C \+ 0C\)/gi, '').replace(/\(4c\)/gi, '').trim();
     currentLamination = currentLamination.replace(/\u00A0/g, ' ').trim();
-  } else if (parts[1] && parts[1].includes('PB01')) {
-    designs = parts.slice(1).filter(d => d.trim().startsWith('PB'));
-  } else if (parts[0] && !isNaN(parseInt(parts[0]))) {
-    const qty = parseInt(parts[0]);
+  } else if (col1 && typeof col1 === 'string' && col1.includes('PB01')) {
+    // Extract designs from this row
+    designs = row.slice(1).filter(d => typeof d === 'string' && d.trim().startsWith('PB'));
+  } else if (col0 && !isNaN(parseInt(col0))) {
+    const qty = parseInt(col0);
     if (qty >= 100) {
       designs.forEach((design, idx) => {
-         const priceStr = parts[idx + 1];
-         if (priceStr && priceStr.trim() !== '') {
-            const price = parseFloat(priceStr.replace(/\"/g, '').replace('MYR', '').replace(/,/g, '').trim());
-            pricingData.push({
-               material: currentMaterial,
-               lamination: currentLamination,
-               design: design,
-               qty: qty,
-               price: price
-            });
+         const priceStr = row[idx + 1];
+         if (priceStr !== undefined && priceStr !== null) {
+            let price = 0;
+            if (typeof priceStr === 'number') {
+              price = priceStr;
+            } else if (typeof priceStr === 'string') {
+              price = parseFloat(priceStr.replace(/\"/g, '').replace('MYR', '').replace(/,/g, '').trim());
+            }
+            if (!isNaN(price)) {
+              pricingData.push({
+                 material: currentMaterial,
+                 lamination: currentLamination,
+                 design: design,
+                 qty: qty,
+                 price: price
+              });
+            }
          }
       });
     }

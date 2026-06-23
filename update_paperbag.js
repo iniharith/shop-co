@@ -18,7 +18,8 @@ for(let i=prodStart; i<text.length; i++) {
   }
 }
 
-// Generate the new product definition
+const designOptions = Array.from({length: 10}).map((_, i) => ({ "label": "PB" + String(i + 1).padStart(2, '0'), "priceAdd": 0 }));
+
 const newProd = `{
       "_id": "prod-141",
       "name": "Paper Bag",
@@ -53,7 +54,7 @@ const newProd = `{
         {
           "name": "Design",
           "isMultiSelect": false,
-          "options": Array.from({length: 10}).map((_, i) => ({ "label": "PB" + String(i + 1).padStart(2, '0'), "priceAdd": 0 }))
+          "options": ${JSON.stringify(designOptions)}
         }
       ],
       "matrixPricing": {
