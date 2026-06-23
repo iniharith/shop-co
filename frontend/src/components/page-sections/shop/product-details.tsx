@@ -110,9 +110,9 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         setTimeout(() => setQuantity(availableQuantities[0]), 0);
       }
       
-      subtotal = exactPrice + (designOption === "design" ? 50 : 0);
+      subtotal = exactPrice + (designOption === "design" ? 100 : 0);
     } else {
-      subtotal = product.price * quantity + (designOption === "design" ? 50 : 0); // fallback if no combination exists
+      subtotal = product.price * quantity + (designOption === "design" ? 100 : 0); // fallback if no combination exists
     }
   } else {
     let optionAddons = 0;
@@ -125,7 +125,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       });
     }
 
-    const basePrice = product.price + optionAddons + (designOption === "design" ? 50 : 0);
+    const basePrice = product.price + optionAddons + (designOption === "design" ? 100 : 0);
     subtotal = basePrice * quantity;
   }
 
@@ -235,7 +235,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                   />
                   <span className="text-sm font-bold text-gray-800 dark:text-foreground">Let KampungCetak design for you</span>
                 </div>
-                <span className="text-sm font-semibold text-primary">+RM 50.00</span>
+                <span className="text-sm font-semibold text-primary">+RM 100.00</span>
               </div>
               <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">Our professional designers will create a stunning custom design for your brand.</p>
             </label>
@@ -304,7 +304,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                       <tr key={q} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                         <td className="p-3 text-left font-semibold text-gray-800 dark:text-foreground">{q}</td>
                         {turnaroundOpt.options.map((opt, idx) => {
-                          const cellBasePrice = product.price + optionAddonsWithoutTurnaround + opt.priceAdd + (designOption === "design" ? 50 : 0);
+                          const cellBasePrice = product.price + optionAddonsWithoutTurnaround + opt.priceAdd + (designOption === "design" ? 100 : 0);
                           const cellSubtotal = cellBasePrice * q;
                           const cellTotal = cellSubtotal * 1.07;
                           const isSelected = quantity === q && selectedOptions[turnaroundOpt.name] === idx;
