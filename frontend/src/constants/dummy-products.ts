@@ -6454,124 +6454,31 @@ export const dummyProducts: any[] = [
     ]
   },
   {
-    "_id": "prod-139",
-    "name": "Button Badge",
-    "description": "High-quality Button Badge with premium materials and vibrant printing. Perfect for wedding product needs.",
-    "price": 77,
-    "originalPrice": 131,
-    "discount": 6,
-    "rating": 5,
-    "reviews": 41,
-    "category": "button-badge",
-    "images": [
-      "/images/products/digital_printing.png"
-    ],
-    "colors": [
-      "Red",
-      "Blue",
-      "Green",
-      "Black",
-      "White"
-    ],
-    "sizes": [
-      "Small",
-      "Medium",
-      "Large",
-      "Standard",
-      "Custom"
-    ],
-    "printingOptions": [
-      {
-        "name": "Format & Size",
-        "options": [
-          {
-            "label": "A4 (210 x 297 mm)",
-            "priceAdd": 0
-          },
-          {
-            "label": "A5 (148 x 210 mm)",
-            "priceAdd": -5
-          },
-          {
-            "label": "A3 (297 x 420 mm)",
-            "priceAdd": 15
-          },
-          {
-            "label": "Custom Size",
-            "priceAdd": 10
-          }
-        ]
-      },
-      {
-        "name": "Material",
-        "options": [
-          {
-            "label": "Art Paper 157g",
-            "priceAdd": 0
-          },
-          {
-            "label": "Art Card 260g",
-            "priceAdd": 5
-          },
-          {
-            "label": "Glossy Photo Paper",
-            "priceAdd": 8
-          },
-          {
-            "label": "Matte Premium Paper",
-            "priceAdd": 10
-          }
-        ]
-      },
-      {
-        "name": "Printing Sides",
-        "options": [
-          {
-            "label": "Single Sided",
-            "priceAdd": 0
-          },
-          {
-            "label": "Double Sided",
-            "priceAdd": 15
-          }
-        ]
-      },
-      {
-        "name": "Finishing Options",
-        "options": [
-          {
-            "label": "None",
-            "priceAdd": 0
-          },
-          {
-            "label": "Matte Lamination",
-            "priceAdd": 8
-          },
-          {
-            "label": "Gloss Lamination",
-            "priceAdd": 8
-          },
-          {
-            "label": "Spot UV",
-            "priceAdd": 20
-          }
-        ]
-      },
-      {
-        "name": "Turnaround Time",
-        "options": [
-          {
-            "label": "Standard (3-4 Working Days)",
-            "priceAdd": 0
-          },
-          {
-            "label": "Express (1-2 Working Days)",
-            "priceAdd": 30
-          }
-        ]
-      }
-    ]
-  },
+      "_id": "prod-139",
+      "name": "Button Badge",
+      "description": "High-quality Button Badge with premium materials and vibrant printing. Perfect for event needs.",
+      "price": 0,
+      "originalPrice": 0,
+      "discount": 0,
+      "rating": 5,
+      "reviews": 41,
+      "category": "button-badge",
+      "images": [
+        "/images/products/digital_printing.png"
+      ],
+      "printingOptions": [
+        {
+          "name": "Type",
+          "isMultiSelect": false,
+          "options": [
+            { "label": "BUTTON BADGE PIN", "priceAdd": 2 },
+            { "label": "BUTTON BADGE KEYCHAIN", "priceAdd": 3 },
+            { "label": "BUTTON BADGE MAGNET", "priceAdd": 3 },
+            { "label": "BUTTON BADGE MAGNET TAG", "priceAdd": 4 }
+          ]
+        }
+      ]
+    },
   {
     "_id": "prod-140",
     "name": "Cek Hantaran",

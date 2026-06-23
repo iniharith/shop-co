@@ -76,6 +76,22 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
   const options = product.printingOptions || [];
 
+  let minQuantity = 1;
+  if (product.category === 'button-badge') {
+    const typeName = options.find(o => o.name.toLowerCase() === 'type')?.name;
+    const type = typeName && typeof selectedOptions[typeName] === 'number' ? options.find(o => o.name === typeName)?.options[selectedOptions[typeName] as number]?.label : "";
+    if (type === "BUTTON BADGE MAGNET TAG") {
+      minQuantity = 10;
+    }
+  }
+
+  useEffect(() => {
+    if (quantity < minQuantity) {
+      setQuantity(minQuantity);
+    }
+  }, [minQuantity, quantity]);
+
+
   // Calculate prices
   let subtotal = 0;
   let availableQuantities: number[] = [];
@@ -476,7 +492,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 <span className="text-sm font-medium dark:text-foreground">Total Pieces</span>
                 <QuantityPicker
                   quantity={quantity}
-                  onDecrement={() => setQuantity((q) => Math.max(1, q - 1))}
+                  onDecrement={() => setQuantity((q) => Math.max(minQuantity, q - 1))}
                   onIncrement={() => setQuantity((q) => q + 1)}
                   max={10000}
                   onQuantityChange={setQuantity}
