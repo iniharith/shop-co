@@ -68,9 +68,8 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			fontFamily: {
-				sans: ['Fonarto', 'sans-serif'],
-				primary: ['Fonarto', 'sans-serif'],
-				secondary: ['Fonarto', 'sans-serif'],
+				primary: ['var(--font-dm-sans)'],
+				secondary: ['var(--font-work-sans)'],
 			},
 
 		},
