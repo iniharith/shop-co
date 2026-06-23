@@ -5527,91 +5527,110 @@ export const dummyProducts: any[] = [
     ],
     "printingOptions": [
       {
-        "name": "Format & Size",
+        "name": "Type of Baju",
+        "isMultiSelect": false,
         "options": [
           {
-            "label": "A4 (210 x 297 mm)",
+            "label": "Round Neck",
             "priceAdd": 0
           },
           {
-            "label": "A5 (148 x 210 mm)",
-            "priceAdd": -5
+            "label": "Muslimah",
+            "priceAdd": 0
           },
           {
-            "label": "A3 (297 x 420 mm)",
-            "priceAdd": 15
+            "label": "Kids",
+            "priceAdd": 0
           },
           {
-            "label": "Custom Size",
-            "priceAdd": 10
+            "label": "Sweater Lycra",
+            "priceAdd": 0
+          },
+          {
+            "label": "Baseball Lycra",
+            "priceAdd": 0
+          },
+          {
+            "label": "Versity Lycra",
+            "priceAdd": 0
+          },
+          {
+            "label": "Korporat Shortsleeve",
+            "priceAdd": 0
+          },
+          {
+            "label": "Korporat Longsleeve",
+            "priceAdd": 0
           }
         ]
       },
       {
-        "name": "Material",
+        "name": "Add Ons",
+        "isMultiSelect": true,
         "options": [
           {
-            "label": "Art Paper 157g",
-            "priceAdd": 0
-          },
-          {
-            "label": "Art Card 260g",
-            "priceAdd": 5
-          },
-          {
-            "label": "Glossy Photo Paper",
-            "priceAdd": 8
-          },
-          {
-            "label": "Matte Premium Paper",
-            "priceAdd": 10
-          }
-        ]
-      },
-      {
-        "name": "Printing Sides",
-        "options": [
-          {
-            "label": "Single Sided",
-            "priceAdd": 0
-          },
-          {
-            "label": "Double Sided",
-            "priceAdd": 15
-          }
-        ]
-      },
-      {
-        "name": "Finishing Options",
-        "options": [
-          {
-            "label": "None",
-            "priceAdd": 0
-          },
-          {
-            "label": "Matte Lamination",
-            "priceAdd": 8
-          },
-          {
-            "label": "Gloss Lamination",
-            "priceAdd": 8
-          },
-          {
-            "label": "Spot UV",
+            "label": "Kain Lycra",
             "priceAdd": 20
-          }
-        ]
-      },
-      {
-        "name": "Turnaround Time",
-        "options": [
-          {
-            "label": "Standard (3-4 Working Days)",
-            "priceAdd": 0
           },
           {
-            "label": "Express (1-2 Working Days)",
-            "priceAdd": 30
+            "label": "Long Sleeve",
+            "priceAdd": 6
+          },
+          {
+            "label": "Polo Collar",
+            "priceAdd": 8
+          },
+          {
+            "label": "Retro Collar",
+            "priceAdd": 16
+          },
+          {
+            "label": "Mandrin Collar (Button)",
+            "priceAdd": 10
+          },
+          {
+            "label": "Mandrin Collar (Zip)",
+            "priceAdd": 16
+          },
+          {
+            "label": "Half Zip Collar",
+            "priceAdd": 14
+          },
+          {
+            "label": "NFL V Neck",
+            "priceAdd": 16
+          },
+          {
+            "label": "V Neck End",
+            "priceAdd": 8
+          },
+          {
+            "label": "Swoosh Collar",
+            "priceAdd": 16
+          },
+          {
+            "label": "Retro Lace",
+            "priceAdd": 20
+          },
+          {
+            "label": "3XL",
+            "priceAdd": 6
+          },
+          {
+            "label": "4XL",
+            "priceAdd": 10
+          },
+          {
+            "label": "5XL",
+            "priceAdd": 16
+          },
+          {
+            "label": "6XL-10XL",
+            "priceAdd": 20
+          },
+          {
+            "label": "New Design",
+            "priceAdd": 100
           }
         ]
       }

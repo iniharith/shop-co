@@ -102,6 +102,55 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     
     const unitPrice = pricingDB[mat || ""]?.[size || ""]?.[pages || ""] || 0;
     subtotal = unitPrice * quantity + (designOption === "design" ? 100 : 0);
+  } else if (product.category === "sublimation-tshirt") {
+    const typeName = options.find(o => o.name.toLowerCase().includes('type'))?.name;
+    const type = typeName && typeof selectedOptions[typeName] === 'number' ? options.find(o => o.name === typeName)?.options[selectedOptions[typeName] as number]?.label : "Round Neck";
+    
+    const tshirtPrices: Record<string, Record<string, number>> = {
+      "Round Neck": { "1": 39, "10": 29, "20": 25, "30": 24, "50": 22, "100": 20 },
+      "Muslimah": { "1": 49, "10": 39, "20": 35, "30": 34, "50": 32, "100": 30 },
+      "Kids": { "1": 39, "10": 29, "20": 25, "30": 24, "50": 22, "100": 20 },
+      "Sweater Lycra": { "1": 119, "10": 99, "20": 89, "30": 79, "50": 75, "100": 65 },
+      "Baseball Lycra": { "1": 119, "10": 99, "20": 89, "30": 79, "50": 75, "100": 65 },
+      "Versity Lycra": { "1": 150, "10": 120, "20": 110, "30": 99, "50": 95, "100": 79 },
+      "Korporat Shortsleeve": { "1": 120, "10": 99, "20": 89, "30": 79, "50": 75, "100": 65 },
+      "Korporat Longsleeve": { "1": 130, "10": 109, "20": 99, "30": 89, "50": 85, "100": 75 }
+    };
+
+    const tiers = [100, 50, 30, 20, 10, 1];
+    let applicableTier = 1;
+    for (let t of tiers) {
+      if (quantity >= t) {
+        applicableTier = t;
+        break;
+      }
+    }
+    
+    const unitPrice = tshirtPrices[type || "Round Neck"]?.[applicableTier.toString()] || tshirtPrices["Round Neck"]["1"];
+
+    let optionAddonsPerPiece = 0;
+    let flatAddons = 0;
+    
+    if (product.printingOptions) {
+      product.printingOptions.forEach(opt => {
+        if (opt.name.toLowerCase().includes('add on')) {
+          const selectedVal = selectedOptions[opt.name];
+          if (Array.isArray(selectedVal)) {
+            selectedVal.forEach(idx => {
+              if (opt.options[idx]) {
+                if (opt.options[idx].label.toLowerCase() === 'new design') {
+                  flatAddons += opt.options[idx].priceAdd;
+                } else {
+                  optionAddonsPerPiece += opt.options[idx].priceAdd;
+                }
+              }
+            });
+          }
+        }
+      });
+    }
+
+    subtotal = ((unitPrice + optionAddonsPerPiece) * quantity) + flatAddons + (designOption === "design" ? 100 : 0);
   } else if (product.matrixPricing?.enabled) {
     const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format') || o.name.toLowerCase().includes('package'))?.name;
     const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides') || o.name.toLowerCase().includes('packaging'))?.name;
@@ -161,8 +210,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       });
     }
 
-    const basePrice = product.price + optionAddons + (designOption === "design" ? 100 : 0);
-    subtotal = basePrice * quantity;
+    const basePrice = product.price + optionAddons;
+    subtotal = basePrice * quantity + (designOption === "design" ? 100 : 0);
   }
 
   const total = subtotal;
