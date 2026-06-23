@@ -17,6 +17,7 @@ const fonarto = localFont({
 const fonartoAmpersand = localFont({
   src: "./fonts/fonarto.woff",
   variable: "--font-fonarto-ampersand",
+  weight: "100 900",
   declarations: [
     { prop: "unicode-range", value: "U+0026" }
   ]
