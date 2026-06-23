@@ -136,7 +136,9 @@ const ProfileCard = () => {
   const displayVerified = profile?.verified || false;
   
   let displayAvatar = profile?.avatar || null;
-  if (displayAvatar && !displayAvatar.startsWith('http')) {
+  if (displayAvatar && displayAvatar.startsWith('http')) {
+    displayAvatar = displayAvatar.replace('http://', 'https://');
+  } else if (displayAvatar && !displayAvatar.startsWith('http')) {
     displayAvatar = `${API}/${displayAvatar.replace(/\\/g, '/').replace(/^\/?/, '')}`;
   }
   

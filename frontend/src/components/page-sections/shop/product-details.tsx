@@ -105,8 +105,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     subtotal = basePrice * quantity;
   }
 
-  const vat = subtotal * 0.07; // 7% VAT
-  const total = subtotal + vat;
+  const total = subtotal;
 
   // Group printing options logically if available
   // Try to group options into steps intelligently. 
@@ -349,16 +348,12 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             <span>Subtotal</span>
             <span>RM {subtotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-            <span>VAT (7%)</span>
-            <span>RM {vat.toFixed(2)}</span>
-          </div>
           <div className="w-full h-px bg-gray-300 dark:bg-border my-2"></div>
           <div className="flex justify-between items-end">
             <span className="text-base font-semibold text-gray-900 dark:text-foreground">Total Price</span>
             <div className="text-right">
               <span className="text-3xl font-extrabold text-primary">RM {total.toFixed(2)}</span>
-              <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">Includes delivery to Malaysia</p>
+              <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">Delivery price will be shown at checkout</p>
             </div>
           </div>
         </div>

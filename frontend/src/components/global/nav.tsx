@@ -96,7 +96,7 @@ const MobileNavSheetContent = ({
                 {(() => {
                   const avatar = (session?.user as any)?.avatar || (session?.user as any)?.image;
                   if (!avatar) return session?.user?.name ? session.user.name.charAt(0).toUpperCase() : <CgProfile size={16} />;
-                  const url = avatar.startsWith('http') ? avatar : `${process.env.NEXT_PUBLIC_BACKEND_URL}/${avatar.replace(/\\/g, '/').replace(/^\/?/, '')}`;
+                  const url = avatar.startsWith('http') ? avatar.replace('http://', 'https://') : `${process.env.NEXT_PUBLIC_BACKEND_URL}/${avatar.replace(/\\/g, '/').replace(/^\/?/, '')}`;
                   return <Image src={url} alt={session.user.name || "Profile"} width={36} height={36} className="object-cover w-full h-full" />;
                 })()}
               </div>
@@ -264,7 +264,7 @@ const Nav = () => {
   const getAvatarUrl = () => {
     const avatar = (session?.user as any)?.avatar || (session?.user as any)?.image;
     if (!avatar) return null;
-    if (avatar.startsWith('http')) return avatar;
+    if (avatar.startsWith('http')) return avatar.replace('http://', 'https://');
     return `${process.env.NEXT_PUBLIC_BACKEND_URL}/${avatar.replace(/\\/g, '/').replace(/^\/?/, '')}`;
   };
 

@@ -68,7 +68,7 @@ export const printingCategories = [
     label: "FRAME",
     href: "/home/shop",
     subItems: [
-      { label: "ISLAMIC KHAT", href: "/home/shop/prod-133" },
+      { label: "ISLAMIC KHAT", href: "/home/shop?category=Islamic%20Khat" },
       { label: "PORTRAIT", href: "/home/shop/prod-134" },
       { label: "CLOCK", href: "/home/shop/prod-135" }
     ]

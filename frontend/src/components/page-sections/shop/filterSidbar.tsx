@@ -43,7 +43,7 @@ export default function FilterSidebar() {
 
   const categoryList = [
     "Digital Printing", "Display Item", "Digital Offset", 
-    "Corporate Gift", "Apparel", "Wedding Product", "Food Packaging"
+    "Corporate Gift", "Apparel", "Wedding Product", "Food Packaging", "Islamic Khat"
   ];
   const turnaroundList = ["Standard (3-4 Days)", "Express (1-2 Days)"];
   const formatList = ["A4", "A5", "A3", "Custom Size", "Large Format"];
