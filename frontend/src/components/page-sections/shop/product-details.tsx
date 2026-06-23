@@ -214,6 +214,13 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     ));
   };
 
+  let currentStep = 1;
+  const designStepNum = product.category?.toLowerCase() !== "islamic khat" ? currentStep++ : 0;
+  const formatStepNum = step1Options.length > 0 ? currentStep++ : 0;
+  const printingStepNum = step2Options.length > 0 ? currentStep++ : 0;
+  const addonsStepNum = step3Addons.length > 0 ? currentStep++ : 0;
+  const quantityStepNum = currentStep++;
+
   return (
     <div className="bg-white dark:bg-card rounded-2xl shadow-lg border border-gray-200 dark:border-border sticky top-24 overflow-hidden">
       
@@ -233,7 +240,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           <div className="space-y-4">
           <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
             <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
-              1
+              {designStepNum}
             </span>
             <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Design & Artwork</h2>
           </div>
@@ -298,7 +305,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         {step1Options.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">2</span>
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">{formatStepNum}</span>
               <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Format & Material</h2>
             </div>
             {renderOptions(step1Options)}
@@ -309,7 +316,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         {step2Options.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">3</span>
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">{printingStepNum}</span>
               <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Printing & Options</h2>
             </div>
             {renderOptions(step2Options)}
@@ -321,7 +328,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           <div className="space-y-4">
             <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
-                {[step1Options.length, step2Options.length].filter(Boolean).length + 1}
+                {addonsStepNum}
               </span>
               <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Addons</h2>
             </div>
@@ -333,7 +340,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         {product.category !== "flyers" && (<div className="space-y-4">
           <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
             <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
-              {[step1Options.length, step2Options.length, step3Addons.length].filter(Boolean).length + 1}
+              {quantityStepNum}
             </span>
             <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">{stepTurnaround.length > 0 ? 'Quantity & Turnaround' : 'Quantity'}</h2>
           </div>
