@@ -18,9 +18,13 @@ export const printingCategories = [
     href: "/home/shop",
     subItems: [
       { label: "PERSONALISED FLAG", href: "/home/shop/prod-106" },
-      { label: "POPUP BACKDROP DISPLAY", href: "/home/shop/prod-107" },
+      { label: "POP UP", href: "/home/shop/prod-107" },
       { label: "ROLL UP STAND", href: "/home/shop/prod-108" },
-      { label: "WIND FLAG", href: "/home/shop/prod-109" }
+      { label: "WIND FLAG", href: "/home/shop/prod-109" },
+      { label: "HUMAN STANDEE", href: "/home/shop/prod-149" },
+      { label: "TRIPOD STAND", href: "/home/shop/prod-150" },
+      { label: "WATER BAG", href: "/home/shop/prod-151" },
+      { label: "MINI X STAND", href: "/home/shop/prod-152" }
     ]
   },
   {
