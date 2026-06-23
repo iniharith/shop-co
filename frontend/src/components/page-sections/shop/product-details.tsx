@@ -81,7 +81,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   let availableQuantities: number[] = [];
   
   if (product.matrixPricing?.enabled) {
-    const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format'))?.name;
+    const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format') || o.name.toLowerCase().includes('package'))?.name;
     const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides') || o.name.toLowerCase().includes('packaging'))?.name;
     
     const selectedMaterial = materialOptName && typeof selectedOptions[materialOptName] === 'number' 
@@ -424,7 +424,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         />
       </div>
 
-      {product.category === 'flyers' && portalEl && (() => {
+      {(product.category === 'flyers' || product.category === 'kad-kahwin') && portalEl && (() => {
         let matrixRow: any = null;
         if (product.matrixPricing?.enabled) {
           const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format'))?.name;
@@ -446,24 +446,51 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
         return createPortal(
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mt-6 overflow-x-auto w-full mb-10">
-            <h2 className="text-xl font-bold tracking-tight text-primary mb-4">Format & Size Pricing</h2>
+            <h2 className="text-xl font-bold tracking-tight text-primary mb-4">{product.category === 'kad-kahwin' ? 'Package Pricing' : 'Format & Size Pricing'}</h2>
             <table className="w-full text-sm text-center border-collapse">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="p-3 text-left font-semibold text-gray-700 border border-gray-200">Quantity</th>
-                  <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A3</th>
-                  <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A4</th>
-                  <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A5</th>
+                  {product.category === 'flyers' ? (
+                    <>
+                      <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A3</th>
+                      <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A4</th>
+                      <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A5</th>
+                    </>
+                  ) : (
+                    <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/2">Price (RM)</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {availableQuantities.map((q) => {
                   const qPrices = matrixRow.quantityPrices[q];
+                  
+                  if (product.category === 'kad-kahwin') {
+                    const price = qPrices; // For kad-kahwin, qPrices is just a number
+                    const isSelected = quantity === q;
+                    return (
+                      <tr key={q} className="hover:bg-gray-50 transition-colors">
+                        <td className="p-3 text-left font-semibold text-gray-800 border border-gray-200">{q}</td>
+                        <td 
+                          onClick={() => {
+                            if (price) {
+                              setQuantity(q);
+                            }
+                          }}
+                          className={`p-3 border border-gray-200 transition-all ${!price ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'cursor-pointer'} ${isSelected ? 'bg-primary/10 border-2 border-primary font-bold text-primary shadow-inner' : 'text-gray-600 hover:bg-primary/5'}`}
+                        >
+                          {price ? `RM ${price.toFixed(2)}` : 'N/A'}
+                        </td>
+                      </tr>
+                    );
+                  }
+
                   return (
                     <tr key={q} className="hover:bg-gray-50 transition-colors">
                       <td className="p-3 text-left font-semibold text-gray-800 border border-gray-200">{q}</td>
                       {['A3', 'A4', 'A5'].map((size) => {
-                        const price = qPrices[size];
+                        const price = qPrices ? qPrices[size] : null;
                         const isSelected = quantity === q && selectedGridSize === size;
                         return (
                           <td 
