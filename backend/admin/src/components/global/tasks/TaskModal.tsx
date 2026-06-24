@@ -86,7 +86,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
              }
           }}
           placeholder="add note"
-          className="bg-transparent border-0 text-black placeholder:text-black/60 font-medium h-5 px-1 w-full focus-visible:ring-0 focus-visible:ring-offset-0 text-[8px] leading-none"
+          className="bg-transparent border-0 text-black placeholder:text-black/60 font-medium h-5 px-1 w-full focus-visible:ring-0 focus-visible:ring-offset-0 text-[6px] leading-none"
         />
         {isPending && <LoaderCircle className="w-3 h-3 animate-spin text-black mr-2 shrink-0" />}
       </div>
