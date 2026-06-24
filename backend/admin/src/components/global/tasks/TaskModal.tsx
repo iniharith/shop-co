@@ -74,7 +74,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
       </div>
 
       {/* Notes Box - Yellow Pill overlapping */}
-      <div className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 z-20 shadow-md bg-[#fde047] rounded-[8px] flex items-center w-[70%] transition-all focus-within:ring-2 focus-within:ring-white">
+      <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-20 shadow-md bg-[#fde047] rounded-[6px] flex items-center w-[70%] transition-all focus-within:ring-2 focus-within:ring-white">
         <Input 
           value={notes}
           onChange={e => setNotes(e.target.value)}
@@ -86,7 +86,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
              }
           }}
           placeholder="add note"
-          className="bg-transparent border-0 text-black placeholder:text-black/60 font-medium h-7 px-2 w-full focus-visible:ring-0 focus-visible:ring-offset-0 text-[8px]"
+          className="bg-transparent border-0 text-black placeholder:text-black/60 font-medium h-5 px-1 w-full focus-visible:ring-0 focus-visible:ring-offset-0 text-[8px] leading-none"
         />
         {isPending && <LoaderCircle className="w-3 h-3 animate-spin text-black mr-2 shrink-0" />}
       </div>
