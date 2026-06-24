@@ -18,8 +18,11 @@ const multer_1 = __importDefault(require("multer"));
 const cloudinary_1 = require("cloudinary");
 const multer_storage_cloudinary_1 = require("multer-storage-cloudinary");
 const FileUploadRepository_1 = require("../../infrastructure/repositories/FileUploadRepository");
+const FileUpload_1 = require("../../domain/entities/FileUpload");
 const WhatsAppService_1 = require("../../infrastructure/services/WhatsAppService");
 const auth_middileware_1 = __importDefault(require("../middlewares/auth.middileware"));
+const TaskRepository_1 = require("../../infrastructure/repositories/TaskRepository");
+const user_repository_1 = __importDefault(require("../../infrastructure/db/repositories/user.repository"));
 const router = (0, express_1.Router)();
 const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB || '50', 10);
 const ALLOWED_MIME_TYPES = [
@@ -74,7 +77,7 @@ router.post('/upload', auth_middileware_1.default, upload.array('files', 10), (0
     const { orderId, taskId, notes, userId: bodyUserId, category } = req.body;
     const authReq = req;
     // If admin provides a userId in the body, upload on their behalf
-    const isAdmin = ['admin', 'system_admin', 'boss'].includes(authReq.role);
+    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(authReq.role);
     const userId = (isAdmin && bodyUserId) ? bodyUserId : authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
     if (!userId && !taskId) {
         res.status(401).json({ success: false, message: 'Log masuk atau Task diperlukan' });
@@ -151,10 +154,30 @@ router.get('/grouped', (0, express_async_handler_1.default)((_req, res) => __awa
     const stats = yield FileUploadRepository_1.fileUploadRepository.getStorageStats();
     res.json({ success: true, data: grouped, stats });
 })));
-// 🟢 Public: Get files for a specific folder
-router.get('/folder/:folderId', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const files = yield FileUploadRepository_1.fileUploadRepository.findByUserId(req.params.folderId);
-    res.json({ success: true, data: files });
+// 🌐 Public: Get files for a specific folder using robust token
+router.get('/folder/:token', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const decoded = JSON.parse(Buffer.from(req.params.token, 'base64').toString('utf-8'));
+        let query = {};
+        if (decoded.t) {
+            query = { taskId: decoded.t };
+        }
+        else if (decoded.o) {
+            query = { orderId: decoded.o };
+        }
+        else if (decoded.u) {
+            query = { userId: decoded.u };
+        }
+        else {
+            res.json({ success: true, data: [] });
+            return;
+        }
+        const files = yield FileUpload_1.FileUpload.find(query).sort({ uploadedAt: -1 });
+        res.json({ success: true, data: files, folderName: decoded.n });
+    }
+    catch (e) {
+        res.json({ success: true, data: [] });
+    }
 })));
 // 🔹🔹🔹 GET /api/files/stats 🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹
 router.get('/stats', (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -191,14 +214,38 @@ router.get('/:id/preview', (0, express_async_handler_1.default)((req, res) => __
     }
     res.redirect(file.path);
 })));
-// ─── PUT /api/files/:id/review ────────────────────────────
+// 📝 PUT /api/files/:id/review 
 // Admin marks a file as reviewed (optionally with notes)
-router.put('/:id/review', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.put('/:id/review', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c;
     const { reviewed, notes } = req.body;
     const file = yield FileUploadRepository_1.fileUploadRepository.updateAdminReview(req.params.id, reviewed !== false, notes);
     if (!file) {
         res.status(404).json({ success: false, message: 'Fail tidak dijumpai' });
         return;
+    }
+    // Sync with task if this file is attached to a task
+    if (file.taskId) {
+        try {
+            const authReq = req;
+            const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
+            let userName = ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.name) || ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.email);
+            if (!userName && userId) {
+                try {
+                    const user = yield user_repository_1.default.findById(userId);
+                    userName = (user === null || user === void 0 ? void 0 : user.name) || (user === null || user === void 0 ? void 0 : user.email);
+                }
+                catch (e) { }
+            }
+            userName = userName || 'Admin';
+            // Update task file notes
+            yield TaskRepository_1.taskRepository.updateFileNotes(file.taskId, file.path, notes || '');
+            // Add comment to task
+            yield TaskRepository_1.taskRepository.addComment(file.taskId, userId, userName, `Note updated for artwork (${file.originalName}): ${notes || '(cleared)'}`, authReq.role || 'admin');
+        }
+        catch (syncErr) {
+            console.error("Failed to sync file note to task:", syncErr);
+        }
     }
     res.json({ success: true, data: file });
 })));
@@ -208,7 +255,7 @@ router.post('/bulk-delete', auth_middileware_1.default, (0, express_async_handle
     var _a, _b, _c;
     const authReq = req;
     const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
-    const isAdmin = ['admin', 'sysadmin', 'boss'].includes(authReq.role);
+    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(authReq.role);
     if (!userId) {
         res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
         return;
@@ -254,7 +301,7 @@ router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.de
     var _a, _b;
     const authReq = req;
     const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
-    const isAdmin = ['admin', 'sysadmin', 'boss'].includes(authReq.role);
+    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(authReq.role);
     if (!userId) {
         res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
         return;

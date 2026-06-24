@@ -53,7 +53,8 @@ const TaskSchema = new mongoose_1.Schema({
     status: { type: String, enum: ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'], default: 'PLACED' },
     files: [{
             url: { type: String, required: true },
-            name: { type: String, required: true }
+            name: { type: String, required: true },
+            notes: { type: String, default: '' }
         }],
     comments: [TaskCommentSchema],
 }, { timestamps: true });

@@ -58,7 +58,12 @@ class TaskRepository {
     }
     addFile(taskId, url, name) {
         return __awaiter(this, void 0, void 0, function* () {
-            return Task_1.Task.findByIdAndUpdate(taskId, { $push: { files: { url, name } } }, { new: true });
+            return Task_1.Task.findByIdAndUpdate(taskId, { $push: { files: { url, name, notes: '' } } }, { new: true });
+        });
+    }
+    updateFileNotes(taskId, fileUrl, notes) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return Task_1.Task.findOneAndUpdate({ _id: taskId, 'files.url': fileUrl }, { $set: { 'files.$.notes': notes } }, { new: true });
         });
     }
 }

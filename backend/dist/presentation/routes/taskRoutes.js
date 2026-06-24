@@ -53,6 +53,8 @@ const auth_middileware_1 = __importDefault(require("../middlewares/auth.middilew
 const cloudinary_1 = require("cloudinary");
 const multer_storage_cloudinary_1 = require("multer-storage-cloudinary");
 const multer_1 = __importDefault(require("multer"));
+const user_repository_1 = __importDefault(require("../../infrastructure/db/repositories/user.repository"));
+const FileUpload_1 = require("../../domain/entities/FileUpload");
 cloudinary_1.v2.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dc7aun6of',
     api_key: process.env.CLOUDINARY_API_KEY || '933197924153588',
@@ -78,7 +80,7 @@ router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)
         orderId: req.query.orderId,
     };
     // If not admin, only show tasks linked to their username or orders (for simplicity, we'll just match their username)
-    if (!['admin', 'sysadmin', 'boss'].includes(role)) {
+    if (!['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(role)) {
         filters.customerUsername = ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.name) || ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.email); // or however user is identified
     }
     const tasks = yield TaskRepository_1.taskRepository.findAll(filters);
@@ -159,7 +161,17 @@ router.post('/:id/comments', auth_middileware_1.default, (0, express_async_handl
     var _a, _b, _c;
     const authReq = req;
     const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
-    const userName = ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.name) || ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.email) || 'Admin';
+    let userName = ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.name) || ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.email);
+    if (!userName && userId) {
+        try {
+            const user = yield user_repository_1.default.findById(userId);
+            userName = (user === null || user === void 0 ? void 0 : user.name) || (user === null || user === void 0 ? void 0 : user.email);
+        }
+        catch (error) {
+            console.error("Error fetching user for comment:", error);
+        }
+    }
+    userName = userName || 'User';
     const role = authReq.role;
     const { text } = req.body;
     if (!text) {
@@ -171,6 +183,45 @@ router.post('/:id/comments', auth_middileware_1.default, (0, express_async_handl
         res.status(404).json({ success: false, message: 'Task not found' });
         return;
     }
+    res.json({ success: true, task });
+})));
+// PUT /api/tasks/:id/files/notes
+router.put('/:id/files/notes', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c;
+    const { id } = req.params;
+    const { fileUrl, notes } = req.body;
+    const authReq = req;
+    const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
+    let userName = ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.name) || ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.email);
+    if (!userName && userId) {
+        try {
+            const user = yield user_repository_1.default.findById(userId);
+            userName = (user === null || user === void 0 ? void 0 : user.name) || (user === null || user === void 0 ? void 0 : user.email);
+        }
+        catch (error) { }
+    }
+    userName = userName || 'Admin';
+    if (!fileUrl) {
+        res.status(400).json({ success: false, message: 'fileUrl is required' });
+        return;
+    }
+    // Update the note in the Task
+    const task = yield TaskRepository_1.taskRepository.updateFileNotes(id, fileUrl, notes || '');
+    if (!task) {
+        res.status(404).json({ success: false, message: 'Task or file not found' });
+        return;
+    }
+    // Extract filename for comment
+    const fileName = fileUrl.split('/').pop() || 'file';
+    // Sync the note to the FileUpload collection
+    try {
+        yield FileUpload_1.FileUpload.findOneAndUpdate({ path: fileUrl, taskId: id }, { $set: { adminNotes: notes || '' } });
+    }
+    catch (err) {
+        console.error("Failed to sync file upload notes:", err);
+    }
+    // Add a comment to the task to notify stakeholders
+    yield TaskRepository_1.taskRepository.addComment(id, userId, userName, `Note updated for attached file (${fileName}): ${notes || '(cleared)'}`, authReq.role || 'admin');
     res.json({ success: true, task });
 })));
 // POST /api/tasks/:id/files
