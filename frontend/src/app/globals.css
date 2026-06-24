@@ -129,8 +129,8 @@
   body {
     @apply bg-background text-foreground;
   }
-  h1, h2{
-    font-family: "integral";
+  h1, h2 {
+    font-family: var(--font-provicali-ampersand), "integral";
   }
   p {
     font-family: var(--font-dm-sans);
