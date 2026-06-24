@@ -50,7 +50,7 @@ const TaskSchema = new mongoose_1.Schema({
     orderId: { type: String, default: null },
     customerUsername: { type: String, default: '' },
     category: { type: String, default: 'UNASSIGNED' },
-    status: { type: String, enum: ['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEW', 'ARTWORK_REJECTED', 'IN_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED', 'TODO', 'IN_PROGRESS', 'DONE DESIGN', 'PEMBETULAN'], default: 'TODO' },
+    status: { type: String, enum: ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'], default: 'PLACED' },
     files: [{
             url: { type: String, required: true },
             name: { type: String, required: true }

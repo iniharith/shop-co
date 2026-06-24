@@ -151,7 +151,12 @@ router.get('/grouped', (0, express_async_handler_1.default)((_req, res) => __awa
     const stats = yield FileUploadRepository_1.fileUploadRepository.getStorageStats();
     res.json({ success: true, data: grouped, stats });
 })));
-// ─── GET /api/files/stats ─────────────────────────────────
+// 🟢 Public: Get files for a specific folder
+router.get('/folder/:folderId', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const files = yield FileUploadRepository_1.fileUploadRepository.findByUserId(req.params.folderId);
+    res.json({ success: true, data: files });
+})));
+// 🔹🔹🔹 GET /api/files/stats 🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹
 router.get('/stats', (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const stats = yield FileUploadRepository_1.fileUploadRepository.getStorageStats();
     res.json({ success: true, data: stats });

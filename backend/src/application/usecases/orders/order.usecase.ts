@@ -118,7 +118,7 @@ export class OrderUsecase {
                 description: `Auto-generated task for Order ${order._id.toString()}.\nNotes: ${orderNotes}`,
                 orderId: order._id.toString(),
                 customerUsername: customerName,
-                status: 'TODO',
+                status: 'PLACED',
             });
         } catch (e) {
             console.error('Failed to auto-create task for order:', e);

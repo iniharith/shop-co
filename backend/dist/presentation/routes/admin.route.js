@@ -20,8 +20,30 @@ const cloudinary_1 = require("cloudinary");
 const multer_storage_cloudinary_1 = require("multer-storage-cloudinary");
 const user_model_1 = __importDefault(require("../../infrastructure/db/models/user.model"));
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
+const order_model_1 = __importDefault(require("../../infrastructure/db/models/order.model"));
+const Task_1 = require("../../domain/entities/Task");
 const router = (0, express_1.Router)();
 const adminController = new admin_controller_1.AdminController();
+// Quick migration endpoint for the user to trigger in their browser
+router.get("/migrate-statuses", (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const o1 = yield order_model_1.default.updateMany({ orderStatus: "ARTWORK_REVIEW" }, { $set: { orderStatus: "ARTWORK_REVIEWED" } });
+        const o2 = yield order_model_1.default.updateMany({ orderStatus: "DONE DESIGN" }, { $set: { orderStatus: "DONE_DESIGN" } });
+        const t1 = yield Task_1.Task.updateMany({ status: "ARTWORK_REVIEW" }, { $set: { status: "ARTWORK_REVIEWED" } });
+        const t2 = yield Task_1.Task.updateMany({ status: "DONE DESIGN" }, { $set: { status: "DONE_DESIGN" } });
+        const t3 = yield Task_1.Task.updateMany({ status: "TODO" }, { $set: { status: "PLACED" } });
+        const t4 = yield Task_1.Task.updateMany({ status: "ARTWORK_REJECT" }, { $set: { status: "ARTWORK_REJECTED" } });
+        res.json({
+            success: true,
+            message: "Database statuses migrated successfully",
+            ordersUpdated: o1.modifiedCount + o2.modifiedCount,
+            tasksUpdated: t1.modifiedCount + t2.modifiedCount + t3.modifiedCount + t4.modifiedCount
+        });
+    }
+    catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+})));
 router.get("/users", auth_middileware_1.default, adminController.getUsers.bind(adminController));
 router.post("/users", auth_middileware_1.default, adminController.createUser.bind(adminController));
 router.put("/users/:id", auth_middileware_1.default, adminController.updateUser.bind(adminController));

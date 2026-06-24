@@ -12,5 +12,5 @@ router.get("/previous-address", auth_middileware_1.authMiddilware, orderControll
 router.get("/status/:status", auth_middileware_1.authMiddilware, orderController.getOrdersByStatus.bind(orderController));
 router.get("/:orderId", auth_middileware_1.authMiddilware, orderController.getOrderById.bind(orderController));
 router.put("/:orderId", auth_middileware_1.authMiddilware, orderController.updateOrderStatus.bind(orderController));
-router.patch("/:orderId/archive", auth_middileware_1.authMiddilware, orderController.archiveOrder.bind(orderController));
+router.put("/:orderId/archive", auth_middileware_1.authMiddilware, orderController.archiveOrder.bind(orderController));
 exports.default = router;
