@@ -18,7 +18,7 @@ const provicaliAmpersand = localFont({
   src: "./fonts/Provicali.otf",
   variable: "--font-provicali-ampersand",
   weight: "100 900",
-  declarations: [
+  adjustFontFallback: false, declarations: [
     { prop: "unicode-range", value: "U+0026" }
   ]
 });
