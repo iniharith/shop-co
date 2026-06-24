@@ -114,6 +114,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   
   const [openOrderBox, setOpenOrderBox] = useState(false);
   const [openUserBox, setOpenUserBox] = useState(false);
+  const [orderSearch, setOrderSearch] = useState("");
+  const [userSearch, setUserSearch] = useState("");
   
   const [description, setDescription] = useState(task.description || "");
   const [commentText, setCommentText] = useState("");
@@ -376,10 +378,24 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   </PopoverTrigger>
                   <PopoverContent className="w-[300px] p-0" align="start">
                     <Command>
-                      <CommandInput placeholder="Search order ID..." className="h-9" />
+                      <CommandInput placeholder="Search order ID..." className="h-9" value={orderSearch} onValueChange={setOrderSearch} />
                       <CommandList>
-                        <CommandEmpty>No order found.</CommandEmpty>
+                        <CommandEmpty>No order found. Type to use custom order ID.</CommandEmpty>
                         <CommandGroup>
+                          {orderSearch && !orders.some((o: any) => o._id === orderSearch || o.orderId === orderSearch) && (
+                            <CommandItem
+                              value={orderSearch}
+                              onSelect={() => {
+                                setOrderId(orderSearch);
+                                handleSaveDetails({ orderId: orderSearch });
+                                setOpenOrderBox(false);
+                                setOrderSearch("");
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", orderId === orderSearch ? "opacity-100" : "opacity-0")} />
+                              Use custom: "{orderSearch}"
+                            </CommandItem>
+                          )}
                           {orders.map((o: any) => (
                             <CommandItem
                               key={o._id}
@@ -388,6 +404,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                 setOrderId(currentValue === orderId ? "" : o._id);
                                 handleSaveDetails({ orderId: currentValue === orderId ? "" : o._id });
                                 setOpenOrderBox(false);
+                                setOrderSearch("");
                               }}
                             >
                               <Check className={cn("mr-2 h-4 w-4", orderId === o._id ? "opacity-100" : "opacity-0")} />
@@ -419,10 +436,24 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   </PopoverTrigger>
                   <PopoverContent className="w-[300px] p-0" align="start">
                     <Command>
-                      <CommandInput placeholder="Search customer name or email..." className="h-9" />
+                      <CommandInput placeholder="Search customer name or email..." className="h-9" value={userSearch} onValueChange={setUserSearch} />
                       <CommandList>
-                        <CommandEmpty>No customer found.</CommandEmpty>
+                        <CommandEmpty>No customer found. Type to use custom username.</CommandEmpty>
                         <CommandGroup>
+                          {userSearch && !customers.some((c: any) => c.name === userSearch || c.email === userSearch) && (
+                            <CommandItem
+                              value={userSearch}
+                              onSelect={() => {
+                                setCustomerUsername(userSearch);
+                                handleSaveDetails({ customerUsername: userSearch });
+                                setOpenUserBox(false);
+                                setUserSearch("");
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", customerUsername === userSearch ? "opacity-100" : "opacity-0")} />
+                              Use custom: "{userSearch}"
+                            </CommandItem>
+                          )}
                           {customers.map((c: any) => (
                             <CommandItem
                               key={c._id}
@@ -432,6 +463,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                 setCustomerUsername(newUsername === customerUsername ? "" : newUsername);
                                 handleSaveDetails({ customerUsername: newUsername === customerUsername ? "" : newUsername });
                                 setOpenUserBox(false);
+                                setUserSearch("");
                               }}
                             >
                               <Check className={cn("mr-2 h-4 w-4", customerUsername === (c.name || c.email) ? "opacity-100" : "opacity-0")} />
