@@ -32,6 +32,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { data: ordersData } = useOrders();
   const admins = usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss'].includes(u.role)) || [];
   const customers = usersData?.users?.filter((u: any) => u.role === 'client') || [];
+  const allUsers = usersData?.users || [];
   const orders = ordersData?.orders || [];
   
   const [openOrderBox, setOpenOrderBox] = useState(false);
@@ -238,8 +239,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {admins.map((admin: any) => (
-                      <SelectItem key={admin._id} value={admin._id}>{admin.name || admin.email}</SelectItem>
+                    {allUsers.map((user: any) => (
+                      <SelectItem key={user._id} value={user._id}>{user.name || user.email}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
