@@ -14,9 +14,9 @@ const fonarto = localFont({
   variable: "--font-fonarto",
 });
 
-const cocogooseAmpersand = localFont({
-  src: "./fonts/cocogoose-pro-regular.woff",
-  variable: "--font-cocogoose-ampersand",
+const provicaliAmpersand = localFont({
+  src: "./fonts/Provicali.otf",
+  variable: "--font-provicali-ampersand",
   weight: "100 900",
   declarations: [
     { prop: "unicode-range", value: "U+0026" }
@@ -76,7 +76,7 @@ export default async function RootLayout({
     <html lang="en">
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${dmSans.variable} overflow-x-hidden w-screen ${geistMono.variable} ${fonarto.variable} ${cocogooseAmpersand.variable} bg-gray-100 dark:bg-background antialiased`}
+        className={`${geistSans.variable} ${dmSans.variable} overflow-x-hidden w-screen ${geistMono.variable} ${fonarto.variable} ${provicaliAmpersand.variable} bg-gray-100 dark:bg-background antialiased`}
       >
         <Provider session={session}>
           <div className="sticky z-50 top-0">
