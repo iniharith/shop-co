@@ -39,7 +39,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
   return (
     <div className="relative group w-fit max-w-[90%] sm:max-w-[80%] mb-5 mt-1 mx-auto sm:mx-0">
       {/* Dark container matching the sketch */}
-      <div className="flex items-center gap-2 bg-[#3f3f3f] p-1.5 pr-2 rounded-[16px] w-full min-w-[190px] shadow-sm relative z-10">
+      <div className="flex items-center gap-2 bg-[#5a5a5a] p-1.5 pr-2 rounded-[16px] w-full min-w-[190px] shadow-sm relative z-10">
         
         {/* Left: Image Box */}
         <a href={file.url} target="_blank" rel="noopener noreferrer" className="shrink-0 bg-white rounded-[12px] w-12 h-12 p-0.5 shadow-inner flex items-center justify-center overflow-hidden relative group-hover:opacity-90 transition-opacity">
@@ -74,7 +74,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
       </div>
 
       {/* Notes Box - Yellow Pill overlapping */}
-      <div className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 z-20 shadow-md bg-[#ebca24] rounded-[8px] flex items-center w-[80%] transition-all focus-within:ring-2 focus-within:ring-white">
+      <div className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 z-20 shadow-md bg-[#fde047] rounded-[8px] flex items-center w-[80%] transition-all focus-within:ring-2 focus-within:ring-white">
         <Input 
           value={notes}
           onChange={e => setNotes(e.target.value)}
