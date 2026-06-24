@@ -24,6 +24,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuBadge,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
@@ -157,18 +158,16 @@ export default function AppSidebar() {
                     isActive={pathname === item.url}
                     className="text-base font-bold py-6"
                   >
-                    <Link href={item.url} className="flex items-center gap-2 flex-1 justify-between">
-                      <div className="flex items-center gap-2">
-                        <Icon />
-                        <span>{item.title}</span>
-                      </div>
-                      {item.title === 'Chat' && unreadChatCount > 0 && (
-                        <span className="bg-red-500 text-white text-[10px] w-4 h-4 p-0 flex items-center justify-center rounded-full shrink-0">
-                          {unreadChatCount}
-                        </span>
-                      )}
+                    <Link href={item.url} className="flex items-center gap-2">
+                      <Icon />
+                      <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
+                  {item.title === 'Chat' && unreadChatCount > 0 && (
+                    <SidebarMenuBadge className="bg-red-500 text-white rounded-full px-1.5 min-w-5 flex items-center justify-center text-[10px]">
+                      {unreadChatCount}
+                    </SidebarMenuBadge>
+                  )}
                 </SidebarMenuItem>
               );
             })}
