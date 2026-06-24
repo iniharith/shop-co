@@ -71,9 +71,12 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      uploadFile({ id: task._id, file });
+    if (e.target.files && e.target.files.length > 0) {
+      Array.from(e.target.files).forEach(file => {
+        uploadFile({ id: task._id, file });
+      });
+      // Clear the input so the same files can be uploaded again if needed
+      e.target.value = "";
     }
   };
 
@@ -193,6 +196,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   type="file" 
                   id="task-file-upload" 
                   className="hidden" 
+                  multiple
                   onChange={handleFileUpload}
                   disabled={isUploading}
                 />
