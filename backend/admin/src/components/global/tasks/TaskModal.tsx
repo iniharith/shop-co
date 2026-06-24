@@ -29,29 +29,36 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
   }, [file.notes]);
 
   const handleSave = () => {
-    updateNotes({ id: task._id, fileUrl: file.url, notes }, {
-      onSuccess: () => toast.success("Notes saved and synced successfully")
-    });
+    if (notes !== (file.notes || "")) {
+      updateNotes({ id: task._id, fileUrl: file.url, notes }, {
+        onSuccess: () => toast.success("Notes saved and synced successfully")
+      });
+    }
   };
 
   return (
-    <div className="flex flex-col gap-2 p-3 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/30 transition-colors relative group">
-      <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2">
-        {isImage ? (
-          <div className="w-full aspect-square rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-            <img src={file.url} alt={file.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-          </div>
-        ) : (
-          <div className="w-full aspect-square bg-muted flex items-center justify-center rounded-lg">
-            <File className="w-8 h-8 text-primary" />
-          </div>
-        )}
-        <div className="flex w-full justify-between items-center gap-2">
-          <span className="text-xs font-semibold truncate flex-1">{file.name}</span>
+    <div className="relative group w-full mb-3 mt-1">
+      {/* Dark container matching the sketch */}
+      <div className="flex items-center gap-3 bg-[#3f3f3f] p-2 pr-3 rounded-[20px] w-full shadow-sm relative z-10">
+        
+        {/* Left: Image Box */}
+        <a href={file.url} target="_blank" rel="noopener noreferrer" className="shrink-0 bg-white rounded-[14px] w-16 h-16 p-0.5 shadow-inner flex items-center justify-center overflow-hidden relative group-hover:opacity-90 transition-opacity">
+          {isImage ? (
+            <img src={file.url} alt={file.name} className="w-full h-full object-cover rounded-[12px]" />
+          ) : (
+            <File className="w-8 h-8 text-primary/80" />
+          )}
+        </a>
+        
+        {/* Right: Filename & Delete Button */}
+        <div className="flex-1 flex justify-between items-center min-w-0 mr-1">
+          <a href={file.url} target="_blank" rel="noopener noreferrer" className="truncate text-white font-medium text-sm tracking-wide hover:underline px-1">
+            {file.name}
+          </a>
           <Button 
             variant="ghost" 
             size="icon" 
-            className="w-6 h-6 shrink-0 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+            className="w-7 h-7 shrink-0 text-red-400 hover:text-red-500 hover:bg-white/10 rounded-full ml-2"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -61,26 +68,27 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
             }}
             disabled={isDeletingFile}
           >
-            <Trash2 className="w-3 h-3" />
+            <Trash2 className="w-3.5 h-3.5" />
           </Button>
         </div>
-      </a>
-      
-      <div className="flex flex-col gap-1.5 mt-1 border-t border-border/50 pt-2">
-        <label className="text-[10px] uppercase font-bold text-muted-foreground flex justify-between items-center">
-          Notes
-          {notes !== (file.notes || "") && <span className="text-amber-500">Unsaved</span>}
-        </label>
-        <Textarea 
-          value={notes} 
-          onChange={e => setNotes(e.target.value)} 
-          placeholder="Add notes for this file..." 
-          className="text-xs min-h-[60px] resize-none"
+      </div>
+
+      {/* Notes Box - Yellow Pill overlapping */}
+      <div className="absolute -bottom-3.5 right-4 z-20 shadow-md bg-[#ebca24] rounded-[10px] flex items-center max-w-[75%] transition-all focus-within:ring-2 focus-within:ring-white">
+        <Input 
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={e => {
+             if (e.key === 'Enter') {
+                e.preventDefault();
+                (e.target as HTMLInputElement).blur();
+             }
+          }}
+          placeholder="add note"
+          className="bg-transparent border-0 text-black placeholder:text-black/60 font-medium h-7 px-3 w-full focus-visible:ring-0 focus-visible:ring-offset-0 text-xs"
         />
-        <Button size="sm" variant="secondary" className="w-full h-7 text-xs mt-1 bg-primary/10 text-primary hover:bg-primary/20 border-0" onClick={handleSave} disabled={isPending}>
-          {isPending ? <LoaderCircle className="w-3 h-3 animate-spin mr-1" /> : <Send className="w-3 h-3 mr-1" />}
-          Save Notes
-        </Button>
+        {isPending && <LoaderCircle className="w-3 h-3 animate-spin text-black mr-2 shrink-0" />}
       </div>
     </div>
   );
@@ -194,7 +202,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                       <label className="text-sm font-semibold text-foreground flex items-center gap-2">
                         <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments
                       </label>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
                         {task.files.map((file: any, idx: number) => (
                           <FileAttachmentCard 
                             key={idx} 
