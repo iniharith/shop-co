@@ -9,6 +9,7 @@ import { Package, CircleUserRound, MapPin, CreditCard, ShoppingBag, Trash2, Truc
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDeleteOrder, useUpdateOrderStatus, useToggleArchiveOrder } from "@/hooks/useOrder";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -82,11 +83,22 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
     }
   };
 
+  const queryClient = useQueryClient();
+
   const handleArchiveToggle = () => {
     const isCurrentlyArchived = (order as any).isArchived || false;
     toggleArchive({ id: order._id as string, isArchived: !isCurrentlyArchived }, {
       onSuccess: () => {
         toast.success(`Order ${isCurrentlyArchived ? 'unarchived' : 'archived'} successfully`);
+        queryClient.setQueryData(["orders"], (oldData: any) => {
+          if (!oldData || !oldData.orders) return oldData;
+          return {
+            ...oldData,
+            orders: oldData.orders.map((o: any) => 
+              o._id === order._id ? { ...o, isArchived: !isCurrentlyArchived } : o
+            )
+          };
+        });
       },
       onError: (err: any) => {
         toast.error("Failed to update archive status");
