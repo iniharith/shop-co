@@ -1,17 +1,16 @@
+@font-face {
+  font-family: "provicali";
+  src: url("/fonts/Provicali.otf");
+}
+
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
-@font-face {
-  font-family: "integral";
-  src: url("/integrCf.ttf");
-}
 
-@font-face {
-  font-family: "integral";
-  src: url("/integrCf.ttf");
-}
+
+
 
 @theme inline {
   --color-background: var(--background);
@@ -129,8 +128,8 @@
   body {
     @apply bg-background text-foreground;
   }
-  h1, h2{
-    font-family: "integral";
+  h1, h2, h3, h4, h5, h6, .font-bold, .font-semibold, .font-extrabold, .font-black, b, strong {
+    font-family: "provicali" !important;
   }
   p {
     font-family: var(--font-dm-sans);
