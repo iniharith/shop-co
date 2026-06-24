@@ -403,7 +403,7 @@ export default function ProductionManager() {
                         onChange={(e) => handleStatusChange(activeGroup, e.target.value)}
                         disabled={isUpdatingStatus}
                       >
-                        {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEW', 'ARTWORK_REJECTED', 'IN_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'].map(s => (
+                        {['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'].map(s => (
                           <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                         ))}
                       </select>
@@ -582,7 +582,7 @@ export default function ProductionManager() {
                           })}
                           disabled={isUpdatingStatus}
                         >
-                          {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEW', 'ARTWORK_REJECTED', 'IN_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'].map(s => (
+                          {['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'].map(s => (
                             <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                           ))}
                         </select>
@@ -617,7 +617,7 @@ export default function ProductionManager() {
                           })}
                           disabled={isUpdatingStatus}
                         >
-                          {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEW', 'ARTWORK_REJECTED', 'IN_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'].map(s => (
+                          {['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'].map(s => (
                             <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                           ))}
                         </select>

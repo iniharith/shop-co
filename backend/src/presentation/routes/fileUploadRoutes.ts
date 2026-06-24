@@ -172,7 +172,16 @@ router.get(
   })
 );
 
-// ─── GET /api/files/stats ─────────────────────────────────
+// 🟢 Public: Get files for a specific folder
+router.get(
+  '/folder/:folderId',
+  asyncHandler(async (req: Request, res: Response) => {
+    const files = await fileUploadRepository.findByUserId(req.params.folderId);
+    res.json({ success: true, data: files });
+  })
+);
+
+// 🔹🔹🔹 GET /api/files/stats 🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹
 router.get(
   '/stats',
   asyncHandler(async (_req: Request, res: Response) => {

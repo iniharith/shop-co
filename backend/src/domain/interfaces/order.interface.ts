@@ -27,7 +27,7 @@ export interface IOrder {
   totalAmount: number;
   paymentMethod: 'COD' | 'ONLINE';
   paymentStatus: 'PENDING' | 'PAID' | 'FAILED';
-  orderStatus: 'PLACED' | 'PENDING_ARTWORK' | 'ARTWORK_REVIEW' | 'ARTWORK_REJECTED' | 'IN_DESIGN' | 'IN_PRODUCTION' | 'SHIPPED' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED' | 'DONE DESIGN' | 'PEMBETULAN';
+  orderStatus: 'PLACED' | 'IN_PROGRESS' | 'PENDING_ARTWORK' | 'ARTWORK_REVIEWED' | 'ARTWORK_REJECTED' | 'IN_DESIGN' | 'PEMBETULAN' | 'DONE_DESIGN' | 'IN_PRODUCTION' | 'SHIPPED' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED' | 'FAILED';
   platform?: 'WEB' | 'TIKTOK' | 'SHOPEE';
   address: IAddress;
   isDeleted?: boolean;

@@ -36,17 +36,19 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
 
   const statusOptions = [
     "PLACED",
+    "IN_PROGRESS",
     "PENDING_ARTWORK",
-    "ARTWORK_REVIEW",
+    "ARTWORK_REVIEWED",
     "ARTWORK_REJECTED",
     "IN_DESIGN",
-    "DONE DESIGN",
     "PEMBETULAN",
+    "DONE_DESIGN",
     "IN_PRODUCTION",
     "SHIPPED",
     "IN_TRANSIT",
     "DELIVERED",
     "CANCELLED",
+    "FAILED",
   ];
 
   const handleStatusChange = (newStatus: string) => {
@@ -68,16 +70,21 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
         return "bg-yellow-500/20 border-yellow-500/40 hover:bg-yellow-500/30 cursor-pointer";
       case "PENDING_ARTWORK":
         return "bg-orange-500/20 border-orange-500/40 hover:bg-orange-500/30 cursor-pointer text-orange-700 dark:text-orange-300";
-      case "ARTWORK_REVIEW":
-        return "bg-blue-500/20 border-blue-500/40 hover:bg-blue-500/30 cursor-pointer text-blue-700 dark:text-blue-300";
+      case "ARTWORK_REVIEWED":
+        return "bg-purple-100 text-purple-800";
       case "ARTWORK_REJECTED":
-        return "bg-red-500/20 border-red-500/40 hover:bg-red-500/40 cursor-pointer text-red-700 dark:text-red-300";
+        return "bg-red-100 text-red-800";
+      case "DONE_DESIGN":
+        return "bg-emerald-100 text-emerald-800";
+      case "IN_PROGRESS":
+        return "bg-blue-100 text-blue-800";
+      case "PEMBETULAN":
+        return "bg-rose-100 text-rose-800";
+      case "FAILED":
+        return "bg-red-100 text-red-800";
       case "IN_DESIGN":
         return "bg-indigo-500/20 border-indigo-500/40 hover:bg-indigo-500/30 cursor-pointer text-indigo-700 dark:text-indigo-300";
-      case "DONE DESIGN":
-        return "bg-emerald-500/20 border-emerald-500/40 hover:bg-emerald-500/30 cursor-pointer text-emerald-700 dark:text-emerald-300";
-      case "PEMBETULAN":
-        return "bg-rose-500/20 border-rose-500/40 hover:bg-rose-500/30 cursor-pointer text-rose-700 dark:text-rose-300";
+
       case "IN_PRODUCTION":
         return "bg-teal-500/20 border-teal-500/40 hover:bg-teal-500/30 cursor-pointer text-teal-700 dark:text-teal-300";
       case "SHIPPED":
@@ -200,7 +207,7 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
                 </Select>
               </div>
               
-              {(status as string === "PENDING_ARTWORK" || status as string === "ARTWORK_REVIEW") && (
+              {(status as string === "PENDING_ARTWORK" || status as string === "ARTWORK_REVIEWED") && (
                 <div className="flex gap-2 mt-2">
                   <button 
                     disabled={statusPending}
@@ -246,7 +253,7 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
                 case "PLACED":
                 case "PENDING_ARTWORK":
                 case "ARTWORK_REJECTED": return 0; // Placed
-                case "ARTWORK_REVIEW":
+                case "ARTWORK_REVIEWED":
                 case "IN_DESIGN": return 1; // Design
                 case "IN_PRODUCTION": return 2; // Print
                 case "SHIPPED":
@@ -273,7 +280,7 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
                 case "PLACED":
                 case "PENDING_ARTWORK":
                 case "ARTWORK_REJECTED": return 0;
-                case "ARTWORK_REVIEW":
+                case "ARTWORK_REVIEWED":
                 case "IN_DESIGN": return 1;
                 case "IN_PRODUCTION": return 2;
                 case "SHIPPED":

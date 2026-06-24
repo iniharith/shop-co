@@ -16,17 +16,21 @@ const getStatusColor = (status: string) => {
     case "PLACED":
       return "bg-yellow-500/20 border-yellow-500/40 hover:bg-yellow-500/30 text-black dark:text-white";
     case "PENDING_ARTWORK":
-      return "bg-orange-500/20 border-orange-500/40 hover:bg-orange-500/30 text-black dark:text-white";
-    case "ARTWORK_REVIEW":
-      return "bg-blue-400/20 border-blue-400/40 hover:bg-blue-400/30 text-black dark:text-white";
+      return "bg-orange-100 text-orange-800 border-orange-200";
+    case "ARTWORK_REVIEWED":
+      return "bg-purple-100 text-purple-800 border-purple-200";
     case "ARTWORK_REJECTED":
-      return "bg-red-400/20 border-red-400/40 hover:bg-red-400/30 text-black dark:text-white";
+      return "bg-red-100 text-red-800 border-red-200";
+    case "DONE_DESIGN":
+      return "bg-emerald-100 text-emerald-800 border-emerald-200";
     case "IN_DESIGN":
       return "bg-indigo-500/20 border-indigo-500/40 hover:bg-indigo-500/30 text-black dark:text-white";
-    case "DONE DESIGN":
-      return "bg-emerald-500/20 border-emerald-500/40 hover:bg-emerald-500/30 text-black dark:text-white";
+    case "IN_PROGRESS":
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    case "FAILED":
+      return "bg-red-100 text-red-800 border-red-200";
     case "PEMBETULAN":
-      return "bg-rose-500/20 border-rose-500/40 hover:bg-rose-500/30 text-black dark:text-white";
+      return "bg-rose-100 text-rose-800 border-rose-200";
     case "IN_PRODUCTION":
       return "bg-purple-500/20 border-purple-500/40 hover:bg-purple-500/40 text-black dark:text-white";
     case "SHIPPED":
@@ -148,17 +152,19 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="PLACED">Placed</SelectItem>
+                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                 <SelectItem value="PENDING_ARTWORK">Pending Artwork</SelectItem>
-                <SelectItem value="ARTWORK_REVIEW">Artwork Review</SelectItem>
+                <SelectItem value="ARTWORK_REVIEWED">Artwork Reviewed</SelectItem>
                 <SelectItem value="ARTWORK_REJECTED">Artwork Rejected</SelectItem>
                 <SelectItem value="IN_DESIGN">In Design</SelectItem>
-                <SelectItem value="DONE DESIGN">Done Design</SelectItem>
                 <SelectItem value="PEMBETULAN">Pembetulan</SelectItem>
+                <SelectItem value="DONE_DESIGN">Done Design</SelectItem>
                 <SelectItem value="IN_PRODUCTION">In Production</SelectItem>
                 <SelectItem value="SHIPPED">Shipped</SelectItem>
                 <SelectItem value="IN_TRANSIT">In Transit</SelectItem>
                 <SelectItem value="DELIVERED">Delivered</SelectItem>
                 <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                <SelectItem value="FAILED">Failed</SelectItem>
               </SelectContent>
             </Select>
             <button 
