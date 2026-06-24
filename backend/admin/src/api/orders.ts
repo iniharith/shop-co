@@ -15,6 +15,11 @@ export const updateOrderStatus = async (token: string, orderId: string, status: 
     return response.data;
 }
 
+export const archiveOrder = async (token: string, orderId: string, isArchived: boolean) => {
+    const response = await AxiosInstance(token).patch(`${ORDER_URL}/${orderId}/archive`, { isArchived });
+    return response.data;
+}
+
 export const createManualOrder = async (token: string, data: any) => {
     const response = await AxiosInstance(token).post(`${ADMIN_URL}/orders/manual`, data);
     return response.data;

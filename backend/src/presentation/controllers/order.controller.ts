@@ -98,6 +98,23 @@ export class OrderController {
     }
 
     /**
+     * @description Toggle archive order
+     * @Method PATCH
+     * @Access PRIVATE
+     * @Route /api/orders/:orderId/archive
+     * @Response 200 - Order archive status toggled successfully
+     */
+    async archiveOrder(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            const { isArchived } = req.body;
+            const order = await this.orderUsecase.toggleArchiveStatus(req.params.orderId, isArchived);
+            res.status(statusCodes.OK).json({ message: "Order archive status updated successfully", order });
+        } catch (error: any) {
+            next(error);
+        }
+    }
+
+    /**
      * @description Get orders by status
      * @Method GET
      * @Access PRIVATE

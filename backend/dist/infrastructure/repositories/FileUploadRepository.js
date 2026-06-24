@@ -47,6 +47,11 @@ class FileUploadRepository {
             return FileUpload_1.FileUpload.findById(id);
         });
     }
+    updateFilename(id, originalName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return FileUpload_1.FileUpload.findByIdAndUpdate(id, { $set: { originalName } }, { new: true });
+        });
+    }
     updateAdminReview(id, reviewed, notes) {
         return __awaiter(this, void 0, void 0, function* () {
             return FileUpload_1.FileUpload.findByIdAndUpdate(id, { $set: { adminReviewed: reviewed, adminNotes: notes } }, { new: true });

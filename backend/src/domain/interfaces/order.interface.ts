@@ -31,6 +31,7 @@ export interface IOrder {
   platform?: 'WEB' | 'TIKTOK' | 'SHOPEE';
   address: IAddress;
   isDeleted?: boolean;
+  isArchived?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

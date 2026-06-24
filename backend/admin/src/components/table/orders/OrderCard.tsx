@@ -5,9 +5,9 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { CellAction } from "@/components/global/cell-actions";
 import OrderInfo from "@/components/global/orderInfo";
 import { cn } from "@/lib/utils";
-import { Package, CircleUserRound, MapPin, CreditCard, ShoppingBag, Trash2, Truck } from "lucide-react";
+import { Package, CircleUserRound, MapPin, CreditCard, ShoppingBag, Trash2, Truck, Archive, ArchiveRestore, ChevronDown, ChevronUp } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useDeleteOrder, useUpdateOrderStatus } from "@/hooks/useOrder";
+import { useDeleteOrder, useUpdateOrderStatus, useToggleArchiveOrder } from "@/hooks/useOrder";
 import { toast } from "sonner";
 
 const getStatusColor = (status: string) => {
@@ -59,8 +59,10 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
   
   const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder();
   const { mutate: updateStatus, isPending: isUpdating } = useUpdateOrderStatus();
+  const { mutate: toggleArchive, isPending: isArchiving } = useToggleArchiveOrder();
   
   const [localStatus, setLocalStatus] = React.useState<string>(order.orderStatus as string);
+  const [isMinimized, setIsMinimized] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     setLocalStatus(order.orderStatus);
@@ -80,12 +82,24 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
     }
   };
 
+  const handleArchiveToggle = () => {
+    const isCurrentlyArchived = (order as any).isArchived || false;
+    toggleArchive({ id: order._id as string, isArchived: !isCurrentlyArchived }, {
+      onSuccess: () => {
+        toast.success(`Order ${isCurrentlyArchived ? 'unarchived' : 'archived'} successfully`);
+      },
+      onError: (err: any) => {
+        toast.error("Failed to update archive status");
+      }
+    });
+  };
+
   return (
-    <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card border border-border/50 rounded-2xl flex flex-col justify-between">
+    <Card className={cn("group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card border border-border/50 rounded-2xl flex flex-col justify-between", isMinimized ? "h-auto" : "")}>
       {/* Top Gradient Bar */}
       <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-primary/60 via-primary to-primary/60 opacity-80" />
       
-      <CardHeader className="pb-3 pt-6 px-5 flex flex-row items-start justify-between gap-4">
+      <CardHeader className="pb-3 pt-6 px-5 flex flex-row items-start justify-between gap-4 relative">
           <div className="flex items-start gap-3">
              <CircleUserRound className="w-8 h-8 text-muted-foreground mt-0.5" />
              <div className="flex flex-col">
@@ -100,122 +114,143 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
           </div>
         
         <div className="flex flex-col items-end gap-2" onClick={(e) => e.stopPropagation()}>
-          <Select 
-            value={localStatus} 
-            onValueChange={(v) => {
-              setLocalStatus(v);
-              updateStatus({ id: order._id as string, status: v }, {
-                onSuccess: () => toast.success("Order status updated!"),
-                onError: () => {
-                  toast.error("Failed to update status");
-                  setLocalStatus(order.orderStatus);
-                }
-              });
-            }}
-            disabled={isUpdating}
-          >
-            <SelectTrigger className={cn("h-8 text-xs font-semibold uppercase tracking-wider border-0 rounded-full", getStatusColor(localStatus))}>
-              <div className="flex items-center">
-                <SelectValue placeholder="Status" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="PLACED">Placed</SelectItem>
-              <SelectItem value="PENDING_ARTWORK">Pending Artwork</SelectItem>
-              <SelectItem value="ARTWORK_REVIEW">Artwork Review</SelectItem>
-              <SelectItem value="ARTWORK_REJECTED">Artwork Rejected</SelectItem>
-              <SelectItem value="IN_DESIGN">In Design</SelectItem>
-              <SelectItem value="DONE DESIGN">Done Design</SelectItem>
-              <SelectItem value="PEMBETULAN">Pembetulan</SelectItem>
-              <SelectItem value="IN_PRODUCTION">In Production</SelectItem>
-              <SelectItem value="SHIPPED">Shipped</SelectItem>
-              <SelectItem value="IN_TRANSIT">In Transit</SelectItem>
-              <SelectItem value="DELIVERED">Delivered</SelectItem>
-              <SelectItem value="CANCELLED">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Select 
+              value={localStatus} 
+              onValueChange={(v) => {
+                setLocalStatus(v);
+                updateStatus({ id: order._id as string, status: v }, {
+                  onSuccess: () => toast.success("Order status updated!"),
+                  onError: () => {
+                    toast.error("Failed to update status");
+                    setLocalStatus(order.orderStatus);
+                  }
+                });
+              }}
+              disabled={isUpdating}
+            >
+              <SelectTrigger className={cn("h-8 text-xs font-semibold uppercase tracking-wider border-0 rounded-full", getStatusColor(localStatus))}>
+                <div className="flex items-center">
+                  <SelectValue placeholder="Status" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PLACED">Placed</SelectItem>
+                <SelectItem value="PENDING_ARTWORK">Pending Artwork</SelectItem>
+                <SelectItem value="ARTWORK_REVIEW">Artwork Review</SelectItem>
+                <SelectItem value="ARTWORK_REJECTED">Artwork Rejected</SelectItem>
+                <SelectItem value="IN_DESIGN">In Design</SelectItem>
+                <SelectItem value="DONE DESIGN">Done Design</SelectItem>
+                <SelectItem value="PEMBETULAN">Pembetulan</SelectItem>
+                <SelectItem value="IN_PRODUCTION">In Production</SelectItem>
+                <SelectItem value="SHIPPED">Shipped</SelectItem>
+                <SelectItem value="IN_TRANSIT">In Transit</SelectItem>
+                <SelectItem value="DELIVERED">Delivered</SelectItem>
+                <SelectItem value="CANCELLED">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+            <button 
+              onClick={() => setIsMinimized(!isMinimized)} 
+              className="p-1.5 bg-muted rounded-full hover:bg-muted/80 text-muted-foreground transition-colors"
+              title={isMinimized ? "Expand" : "Minimize"}
+            >
+              {isMinimized ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
       </CardHeader>
       
-      <CardContent className="px-5 py-4 flex-1">
-        <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-sm">
-          <div className="flex items-start gap-2">
-             <ShoppingBag className="w-4 h-4 mt-0.5 text-muted-foreground" />
-             <div className="flex flex-col">
-               <span className="text-muted-foreground text-xs font-medium uppercase">Products</span>
-               <span className="font-medium">{order.products?.length || 0} Items</span>
-             </div>
-          </div>
-          
-          <div className="flex items-start gap-2">
-             <CreditCard className="w-4 h-4 mt-0.5 text-muted-foreground" />
-             <div className="flex flex-col">
-               <span className="text-muted-foreground text-xs font-medium uppercase">Payment</span>
-               <div className="flex items-center gap-1.5 mt-0.5">
-                 <span className="font-medium text-xs truncate max-w-[60px]">{order.paymentMethod}</span>
-                 <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 border leading-none h-4", getPaymentColor(order.paymentStatus))}>
-                   {order.paymentStatus}
-                 </Badge>
-               </div>
-             </div>
-          </div>
+      {!isMinimized && (
+        <>
+          <CardContent className="px-5 py-4 flex-1">
+            <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-sm">
+              <div className="flex items-start gap-2">
+                 <ShoppingBag className="w-4 h-4 mt-0.5 text-muted-foreground" />
+                 <div className="flex flex-col">
+                   <span className="text-muted-foreground text-xs font-medium uppercase">Products</span>
+                   <span className="font-medium">{order.products?.length || 0} Items</span>
+                 </div>
+              </div>
+              
+              <div className="flex items-start gap-2">
+                 <CreditCard className="w-4 h-4 mt-0.5 text-muted-foreground" />
+                 <div className="flex flex-col">
+                   <span className="text-muted-foreground text-xs font-medium uppercase">Payment</span>
+                   <div className="flex items-center gap-1.5 mt-0.5">
+                     <span className="font-medium text-xs truncate max-w-[60px]">{order.paymentMethod}</span>
+                     <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 border leading-none h-4", getPaymentColor(order.paymentStatus))}>
+                       {order.paymentStatus}
+                     </Badge>
+                   </div>
+                 </div>
+              </div>
 
-          <div className="flex items-start gap-2">
-             <MapPin className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
-             <div className="flex flex-col">
-               <span className="text-muted-foreground text-xs font-medium uppercase">Address</span>
-               <span className="font-medium line-clamp-2 text-sm leading-snug">
-                 {order.address?.address || order.address?.city || "-"}
-               </span>
-             </div>
-          </div>
+              <div className="flex items-start gap-2">
+                 <MapPin className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+                 <div className="flex flex-col">
+                   <span className="text-muted-foreground text-xs font-medium uppercase">Address</span>
+                   <span className="font-medium line-clamp-2 text-sm leading-snug">
+                     {order.address?.address || order.address?.city || "-"}
+                   </span>
+                 </div>
+              </div>
 
-          <div className="flex items-start gap-2">
-             <Truck className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
-             <div className="flex flex-col">
-               <span className="text-muted-foreground text-xs font-medium uppercase">Tracking No.</span>
-               <span className="font-medium text-sm leading-snug break-all">
-                 {(order as any).trackingNumber || "-"}
-               </span>
-             </div>
-          </div>
+              <div className="flex items-start gap-2">
+                 <Truck className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+                 <div className="flex flex-col">
+                   <span className="text-muted-foreground text-xs font-medium uppercase">Tracking No.</span>
+                   <span className="font-medium text-sm leading-snug break-all">
+                     {(order as any).trackingNumber || "-"}
+                   </span>
+                 </div>
+              </div>
 
-          {order.orderNotes && (
-            <div className="flex items-start gap-2 col-span-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mt-2">
-               <Package className="w-4 h-4 mt-0.5 text-yellow-600 shrink-0" />
-               <div className="flex flex-col">
-                 <span className="text-yellow-700 text-xs font-bold uppercase tracking-wider">Order Notes</span>
-                 <span className="font-medium text-sm text-yellow-800 italic mt-0.5">
-                   "{order.orderNotes}"
-                 </span>
-               </div>
+              {order.orderNotes && (
+                <div className="flex items-start gap-2 col-span-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mt-2">
+                   <Package className="w-4 h-4 mt-0.5 text-yellow-600 shrink-0" />
+                   <div className="flex flex-col">
+                     <span className="text-yellow-700 text-xs font-bold uppercase tracking-wider">Order Notes</span>
+                     <span className="font-medium text-sm text-yellow-800 italic mt-0.5">
+                       "{order.orderNotes}"
+                     </span>
+                   </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </CardContent>
-      
-      <CardFooter className="px-5 py-4 border-t bg-muted/20 flex items-center justify-between">
-        <div className="flex flex-col">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Order Total</span>
-          <span className="text-xl font-bold tracking-tight text-foreground">
-             RM{Number(order.totalAmount).toFixed(2)}
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={handleDelete}
-            disabled={isDeleting}
-            className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-            title="Delete Order"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
-          <CellAction
-            info={<OrderInfo order={order as any} />}
-            id={(order as any)._id}
-          />
-        </div>
-      </CardFooter>
+          </CardContent>
+          
+          <CardFooter className="px-5 py-4 border-t bg-muted/20 flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Order Total</span>
+              <span className="text-xl font-bold tracking-tight text-foreground">
+                 RM{Number(order.totalAmount).toFixed(2)}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={handleArchiveToggle}
+                disabled={isArchiving}
+                className="p-2 text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors"
+                title={(order as any).isArchived ? "Unarchive Order" : "Archive Order"}
+              >
+                {(order as any).isArchived ? <ArchiveRestore className="w-5 h-5" /> : <Archive className="w-5 h-5" />}
+              </button>
+              <button 
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                title="Delete Order"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+              <CellAction
+                info={<OrderInfo order={order as any} />}
+                id={(order as any)._id}
+              />
+            </div>
+          </CardFooter>
+        </>
+      )}
     </Card>
   );
 };

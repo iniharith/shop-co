@@ -20,7 +20,7 @@ const OrdersList = (props: Props) => {
     
     // Exclude completed or cancelled orders from the active orders view
     const excludeStatuses = ["DELIVERED", "DONE DESIGN", "CANCELLED", "FAILED"];
-    orders = orders.filter((o: any) => !excludeStatuses.includes(o.orderStatus));
+    orders = orders.filter((o: any) => !excludeStatuses.includes(o.orderStatus) && !o.isArchived);
 
     // Filter by platform
     if (activeTab !== "ALL") {

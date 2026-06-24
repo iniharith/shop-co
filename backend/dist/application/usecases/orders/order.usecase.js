@@ -229,6 +229,19 @@ class OrderUsecase {
             return order;
         });
     }
+    toggleArchiveStatus(orderId, isArchived) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const order = yield this.orderRepository.updateOrder(orderId, { isArchived });
+            if (!order)
+                throw new Error("Order not found");
+            yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS);
+            yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + orderId);
+            if (order.userId) {
+                yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + order.userId.toString());
+            }
+            return order;
+        });
+    }
     getOrdersByStatus(status) {
         return __awaiter(this, void 0, void 0, function* () {
             const cachedOrders = yield this.redisService.get(redis_constant_1.REDIS_KEYS.ORDERS + status);

@@ -17,6 +17,12 @@ export const useUpdateOrderStatus = () => {
     return { mutate, isPending }
 }
 
+export const useToggleArchiveOrder = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(['toggleArchiveOrder'], ({ id, isArchived }: any) => import("@/api/orders").then(m => m.archiveOrder(session?.user.token, id, isArchived)), ["orders"])
+    return { mutate, isPending }
+}
+
 export const useCreateManualOrder = () => {
     const { data: session } = useSession();
     const { mutate, isPending } = useMutationData(['createManualOrder'], (data: any) => import("@/api/orders").then(m => m.createManualOrder(session?.user.token, data)), ["orders"])

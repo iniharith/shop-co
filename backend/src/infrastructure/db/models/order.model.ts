@@ -88,6 +88,10 @@ const OrderSchema: Schema = new Schema(
       type: Boolean,
       default: false,
     },
+    isArchived: {
+      type: Boolean,
+      default: false,
+    },
     trackingNumber: {
       type: String,
       default: '',

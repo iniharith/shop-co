@@ -198,6 +198,19 @@ export class OrderUsecase {
 
     }
 
+    async toggleArchiveStatus(orderId: string, isArchived: boolean) {
+        const order = await this.orderRepository.updateOrder(orderId, { isArchived } as any);
+        if (!order) throw new Error("Order not found");
+        
+        await this.redisService.del(REDIS_KEYS.ORDERS);
+        await this.redisService.del(REDIS_KEYS.ORDERS + orderId);
+        if (order.userId) {
+            await this.redisService.del(REDIS_KEYS.ORDERS + order.userId.toString());
+        }
+
+        return order;
+    }
+
 
     async getOrdersByStatus(status: "PLACED" | "PENDING_ARTWORK" | "ARTWORK_REVIEW" | "ARTWORK_REJECTED" | "IN_DESIGN" | "IN_PRODUCTION" | "SHIPPED" | "DELIVERED" | "CANCELLED") {
         const cachedOrders = await this.redisService.get(REDIS_KEYS.ORDERS + status);

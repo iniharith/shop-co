@@ -111,6 +111,10 @@ const OrderSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false,
     },
+    isArchived: {
+        type: Boolean,
+        default: false,
+    },
     trackingNumber: {
         type: String,
         default: '',

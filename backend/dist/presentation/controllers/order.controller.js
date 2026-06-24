@@ -111,6 +111,25 @@ class OrderController {
         });
     }
     /**
+     * @description Toggle archive order
+     * @Method PATCH
+     * @Access PRIVATE
+     * @Route /api/orders/:orderId/archive
+     * @Response 200 - Order archive status toggled successfully
+     */
+    archiveOrder(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { isArchived } = req.body;
+                const order = yield this.orderUsecase.toggleArchiveStatus(req.params.orderId, isArchived);
+                res.status(api_constant_1.statusCodes.OK).json({ message: "Order archive status updated successfully", order });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    /**
      * @description Get orders by status
      * @Method GET
      * @Access PRIVATE
