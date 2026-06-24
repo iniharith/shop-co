@@ -36,7 +36,7 @@ export default function TasksManager() {
   const { mutate: updateTask } = useUpdateTask();
   const { mutate: deleteTask } = useDeleteTask();
 
-  const [newTask, setNewTask] = useState({ title: "", description: "", status: "TODO", category: "UNASSIGNED" });
+  const [newTask, setNewTask] = useState({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
 
   const handleCreateTask = () => {
     if (!newTask.title) {
@@ -47,7 +47,7 @@ export default function TasksManager() {
       onSuccess: () => {
         toast.success("Task created!");
         setIsCreateOpen(false);
-        setNewTask({ title: "", description: "", status: "TODO", category: "UNASSIGNED" });
+        setNewTask({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
       }
     });
   };
