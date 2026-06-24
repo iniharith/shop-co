@@ -16,13 +16,13 @@ const adminController = new AdminController();
 // Quick migration endpoint for the user to trigger in their browser
 router.get("/migrate-statuses", asyncHandler(async (req, res) => {
   try {
-    const o1 = await Order.updateMany({ orderStatus: "ARTWORK_REVIEW" }, { $set: { orderStatus: "ARTWORK_REVIEWED" } });
-    const o2 = await Order.updateMany({ orderStatus: "DONE DESIGN" }, { $set: { orderStatus: "DONE_DESIGN" } });
+    const o1 = await Order.collection.updateMany({ orderStatus: "ARTWORK_REVIEW" }, { $set: { orderStatus: "ARTWORK_REVIEWED" } });
+    const o2 = await Order.collection.updateMany({ orderStatus: "DONE DESIGN" }, { $set: { orderStatus: "DONE_DESIGN" } });
     
-    const t1 = await Task.updateMany({ status: "ARTWORK_REVIEW" }, { $set: { status: "ARTWORK_REVIEWED" } });
-    const t2 = await Task.updateMany({ status: "DONE DESIGN" }, { $set: { status: "DONE_DESIGN" } });
-    const t3 = await Task.updateMany({ status: "TODO" }, { $set: { status: "PLACED" } });
-    const t4 = await Task.updateMany({ status: "ARTWORK_REJECT" }, { $set: { status: "ARTWORK_REJECTED" } });
+    const t1 = await Task.collection.updateMany({ status: "ARTWORK_REVIEW" }, { $set: { status: "ARTWORK_REVIEWED" } });
+    const t2 = await Task.collection.updateMany({ status: "DONE DESIGN" }, { $set: { status: "DONE_DESIGN" } });
+    const t3 = await Task.collection.updateMany({ status: "TODO" }, { $set: { status: "PLACED" } });
+    const t4 = await Task.collection.updateMany({ status: "ARTWORK_REJECT" }, { $set: { status: "ARTWORK_REJECTED" } });
     
     res.json({
       success: true,
