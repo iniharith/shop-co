@@ -415,15 +415,22 @@ export default function ArtworksManager() {
                       </div>
                     </div>
                       <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => {
-                            const link = `${window.location.origin}/share/folder/${encodeURIComponent(activeGroup.userId || "")}`;
-                            navigator.clipboard.writeText(link);
-                            toast.success("Share link copied to clipboard");
-                          }}
-                        >
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              const shareData = {
+                                n: activeGroup.folderName,
+                                t: activeGroup.taskId || "",
+                                o: activeGroup.orderId || "",
+                                u: activeGroup.userId || ""
+                              };
+                              const token = btoa(JSON.stringify(shareData));
+                              const link = `${window.location.origin}/share/folder/${token}`;
+                              navigator.clipboard.writeText(link);
+                              toast.success("Share link copied to clipboard");
+                            }}
+                          >
                           <Folder className="w-4 h-4 mr-2" /> Share Link
                         </Button>
                         {activeGroup.files.length > 0 && (

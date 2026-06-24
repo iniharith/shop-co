@@ -27,7 +27,8 @@ export default function ChatManager() {
   const { mutate: deleteConv, isPending: isDeleting } = useDeleteConversation();
   
   const { data: usersData } = useUsers();
-  const backendUsers = usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss'].includes(u.role)) || [];
+  // Filter out the current user, but include everyone else (admins, bosses, clients)
+  const allUsers = usersData?.users?.filter((u: any) => u._id !== currentUserId) || [];
   const [openNewChat, setOpenNewChat] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -93,13 +94,13 @@ export default function ChatManager() {
                   <Plus className="w-4 h-4" />
                 </Button>
               </PopoverTrigger>
-            <PopoverContent className="w-[250px] p-0" align="end">
+            <PopoverContent className="w-[300px] p-0" align="end">
               <Command>
-                <CommandInput placeholder="Search admin..." className="h-9" />
+                <CommandInput placeholder="Search user..." className="h-9" />
                 <CommandList>
-                  <CommandEmpty>No admin found.</CommandEmpty>
-                  <CommandGroup>
-                    {backendUsers.map((u: any) => (
+                  <CommandEmpty>No user found.</CommandEmpty>
+                  <CommandGroup heading="Available Users">
+                    {allUsers.map((u: any) => (
                       <CommandItem
                         key={u._id}
                         value={u.name || u.email}
@@ -112,8 +113,10 @@ export default function ChatManager() {
                           });
                         }}
                       >
-                        <User className="mr-2 h-4 w-4 text-muted-foreground" />
-                        {u.name || u.email}
+                        <div className="flex flex-col">
+                          <span className="font-medium text-sm">{u.name || u.email}</span>
+                          <span className="text-[10px] text-muted-foreground uppercase">{u.role}</span>
+                        </div>
                       </CommandItem>
                     ))}
                   </CommandGroup>
@@ -215,7 +218,7 @@ export default function ChatManager() {
             
             <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col bg-muted/5">
               {messages.map((msg: any) => {
-                const isMe = msg.senderId?._id?.toString() === currentUserId || (msg.senderRole && ['admin','sysadmin','boss'].includes(msg.senderRole) && msg.senderId?._id?.toString() === currentUserId) || msg.senderId === currentUserId;
+                const isMe = msg.senderId?._id?.toString() === currentUserId || (msg.senderRole && ['admin','sysadmin','boss','designer','production'].includes(msg.senderRole) && msg.senderId?._id?.toString() === currentUserId) || msg.senderId === currentUserId;
                 return (
                   <div key={msg._id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[70%] p-3 rounded-2xl ${isMe ? 'bg-primary text-primary-foreground rounded-tr-sm' : 'bg-muted border border-border/50 rounded-tl-sm'}`}>

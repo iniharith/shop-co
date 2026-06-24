@@ -41,3 +41,8 @@ export const deleteTaskFile = async (token: string, taskId: string, fileId: stri
     const response = await AxiosInstance(token).delete(`/api/tasks/${taskId}/files/${fileId}`);
     return response.data;
 }
+export const updateTaskFileNotes = async (token: string, taskId: string, fileUrl: string, notes: string) => {
+    const response = await AxiosInstance(token).put(`/api/tasks/${taskId}/files/notes`, { fileUrl, notes });
+    return response.data;
+}
+

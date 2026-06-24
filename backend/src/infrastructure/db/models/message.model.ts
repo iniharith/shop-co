@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IMessageDocument extends Document {
   conversationId: mongoose.Types.ObjectId;
   senderId?: mongoose.Types.ObjectId; // Optional if coming from raw WhatsApp without user mapping
-  senderRole?: 'admin' | 'sysadmin' | 'boss' | 'client' | 'system';
+  senderRole?: 'admin' | 'sysadmin' | 'boss' | 'designer' | 'production' | 'client' | 'system';
   text: string;
   isRead: boolean;
   source: 'web' | 'whatsapp';
@@ -22,7 +22,7 @@ const MessageSchema = new Schema(
     },
     senderRole: {
       type: String,
-      enum: ['admin', 'sysadmin', 'boss', 'client', 'system'],
+      enum: ['admin', 'sysadmin', 'boss', 'designer', 'production', 'client', 'system'],
       default: 'client',
     },
     text: {

@@ -1,11 +1,12 @@
 "use client";
 import { Badge } from "@/components/ui/badge";
 import React, { useState } from "react";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile } from "@/hooks/useTasks";
+import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
 import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag } from "lucide-react";
 import { format } from "date-fns";
@@ -16,6 +17,74 @@ import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, Command
 import { useOrders } from "@/hooks/useOrder";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => {
+  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(file.url);
+  const [notes, setNotes] = useState(file.notes || "");
+  const { mutate: updateNotes, isPending } = useUpdateTaskFileNotes();
+
+  // Reset local state if external notes change
+  React.useEffect(() => {
+    setNotes(file.notes || "");
+  }, [file.notes]);
+
+  const handleSave = () => {
+    updateNotes({ id: task._id, fileUrl: file.url, notes }, {
+      onSuccess: () => toast.success("Notes saved and synced successfully")
+    });
+  };
+
+  return (
+    <div className="flex flex-col gap-2 p-3 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/30 transition-colors relative group">
+      <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2">
+        {isImage ? (
+          <div className="w-full aspect-square rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+            <img src={file.url} alt={file.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+          </div>
+        ) : (
+          <div className="w-full aspect-square bg-muted flex items-center justify-center rounded-lg">
+            <File className="w-8 h-8 text-primary" />
+          </div>
+        )}
+        <div className="flex w-full justify-between items-center gap-2">
+          <span className="text-xs font-semibold truncate flex-1">{file.name}</span>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="w-6 h-6 shrink-0 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (confirm('Are you sure you want to delete this file?')) {
+                deleteFile({ id: task._id, fileId: file._id || file.url.split('/').pop() });
+              }
+            }}
+            disabled={isDeletingFile}
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
+      </a>
+      
+      <div className="flex flex-col gap-1.5 mt-1 border-t border-border/50 pt-2">
+        <label className="text-[10px] uppercase font-bold text-muted-foreground flex justify-between items-center">
+          Notes
+          {notes !== (file.notes || "") && <span className="text-amber-500">Unsaved</span>}
+        </label>
+        <Textarea 
+          value={notes} 
+          onChange={e => setNotes(e.target.value)} 
+          placeholder="Add notes for this file..." 
+          className="text-xs min-h-[60px] resize-none"
+        />
+        <Button size="sm" variant="secondary" className="w-full h-7 text-xs mt-1 bg-primary/10 text-primary hover:bg-primary/20 border-0" onClick={handleSave} disabled={isPending}>
+          {isPending ? <LoaderCircle className="w-3 h-3 animate-spin mr-1" /> : <Send className="w-3 h-3 mr-1" />}
+          Save Notes
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 interface TaskModalProps {
   task: any;
@@ -30,7 +99,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { mutate: deleteFile, isPending: isDeletingFile } = useDeleteTaskFile();
   const { data: usersData } = useUsers();
   const { data: ordersData } = useOrders();
-  const admins = usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss'].includes(u.role)) || [];
+  const admins = usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(u.role)) || [];
   const customers = usersData?.users?.filter((u: any) => u.role === 'client') || [];
   const allUsers = usersData?.users || [];
   const orders = ordersData?.orders || [];
@@ -44,6 +113,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [orderId, setOrderId] = useState(task.orderId || "");
   const [customerUsername, setCustomerUsername] = useState(task.customerUsername || "");
   const [category, setCategory] = useState(task.category || "UNASSIGNED");
+  const [status, setStatus] = useState(task.status || "PLACED");
   const [title, setTitle] = useState(task.title || "");
   const getAssigneeId = (val: any) => typeof val === 'object' && val !== null ? val._id : (val || "");
   const [assignee, setAssignee] = useState(getAssigneeId(task.assignee));
@@ -58,9 +128,12 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
         orderId,
         customerUsername,
         category,
+        status,
         assignee: assignee === "unassigned" ? null : assignee,
         ...overrides
       }
+    }, {
+      onSuccess: () => toast.success("Task details updated!")
     });
   };
 
@@ -83,12 +156,12 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl p-0 overflow-hidden bg-background border-border shadow-xl">
-        <div className="grid grid-cols-1 md:grid-cols-3 h-[85vh] max-h-[85vh]">
+      <DialogContent className="max-w-3xl w-[95vw] md:w-full p-0 overflow-hidden bg-background border-border shadow-xl max-h-[90vh] flex flex-col">
+        <div className="flex flex-col md:flex-row h-full overflow-y-auto md:overflow-hidden">
           
           {/* Main Content (Left, 2/3 width) */}
-          <div className="md:col-span-2 flex flex-col border-r border-border/50 bg-background">
-            <div className="p-6 border-b border-border/50">
+          <div className="flex-1 flex flex-col md:border-r border-border/50 bg-background min-h-0">
+            <div className="p-4 md:p-6 border-b border-border/50 shrink-0">
               <DialogHeader>
                 <DialogTitle className="sr-only">Task Details</DialogTitle>
                   <Input 
@@ -101,7 +174,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               </DialogHeader>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="flex-1 p-4 md:p-6 space-y-6 md:overflow-y-auto">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <span className="w-1.5 h-4 bg-primary rounded-full"></span> Description
@@ -117,47 +190,22 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
               <div className="space-y-4 pt-4 border-t border-border/50">
                 {task.files && task.files.length > 0 && (
-                  <div className="mb-6 space-y-3">
-                    <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {task.files.map((file: any, idx: number) => {
-                        const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(file.url);
-                        return (
-                          <div key={idx} className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/40 transition-colors overflow-hidden relative group">
-                            <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 flex-1 min-w-0">
-                              {isImage ? (
-                                <div className="w-12 h-12 shrink-0 rounded overflow-hidden">
-                                  <img src={file.url} alt={file.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                                </div>
-                              ) : (
-                                <div className="w-12 h-12 shrink-0 bg-muted flex items-center justify-center rounded">
-                                  <File className="w-5 h-5 text-primary" />
-                                </div>
-                              )}
-                              <span className="text-xs font-medium truncate">{file.name}</span>
-                            </a>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="w-8 h-8 shrink-0 text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                if (confirm('Are you sure you want to delete this file?')) {
-                                  deleteFile({ id: task._id, fileId: file._id || file.url.split('/').pop() });
-                                }
-                              }}
-                              disabled={isDeletingFile}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                    <div className="mb-6 space-y-3">
+                      <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments
+                      </label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {task.files.map((file: any, idx: number) => (
+                          <FileAttachmentCard 
+                            key={idx} 
+                            task={task} 
+                            file={file} 
+                            deleteFile={deleteFile} 
+                            isDeletingFile={isDeletingFile} 
+                          />
+                        ))}
+                      </div>
+                    </div>)}
                 
                 <label className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-muted-foreground" /> Comments
@@ -191,7 +239,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               </div>
             </div>
             
-            <div className="p-4 border-t border-border/50 bg-muted/10">
+            <div className="p-4 border-y md:border-y-0 md:border-t border-border/50 bg-muted/10 shrink-0">
               <div className="flex gap-2">
                 <input 
                   type="file" 
@@ -225,7 +273,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
           </div>
           
           {/* Sidebar (Right, 1/3 width) */}
-          <div className="bg-muted/10 p-6 space-y-6 overflow-y-auto">
+          <div className="w-full md:w-72 lg:w-80 bg-muted/10 p-4 md:p-6 space-y-6 shrink-0 md:overflow-y-auto">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Properties</h3>
             
             <div className="space-y-4">
@@ -267,6 +315,27 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                    <Check className="w-3.5 h-3.5" /> Product Status
+                  </label>
+                  <Select value={status} onValueChange={(v) => { setStatus(v); handleSaveDetails({ status: v }); }}>
+                    <SelectTrigger className="h-9 bg-background shadow-sm border-border/50">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[
+                        'PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 
+                        'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 
+                        'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 
+                        'CANCELLED', 'FAILED'
+                      ].map(s => (
+                        <SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">

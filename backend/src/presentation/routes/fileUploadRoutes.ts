@@ -7,6 +7,8 @@ import { fileUploadRepository } from '../../infrastructure/repositories/FileUplo
 import { FileUpload } from '../../domain/entities/FileUpload';
 import { whatsAppService } from '../../infrastructure/services/WhatsAppService';
 import authMiddilware from '../middlewares/auth.middileware';
+import { taskRepository } from '../../infrastructure/repositories/TaskRepository';
+import UserRepository from '../../infrastructure/db/repositories/user.repository';
 
 const router = Router();
 
@@ -72,7 +74,7 @@ router.post(
     const authReq = req as any;
     
     // If admin provides a userId in the body, upload on their behalf
-    const isAdmin = ['admin', 'system_admin', 'boss'].includes(authReq.role);
+    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(authReq.role);
     const userId = (isAdmin && bodyUserId) ? bodyUserId : authReq.userId || authReq.user?.id;
 
     if (!userId && !taskId) {
@@ -249,10 +251,11 @@ router.get(
   })
 );
 
-// ─── PUT /api/files/:id/review ────────────────────────────
+// 📝 PUT /api/files/:id/review 
 // Admin marks a file as reviewed (optionally with notes)
 router.put(
   '/:id/review',
+  authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
     const { reviewed, notes } = req.body;
     const file = await fileUploadRepository.updateAdminReview(
@@ -264,6 +267,37 @@ router.put(
       res.status(404).json({ success: false, message: 'Fail tidak dijumpai' });
       return;
     }
+
+    // Sync with task if this file is attached to a task
+    if (file.taskId) {
+      try {
+        const authReq = req as any;
+        const userId = authReq.userId || authReq.user?.id;
+        let userName = authReq.user?.name || authReq.user?.email;
+        if (!userName && userId) {
+          try {
+            const user = await UserRepository.findById(userId);
+            userName = user?.name || user?.email;
+          } catch (e) {}
+        }
+        userName = userName || 'Admin';
+
+        // Update task file notes
+        await taskRepository.updateFileNotes(file.taskId, file.path, notes || '');
+        
+        // Add comment to task
+        await taskRepository.addComment(
+          file.taskId,
+          userId,
+          userName,
+          `Note updated for artwork (${file.originalName}): ${notes || '(cleared)'}`,
+          authReq.role || 'admin'
+        );
+      } catch (syncErr) {
+        console.error("Failed to sync file note to task:", syncErr);
+      }
+    }
+
     res.json({ success: true, data: file });
     })
 );
@@ -276,7 +310,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as any;
     const userId = authReq.userId || authReq.user?.id;
-    const isAdmin = ['admin', 'sysadmin', 'boss'].includes(authReq.role);
+    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(authReq.role);
 
     if (!userId) {
       res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
@@ -331,7 +365,7 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as any;
     const userId = authReq.userId || authReq.user?.id;
-    const isAdmin = ['admin', 'sysadmin', 'boss'].includes(authReq.role);
+    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(authReq.role);
 
     if (!userId) {
       res.status(401).json({ success: false, message: 'Log masuk diperlukan' });

@@ -115,7 +115,7 @@ export class AdminController {
      */
     async getOrders(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(req.role as Roles)) {
+            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS, Roles.DESIGNER, Roles.PRODUCTION].includes(req.role as Roles)) {
                 throw new Error(messages.UNAUTHORIZED)
             }
             const orders = await this.adminUsecase.getOrders();

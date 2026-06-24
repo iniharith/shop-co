@@ -6,6 +6,8 @@ import authMiddilware from '../middlewares/auth.middileware';
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import multer from "multer";
+import UserRepository from '../../infrastructure/db/repositories/user.repository';
+import { FileUpload } from '../../domain/entities/FileUpload';
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dc7aun6of',
@@ -38,7 +40,7 @@ router.get(
     };
     
     // If not admin, only show tasks linked to their username or orders (for simplicity, we'll just match their username)
-    if (!['admin', 'sysadmin', 'boss'].includes(role)) {
+    if (!['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(role)) {
       filters.customerUsername = authReq.user?.name || authReq.user?.email; // or however user is identified
     }
     
@@ -143,7 +145,18 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as any;
     const userId = authReq.userId || authReq.user?.id;
-    const userName = authReq.user?.name || authReq.user?.email || 'Admin';
+    
+    let userName = authReq.user?.name || authReq.user?.email;
+    if (!userName && userId) {
+      try {
+        const user = await UserRepository.findById(userId);
+        userName = user?.name || user?.email;
+      } catch (error) {
+        console.error("Error fetching user for comment:", error);
+      }
+    }
+    userName = userName || 'User';
+
     const role = authReq.role;
     const { text } = req.body;
 
@@ -157,6 +170,63 @@ router.post(
       res.status(404).json({ success: false, message: 'Task not found' });
       return;
     }
+    res.json({ success: true, task });
+  })
+);
+
+// PUT /api/tasks/:id/files/notes
+router.put(
+  '/:id/files/notes',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { fileUrl, notes } = req.body;
+    const authReq = req as any;
+    const userId = authReq.userId || authReq.user?.id;
+    
+    let userName = authReq.user?.name || authReq.user?.email;
+    if (!userName && userId) {
+      try {
+        const user = await UserRepository.findById(userId);
+        userName = user?.name || user?.email;
+      } catch (error) {}
+    }
+    userName = userName || 'Admin';
+
+    if (!fileUrl) {
+      res.status(400).json({ success: false, message: 'fileUrl is required' });
+      return;
+    }
+
+    // Update the note in the Task
+    const task = await taskRepository.updateFileNotes(id, fileUrl, notes || '');
+    if (!task) {
+      res.status(404).json({ success: false, message: 'Task or file not found' });
+      return;
+    }
+
+    // Extract filename for comment
+    const fileName = fileUrl.split('/').pop() || 'file';
+
+    // Sync the note to the FileUpload collection
+    try {
+      await FileUpload.findOneAndUpdate(
+        { path: fileUrl, taskId: id },
+        { $set: { adminNotes: notes || '' } }
+      );
+    } catch (err) {
+      console.error("Failed to sync file upload notes:", err);
+    }
+
+    // Add a comment to the task to notify stakeholders
+    await taskRepository.addComment(
+      id, 
+      userId, 
+      userName, 
+      `Note updated for attached file (${fileName}): ${notes || '(cleared)'}`, 
+      authReq.role || 'admin'
+    );
+
     res.json({ success: true, task });
   })
 );

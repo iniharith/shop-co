@@ -51,3 +51,13 @@ export const useAddTaskComment = () => {
     const { mutate, isPending } = useMutationData(['addTaskComment'], ({ id, text }: any) => addTaskComment(session?.user?.token, id, text), ['tasks']);
     return { mutate, isPending };
 }
+
+export const useUpdateTaskFileNotes = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(
+        ['updateTaskFileNotes'],
+        (data: { id: string, fileUrl: string, notes: string }) => import("@/api/tasks").then(m => m.updateTaskFileNotes(session?.user.token, data.id, data.fileUrl, data.notes)),
+        ["tasks", "allFiles", "groupedFiles"]
+    );
+    return { mutate, isPending };
+}

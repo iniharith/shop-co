@@ -11,7 +11,7 @@ export default function PublicFolderView({ params }: { params: { folderId: strin
   const [files, setFiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const decodedFolderId = decodeURIComponent(params.folderId);
+  const [folderName, setFolderName] = useState<string>("");
 
   useEffect(() => {
     const fetchFiles = async () => {
@@ -19,6 +19,7 @@ export default function PublicFolderView({ params }: { params: { folderId: strin
         const response = await AxiosInstance("").get(`/api/files/folder/${params.folderId}`);
         if (response.data?.success) {
           setFiles(response.data.data || []);
+          setFolderName(response.data.folderName || "Shared Folder");
         }
       } catch (error) {
         console.error("Failed to fetch folder files:", error);
@@ -52,7 +53,7 @@ export default function PublicFolderView({ params }: { params: { folderId: strin
               <Folder className="w-8 h-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">{decodedFolderId}</h1>
+              <h1 className="text-xl font-bold">{folderName || "Loading..."}</h1>
               <p className="text-sm text-muted-foreground">{files.length} Files Available</p>
             </div>
           </div>

@@ -41,7 +41,15 @@ export class TaskRepository {
   async addFile(taskId: string, url: string, name: string): Promise<ITask | null> {
     return Task.findByIdAndUpdate(
       taskId,
-      { $push: { files: { url, name } } },
+      { $push: { files: { url, name, notes: '' } } },
+      { new: true }
+    );
+  }
+
+  async updateFileNotes(taskId: string, fileUrl: string, notes: string): Promise<ITask | null> {
+    return Task.findOneAndUpdate(
+      { _id: taskId, 'files.url': fileUrl },
+      { $set: { 'files.$.notes': notes } },
       { new: true }
     );
   }

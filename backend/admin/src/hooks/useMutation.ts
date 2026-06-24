@@ -20,7 +20,9 @@ export const useMutationData = (mutationKey: MutationKey,
                 description: error.message?.toString()
             })        },
         onSuccess(data) {
-            toast.success(data.message)
+            if (data?.message) {
+                toast.success(data.message);
+            }
             if (onSuccess) onSuccess(data);
         },
 

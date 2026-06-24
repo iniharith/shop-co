@@ -20,7 +20,7 @@ router.get(
     const role = authReq.role;
     let conversations;
     
-    if (['admin', 'sysadmin', 'boss'].includes(role)) {
+    if (['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(role)) {
       // Admins see all conversations for now
       conversations = await chatRepository.findConversationsByUser(userId); // Or fetch all if needed
       // Actually, fetching all conversations is better for an admin dashboard
@@ -97,7 +97,7 @@ router.post(
     });
     
     const conversation = await chatRepository.findConversationById(req.params.id);
-    if (conversation && conversation.whatsappPhone && ['admin', 'sysadmin', 'boss'].includes(role)) {
+    if (conversation && conversation.whatsappPhone && ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(role)) {
       // Send back to WhatsApp using WhatsAppService or directly via Meta API
       try {
         const { default: axios } = await import('axios');

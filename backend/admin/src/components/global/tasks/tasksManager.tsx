@@ -15,8 +15,47 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, isToday, isTomorrow } from "date-fns";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import TaskModal from "./TaskModal";
+
+const DueDateDisplay = ({ task, updateTask, className }: { task: any, updateTask: any, className?: string }) => {
+  const dateObj = task.dueDate ? new Date(task.dueDate) : null;
+  let displayText = "Set Due Date";
+  let colorClass = "text-muted-foreground";
+
+  if (dateObj) {
+    if (isToday(dateObj)) {
+      displayText = "Today";
+      colorClass = "text-red-500 font-bold";
+    } else if (isTomorrow(dateObj)) {
+      displayText = "Tomorrow";
+      colorClass = "text-yellow-600 font-bold dark:text-yellow-500";
+    } else {
+      displayText = format(dateObj, "dd MMM");
+      colorClass = "text-muted-foreground font-medium";
+    }
+  }
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="sm" className={`px-2 w-full justify-start hover:bg-muted/50 ${colorClass} ${className}`}>
+          <Calendar className="w-3 h-3 mr-1 shrink-0" />
+          <span className="truncate">{displayText}</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <CalendarUI
+          mode="single"
+          selected={dateObj || undefined}
+          onSelect={(date) => updateTask({ id: task._id, data: { dueDate: date } })}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 export default function TasksManager() {
   const { data: response, isPending, refetch, isFetching } = useTasks();
@@ -251,7 +290,7 @@ export default function TasksManager() {
                   <Card key={task._id} className="cursor-pointer hover:shadow-md transition-shadow group border border-border/50" onClick={() => setSelectedTask(task)}>
                     <CardContent className="p-3 flex flex-col gap-2">
                       <div className="flex justify-between items-start gap-2">
-                        <span className="font-medium text-xs leading-tight">{task.title}</span>
+                        <span className="font-semibold text-sm leading-tight">{task.title}</span>
                         <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-500 hover:bg-red-50" onClick={(e) => handleDelete(task._id, e)}>
                           <Trash2 className="w-3 h-3" />
                         </Button>
@@ -267,12 +306,7 @@ export default function TasksManager() {
                       
                       {/* Interactive Assignee, DueDate, and Status for Board View */}
                       <div className="grid grid-cols-1 gap-1.5" onClick={e => e.stopPropagation()}>
-                        <Input 
-                          type="date" 
-                          value={task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ""} 
-                          onChange={e => updateTask({ id: task._id, data: { dueDate: e.target.value ? new Date(e.target.value) : null } })}
-                          className="h-6 text-[10px] bg-muted/50 border-0 focus:ring-0 w-full px-2"
-                        />
+                        <DueDateDisplay task={task} updateTask={updateTask} className="h-6 text-[9px] bg-muted/50 border-0 focus:ring-0" />
                         <Select value={task.assignee || "unassigned"} onValueChange={(v) => updateTask({ id: task._id, data: { assignee: v === "unassigned" ? null : v } })}>
                           <SelectTrigger className="h-6 text-[10px] font-bold bg-muted/50 border-0 focus:ring-0">
                             <SelectValue />
@@ -365,12 +399,7 @@ export default function TasksManager() {
                           </Select>
                         </div>
                         <div className="col-span-2 text-sm text-muted-foreground flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                          <Input 
-                            type="date" 
-                            value={task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ""} 
-                            onChange={e => updateTask({ id: task._id, data: { dueDate: e.target.value ? new Date(e.target.value) : null } })}
-                            className="h-8 text-xs bg-background border border-border/50 shadow-sm w-full"
-                          />
+                          <DueDateDisplay task={task} updateTask={updateTask} className="h-8 text-[11px] bg-background border border-border/50 shadow-sm" />
                         </div>
                         <div className="col-span-2" onClick={e => e.stopPropagation()}>
                           <Select value={task.status} onValueChange={(v) => handleStatusChange(task._id, v)}>
