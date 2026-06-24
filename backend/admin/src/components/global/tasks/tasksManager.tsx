@@ -167,7 +167,7 @@ export default function TasksManager() {
                   toast.success(`Migration successful! Refreshed board.`);
                   refetch();
                 } else {
-                  toast.error(`Migration failed: ${data.error}`);
+                  toast.error(`Migration failed: ${JSON.stringify(data)}`);
                 }
               } catch (e) {
                 toast.error("Network error during migration");
