@@ -419,16 +419,17 @@ export default function ArtworksManager() {
                             variant="outline" 
                             size="sm" 
                             onClick={() => {
-                              const shareData = {
-                                n: activeGroup.folderName,
-                                t: activeGroup.taskId || "",
-                                o: activeGroup.orderId || "",
-                                u: activeGroup.userId || ""
-                              };
-                              const token = btoa(JSON.stringify(shareData));
-                              const link = `${window.location.origin}/share/folder/${token}`;
-                              navigator.clipboard.writeText(link);
-                              toast.success("Share link copied to clipboard");
+                                const shareData = {
+                                  n: activeGroup.folderName,
+                                  t: activeGroup.taskId || "",
+                                  o: activeGroup.orderId || "",
+                                  u: activeGroup.userId || ""
+                                };
+                                const base64 = btoa(unescape(encodeURIComponent(JSON.stringify(shareData))));
+                                const token = encodeURIComponent(base64);
+                                const link = `${window.location.origin}/share/folder/${token}`;
+                                navigator.clipboard.writeText(link);
+                                toast.success("Share link copied to clipboard");
                             }}
                           >
                           <Folder className="w-4 h-4 mr-2" /> Share Link

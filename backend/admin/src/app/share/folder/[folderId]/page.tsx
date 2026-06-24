@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, use } from "react";
 import AxiosInstance from "@/utils/axios";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Folder, Image as ImageIcon, Download, FileText, Eye, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
-export default function PublicFolderView({ params }: { params: { folderId: string } }) {
+export default function PublicFolderView({ params }: { params: Promise<{ folderId: string }> }) {
+  const unwrappedParams = use(params);
   const [files, setFiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -16,7 +17,7 @@ export default function PublicFolderView({ params }: { params: { folderId: strin
   useEffect(() => {
     const fetchFiles = async () => {
       try {
-        const response = await AxiosInstance("").get(`/api/files/folder/${params.folderId}`);
+        const response = await AxiosInstance("").get(`/api/files/folder/${unwrappedParams.folderId}`);
         if (response.data?.success) {
           setFiles(response.data.data || []);
           setFolderName(response.data.folderName || "Shared Folder");
@@ -28,7 +29,7 @@ export default function PublicFolderView({ params }: { params: { folderId: strin
       }
     };
     fetchFiles();
-  }, [params.folderId]);
+  }, [unwrappedParams.folderId]);
 
   if (loading) {
     return (

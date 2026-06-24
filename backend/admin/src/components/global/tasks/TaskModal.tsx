@@ -37,7 +37,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
   };
 
   return (
-    <div className="relative group w-full mb-3 mt-1">
+    <div className="relative group w-full mb-6 mt-1">
       {/* Dark container matching the sketch */}
       <div className="flex items-center gap-3 bg-[#3f3f3f] p-2 pr-3 rounded-[20px] w-full shadow-sm relative z-10">
         
@@ -168,7 +168,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
         <div className="flex flex-col md:flex-row h-full overflow-y-auto md:overflow-hidden">
           
           {/* Main Content (Left, 2/3 width) */}
-          <div className="flex-1 flex flex-col md:border-r border-border/50 bg-background min-h-0">
+          <div className="flex-none md:flex-1 flex flex-col md:border-r border-border/50 bg-background min-h-0 shrink-0 md:shrink">
             <div className="p-4 md:p-6 border-b border-border/50 shrink-0">
               <DialogHeader>
                 <DialogTitle className="sr-only">Task Details</DialogTitle>
@@ -182,7 +182,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               </DialogHeader>
             </div>
             
-            <div className="flex-1 p-4 md:p-6 space-y-6 md:overflow-y-auto">
+            <div className="flex-none md:flex-1 p-4 md:p-6 space-y-6 md:overflow-y-auto">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <span className="w-1.5 h-4 bg-primary rounded-full"></span> Description
