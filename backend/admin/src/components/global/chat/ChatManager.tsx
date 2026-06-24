@@ -65,7 +65,9 @@ export default function ChatManager() {
 
   const handleSend = () => {
     if (!text.trim() || !activeConvId) return;
-    sendMessage(text, { onSuccess: () => setText("") });
+    const currentText = text;
+    setText("");
+    sendMessage(currentText);
   };
 
   const getParticipantName = (conv: any) => {
@@ -105,7 +107,7 @@ export default function ChatManager() {
                         key={u._id}
                         value={u.name || u.email}
                         onSelect={() => {
-                          createConv({ participantIds: [u._id], type: 'admin_admin' }, {
+                          createConv({ participantIds: [currentUserId, u._id], type: 'admin_admin' }, {
                             onSuccess: (res: any) => {
                               if(res.conversation) setActiveConvId(res.conversation._id);
                               setOpenNewChat(false);

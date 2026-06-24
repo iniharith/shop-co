@@ -48,6 +48,7 @@ import * as React from "react";
 import { Icons } from "../global/icons";
 import { useTheme } from "next-themes";
 import { useNotifications } from "@/hooks/useNotification";
+import { useConversations } from "@/hooks/useChat";
 
 import { roleByNavItems } from "@/constants/navItems";
 import { DialogTitle } from "../ui/dialog";
@@ -64,6 +65,9 @@ export default function AppSidebar() {
   const { theme } = useTheme();
   const { data: notificationsResponse } = useNotifications();
   const unreadCount = notificationsResponse?.notifications?.filter((n: any) => !n.read).length || 0;
+  
+  const { data: conversationsResponse } = useConversations();
+  const unreadChatCount = (conversationsResponse as any)?.conversations?.reduce((total: number, conv: any) => total + (conv.unreadCount || 0), 0) || 0;
  
   const navItems = roleByNavItems(session?.user?.role)
 
@@ -153,9 +157,16 @@ export default function AppSidebar() {
                     isActive={pathname === item.url}
                     className="text-base font-bold py-6"
                   >
-                    <Link href={item.url} className="flex items-center gap-2">
-                      <Icon />
-                      <span>{item.title}</span>
+                    <Link href={item.url} className="flex items-center gap-2 flex-1 justify-between">
+                      <div className="flex items-center gap-2">
+                        <Icon />
+                        <span>{item.title}</span>
+                      </div>
+                      {item.title === 'Chat' && unreadChatCount > 0 && (
+                        <span className="bg-red-500 text-white text-[10px] w-4 h-4 p-0 flex items-center justify-center rounded-full shrink-0">
+                          {unreadChatCount}
+                        </span>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

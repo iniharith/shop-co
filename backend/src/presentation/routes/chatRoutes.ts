@@ -31,8 +31,21 @@ router.get(
     } else {
       conversations = await chatRepository.findConversationsByUser(userId);
     }
+    const { MessageModel } = await import('../../infrastructure/db/models/message.model');
     
-    res.json({ success: true, conversations });
+    // Add unread count to each conversation
+    const conversationsWithUnread = await Promise.all(
+      conversations.map(async (conv: any) => {
+        const unreadCount = await MessageModel.countDocuments({
+          conversationId: conv._id,
+          senderId: { $ne: userId },
+          isRead: false
+        });
+        return { ...conv.toObject(), unreadCount };
+      })
+    );
+    
+    res.json({ success: true, conversations: conversationsWithUnread });
   })
 );
 
