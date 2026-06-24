@@ -111,12 +111,12 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
       {/* Top Gradient Bar */}
       <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-primary/60 via-primary to-primary/60 opacity-80" />
       
-      <CardHeader className="pb-3 pt-6 px-5 flex flex-row items-start justify-between gap-4 relative">
-          <div className="flex items-start gap-3">
-             <CircleUserRound className="w-8 h-8 text-muted-foreground mt-0.5" />
-             <div className="flex flex-col">
-               <span className="font-semibold text-lg leading-tight">{order.customerName || userName}</span>
-               <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5 mt-0.5">
+      <CardHeader className={cn("px-5 flex flex-row justify-between gap-4 relative", isMinimized ? "py-3 items-center" : "pb-3 pt-6 items-start")}>
+          <div className={cn("flex gap-3", isMinimized ? "items-center" : "items-start")}>
+             <CircleUserRound className={cn("text-muted-foreground", isMinimized ? "w-6 h-6" : "w-8 h-8 mt-0.5")} />
+             <div className="flex flex-col justify-center">
+               <span className={cn("font-semibold leading-tight truncate max-w-[150px] sm:max-w-[200px]", isMinimized ? "text-base" : "text-lg")}>{order.customerName || userName}</span>
+               <span className={cn("text-muted-foreground font-medium flex items-center gap-1.5", isMinimized ? "text-[10px] mt-0" : "text-xs mt-0.5")}>
                  <span className="bg-primary/10 px-1.5 py-0.5 rounded text-primary tracking-tight font-mono font-bold">
                    ORD-{order._id.split("").reverse().splice(0, 4).reverse().join("")}
                  </span>
@@ -125,7 +125,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
              </div>
           </div>
         
-        <div className="flex flex-col items-end gap-2" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-col items-end justify-center gap-2" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-2">
             <Select 
               value={localStatus} 
