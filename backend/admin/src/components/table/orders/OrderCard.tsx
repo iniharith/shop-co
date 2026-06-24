@@ -95,7 +95,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
   };
 
   return (
-    <Card className={cn("group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card border border-border/50 rounded-2xl flex flex-col justify-between", isMinimized ? "h-auto" : "")}>
+    <Card className={cn("group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-card border border-border/50 rounded-2xl flex flex-col justify-between", isMinimized ? "h-fit self-start" : "h-full")}>
       {/* Top Gradient Bar */}
       <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-primary/60 via-primary to-primary/60 opacity-80" />
       
@@ -149,6 +149,18 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
                 <SelectItem value="CANCELLED">Cancelled</SelectItem>
               </SelectContent>
             </Select>
+            <button 
+              onClick={() => {
+                if ((order as any).awbUrl) {
+                  window.open((order as any).awbUrl, "_blank");
+                }
+              }}
+              disabled={!(order as any).awbUrl}
+              className="p-1.5 bg-muted rounded-full hover:bg-muted/80 text-muted-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={(order as any).awbUrl ? "Print AWB" : "No AWB Available"}
+            >
+              <Printer className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            </button>
             <button 
               onClick={() => setIsMinimized(!isMinimized)} 
               className="p-1.5 bg-muted rounded-full hover:bg-muted/80 text-muted-foreground transition-colors"

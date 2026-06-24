@@ -24,7 +24,7 @@ router.get("/:orderId", authMiddilware, orderController.getOrderById.bind(orderC
 
 router.put("/:orderId", authMiddilware, orderController.updateOrderStatus.bind(orderController));
 
-router.patch("/:orderId/archive", authMiddilware, orderController.archiveOrder.bind(orderController));
+router.put("/:orderId/archive", authMiddilware, orderController.archiveOrder.bind(orderController));
 
 export default router;
 

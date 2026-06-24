@@ -16,7 +16,7 @@ export const updateOrderStatus = async (token: string, orderId: string, status: 
 }
 
 export const archiveOrder = async (token: string, orderId: string, isArchived: boolean) => {
-    const response = await AxiosInstance(token).patch(`${ORDER_URL}/${orderId}/archive`, { isArchived });
+    const response = await AxiosInstance(token).put(`${ORDER_URL}/${orderId}/archive`, { isArchived });
     return response.data;
 }
 
