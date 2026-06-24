@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { CellAction } from "@/components/global/cell-actions";
 import OrderInfo from "@/components/global/orderInfo";
 import { cn } from "@/lib/utils";
-import { Package, CircleUserRound, MapPin, CreditCard, ShoppingBag, Trash2, Truck, Archive, ArchiveRestore, ChevronDown, ChevronUp } from "lucide-react";
+import { Package, CircleUserRound, MapPin, CreditCard, ShoppingBag, Trash2, Truck, Archive, ArchiveRestore, ChevronDown, ChevronUp, Printer } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDeleteOrder, useUpdateOrderStatus, useToggleArchiveOrder } from "@/hooks/useOrder";
 import { toast } from "sonner";
