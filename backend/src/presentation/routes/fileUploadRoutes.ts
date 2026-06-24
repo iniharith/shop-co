@@ -4,6 +4,7 @@ import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import { fileUploadRepository } from '../../infrastructure/repositories/FileUploadRepository';
+import { FileUpload } from '../../domain/entities/FileUpload';
 import { whatsAppService } from '../../infrastructure/services/WhatsAppService';
 import authMiddilware from '../middlewares/auth.middileware';
 
@@ -172,12 +173,28 @@ router.get(
   })
 );
 
-// 🟢 Public: Get files for a specific folder
+// 🌐 Public: Get files for a specific folder using robust token
 router.get(
-  '/folder/:folderId',
+  '/folder/:token',
   asyncHandler(async (req: Request, res: Response) => {
-    const files = await fileUploadRepository.findByUserId(req.params.folderId);
-    res.json({ success: true, data: files });
+    try {
+      const decoded = JSON.parse(Buffer.from(req.params.token, 'base64').toString('utf-8'));
+      let query: any = {};
+      if (decoded.t) {
+        query = { taskId: decoded.t };
+      } else if (decoded.o) {
+        query = { orderId: decoded.o };
+      } else if (decoded.u) {
+        query = { userId: decoded.u };
+      } else {
+        res.json({ success: true, data: [] });
+        return;
+      }
+      const files = await FileUpload.find(query).sort({ uploadedAt: -1 });
+      res.json({ success: true, data: files, folderName: decoded.n });
+    } catch (e) {
+      res.json({ success: true, data: [] });
+    }
   })
 );
 
