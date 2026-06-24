@@ -1,7 +1,7 @@
 import { useSession } from "next-auth/react";
 import { useQueryData } from "./useQueryData";
 import { useMutationData } from "./useMutation";
-import { getTasks, createTask, updateTask, deleteTask, addTaskComment } from "@/api/tasks";
+import { getTasks, createTask, updateTask, deleteTask, addTaskComment, deleteTaskComment } from "@/api/tasks";
 
 export const useTasks = (filters?: any) => {
     const { data: session } = useSession();
@@ -49,6 +49,12 @@ export const useDeleteTaskFile = () => {
 export const useAddTaskComment = () => {
     const { data: session } = useSession();
     const { mutate, isPending } = useMutationData(['addTaskComment'], ({ id, text }: any) => addTaskComment(session?.user?.token, id, text), ['tasks']);
+    return { mutate, isPending };
+}
+
+export const useDeleteTaskComment = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(['deleteTaskComment'], ({ id, commentId }: any) => deleteTaskComment(session?.user?.token, id, commentId), ['tasks']);
     return { mutate, isPending };
 }
 

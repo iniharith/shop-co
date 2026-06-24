@@ -38,6 +38,14 @@ export class TaskRepository {
     );
   }
 
+  async deleteComment(taskId: string, commentId: string): Promise<ITask | null> {
+    return Task.findByIdAndUpdate(
+      taskId,
+      { $pull: { comments: { _id: commentId } } as any },
+      { new: true }
+    );
+  }
+
   async addFile(taskId: string, url: string, name: string): Promise<ITask | null> {
     return Task.findByIdAndUpdate(
       taskId,

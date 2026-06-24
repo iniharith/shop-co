@@ -174,6 +174,20 @@ router.post(
   })
 );
 
+// DELETE /api/tasks/:id/comments/:commentId
+router.delete(
+  '/:id/comments/:commentId',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const task = await taskRepository.deleteComment(req.params.id, req.params.commentId);
+    if (!task) {
+      res.status(404).json({ success: false, message: 'Task not found' });
+      return;
+    }
+    res.json({ success: true, task });
+  })
+);
+
 // PUT /api/tasks/:id/files/notes
 router.put(
   '/:id/files/notes',

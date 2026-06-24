@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes } from "@/hooks/useTasks";
+import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
 import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag } from "lucide-react";
 import { format } from "date-fns";
@@ -37,7 +37,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
   };
 
   return (
-    <div className="relative group w-fit max-w-[90%] sm:max-w-[80%] mb-5 mt-1 mx-auto sm:mx-0">
+    <div className="relative group w-fit max-w-full mb-5 mt-1">
       {/* Dark container matching the sketch */}
       <div className="flex items-center gap-2 bg-[#5a5a5a] p-1.5 pr-2 rounded-[16px] w-full min-w-[190px] shadow-sm relative z-10">
         
@@ -103,6 +103,7 @@ interface TaskModalProps {
 export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { mutate: updateTask, isPending: isUpdating } = useUpdateTask();
   const { mutate: addComment, isPending: isCommenting } = useAddTaskComment();
+  const { mutate: deleteCommentApi, isPending: isDeletingComment } = useDeleteTaskComment();
   const { mutate: uploadFile, isPending: isUploading } = useUploadTaskFile();
   const { mutate: deleteFile, isPending: isDeletingFile } = useDeleteTaskFile();
   const { data: usersData } = useUsers();
@@ -161,6 +162,12 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       });
       // Clear the input so the same files can be uploaded again if needed
       e.target.value = "";
+    }
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    if (confirm("Are you sure you want to delete this comment?")) {
+      deleteCommentApi({ id: task._id, commentId });
     }
   };
 
@@ -234,8 +241,19 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                             {comment.role === 'client' && (
                               <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-primary/20 text-primary">Customer</Badge>
                             )}
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-muted-foreground">{format(new Date(comment.createdAt), "MMM d, h:mm a")}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-5 w-5 text-red-400 hover:text-red-600 hover:bg-red-400/10 p-0 rounded-full"
+                                onClick={() => handleDeleteComment(comment._id)}
+                                disabled={isDeletingComment}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
-                          <span className="text-[10px] text-muted-foreground">{format(new Date(comment.createdAt), "MMM d, h:mm a")}</span>
                         </div>
                         <p className="text-sm text-foreground leading-relaxed">{comment.text}</p>
                       </div>
