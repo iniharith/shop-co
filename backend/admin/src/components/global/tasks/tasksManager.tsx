@@ -259,8 +259,8 @@ export default function TasksManager() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="unassigned">Unassigned</SelectItem>
-                            {usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss'].includes(u.role)).map((admin: any) => (
-                              <SelectItem key={admin._id} value={admin._id} className="font-bold">{admin.name || admin.email}</SelectItem>
+                            {usersData?.users?.map((user: any) => (
+                              <SelectItem key={user._id} value={user._id} className="font-bold">{user.name || user.email}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -338,8 +338,8 @@ export default function TasksManager() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="unassigned">Unassigned</SelectItem>
-                              {usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss'].includes(u.role)).map((admin: any) => (
-                                <SelectItem key={admin._id} value={admin._id} className="font-bold">{admin.name || admin.email}</SelectItem>
+                              {usersData?.users?.map((user: any) => (
+                                <SelectItem key={user._id} value={user._id} className="font-bold">{user.name || user.email}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
