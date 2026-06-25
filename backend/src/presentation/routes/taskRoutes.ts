@@ -274,7 +274,7 @@ router.post(
         taskId: task._id,
         orderId: task.orderId || undefined,
         category: 'TASK',
-        filename: req.file.filename,
+        filename: (req.file as any).key || req.file.filename || req.file.originalname,
         originalName: fileName,
         mimetype: req.file.mimetype,
         size: req.file.size,

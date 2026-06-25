@@ -359,8 +359,7 @@ export default function TasksManager() {
                             <SelectItem value="unassigned">Unassigned</SelectItem>
                             {usersData?.users?.map((user: any) => (
                               <SelectItem key={user._id} value={user._id} className="font-bold">
-                                <div className="flex items-center gap-2">
-                                  <div className={`w-2 h-2 rounded-full ${getUserColor(user._id)}`} />
+                                <div className={`px-2 py-0.5 rounded text-white text-[10px] uppercase inline-block ${getUserColor(user._id)}`}>
                                   {user.name || user.email}
                                 </div>
                               </SelectItem>
@@ -424,8 +423,8 @@ export default function TasksManager() {
                   <div className="grid grid-cols-12 gap-4 p-2 border-b border-border/50 bg-muted/10 font-medium text-xs text-muted-foreground">
                     <div className="col-span-6 px-2">Task Name</div>
                     <div className="col-span-2">Assignee</div>
-                    <div className="col-span-2">Due Date</div>
                     <div className="col-span-2">Status</div>
+                    <div className="col-span-2">Due Date</div>
                   </div>
                   <div className="divide-y divide-border/50">
                     {sectionTasks.map((task: any) => (
@@ -445,17 +444,13 @@ export default function TasksManager() {
                               <SelectItem value="unassigned">Unassigned</SelectItem>
                               {usersData?.users?.map((user: any) => (
                                 <SelectItem key={user._id} value={user._id} className="font-bold">
-                                  <div className="flex items-center gap-2">
-                                    <div className={`w-2 h-2 rounded-full ${getUserColor(user._id)}`} />
+                                  <div className={`px-2 py-0.5 rounded text-white text-[11px] uppercase inline-block ${getUserColor(user._id)}`}>
                                     {user.name || user.email}
                                   </div>
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                        </div>
-                        <div className="col-span-2 text-sm text-muted-foreground flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                          <DueDateDisplay task={task} updateTask={updateTask} className="h-8 text-[11px] bg-transparent border-0 shadow-none hover:bg-muted" />
                         </div>
                         <div className="col-span-2 pr-2" onClick={e => e.stopPropagation()}>
                           <Select value={task.status} onValueChange={(v) => handleStatusChange(task._id, v)}>
@@ -468,6 +463,9 @@ export default function TasksManager() {
                               ))}
                             </SelectContent>
                           </Select>
+                        </div>
+                        <div className="col-span-2 text-sm text-muted-foreground flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                          <DueDateDisplay task={task} updateTask={updateTask} className="h-8 text-[11px] bg-transparent border-0 shadow-none hover:bg-muted" />
                         </div>
                       </div>
                     ))}

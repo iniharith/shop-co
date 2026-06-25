@@ -102,8 +102,9 @@ export default function ProductionManager() {
       let taskIdStr = "";
       let isTask = false;
       
-      const isProductionOrder = productionOrderIdsFiltered.includes(file.orderId?.toString()) || productionUserIds.includes(file.userId?.toString());
-      const isProductionTask = file.category === 'TASK' && file.taskId && productionTaskIds.includes(file.taskId?.toString());
+      const isTaskFile = file.category === 'TASK' && !!file.taskId;
+      const isProductionTask = isTaskFile && productionTaskIds.includes(file.taskId?.toString());
+      const isProductionOrder = !isTaskFile && (productionOrderIdsFiltered.includes(file.orderId?.toString()) || productionUserIds.includes(file.userId?.toString()));
       
       if (!isProductionOrder && !isProductionTask) return;
 

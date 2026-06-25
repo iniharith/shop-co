@@ -86,7 +86,7 @@ router.post('/upload', auth_middileware_1.default, upload.array('files', 10), (0
         orderId: orderId || undefined,
         taskId: taskId || undefined,
         category: category || undefined,
-        filename: file.filename,
+        filename: file.key || file.filename || file.originalname,
         originalName: file.originalname,
         mimetype: file.mimetype,
         size: file.size,

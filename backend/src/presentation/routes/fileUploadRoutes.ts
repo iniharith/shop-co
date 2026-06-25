@@ -89,7 +89,7 @@ router.post(
           orderId: orderId || undefined,
           taskId: taskId || undefined,
           category: category || undefined,
-          filename: file.filename,
+          filename: (file as any).key || file.filename || file.originalname,
           originalName: file.originalname,
           mimetype: file.mimetype,
           size: file.size,
