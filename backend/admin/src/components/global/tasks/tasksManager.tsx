@@ -359,7 +359,8 @@ export default function TasksManager() {
                             <SelectItem value="unassigned">Unassigned</SelectItem>
                             {usersData?.users?.map((user: any) => (
                               <SelectItem key={user._id} value={user._id} className="font-bold">
-                                <div className={`px-2 py-0.5 rounded text-white text-[10px] uppercase inline-block ${getUserColor(user._id)}`}>
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-2 h-2 rounded-full ${getUserColor(user._id)}`} />
                                   {user.name || user.email}
                                 </div>
                               </SelectItem>
@@ -444,7 +445,8 @@ export default function TasksManager() {
                               <SelectItem value="unassigned">Unassigned</SelectItem>
                               {usersData?.users?.map((user: any) => (
                                 <SelectItem key={user._id} value={user._id} className="font-bold">
-                                  <div className={`px-2 py-0.5 rounded text-white text-[11px] uppercase inline-block ${getUserColor(user._id)}`}>
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-2 h-2 rounded-full ${getUserColor(user._id)}`} />
                                     {user.name || user.email}
                                   </div>
                                 </SelectItem>
