@@ -307,11 +307,10 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
                   <TabsContent value="activity" className="mt-0">
                     <div className="space-y-4">
-                      {/* Combine comments and activities, sort by createdAt */}
+                      {/* Show activities, sort by createdAt */}
                       {(() => {
                         const allItems = [
-                          ...(task.comments || []).map((c: any) => ({ ...c, type: 'comment' })),
-                          ...(task.activities || []).map((a: any) => ({ ...a, type: 'activity' }))
+                          ...(task.activities || []).filter((a: any) => !a.action.startsWith("changed the description") && !a.action.startsWith("added a comment")).map((a: any) => ({ ...a, type: 'activity' }))
                         ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                         
                         if (allItems.length === 0) {
@@ -319,28 +318,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                         }
 
                         return allItems.map((item: any, idx: number) => {
-                          if (item.type === 'comment') {
-                            return (
-                              <div key={`c-${idx}`} className="flex gap-3">
-                                <Avatar className="w-8 h-8 border border-border/50 bg-muted shrink-0">
-                                  <AvatarFallback className="text-xs">{item.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 bg-muted/40 rounded-xl rounded-tl-none p-3 border border-border/50">
-                                  <div className="flex justify-between items-baseline mb-1">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs font-bold">{item.userName}</span>
-                                      {item.role === 'client' && (
-                                        <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-primary/20 text-primary">Customer</Badge>
-                                      )}
-                                      <span className="text-[10px] text-muted-foreground">{format(new Date(item.createdAt), "MMM d, h:mm a")}</span>
-                                    </div>
-                                  </div>
-                                  <p className="text-sm text-foreground leading-relaxed">{item.text}</p>
-                                </div>
-                              </div>
-                            );
-                          } else {
-                            // Activity format
+                          if (item.type === 'activity') {
                             return (
                               <div key={`a-${idx}`} className="flex gap-3 items-center text-sm py-1">
                                 <Avatar className="w-6 h-6 border border-border/50 bg-muted shrink-0 text-[10px]">
