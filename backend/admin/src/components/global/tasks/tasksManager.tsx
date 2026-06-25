@@ -490,7 +490,7 @@ export default function TasksManager() {
                   </div>
                   <div className="divide-y divide-border/50">
                     {sectionTasks.map((task: any) => (
-                      <div key={task._id} className="grid grid-cols-12 gap-2 items-center py-2 hover:bg-muted/30 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-border/30" onClick={() => setSelectedTask(task)}>
+                      <div key={task._id} className="group grid grid-cols-12 gap-2 items-center py-2 hover:bg-muted/30 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-border/30" onClick={() => setSelectedTask(task)}>
                         <div className="col-span-6 font-medium text-sm flex items-center gap-2 px-2">
                            <button type="button" onClick={(e) => toggleTaskDone(task, e)} className="shrink-0 text-muted-foreground hover:text-emerald-500 transition-colors">
                              {task.isDone ? <CheckCircle className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
@@ -527,8 +527,11 @@ export default function TasksManager() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="col-span-2 pr-4 text-sm text-muted-foreground flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                           <DueDateDisplay task={task} updateTask={updateTask} className="w-fit pr-4" />
+                        <div className="col-span-2 pr-4 text-sm text-muted-foreground flex items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
+                           <DueDateDisplay task={task} updateTask={updateTask} className="w-fit" />
+                           <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-500 hover:bg-red-50" onClick={(e) => handleDelete(task._id, e)}>
+                             <Trash2 className="w-3.5 h-3.5" />
+                           </Button>
                         </div>
                       </div>
                     ))}
