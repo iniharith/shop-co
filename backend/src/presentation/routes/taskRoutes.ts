@@ -123,7 +123,9 @@ router.put(
     const userName = authReq.user?.name || authReq.user?.email || 'System';
 
     if (req.body.status && req.body.status !== oldTask?.status) {
-      await taskRepository.addActivity(req.params.id, userId, userName, `changed status to ${req.body.status}`);
+      const oldStatus = (oldTask?.status || 'PLACED').replace(/_/g, ' ');
+      const newStatus = req.body.status.replace(/_/g, ' ');
+      await taskRepository.addActivity(req.params.id, userId, userName, `changed status from ${oldStatus} to ${newStatus}`);
     }
     if (req.body.assignee && oldTask?.assignee?.toString() !== req.body.assignee) {
       await taskRepository.addActivity(req.params.id, userId, userName, `assigned this task`);

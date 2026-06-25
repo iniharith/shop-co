@@ -309,30 +309,44 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                     <div className="space-y-4">
                       {/* Show activities, sort by createdAt */}
                       {(() => {
-                        const allItems = [
+                        const activityItems = [
                           ...(task.activities || []).filter((a: any) => !a.action.startsWith("changed the description") && !a.action.startsWith("added a comment")).map((a: any) => ({ ...a, type: 'activity' }))
                         ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                         
-                        if (allItems.length === 0) {
-                          return <div className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-xl border border-dashed border-border/50">No activity yet.</div>;
-                        }
-
-                        return allItems.map((item: any, idx: number) => {
-                          if (item.type === 'activity') {
-                            return (
-                              <div key={`a-${idx}`} className="flex gap-3 items-center text-sm py-1">
-                                <Avatar className="w-6 h-6 border border-border/50 bg-muted shrink-0 text-[10px]">
-                                  <AvatarFallback>{item.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 text-muted-foreground">
-                                  <span className="font-semibold text-foreground mr-1">{item.userName}</span>
-                                  {item.action}
-                                  <span className="text-[10px] ml-2 text-muted-foreground/70">• {format(new Date(item.createdAt), "MMM d, h:mm a")}</span>
-                                </div>
-                              </div>
-                            );
-                          }
-                        });
+                        return (
+                          <div className="space-y-3">
+                            {activityItems.length === 0 && !task.createdAt ? (
+                              <div className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-xl border border-dashed border-border/50">No activity yet.</div>
+                            ) : (
+                              <>
+                                {activityItems.map((item: any, idx: number) => (
+                                  <div key={`a-${idx}`} className="flex gap-3 items-center text-sm py-1">
+                                    <Avatar className="w-6 h-6 border border-border/50 bg-muted shrink-0 text-[10px]">
+                                      <AvatarFallback>{item.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 text-muted-foreground">
+                                      <span className="font-semibold text-foreground mr-1">{item.userName}</span>
+                                      {item.action}
+                                      <span className="text-[10px] ml-2 text-muted-foreground/70">• {format(new Date(item.createdAt), "MMM d, h:mm a")}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                                {task.createdAt && (
+                                  <div className="flex gap-3 items-center text-sm py-1">
+                                    <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/30 shrink-0 flex items-center justify-center">
+                                      <span className="text-[9px] font-bold text-primary">✦</span>
+                                    </div>
+                                    <div className="flex-1 text-muted-foreground">
+                                      <span className="font-semibold text-foreground mr-1">Task</span>
+                                      created
+                                      <span className="text-[10px] ml-2 text-muted-foreground/70">• {format(new Date(task.createdAt), "MMM d, h:mm a")}</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        );
                       })()}
                     </div>
                   </TabsContent>
