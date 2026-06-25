@@ -52,6 +52,16 @@ const DueDateDisplay = ({ task, updateTask, className }: { task: any, updateTask
           onSelect={(date) => updateTask({ id: task._id, data: { dueDate: date } })}
           initialFocus
         />
+        <div className="p-2 border-t border-border/50">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="w-full text-muted-foreground hover:text-red-500 hover:bg-red-50"
+            onClick={() => updateTask({ id: task._id, data: { dueDate: null } })}
+          >
+            Clear Date
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   );
@@ -103,7 +113,10 @@ export default function TasksManager() {
     });
   };
 
+  const [optimisticStatuses, setOptimisticStatuses] = useState<Record<string, string>>({});
+
   const handleStatusChange = (taskId: string, newStatus: string) => {
+    setOptimisticStatuses(prev => ({ ...prev, [taskId]: newStatus }));
     updateTask({ id: taskId, data: { status: newStatus } });
   };
 
@@ -370,7 +383,7 @@ export default function TasksManager() {
                       </div>
                       
                       {/* Move Status inline for Board View */}
-                      <Select value={task.status} onValueChange={(v) => handleStatusChange(task._id, v)}>
+                      <Select value={optimisticStatuses[task._id] || task.status} onValueChange={(v) => handleStatusChange(task._id, v)}>
                         <SelectTrigger className="h-6 text-[10px] bg-muted/50 border-0 focus:ring-0" onClick={e => e.stopPropagation()}>
                           <SelectValue />
                         </SelectTrigger>
@@ -421,41 +434,41 @@ export default function TasksManager() {
                   </button>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <div className="grid grid-cols-12 gap-4 p-2 border-b border-border/50 bg-muted/10 font-medium text-xs text-muted-foreground">
-                    <div className="col-span-6 px-2">Task Name</div>
+                  <div className="grid grid-cols-12 gap-2 pb-2 mb-2 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div className="col-span-7 px-2">Task Name</div>
                     <div className="col-span-2">Assignee</div>
                     <div className="col-span-2">Status</div>
-                    <div className="col-span-2">Due Date</div>
+                    <div className="col-span-1">Due Date</div>
                   </div>
                   <div className="divide-y divide-border/50">
                     {sectionTasks.map((task: any) => (
-                      <div key={task._id} className={`grid grid-cols-12 gap-4 p-2 items-center hover:bg-muted/20 cursor-pointer ${task.isDone ? 'bg-muted/10 opacity-70' : ''}`} onClick={() => setSelectedTask(task)}>
-                        <div className="col-span-6 font-medium text-sm flex items-center gap-2 px-2">
-                          <button type="button" onClick={(e) => toggleTaskDone(task, e)} className="shrink-0 text-muted-foreground hover:text-emerald-500 transition-colors">
-                            {task.isDone ? <CheckCircle className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
-                          </button>
-                          <span className={`truncate ${task.isDone ? 'text-muted-foreground' : ''}`}>{task.title}</span>
+                      <div key={task._id} className="grid grid-cols-12 gap-2 items-center py-2 hover:bg-muted/30 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-border/30" onClick={() => setSelectedTask(task)}>
+                        <div className="col-span-7 font-medium text-sm flex items-center gap-2 px-2">
+                           <button type="button" onClick={(e) => toggleTaskDone(task, e)} className="shrink-0 text-muted-foreground hover:text-emerald-500 transition-colors">
+                             {task.isDone ? <CheckCircle className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
+                           </button>
+                           <span className={`truncate ${task.isDone ? 'text-muted-foreground' : ''}`}>{task.title}</span>
                         </div>
                         <div className="col-span-2 text-sm flex items-center gap-2 text-muted-foreground font-bold" onClick={e => e.stopPropagation()}>
-                          <Select value={task.assignee || "unassigned"} onValueChange={(v) => updateTask({ id: task._id, data: { assignee: v === "unassigned" ? null : v } })}>
-                            <SelectTrigger className="h-8 text-sm font-bold bg-transparent border-0 shadow-none focus:ring-0">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="unassigned">Unassigned</SelectItem>
-                              {usersData?.users?.map((user: any) => (
-                                <SelectItem key={user._id} value={user._id} className="font-bold">
-                                  <div className="flex items-center gap-2">
-                                    <div className={`w-2 h-2 rounded-full ${getUserColor(user._id)}`} />
-                                    {user.name || user.email}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                           <Select value={task.assignee || "unassigned"} onValueChange={(v) => updateTask({ id: task._id, data: { assignee: v === "unassigned" ? null : v } })}>
+                              <SelectTrigger className="h-8 text-xs bg-transparent border-0 shadow-none focus:ring-0">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="unassigned">Unassigned</SelectItem>
+                                {usersData?.users?.map((u: any) => (
+                                  <SelectItem key={u._id} value={u._id} className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <div className={`w-2 h-2 rounded-full ${getUserColor(u._id)}`} />
+                                      {u.name}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                           </Select>
                         </div>
                         <div className="col-span-2 pr-2" onClick={e => e.stopPropagation()}>
-                          <Select value={task.status} onValueChange={(v) => handleStatusChange(task._id, v)}>
+                          <Select value={optimisticStatuses[task._id] || task.status} onValueChange={(v) => handleStatusChange(task._id, v)}>
                             <SelectTrigger className="h-8 text-xs bg-transparent border-0 shadow-none focus:ring-0">
                               <SelectValue />
                             </SelectTrigger>
@@ -466,8 +479,8 @@ export default function TasksManager() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="col-span-2 text-sm text-muted-foreground flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                          <DueDateDisplay task={task} updateTask={updateTask} className="h-8 text-[11px] bg-transparent border-0 shadow-none hover:bg-muted" />
+                        <div className="col-span-1 text-sm text-muted-foreground flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                           <DueDateDisplay task={task} updateTask={updateTask} className="w-full" />
                         </div>
                       </div>
                     ))}

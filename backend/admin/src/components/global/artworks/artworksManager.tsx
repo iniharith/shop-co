@@ -440,17 +440,16 @@ export default function ArtworksManager() {
                             <Download className="w-4 h-4 mr-2" /> Download All
                           </Button>
                         )}
+                        <Button 
+                          onClick={() => {
+                            setUploadData({ userId: activeGroup.userId || "", orderId: activeGroup.orderId || "", category: activeGroup.taskId ? "TASK" : "DIGITAL PRINTING", notes: "", taskId: activeGroup.taskId || "" });
+                            setUploadModalOpen(true);
+                          }}
+                          size="sm"
+                        >
+                          <Plus className="w-4 h-4 mr-2" /> Add Artwork
+                        </Button>
                       </div>
-                    {activeGroup.files.length === 0 && (
-                       <Button 
-                         onClick={() => {
-                           setUploadData({ userId: activeGroup.userId || "", orderId: activeGroup.orderId || "", category: "TASK", notes: "", taskId: activeGroup.taskId || "" });
-                           setUploadModalOpen(true);
-                         }}
-                       >
-                         <Plus className="w-4 h-4 mr-2" /> Add Artwork
-                       </Button>
-                    )}
                   </div>
                   
                   {activeGroup.files.length === 0 ? (
