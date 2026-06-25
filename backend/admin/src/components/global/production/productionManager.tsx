@@ -593,14 +593,12 @@ export default function ProductionManager() {
                       <Folder className="w-8 h-8 text-primary" />
                     </div>
                     <div className="w-full">
-                      <div className="flex items-center justify-center gap-2 mb-1">
-                        {(activeSubTab === "IN_PRODUCTION" || activeSubTab === "DONE_PRINTING") && (
-                          <button type="button" onClick={(e) => handleAdvanceFlow(group, e)} className="shrink-0 text-muted-foreground hover:text-emerald-500 transition-colors" title={`Mark as ${activeSubTab === 'IN_PRODUCTION' ? 'Done Printing' : 'Packaging'}`}>
-                            <CheckCircle className="w-4 h-4" />
-                          </button>
-                        )}
-                        <h3 className="font-semibold text-base truncate" title={group.folderName}>{group.folderName}</h3>
-                      </div>
+                      {(activeSubTab === "IN_PRODUCTION" || activeSubTab === "DONE_PRINTING") && (
+                        <button type="button" onClick={(e) => handleAdvanceFlow(group, e)} className="absolute top-2 left-2 z-10 text-muted-foreground hover:text-emerald-500 transition-colors" title={`Mark as ${activeSubTab === 'IN_PRODUCTION' ? 'Done Printing' : 'Packaging'}`}>
+                          <CheckCircle className="w-6 h-6 bg-background rounded-full" />
+                        </button>
+                      )}
+                      <h3 className="font-semibold text-base truncate" title={group.folderName}>{group.folderName}</h3>
                       {group.orderId && (
                         <p className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded inline-block mt-1 mb-2 block">
                           Order: {group.orderId}
@@ -634,18 +632,16 @@ export default function ProductionManager() {
                   className="flex items-center gap-4 p-4 border bg-card rounded-lg hover:bg-muted/30 cursor-pointer transition-colors" 
                   onClick={() => setSelectedFolder(folderId)}
                 >
-                  <div className="p-2.5 bg-primary/10 rounded-lg shrink-0">
+                  <div className="p-2.5 bg-primary/10 rounded-lg shrink-0 relative">
+                    {(activeSubTab === "IN_PRODUCTION" || activeSubTab === "DONE_PRINTING") && (
+                      <button type="button" onClick={(e) => handleAdvanceFlow(group, e)} className="absolute -top-1 -left-1 z-10 text-muted-foreground hover:text-emerald-500 transition-colors" title={`Mark as ${activeSubTab === 'IN_PRODUCTION' ? 'Done Printing' : 'Packaging'}`}>
+                        <CheckCircle className="w-6 h-6 bg-background rounded-full" />
+                      </button>
+                    )}
                     <Folder className="w-6 h-6 text-primary" />
                   </div>
                   <div className="flex flex-col flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      {(activeSubTab === "IN_PRODUCTION" || activeSubTab === "DONE_PRINTING") && (
-                        <button type="button" onClick={(e) => handleAdvanceFlow(group, e)} className="shrink-0 text-muted-foreground hover:text-emerald-500 transition-colors" title={`Mark as ${activeSubTab === 'IN_PRODUCTION' ? 'Done Printing' : 'Packaging'}`}>
-                          <CheckCircle className="w-4 h-4" />
-                        </button>
-                      )}
-                      <span className="font-semibold text-base truncate">{group.folderName}</span>
-                    </div>
+                    <span className="font-semibold text-base truncate">{group.folderName}</span>
                     {group.orderId && <span className="text-[10px] text-muted-foreground font-mono truncate">Order ID: {group.orderId}</span>}
                   </div>
                   {group.orderId && (
