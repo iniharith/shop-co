@@ -15,8 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { useOrders } from "@/hooks/useOrder";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Check, ChevronsUpDown, Download as DownloadIcon } from "lucide-react";
+import { cn, forceDownload } from "@/lib/utils";
 
 const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => {
   const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(file.url);
@@ -55,21 +55,37 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
           <a href={file.url} target="_blank" rel="noopener noreferrer" className="truncate text-white font-medium text-sm tracking-wide hover:underline px-1">
             {file.name}
           </a>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="w-7 h-7 shrink-0 text-red-400 hover:text-red-500 hover:bg-white/10 rounded-full ml-2"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (confirm('Are you sure you want to delete this file?')) {
-                deleteFile({ id: task._id, fileId: file._id || file.url.split('/').pop() });
-              }
-            }}
-            disabled={isDeletingFile}
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="w-7 h-7 shrink-0 text-blue-400 hover:text-blue-500 hover:bg-white/10 rounded-full"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                forceDownload(file.url, file.name);
+              }}
+              title="Download"
+            >
+              <DownloadIcon className="w-3.5 h-3.5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="w-7 h-7 shrink-0 text-red-400 hover:text-red-500 hover:bg-white/10 rounded-full ml-1"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (confirm('Are you sure you want to delete this file?')) {
+                  deleteFile({ id: task._id, fileId: file._id || file.url.split('/').pop() });
+                }
+              }}
+              disabled={isDeletingFile}
+              title="Delete"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
       </div>
 

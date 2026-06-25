@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, CheckCircle } from "lucide-react";
+import { forceDownload } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -483,14 +484,10 @@ export default function ProductionManager() {
                                 <MessageSquare className="w-4 h-4 mr-1" /> Note
                               </Button>
                             </div>
-                            <Button variant="secondary" size="sm" className="w-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-200" onClick={() => {
-                              const link = document.createElement("a");
-                              link.href = getFileUrl(file.path);
-                              link.download = file.originalName;
-                              link.target = "_blank";
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
+                            <Button variant="secondary" size="sm" className="w-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-200" onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              forceDownload(getFileUrl(file.path), file.originalName);
                             }}>
                               <Download className="w-4 h-4 mr-1" /> Download
                             </Button>
@@ -534,14 +531,10 @@ export default function ProductionManager() {
                           <Button variant="ghost" size="icon" onClick={() => window.open(getFileUrl(file.path), "_blank")} title="View">
                             <Eye className="w-4 h-4 text-muted-foreground" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => {
-                            const link = document.createElement("a");
-                            link.href = getFileUrl(file.path);
-                            link.download = file.originalName;
-                            link.target = "_blank";
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                          <Button variant="ghost" size="icon" className="hover:bg-blue-50" onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            forceDownload(getFileUrl(file.path), file.originalName);
                           }} title="Download">
                             <Download className="w-4 h-4 text-blue-500" />
                           </Button>
