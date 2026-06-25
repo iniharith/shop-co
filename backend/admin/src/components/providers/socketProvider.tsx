@@ -64,6 +64,20 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       await client.invalidateQueries({ queryKey: ["orders"] });
     });
 
+    socket.on("new_message", async (data) => {
+      console.log("🟢 new chat message received", data);
+      await client.invalidateQueries({ queryKey: ["conversations"] });
+      if (data && data.conversationId) {
+        await client.invalidateQueries({ queryKey: ["messages", data.conversationId] });
+      }
+    });
+
+    socket.on("notification", async (data) => {
+      console.log("🟢 new notification received", data);
+      toast.info(data.message || data.title || "New Notification");
+      await client.invalidateQueries({ queryKey: ["notifications"] });
+    });
+
     socket.on("disconnect", () => {
       console.log("🔴 disconnected from socket");
     });

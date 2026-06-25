@@ -2,14 +2,16 @@
 import React, { useState, useMemo } from "react";
 import { DataTableSkeleton } from "../table/data-table-skeleton";
 import { useOrders } from "@/hooks/useOrder";
+import { useBulkDeleteOrders } from "@/hooks/useOrder";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import OrderCard from "../../table/orders/OrderCard";
-import { Search, PackageX, RefreshCw, Archive } from "lucide-react";
+import { Search, PackageX, RefreshCw, Archive, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 const HistoryManager = () => {
   const { data, isPending, refetch, isFetching } = useOrders();
+  const { mutate: bulkDeleteMutate, isPending: isDeleting } = useBulkDeleteOrders();
   const [activeTab, setActiveTab] = useState("DONE");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -40,6 +42,15 @@ const HistoryManager = () => {
 
   if (isPending) return <DataTableSkeleton />;
 
+  const handleDeleteAll = () => {
+    if (filteredOrders.length === 0) return;
+    const confirmDelete = window.confirm(`Are you sure you want to delete ALL ${filteredOrders.length} orders in this view? This action cannot be undone.`);
+    if (!confirmDelete) return;
+
+    const orderIds = filteredOrders.map((o: any) => o._id);
+    bulkDeleteMutate(orderIds);
+  };
+
   if (data) {
     return (
       <div className="space-y-6">
@@ -64,6 +75,10 @@ const HistoryManager = () => {
             </div>
             <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="rounded-xl h-10 w-10 shadow-sm border-border shrink-0" title="Refresh History">
               <RefreshCw className={`w-4 h-4 text-muted-foreground ${isFetching ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteAll} disabled={isDeleting || filteredOrders.length === 0} className="rounded-xl h-10 shadow-sm shrink-0" title="Delete All Displayed Orders">
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete All
             </Button>
           </div>
         </div>

@@ -161,6 +161,32 @@ class AdminController {
         });
     }
     /**
+     * @description Bulk delete orders
+     * @Method POST
+     * @Route /api/admin/orders/bulk-delete
+     */
+    bulkDeleteOrders(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS].includes(req.role)) {
+                    throw new Error(api_constant_1.messages.UNAUTHORIZED);
+                }
+                const { orderIds } = req.body;
+                if (!Array.isArray(orderIds))
+                    throw new Error("orderIds must be an array");
+                for (const id of orderIds) {
+                    yield this.adminUsecase.deleteOrder(id);
+                }
+                res.status(api_constant_1.statusCodes.OK).json({
+                    message: `${orderIds.length} orders deleted successfully`
+                });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    /**
      * @description Seed test data
      * @Method POST
      * @Route /api/admin/seed-test-data

@@ -146,7 +146,23 @@ router.post('/conversations/:id/messages', auth_middileware_1.default, (0, expre
     }
     yield ChatRepository_1.chatRepository.updateLastMessage(req.params.id);
     // Publish to redis so websockets broadcast to clients
-    yield redisService.publish('chat_messages', JSON.stringify(message));
+    const { REDIS_CHANNELS } = yield Promise.resolve().then(() => __importStar(require('../../shared/constants/redis.constant')));
+    yield redisService.publish(REDIS_CHANNELS.CHAT_MESSAGE, JSON.stringify(message));
+    // Also notify other participants via standard notification so the bell updates
+    if (conversation) {
+        const { NotificationModel } = yield Promise.resolve().then(() => __importStar(require('../../infrastructure/db/models/notification.model')));
+        const otherParticipants = conversation.participants.filter((p) => p.toString() !== userId.toString());
+        for (const pId of otherParticipants) {
+            const newNotif = yield NotificationModel.create({
+                userId: pId,
+                title: 'Mesej Baru',
+                message: `Mesej baru daripada ${role}`,
+                type: 'SYSTEM',
+                read: false,
+            });
+            yield redisService.publish(REDIS_CHANNELS.NOTIFICATION, JSON.stringify(newNotif));
+        }
+    }
     res.json({ success: true, message });
 })));
 exports.default = router;

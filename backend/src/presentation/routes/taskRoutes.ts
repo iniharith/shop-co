@@ -105,12 +105,28 @@ router.put(
         const notifRepo = new NotificationRepository();
         const newNotif = await notifRepo.createNotification({
             userId: req.body.assignee,
+            title: 'Tugasan Baru',
             message: `You have been assigned a new task: ${task.title}`,
             type: 'SYSTEM',
             read: false
         } as any);
         
         await redisService.publish(REDIS_CHANNELS.NOTIFICATION, JSON.stringify(newNotif));
+    }
+    
+    // Log activities
+    const authReq = req as any;
+    const userId = authReq.userId || authReq.user?._id || authReq.user?.id || 'system';
+    const userName = authReq.user?.name || authReq.user?.email || 'System';
+
+    if (req.body.status && req.body.status !== oldTask?.status) {
+      await taskRepository.addActivity(req.params.id, userId, userName, `changed status to ${req.body.status}`);
+    }
+    if (req.body.assignee && oldTask?.assignee?.toString() !== req.body.assignee) {
+      await taskRepository.addActivity(req.params.id, userId, userName, `assigned this task`);
+    }
+    if (req.body.description !== undefined && req.body.description !== oldTask?.description) {
+      await taskRepository.addActivity(req.params.id, userId, userName, `changed the description`);
     }
     
     // Sync status to Order if it changed

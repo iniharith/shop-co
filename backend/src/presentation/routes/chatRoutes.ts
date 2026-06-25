@@ -136,7 +136,27 @@ router.post(
     await chatRepository.updateLastMessage(req.params.id);
     
     // Publish to redis so websockets broadcast to clients
-    await redisService.publish('chat_messages', JSON.stringify(message));
+    const { REDIS_CHANNELS } = await import('../../shared/constants/redis.constant');
+    await redisService.publish(REDIS_CHANNELS.CHAT_MESSAGE, JSON.stringify(message));
+    
+    // Also notify other participants via standard notification so the bell updates
+    if (conversation) {
+      const { NotificationModel } = await import('../../infrastructure/db/models/notification.model');
+      const otherParticipants = conversation.participants.filter(
+        (p: any) => p.toString() !== userId.toString()
+      );
+      
+      for (const pId of otherParticipants) {
+        const newNotif = await NotificationModel.create({
+          userId: pId,
+          title: 'Mesej Baru',
+          message: `Mesej baru daripada ${role}`,
+          type: 'SYSTEM',
+          read: false,
+        });
+        await redisService.publish(REDIS_CHANNELS.NOTIFICATION, JSON.stringify(newNotif));
+      }
+    }
     
     res.json({ success: true, message });
   })

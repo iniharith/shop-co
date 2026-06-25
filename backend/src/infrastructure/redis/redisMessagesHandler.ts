@@ -22,6 +22,10 @@ export function handleRedisAndSocketMessageClient(redisService: RedisService, io
                     console.log("🔴 no socket id found for user", data?.userId);
                 }
                 break;
+            case REDIS_CHANNELS.CHAT_MESSAGE:
+                console.log("🟢 new chat message", message);
+                io.emit("new_message", JSON.parse(message));
+                break;
 
         }
 
@@ -43,14 +47,18 @@ export function handleRedisAndSocketMessageAdmin(redisService: RedisService, io:
                 io.emit("order_placed", message);
                 break;
             case REDIS_CHANNELS.NOTIFICATION:
-                const data = JSON.parse(message);
-                const socketId = await getReceiverSocketId(data?.userId) || null;
-                if (socketId) {
-                    console.log("🟢 sending notification to admin", data?.userId, socketId);
-                    io.to(socketId).emit("notification", data);
+                const dataAdmin = JSON.parse(message);
+                const socketIdAdmin = await getReceiverSocketId(dataAdmin?.userId) || null;
+                if (socketIdAdmin) {
+                    console.log("🟢 sending notification to admin", dataAdmin?.userId, socketIdAdmin);
+                    io.to(socketIdAdmin).emit("notification", dataAdmin);
                 } else {
-                    console.log("🔴 no socket id found for admin", data?.userId);
+                    console.log("🔴 no socket id found for admin", dataAdmin?.userId);
                 }
+                break;
+            case REDIS_CHANNELS.CHAT_MESSAGE:
+                console.log("🟢 new chat message", message);
+                io.emit("new_message", JSON.parse(message));
                 break;
         }
 

@@ -32,6 +32,10 @@ function handleRedisAndSocketMessageClient(redisService, io) {
                     console.log("🔴 no socket id found for user", data === null || data === void 0 ? void 0 : data.userId);
                 }
                 break;
+            case redis_constant_1.REDIS_CHANNELS.CHAT_MESSAGE:
+                console.log("🟢 new chat message", message);
+                io.emit("new_message", JSON.parse(message));
+                break;
         }
     }));
 }
@@ -48,15 +52,19 @@ function handleRedisAndSocketMessageAdmin(redisService, io) {
                 io.emit("order_placed", message);
                 break;
             case redis_constant_1.REDIS_CHANNELS.NOTIFICATION:
-                const data = JSON.parse(message);
-                const socketId = (yield (0, socketHandler_1.getReceiverSocketId)(data === null || data === void 0 ? void 0 : data.userId)) || null;
-                if (socketId) {
-                    console.log("🟢 sending notification to admin", data === null || data === void 0 ? void 0 : data.userId, socketId);
-                    io.to(socketId).emit("notification", data);
+                const dataAdmin = JSON.parse(message);
+                const socketIdAdmin = (yield (0, socketHandler_1.getReceiverSocketId)(dataAdmin === null || dataAdmin === void 0 ? void 0 : dataAdmin.userId)) || null;
+                if (socketIdAdmin) {
+                    console.log("🟢 sending notification to admin", dataAdmin === null || dataAdmin === void 0 ? void 0 : dataAdmin.userId, socketIdAdmin);
+                    io.to(socketIdAdmin).emit("notification", dataAdmin);
                 }
                 else {
-                    console.log("🔴 no socket id found for admin", data === null || data === void 0 ? void 0 : data.userId);
+                    console.log("🔴 no socket id found for admin", dataAdmin === null || dataAdmin === void 0 ? void 0 : dataAdmin.userId);
                 }
+                break;
+            case redis_constant_1.REDIS_CHANNELS.CHAT_MESSAGE:
+                console.log("🟢 new chat message", message);
+                io.emit("new_message", JSON.parse(message));
                 break;
         }
     }));

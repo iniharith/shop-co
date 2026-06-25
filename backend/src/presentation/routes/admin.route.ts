@@ -40,6 +40,7 @@ router.delete("/users/:id", authMiddilware, adminController.deleteUser.bind(admi
 
 router.get("/orders", authMiddilware, adminController.getOrders.bind(adminController));
 router.post("/orders/manual", authMiddilware, adminController.createManualOrder.bind(adminController));
+router.post("/orders/bulk-delete", authMiddilware, adminController.bulkDeleteOrders.bind(adminController));
 router.delete("/orders/:id", authMiddilware, adminController.deleteOrder.bind(adminController));
 
 router.post("/seed-test-data", authMiddilware, adminController.seedTestData.bind(adminController));

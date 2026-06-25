@@ -30,6 +30,11 @@ export const deleteOrder = async (token: string, orderId: string) => {
     return response.data;
 }
 
+export const bulkDeleteOrders = async (token: string, orderIds: string[]) => {
+    const response = await AxiosInstance(token).post(`${ADMIN_URL}/orders/bulk-delete`, { orderIds });
+    return response.data;
+}
+
 
 
 

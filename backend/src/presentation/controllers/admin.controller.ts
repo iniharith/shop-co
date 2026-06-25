@@ -148,6 +148,30 @@ export class AdminController {
         }
     }
 
+    /**
+     * @description Bulk delete orders
+     * @Method POST
+     * @Route /api/admin/orders/bulk-delete
+     */
+    async bulkDeleteOrders(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            if (![Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(req.role as Roles)) {
+                throw new Error(messages.UNAUTHORIZED)
+            }
+            const { orderIds } = req.body;
+            if (!Array.isArray(orderIds)) throw new Error("orderIds must be an array");
+            
+            for (const id of orderIds) {
+                await this.adminUsecase.deleteOrder(id);
+            }
+            res.status(statusCodes.OK).json({
+                message: `${orderIds.length} orders deleted successfully`
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
 
 
 

@@ -38,6 +38,14 @@ export class TaskRepository {
     );
   }
 
+  async addActivity(taskId: string, userId: string, userName: string, action: string, details?: string): Promise<ITask | null> {
+    return Task.findByIdAndUpdate(
+      taskId,
+      { $push: { activities: { userId, userName, action, details: details || '', createdAt: new Date() } } },
+      { new: true }
+    );
+  }
+
   async deleteComment(taskId: string, commentId: string): Promise<ITask | null> {
     return Task.findByIdAndUpdate(
       taskId,

@@ -42,6 +42,13 @@ const TaskCommentSchema = new mongoose_1.Schema({
     role: { type: String, default: 'admin' },
     createdAt: { type: Date, default: Date.now },
 });
+const TaskActivitySchema = new mongoose_1.Schema({
+    userId: { type: String, required: true },
+    userName: { type: String, required: true },
+    action: { type: String, required: true },
+    details: { type: String, default: '' },
+    createdAt: { type: Date, default: Date.now },
+});
 const TaskSchema = new mongoose_1.Schema({
     title: { type: String, required: true },
     description: { type: String, default: '' },
@@ -58,5 +65,6 @@ const TaskSchema = new mongoose_1.Schema({
             notes: { type: String, default: '' }
         }],
     comments: [TaskCommentSchema],
+    activities: [TaskActivitySchema],
 }, { timestamps: true });
 exports.Task = mongoose_1.default.model('Task', TaskSchema);

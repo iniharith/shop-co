@@ -14,4 +14,5 @@ var REDIS_CHANNELS;
 (function (REDIS_CHANNELS) {
     REDIS_CHANNELS["NOTIFICATION"] = "notification";
     REDIS_CHANNELS["ORDER_PLACED"] = "order_placed";
+    REDIS_CHANNELS["CHAT_MESSAGE"] = "chat_message";
 })(REDIS_CHANNELS || (exports.REDIS_CHANNELS = REDIS_CHANNELS = {}));

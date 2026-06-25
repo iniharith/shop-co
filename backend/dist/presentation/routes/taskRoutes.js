@@ -119,7 +119,7 @@ const deleteAllTaskFiles = (task) => __awaiter(void 0, void 0, void 0, function*
 });
 // PUT /api/tasks/:id
 router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b, _c, _d, _e, _f;
     const oldTask = yield TaskRepository_1.taskRepository.findById(req.params.id);
     const task = yield TaskRepository_1.taskRepository.update(req.params.id, req.body);
     if (!task) {
@@ -131,11 +131,25 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
         const notifRepo = new NotificationRepository();
         const newNotif = yield notifRepo.createNotification({
             userId: req.body.assignee,
+            title: 'Tugasan Baru',
             message: `You have been assigned a new task: ${task.title}`,
             type: 'SYSTEM',
             read: false
         });
         yield redisService.publish(redis_constant_1.REDIS_CHANNELS.NOTIFICATION, JSON.stringify(newNotif));
+    }
+    // Log activities
+    const authReq = req;
+    const userId = authReq.userId || ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b._id) || ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.id) || 'system';
+    const userName = ((_d = authReq.user) === null || _d === void 0 ? void 0 : _d.name) || ((_e = authReq.user) === null || _e === void 0 ? void 0 : _e.email) || 'System';
+    if (req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status)) {
+        yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `changed status to ${req.body.status}`);
+    }
+    if (req.body.assignee && ((_f = oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) === null || _f === void 0 ? void 0 : _f.toString()) !== req.body.assignee) {
+        yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `assigned this task`);
+    }
+    if (req.body.description !== undefined && req.body.description !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.description)) {
+        yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `changed the description`);
     }
     // Sync status to Order if it changed
     if (req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status)) {

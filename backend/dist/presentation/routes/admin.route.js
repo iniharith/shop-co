@@ -48,6 +48,7 @@ router.put("/users/:id", auth_middileware_1.default, adminController.updateUser.
 router.delete("/users/:id", auth_middileware_1.default, adminController.deleteUser.bind(adminController));
 router.get("/orders", auth_middileware_1.default, adminController.getOrders.bind(adminController));
 router.post("/orders/manual", auth_middileware_1.default, adminController.createManualOrder.bind(adminController));
+router.post("/orders/bulk-delete", auth_middileware_1.default, adminController.bulkDeleteOrders.bind(adminController));
 router.delete("/orders/:id", auth_middileware_1.default, adminController.deleteOrder.bind(adminController));
 router.post("/seed-test-data", auth_middileware_1.default, adminController.seedTestData.bind(adminController));
 router.delete("/clear-test-data", auth_middileware_1.default, adminController.clearTestData.bind(adminController));

@@ -4,13 +4,15 @@ import React, { useEffect, useState, use } from "react";
 import AxiosInstance from "@/utils/axios";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Folder, Image as ImageIcon, Download, FileText, Eye, Loader2 } from "lucide-react";
+import { Folder, Image as ImageIcon, Download, FileText, Eye, Loader2, Upload } from "lucide-react";
+import { toast } from "sonner";
 import { format } from "date-fns";
 
 export default function PublicFolderView({ params }: { params: Promise<{ folderId: string }> }) {
   const unwrappedParams = use(params);
   const [files, setFiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   const [folderName, setFolderName] = useState<string>("");
 
@@ -40,9 +42,47 @@ export default function PublicFolderView({ params }: { params: Promise<{ folderI
   }
 
   const handleDownloadAll = () => {
-    files.forEach(file => {
-      window.open(file.path, "_blank");
+    files.forEach((file, index) => {
+      setTimeout(() => {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+        const link = document.createElement('a');
+        link.href = `${backendUrl}/api/files/${file._id}/download`;
+        link.download = file.originalName || "file";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }, index * 300); // Stagger downloads slightly
     });
+  };
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    setUploading(true);
+    const toastId = toast.loading("Uploading files...");
+    try {
+      const formData = new FormData();
+      Array.from(e.target.files).forEach(f => formData.append("files", f));
+      
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const res = await fetch(`${backendUrl}/api/files/shared/upload/${unwrappedParams.folderId}`, {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Upload failed");
+      }
+      
+      toast.success("Files uploaded successfully", { id: toastId });
+      window.location.reload();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload files", { id: toastId });
+    } finally {
+      setUploading(false);
+      // Reset input
+      e.target.value = '';
+    }
   };
 
   return (
@@ -58,9 +98,30 @@ export default function PublicFolderView({ params }: { params: Promise<{ folderI
               <p className="text-sm text-muted-foreground">{files.length} Files Available</p>
             </div>
           </div>
-          <Button onClick={handleDownloadAll} className="w-full sm:w-auto">
-            <Download className="w-4 h-4 mr-2" /> Download All
-          </Button>
+          <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
+            <div>
+              <input 
+                type="file" 
+                multiple 
+                id="upload-artwork" 
+                className="hidden" 
+                onChange={handleUpload} 
+                disabled={uploading} 
+                accept="image/*,application/pdf"
+              />
+              <label htmlFor="upload-artwork">
+                <Button asChild variant="outline" className="w-full sm:w-auto cursor-pointer" disabled={uploading}>
+                  <span>
+                    <Upload className="w-4 h-4 mr-2" /> 
+                    {uploading ? "Uploading..." : "Upload Artwork"}
+                  </span>
+                </Button>
+              </label>
+            </div>
+            <Button onClick={handleDownloadAll} className="w-full sm:w-auto">
+              <Download className="w-4 h-4 mr-2" /> Download All
+            </Button>
+          </div>
         </div>
 
         {files.length === 0 ? (

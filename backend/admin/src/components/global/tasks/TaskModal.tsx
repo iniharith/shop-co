@@ -10,6 +10,7 @@ import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile,
 import { useUsers } from "@/hooks/useUsers";
 import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag } from "lucide-react";
 import { format } from "date-fns";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -63,7 +64,12 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                forceDownload(file.url, file.name);
+                if (file._id) {
+                  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+                  window.location.href = `${backendUrl}/api/files/${file._id}/download`;
+                } else {
+                  forceDownload(file.url, file.name);
+                }
               }}
               title="Download"
             >
@@ -135,6 +141,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [userSearch, setUserSearch] = useState("");
   
   const [description, setDescription] = useState(task.description || "");
+  const [activeTab, setActiveTab] = useState("comments");
   const [commentText, setCommentText] = useState("");
   const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "");
   const [orderId, setOrderId] = useState(task.orderId || "");
@@ -213,7 +220,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   <span className="w-1.5 h-4 bg-primary rounded-full"></span> Description
                 </label>
                 <Textarea 
-                  className="min-h-[120px] bg-muted/30 focus-visible:ring-1 border-border/50 shadow-sm resize-none" 
+                  className="min-h-[120px] bg-muted/30 focus-visible:ring-1 border-border/50 shadow-sm resize-y" 
                   value={description} 
                   onChange={(e) => setDescription(e.target.value)} 
                   placeholder="Add more details to this task..."
@@ -240,46 +247,111 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                       </div>
                     </div>)}
                 
-                <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-muted-foreground" /> Comments
-                </label>
-                
-                <div className="space-y-4">
-                  {task.comments?.map((comment: any, idx: number) => (
-                    <div key={idx} className="flex gap-3">
-                      <Avatar className="w-8 h-8 border border-border/50 bg-muted">
-                        <AvatarFallback className="text-xs">{comment.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 bg-muted/40 rounded-xl rounded-tl-none p-3 border border-border/50">
-                        <div className="flex justify-between items-baseline mb-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold">{comment.userName}</span>
-                            {comment.role === 'client' && (
-                              <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-primary/20 text-primary">Customer</Badge>
-                            )}
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-muted-foreground">{format(new Date(comment.createdAt), "MMM d, h:mm a")}</span>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-5 w-5 text-red-400 hover:text-red-600 hover:bg-red-400/10 p-0 rounded-full"
-                                onClick={() => handleDeleteComment(comment._id)}
-                                disabled={isDeletingComment}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-4">
+                    <TabsList className="h-8 bg-transparent p-0">
+                      <TabsTrigger value="comments" className="text-xs data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:font-bold data-[state=active]:underline underline-offset-8 decoration-2 decoration-primary px-4">
+                        Comments
+                      </TabsTrigger>
+                      <TabsTrigger value="activity" className="text-xs data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:font-bold data-[state=active]:underline underline-offset-8 decoration-2 decoration-primary px-4">
+                        All activity
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
+
+                  <TabsContent value="comments" className="mt-0">
+                    <div className="space-y-4">
+                      {task.comments?.map((comment: any, idx: number) => (
+                        <div key={idx} className="flex gap-3">
+                          <Avatar className="w-8 h-8 border border-border/50 bg-muted shrink-0">
+                            <AvatarFallback className="text-xs">{comment.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 bg-muted/40 rounded-xl rounded-tl-none p-3 border border-border/50">
+                            <div className="flex justify-between items-baseline mb-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold">{comment.userName}</span>
+                                {comment.role === 'client' && (
+                                  <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-primary/20 text-primary">Customer</Badge>
+                                )}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] text-muted-foreground">{format(new Date(comment.createdAt), "MMM d, h:mm a")}</span>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-5 w-5 text-red-400 hover:text-red-600 hover:bg-red-400/10 p-0 rounded-full shrink-0"
+                                    onClick={() => handleDeleteComment(comment._id)}
+                                    disabled={isDeletingComment}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
+                            <p className="text-sm text-foreground leading-relaxed">{comment.text}</p>
                           </div>
                         </div>
-                        <p className="text-sm text-foreground leading-relaxed">{comment.text}</p>
-                      </div>
+                      ))}
+                      
+                      {(!task.comments || task.comments.length === 0) && (
+                        <div className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-xl border border-dashed border-border/50">No comments yet.</div>
+                      )}
                     </div>
-                  ))}
-                  
-                  {(!task.comments || task.comments.length === 0) && (
-                    <div className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-xl border border-dashed border-border/50">No comments yet.</div>
-                  )}
-                </div>
+                  </TabsContent>
+
+                  <TabsContent value="activity" className="mt-0">
+                    <div className="space-y-4">
+                      {/* Combine comments and activities, sort by createdAt */}
+                      {(() => {
+                        const allItems = [
+                          ...(task.comments || []).map((c: any) => ({ ...c, type: 'comment' })),
+                          ...(task.activities || []).map((a: any) => ({ ...a, type: 'activity' }))
+                        ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                        
+                        if (allItems.length === 0) {
+                          return <div className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-xl border border-dashed border-border/50">No activity yet.</div>;
+                        }
+
+                        return allItems.map((item: any, idx: number) => {
+                          if (item.type === 'comment') {
+                            return (
+                              <div key={`c-${idx}`} className="flex gap-3">
+                                <Avatar className="w-8 h-8 border border-border/50 bg-muted shrink-0">
+                                  <AvatarFallback className="text-xs">{item.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 bg-muted/40 rounded-xl rounded-tl-none p-3 border border-border/50">
+                                  <div className="flex justify-between items-baseline mb-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-bold">{item.userName}</span>
+                                      {item.role === 'client' && (
+                                        <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-primary/20 text-primary">Customer</Badge>
+                                      )}
+                                      <span className="text-[10px] text-muted-foreground">{format(new Date(item.createdAt), "MMM d, h:mm a")}</span>
+                                    </div>
+                                  </div>
+                                  <p className="text-sm text-foreground leading-relaxed">{item.text}</p>
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            // Activity format
+                            return (
+                              <div key={`a-${idx}`} className="flex gap-3 items-center text-sm py-1">
+                                <Avatar className="w-6 h-6 border border-border/50 bg-muted shrink-0 text-[10px]">
+                                  <AvatarFallback>{item.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 text-muted-foreground">
+                                  <span className="font-semibold text-foreground mr-1">{item.userName}</span>
+                                  {item.action}
+                                  <span className="text-[10px] ml-2 text-muted-foreground/70">• {format(new Date(item.createdAt), "MMM d, h:mm a")}</span>
+                                </div>
+                              </div>
+                            );
+                          }
+                        });
+                      })()}
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </div>
             </div>
             

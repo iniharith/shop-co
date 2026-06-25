@@ -97,6 +97,7 @@ export default function TasksManager() {
   const { mutate: updateTask } = useUpdateTask();
   const { mutate: deleteTask } = useDeleteTask();
 
+  const [searchQuery, setSearchQuery] = useState("");
   const [newTask, setNewTask] = useState({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
 
   const handleCreateTask = () => {
@@ -116,8 +117,24 @@ export default function TasksManager() {
   const [optimisticStatuses, setOptimisticStatuses] = useState<Record<string, string>>({});
 
   const handleStatusChange = (taskId: string, newStatus: string) => {
+    const currentTask = tasks.find((t: any) => t._id === taskId);
+    const oldStatus = currentTask?.status;
+
     setOptimisticStatuses(prev => ({ ...prev, [taskId]: newStatus }));
-    updateTask({ id: taskId, data: { status: newStatus } });
+    updateTask({ id: taskId, data: { status: newStatus } }, {
+      onSuccess: () => {
+        toast.success("Task details updated!", {
+          duration: 3000,
+          action: {
+            label: "Undo",
+            onClick: () => {
+              setOptimisticStatuses(prev => ({ ...prev, [taskId]: oldStatus }));
+              updateTask({ id: taskId, data: { status: oldStatus } });
+            }
+          }
+        });
+      }
+    });
   };
 
   const handleDelete = (taskId: string, e: React.MouseEvent) => {
@@ -134,13 +151,19 @@ export default function TasksManager() {
   const visibleColumns = columns.filter(s => !hiddenColumns.includes(s));
 
   // Sort tasks based on selected option
-  const sortedTasks = [...tasks].sort((a: any, b: any) => {
-    if (sortOption === "dateDesc") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    if (sortOption === "dateAsc") return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    if (sortOption === "nameAsc") return a.title.localeCompare(b.title);
-    if (sortOption === "nameDesc") return b.title.localeCompare(a.title);
-    return 0;
-  });
+  const sortedTasks = [...tasks]
+    .filter((t: any) => 
+      t.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      t.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.customerUsername?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a: any, b: any) => {
+      if (sortOption === "dateDesc") return new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime();
+      if (sortOption === "dateAsc") return new Date(a.updatedAt || a.createdAt).getTime() - new Date(b.updatedAt || b.createdAt).getTime();
+      if (sortOption === "nameAsc") return (a.title || "").localeCompare(b.title || "");
+      if (sortOption === "nameDesc") return (b.title || "").localeCompare(a.title || "");
+      return 0;
+    });
 
   const toggleTaskDone = (task: any, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -241,6 +264,13 @@ export default function TasksManager() {
               <SelectItem value="nameDesc">Name (Z-A)</SelectItem>
             </SelectContent>
           </Select>
+          
+          <Input 
+            placeholder="Search tasks..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8 w-48 text-sm"
+          />
         </div>
         
         <div className="flex items-center gap-2">

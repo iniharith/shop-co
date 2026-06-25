@@ -35,4 +35,10 @@ export const useDeleteOrder = () => {
     return { mutate, isPending }
 }
 
+export const useBulkDeleteOrders = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(['bulkDeleteOrders'], (orderIds: string[]) => import("@/api/orders").then(m => m.bulkDeleteOrders(session?.user.token, orderIds)), ["orders"])
+    return { mutate, isPending }
+}
+
 

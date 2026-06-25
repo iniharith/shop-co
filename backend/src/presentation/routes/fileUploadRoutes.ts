@@ -194,6 +194,57 @@ router.get(
   })
 );
 
+// 🌐 Public: Upload files to a specific folder using robust token
+const decodeSharedToken = (req: any, res: any, next: any) => {
+  try {
+    const decoded = JSON.parse(Buffer.from(req.params.token, 'base64').toString('utf-8'));
+    req.userId = decoded.u || 'customer';
+    req.taskId = decoded.t;
+    req.orderId = decoded.o;
+    next();
+  } catch (e) {
+    res.status(400).json({ success: false, message: 'Invalid token' });
+  }
+};
+
+router.post(
+  '/shared/upload/:token',
+  decodeSharedToken,
+  upload.array('files', 10),
+  asyncHandler(async (req: Request, res: Response) => {
+    const files = req.files as (Express.Multer.File & { path: string; filename: string })[];
+    const { taskId, orderId, userId } = req as any;
+    
+    if (!files || files.length === 0) {
+      res.status(400).json({ success: false, message: 'Tiada fail dipilih' });
+      return;
+    }
+
+    const savedFiles = await Promise.all(
+      files.map((file) =>
+        fileUploadRepository.create({
+          userId: userId || 'customer',
+          orderId: orderId || undefined,
+          taskId: taskId || undefined,
+          category: 'artwork',
+          filename: (file as any).key || file.filename || file.originalname,
+          originalName: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          path: (file as any).location || file.path,
+          adminReviewed: false,
+        })
+      )
+    );
+
+    res.status(201).json({
+      success: true,
+      message: `${savedFiles.length} fail berjaya dimuat naik`,
+      data: savedFiles,
+    });
+  })
+);
+
 // 🔹🔹🔹 GET /api/files/stats 🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹
 router.get(
   '/stats',
@@ -217,7 +268,7 @@ router.get(
 );
 
 // ─── GET /api/files/:id/download ─────────────────────────
-// Redirects to S3 URL for download
+// Proxies the S3 URL to force a download with Content-Disposition
 router.get(
   '/:id/download',
   asyncHandler(async (req: Request, res: Response) => {
@@ -226,8 +277,27 @@ router.get(
       res.status(404).json({ success: false, message: 'Fail tidak dijumpai' });
       return;
     }
-    // file.path is the S3 URL — redirect directly
-    res.redirect(file.path);
+    
+    try {
+      // Import axios dynamically if not at top of file, or use global fetch
+      const response = await fetch(file.path);
+      if (!response.ok) throw new Error("Failed to fetch from S3");
+      
+      res.setHeader('Content-Disposition', `attachment; filename="${file.originalName.replace(/"/g, '\\"')}"`);
+      res.setHeader('Content-Type', file.mimetype || 'application/octet-stream');
+      
+      if (response.body) {
+        // Node 18+ fetch body is a web readable stream. We need to pipe it.
+        const { Readable } = require('stream');
+        Readable.fromWeb(response.body).pipe(res);
+      } else {
+        res.redirect(file.path);
+      }
+    } catch (err) {
+      console.error("Error streaming file:", err);
+      // Fallback to redirect if streaming fails
+      res.redirect(file.path);
+    }
   })
 );
 

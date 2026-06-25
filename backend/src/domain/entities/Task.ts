@@ -8,6 +8,14 @@ export interface ITaskComment {
   createdAt: Date;
 }
 
+export interface ITaskActivity {
+  userId: string;
+  userName: string;
+  action: string;
+  details?: string;
+  createdAt: Date;
+}
+
 export interface ITask extends Document {
   title: string;
   description?: string;
@@ -20,6 +28,7 @@ export interface ITask extends Document {
   isDone?: boolean;
   files: { url: string; name: string; notes?: string }[];
   comments: ITaskComment[];
+  activities: ITaskActivity[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +38,14 @@ const TaskCommentSchema = new Schema<ITaskComment>({
   userName: { type: String, required: true },
   text: { type: String, required: true },
   role: { type: String, default: 'admin' },
+  createdAt: { type: Date, default: Date.now },
+});
+
+const TaskActivitySchema = new Schema<ITaskActivity>({
+  userId: { type: String, required: true },
+  userName: { type: String, required: true },
+  action: { type: String, required: true },
+  details: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -49,6 +66,7 @@ const TaskSchema = new Schema<ITask>(
       notes: { type: String, default: '' }
     }],
     comments: [TaskCommentSchema],
+    activities: [TaskActivitySchema],
   },
   { timestamps: true }
 );

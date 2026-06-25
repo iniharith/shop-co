@@ -12,6 +12,8 @@ import { useMemo } from "react";
 import RenderResults from "./render-result";
 import useThemeSwitching from "./use-theme-switching";
 import { useSession } from "next-auth/react";
+import { useTasks } from "@/hooks/useTasks";
+import { useOrders } from "@/hooks/useOrder";
 export default function KBar({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -53,8 +55,36 @@ export default function KBar({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const { data: tasksData } = useTasks();
+  const { data: ordersData } = useOrders();
+
+  const tasks = (tasksData as any)?.tasks || [];
+  const orders = (ordersData as any)?.orders || [];
+
+  const dynamicActions = useMemo(() => {
+    const taskActions = tasks.map((t: any) => ({
+      id: `task-${t._id}`,
+      name: `Task: ${t.title}`,
+      keywords: `${t.title} ${t.customerUsername || ''} ${t.orderId || ''}`,
+      section: "Tasks",
+      subtitle: `Status: ${t.status.replace(/_/g, ' ')}`,
+      perform: () => navigateTo("/admin/tasks")
+    }));
+
+    const orderActions = orders.map((o: any) => ({
+      id: `order-${o._id}`,
+      name: `Order: ${o._id}`,
+      keywords: `${o._id} ${o.customerName || ''} ${o.trackingNumber || ''}`,
+      section: "Orders & Tracking",
+      subtitle: `Customer: ${o.customerName} - Status: ${o.orderStatus.replace(/_/g, ' ')}`,
+      perform: () => navigateTo("/admin/orders")
+    }));
+
+    return [...actions, ...taskActions, ...orderActions];
+  }, [actions, tasks, orders]);
+
   return (
-    <KBarProvider actions={actions}>
+    <KBarProvider actions={dynamicActions}>
       <KBarComponent>{children}</KBarComponent>
     </KBarProvider>
   );
