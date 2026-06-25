@@ -28,7 +28,6 @@ const ALLOWED_MIME_TYPES = [
 const storage = multerS3({
   s3: s3Client,
   bucket: S3_BUCKET_NAME,
-  acl: 'public-read',
   contentType: multerS3.AUTO_CONTENT_TYPE,
   metadata: function (req: any, file: any, cb: any) {
     cb(null, { fieldName: file.fieldname });
