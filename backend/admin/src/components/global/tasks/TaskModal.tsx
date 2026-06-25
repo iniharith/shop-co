@@ -64,9 +64,8 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                // Ensure direct download by routing through the backend proxy
                 const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-                window.location.href = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(file.url)}&name=${encodeURIComponent(file.name)}`;
+                forceDownload(file.url, file.name);
               }}
               title="Download"
             >

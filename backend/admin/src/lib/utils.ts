@@ -28,25 +28,17 @@ export function formatBytes(
 
 export const forceDownload = async (url: string, filename: string) => {
   try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("Network response was not ok");
-    const blob = await response.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+    const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(url)}&name=${encodeURIComponent(filename)}`;
+    
     const link = document.createElement('a');
-    link.href = blobUrl;
+    link.href = proxyUrl;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    window.URL.revokeObjectURL(blobUrl);
   } catch (error) {
-    console.error("Download failed, opening in new tab", error);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    console.error("Download failed", error);
+    window.location.href = url;
   }
 };

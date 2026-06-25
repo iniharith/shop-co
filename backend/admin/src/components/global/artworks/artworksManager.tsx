@@ -526,7 +526,7 @@ export default function ArtworksManager() {
                             <Button variant="secondary" size="sm" className="w-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-200" onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/files/proxy-download?url=${encodeURIComponent(file.path)}&name=${encodeURIComponent(file.originalName)}`;
+                              forceDownload(getFileUrl(file.path), file.originalName);
                             }}>
                               <Download className="w-4 h-4 mr-1" /> Download
                             </Button>
@@ -580,7 +580,7 @@ export default function ArtworksManager() {
                           <Button variant="ghost" size="icon" className="hover:bg-blue-50" onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/files/proxy-download?url=${encodeURIComponent(file.path)}&name=${encodeURIComponent(file.originalName)}`;
+                          forceDownload(getFileUrl(file.path), file.originalName);
                         }} title="Download">
                           <Download className="w-4 h-4 text-blue-500" />
                           </Button>
