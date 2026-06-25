@@ -254,6 +254,40 @@ router.get(
   })
 );
 
+// ─── GET /api/files/proxy-download ─────────────────────────
+// Proxies an S3 URL provided via query parameter to force download
+router.get(
+  '/proxy-download',
+  asyncHandler(async (req: Request, res: Response) => {
+    const fileUrl = req.query.url as string;
+    const fileName = (req.query.name as string) || "download";
+    
+    if (!fileUrl) {
+      res.status(400).json({ success: false, message: 'URL required' });
+      return;
+    }
+    
+    try {
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error("Failed to fetch from S3");
+      
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName.replace(/"/g, '\\"')}"`);
+      const contentType = response.headers.get('content-type') || 'application/octet-stream';
+      res.setHeader('Content-Type', contentType);
+      
+      if (response.body) {
+        const { Readable } = require('stream');
+        Readable.fromWeb(response.body).pipe(res);
+      } else {
+        res.redirect(fileUrl);
+      }
+    } catch (err) {
+      console.error("Error streaming proxy file:", err);
+      res.redirect(fileUrl);
+    }
+  })
+);
+
 // ─── GET /api/files/:id ───────────────────────────────────
 router.get(
   '/:id',

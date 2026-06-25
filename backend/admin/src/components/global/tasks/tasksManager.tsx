@@ -124,7 +124,7 @@ export default function TasksManager() {
     updateTask({ id: taskId, data: { status: newStatus } }, {
       onSuccess: () => {
         toast.success("Task details updated!", {
-          duration: 3000,
+          duration: 5000,
           action: {
             label: "Undo",
             onClick: () => {
@@ -158,8 +158,8 @@ export default function TasksManager() {
       t.customerUsername?.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a: any, b: any) => {
-      if (sortOption === "dateDesc") return new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime();
-      if (sortOption === "dateAsc") return new Date(a.updatedAt || a.createdAt).getTime() - new Date(b.updatedAt || b.createdAt).getTime();
+      if (sortOption === "dateDesc") return new Date(b.statusUpdatedAt || b.createdAt).getTime() - new Date(a.statusUpdatedAt || a.createdAt).getTime();
+      if (sortOption === "dateAsc") return new Date(a.statusUpdatedAt || a.createdAt).getTime() - new Date(b.statusUpdatedAt || b.createdAt).getTime();
       if (sortOption === "nameAsc") return (a.title || "").localeCompare(b.title || "");
       if (sortOption === "nameDesc") return (b.title || "").localeCompare(a.title || "");
       return 0;

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useMemo } from "react";
 import { useAllFiles, useReviewFile, useDeleteFile, useBulkDeleteFiles } from "@/hooks/useAdminDashboard";
+import JSZip from "jszip";
 import { useOrders, useUpdateOrderStatus } from "@/hooks/useOrder";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
@@ -197,6 +198,36 @@ export default function ProductionManager() {
         onSuccess: () => toast.success("Order status updated!"),
         onError: () => toast.error("Failed to update order status")
       });
+    }
+  };
+
+  const handleDownloadAll = async (group: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    toast.loading(`Preparing ZIP with ${group.files.length} files...`);
+    try {
+      const zip = new JSZip();
+      const filePromises = group.files.map(async (file: any) => {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+        const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName || "file")}`;
+        const response = await fetch(proxyUrl);
+        const blob = await response.blob();
+        zip.file(file.originalName || "file", blob);
+      });
+      await Promise.all(filePromises);
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${group.folderName || "production"}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.dismiss();
+      toast.success("Download started!");
+    } catch (error) {
+      toast.dismiss();
+      toast.error("Failed to create ZIP");
     }
   };
 
@@ -439,6 +470,11 @@ export default function ProductionManager() {
                       </select>
                     </div>
                   </div>
+                  <div className="ml-auto">
+                    <Button variant="secondary" size="sm" onClick={(e) => handleDownloadAll(activeGroup, e)}>
+                      <Download className="w-4 h-4 mr-2" /> Download All
+                    </Button>
+                  </div>
                 </div>
                 
                 <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
@@ -487,7 +523,7 @@ export default function ProductionManager() {
                             <Button variant="secondary" size="sm" className="w-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-200" onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              forceDownload(getFileUrl(file.path), file.originalName);
+                              window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName)}`;
                             }}>
                               <Download className="w-4 h-4 mr-1" /> Download
                             </Button>
@@ -534,7 +570,7 @@ export default function ProductionManager() {
                           <Button variant="ghost" size="icon" className="hover:bg-blue-50" onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            forceDownload(getFileUrl(file.path), file.originalName);
+                            window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName)}`;
                           }} title="Download">
                             <Download className="w-4 h-4 text-blue-500" />
                           </Button>

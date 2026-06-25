@@ -64,12 +64,9 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (file._id) {
-                  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-                  window.location.href = `${backendUrl}/api/files/${file._id}/download`;
-                } else {
-                  forceDownload(file.url, file.name);
-                }
+                // Ensure direct download by routing through the backend proxy
+                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+                window.location.href = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(file.url)}&name=${encodeURIComponent(file.name)}`;
               }}
               title="Download"
             >
@@ -149,7 +146,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [category, setCategory] = useState(task.category || "UNASSIGNED");
   const [status, setStatus] = useState(task.status || "PLACED");
   const [title, setTitle] = useState(task.title || "");
-  const getAssigneeId = (val: any) => typeof val === 'object' && val !== null ? val._id : (val || "");
+  const getAssigneeId = (val: any) => typeof val === 'object' && val !== null ? val._id : (val || "unassigned");
   const [assignee, setAssignee] = useState(getAssigneeId(task.assignee));
 
   const handleSaveDetails = (overrides?: any) => {

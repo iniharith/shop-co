@@ -94,6 +94,9 @@ router.put(
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
     const oldTask = await taskRepository.findById(req.params.id);
+    if (req.body.status && req.body.status !== oldTask?.status) {
+      req.body.statusUpdatedAt = new Date();
+    }
     const task = await taskRepository.update(req.params.id, req.body);
     if (!task) {
       res.status(404).json({ success: false, message: 'Task not found' });
