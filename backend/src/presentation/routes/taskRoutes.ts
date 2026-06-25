@@ -129,7 +129,7 @@ router.put(
       await taskRepository.addActivity(req.params.id, userId, userName, `assigned this task`);
     }
     if (req.body.description !== undefined && req.body.description !== oldTask?.description) {
-      await taskRepository.addActivity(req.params.id, userId, userName, `changed the description`);
+      // Do not log description changes as activity
     }
     
     // Sync status to Order if it changed
@@ -195,10 +195,7 @@ router.post(
       return;
     }
 
-    // Also log it as an activity
-    const updatedTask = await taskRepository.addActivity(req.params.id, userId, userName, `added a comment: "${text.length > 50 ? text.substring(0, 50) + '...' : text}"`);
-
-    res.json({ success: true, task: updatedTask || task });
+    res.json({ success: true, task });
   })
 );
 
