@@ -73,7 +73,17 @@ router.get('/conversations', auth_middileware_1.default, (0, express_async_handl
     else {
         conversations = yield ChatRepository_1.chatRepository.findConversationsByUser(userId);
     }
-    res.json({ success: true, conversations });
+    const { MessageModel } = yield Promise.resolve().then(() => __importStar(require('../../infrastructure/db/models/message.model')));
+    // Add unread count to each conversation
+    const conversationsWithUnread = yield Promise.all(conversations.map((conv) => __awaiter(void 0, void 0, void 0, function* () {
+        const unreadCount = yield MessageModel.countDocuments({
+            conversationId: conv._id,
+            senderId: { $ne: userId },
+            isRead: false
+        });
+        return Object.assign(Object.assign({}, conv.toObject()), { unreadCount });
+    })));
+    res.json({ success: true, conversations: conversationsWithUnread });
 })));
 // POST /api/chat/conversations
 router.post('/conversations', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {

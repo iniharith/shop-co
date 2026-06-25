@@ -201,20 +201,14 @@ class OrderUsecase {
                 if (updateStatus === 'DELIVERED') {
                     const { Task } = yield Promise.resolve().then(() => __importStar(require('../../../domain/entities/Task')));
                     const { FileUpload } = yield Promise.resolve().then(() => __importStar(require('../../../domain/entities/FileUpload')));
-                    const { v2: cloudinary } = yield Promise.resolve().then(() => __importStar(require('cloudinary')));
-                    cloudinary.config({
-                        cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dc7aun6of',
-                        api_key: process.env.CLOUDINARY_API_KEY || '933197924153588',
-                        api_secret: process.env.CLOUDINARY_API_SECRET || 'L8yhCjjrcV4--wTSGB-_JVY5kgg',
-                    });
+                    const { deleteFromS3 } = yield Promise.resolve().then(() => __importStar(require('../../../infrastructure/config/s3')));
                     const tasks = yield Task.find({ orderId });
                     for (const task of tasks) {
                         if (task.files && task.files.length > 0) {
                             for (const file of task.files) {
-                                const parts = file.url.split('/');
-                                const filenameWithExtension = parts[parts.length - 1];
-                                const publicId = `kampungcetak/tasks/${filenameWithExtension.split('.')[0]}`;
-                                yield cloudinary.uploader.destroy(publicId).catch(() => { });
+                                if (file.url) {
+                                    yield deleteFromS3(file.url).catch(() => { });
+                                }
                                 yield FileUpload.findOneAndDelete({ path: file.url, taskId: task._id });
                             }
                             task.files = [];

@@ -3,24 +3,25 @@ import asyncHandler from 'express-async-handler';
 import { taskRepository } from '../../infrastructure/repositories/TaskRepository';
 import { OrderUsecase } from '../../application/usecases/orders/order.usecase';
 import authMiddilware from '../middlewares/auth.middileware';
-import { v2 as cloudinary } from "cloudinary";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
+import { s3Client, S3_BUCKET_NAME, deleteFromS3 } from "../../infrastructure/config/s3";
+import multerS3 from "multer-s3";
 import multer from "multer";
 import UserRepository from '../../infrastructure/db/repositories/user.repository';
 import { FileUpload } from '../../domain/entities/FileUpload';
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dc7aun6of',
-  api_key: process.env.CLOUDINARY_API_KEY || '933197924153588',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'L8yhCjjrcV4--wTSGB-_JVY5kgg',
-});
-
-const taskStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: "kampungcetak/tasks",
-    allowed_formats: ["jpg", "png", "jpeg", "webp", "pdf", "docx", "zip"]
-  } as any,
+const taskStorage = multerS3({
+  s3: s3Client,
+  bucket: S3_BUCKET_NAME,
+  acl: 'public-read',
+  contentType: multerS3.AUTO_CONTENT_TYPE,
+  metadata: function (req: any, file: any, cb: any) {
+    cb(null, { fieldName: file.fieldname });
+  },
+  key: function (req: any, file: any, cb: any) {
+    const taskId = req.params.id || req.body.taskId || 'unknown_task';
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `kampungcetak/tasks/${taskId}/${uniqueSuffix}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`);
+  }
 });
 const taskUpload = multer({ storage: taskStorage });
 
@@ -66,11 +67,10 @@ const deleteAllTaskFiles = async (task: any) => {
       const { FileUpload } = await import('../../domain/entities/FileUpload');
       
       for (const file of task.files) {
-        // Delete from Cloudinary
-        const parts = file.url.split('/');
-        const filenameWithExtension = parts[parts.length - 1];
-        const publicId = `kampungcetak/tasks/${filenameWithExtension.split('.')[0]}`;
-        await cloudinary.uploader.destroy(publicId);
+        // Delete from S3
+        if (file.url) {
+          await deleteFromS3(file.url);
+        }
         
         // Delete from FileUpload collection
         await FileUpload.findOneAndDelete({ path: file.url, taskId: task._id });
@@ -255,7 +255,7 @@ router.post(
       res.status(400).json({ success: false, message: 'No file uploaded' });
       return;
     }
-    const fileUrl = req.file.path;
+    const fileUrl = (req.file as any).location;
     const fileName = req.file.originalname || 'Attached File';
 
     const task = await taskRepository.addFile(req.params.id, fileUrl, fileName);
@@ -310,14 +310,13 @@ router.delete(
 
     const fileUrl = task.files[fileIndex].url;
 
-    // Delete from Cloudinary
+    // Delete from S3
     try {
-      const parts = fileUrl.split('/');
-      const filenameWithExtension = parts[parts.length - 1];
-      const publicId = `kampungcetak/tasks/${filenameWithExtension.split('.')[0]}`;
-      await cloudinary.uploader.destroy(publicId);
+      if (fileUrl) {
+        await deleteFromS3(fileUrl);
+      }
     } catch (e) {
-      console.error('Failed to delete file from Cloudinary:', e);
+      console.error('Failed to delete file from S3:', e);
     }
 
     // Delete from task document

@@ -15,8 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const multer_1 = __importDefault(require("multer"));
-const cloudinary_1 = require("cloudinary");
-const multer_storage_cloudinary_1 = require("multer-storage-cloudinary");
+const s3_1 = require("../../infrastructure/config/s3");
+const multer_s3_1 = __importDefault(require("multer-s3"));
 const FileUploadRepository_1 = require("../../infrastructure/repositories/FileUploadRepository");
 const FileUpload_1 = require("../../domain/entities/FileUpload");
 const WhatsAppService_1 = require("../../infrastructure/services/WhatsAppService");
@@ -34,27 +34,21 @@ const ALLOWED_MIME_TYPES = [
     'image/tiff',
     'application/pdf',
 ];
-// ─── Cloudinary Configuration ─────────────────────────────
-// Railway filesystem is ephemeral — files are wiped on each redeploy.
-// Cloudinary provides persistent, cloud-hosted storage for all uploads.
-cloudinary_1.v2.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dc7aun6of',
-    api_key: process.env.CLOUDINARY_API_KEY || '933197924153588',
-    api_secret: process.env.CLOUDINARY_API_SECRET || 'L8yhCjjrcV4--wTSGB-_JVY5kgg',
-});
-// ─── Multer + Cloudinary Storage ─────────────────────────
-const storage = new multer_storage_cloudinary_1.CloudinaryStorage({
-    cloudinary: cloudinary_1.v2,
-    params: (req, file) => __awaiter(void 0, void 0, void 0, function* () {
+// ─── Multer + S3 Storage ─────────────────────────
+const storage = (0, multer_s3_1.default)({
+    s3: s3_1.s3Client,
+    bucket: s3_1.S3_BUCKET_NAME,
+    acl: 'public-read',
+    contentType: multer_s3_1.default.AUTO_CONTENT_TYPE,
+    metadata: function (req, file, cb) {
+        cb(null, { fieldName: file.fieldname });
+    },
+    key: function (req, file, cb) {
         var _a;
-        return ({
-            folder: `kampungcetak/uploads/${req.userId || ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || 'unknown'}`,
-            // PDFs must be stored as 'raw', images as 'image'
-            resource_type: file.mimetype === 'application/pdf' ? 'raw' : 'image',
-            allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'tiff', 'gif', 'pdf'],
-            public_id: `${Date.now()}-${Math.round(Math.random() * 1e9)}`,
-        });
-    }),
+        const userId = req.userId || ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || 'unknown';
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, `kampungcetak/uploads/${userId}/${uniqueSuffix}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`);
+    }
 });
 const upload = (0, multer_1.default)({
     storage,
@@ -70,7 +64,7 @@ const upload = (0, multer_1.default)({
 });
 // ─── POST /api/files/upload ───────────────────────────────
 // Customer uploads one or more files (requires auth middleware upstream)
-// Files are uploaded directly to Cloudinary — not stored locally.
+// Files are uploaded directly to AWS S3 — not stored locally.
 router.post('/upload', auth_middileware_1.default, upload.array('files', 10), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
     const files = req.files;
@@ -97,8 +91,8 @@ router.post('/upload', auth_middileware_1.default, upload.array('files', 10), (0
         originalName: file.originalname,
         mimetype: file.mimetype,
         size: file.size,
-        // file.path = Cloudinary secure URL (e.g. https://res.cloudinary.com/...)
-        path: file.path,
+        // file.location is provided by multer-s3
+        path: file.location || file.path,
         notes: notes || undefined,
         adminReviewed: false,
     })));
@@ -194,18 +188,18 @@ router.get('/:id', (0, express_async_handler_1.default)((req, res) => __awaiter(
     res.json({ success: true, data: file });
 })));
 // ─── GET /api/files/:id/download ─────────────────────────
-// Redirects to Cloudinary URL for download
+// Redirects to S3 URL for download
 router.get('/:id/download', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const file = yield FileUploadRepository_1.fileUploadRepository.findById(req.params.id);
     if (!file) {
         res.status(404).json({ success: false, message: 'Fail tidak dijumpai' });
         return;
     }
-    // file.path is the Cloudinary URL — redirect directly
+    // file.path is the S3 URL — redirect directly
     res.redirect(file.path);
 })));
 // ─── GET /api/files/:id/preview ──────────────────────────
-// Redirects to Cloudinary URL for inline preview
+// Redirects to S3 URL for inline preview
 router.get('/:id/preview', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const file = yield FileUploadRepository_1.fileUploadRepository.findById(req.params.id);
     if (!file) {
@@ -252,7 +246,7 @@ router.put('/:id/review', auth_middileware_1.default, (0, express_async_handler_
 // 🟨🟨🟨 POST /api/files/bulk-delete 🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨
 // Admin or owner bulk deletes files
 router.post('/bulk-delete', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c;
+    var _a, _b;
     const authReq = req;
     const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
     const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(authReq.role);
@@ -276,16 +270,8 @@ router.post('/bulk-delete', auth_middileware_1.default, (0, express_async_handle
                 continue; // skip if unauthorized
             }
             yield FileUploadRepository_1.fileUploadRepository.delete(id);
-            if ((_c = file.path) === null || _c === void 0 ? void 0 : _c.includes('cloudinary.com')) {
-                const urlParts = file.path.split('/');
-                const uploadIndex = urlParts.indexOf('upload');
-                if (uploadIndex !== -1) {
-                    const publicIdWithVersion = urlParts.slice(uploadIndex + 2).join('/');
-                    const publicId = publicIdWithVersion.replace(/\.[^/.]+$/, ''); // remove extension
-                    const resourceType = file.mimetype === 'application/pdf' ? 'raw' : 'image';
-                    yield cloudinary_1.v2.uploader.destroy(publicId, { resource_type: resourceType });
-                    console.log(`[FileUpload] Deleted from Cloudinary: ${publicId}`);
-                }
+            if (file.path) {
+                yield (0, s3_1.deleteFromS3)(file.path);
             }
             deletedCount++;
         }
@@ -316,23 +302,14 @@ router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.de
         res.status(403).json({ success: false, message: 'Tiada kebenaran untuk memadam fail ini' });
         return;
     }
-    // Delete from Cloudinary using the public_id extracted from the URL
+    // Delete from S3 using the helper
     try {
-        // Extract public_id from Cloudinary URL
-        // e.g. https://res.cloudinary.com/{cloud}/image/upload/v123/kampungcetak/uploads/{userId}/{public_id}
-        const urlParts = file.path.split('/');
-        const uploadIndex = urlParts.indexOf('upload');
-        if (uploadIndex !== -1) {
-            // Join everything after 'upload/v{version}/' as the public_id path
-            const publicIdWithVersion = urlParts.slice(uploadIndex + 2).join('/');
-            const publicId = publicIdWithVersion.replace(/\.[^/.]+$/, ''); // remove extension
-            const resourceType = file.mimetype === 'application/pdf' ? 'raw' : 'image';
-            yield cloudinary_1.v2.uploader.destroy(publicId, { resource_type: resourceType });
-            console.log(`[FileUpload] Deleted from Cloudinary: ${publicId}`);
+        if (file.path) {
+            yield (0, s3_1.deleteFromS3)(file.path);
         }
     }
     catch (err) {
-        console.warn('[FileUpload] Could not delete from Cloudinary:', err.message);
+        console.warn('[FileUpload] Could not delete from S3:', err.message);
     }
     yield FileUploadRepository_1.fileUploadRepository.delete(req.params.id);
     res.json({ success: true, message: 'Fail berjaya dipadam' });

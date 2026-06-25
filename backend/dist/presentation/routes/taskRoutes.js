@@ -50,22 +50,24 @@ const express_async_handler_1 = __importDefault(require("express-async-handler")
 const TaskRepository_1 = require("../../infrastructure/repositories/TaskRepository");
 const order_usecase_1 = require("../../application/usecases/orders/order.usecase");
 const auth_middileware_1 = __importDefault(require("../middlewares/auth.middileware"));
-const cloudinary_1 = require("cloudinary");
-const multer_storage_cloudinary_1 = require("multer-storage-cloudinary");
+const s3_1 = require("../../infrastructure/config/s3");
+const multer_s3_1 = __importDefault(require("multer-s3"));
 const multer_1 = __importDefault(require("multer"));
 const user_repository_1 = __importDefault(require("../../infrastructure/db/repositories/user.repository"));
 const FileUpload_1 = require("../../domain/entities/FileUpload");
-cloudinary_1.v2.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dc7aun6of',
-    api_key: process.env.CLOUDINARY_API_KEY || '933197924153588',
-    api_secret: process.env.CLOUDINARY_API_SECRET || 'L8yhCjjrcV4--wTSGB-_JVY5kgg',
-});
-const taskStorage = new multer_storage_cloudinary_1.CloudinaryStorage({
-    cloudinary: cloudinary_1.v2,
-    params: {
-        folder: "kampungcetak/tasks",
-        allowed_formats: ["jpg", "png", "jpeg", "webp", "pdf", "docx", "zip"]
+const taskStorage = (0, multer_s3_1.default)({
+    s3: s3_1.s3Client,
+    bucket: s3_1.S3_BUCKET_NAME,
+    acl: 'public-read',
+    contentType: multer_s3_1.default.AUTO_CONTENT_TYPE,
+    metadata: function (req, file, cb) {
+        cb(null, { fieldName: file.fieldname });
     },
+    key: function (req, file, cb) {
+        const taskId = req.params.id || req.body.taskId || 'unknown_task';
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, `kampungcetak/tasks/${taskId}/${uniqueSuffix}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`);
+    }
 });
 const taskUpload = (0, multer_1.default)({ storage: taskStorage });
 const router = (0, express_1.Router)();
@@ -97,11 +99,10 @@ const deleteAllTaskFiles = (task) => __awaiter(void 0, void 0, void 0, function*
         try {
             const { FileUpload } = yield Promise.resolve().then(() => __importStar(require('../../domain/entities/FileUpload')));
             for (const file of task.files) {
-                // Delete from Cloudinary
-                const parts = file.url.split('/');
-                const filenameWithExtension = parts[parts.length - 1];
-                const publicId = `kampungcetak/tasks/${filenameWithExtension.split('.')[0]}`;
-                yield cloudinary_1.v2.uploader.destroy(publicId);
+                // Delete from S3
+                if (file.url) {
+                    yield (0, s3_1.deleteFromS3)(file.url);
+                }
                 // Delete from FileUpload collection
                 yield FileUpload.findOneAndDelete({ path: file.url, taskId: task._id });
             }
@@ -185,6 +186,15 @@ router.post('/:id/comments', auth_middileware_1.default, (0, express_async_handl
     }
     res.json({ success: true, task });
 })));
+// DELETE /api/tasks/:id/comments/:commentId
+router.delete('/:id/comments/:commentId', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const task = yield TaskRepository_1.taskRepository.deleteComment(req.params.id, req.params.commentId);
+    if (!task) {
+        res.status(404).json({ success: false, message: 'Task not found' });
+        return;
+    }
+    res.json({ success: true, task });
+})));
 // PUT /api/tasks/:id/files/notes
 router.put('/:id/files/notes', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
@@ -231,7 +241,7 @@ router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'),
         res.status(400).json({ success: false, message: 'No file uploaded' });
         return;
     }
-    const fileUrl = req.file.path;
+    const fileUrl = req.file.location;
     const fileName = req.file.originalname || 'Attached File';
     const task = yield TaskRepository_1.taskRepository.addFile(req.params.id, fileUrl, fileName);
     if (!task) {
@@ -275,15 +285,14 @@ router.delete('/:id/files/:fileId', auth_middileware_1.default, (0, express_asyn
         return;
     }
     const fileUrl = task.files[fileIndex].url;
-    // Delete from Cloudinary
+    // Delete from S3
     try {
-        const parts = fileUrl.split('/');
-        const filenameWithExtension = parts[parts.length - 1];
-        const publicId = `kampungcetak/tasks/${filenameWithExtension.split('.')[0]}`;
-        yield cloudinary_1.v2.uploader.destroy(publicId);
+        if (fileUrl) {
+            yield (0, s3_1.deleteFromS3)(fileUrl);
+        }
     }
     catch (e) {
-        console.error('Failed to delete file from Cloudinary:', e);
+        console.error('Failed to delete file from S3:', e);
     }
     // Delete from task document
     task.files.splice(fileIndex, 1);

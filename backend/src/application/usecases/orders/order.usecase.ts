@@ -167,22 +167,15 @@ export class OrderUsecase {
             if (updateStatus === 'DELIVERED') {
                 const { Task } = await import('../../../domain/entities/Task');
                 const { FileUpload } = await import('../../../domain/entities/FileUpload');
-                const { v2: cloudinary } = await import('cloudinary');
+                const { deleteFromS3 } = await import('../../../infrastructure/config/s3');
                 
-                cloudinary.config({
-                  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dc7aun6of',
-                  api_key: process.env.CLOUDINARY_API_KEY || '933197924153588',
-                  api_secret: process.env.CLOUDINARY_API_SECRET || 'L8yhCjjrcV4--wTSGB-_JVY5kgg',
-                });
-
                 const tasks = await Task.find({ orderId });
                 for (const task of tasks) {
                     if (task.files && task.files.length > 0) {
                         for (const file of task.files) {
-                            const parts = file.url.split('/');
-                            const filenameWithExtension = parts[parts.length - 1];
-                            const publicId = `kampungcetak/tasks/${filenameWithExtension.split('.')[0]}`;
-                            await cloudinary.uploader.destroy(publicId).catch(() => {});
+                            if (file.url) {
+                                await deleteFromS3(file.url).catch(() => {});
+                            }
                             await FileUpload.findOneAndDelete({ path: file.url, taskId: task._id });
                         }
                         task.files = [];

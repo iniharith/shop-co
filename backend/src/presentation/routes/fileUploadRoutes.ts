@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import multer from 'multer';
-import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import { s3Client, S3_BUCKET_NAME, deleteFromS3 } from '../../infrastructure/config/s3';
+import multerS3 from 'multer-s3';
 import { fileUploadRepository } from '../../infrastructure/repositories/FileUploadRepository';
 import { FileUpload } from '../../domain/entities/FileUpload';
 import { whatsAppService } from '../../infrastructure/services/WhatsAppService';
@@ -24,26 +24,21 @@ const ALLOWED_MIME_TYPES = [
   'application/pdf',
 ];
 
-// ─── Cloudinary Configuration ─────────────────────────────
-// Railway filesystem is ephemeral — files are wiped on each redeploy.
-// Cloudinary provides persistent, cloud-hosted storage for all uploads.
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dc7aun6of',
-  api_key: process.env.CLOUDINARY_API_KEY || '933197924153588',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'L8yhCjjrcV4--wTSGB-_JVY5kgg',
+// ─── Multer + S3 Storage ─────────────────────────
+const storage = multerS3({
+  s3: s3Client,
+  bucket: S3_BUCKET_NAME,
+  acl: 'public-read',
+  contentType: multerS3.AUTO_CONTENT_TYPE,
+  metadata: function (req: any, file: any, cb: any) {
+    cb(null, { fieldName: file.fieldname });
+  },
+  key: function (req: any, file: any, cb: any) {
+    const userId = req.userId || req.user?.id || 'unknown';
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `kampungcetak/uploads/${userId}/${uniqueSuffix}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`);
+  }
 });
-
-// ─── Multer + Cloudinary Storage ─────────────────────────
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: async (req: any, file: Express.Multer.File) => ({
-    folder: `kampungcetak/uploads/${req.userId || req.user?.id || 'unknown'}`,
-    // PDFs must be stored as 'raw', images as 'image'
-    resource_type: file.mimetype === 'application/pdf' ? 'raw' : 'image',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'tiff', 'gif', 'pdf'],
-    public_id: `${Date.now()}-${Math.round(Math.random() * 1e9)}`,
-  }),
-} as any);
 
 const upload = multer({
   storage,
@@ -63,7 +58,7 @@ const upload = multer({
 
 // ─── POST /api/files/upload ───────────────────────────────
 // Customer uploads one or more files (requires auth middleware upstream)
-// Files are uploaded directly to Cloudinary — not stored locally.
+// Files are uploaded directly to AWS S3 — not stored locally.
 router.post(
   '/upload',
   authMiddilware,
@@ -99,8 +94,8 @@ router.post(
           originalName: file.originalname,
           mimetype: file.mimetype,
           size: file.size,
-          // file.path = Cloudinary secure URL (e.g. https://res.cloudinary.com/...)
-          path: file.path,
+          // file.location is provided by multer-s3
+          path: (file as any).location || file.path,
           notes: notes || undefined,
           adminReviewed: false,
         })
@@ -223,7 +218,7 @@ router.get(
 );
 
 // ─── GET /api/files/:id/download ─────────────────────────
-// Redirects to Cloudinary URL for download
+// Redirects to S3 URL for download
 router.get(
   '/:id/download',
   asyncHandler(async (req: Request, res: Response) => {
@@ -232,13 +227,13 @@ router.get(
       res.status(404).json({ success: false, message: 'Fail tidak dijumpai' });
       return;
     }
-    // file.path is the Cloudinary URL — redirect directly
+    // file.path is the S3 URL — redirect directly
     res.redirect(file.path);
   })
 );
 
 // ─── GET /api/files/:id/preview ──────────────────────────
-// Redirects to Cloudinary URL for inline preview
+// Redirects to S3 URL for inline preview
 router.get(
   '/:id/preview',
   asyncHandler(async (req: Request, res: Response) => {
@@ -336,16 +331,8 @@ router.post(
         }
 
         await fileUploadRepository.delete(id);
-        if (file.path?.includes('cloudinary.com')) {
-          const urlParts = file.path.split('/');
-          const uploadIndex = urlParts.indexOf('upload');
-          if (uploadIndex !== -1) {
-            const publicIdWithVersion = urlParts.slice(uploadIndex + 2).join('/');
-            const publicId = publicIdWithVersion.replace(/\.[^/.]+$/, ''); // remove extension
-            const resourceType = file.mimetype === 'application/pdf' ? 'raw' : 'image';
-            await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
-            console.log(`[FileUpload] Deleted from Cloudinary: ${publicId}`);
-          }
+        if (file.path) {
+          await deleteFromS3(file.path);
         }
         deletedCount++;
       } catch (err: any) {
@@ -384,22 +371,13 @@ router.delete(
       return;
     }
 
-    // Delete from Cloudinary using the public_id extracted from the URL
+    // Delete from S3 using the helper
     try {
-      // Extract public_id from Cloudinary URL
-      // e.g. https://res.cloudinary.com/{cloud}/image/upload/v123/kampungcetak/uploads/{userId}/{public_id}
-      const urlParts = file.path.split('/');
-      const uploadIndex = urlParts.indexOf('upload');
-      if (uploadIndex !== -1) {
-        // Join everything after 'upload/v{version}/' as the public_id path
-        const publicIdWithVersion = urlParts.slice(uploadIndex + 2).join('/');
-        const publicId = publicIdWithVersion.replace(/\.[^/.]+$/, ''); // remove extension
-        const resourceType = file.mimetype === 'application/pdf' ? 'raw' : 'image';
-        await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
-        console.log(`[FileUpload] Deleted from Cloudinary: ${publicId}`);
+      if (file.path) {
+        await deleteFromS3(file.path);
       }
     } catch (err: any) {
-      console.warn('[FileUpload] Could not delete from Cloudinary:', err.message);
+      console.warn('[FileUpload] Could not delete from S3:', err.message);
     }
 
     await fileUploadRepository.delete(req.params.id);

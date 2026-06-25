@@ -56,6 +56,11 @@ class TaskRepository {
             return Task_1.Task.findByIdAndUpdate(taskId, { $push: { comments: { userId, userName, text, role: role || 'admin', createdAt: new Date() } } }, { new: true });
         });
     }
+    deleteComment(taskId, commentId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return Task_1.Task.findByIdAndUpdate(taskId, { $pull: { comments: { _id: commentId } } }, { new: true });
+        });
+    }
     addFile(taskId, url, name) {
         return __awaiter(this, void 0, void 0, function* () {
             return Task_1.Task.findByIdAndUpdate(taskId, { $push: { files: { url, name, notes: '' } } }, { new: true });

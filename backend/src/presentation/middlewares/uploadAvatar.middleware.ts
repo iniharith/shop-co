@@ -1,22 +1,21 @@
 import multer from 'multer';
-import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import { s3Client, S3_BUCKET_NAME } from '../../infrastructure/config/s3';
+import multerS3 from 'multer-s3';
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dc7aun6of',
-  api_key: process.env.CLOUDINARY_API_KEY || '933197924153588',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'L8yhCjjrcV4--wTSGB-_JVY5kgg',
+const storage = multerS3({
+  s3: s3Client,
+  bucket: S3_BUCKET_NAME,
+  acl: 'public-read',
+  contentType: multerS3.AUTO_CONTENT_TYPE,
+  metadata: function (req: any, file: any, cb: any) {
+    cb(null, { fieldName: file.fieldname });
+  },
+  key: function (req: any, file: any, cb: any) {
+    const userId = req.user?.id || req.body.id || 'avatar';
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `kampungcetak/avatars/${userId}/${uniqueSuffix}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`);
+  }
 });
-
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: async (req: any, file: Express.Multer.File) => ({
-    folder: 'kampungcetak/avatars',
-    resource_type: 'image',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-    public_id: `avatar-${Date.now()}-${Math.round(Math.random() * 1e9)}`,
-  }),
-} as any);
 
 export const uploadAvatar = multer({
   storage,
