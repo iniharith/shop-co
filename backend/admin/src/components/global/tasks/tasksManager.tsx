@@ -434,7 +434,7 @@ export default function TasksManager() {
                   </button>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <div className="grid grid-cols-12 gap-2 pb-2 mb-2 border-b border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <div className="grid grid-cols-12 gap-4 p-2 border-b border-border/50 bg-muted/10 font-medium text-xs text-muted-foreground">
                     <div className="col-span-6 px-2">Task Name</div>
                     <div className="col-span-2">Assignee</div>
                     <div className="col-span-2 pr-2">Status</div>
@@ -443,11 +443,11 @@ export default function TasksManager() {
                   <div className="divide-y divide-border/50">
                     {sectionTasks.map((task: any) => (
                       <div key={task._id} className="grid grid-cols-12 gap-2 items-center py-2 hover:bg-muted/30 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-border/30" onClick={() => setSelectedTask(task)}>
-                        <div className="col-span-6 font-medium text-sm flex items-start gap-2 px-2">
-                           <button type="button" onClick={(e) => toggleTaskDone(task, e)} className="shrink-0 text-muted-foreground hover:text-emerald-500 transition-colors mt-0.5">
+                        <div className="col-span-6 font-medium text-sm flex items-center gap-2 px-2">
+                           <button type="button" onClick={(e) => toggleTaskDone(task, e)} className="shrink-0 text-muted-foreground hover:text-emerald-500 transition-colors">
                              {task.isDone ? <CheckCircle className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
                            </button>
-                           <span className={`leading-tight break-words ${task.isDone ? 'text-muted-foreground' : ''}`}>{task.title}</span>
+                           <span className={`truncate ${task.isDone ? 'text-muted-foreground' : ''}`}>{task.title}</span>
                         </div>
                         <div className="col-span-2 text-sm flex items-center gap-2 text-muted-foreground font-bold" onClick={e => e.stopPropagation()}>
                            <Select value={task.assignee || "unassigned"} onValueChange={(v) => updateTask({ id: task._id, data: { assignee: v === "unassigned" ? null : v } })}>
