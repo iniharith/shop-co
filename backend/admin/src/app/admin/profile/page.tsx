@@ -57,6 +57,7 @@ export default function ProfilePage() {
       setAvatarFile(null);
       // Optional: trigger session update
       await update({ avatar: res.data?.avatarUrl });
+      window.location.reload();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to upload avatar");
       console.error(error);
@@ -77,6 +78,8 @@ export default function ProfilePage() {
       
       if (avatarFile) {
         await handleUploadAvatar();
+      } else {
+        window.location.reload();
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to update profile");
