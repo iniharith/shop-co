@@ -4,7 +4,7 @@ import { Drawer } from "vaul";
 import { IoCloseCircle } from "react-icons/io5";
 import { Button } from "@heroui/button";
 import { cn } from "@/lib/utils";
-import { Bell, Package, Tag, CircleCheck, Truck } from "lucide-react";
+import { Bell, Package, Tag, CircleCheck, Truck, BellOff } from "lucide-react";
 
 import { useMarkAllNotificationsAsRead } from "@/hooks/useNotification";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -156,11 +156,7 @@ const NotificationsDrawer = ({
                   ) : (
                     <div className="flex justify-center items-center h-full">
                       <div className="flex flex-col h-full w-full items-center justify-center gap-2">
-                        <img
-                          src="/noNotification.svg"
-                          alt="No notifications"
-                          className="w-full h-full"
-                        />
+                        <BellOff className="w-16 h-16 text-gray-300" />
                         <p className="text-sm text-gray-500">
                           {activeTab === "new"
                             ? "No new notifications"

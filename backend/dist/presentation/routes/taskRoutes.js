@@ -55,6 +55,9 @@ const multer_s3_1 = __importDefault(require("multer-s3"));
 const multer_1 = __importDefault(require("multer"));
 const user_repository_1 = __importDefault(require("../../infrastructure/db/repositories/user.repository"));
 const FileUpload_1 = require("../../domain/entities/FileUpload");
+const redis_1 = require("../../infrastructure/redis/redis");
+const redis_constant_1 = require("../../shared/constants/redis.constant");
+const redisService = new redis_1.RedisService();
 const taskStorage = (0, multer_s3_1.default)({
     s3: s3_1.s3Client,
     bucket: s3_1.S3_BUCKET_NAME,
@@ -126,12 +129,13 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
     if (req.body.assignee && ((_a = oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) === null || _a === void 0 ? void 0 : _a.toString()) !== req.body.assignee) {
         const { NotificationRepository } = yield Promise.resolve().then(() => __importStar(require('../../infrastructure/db/repositories/notification.repository')));
         const notifRepo = new NotificationRepository();
-        yield notifRepo.createNotification({
+        const newNotif = yield notifRepo.createNotification({
             userId: req.body.assignee,
             message: `You have been assigned a new task: ${task.title}`,
-            type: 'system',
+            type: 'SYSTEM',
             read: false
         });
+        yield redisService.publish(redis_constant_1.REDIS_CHANNELS.NOTIFICATION, JSON.stringify(newNotif));
     }
     // Sync status to Order if it changed
     if (req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status)) {

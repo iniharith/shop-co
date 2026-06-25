@@ -8,6 +8,10 @@ import multerS3 from "multer-s3";
 import multer from "multer";
 import UserRepository from '../../infrastructure/db/repositories/user.repository';
 import { FileUpload } from '../../domain/entities/FileUpload';
+import { RedisService } from '../../infrastructure/redis/redis';
+import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
+
+const redisService = new RedisService();
 
 const taskStorage = multerS3({
   s3: s3Client,
@@ -99,12 +103,14 @@ router.put(
     if (req.body.assignee && oldTask?.assignee?.toString() !== req.body.assignee) {
         const { NotificationRepository } = await import('../../infrastructure/db/repositories/notification.repository');
         const notifRepo = new NotificationRepository();
-        await notifRepo.createNotification({
+        const newNotif = await notifRepo.createNotification({
             userId: req.body.assignee,
             message: `You have been assigned a new task: ${task.title}`,
-            type: 'system',
+            type: 'SYSTEM',
             read: false
         } as any);
+        
+        await redisService.publish(REDIS_CHANNELS.NOTIFICATION, JSON.stringify(newNotif));
     }
     
     // Sync status to Order if it changed

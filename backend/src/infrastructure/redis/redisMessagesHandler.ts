@@ -42,6 +42,16 @@ export function handleRedisAndSocketMessageAdmin(redisService: RedisService, io:
                 console.log("🟢 order placed", message);
                 io.emit("order_placed", message);
                 break;
+            case REDIS_CHANNELS.NOTIFICATION:
+                const data = JSON.parse(message);
+                const socketId = await getReceiverSocketId(data?.userId) || null;
+                if (socketId) {
+                    console.log("🟢 sending notification to admin", data?.userId, socketId);
+                    io.to(socketId).emit("notification", data);
+                } else {
+                    console.log("🔴 no socket id found for admin", data?.userId);
+                }
+                break;
         }
 
 

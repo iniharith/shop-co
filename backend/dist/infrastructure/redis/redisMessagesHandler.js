@@ -47,6 +47,17 @@ function handleRedisAndSocketMessageAdmin(redisService, io) {
                 console.log("🟢 order placed", message);
                 io.emit("order_placed", message);
                 break;
+            case redis_constant_1.REDIS_CHANNELS.NOTIFICATION:
+                const data = JSON.parse(message);
+                const socketId = (yield (0, socketHandler_1.getReceiverSocketId)(data === null || data === void 0 ? void 0 : data.userId)) || null;
+                if (socketId) {
+                    console.log("🟢 sending notification to admin", data === null || data === void 0 ? void 0 : data.userId, socketId);
+                    io.to(socketId).emit("notification", data);
+                }
+                else {
+                    console.log("🔴 no socket id found for admin", data === null || data === void 0 ? void 0 : data.userId);
+                }
+                break;
         }
     }));
 }
