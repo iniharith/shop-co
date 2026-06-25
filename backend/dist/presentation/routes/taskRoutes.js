@@ -58,7 +58,6 @@ const FileUpload_1 = require("../../domain/entities/FileUpload");
 const taskStorage = (0, multer_s3_1.default)({
     s3: s3_1.s3Client,
     bucket: s3_1.S3_BUCKET_NAME,
-    acl: 'public-read',
     contentType: multer_s3_1.default.AUTO_CONTENT_TYPE,
     metadata: function (req, file, cb) {
         cb(null, { fieldName: file.fieldname });

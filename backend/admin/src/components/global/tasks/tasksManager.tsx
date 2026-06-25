@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutGrid, List, Plus, Calendar, User as User, MessageSquare, Trash2, ChevronDown, ChevronRight, Settings2, Check, RefreshCw } from "lucide-react";
+import { LayoutGrid, List, Plus, Calendar, User as User, MessageSquare, Trash2, ChevronDown, ChevronRight, Settings2, Check, RefreshCw, CheckCircle, Circle, ArrowDownUp } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -57,6 +57,16 @@ const DueDateDisplay = ({ task, updateTask, className }: { task: any, updateTask
   );
 };
 
+// Simple hash function to generate a consistent color index for a given string
+const getUserColor = (id: string) => {
+  const colors = ["bg-red-500", "bg-orange-500", "bg-amber-500", "bg-green-500", "bg-emerald-500", "bg-teal-500", "bg-cyan-500", "bg-blue-500", "bg-indigo-500", "bg-violet-500", "bg-purple-500", "bg-fuchsia-500", "bg-pink-500", "bg-rose-500"];
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
+
 export default function TasksManager() {
   const { data: response, isPending, refetch, isFetching } = useTasks();
   const tasks = (response as any)?.tasks || [];
@@ -70,6 +80,7 @@ export default function TasksManager() {
   const [collapsedSections, setCollapsedSections] = useState<string[]>([]);
   const [collapsedColumns, setCollapsedColumns] = useState<string[]>([]);
   const [columnsPopoverOpen, setColumnsPopoverOpen] = useState(false);
+  const [sortOption, setSortOption] = useState<"dateDesc" | "dateAsc" | "nameAsc" | "nameDesc">("dateDesc");
   
   const { mutate: createTask, isPending: isCreating } = useCreateTask();
   const { mutate: updateTask } = useUpdateTask();
@@ -104,9 +115,23 @@ export default function TasksManager() {
     }
   };
 
-  const columns = ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'];
+  const columns = ['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'];
 
   const visibleColumns = columns.filter(s => !hiddenColumns.includes(s));
+
+  // Sort tasks based on selected option
+  const sortedTasks = [...tasks].sort((a: any, b: any) => {
+    if (sortOption === "dateDesc") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    if (sortOption === "dateAsc") return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    if (sortOption === "nameAsc") return a.title.localeCompare(b.title);
+    if (sortOption === "nameDesc") return b.title.localeCompare(a.title);
+    return 0;
+  });
+
+  const toggleTaskDone = (task: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    updateTask({ id: task._id, data: { isDone: !task.isDone } });
+  };
 
   const toggleColumnVisibility = (status: string) => {
     setHiddenColumns(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]);
@@ -189,6 +214,19 @@ export default function TasksManager() {
               </PopoverContent>
             </Popover>
           )}
+
+          <Select value={sortOption} onValueChange={(v: any) => setSortOption(v)}>
+            <SelectTrigger className="h-8 px-3 text-sm rounded-md w-40 gap-2 font-medium">
+              <ArrowDownUp className="w-4 h-4 shrink-0" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="dateDesc">Newest First</SelectItem>
+              <SelectItem value="dateAsc">Oldest First</SelectItem>
+              <SelectItem value="nameAsc">Name (A-Z)</SelectItem>
+              <SelectItem value="nameDesc">Name (Z-A)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         
         <div className="flex items-center gap-2">
@@ -266,7 +304,7 @@ export default function TasksManager() {
           <div className="absolute inset-0 overflow-x-auto pb-4">
             <div className="flex gap-4 items-start w-max">
             {visibleColumns.map(status => {
-              const columnTasks = tasks.filter((t: any) => t.status === status);
+              const columnTasks = sortedTasks.filter((t: any) => t.status === status);
               const isCollapsed = collapsedColumns.includes(status);
               return (
               <div key={status} className="bg-muted/30 rounded-2xl p-3 border border-border/50 flex flex-col gap-3 min-w-[270px] w-[270px] shrink-0">
@@ -287,10 +325,15 @@ export default function TasksManager() {
                 {!isCollapsed && (
                 <div className="flex flex-col gap-2">
                   {columnTasks.map((task: any) => (
-                  <Card key={task._id} className="cursor-pointer hover:shadow-md transition-shadow group border border-border/50" onClick={() => setSelectedTask(task)}>
+                  <Card key={task._id} className={`cursor-pointer hover:shadow-md transition-shadow group border border-border/50 ${task.isDone ? 'opacity-60 bg-muted/20' : ''}`} onClick={() => setSelectedTask(task)}>
                     <CardContent className="p-3 flex flex-col gap-2">
                       <div className="flex justify-between items-start gap-2">
-                        <span className="font-semibold text-sm leading-tight">{task.title}</span>
+                        <div className="flex items-start gap-2 flex-1">
+                          <button type="button" onClick={(e) => toggleTaskDone(task, e)} className="shrink-0 mt-0.5 text-muted-foreground hover:text-emerald-500 transition-colors">
+                            {task.isDone ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Circle className="w-4 h-4" />}
+                          </button>
+                          <span className={`font-semibold text-sm leading-tight ${task.isDone ? 'line-through text-muted-foreground' : ''}`}>{task.title}</span>
+                        </div>
                         <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-500 hover:bg-red-50" onClick={(e) => handleDelete(task._id, e)}>
                           <Trash2 className="w-3 h-3" />
                         </Button>
@@ -314,7 +357,12 @@ export default function TasksManager() {
                           <SelectContent>
                             <SelectItem value="unassigned">Unassigned</SelectItem>
                             {usersData?.users?.map((user: any) => (
-                              <SelectItem key={user._id} value={user._id} className="font-bold">{user.name || user.email}</SelectItem>
+                              <SelectItem key={user._id} value={user._id} className="font-bold">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-2 h-2 rounded-full ${getUserColor(user._id)}`} />
+                                  {user.name || user.email}
+                                </div>
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -353,7 +401,7 @@ export default function TasksManager() {
             </div>
           )}
           {columns.map(status => {
-            const sectionTasks = tasks.filter((t: any) => t.status === status);
+            const sectionTasks = sortedTasks.filter((t: any) => t.status === status);
             if (sectionTasks.length === 0) return null;
             const isCollapsed = collapsedSections.includes(status);
             return (
@@ -372,38 +420,45 @@ export default function TasksManager() {
                   </button>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <div className="grid grid-cols-12 gap-4 p-4 border-b border-border/50 bg-muted/10 font-medium text-xs text-muted-foreground">
-                    <div className="col-span-6">Task Name</div>
+                  <div className="grid grid-cols-12 gap-4 p-2 border-b border-border/50 bg-muted/10 font-medium text-xs text-muted-foreground">
+                    <div className="col-span-6 px-2">Task Name</div>
                     <div className="col-span-2">Assignee</div>
                     <div className="col-span-2">Due Date</div>
                     <div className="col-span-2">Status</div>
                   </div>
                   <div className="divide-y divide-border/50">
                     {sectionTasks.map((task: any) => (
-                      <div key={task._id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-muted/20 cursor-pointer" onClick={() => setSelectedTask(task)}>
-                        <div className="col-span-6 font-medium text-sm flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${task.status === 'DONE_DESIGN' ? 'bg-emerald-500' : task.status === 'IN_PROGRESS' ? 'bg-blue-500' : task.status === 'PEMBETULAN' ? 'bg-red-500' : 'bg-amber-500'}`} />
-                          {task.title}
+                      <div key={task._id} className={`grid grid-cols-12 gap-4 p-2 items-center hover:bg-muted/20 cursor-pointer ${task.isDone ? 'bg-muted/10 opacity-70' : ''}`} onClick={() => setSelectedTask(task)}>
+                        <div className="col-span-6 font-medium text-sm flex items-center gap-2 px-2">
+                          <button type="button" onClick={(e) => toggleTaskDone(task, e)} className="shrink-0 text-muted-foreground hover:text-emerald-500 transition-colors">
+                            {task.isDone ? <CheckCircle className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
+                          </button>
+                          <span className={`truncate ${task.isDone ? 'line-through text-muted-foreground' : ''}`}>{task.title}</span>
                         </div>
                         <div className="col-span-2 text-sm flex items-center gap-2 text-muted-foreground font-bold" onClick={e => e.stopPropagation()}>
                           <Select value={task.assignee || "unassigned"} onValueChange={(v) => updateTask({ id: task._id, data: { assignee: v === "unassigned" ? null : v } })}>
-                            <SelectTrigger className="h-8 text-sm font-bold bg-background border border-border/50 shadow-sm focus:ring-0">
+                            <SelectTrigger className="h-8 text-sm font-bold bg-transparent border-0 shadow-none focus:ring-0">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="unassigned">Unassigned</SelectItem>
                               {usersData?.users?.map((user: any) => (
-                                <SelectItem key={user._id} value={user._id} className="font-bold">{user.name || user.email}</SelectItem>
+                                <SelectItem key={user._id} value={user._id} className="font-bold">
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-2 h-2 rounded-full ${getUserColor(user._id)}`} />
+                                    {user.name || user.email}
+                                  </div>
+                                </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="col-span-2 text-sm text-muted-foreground flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                          <DueDateDisplay task={task} updateTask={updateTask} className="h-8 text-[11px] bg-background border border-border/50 shadow-sm" />
+                          <DueDateDisplay task={task} updateTask={updateTask} className="h-8 text-[11px] bg-transparent border-0 shadow-none hover:bg-muted" />
                         </div>
-                        <div className="col-span-2" onClick={e => e.stopPropagation()}>
+                        <div className="col-span-2 pr-2" onClick={e => e.stopPropagation()}>
                           <Select value={task.status} onValueChange={(v) => handleStatusChange(task._id, v)}>
-                            <SelectTrigger className="h-8 text-xs bg-background border border-border/50 shadow-sm focus:ring-0">
+                            <SelectTrigger className="h-8 text-xs bg-transparent border-0 shadow-none focus:ring-0">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>

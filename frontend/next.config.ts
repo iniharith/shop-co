@@ -24,6 +24,10 @@ const nextConfig: NextConfig = {
         hostname: "res.cloudinary.com",
         protocol: "https",
       },
+      {
+        hostname: "kampungcetak-storage.s3.ap-southeast-5.amazonaws.com",
+        protocol: "https",
+      },
     ],
   },
   typescript: {

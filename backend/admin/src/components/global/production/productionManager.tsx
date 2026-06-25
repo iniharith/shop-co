@@ -7,7 +7,7 @@ import { useUsers } from "@/hooks/useUsers";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +37,7 @@ export default function ProductionManager() {
   const { data: usersResponse } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
+  const [activeSubTab, setActiveSubTab] = useState("IN_PRODUCTION");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
@@ -85,11 +86,14 @@ export default function ProductionManager() {
     const orders = ordersResponse?.orders || [];
     const productionOrders = orders.filter((o: any) => o.orderStatus === 'IN_PRODUCTION');
     const productionOrderIds = productionOrders.map((o: any) => o._id.toString());
-    const productionUserIds = productionOrders.map((o: any) => o.userId?.toString());
     const users = (usersResponse as any)?.data || [];
     const tasks = (tasksResponse as any)?.tasks || [];
-    const productionTasks = tasks.filter((t: any) => t.status === 'IN_PRODUCTION');
+    const productionTasks = tasks.filter((t: any) => t.status === activeSubTab);
     const productionTaskIds = productionTasks.map((t: any) => t._id.toString());
+    
+    const filteredProductionOrders = orders.filter((o: any) => o.orderStatus === activeSubTab);
+    const productionOrderIdsFiltered = filteredProductionOrders.map((o: any) => o._id.toString());
+    const productionUserIds = filteredProductionOrders.map((o: any) => o.userId?.toString());
 
     const groups: Record<string, any[]> = {};
     filteredFiles.forEach((file: any) => {
@@ -98,7 +102,7 @@ export default function ProductionManager() {
       let taskIdStr = "";
       let isTask = false;
       
-      const isProductionOrder = productionOrderIds.includes(file.orderId?.toString()) || productionUserIds.includes(file.userId?.toString());
+      const isProductionOrder = productionOrderIdsFiltered.includes(file.orderId?.toString()) || productionUserIds.includes(file.userId?.toString());
       const isProductionTask = file.category === 'TASK' && file.taskId && productionTaskIds.includes(file.taskId?.toString());
       
       if (!isProductionOrder && !isProductionTask) return;
@@ -115,7 +119,7 @@ export default function ProductionManager() {
         if (file.orderId) {
            orderIdStr = file.orderId;
         } else {
-           const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString() && o.orderStatus === 'IN_PRODUCTION');
+           const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString() && o.orderStatus === activeSubTab);
            if (order) orderIdStr = order._id;
         }
       }
@@ -141,7 +145,7 @@ export default function ProductionManager() {
         if (order) orderStatus = order.orderStatus;
       } else if (parsed.isTask) {
          const task = tasks.find((t: any) => t._id === parsed.taskId);
-         orderStatus = task?.status || "IN_PRODUCTION";
+         orderStatus = task?.status || activeSubTab;
       }
       return {
         folderName: parsed.name,
@@ -192,6 +196,16 @@ export default function ProductionManager() {
         onError: () => toast.error("Failed to update order status")
       });
     }
+  };
+
+  const handleAdvanceFlow = (group: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    let nextStatus = "";
+    if (activeSubTab === "IN_PRODUCTION") nextStatus = "DONE_PRINTING";
+    else if (activeSubTab === "DONE_PRINTING") nextStatus = "PACKAGING";
+    else return; // Hold state or other state doesn't have a single "tick" next step
+
+    handleStatusChange(group, nextStatus);
   };
 
   const handleDelete = (fileId: string) => {
@@ -358,10 +372,24 @@ export default function ProductionManager() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="flex flex-wrap h-auto gap-2 justify-start mb-6">
+        <TabsList className="flex flex-wrap h-auto gap-2 justify-start mb-2">
           {categories.map(cat => (
             <TabsTrigger key={cat} value={cat} className="text-xs md:text-sm">{cat}</TabsTrigger>
           ))}
+        </TabsList>
+      </Tabs>
+
+      <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full mb-6">
+        <TabsList className="flex h-auto justify-start border-b w-full rounded-none bg-transparent p-0">
+          <TabsTrigger value="IN_PRODUCTION" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">
+            Printing
+          </TabsTrigger>
+          <TabsTrigger value="HOLD_PRINTING" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">
+            Hold
+          </TabsTrigger>
+          <TabsTrigger value="DONE_PRINTING" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">
+            Done Printing
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -403,7 +431,7 @@ export default function ProductionManager() {
                         onChange={(e) => handleStatusChange(activeGroup, e.target.value)}
                         disabled={isUpdatingStatus}
                       >
-                        {['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'].map(s => (
+                        {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'].map(s => (
                           <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                         ))}
                       </select>
@@ -565,7 +593,14 @@ export default function ProductionManager() {
                       <Folder className="w-8 h-8 text-primary" />
                     </div>
                     <div className="w-full">
-                      <h3 className="font-semibold text-base truncate" title={group.folderName}>{group.folderName}</h3>
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        {(activeSubTab === "IN_PRODUCTION" || activeSubTab === "DONE_PRINTING") && (
+                          <button type="button" onClick={(e) => handleAdvanceFlow(group, e)} className="shrink-0 text-muted-foreground hover:text-emerald-500 transition-colors" title={`Mark as ${activeSubTab === 'IN_PRODUCTION' ? 'Done Printing' : 'Packaging'}`}>
+                            <CheckCircle className="w-4 h-4" />
+                          </button>
+                        )}
+                        <h3 className="font-semibold text-base truncate" title={group.folderName}>{group.folderName}</h3>
+                      </div>
                       {group.orderId && (
                         <p className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded inline-block mt-1 mb-2 block">
                           Order: {group.orderId}
@@ -582,7 +617,7 @@ export default function ProductionManager() {
                           })}
                           disabled={isUpdatingStatus}
                         >
-                          {['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'].map(s => (
+                          {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'].map(s => (
                             <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                           ))}
                         </select>
@@ -603,7 +638,14 @@ export default function ProductionManager() {
                     <Folder className="w-6 h-6 text-primary" />
                   </div>
                   <div className="flex flex-col flex-1 min-w-0">
-                    <span className="font-semibold text-base truncate">{group.folderName}</span>
+                    <div className="flex items-center gap-2">
+                      {(activeSubTab === "IN_PRODUCTION" || activeSubTab === "DONE_PRINTING") && (
+                        <button type="button" onClick={(e) => handleAdvanceFlow(group, e)} className="shrink-0 text-muted-foreground hover:text-emerald-500 transition-colors" title={`Mark as ${activeSubTab === 'IN_PRODUCTION' ? 'Done Printing' : 'Packaging'}`}>
+                          <CheckCircle className="w-4 h-4" />
+                        </button>
+                      )}
+                      <span className="font-semibold text-base truncate">{group.folderName}</span>
+                    </div>
                     {group.orderId && <span className="text-[10px] text-muted-foreground font-mono truncate">Order ID: {group.orderId}</span>}
                   </div>
                   {group.orderId && (
@@ -617,7 +659,7 @@ export default function ProductionManager() {
                           })}
                           disabled={isUpdatingStatus}
                         >
-                          {['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'].map(s => (
+                          {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'].map(s => (
                             <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                           ))}
                         </select>

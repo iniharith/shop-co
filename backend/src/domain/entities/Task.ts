@@ -16,7 +16,8 @@ export interface ITask extends Document {
   orderId?: string; // Linked Order ID
   customerUsername?: string; // Linked Customer Username
   category?: string; // e.g. DIGITAL PRINTING, DISPLAY ITEM
-  status: 'PLACED' | 'IN_PROGRESS' | 'PENDING_ARTWORK' | 'ARTWORK_REVIEWED' | 'ARTWORK_REJECTED' | 'IN_DESIGN' | 'PEMBETULAN' | 'DONE_DESIGN' | 'IN_PRODUCTION' | 'SHIPPED' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED' | 'FAILED';
+  status: 'PLACED' | 'PENDING_ARTWORK' | 'ARTWORK_REVIEWED' | 'ARTWORK_REJECTED' | 'IN_DESIGN' | 'PEMBETULAN' | 'DONE_DESIGN' | 'IN_PRODUCTION' | 'HOLD_PRINTING' | 'DONE_PRINTING' | 'PACKAGING' | 'SHIPPED' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED' | 'FAILED';
+  isDone?: boolean;
   files: { url: string; name: string; notes?: string }[];
   comments: ITaskComment[];
   createdAt: Date;
@@ -40,7 +41,8 @@ const TaskSchema = new Schema<ITask>(
     orderId: { type: String, default: null },
     customerUsername: { type: String, default: '' },
     category: { type: String, default: 'UNASSIGNED' },
-    status: { type: String, enum: ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'], default: 'PLACED' },
+    status: { type: String, enum: ['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'], default: 'PLACED' },
+    isDone: { type: Boolean, default: false },
     files: [{
       url: { type: String, required: true },
       name: { type: String, required: true },
