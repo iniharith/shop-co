@@ -92,6 +92,7 @@ export default function TasksManager() {
   const [collapsedColumns, setCollapsedColumns] = useState<string[]>([]);
   const [columnsPopoverOpen, setColumnsPopoverOpen] = useState(false);
   const [sortOption, setSortOption] = useState<"dateDesc" | "dateAsc" | "nameAsc" | "nameDesc">("dateDesc");
+  const [deletedTaskIds, setDeletedTaskIds] = useState<string[]>([]);
   
   const { mutate: createTask, isPending: isCreating } = useCreateTask();
   const { mutate: updateTask } = useUpdateTask();
@@ -139,11 +140,27 @@ export default function TasksManager() {
 
   const handleDelete = (taskId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm("Are you sure you want to delete this task?")) {
-      deleteTask(taskId, {
-        onSuccess: () => toast.success("Task deleted")
-      });
-    }
+    
+    // Optimistically hide the task
+    setDeletedTaskIds(prev => [...prev, taskId]);
+    let cancelled = false;
+
+    toast.success("Task deleted!", {
+      duration: 5000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          cancelled = true;
+          setDeletedTaskIds(prev => prev.filter(id => id !== taskId));
+        }
+      }
+    });
+
+    setTimeout(() => {
+      if (!cancelled) {
+        deleteTask(taskId);
+      }
+    }, 5000);
   };
 
   const columns = ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'];
@@ -152,6 +169,7 @@ export default function TasksManager() {
 
   // Sort tasks based on selected option
   const sortedTasks = [...tasks]
+    .filter((t: any) => !deletedTaskIds.includes(t._id))
     .filter((t: any) => 
       t.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
       t.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
