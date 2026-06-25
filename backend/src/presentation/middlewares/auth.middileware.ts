@@ -34,6 +34,7 @@ export const authMiddilware = async (req: AuthRequest, res: Response, next: Next
 
         req.userId = userId as string;
         req.role = user.role;
+        (req as any).user = user;
         next();
     } catch (error) {
         console.log('error', (error as Error).message)

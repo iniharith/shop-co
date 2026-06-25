@@ -216,9 +216,20 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   <span className="w-1.5 h-4 bg-primary rounded-full"></span> Description
                 </label>
                 <Textarea 
-                  className="min-h-[120px] bg-muted/30 focus-visible:ring-1 border-border/50 shadow-sm resize-y" 
+                  className="min-h-[120px] bg-muted/30 focus-visible:ring-1 border-border/50 shadow-sm overflow-hidden resize-none" 
                   value={description} 
                   onChange={(e) => setDescription(e.target.value)} 
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = "0px";
+                    target.style.height = target.scrollHeight + "px";
+                  }}
+                  ref={(el) => {
+                    if (el) {
+                      el.style.height = "0px";
+                      el.style.height = el.scrollHeight + "px";
+                    }
+                  }}
                   placeholder="Add more details to this task..."
                   onBlur={() => handleSaveDetails()}
                 />

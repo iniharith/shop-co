@@ -256,13 +256,12 @@ router.put(
       console.error("Failed to sync file upload notes:", err);
     }
 
-    // Add a comment to the task to notify stakeholders
-    await taskRepository.addComment(
+    // Add an activity to the task to notify stakeholders
+    await taskRepository.addActivity(
       id, 
       userId, 
       userName, 
-      `Note updated for attached file (${fileName}): ${notes || '(cleared)'}`, 
-      authReq.role || 'admin'
+      `updated note for attached file (${fileName}): ${notes || '(cleared)'}`
     );
 
     res.json({ success: true, task });
