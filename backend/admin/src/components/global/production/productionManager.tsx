@@ -158,7 +158,7 @@ export default function ProductionManager() {
         files
       };
     });
-  }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab]);
+  }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab, activeSubTab]);
 
   const handleReview = (fileId: string, currentStatus: boolean, notes?: string) => {
     reviewFileMutate(
