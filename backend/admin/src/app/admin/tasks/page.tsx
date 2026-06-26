@@ -6,7 +6,7 @@ import TasksManager from "@/components/global/tasks/tasksManager";
 
 export default function Page() {
   return (
-    <PageContainer scrollable={true}>
+    <PageContainer nativeScroll={true}>
       <div className="flex flex-1 flex-col space-y-4 min-w-0 w-full">
         <div className="flex items-start justify-between">
           <Heading
