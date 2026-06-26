@@ -323,7 +323,7 @@ export default function ArtworksManager() {
     if (previewImage) {
       return (
         <div className={`${sizeClass} overflow-hidden bg-muted flex items-center justify-center shrink-0`}>
-          <img src={getFileUrl(previewImage.path)} alt={group.folderName} className="object-cover w-full h-full" />
+          <img src={getFileUrl(previewImage.path)} alt={group.folderName} loading="lazy" decoding="async" width={64} height={64} className="object-cover w-full h-full" />
         </div>
       );
     }
