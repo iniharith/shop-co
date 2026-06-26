@@ -21,12 +21,14 @@ export class ShareLinkRepository {
   }): Promise<IShareLink> {
     const { folderName, taskId, orderId, userId } = params;
 
-    const query: Record<string, any> = {};
-    if (taskId) query.taskId = taskId;
-    else if (orderId) query.orderId = orderId;
-    else if (userId) query.userId = userId;
+    // IMPORTANT: only reuse an existing link if we have a real identifier to
+    // match on. An empty {} query would match the FIRST document in the
+    // entire collection, silently handing back an unrelated customer's link.
+    let existing: IShareLink | null = null;
+    if (taskId) existing = await ShareLink.findOne({ taskId });
+    else if (orderId) existing = await ShareLink.findOne({ orderId });
+    else if (userId) existing = await ShareLink.findOne({ userId });
 
-    const existing = await ShareLink.findOne(query);
     if (existing) return existing;
 
     const base = slugify(folderName);

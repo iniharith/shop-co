@@ -38,6 +38,20 @@ export class FileUploadRepository {
     );
   }
 
+  // Re-points a file at the correct customer/order/task — used to fix files
+  // uploaded through a share link before its userId was resolved correctly.
+  async reassign(
+    id: string,
+    data: { userId?: string; orderId?: string; taskId?: string; category?: string }
+  ): Promise<IFileUpload | null> {
+    const update: any = {};
+    if (data.userId) update.userId = data.userId;
+    if (data.orderId) update.orderId = data.orderId;
+    if (data.taskId) update.taskId = data.taskId;
+    if (data.category) update.category = data.category;
+    return FileUpload.findByIdAndUpdate(id, { $set: update }, { new: true });
+  }
+
   async updateAdminReview(
     id: string,
     reviewed: boolean,

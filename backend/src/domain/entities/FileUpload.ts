@@ -15,6 +15,7 @@ export interface IFileUpload extends Document {
   notes?: string;
   adminReviewed: boolean;
   adminNotes?: string;
+  shareSlug?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +36,10 @@ const FileUploadSchema = new Schema<IFileUpload>(
     notes: { type: String },
     adminReviewed: { type: Boolean, default: false },
     adminNotes: { type: String },
+    // The exact share-link slug this file was uploaded through, if any.
+    // This is the single source of truth linking an upload back to its
+    // folder — independent of userId/orderId/taskId matching.
+    shareSlug: { type: String, index: true },
   },
   { timestamps: true }
 );

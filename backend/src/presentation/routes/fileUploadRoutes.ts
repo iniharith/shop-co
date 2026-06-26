@@ -10,6 +10,8 @@ import authMiddilware from '../middlewares/auth.middileware';
 import { taskRepository } from '../../infrastructure/repositories/TaskRepository';
 import UserRepository from '../../infrastructure/db/repositories/user.repository';
 import { shareLinkRepository } from '../../infrastructure/repositories/ShareLinkRepository';
+import { ShareLink } from '../../domain/entities/ShareLink';
+import OrderRepository from '../../infrastructure/db/repositories/order.repository';
 
 const router = Router();
 
@@ -170,6 +172,28 @@ router.get(
   })
 );
 
+// ─── PUT /api/files/:id/reassign ───────────────────────────
+// Admin: fix a file that landed in the wrong folder (e.g. uploaded via a
+// share link before the link's userId was resolved correctly).
+router.put(
+  '/:id/reassign',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { userId, orderId, taskId, category } = req.body;
+    const file = await fileUploadRepository.reassign(req.params.id, {
+      userId,
+      orderId,
+      taskId,
+      category,
+    });
+    if (!file) {
+      res.status(404).json({ success: false, message: 'Fail tidak dijumpai' });
+      return;
+    }
+    res.json({ success: true, data: file });
+  })
+);
+
 // 🌐 Public: Get files for a specific folder using robust token
 router.get(
   '/folder/:token',
@@ -202,6 +226,10 @@ const decodeSharedToken = (req: any, res: any, next: any) => {
     req.userId = decoded.u || 'customer';
     req.taskId = decoded.t;
     req.orderId = decoded.o;
+    // Preserve folder type so the admin UI re-groups this upload into the
+    // SAME folder the link was generated from (task folders are grouped by
+    // taskId/category, not by userId).
+    req.shareCategory = decoded.t ? 'TASK' : 'artwork';
     next();
   } catch (e) {
     res.status(400).json({ success: false, message: 'Invalid token' });
@@ -214,7 +242,7 @@ router.post(
   upload.array('files', 10),
   asyncHandler(async (req: Request, res: Response) => {
     const files = req.files as (Express.Multer.File & { path: string; filename: string })[];
-    const { taskId, orderId, userId } = req as any;
+    const { taskId, orderId, userId, shareCategory } = req as any;
     
     if (!files || files.length === 0) {
       res.status(400).json({ success: false, message: 'Tiada fail dipilih' });
@@ -227,7 +255,7 @@ router.post(
           userId: userId || 'customer',
           orderId: orderId || undefined,
           taskId: taskId || undefined,
-          category: 'artwork',
+          category: shareCategory || 'artwork',
           filename: (file as any).key || file.filename || file.originalname,
           originalName: file.originalname,
           mimetype: file.mimetype,
@@ -260,8 +288,90 @@ router.post(
       return;
     }
 
-    const link = await shareLinkRepository.findOrCreate({ folderName, taskId, orderId, userId });
+    // Always try to resolve the REAL customer userId server-side, even if the
+    // admin UI didn't have one on hand (e.g. an empty folder with no files yet).
+    // This keeps customer uploads grouped under the correct user in the admin
+    // view instead of falling into a generic "customer" folder.
+    let resolvedUserId = userId || undefined;
+    let resolvedOrderId = orderId || undefined;
+
+    if (!resolvedUserId && taskId) {
+      try {
+        const task = await taskRepository.findById(taskId);
+        if (task) {
+          resolvedOrderId = resolvedOrderId || (task as any).orderId;
+        }
+      } catch (e) {}
+    }
+
+    if (!resolvedUserId && resolvedOrderId) {
+      try {
+        const order = await OrderRepository.getOrderById(resolvedOrderId);
+        if (order) {
+          const ou: any = (order as any).userId;
+          resolvedUserId = ou?._id ? ou._id.toString() : ou?.toString();
+        }
+      } catch (e) {}
+    }
+
+    if (!taskId && !resolvedOrderId && !resolvedUserId) {
+      res.status(400).json({
+        success: false,
+        message: 'Folder ini belum dikaitkan dengan order, task, atau pelanggan — tidak boleh jana share link',
+      });
+      return;
+    }
+
+    const link = await shareLinkRepository.findOrCreate({
+      folderName,
+      taskId,
+      orderId: resolvedOrderId,
+      userId: resolvedUserId,
+    });
     res.json({ success: true, data: link });
+  })
+);
+
+// ─── PUT /api/files/share-link/:slug ───────────────────────
+// Admin: backfill userId on an existing share link if it was created
+// before the customer's userId was resolvable (fixes old links).
+router.put(
+  '/share-link/:slug',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const link = await shareLinkRepository.findBySlug(req.params.slug);
+    if (!link) {
+      res.status(404).json({ success: false, message: 'Link tidak dijumpai' });
+      return;
+    }
+    const { userId } = req.body;
+    if (userId) {
+      link.userId = userId;
+      await link.save();
+    }
+    res.json({ success: true, data: link });
+  })
+);
+
+// ─── GET /api/files/share-links ────────────────────────────
+// Admin: list all share links (for diagnosing/cleaning up old/ambiguous ones)
+router.get(
+  '/share-links',
+  authMiddilware,
+  asyncHandler(async (_req: Request, res: Response) => {
+    const links = await ShareLink.find().sort({ createdAt: -1 });
+    res.json({ success: true, data: links });
+  })
+);
+
+// ─── DELETE /api/files/share-link/:slug ────────────────────
+// Admin: delete a share link (e.g. a stale/ambiguous one)
+router.delete(
+  '/share-link/:slug',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    await ShareLink.deleteOne({ slug: req.params.slug });
+    res.json({ success: true });
   })
 );
 
@@ -275,16 +385,15 @@ router.get(
       return;
     }
 
-    let query: any = {};
-    if (link.taskId) query = { taskId: link.taskId };
-    else if (link.orderId) query = { orderId: link.orderId };
-    else if (link.userId) query = { userId: link.userId };
-    else {
-      res.json({ success: true, data: [], folderName: link.folderName });
-      return;
-    }
+    // Match files 3 ways and merge: by the exact slug stamp (covers every
+    // customer upload through this link), and by taskId/orderId (covers
+    // files the admin added directly to the folder before sharing it).
+    const orConditions: any[] = [{ shareSlug: req.params.slug }];
+    if (link.taskId) orConditions.push({ taskId: link.taskId });
+    else if (link.orderId) orConditions.push({ orderId: link.orderId });
+    else if (link.userId) orConditions.push({ userId: link.userId });
 
-    const files = await FileUpload.find(query).sort({ uploadedAt: -1 });
+    const files = await FileUpload.find({ $or: orConditions }).sort({ uploadedAt: -1 });
     res.json({ success: true, data: files, folderName: link.folderName });
   })
 );
@@ -299,6 +408,11 @@ const decodeSharedSlug = async (req: any, res: any, next: any) => {
   req.userId = link.userId || 'customer';
   req.taskId = link.taskId;
   req.orderId = link.orderId;
+  req.shareSlug = req.params.slug;
+  // Preserve folder type so the admin UI re-groups this upload into the
+  // SAME folder the link was generated from (task folders are grouped by
+  // taskId/category, not by userId).
+  req.shareCategory = link.taskId ? 'TASK' : 'artwork';
   next();
 };
 
@@ -308,7 +422,7 @@ router.post(
   upload.array('files', 10),
   asyncHandler(async (req: Request, res: Response) => {
     const files = req.files as (Express.Multer.File & { path: string; filename: string })[];
-    const { taskId, orderId, userId } = req as any;
+    const { taskId, orderId, userId, shareCategory, shareSlug } = req as any;
 
     if (!files || files.length === 0) {
       res.status(400).json({ success: false, message: 'Tiada fail dipilih' });
@@ -321,7 +435,8 @@ router.post(
           userId: userId || 'customer',
           orderId: orderId || undefined,
           taskId: taskId || undefined,
-          category: 'artwork',
+          category: shareCategory || 'artwork',
+          shareSlug,
           filename: (file as any).key || file.filename || file.originalname,
           originalName: file.originalname,
           mimetype: file.mimetype,
