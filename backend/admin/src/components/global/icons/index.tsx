@@ -26,6 +26,7 @@ import {
   Plus,
   Printer,
   History,
+  Package,
   Settings,
   SunMedium,
   Trash,
@@ -105,6 +106,7 @@ export const Icons = {
   message: MessageSquare,
   printer: Printer,
   history: History,
+  packageBox: Package,
   gitHub: ({ ...props }: LucideProps) => (
     <svg
       aria-hidden="true"

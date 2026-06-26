@@ -62,6 +62,13 @@ export const AdminNavItems: NavItem[] = [
         isActive: false,
     },
     {
+        title: 'Packaging',
+        url: '/admin/packaging',
+        icon: 'packageBox',
+        shortcut: ['k', 'p'],
+        isActive: false,
+    },
+    {
         title: 'History',
         url: '/admin/history',
         icon: 'history',

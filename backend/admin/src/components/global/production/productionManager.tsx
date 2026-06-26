@@ -451,7 +451,7 @@ export default function ProductionManager() {
                       {activeGroup.folderName}
                     </h2>
                     {(activeGroup.orderId || activeGroup.taskId) && (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-base font-semibold text-foreground/80">
                         {activeGroup.taskId ? `Task ID: ${activeGroup.taskId}` : `Order ID: ${activeGroup.orderId}`}
                       </p>
                     )}

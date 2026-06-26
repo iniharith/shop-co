@@ -1,14 +1,14 @@
 "use client";
 import React, { useState, useMemo } from "react";
-import { useAllFiles, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile, useCreateShareLink } from "@/hooks/useAdminDashboard";
+import { useAllFiles, useReviewFile, useDeleteFile, useBulkDeleteFiles } from "@/hooks/useAdminDashboard";
 import JSZip from "jszip";
-import { useOrders } from "@/hooks/useOrder";
+import { useOrders, useUpdateOrderStatus } from "@/hooks/useOrder";
+import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
-import { useTasks } from "@/hooks/useTasks";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, CheckCircle } from "lucide-react";
 import { forceDownload } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -30,18 +30,20 @@ const categories = [
   "FOOD PACKAGING"
 ];
 
-export default function ArtworksManager() {
+// Packaging only ever deals with one status, so there are no sub-tabs (unlike Production's Printing/Hold/Done Printing)
+const PACKAGING_STATUS = "PACKAGING";
+
+export default function PackagingManager() {
   const { data: session } = useSession();
-  const { data: response, isPending, refetch, isFetching: isFetchingFiles } = useAllFiles();
-  const { data: ordersResponse, isFetching: isFetchingOrders } = useOrders();
-  const { data: usersResponse, isPending: usersPending } = useUsers();
-  const { data: tasksResponse, isPending: tasksPending } = useTasks();
-  const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
-
-  const isFetching = isFetchingFiles || isFetchingOrders;
-
+  const { data: response, isPending, refetch, isFetching } = useAllFiles();
+  const { data: ordersResponse } = useOrders();
+  const { data: tasksResponse } = useTasks();
+  const { mutate: updateTask } = useUpdateTask();
+  const { data: usersResponse } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
+  // Fixed sub-tab — Packaging has no Printing/Hold/Done Printing tabs like Production does
+  const activeSubTab = PACKAGING_STATUS;
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
@@ -50,16 +52,14 @@ export default function ArtworksManager() {
 
   // Upload Modal State
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [uploadData, setUploadData] = useState({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "" });
+  const [uploadData, setUploadData] = useState({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "" });
   const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
 
   const { mutate: reviewFileMutate, isPending: isReviewing } = useReviewFile();
   const { mutate: deleteFileMutate, isPending: isDeleting } = useDeleteFile();
   const { mutate: bulkDeleteMutate, isPending: isBulkDeleting } = useBulkDeleteFiles();
-  const { mutate: renameFileMutate } = useRenameFile();
 
-  const [editingFileId, setEditingFileId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState<string>("");
+  const { mutate: updateOrderStatus, isPending: isUpdatingStatus } = useUpdateOrderStatus();
 
   const allFiles: any[] = (response as any)?.data || [];
 
@@ -90,87 +90,80 @@ export default function ArtworksManager() {
 
   const groupedFiles = useMemo(() => {
     const orders = ordersResponse?.orders || [];
-    const users = usersResponse?.users || [];
+    const packagingOrders = orders.filter((o: any) => o.orderStatus === PACKAGING_STATUS);
+    const packagingOrderIds = packagingOrders.map((o: any) => o._id.toString());
+    const users = (usersResponse as any)?.data || [];
     const tasks = (tasksResponse as any)?.tasks || [];
+    const packagingTasks = tasks.filter((t: any) => t.status === activeSubTab);
+    const packagingTaskIds = packagingTasks.map((t: any) => t._id.toString());
+    
+    const filteredPackagingOrders = orders.filter((o: any) => o.orderStatus === activeSubTab);
+    const packagingOrderIdsFiltered = filteredPackagingOrders.map((o: any) => o._id.toString());
+    const packagingUserIds = filteredPackagingOrders.map((o: any) => o.userId?.toString());
+
     const groups: Record<string, any[]> = {};
     filteredFiles.forEach((file: any) => {
       let groupName = "Unassigned";
       let orderIdStr = "";
-      
-      let shouldExclude = false;
-
       let taskIdStr = "";
+      let isTask = false;
+      
+      const isTaskFile = file.category === 'TASK' && !!file.taskId;
+      const isPackagingTask = isTaskFile && packagingTaskIds.includes(file.taskId?.toString());
+      const isPackagingOrder = !isTaskFile && (packagingOrderIdsFiltered.includes(file.orderId?.toString()) || packagingUserIds.includes(file.userId?.toString()));
+      
+      if (!isPackagingOrder && !isPackagingTask) return;
 
-      if (file.category === 'TASK' && file.taskId) {
+      if (isPackagingTask) {
         const task = tasks.find((t: any) => t._id === file.taskId);
-        groupName = task ? task.title : "Deleted Task";
-        orderIdStr = task?.orderId || "";
+        groupName = task?.title || "Deleted Task";
         taskIdStr = file.taskId;
-        
-        if (task && (task.status === 'IN_PRODUCTION' || task.status === 'CANCELLED' || task.status === 'FAILED')) {
-            shouldExclude = true;
-        }
+        orderIdStr = task?.orderId || "";
+        isTask = true;
       } else {
-        // Files uploaded via share link carry _shareFolderName from the backend enrichment
-        if (file._shareFolderName) {
-          groupName = file._shareFolderName;
-        } else {
-          const user = users.find((u: any) => u._id?.toString() === file.userId?.toString());
-          groupName = user?.name || file.userId;
-        }
-
+        const user = users.find((u: any) => u._id?.toString() === file.userId?.toString());
+        groupName = user?.name || file.userId;
         if (file.orderId) {
-          orderIdStr = file.orderId;
+           orderIdStr = file.orderId;
         } else {
-          // fallback to see if we can find an order matching this file's userId
-          const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString());
-          if (order) orderIdStr = order._id;
+           const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString() && o.orderStatus === activeSubTab);
+           if (order) orderIdStr = order._id;
         }
       }
-      
-      const isTaskFile = file.category === 'TASK' && file.taskId;
 
-      // Only apply order-status exclusion for non-TASK files
-      // Task files are already handled by task status above — don't double-exclude them
-      // just because the linked order moved to IN_PRODUCTION/SHIPPED etc.
-      if (!isTaskFile && orderIdStr) {
-          const order = orders.find((o: any) => o._id === orderIdStr);
-          if (order && ((order as any).orderStatus === 'IN_PRODUCTION' || (order as any).orderStatus === 'SHIPPED' || (order as any).orderStatus === 'DELIVERED' || (order as any).orderStatus === 'CANCELLED' || (order as any).orderStatus === 'FAILED')) {
-              shouldExclude = true;
-          }
-      }
-      
-      if (shouldExclude) return;
-
-      const key = JSON.stringify({ name: groupName, orderId: orderIdStr, taskId: taskIdStr });
-      if (!groups[key]) {
-        groups[key] = [];
-      }
+      const key = JSON.stringify({ name: groupName, orderId: orderIdStr, taskId: taskIdStr, isTask });
+      if (!groups[key]) groups[key] = [];
       groups[key].push(file);
     });
 
-    // explicitly add empty folders for any Tasks that don't have files yet
-    tasks.forEach((task: any) => {
-      if (task.status !== 'IN_PRODUCTION' && task.status !== 'CANCELLED' && task.status !== 'FAILED') {
-        if (activeTab !== "ALL" && task.category !== activeTab) return; // respect active tab for empty folders
-        const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id });
-        if (!groups[key]) {
-          groups[key] = [];
-        }
+    packagingTasks.forEach((task: any) => {
+      if (activeTab !== "ALL" && task.category !== activeTab) return; // respect active tab for empty folders
+      const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id, isTask: true });
+      if (!groups[key]) {
+        groups[key] = [];
       }
     });
 
     return Object.entries(groups).map(([keyStr, files]) => {
       const parsed = JSON.parse(keyStr);
+      let orderStatus = "N/A";
+      if (!parsed.isTask && parsed.orderId) {
+        const order = orders.find((o: any) => o._id === parsed.orderId);
+        if (order) orderStatus = order.orderStatus;
+      } else if (parsed.isTask) {
+         const task = tasks.find((t: any) => t._id === parsed.taskId);
+         orderStatus = task?.status || activeSubTab;
+      }
       return {
         folderName: parsed.name,
         orderId: parsed.orderId,
         taskId: parsed.taskId,
-        userId: files.length > 0 ? files[0].userId : "",
+        isTask: parsed.isTask, userId: files.length > 0 ? files[0].userId : "",
+        orderStatus: orderStatus,
         files
       };
     });
-  }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab]);
+  }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab, activeSubTab]);
 
   const handleReview = (fileId: string, currentStatus: boolean, notes?: string) => {
     reviewFileMutate(
@@ -190,7 +183,7 @@ export default function ArtworksManager() {
       { id: selectedFile._id, reviewed: selectedFile.adminReviewed, notes: commentText },
       {
         onSuccess: () => {
-          toast.success("Comment saved!");
+          toast.success("Note saved successfully!");
           setCommentModalOpen(false);
           window.location.reload();
         },
@@ -198,14 +191,18 @@ export default function ArtworksManager() {
     );
   };
 
-  const handleDelete = (fileId: string) => {
-    if (!confirm("Are you sure you want to delete this file? This action cannot be undone.")) return;
-    deleteFileMutate(fileId, {
-      onSuccess: () => {
-        toast.success("File deleted successfully!");
-        window.location.reload();
-      },
-    });
+  const handleStatusChange = (group: any, newStatus: string) => {
+    if (group.isTask) {
+      updateTask({ id: group.taskId, data: { status: newStatus } }, {
+        onSuccess: () => toast.success("Task status updated!"),
+        onError: () => toast.error("Failed to update task status")
+      });
+    } else {
+      updateOrderStatus({ id: group.orderId, status: newStatus }, {
+        onSuccess: () => toast.success("Order status updated!"),
+        onError: () => toast.error("Failed to update order status")
+      });
+    }
   };
 
   const handleDownloadAll = async (group: any, e: React.MouseEvent) => {
@@ -225,7 +222,7 @@ export default function ArtworksManager() {
       const url = URL.createObjectURL(content);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${group.folderName || "artworks"}.zip`;
+      link.download = `${group.folderName || "packaging"}.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -236,6 +233,21 @@ export default function ArtworksManager() {
       toast.dismiss();
       toast.error("Failed to create ZIP");
     }
+  };
+
+  const handleAdvanceFlow = (group: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Packaging has just one stage, so the tick always moves the item on to Shipped
+    handleStatusChange(group, "SHIPPED");
+  };
+
+  const handleDelete = (fileId: string) => {
+    if (!confirm("Are you sure you want to delete this file?")) return;
+    deleteFileMutate(fileId, {
+      onSuccess: () => {
+        toast.success("File deleted!");
+      },
+    });
   };
 
   const handleDeleteFolder = (group: any, e: React.MouseEvent) => {
@@ -254,14 +266,14 @@ export default function ArtworksManager() {
   };
 
   const handleUploadSubmit = async () => {
+    
     if (!uploadFiles || uploadFiles.length === 0) return toast.error("Please select a file");
 
     const formData = new FormData();
-    if (uploadData.userId) formData.append("userId", uploadData.userId);
-    if (uploadData.orderId) formData.append("orderId", uploadData.orderId);
+    formData.append("userId", uploadData.userId);
+    formData.append("orderId", uploadData.orderId);
     formData.append("category", uploadData.category);
     formData.append("notes", uploadData.notes);
-    if (uploadData.taskId) formData.append("taskId", uploadData.taskId);
     Array.from(uploadFiles).forEach(f => formData.append("files", f));
 
       try {
@@ -336,7 +348,7 @@ export default function ArtworksManager() {
               </button>
             )}
           </div>
-          <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="shrink-0" title="Refresh Artworks">
+          <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="shrink-0" title="Refresh Packaging Files">
             <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
           </Button>
         </div>
@@ -360,11 +372,11 @@ export default function ArtworksManager() {
           </div>
           <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
             <DialogTrigger asChild>
-              <Button><Plus className="w-4 h-4 mr-2" /> Upload Artwork</Button>
+              <Button><Plus className="w-4 h-4 mr-2" /> Upload File</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Upload Artwork for User</DialogTitle>
+                <DialogTitle>Upload File for Packaging</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
@@ -393,7 +405,7 @@ export default function ArtworksManager() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="flex flex-wrap h-auto gap-2 justify-start mb-6">
+        <TabsList className="flex flex-wrap h-auto gap-2 justify-start mb-2">
           {categories.map(cat => (
             <TabsTrigger key={cat} value={cat} className="text-xs md:text-sm">{cat}</TabsTrigger>
           ))}
@@ -402,113 +414,65 @@ export default function ArtworksManager() {
 
       {groupedFiles.length === 0 ? (
         <div className="p-8 text-center text-muted-foreground border border-dashed rounded-xl">
-          No artwork for now to view.
+          No files in packaging right now.
         </div>
       ) : selectedFolder ? (
         // --- INSIDE A FOLDER ---
         <div className="space-y-4">
           {(() => {
-            const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
+            const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId || ""}` === selectedFolder);
             if (!activeGroup) {
               setTimeout(() => setSelectedFolder(null), 0);
               return null;
             }
             return (
               <>
-                  <div className="flex items-center gap-4 mb-4 pb-4 border-b justify-between">
-                    <div className="flex items-center gap-4">
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedFolder(null)}>
-                        <ChevronLeft className="w-4 h-4 mr-1" /> Back
-                      </Button>
-                      <div>
-                        <h2 className="text-lg font-bold flex items-center gap-2">
-                          <Folder className="w-5 h-5 text-primary" />
-                          {activeGroup.folderName}
-                        </h2>
-                        {activeGroup.orderId && <p className="text-base font-semibold text-foreground/80">Order ID: {activeGroup.orderId}</p>}
-                      </div>
-                    </div>
-                      <div className="flex items-center gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            disabled={isGeneratingLink}
-                            onClick={async () => {
-                                try {
-                                  const res = await createShareLink({
-                                    folderName: activeGroup.folderName,
-                                    taskId: activeGroup.taskId || undefined,
-                                    orderId: activeGroup.orderId || undefined,
-                                    userId: activeGroup.userId || undefined,
-                                  });
-                                  const slug = res?.data?.slug;
-                                  if (!slug) {
-                                    toast.error("Failed to generate share link");
-                                    return;
-                                  }
-                                  const link = `${window.location.origin}/share/${slug}`;
-                                  navigator.clipboard.writeText(link);
-                                  toast.success("Share link copied to clipboard");
-                                } catch (e) {
-                                  toast.error("Failed to generate share link");
-                                }
-                            }}
-                          >
-                          <Folder className="w-4 h-4 mr-2" /> {isGeneratingLink ? "Generating..." : "Share Link"}
-                        </Button>
-                        {activeGroup.files.length > 0 && (
-                          <Button variant="secondary" size="sm" onClick={(e) => handleDownloadAll(activeGroup, e)}>
-                            <Download className="w-4 h-4 mr-2" /> Download All
-                          </Button>
-                        )}
-                        <Button 
-                          onClick={() => {
-                            setUploadData({ userId: activeGroup.userId || "", orderId: activeGroup.orderId || "", category: activeGroup.taskId ? "TASK" : "DIGITAL PRINTING", notes: "", taskId: activeGroup.taskId || "" });
-                            setUploadModalOpen(true);
-                          }}
-                          size="sm"
-                        >
-                          <Plus className="w-4 h-4 mr-2" /> Add Artwork
-                        </Button>
-                      </div>
-                  </div>
-                  
-                  {activeGroup.files.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center p-12 border border-dashed rounded-xl bg-muted/20">
-                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                        <Folder className="w-8 h-8 text-primary" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-foreground mb-2">Folder is empty</h3>
-                      <p className="text-sm text-muted-foreground text-center max-w-sm mb-6">
-                        There are no artworks in this folder yet. Click the button below to add one.
+                <div className="flex items-center gap-4 mb-4 pb-4 border-b">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedFolder(null)}>
+                    <ChevronLeft className="w-4 h-4 mr-1" /> Back
+                  </Button>
+                  <div>
+                    <h2 className="text-lg font-bold flex items-center gap-2">
+                      <Folder className="w-5 h-5 text-primary" />
+                      {activeGroup.folderName}
+                    </h2>
+                    {(activeGroup.orderId || activeGroup.taskId) && (
+                      <p className="text-base font-semibold text-foreground/80">
+                        {activeGroup.taskId ? `Task ID: ${activeGroup.taskId}` : `Order ID: ${activeGroup.orderId}`}
                       </p>
-                      <Button 
-                         onClick={() => {
-                           setUploadData({ userId: activeGroup.userId || "", orderId: activeGroup.orderId || "", category: "TASK", notes: "", taskId: activeGroup.taskId || "" });
-                           setUploadModalOpen(true);
-                         }}
-                       >
-                         <Plus className="w-4 h-4 mr-2" /> Add Artwork
-                      </Button>
+                    )}
+                    
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-xs font-semibold">Change Status:</span>
+                      <select 
+                        className="h-8 text-xs bg-background border border-border/50 rounded px-2 focus:ring-0"
+                        value={activeGroup.orderStatus}
+                        onChange={(e) => handleStatusChange(activeGroup, e.target.value)}
+                        disabled={isUpdatingStatus}
+                      >
+                        {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'].map(s => (
+                          <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                        ))}
+                      </select>
                     </div>
-                  ) : (
-                    <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
-                      {activeGroup.files.map((file: any) => (
+                  </div>
+                  <div className="ml-auto">
+                    <Button variant="secondary" size="sm" onClick={(e) => handleDownloadAll(activeGroup, e)}>
+                      <Download className="w-4 h-4 mr-2" /> Download All
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
+                  {activeGroup.files.map((file: any) => (
                     viewMode === "grid" ? (
                       <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                         {getFileThumbnail(file)}
                         <CardHeader className="p-4 pb-2 flex flex-col items-start justify-between bg-muted/5 border-b">
                           <div className="overflow-hidden w-full">
-                            {editingFileId === file._id ? (
-                                <Input autoFocus value={editingName} onChange={(e) => setEditingName(e.target.value)} onBlur={() => {
-                                  if (editingName !== file.originalName) { renameFileMutate({ id: file._id, originalName: editingName }, { onSuccess: () => window.location.reload() }); }
-                                  setEditingFileId(null);
-                                }} onKeyDown={(e) => { if(e.key === 'Enter') e.currentTarget.blur(); }} className="h-7 text-sm" />
-                              ) : (
-                                <CardTitle className="text-sm truncate w-full cursor-pointer hover:underline" title={file.originalName} onClick={() => { setEditingFileId(file._id); setEditingName(file.originalName); }}>
-                                  {file.originalName}
-                                </CardTitle>
-                              )}
+                            <CardTitle className="text-sm truncate w-full" title={file.originalName}>
+                              {file.originalName}
+                            </CardTitle>
                             <CardDescription className="text-xs truncate w-full">
                               User: {activeGroup.folderName}
                             </CardDescription>
@@ -571,14 +535,7 @@ export default function ArtworksManager() {
                         <div className="flex items-center gap-4 min-w-0 flex-1">
                           {getFileIcon(file.mimetype)}
                           <div className="min-w-0 flex-1">
-                            {editingFileId === file._id ? (
-                                <Input autoFocus value={editingName} onChange={(e) => setEditingName(e.target.value)} onBlur={() => {
-                                  if (editingName !== file.originalName) { renameFileMutate({ id: file._id, originalName: editingName }, { onSuccess: () => window.location.reload() }); }
-                                  setEditingFileId(null);
-                                }} onKeyDown={(e) => { if(e.key === 'Enter') e.currentTarget.blur(); }} className="h-7 text-sm w-1/2" />
-                              ) : (
-                                <h4 className="text-sm font-medium truncate cursor-pointer hover:underline" title={file.originalName} onClick={() => { setEditingFileId(file._id); setEditingName(file.originalName); }}>{file.originalName}</h4>
-                              )}
+                            <h4 className="text-sm font-medium truncate" title={file.originalName}>{file.originalName}</h4>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                               <span className="bg-muted px-1.5 py-0.5 rounded">{file.category || "Uncategorized"}</span>
                               <span className={file.adminReviewed ? "text-green-500 font-medium" : "text-amber-500 font-medium"}>
@@ -597,11 +554,11 @@ export default function ArtworksManager() {
                             <Eye className="w-4 h-4 text-muted-foreground" />
                           </Button>
                           <Button variant="ghost" size="icon" className="hover:bg-blue-50" onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          forceDownload(getFileUrl(file.path), file.originalName);
-                        }} title="Download">
-                          <Download className="w-4 h-4 text-blue-500" />
+                            e.preventDefault();
+                            e.stopPropagation();
+                            forceDownload(getFileUrl(file.path), file.originalName);
+                          }} title="Download">
+                            <Download className="w-4 h-4 text-blue-500" />
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => {
                             setSelectedFile(file);
@@ -621,7 +578,6 @@ export default function ArtworksManager() {
                     )
                   ))}
                 </div>
-                )}
               </>
             );
           })()}
@@ -630,7 +586,7 @@ export default function ArtworksManager() {
         // --- OUTSIDE (FOLDERS) ---
         <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
           {groupedFiles.map((group) => {
-            const folderId = `${group.folderName}-${group.orderId}-${group.taskId}`;
+            const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
             if (viewMode === "grid") {
               return (
                 <Card 
@@ -638,16 +594,6 @@ export default function ArtworksManager() {
                   className="cursor-pointer overflow-hidden shadow-sm hover:shadow-md hover:border-primary/50 transition-all group relative" 
                   onClick={() => setSelectedFolder(folderId)}
                 >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-10 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-blue-50 hover:text-blue-600"
-                    onClick={(e) => handleDownloadAll(group, e)}
-                    disabled={group.files.length === 0}
-                    title="Download All Files"
-                  >
-                    <Download className="w-4 h-4 text-muted-foreground hover:text-blue-600" />
-                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -663,13 +609,32 @@ export default function ArtworksManager() {
                       <Folder className="w-8 h-8 text-primary" />
                     </div>
                     <div className="w-full">
+                      <button type="button" onClick={(e) => handleAdvanceFlow(group, e)} className="absolute top-2 left-2 z-10 text-muted-foreground hover:text-emerald-500 transition-colors" title="Mark as Shipped">
+                        <CheckCircle className="w-6 h-6 bg-background rounded-full" />
+                      </button>
                       <h3 className="font-semibold text-base truncate" title={group.folderName}>{group.folderName}</h3>
                       {group.orderId && (
-                        <p className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded inline-block mt-1">
+                        <p className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded inline-block mt-1 mb-2 block">
                           Order: {group.orderId}
                         </p>
                       )}
-                      <p className="text-xs text-muted-foreground mt-1 font-medium">{group.files.length} item(s)</p>
+                      {group.orderId && (
+                        <select 
+                          className="h-7 w-full text-xs bg-background border border-border/50 rounded px-2 focus:ring-0"
+                          value={group.orderStatus}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => updateOrderStatus({ id: group.orderId, status: e.target.value }, {
+                            onSuccess: () => toast.success("Order status updated!"),
+                            onError: () => toast.error("Failed to update order status")
+                          })}
+                          disabled={isUpdatingStatus}
+                        >
+                          {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'].map(s => (
+                            <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                          ))}
+                        </select>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-2 font-medium">{group.files.length} item(s)</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -681,25 +646,35 @@ export default function ArtworksManager() {
                   className="flex items-center gap-4 p-4 border bg-card rounded-lg hover:bg-muted/30 cursor-pointer transition-colors" 
                   onClick={() => setSelectedFolder(folderId)}
                 >
-                  <div className="p-2.5 bg-primary/10 rounded-lg shrink-0">
+                  <div className="p-2.5 bg-primary/10 rounded-lg shrink-0 relative">
+                    <button type="button" onClick={(e) => handleAdvanceFlow(group, e)} className="absolute -top-1 -left-1 z-10 text-muted-foreground hover:text-emerald-500 transition-colors" title="Mark as Shipped">
+                      <CheckCircle className="w-6 h-6 bg-background rounded-full" />
+                    </button>
                     <Folder className="w-6 h-6 text-primary" />
                   </div>
                   <div className="flex flex-col flex-1 min-w-0">
                     <span className="font-semibold text-base truncate">{group.folderName}</span>
                     {group.orderId && <span className="text-[10px] text-muted-foreground font-mono truncate">Order ID: {group.orderId}</span>}
                   </div>
+                  {group.orderId && (
+                    <div className="shrink-0 mr-4" onClick={(e) => e.stopPropagation()}>
+                        <select 
+                          className="h-8 text-xs bg-background border border-border/50 rounded px-2 focus:ring-0"
+                          value={group.orderStatus}
+                          onChange={(e) => updateOrderStatus({ id: group.orderId, status: e.target.value }, {
+                            onSuccess: () => toast.success("Order status updated!"),
+                            onError: () => toast.error("Failed to update order status")
+                          })}
+                          disabled={isUpdatingStatus}
+                        >
+                          {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'].map(s => (
+                            <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                          ))}
+                        </select>
+                    </div>
+                  )}
                   <div className="shrink-0 flex items-center gap-2">
                     <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">{group.files.length} file(s)</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600 ml-1"
-                      onClick={(e) => handleDownloadAll(group, e)}
-                      disabled={group.files.length === 0}
-                      title="Download All Files"
-                    >
-                      <Download className="w-4 h-4 text-muted-foreground hover:text-blue-600" />
-                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
