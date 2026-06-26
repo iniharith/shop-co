@@ -172,8 +172,11 @@ router.get(
       if (file.shareSlug && slugMap[file.shareSlug]) {
         const link = slugMap[file.shareSlug];
         const f = file.toObject ? file.toObject() : { ...file };
-        // Backfill taskId/orderId from the share link so grouping works
-        if (!f.taskId && link.taskId) f.taskId = link.taskId;
+        // Backfill taskId/orderId/category from the share link so grouping works
+        if (!f.taskId && link.taskId) {
+          f.taskId = link.taskId;
+          f.category = 'TASK'; // also fix category so grouping treats it as a task file
+        }
         if (!f.orderId && link.orderId) f.orderId = link.orderId;
         f._shareFolderName = link.folderName; // pass folder name to frontend
         return f;

@@ -176,8 +176,9 @@ export default function TasksManager() {
       t.customerUsername?.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a: any, b: any) => {
-      if (sortOption === "dateDesc") return new Date(b.statusUpdatedAt || b.createdAt).getTime() - new Date(a.statusUpdatedAt || a.createdAt).getTime();
-      if (sortOption === "dateAsc") return new Date(a.statusUpdatedAt || a.createdAt).getTime() - new Date(b.statusUpdatedAt || b.createdAt).getTime();
+      // Sort by createdAt only — not statusUpdatedAt — so assignee/dueDate changes never move a task
+      if (sortOption === "dateDesc") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (sortOption === "dateAsc") return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       if (sortOption === "nameAsc") return (a.title || "").localeCompare(b.title || "");
       if (sortOption === "nameDesc") return (b.title || "").localeCompare(a.title || "");
       return 0;
