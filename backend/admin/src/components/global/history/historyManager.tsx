@@ -19,7 +19,7 @@ const HistoryManager = () => {
     let orders = data?.orders || [];
     
     if (activeTab === "DONE") {
-      orders = orders.filter((o: any) => !o.isArchived && (o.orderStatus === "DELIVERED" || o.orderStatus === "DONE DESIGN" || o.orderStatus === "SHIPPED"));
+      orders = orders.filter((o: any) => !o.isArchived && (o.orderStatus === "DELIVERED" || o.orderStatus === "DONE_DESIGN" || o.orderStatus === "SHIPPED"));
     } else if (activeTab === "CANCELLED") {
       orders = orders.filter((o: any) => !o.isArchived && (o.orderStatus === "CANCELLED" || o.orderStatus === "FAILED"));
     } else if (activeTab === "ARCHIVED") {
