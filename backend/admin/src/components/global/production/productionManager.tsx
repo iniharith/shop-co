@@ -328,6 +328,24 @@ export default function ProductionManager() {
     );
   };
 
+  // Folder-card preview: show the first image inside the folder so users can see
+  // at a glance what's in it, instead of always showing a generic folder icon.
+  const getFolderPreview = (group: any, sizeClass: string = "w-16 h-16 rounded-2xl") => {
+    const previewImage = group.files?.find((f: any) => f.mimetype?.includes("image"));
+    if (previewImage) {
+      return (
+        <div className={`${sizeClass} overflow-hidden bg-muted flex items-center justify-center shrink-0`}>
+          <img src={getFileUrl(previewImage.path)} alt={group.folderName} className="object-cover w-full h-full" />
+        </div>
+      );
+    }
+    return (
+      <div className={`${sizeClass} bg-primary/5 group-hover:bg-primary/10 flex items-center justify-center transition-colors shrink-0`}>
+        <Folder className="w-8 h-8 text-primary" />
+      </div>
+    );
+  };
+
   if (isPending) return <div className="flex justify-center p-8"><p>Loading artworks...</p></div>;
 
   return (
@@ -451,7 +469,7 @@ export default function ProductionManager() {
                       {activeGroup.folderName}
                     </h2>
                     {(activeGroup.orderId || activeGroup.taskId) && (
-                      <p className="text-base font-semibold text-foreground/80">
+                      <p className="text-[14.4px] font-bold text-foreground/80">
                         {activeGroup.taskId ? `Task ID: ${activeGroup.taskId}` : `Order ID: ${activeGroup.orderId}`}
                       </p>
                     )}
@@ -619,9 +637,7 @@ export default function ProductionManager() {
                     <Trash2 className="w-4 h-4 text-muted-foreground hover:text-red-600" />
                   </Button>
                   <CardContent className="p-6 flex flex-col items-center justify-center gap-4 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-primary/5 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
-                      <Folder className="w-8 h-8 text-primary" />
-                    </div>
+                    {getFolderPreview(group)}
                     <div className="w-full">
                       {(activeSubTab === "IN_PRODUCTION" || activeSubTab === "DONE_PRINTING") && (
                         <button type="button" onClick={(e) => handleAdvanceFlow(group, e)} className="absolute top-2 left-2 z-10 text-muted-foreground hover:text-emerald-500 transition-colors" title={`Mark as ${activeSubTab === 'IN_PRODUCTION' ? 'Done Printing' : 'Packaging'}`}>
@@ -630,7 +646,7 @@ export default function ProductionManager() {
                       )}
                       <h3 className="font-semibold text-base truncate" title={group.folderName}>{group.folderName}</h3>
                       {group.orderId && (
-                        <p className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded inline-block mt-1 mb-2 block">
+                        <p className="text-[12.8px] font-bold text-foreground/80 mt-1 mb-2">
                           Order: {group.orderId}
                         </p>
                       )}
@@ -662,17 +678,17 @@ export default function ProductionManager() {
                   className="flex items-center gap-4 p-4 border bg-card rounded-lg hover:bg-muted/30 cursor-pointer transition-colors" 
                   onClick={() => setSelectedFolder(folderId)}
                 >
-                  <div className="p-2.5 bg-primary/10 rounded-lg shrink-0 relative">
+                  <div className="rounded-lg shrink-0 relative overflow-hidden w-11 h-11 bg-primary/10 flex items-center justify-center">
                     {(activeSubTab === "IN_PRODUCTION" || activeSubTab === "DONE_PRINTING") && (
                       <button type="button" onClick={(e) => handleAdvanceFlow(group, e)} className="absolute -top-1 -left-1 z-10 text-muted-foreground hover:text-emerald-500 transition-colors" title={`Mark as ${activeSubTab === 'IN_PRODUCTION' ? 'Done Printing' : 'Packaging'}`}>
                         <CheckCircle className="w-6 h-6 bg-background rounded-full" />
                       </button>
                     )}
-                    <Folder className="w-6 h-6 text-primary" />
+                    {getFolderPreview(group, "w-11 h-11")}
                   </div>
                   <div className="flex flex-col flex-1 min-w-0">
                     <span className="font-semibold text-base truncate">{group.folderName}</span>
-                    {group.orderId && <span className="text-[10px] text-muted-foreground font-mono truncate">Order ID: {group.orderId}</span>}
+                    {group.orderId && <span className="text-[12.8px] font-bold text-foreground/80 truncate">Order ID: {group.orderId}</span>}
                   </div>
                   {group.orderId && (
                     <div className="shrink-0 mr-4" onClick={(e) => e.stopPropagation()}>

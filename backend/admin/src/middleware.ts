@@ -39,7 +39,7 @@ export default withAuth(
       }
 
       // Allow verified users or ANY internal staff role to bypass verified check
-      const isInternalStaff = [Roles.ADMIN, Roles.SYSADMIN, Roles.DESIGNER, Roles.BOSS, Roles.PRODUCTION].includes(userRole as Roles);
+      const isInternalStaff = [Roles.ADMIN, Roles.SYSADMIN, Roles.DESIGNER, Roles.BOSS, Roles.PRODUCTION, Roles.PACKAGING].includes(userRole as Roles);
       
       if (isLoggedIn && !isInternalStaff && isVerified === "false") {
         return NextResponse.redirect(new URL("/auth/signout", req.url));

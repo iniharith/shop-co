@@ -71,7 +71,7 @@ router.post(
     const authReq = req as any;
     
     // If admin provides a userId in the body, upload on their behalf
-    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(authReq.role);
+    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(authReq.role);
     const userId = (isAdmin && bodyUserId) ? bodyUserId : authReq.userId || authReq.user?.id;
 
     if (!userId && !taskId) {
@@ -709,7 +709,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as any;
     const userId = authReq.userId || authReq.user?.id;
-    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(authReq.role);
+    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(authReq.role);
 
     if (!userId) {
       res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
@@ -756,7 +756,7 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const authReq = req as any;
     const userId = authReq.userId || authReq.user?.id;
-    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(authReq.role);
+    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(authReq.role);
 
     if (!userId) {
       res.status(401).json({ success: false, message: 'Log masuk diperlukan' });

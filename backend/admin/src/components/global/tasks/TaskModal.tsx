@@ -126,7 +126,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { mutate: deleteFile, isPending: isDeletingFile } = useDeleteTaskFile();
   const { data: usersData } = useUsers();
   const { data: ordersData } = useOrders();
-  const admins = usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(u.role)) || [];
+  const admins = usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(u.role)) || [];
   const customers = usersData?.users?.filter((u: any) => u.role === 'client') || [];
   const allUsers = usersData?.users || [];
   const orders = ordersData?.orders || [];

@@ -44,7 +44,7 @@ router.get(
     };
     
     // If not admin, only show tasks linked to their username or orders (for simplicity, we'll just match their username)
-    if (!['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(role)) {
+    if (!['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(role)) {
       filters.customerUsername = authReq.user?.name || authReq.user?.email; // or however user is identified
     }
     
@@ -94,6 +94,17 @@ router.put(
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
     const oldTask = await taskRepository.findById(req.params.id);
+
+    // If someone is being newly assigned to a task that's still "In Progress",
+    // automatically advance it to "In Design" — being assigned implies design work
+    // is starting. Only triggers when assignee actually changes, and only nudges
+    // the status if the caller didn't already explicitly request a different one.
+    const isNewAssignment = req.body.assignee && oldTask?.assignee?.toString() !== req.body.assignee;
+    const currentStatus = oldTask?.status || 'PLACED';
+    if (isNewAssignment && currentStatus === 'IN_PROGRESS' && !req.body.status) {
+      req.body.status = 'IN_DESIGN';
+    }
+
     if (req.body.status && req.body.status !== oldTask?.status) {
       req.body.statusUpdatedAt = new Date();
     }

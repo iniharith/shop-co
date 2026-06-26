@@ -220,7 +220,7 @@ export default function ChatManager() {
             
             <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col bg-muted/5">
               {messages.map((msg: any) => {
-                const isMe = msg.senderId?._id?.toString() === currentUserId || (msg.senderRole && ['admin','sysadmin','boss','designer','production'].includes(msg.senderRole) && msg.senderId?._id?.toString() === currentUserId) || msg.senderId === currentUserId;
+                const isMe = msg.senderId?._id?.toString() === currentUserId || (msg.senderRole && ['admin','sysadmin','boss','designer','production','packaging'].includes(msg.senderRole) && msg.senderId?._id?.toString() === currentUserId) || msg.senderId === currentUserId;
                 return (
                   <div key={msg._id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[70%] p-3 rounded-2xl ${isMe ? 'bg-primary text-primary-foreground rounded-tr-sm' : 'bg-muted border border-border/50 rounded-tl-sm'}`}>
