@@ -9,7 +9,7 @@ const LiveSessionMonitor = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!session?.user?.id && !pathname.startsWith("/auth")) {
+    if (!session?.user?.id && !pathname.startsWith("/auth") && !pathname.startsWith("/share")) {
       signOut().then(() => {
         toast.error("Session expired, please login again");
       });

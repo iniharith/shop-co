@@ -9,6 +9,7 @@ import { whatsAppService } from '../../infrastructure/services/WhatsAppService';
 import authMiddilware from '../middlewares/auth.middileware';
 import { taskRepository } from '../../infrastructure/repositories/TaskRepository';
 import UserRepository from '../../infrastructure/db/repositories/user.repository';
+import { shareLinkRepository } from '../../infrastructure/repositories/ShareLinkRepository';
 
 const router = Router();
 
@@ -244,6 +245,101 @@ router.post(
     });
   })
 );
+
+// ─── POST /api/files/share-link ───────────────────────────
+// Admin: create (or reuse) a short, name-based share link for a folder
+// e.g. { folderName: "Ahmad Ali", taskId, orderId, userId } -> { slug: "ahmad-ali" }
+router.post(
+  '/share-link',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { folderName, taskId, orderId, userId } = req.body;
+
+    if (!folderName) {
+      res.status(400).json({ success: false, message: 'folderName diperlukan' });
+      return;
+    }
+
+    const link = await shareLinkRepository.findOrCreate({ folderName, taskId, orderId, userId });
+    res.json({ success: true, data: link });
+  })
+);
+
+// 🌐 Public: Get files for a specific folder using a short slug
+router.get(
+  '/s/:slug',
+  asyncHandler(async (req: Request, res: Response) => {
+    const link = await shareLinkRepository.findBySlug(req.params.slug);
+    if (!link) {
+      res.json({ success: true, data: [], folderName: null });
+      return;
+    }
+
+    let query: any = {};
+    if (link.taskId) query = { taskId: link.taskId };
+    else if (link.orderId) query = { orderId: link.orderId };
+    else if (link.userId) query = { userId: link.userId };
+    else {
+      res.json({ success: true, data: [], folderName: link.folderName });
+      return;
+    }
+
+    const files = await FileUpload.find(query).sort({ uploadedAt: -1 });
+    res.json({ success: true, data: files, folderName: link.folderName });
+  })
+);
+
+// 🌐 Public: Upload files to a folder using a short slug
+const decodeSharedSlug = async (req: any, res: any, next: any) => {
+  const link = await shareLinkRepository.findBySlug(req.params.slug);
+  if (!link) {
+    res.status(404).json({ success: false, message: 'Link tidak dijumpai' });
+    return;
+  }
+  req.userId = link.userId || 'customer';
+  req.taskId = link.taskId;
+  req.orderId = link.orderId;
+  next();
+};
+
+router.post(
+  '/s/:slug/upload',
+  asyncHandler(decodeSharedSlug),
+  upload.array('files', 10),
+  asyncHandler(async (req: Request, res: Response) => {
+    const files = req.files as (Express.Multer.File & { path: string; filename: string })[];
+    const { taskId, orderId, userId } = req as any;
+
+    if (!files || files.length === 0) {
+      res.status(400).json({ success: false, message: 'Tiada fail dipilih' });
+      return;
+    }
+
+    const savedFiles = await Promise.all(
+      files.map((file) =>
+        fileUploadRepository.create({
+          userId: userId || 'customer',
+          orderId: orderId || undefined,
+          taskId: taskId || undefined,
+          category: 'artwork',
+          filename: (file as any).key || file.filename || file.originalname,
+          originalName: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          path: (file as any).location || file.path,
+          adminReviewed: false,
+        })
+      )
+    );
+
+    res.status(201).json({
+      success: true,
+      message: `${savedFiles.length} fail berjaya dimuat naik`,
+      data: savedFiles,
+    });
+  })
+);
+
 
 // 🔹🔹🔹 GET /api/files/stats 🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹
 router.get(

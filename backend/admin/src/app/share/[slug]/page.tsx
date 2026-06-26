@@ -8,23 +8,29 @@ import { Folder, Image as ImageIcon, Download, FileText, Eye, Loader2, Upload } 
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-export default function PublicFolderView({ params }: { params: Promise<{ folderId: string }> }) {
+export default function PublicSlugFolderView({ params }: { params: Promise<{ slug: string }> }) {
   const unwrappedParams = use(params);
   const [files, setFiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
   const [folderName, setFolderName] = useState<string>("");
+  const [notFound, setNotFound] = useState(false);
 
   const fetchFiles = async () => {
     try {
-      const response = await AxiosInstance("").get(`/api/files/folder/${unwrappedParams.folderId}`);
+      const response = await AxiosInstance("").get(`/api/files/s/${unwrappedParams.slug}`);
       if (response.data?.success) {
         setFiles(response.data.data || []);
-        setFolderName(response.data.folderName || "Shared Folder");
+        if (response.data.folderName) {
+          setFolderName(response.data.folderName);
+        } else {
+          setNotFound(true);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch folder files:", error);
+      setNotFound(true);
     } finally {
       setLoading(false);
     }
@@ -32,7 +38,7 @@ export default function PublicFolderView({ params }: { params: Promise<{ folderI
 
   useEffect(() => {
     fetchFiles();
-  }, [unwrappedParams.folderId]);
+  }, [unwrappedParams.slug]);
 
   if (loading) {
     return (
@@ -63,18 +69,18 @@ export default function PublicFolderView({ params }: { params: Promise<{ folderI
     try {
       const formData = new FormData();
       Array.from(e.target.files).forEach(f => formData.append("files", f));
-      
+
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-      const res = await fetch(`${backendUrl}/api/files/shared/upload/${unwrappedParams.folderId}`, {
+      const res = await fetch(`${backendUrl}/api/files/s/${unwrappedParams.slug}/upload`, {
         method: "POST",
         body: formData,
       });
-      
+
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.message || "Upload failed");
       }
-      
+
       toast.success("Files uploaded successfully", { id: toastId });
       await fetchFiles();
     } catch (err: any) {
@@ -85,6 +91,16 @@ export default function PublicFolderView({ params }: { params: Promise<{ folderI
       e.target.value = '';
     }
   };
+
+  if (notFound) {
+    return (
+      <div className="min-h-screen bg-gray-50/50 flex items-center justify-center p-4">
+        <div className="p-12 text-center text-muted-foreground bg-white border border-dashed rounded-xl shadow-sm max-w-md">
+          This link is invalid or has expired.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-4 md:p-8">
@@ -101,19 +117,19 @@ export default function PublicFolderView({ params }: { params: Promise<{ folderI
           </div>
           <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
             <div>
-              <input 
-                type="file" 
-                multiple 
-                id="upload-artwork" 
-                className="hidden" 
-                onChange={handleUpload} 
-                disabled={uploading} 
+              <input
+                type="file"
+                multiple
+                id="upload-artwork"
+                className="hidden"
+                onChange={handleUpload}
+                disabled={uploading}
                 accept="image/*,application/pdf"
               />
               <label htmlFor="upload-artwork">
                 <Button asChild variant="outline" className="w-full sm:w-auto cursor-pointer" disabled={uploading}>
                   <span>
-                    <Upload className="w-4 h-4 mr-2" /> 
+                    <Upload className="w-4 h-4 mr-2" />
                     {uploading ? "Uploading..." : "Upload Artwork"}
                   </span>
                 </Button>

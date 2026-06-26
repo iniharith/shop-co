@@ -12,7 +12,8 @@ import {
     getAllFiles,
     reviewFile, 
     deleteFile,
-    bulkDeleteFiles
+    bulkDeleteFiles,
+    createShareLink
 } from "@/api/admin-dashboard";
 
 export const useParcelStats = () => {
@@ -85,4 +86,14 @@ export const useRenameFile = () => {
         ['allFiles', 'groupedFiles', 'tasks']
     );
     return { mutate, isPending };
+}
+
+export const useCreateShareLink = () => {
+    const { data: session } = useSession();
+    const { mutate, mutateAsync, isPending } = useMutationData(
+        ['createShareLink'],
+        (data: { folderName: string; taskId?: string; orderId?: string; userId?: string }) =>
+            createShareLink(session?.user?.token, data)
+    );
+    return { mutate, mutateAsync, isPending };
 }

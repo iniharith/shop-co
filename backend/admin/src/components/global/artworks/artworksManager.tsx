@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useMemo } from "react";
-import { useAllFiles, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile } from "@/hooks/useAdminDashboard";
+import { useAllFiles, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile, useCreateShareLink } from "@/hooks/useAdminDashboard";
 import JSZip from "jszip";
 import { useOrders } from "@/hooks/useOrder";
 import { useUsers } from "@/hooks/useUsers";
@@ -36,6 +36,7 @@ export default function ArtworksManager() {
   const { data: ordersResponse, isFetching: isFetchingOrders } = useOrders();
   const { data: usersResponse, isPending: usersPending } = useUsers();
   const { data: tasksResponse, isPending: tasksPending } = useTasks();
+  const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
 
   const isFetching = isFetchingFiles || isFetchingOrders;
 
@@ -421,21 +422,29 @@ export default function ArtworksManager() {
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={() => {
-                                const shareData = {
-                                  n: activeGroup.folderName,
-                                  t: activeGroup.taskId || "",
-                                  o: activeGroup.orderId || "",
-                                  u: activeGroup.userId || ""
-                                };
-                                const base64 = btoa(unescape(encodeURIComponent(JSON.stringify(shareData))));
-                                const token = encodeURIComponent(base64);
-                                const link = `${window.location.origin}/share/folder/${token}`;
-                                navigator.clipboard.writeText(link);
-                                toast.success("Share link copied to clipboard");
+                            disabled={isGeneratingLink}
+                            onClick={async () => {
+                                try {
+                                  const res = await createShareLink({
+                                    folderName: activeGroup.folderName,
+                                    taskId: activeGroup.taskId || undefined,
+                                    orderId: activeGroup.orderId || undefined,
+                                    userId: activeGroup.userId || undefined,
+                                  });
+                                  const slug = res?.data?.slug;
+                                  if (!slug) {
+                                    toast.error("Failed to generate share link");
+                                    return;
+                                  }
+                                  const link = `${window.location.origin}/share/${slug}`;
+                                  navigator.clipboard.writeText(link);
+                                  toast.success("Share link copied to clipboard");
+                                } catch (e) {
+                                  toast.error("Failed to generate share link");
+                                }
                             }}
                           >
-                          <Folder className="w-4 h-4 mr-2" /> Share Link
+                          <Folder className="w-4 h-4 mr-2" /> {isGeneratingLink ? "Generating..." : "Share Link"}
                         </Button>
                         {activeGroup.files.length > 0 && (
                           <Button variant="secondary" size="sm" onClick={(e) => handleDownloadAll(activeGroup, e)}>
