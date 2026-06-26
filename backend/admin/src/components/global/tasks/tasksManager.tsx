@@ -362,7 +362,7 @@ export default function TasksManager() {
 
       {/* Board View */}
       {viewMode === "board" && (
-        <div className="relative w-full flex-1 min-h-[78vh]">
+        <div className="relative w-full flex-1" style={{minHeight: 'calc(100vh - 200px)'}}>
           <div className="absolute inset-0 overflow-x-auto pb-4">
             <div className="flex gap-4 items-start w-max">
             {visibleColumns.map(status => {
