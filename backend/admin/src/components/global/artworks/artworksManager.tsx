@@ -128,8 +128,12 @@ export default function ArtworksManager() {
         }
       }
       
-      // Only apply order-status exclusion if the file actually has an orderId
-      if (orderIdStr) {
+      const isTaskFile = file.category === 'TASK' && file.taskId;
+
+      // Only apply order-status exclusion for non-TASK files
+      // Task files are already handled by task status above — don't double-exclude them
+      // just because the linked order moved to IN_PRODUCTION/SHIPPED etc.
+      if (!isTaskFile && orderIdStr) {
           const order = orders.find((o: any) => o._id === orderIdStr);
           if (order && ((order as any).orderStatus === 'IN_PRODUCTION' || (order as any).orderStatus === 'SHIPPED' || (order as any).orderStatus === 'DELIVERED' || (order as any).orderStatus === 'CANCELLED' || (order as any).orderStatus === 'FAILED')) {
               shouldExclude = true;
