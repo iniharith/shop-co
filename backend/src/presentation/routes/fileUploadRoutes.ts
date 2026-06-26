@@ -455,6 +455,68 @@ router.post(
   })
 );
 
+// 🌐 Public: Delete a file from a shared folder (slug acts as auth)
+router.delete(
+  '/s/:slug/files/:id',
+  asyncHandler(async (req: Request, res: Response) => {
+    const link = await shareLinkRepository.findBySlug(req.params.slug);
+    if (!link) {
+      res.status(404).json({ success: false, message: 'Link not found' });
+      return;
+    }
+    const file = await fileUploadRepository.findById(req.params.id);
+    if (!file) {
+      res.status(404).json({ success: false, message: 'File not found' });
+      return;
+    }
+    // Verify file belongs to this share link
+    const belongsToLink =
+      file.shareSlug === req.params.slug ||
+      (link.taskId && file.taskId?.toString() === link.taskId?.toString()) ||
+      (link.orderId && file.orderId?.toString() === link.orderId?.toString());
+    if (!belongsToLink) {
+      res.status(403).json({ success: false, message: 'Access denied' });
+      return;
+    }
+    try {
+      if (file.path) await deleteFromS3(file.path);
+    } catch (err: any) {
+      console.warn('[SharedDelete] S3 delete failed:', err.message);
+    }
+    await fileUploadRepository.delete(req.params.id);
+    res.json({ success: true, message: 'File deleted' });
+  })
+);
+
+// 🌐 Public: Add/update a note on a file from a shared folder
+router.patch(
+  '/s/:slug/files/:id/note',
+  asyncHandler(async (req: Request, res: Response) => {
+    const link = await shareLinkRepository.findBySlug(req.params.slug);
+    if (!link) {
+      res.status(404).json({ success: false, message: 'Link not found' });
+      return;
+    }
+    const file = await fileUploadRepository.findById(req.params.id);
+    if (!file) {
+      res.status(404).json({ success: false, message: 'File not found' });
+      return;
+    }
+    const belongsToLink =
+      file.shareSlug === req.params.slug ||
+      (link.taskId && file.taskId?.toString() === link.taskId?.toString()) ||
+      (link.orderId && file.orderId?.toString() === link.orderId?.toString());
+    if (!belongsToLink) {
+      res.status(403).json({ success: false, message: 'Access denied' });
+      return;
+    }
+    const { notes } = req.body;
+    (file as any).notes = notes ?? '';
+    await (file as any).save();
+    res.json({ success: true, data: file });
+  })
+);
+
 
 // 🔹🔹🔹 GET /api/files/stats 🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹
 router.get(
