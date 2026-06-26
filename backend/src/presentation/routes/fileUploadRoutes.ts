@@ -156,8 +156,33 @@ router.get(
     if (search) filters.search = search;
 
     const files = await fileUploadRepository.findAll(filters);
+
+    // Enrich files that were uploaded via a share link with the link's metadata
+    // so the admin grouping logic can place them in the correct folder
+    const slugsNeeded = [...new Set(
+      (files as any[]).filter((f: any) => f.shareSlug).map((f: any) => f.shareSlug)
+    )];
+    let slugMap: Record<string, any> = {};
+    if (slugsNeeded.length > 0) {
+      const links = await ShareLink.find({ slug: { $in: slugsNeeded } });
+      links.forEach((l: any) => { slugMap[l.slug] = l; });
+    }
+
+    const enrichedFiles = (files as any[]).map((file: any) => {
+      if (file.shareSlug && slugMap[file.shareSlug]) {
+        const link = slugMap[file.shareSlug];
+        const f = file.toObject ? file.toObject() : { ...file };
+        // Backfill taskId/orderId from the share link so grouping works
+        if (!f.taskId && link.taskId) f.taskId = link.taskId;
+        if (!f.orderId && link.orderId) f.orderId = link.orderId;
+        f._shareFolderName = link.folderName; // pass folder name to frontend
+        return f;
+      }
+      return file;
+    });
+
     const stats = await fileUploadRepository.getStorageStats();
-    res.json({ success: true, data: files, stats, count: files.length });
+    res.json({ success: true, data: enrichedFiles, stats, count: enrichedFiles.length });
   })
 );
 

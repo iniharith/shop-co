@@ -111,8 +111,13 @@ export default function ArtworksManager() {
             shouldExclude = true;
         }
       } else {
-        const user = users.find((u: any) => u._id?.toString() === file.userId?.toString());
-        groupName = user?.name || file.userId;
+        // Files uploaded via share link carry _shareFolderName from the backend enrichment
+        if (file._shareFolderName) {
+          groupName = file._shareFolderName;
+        } else {
+          const user = users.find((u: any) => u._id?.toString() === file.userId?.toString());
+          groupName = user?.name || file.userId;
+        }
 
         if (file.orderId) {
           orderIdStr = file.orderId;
@@ -123,6 +128,7 @@ export default function ArtworksManager() {
         }
       }
       
+      // Only apply order-status exclusion if the file actually has an orderId
       if (orderIdStr) {
           const order = orders.find((o: any) => o._id === orderIdStr);
           if (order && ((order as any).orderStatus === 'IN_PRODUCTION' || (order as any).orderStatus === 'SHIPPED' || (order as any).orderStatus === 'DELIVERED' || (order as any).orderStatus === 'CANCELLED' || (order as any).orderStatus === 'FAILED')) {
