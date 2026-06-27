@@ -315,13 +315,6 @@ export default function ProductionManager() {
   };
 
   const getFileThumbnail = (file: any) => {
-    if (file.mimetype?.includes("image")) {
-      return (
-        <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
-          <ImageNext src={getFileUrl(file.path)} alt={file.originalName} width={20} height={20} quality={50} className="object-cover w-full h-full" />
-        </div>
-      );
-    }
     return (
       <div className="w-full h-24 bg-muted/50 rounded-t-lg flex items-center justify-center">
         {getFileIcon(file.mimetype)}
@@ -332,14 +325,6 @@ export default function ProductionManager() {
   // Folder-card preview: show the first image inside the folder so users can see
   // at a glance what's in it, instead of always showing a generic folder icon.
   const getFolderPreview = (group: any, sizeClass: string = "w-16 h-16 rounded-2xl") => {
-    const previewImage = group.files?.find((f: any) => f.mimetype?.includes("image"));
-    if (previewImage) {
-      return (
-        <div className={`${sizeClass} overflow-hidden bg-muted flex items-center justify-center shrink-0`}>
-          <ImageNext src={getFileUrl(previewImage.path)} alt={group.folderName} width={40} height={40} className="object-cover w-full h-full" />
-        </div>
-      );
-    }
     return (
       <div className={`${sizeClass} bg-primary/5 group-hover:bg-primary/10 flex items-center justify-center transition-colors shrink-0`}>
         <Folder className="w-8 h-8 text-primary" />
