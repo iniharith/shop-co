@@ -17,6 +17,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from "sonner";
 import { format, isToday, isTomorrow } from "date-fns";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
+import { useSearchParams } from "next/navigation";
 import TaskModal from "./TaskModal";
 
 const DueDateDisplay = ({ task, updateTask, className }: { task: any, updateTask: any, className?: string }) => {
@@ -82,6 +83,9 @@ export default function TasksManager() {
   const { data: response, isPending, refetch, isFetching } = useTasks();
   const tasks = (response as any)?.tasks || [];
   
+  const searchParams = useSearchParams();
+  const taskIdParam = searchParams.get('taskId');
+  
   const { data: usersData } = useUsers();
   
   const [viewMode, setViewMode] = useState<"board" | "list">("board");
@@ -100,6 +104,15 @@ export default function TasksManager() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [newTask, setNewTask] = useState({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
+
+  React.useEffect(() => {
+    if (taskIdParam && tasks.length > 0) {
+      const task = tasks.find((t: any) => t._id === taskIdParam);
+      if (task && (!selectedTask || selectedTask._id !== task._id)) {
+        setSelectedTask(task);
+      }
+    }
+  }, [taskIdParam, tasks]);
 
   const handleCreateTask = () => {
     if (!newTask.title) {

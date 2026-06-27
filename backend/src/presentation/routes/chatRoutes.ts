@@ -25,7 +25,12 @@ router.get(
       conversations = await chatRepository.findConversationsByUser(userId); // Or fetch all if needed
       // Actually, fetching all conversations is better for an admin dashboard
       const { ConversationModel } = await import('../../infrastructure/db/models/conversation.model');
-      conversations = await ConversationModel.find()
+      conversations = await ConversationModel.find({
+        $or: [
+          { type: 'admin_customer' }, // Admins can see all customer support chats
+          { type: 'admin_admin', participants: userId } // Admins ONLY see admin-admin chats if they are in it
+        ]
+      })
         .populate('participants', 'name email role')
         .sort({ lastMessageAt: -1 });
     } else {

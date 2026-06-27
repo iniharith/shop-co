@@ -3,6 +3,7 @@ import PageContainer from "@/components/layout/page-container";
 import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import TasksManager from "@/components/global/tasks/tasksManager";
+import { Suspense } from "react";
 
 export default function Page() {
   return (
@@ -15,7 +16,9 @@ export default function Page() {
           />
         </div>
         <Separator />
-        <TasksManager />
+        <Suspense fallback={<div>Loading tasks...</div>}>
+          <TasksManager />
+        </Suspense>
       </div>
     </PageContainer>
   );
