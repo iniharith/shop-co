@@ -26,7 +26,7 @@ export interface ITask extends Document {
   category?: string; // e.g. DIGITAL PRINTING, DISPLAY ITEM
   status: 'PLACED' | 'IN_PROGRESS' | 'PENDING_ARTWORK' | 'ARTWORK_REVIEWED' | 'ARTWORK_REJECTED' | 'IN_DESIGN' | 'PEMBETULAN' | 'DONE_DESIGN' | 'IN_PRODUCTION' | 'HOLD_PRINTING' | 'DONE_PRINTING' | 'PACKAGING' | 'SHIPPED' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED' | 'FAILED';
   isDone?: boolean;
-  files: { url: string; name: string; notes?: string }[];
+  files: { url: string; name: string; notes?: string; tag?: string }[];
   comments: ITaskComment[];
   activities: ITaskActivity[];
   statusUpdatedAt?: Date;
@@ -65,7 +65,8 @@ const TaskSchema = new Schema<ITask>(
     files: [{
       url: { type: String, required: true },
       name: { type: String, required: true },
-      notes: { type: String, default: '' }
+      notes: { type: String, default: '' },
+      tag: { type: String, enum: ['attachment', 'draft', 'for_print'], default: 'attachment' }
     }],
     comments: [TaskCommentSchema],
     activities: [TaskActivitySchema],

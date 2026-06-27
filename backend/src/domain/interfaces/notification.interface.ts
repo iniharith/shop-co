@@ -6,6 +6,8 @@ export interface INotification {
   message: string;
   type: "ORDER" | "DELIVERY" | "PROMOTION" | "SYSTEM" | "VERIFICATION";
   orderId?: string | mongoose.Types.ObjectId;
+  taskId?: string | mongoose.Types.ObjectId;
+  link?: string;
   read: boolean;
   createdAt?: Date;
 }

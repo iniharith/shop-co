@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useOrders } from "@/hooks/useOrder";
 import { Check, ChevronsUpDown, Download as DownloadIcon } from "lucide-react";
 import { cn, forceDownload } from "@/lib/utils";
@@ -53,24 +54,27 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
         
         {/* Right: Filename & Delete Button */}
         <div className="flex-1 flex justify-between items-center min-w-0 mr-1">
+        {file.tag === 'draft' ? (
+          <Badge className="bg-orange-500 hover:bg-orange-600 mb-1 w-fit text-[10px]">Draft</Badge>
+        ) : file.tag === 'for_print' ? (
+          <Badge className="bg-green-500 hover:bg-green-600 mb-1 w-fit text-[10px]">For Print</Badge>
+        ) : (
+          <Badge className="bg-gray-500 hover:bg-gray-600 mb-1 w-fit text-[10px]">Attachment</Badge>
+        )}
+        <div className="flex items-center gap-2 mb-2 group">
           <a href={file.url} target="_blank" rel="noopener noreferrer" className="truncate text-white font-medium text-sm tracking-wide hover:underline px-1">
             {file.name}
           </a>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-6 h-6 shrink-0 text-white/50 hover:text-white hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={() => forceDownload(file.url, file.name)}
+          >
+            <DownloadIcon className="w-3.5 h-3.5" />
+          </Button>
+        </div>
           <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="w-7 h-7 shrink-0 text-blue-400 hover:text-blue-500 hover:bg-white/10 rounded-full"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-                forceDownload(file.url, file.name);
-              }}
-              title="Download"
-            >
-              <DownloadIcon className="w-3.5 h-3.5" />
-            </Button>
             <Button 
               variant="ghost" 
               size="icon" 
@@ -133,6 +137,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   
   const [openOrderBox, setOpenOrderBox] = useState(false);
   const [openUserBox, setOpenUserBox] = useState(false);
+  const [uploadTag, setUploadTag] = useState<string>('attachment');
   const [orderSearch, setOrderSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
   
@@ -176,11 +181,17 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      Array.from(e.target.files).forEach(file => {
-        uploadFile({ id: task._id, file });
+      const files = Array.from(e.target.files);
+      files.forEach(file => {
+        uploadFile({ id: task._id, file, tag: uploadTag }, {
+          onSuccess: () => {
+            toast.success("File uploaded successfully");
+          },
+          onError: () => toast.error("Failed to upload file")
+        });
       });
-      // Clear the input so the same files can be uploaded again if needed
-      e.target.value = "";
+      // reset input
+      e.target.value = '';
     }
   };
 
@@ -364,15 +375,38 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   onChange={handleFileUpload}
                   disabled={isUploading}
                 />
-                <Button 
-                  onClick={() => document.getElementById('task-file-upload')?.click()} 
-                  disabled={isUploading} 
-                  variant="outline"
-                  size="icon" 
-                  className="shrink-0 shadow-sm"
-                >
-                  {isUploading ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      disabled={isUploading} 
+                      variant="outline"
+                      size="icon" 
+                      className="shrink-0 shadow-sm"
+                    >
+                      {isUploading ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={() => {
+                      setUploadTag('attachment');
+                      setTimeout(() => document.getElementById('task-file-upload')?.click(), 50);
+                    }}>
+                      <Badge className="bg-gray-500 mr-2 text-[10px]">Attachment</Badge> Upload Attachment
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      setUploadTag('draft');
+                      setTimeout(() => document.getElementById('task-file-upload')?.click(), 50);
+                    }}>
+                      <Badge className="bg-orange-500 mr-2 text-[10px]">Draft</Badge> Upload Draft
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      setUploadTag('for_print');
+                      setTimeout(() => document.getElementById('task-file-upload')?.click(), 50);
+                    }}>
+                      <Badge className="bg-green-500 mr-2 text-[10px]">For Print</Badge> Upload For Print
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Input 
                   placeholder="Ask a question or post an update..." 
                   value={commentText} 

@@ -25,6 +25,13 @@ const NotificationSchema = new Schema<NotificationDocument>(
         type: Schema.Types.ObjectId,
         ref: "Order",
       },
+      taskId: {
+        type: Schema.Types.ObjectId,
+        ref: "Task",
+      },
+      link: {
+        type: String,
+      },
       read: {
         type: Boolean,
         default: false,

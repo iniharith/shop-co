@@ -33,35 +33,13 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MessageModel = void 0;
+exports.ShareLink = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const MessageSchema = new mongoose_1.Schema({
-    conversationId: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Conversation',
-        required: true,
-    },
-    senderId: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'User',
-    },
-    senderRole: {
-        type: String,
-        enum: ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'client', 'system'],
-        default: 'client',
-    },
-    text: {
-        type: String,
-        required: true,
-    },
-    isRead: {
-        type: Boolean,
-        default: false,
-    },
-    source: {
-        type: String,
-        enum: ['web', 'whatsapp'],
-        default: 'web',
-    },
+const ShareLinkSchema = new mongoose_1.Schema({
+    slug: { type: String, required: true, unique: true, index: true },
+    folderName: { type: String, required: true },
+    taskId: { type: String, index: true },
+    orderId: { type: String, index: true },
+    userId: { type: String, index: true },
 }, { timestamps: true });
-exports.MessageModel = mongoose_1.default.model('Message', MessageSchema);
+exports.ShareLink = mongoose_1.default.model('ShareLink', ShareLinkSchema);

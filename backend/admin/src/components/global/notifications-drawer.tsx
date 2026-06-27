@@ -1,5 +1,7 @@
 "use client";
 import type React from "react";
+import { format } from "date-fns";
+import { useRouter } from "next/navigation";
 import { Drawer } from "vaul";
 import { IoCloseCircle } from "react-icons/io5";
 import { Button } from "@heroui/button";
@@ -40,6 +42,7 @@ const NotificationsDrawer = ({
 }: NotificationsDrawerProps) => {
   const closeDrawer = () => setIsOpen(false);
   const { mutate, isPending } = useMarkAllNotificationsAsRead();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("new");
 
   // Filter notifications based on active tab
@@ -112,8 +115,15 @@ const NotificationsDrawer = ({
                     filteredNotifications.map((notification) => (
                       <div
                         key={notification._id}
+                        onClick={() => {
+                          if (notification.link) {
+                            setIsOpen(false);
+                            router.push(notification.link);
+                          }
+                        }}
                         className={cn(
                           "p-3 rounded-lg border transition-all duration-200 hover:bg-gray-50",
+                          notification.link ? "cursor-pointer" : "",
                           notification.read
                             ? "border-gray-200"
                             : "border-primary/30 bg-blue-50/50"

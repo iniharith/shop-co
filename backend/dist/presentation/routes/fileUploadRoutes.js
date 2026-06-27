@@ -23,6 +23,9 @@ const WhatsAppService_1 = require("../../infrastructure/services/WhatsAppService
 const auth_middileware_1 = __importDefault(require("../middlewares/auth.middileware"));
 const TaskRepository_1 = require("../../infrastructure/repositories/TaskRepository");
 const user_repository_1 = __importDefault(require("../../infrastructure/db/repositories/user.repository"));
+const ShareLinkRepository_1 = require("../../infrastructure/repositories/ShareLinkRepository");
+const ShareLink_1 = require("../../domain/entities/ShareLink");
+const order_repository_1 = __importDefault(require("../../infrastructure/db/repositories/order.repository"));
 const router = (0, express_1.Router)();
 const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB || '50', 10);
 const ALLOWED_MIME_TYPES = [
@@ -70,7 +73,7 @@ router.post('/upload', auth_middileware_1.default, upload.array('files', 10), (0
     const { orderId, taskId, notes, userId: bodyUserId, category } = req.body;
     const authReq = req;
     // If admin provides a userId in the body, upload on their behalf
-    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(authReq.role);
+    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(authReq.role);
     const userId = (isAdmin && bodyUserId) ? bodyUserId : authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
     if (!userId && !taskId) {
         res.status(401).json({ success: false, message: 'Log masuk atau Task diperlukan' });
@@ -137,8 +140,32 @@ router.get('/', (0, express_async_handler_1.default)((req, res) => __awaiter(voi
     if (search)
         filters.search = search;
     const files = yield FileUploadRepository_1.fileUploadRepository.findAll(filters);
+    // Enrich files that were uploaded via a share link with the link's metadata
+    // so the admin grouping logic can place them in the correct folder
+    const slugsNeeded = [...new Set(files.filter((f) => f.shareSlug).map((f) => f.shareSlug))];
+    let slugMap = {};
+    if (slugsNeeded.length > 0) {
+        const links = yield ShareLink_1.ShareLink.find({ slug: { $in: slugsNeeded } });
+        links.forEach((l) => { slugMap[l.slug] = l; });
+    }
+    const enrichedFiles = files.map((file) => {
+        if (file.shareSlug && slugMap[file.shareSlug]) {
+            const link = slugMap[file.shareSlug];
+            const f = file.toObject ? file.toObject() : Object.assign({}, file);
+            // Backfill taskId/orderId/category from the share link so grouping works
+            if (!f.taskId && link.taskId) {
+                f.taskId = link.taskId;
+                f.category = 'TASK'; // also fix category so grouping treats it as a task file
+            }
+            if (!f.orderId && link.orderId)
+                f.orderId = link.orderId;
+            f._shareFolderName = link.folderName; // pass folder name to frontend
+            return f;
+        }
+        return file;
+    });
     const stats = yield FileUploadRepository_1.fileUploadRepository.getStorageStats();
-    res.json({ success: true, data: files, stats, count: files.length });
+    res.json({ success: true, data: enrichedFiles, stats, count: enrichedFiles.length });
 })));
 // ─── GET /api/files/grouped ───────────────────────────────
 // Admin: files grouped by customer (Nextcloud folder view)
@@ -146,6 +173,23 @@ router.get('/grouped', (0, express_async_handler_1.default)((_req, res) => __awa
     const grouped = yield FileUploadRepository_1.fileUploadRepository.getFilesGroupedByUser();
     const stats = yield FileUploadRepository_1.fileUploadRepository.getStorageStats();
     res.json({ success: true, data: grouped, stats });
+})));
+// ─── PUT /api/files/:id/reassign ───────────────────────────
+// Admin: fix a file that landed in the wrong folder (e.g. uploaded via a
+// share link before the link's userId was resolved correctly).
+router.put('/:id/reassign', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { userId, orderId, taskId, category } = req.body;
+    const file = yield FileUploadRepository_1.fileUploadRepository.reassign(req.params.id, {
+        userId,
+        orderId,
+        taskId,
+        category,
+    });
+    if (!file) {
+        res.status(404).json({ success: false, message: 'Fail tidak dijumpai' });
+        return;
+    }
+    res.json({ success: true, data: file });
 })));
 // 🌐 Public: Get files for a specific folder using robust token
 router.get('/folder/:token', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -179,6 +223,10 @@ const decodeSharedToken = (req, res, next) => {
         req.userId = decoded.u || 'customer';
         req.taskId = decoded.t;
         req.orderId = decoded.o;
+        // Preserve folder type so the admin UI re-groups this upload into the
+        // SAME folder the link was generated from (task folders are grouped by
+        // taskId/category, not by userId).
+        req.shareCategory = decoded.t ? 'TASK' : 'artwork';
         next();
     }
     catch (e) {
@@ -187,7 +235,7 @@ const decodeSharedToken = (req, res, next) => {
 };
 router.post('/shared/upload/:token', decodeSharedToken, upload.array('files', 10), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const files = req.files;
-    const { taskId, orderId, userId } = req;
+    const { taskId, orderId, userId, shareCategory } = req;
     if (!files || files.length === 0) {
         res.status(400).json({ success: false, message: 'Tiada fail dipilih' });
         return;
@@ -196,7 +244,7 @@ router.post('/shared/upload/:token', decodeSharedToken, upload.array('files', 10
         userId: userId || 'customer',
         orderId: orderId || undefined,
         taskId: taskId || undefined,
-        category: 'artwork',
+        category: shareCategory || 'artwork',
         filename: file.key || file.filename || file.originalname,
         originalName: file.originalname,
         mimetype: file.mimetype,
@@ -209,6 +257,202 @@ router.post('/shared/upload/:token', decodeSharedToken, upload.array('files', 10
         message: `${savedFiles.length} fail berjaya dimuat naik`,
         data: savedFiles,
     });
+})));
+// ─── POST /api/files/share-link ───────────────────────────
+// Admin: create (or reuse) a short, name-based share link for a folder
+// e.g. { folderName: "Ahmad Ali", taskId, orderId, userId } -> { slug: "ahmad-ali" }
+router.post('/share-link', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { folderName, taskId, orderId, userId } = req.body;
+    if (!folderName) {
+        res.status(400).json({ success: false, message: 'folderName diperlukan' });
+        return;
+    }
+    // Always try to resolve the REAL customer userId server-side, even if the
+    // admin UI didn't have one on hand (e.g. an empty folder with no files yet).
+    // This keeps customer uploads grouped under the correct user in the admin
+    // view instead of falling into a generic "customer" folder.
+    let resolvedUserId = userId || undefined;
+    let resolvedOrderId = orderId || undefined;
+    if (!resolvedUserId && taskId) {
+        try {
+            const task = yield TaskRepository_1.taskRepository.findById(taskId);
+            if (task) {
+                resolvedOrderId = resolvedOrderId || task.orderId;
+            }
+        }
+        catch (e) { }
+    }
+    if (!resolvedUserId && resolvedOrderId) {
+        try {
+            const order = yield order_repository_1.default.getOrderById(resolvedOrderId);
+            if (order) {
+                const ou = order.userId;
+                resolvedUserId = (ou === null || ou === void 0 ? void 0 : ou._id) ? ou._id.toString() : ou === null || ou === void 0 ? void 0 : ou.toString();
+            }
+        }
+        catch (e) { }
+    }
+    if (!taskId && !resolvedOrderId && !resolvedUserId) {
+        res.status(400).json({
+            success: false,
+            message: 'Folder ini belum dikaitkan dengan order, task, atau pelanggan — tidak boleh jana share link',
+        });
+        return;
+    }
+    const link = yield ShareLinkRepository_1.shareLinkRepository.findOrCreate({
+        folderName,
+        taskId,
+        orderId: resolvedOrderId,
+        userId: resolvedUserId,
+    });
+    res.json({ success: true, data: link });
+})));
+// ─── PUT /api/files/share-link/:slug ───────────────────────
+// Admin: backfill userId on an existing share link if it was created
+// before the customer's userId was resolvable (fixes old links).
+router.put('/share-link/:slug', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
+    if (!link) {
+        res.status(404).json({ success: false, message: 'Link tidak dijumpai' });
+        return;
+    }
+    const { userId } = req.body;
+    if (userId) {
+        link.userId = userId;
+        yield link.save();
+    }
+    res.json({ success: true, data: link });
+})));
+// ─── GET /api/files/share-links ────────────────────────────
+// Admin: list all share links (for diagnosing/cleaning up old/ambiguous ones)
+router.get('/share-links', auth_middileware_1.default, (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const links = yield ShareLink_1.ShareLink.find().sort({ createdAt: -1 });
+    res.json({ success: true, data: links });
+})));
+// ─── DELETE /api/files/share-link/:slug ────────────────────
+// Admin: delete a share link (e.g. a stale/ambiguous one)
+router.delete('/share-link/:slug', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    yield ShareLink_1.ShareLink.deleteOne({ slug: req.params.slug });
+    res.json({ success: true });
+})));
+// 🌐 Public: Get files for a specific folder using a short slug
+router.get('/s/:slug', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
+    if (!link) {
+        res.json({ success: true, data: [], folderName: null });
+        return;
+    }
+    // Match files 3 ways and merge: by the exact slug stamp (covers every
+    // customer upload through this link), and by taskId/orderId (covers
+    // files the admin added directly to the folder before sharing it).
+    const orConditions = [{ shareSlug: req.params.slug }];
+    if (link.taskId)
+        orConditions.push({ taskId: link.taskId });
+    else if (link.orderId)
+        orConditions.push({ orderId: link.orderId });
+    else if (link.userId)
+        orConditions.push({ userId: link.userId });
+    const files = yield FileUpload_1.FileUpload.find({ $or: orConditions }).sort({ uploadedAt: -1 });
+    res.json({ success: true, data: files, folderName: link.folderName });
+})));
+// 🌐 Public: Upload files to a folder using a short slug
+const decodeSharedSlug = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
+    if (!link) {
+        res.status(404).json({ success: false, message: 'Link tidak dijumpai' });
+        return;
+    }
+    req.userId = link.userId || 'customer';
+    req.taskId = link.taskId;
+    req.orderId = link.orderId;
+    req.shareSlug = req.params.slug;
+    // Preserve folder type so the admin UI re-groups this upload into the
+    // SAME folder the link was generated from (task folders are grouped by
+    // taskId/category, not by userId).
+    req.shareCategory = link.taskId ? 'TASK' : 'artwork';
+    next();
+});
+router.post('/s/:slug/upload', (0, express_async_handler_1.default)(decodeSharedSlug), upload.array('files', 10), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const files = req.files;
+    const { taskId, orderId, userId, shareCategory, shareSlug } = req;
+    if (!files || files.length === 0) {
+        res.status(400).json({ success: false, message: 'Tiada fail dipilih' });
+        return;
+    }
+    const savedFiles = yield Promise.all(files.map((file) => FileUploadRepository_1.fileUploadRepository.create({
+        userId: userId || 'customer',
+        orderId: orderId || undefined,
+        taskId: taskId || undefined,
+        category: shareCategory || 'artwork',
+        shareSlug,
+        filename: file.key || file.filename || file.originalname,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+        path: file.location || file.path,
+        adminReviewed: false,
+    })));
+    res.status(201).json({
+        success: true,
+        message: `${savedFiles.length} fail berjaya dimuat naik`,
+        data: savedFiles,
+    });
+})));
+// 🌐 Public: Delete a file from a shared folder (slug acts as auth)
+router.delete('/s/:slug/files/:id', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d;
+    const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
+    if (!link) {
+        res.status(404).json({ success: false, message: 'Link not found' });
+        return;
+    }
+    const file = yield FileUploadRepository_1.fileUploadRepository.findById(req.params.id);
+    if (!file) {
+        res.status(404).json({ success: false, message: 'File not found' });
+        return;
+    }
+    // Verify file belongs to this share link
+    const belongsToLink = file.shareSlug === req.params.slug ||
+        (link.taskId && ((_a = file.taskId) === null || _a === void 0 ? void 0 : _a.toString()) === ((_b = link.taskId) === null || _b === void 0 ? void 0 : _b.toString())) ||
+        (link.orderId && ((_c = file.orderId) === null || _c === void 0 ? void 0 : _c.toString()) === ((_d = link.orderId) === null || _d === void 0 ? void 0 : _d.toString()));
+    if (!belongsToLink) {
+        res.status(403).json({ success: false, message: 'Access denied' });
+        return;
+    }
+    try {
+        if (file.path)
+            yield (0, s3_1.deleteFromS3)(file.path);
+    }
+    catch (err) {
+        console.warn('[SharedDelete] S3 delete failed:', err.message);
+    }
+    yield FileUploadRepository_1.fileUploadRepository.delete(req.params.id);
+    res.json({ success: true, message: 'File deleted' });
+})));
+// 🌐 Public: Add/update a note on a file from a shared folder
+router.patch('/s/:slug/files/:id/note', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d;
+    const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
+    if (!link) {
+        res.status(404).json({ success: false, message: 'Link not found' });
+        return;
+    }
+    const file = yield FileUploadRepository_1.fileUploadRepository.findById(req.params.id);
+    if (!file) {
+        res.status(404).json({ success: false, message: 'File not found' });
+        return;
+    }
+    const belongsToLink = file.shareSlug === req.params.slug ||
+        (link.taskId && ((_a = file.taskId) === null || _a === void 0 ? void 0 : _a.toString()) === ((_b = link.taskId) === null || _b === void 0 ? void 0 : _b.toString())) ||
+        (link.orderId && ((_c = file.orderId) === null || _c === void 0 ? void 0 : _c.toString()) === ((_d = link.orderId) === null || _d === void 0 ? void 0 : _d.toString()));
+    if (!belongsToLink) {
+        res.status(403).json({ success: false, message: 'Access denied' });
+        return;
+    }
+    const { notes } = req.body;
+    file.notes = notes !== null && notes !== void 0 ? notes : '';
+    yield file.save();
+    res.json({ success: true, data: file });
 })));
 // 🔹🔹🔹 GET /api/files/stats 🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹
 router.get('/stats', (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -334,7 +578,7 @@ router.post('/bulk-delete', auth_middileware_1.default, (0, express_async_handle
     var _a, _b;
     const authReq = req;
     const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
-    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(authReq.role);
+    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(authReq.role);
     if (!userId) {
         res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
         return;
@@ -372,7 +616,7 @@ router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.de
     var _a, _b;
     const authReq = req;
     const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
-    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(authReq.role);
+    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(authReq.role);
     if (!userId) {
         res.status(401).json({ success: false, message: 'Log masuk diperlukan' });
         return;

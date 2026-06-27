@@ -54,10 +54,10 @@ export class TaskRepository {
     );
   }
 
-  async addFile(taskId: string, url: string, name: string): Promise<ITask | null> {
+  async addFile(taskId: string, url: string, name: string, tag?: string): Promise<ITask | null> {
     return Task.findByIdAndUpdate(
       taskId,
-      { $push: { files: { url, name, notes: '' } } },
+      { $push: { files: { url, name, notes: '', tag: tag || 'attachment' } } },
       { new: true }
     );
   }

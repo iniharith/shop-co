@@ -67,7 +67,7 @@ router.post(
   upload.array('files', 10),
   asyncHandler(async (req: Request, res: Response) => {
     const files = req.files as (Express.Multer.File & { path: string; filename: string })[];
-    const { orderId, taskId, notes, userId: bodyUserId, category } = req.body;
+    const { orderId, taskId, notes, userId: bodyUserId, category, tag } = req.body;
     const authReq = req as any;
     
     // If admin provides a userId in the body, upload on their behalf
@@ -92,6 +92,7 @@ router.post(
           orderId: orderId || undefined,
           taskId: taskId || undefined,
           category: category || undefined,
+          tag: tag || undefined,
           filename: (file as any).key || file.filename || file.originalname,
           originalName: file.originalname,
           mimetype: file.mimetype,

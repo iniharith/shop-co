@@ -52,6 +52,22 @@ class FileUploadRepository {
             return FileUpload_1.FileUpload.findByIdAndUpdate(id, { $set: { originalName } }, { new: true });
         });
     }
+    // Re-points a file at the correct customer/order/task — used to fix files
+    // uploaded through a share link before its userId was resolved correctly.
+    reassign(id, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const update = {};
+            if (data.userId)
+                update.userId = data.userId;
+            if (data.orderId)
+                update.orderId = data.orderId;
+            if (data.taskId)
+                update.taskId = data.taskId;
+            if (data.category)
+                update.category = data.category;
+            return FileUpload_1.FileUpload.findByIdAndUpdate(id, { $set: update }, { new: true });
+        });
+    }
     updateAdminReview(id, reviewed, notes) {
         return __awaiter(this, void 0, void 0, function* () {
             return FileUpload_1.FileUpload.findByIdAndUpdate(id, { $set: { adminReviewed: reviewed, adminNotes: notes } }, { new: true });

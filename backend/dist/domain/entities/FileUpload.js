@@ -50,5 +50,9 @@ const FileUploadSchema = new mongoose_1.Schema({
     notes: { type: String },
     adminReviewed: { type: Boolean, default: false },
     adminNotes: { type: String },
+    // The exact share-link slug this file was uploaded through, if any.
+    // This is the single source of truth linking an upload back to its
+    // folder — independent of userId/orderId/taskId matching.
+    shareSlug: { type: String, index: true },
 }, { timestamps: true });
 exports.FileUpload = mongoose_1.default.model('FileUpload', FileUploadSchema);

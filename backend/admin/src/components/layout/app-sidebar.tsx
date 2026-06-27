@@ -181,19 +181,21 @@ export default function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="data-[state=open]:bg-slate-800 bg-slate-900 hover:bg-slate-800 data-[state=open]:text-slate-100 relative"
+                  className="data-[state=open]:bg-slate-800 bg-slate-900 hover:bg-slate-800 data-[state=open]:text-slate-100"
                 >
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 p-0 flex items-center justify-center rounded-full z-10 shadow-sm">
-                      {unreadCount}
-                    </span>
-                  )}
-                  <Avatar className="h-8 w-8 rounded-lg relative">
-                    <AvatarImage src={((session?.user as any)?.avatar || (session?.user as any)?.image)?.startsWith('http') ? ((session?.user as any)?.avatar || (session?.user as any)?.image) : ((session?.user as any)?.avatar || (session?.user as any)?.image) ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${((session?.user as any)?.avatar || (session?.user as any)?.image).replace(/^\//, '')}` : ""} />
-                    <AvatarFallback className="rounded-lg text-white">
-                      {session?.user?.name?.slice(0, 2)?.toUpperCase() || "CN"}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] w-4 h-4 p-0 flex items-center justify-center rounded-full z-50 shadow-sm border border-slate-900">
+                        {unreadCount}
+                      </span>
+                    )}
+                    <Avatar className="h-8 w-8 rounded-lg">
+                      <AvatarImage src={((session?.user as any)?.avatar || (session?.user as any)?.image)?.startsWith('http') ? ((session?.user as any)?.avatar || (session?.user as any)?.image) : ((session?.user as any)?.avatar || (session?.user as any)?.image) ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${((session?.user as any)?.avatar || (session?.user as any)?.image).replace(/^\//, '')}` : ""} />
+                      <AvatarFallback className="rounded-lg text-white">
+                        {session?.user?.name?.slice(0, 2)?.toUpperCase() || "CN"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
                   <div className="grid flex-1 text-white text-left text-sm leading-tight">
                     <span className="truncate text-white font-semibold">
                       {session?.user?.name || ""}

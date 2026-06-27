@@ -61,7 +61,7 @@ router.get('/conversations', auth_middileware_1.default, (0, express_async_handl
     // For simplicity, let's just return conversations they are part of, or all if admin?
     const role = authReq.role;
     let conversations;
-    if (['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(role)) {
+    if (['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(role)) {
         // Admins see all conversations for now
         conversations = yield ChatRepository_1.chatRepository.findConversationsByUser(userId); // Or fetch all if needed
         // Actually, fetching all conversations is better for an admin dashboard
@@ -126,7 +126,7 @@ router.post('/conversations/:id/messages', auth_middileware_1.default, (0, expre
         source: source || 'web',
     });
     const conversation = yield ChatRepository_1.chatRepository.findConversationById(req.params.id);
-    if (conversation && conversation.whatsappPhone && ['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(role)) {
+    if (conversation && conversation.whatsappPhone && ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(role)) {
         // Send back to WhatsApp using WhatsAppService or directly via Meta API
         try {
             const { default: axios } = yield Promise.resolve().then(() => __importStar(require('axios')));

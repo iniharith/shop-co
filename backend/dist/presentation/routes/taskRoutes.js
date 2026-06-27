@@ -84,7 +84,7 @@ router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)
         orderId: req.query.orderId,
     };
     // If not admin, only show tasks linked to their username or orders (for simplicity, we'll just match their username)
-    if (!['admin', 'sysadmin', 'boss', 'designer', 'production'].includes(role)) {
+    if (!['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(role)) {
         filters.customerUsername = ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.name) || ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.email); // or however user is identified
     }
     const tasks = yield TaskRepository_1.taskRepository.findAll(filters);
@@ -119,8 +119,17 @@ const deleteAllTaskFiles = (task) => __awaiter(void 0, void 0, void 0, function*
 });
 // PUT /api/tasks/:id
 router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g;
     const oldTask = yield TaskRepository_1.taskRepository.findById(req.params.id);
+    // If someone is being newly assigned to a task that's still "In Progress",
+    // automatically advance it to "In Design" — being assigned implies design work
+    // is starting. Only triggers when assignee actually changes, and only nudges
+    // the status if the caller didn't already explicitly request a different one.
+    const isNewAssignment = req.body.assignee && ((_a = oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) === null || _a === void 0 ? void 0 : _a.toString()) !== req.body.assignee;
+    const currentStatus = (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status) || 'PLACED';
+    if (isNewAssignment && currentStatus === 'IN_PROGRESS' && !req.body.status) {
+        req.body.status = 'IN_DESIGN';
+    }
     if (req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status)) {
         req.body.statusUpdatedAt = new Date();
     }
@@ -129,7 +138,7 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
         res.status(404).json({ success: false, message: 'Task not found' });
         return;
     }
-    if (req.body.assignee && ((_a = oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) === null || _a === void 0 ? void 0 : _a.toString()) !== req.body.assignee) {
+    if (req.body.assignee && ((_b = oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) === null || _b === void 0 ? void 0 : _b.toString()) !== req.body.assignee) {
         const { NotificationRepository } = yield Promise.resolve().then(() => __importStar(require('../../infrastructure/db/repositories/notification.repository')));
         const notifRepo = new NotificationRepository();
         const newNotif = yield notifRepo.createNotification({
@@ -143,16 +152,18 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
     }
     // Log activities
     const authReq = req;
-    const userId = authReq.userId || ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b._id) || ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.id) || 'system';
-    const userName = ((_d = authReq.user) === null || _d === void 0 ? void 0 : _d.name) || ((_e = authReq.user) === null || _e === void 0 ? void 0 : _e.email) || 'System';
+    const userId = authReq.userId || ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c._id) || ((_d = authReq.user) === null || _d === void 0 ? void 0 : _d.id) || 'system';
+    const userName = ((_e = authReq.user) === null || _e === void 0 ? void 0 : _e.name) || ((_f = authReq.user) === null || _f === void 0 ? void 0 : _f.email) || 'System';
     if (req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status)) {
-        yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `changed status to ${req.body.status}`);
+        const oldStatus = ((oldTask === null || oldTask === void 0 ? void 0 : oldTask.status) || 'PLACED').replace(/_/g, ' ');
+        const newStatus = req.body.status.replace(/_/g, ' ');
+        yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `changed status from ${oldStatus} to ${newStatus}`);
     }
-    if (req.body.assignee && ((_f = oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) === null || _f === void 0 ? void 0 : _f.toString()) !== req.body.assignee) {
+    if (req.body.assignee && ((_g = oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) === null || _g === void 0 ? void 0 : _g.toString()) !== req.body.assignee) {
         yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `assigned this task`);
     }
     if (req.body.description !== undefined && req.body.description !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.description)) {
-        yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `changed the description`);
+        // Do not log description changes as activity
     }
     // Sync status to Order if it changed
     if (req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status)) {
@@ -250,8 +261,8 @@ router.put('/:id/files/notes', auth_middileware_1.default, (0, express_async_han
     catch (err) {
         console.error("Failed to sync file upload notes:", err);
     }
-    // Add a comment to the task to notify stakeholders
-    yield TaskRepository_1.taskRepository.addComment(id, userId, userName, `Note updated for attached file (${fileName}): ${notes || '(cleared)'}`, authReq.role || 'admin');
+    // Add an activity to the task to notify stakeholders
+    yield TaskRepository_1.taskRepository.addActivity(id, userId, userName, `updated note for attached file (${fileName}): ${notes || '(cleared)'}`);
     res.json({ success: true, task });
 })));
 // POST /api/tasks/:id/files

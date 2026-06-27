@@ -12,6 +12,7 @@ import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck,
 import { forceDownload } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import ImageNext from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -317,7 +318,7 @@ export default function ProductionManager() {
     if (file.mimetype?.includes("image")) {
       return (
         <div className="w-full h-40 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
-          <img src={getFileUrl(file.path)} alt={file.originalName} className="object-cover w-full h-full" />
+          <ImageNext src={getFileUrl(file.path)} alt={file.originalName} width={400} height={400} className="object-cover w-full h-full" />
         </div>
       );
     }
@@ -335,7 +336,7 @@ export default function ProductionManager() {
     if (previewImage) {
       return (
         <div className={`${sizeClass} overflow-hidden bg-muted flex items-center justify-center shrink-0`}>
-          <img src={getFileUrl(previewImage.path)} alt={group.folderName} loading="lazy" decoding="async" width={64} height={64} className="object-cover w-full h-full" />
+          <ImageNext src={getFileUrl(previewImage.path)} alt={group.folderName} width={128} height={128} className="object-cover w-full h-full" />
         </div>
       );
     }
@@ -502,8 +503,15 @@ export default function ProductionManager() {
                         {getFileThumbnail(file)}
                         <CardHeader className="p-4 pb-2 flex flex-col items-start justify-between bg-muted/5 border-b">
                           <div className="overflow-hidden w-full">
-                            <CardTitle className="text-sm truncate w-full" title={file.originalName}>
-                              {file.originalName}
+                            <CardTitle className="text-sm truncate w-full flex items-center gap-2" title={file.originalName}>
+                                  {file.originalName}
+                                  {file.tag === 'draft' ? (
+                                    <Badge className="bg-orange-500 hover:bg-orange-600 shrink-0 text-[8px] px-1 py-0 h-4">Draft</Badge>
+                                  ) : file.tag === 'for_print' ? (
+                                    <Badge className="bg-green-500 hover:bg-green-600 shrink-0 text-[8px] px-1 py-0 h-4">For Print</Badge>
+                                  ) : file.tag === 'attachment' ? (
+                                    <Badge className="bg-gray-500 hover:bg-gray-600 shrink-0 text-[8px] px-1 py-0 h-4">Attachment</Badge>
+                                  ) : null}
                             </CardTitle>
                             <CardDescription className="text-xs truncate w-full">
                               User: {activeGroup.folderName}
@@ -567,7 +575,16 @@ export default function ProductionManager() {
                         <div className="flex items-center gap-4 min-w-0 flex-1">
                           {getFileIcon(file.mimetype)}
                           <div className="min-w-0 flex-1">
-                            <h4 className="text-sm font-medium truncate" title={file.originalName}>{file.originalName}</h4>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-sm font-medium truncate" title={file.originalName}>{file.originalName}</h4>
+                              {file.tag === 'draft' ? (
+                                    <Badge className="bg-orange-500 hover:bg-orange-600 shrink-0 text-[8px] px-1 py-0 h-4">Draft</Badge>
+                                  ) : file.tag === 'for_print' ? (
+                                    <Badge className="bg-green-500 hover:bg-green-600 shrink-0 text-[8px] px-1 py-0 h-4">For Print</Badge>
+                                  ) : file.tag === 'attachment' ? (
+                                    <Badge className="bg-gray-500 hover:bg-gray-600 shrink-0 text-[8px] px-1 py-0 h-4">Attachment</Badge>
+                                  ) : null}
+                            </div>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                               <span className="bg-muted px-1.5 py-0.5 rounded">{file.category || "Uncategorized"}</span>
                               <span className={file.adminReviewed ? "text-green-500 font-medium" : "text-amber-500 font-medium"}>

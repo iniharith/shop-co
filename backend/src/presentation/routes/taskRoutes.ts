@@ -7,6 +7,7 @@ import { s3Client, S3_BUCKET_NAME, deleteFromS3 } from "../../infrastructure/con
 import multerS3 from "multer-s3";
 import multer from "multer";
 import UserRepository from '../../infrastructure/db/repositories/user.repository';
+import { NotificationRepository } from '../../infrastructure/db/repositories/notification.repository';
 import { FileUpload } from '../../domain/entities/FileUpload';
 import { RedisService } from '../../infrastructure/redis/redis';
 import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
@@ -208,6 +209,24 @@ router.post(
       return;
     }
 
+    // Send notification to assignee if they are not the one commenting
+    if (task.assignee && task.assignee.toString() !== userId.toString()) {
+      try {
+        const notifRepo = new NotificationRepository();
+        await notifRepo.createNotification({
+          userId: task.assignee.toString(),
+          title: 'New Task Comment',
+          message: `${userName} commented on task: ${task.title}`,
+          type: 'SYSTEM',
+          taskId: task._id.toString(),
+          link: `/admin/tasks?taskId=${task._id.toString()}`,
+          read: false
+        } as any);
+      } catch (err) {
+        console.error("Failed to send comment notification:", err);
+      }
+    }
+
     res.json({ success: true, task });
   })
 );
@@ -294,8 +313,9 @@ router.post(
     }
     const fileUrl = (req.file as any).location;
     const fileName = req.file.originalname || 'Attached File';
+    const tag = req.body.tag || 'attachment';
 
-    const task = await taskRepository.addFile(req.params.id, fileUrl, fileName);
+    const task = await taskRepository.addFile(req.params.id, fileUrl, fileName, tag);
     if (!task) {
       res.status(404).json({ success: false, message: 'Task not found' });
       return;
@@ -312,6 +332,7 @@ router.post(
         taskId: task._id,
         orderId: task.orderId || undefined,
         category: 'TASK',
+        tag: tag,
         filename: (req.file as any).key || req.file.filename || req.file.originalname,
         originalName: fileName,
         mimetype: req.file.mimetype,

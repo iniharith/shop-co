@@ -5,7 +5,7 @@ import { getTasks, createTask, updateTask, deleteTask, addTaskComment, deleteTas
 
 export const useTasks = (filters?: any) => {
     const { data: session } = useSession();
-    return useQueryData(['tasks', filters], () => getTasks(session?.user?.token, filters));
+    return useQueryData(['tasks', filters], () => getTasks(session?.user?.token, filters), { refetchInterval: 3000 });
 }
 
 export const useCreateTask = () => {
@@ -30,7 +30,7 @@ export const useUploadTaskFile = () => {
     const { data: session } = useSession();
     const { mutate, isPending } = useMutationData(
         ['uploadTaskFile'],
-        (data: { id: string, file: File }) => import("@/api/tasks").then(m => m.uploadTaskFile(session?.user.token, data.id, data.file)),
+        (data: { id: string, file: File, tag?: string }) => import("@/api/tasks").then(m => m.uploadTaskFile(session?.user.token, data.id, data.file, data.tag)),
         ["tasks", "allFiles", "groupedFiles"]
     )
     return { mutate, isPending }

@@ -39,6 +39,7 @@ const authMiddilware = (req, res, next) => __awaiter(void 0, void 0, void 0, fun
         }
         req.userId = userId;
         req.role = user.role;
+        req.user = user;
         next();
     }
     catch (error) {
