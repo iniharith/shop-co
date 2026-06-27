@@ -384,7 +384,7 @@ router.delete(
     // Delete from FileUpload collection
     try {
       const { FileUpload } = await import('../../domain/entities/FileUpload');
-      await FileUpload.findOneAndDelete({ path: fileUrl, taskId: id });
+      await FileUpload.findOneAndDelete({ path: fileUrl });
     } catch (e) {
       console.error('Failed to delete task file from FileUpload:', e);
     }

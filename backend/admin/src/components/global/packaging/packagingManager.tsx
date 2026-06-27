@@ -482,7 +482,7 @@ export default function PackagingManager() {
                   </div>
                 </div>
                 
-                <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3" : "flex flex-col gap-3"}>
+                <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3" : "flex flex-col gap-3"}>
                   {activeGroup.files.map((file: any) => (
                     viewMode === "grid" ? (
                       <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow relative">
@@ -496,11 +496,11 @@ export default function PackagingManager() {
                         ) : null}
                         <CardHeader className="p-4 pb-2 flex flex-col items-start justify-between bg-muted/5 border-b">
                           <div className="overflow-hidden w-full">
-                            <CardTitle className="text-xs truncate w-full flex items-center gap-2" title={file.originalName}>
+                            <CardTitle className="text-[10px] truncate w-full flex items-center gap-2" title={file.originalName}>
                               {file.originalName}
                               
                             </CardTitle>
-                            <CardDescription className="text-[10px] truncate w-full">
+                            <CardDescription className="text-[9px] truncate w-full">
                               User: {activeGroup.folderName}
                             </CardDescription>
                           </div>
@@ -614,7 +614,7 @@ export default function PackagingManager() {
         </div>
       ) : (
         // --- OUTSIDE (FOLDERS) ---
-        <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3" : "flex flex-col gap-3"}>
+        <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3" : "flex flex-col gap-3"}>
           {groupedFiles.map((group) => {
             const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
             if (viewMode === "grid") {
