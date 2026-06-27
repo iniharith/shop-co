@@ -138,7 +138,7 @@ export default function PublicFolderView({ params }: { params: Promise<{ folderI
                 <Card key={file._id} className="overflow-hidden bg-white shadow-sm hover:shadow-md transition-all border">
                   {isImage ? (
                     <div className="h-48 relative bg-muted group overflow-hidden">
-                      <Image src={file.path} alt={file.originalName} width={200} height={200} quality={50} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                      <Image src={file.path} alt={file.originalName} width={50} height={50} quality={50} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                         <Button variant="secondary" size="sm" onClick={() => window.open(file.path, "_blank")}>
                           <Eye className="w-4 h-4 mr-2" /> View

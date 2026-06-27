@@ -118,7 +118,9 @@ const NotificationsDrawer = ({
                         onClick={() => {
                           if (notification.link) {
                             setIsOpen(false);
-                            router.push(notification.link);
+                            setTimeout(() => {
+                              router.push(notification.link);
+                            }, 100);
                           }
                         }}
                         className={cn(

@@ -52,45 +52,54 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
           )}
         </a>
         
-        {/* Right: Filename & Delete Button */}
-        <div className="flex-1 flex justify-between items-center min-w-0 mr-1">
-        {file.tag === 'draft' ? (
-          <Badge className="bg-orange-500 hover:bg-orange-600 mb-1 w-fit text-[10px]">Draft</Badge>
-        ) : file.tag === 'for_print' ? (
-          <Badge className="bg-green-500 hover:bg-green-600 mb-1 w-fit text-[10px]">For Print</Badge>
-        ) : (
-          <Badge className="bg-gray-500 hover:bg-gray-600 mb-1 w-fit text-[10px]">Attachment</Badge>
-        )}
-        <div className="flex items-center gap-2 mb-2 group">
-          <a href={file.url} target="_blank" rel="noopener noreferrer" className="truncate text-white font-medium text-sm tracking-wide hover:underline px-1">
-            {file.name}
-          </a>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-6 h-6 shrink-0 text-white/50 hover:text-white hover:bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={() => forceDownload(file.url, file.name)}
-          >
-            <DownloadIcon className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-          <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="w-7 h-7 shrink-0 text-red-400 hover:text-red-500 hover:bg-white/10 rounded-full ml-1"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (confirm('Are you sure you want to delete this file?')) {
-                  deleteFile({ id: task._id, fileId: file._id || file.url.split('/').pop() });
-                }
-              }}
-              disabled={isDeletingFile}
-              title="Delete"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
+        {/* Right: Filename, Tag & Buttons */}
+        <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-1">
+          {/* Top: Tag */}
+          {file.tag === 'draft' ? (
+            <Badge className="bg-orange-500 hover:bg-orange-600 mb-0.5 w-fit text-[10px] px-1.5 py-0 h-4 rounded-md">Draft</Badge>
+          ) : file.tag === 'for_print' ? (
+            <Badge className="bg-green-500 hover:bg-green-600 mb-0.5 w-fit text-[10px] px-1.5 py-0 h-4 rounded-md">For Print</Badge>
+          ) : (
+            <Badge className="bg-gray-500 hover:bg-gray-600 mb-0.5 w-fit text-[10px] px-1.5 py-0 h-4 rounded-md">Attachment</Badge>
+          )}
+          
+          {/* Bottom: Filename & Actions */}
+          <div className="flex justify-between items-center w-full min-w-0">
+            <a href={file.url} target="_blank" rel="noopener noreferrer" className="truncate text-white font-medium text-[13px] tracking-wide hover:underline pr-2 pb-1">
+              {file.name}
+            </a>
+            
+            <div className="flex items-center pb-1">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="w-6 h-6 shrink-0 text-blue-400 hover:text-blue-500 hover:bg-white/10 rounded-full"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  forceDownload(file.url, file.name);
+                }}
+                title="Download"
+              >
+                <DownloadIcon className="w-3.5 h-3.5" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="w-6 h-6 shrink-0 text-red-400 hover:text-red-500 hover:bg-white/10 rounded-full ml-0.5"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (confirm('Are you sure you want to delete this file?')) {
+                    deleteFile({ id: task._id, fileId: file._id || file.url.split('/').pop() });
+                  }
+                }}
+                disabled={isDeletingFile}
+                title="Delete"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -137,7 +146,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   
   const [openOrderBox, setOpenOrderBox] = useState(false);
   const [openUserBox, setOpenUserBox] = useState(false);
-  const [uploadTag, setUploadTag] = useState<string>('attachment');
+  const uploadTagRef = React.useRef<string>('attachment');
   const [orderSearch, setOrderSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
   
@@ -183,7 +192,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     if (e.target.files && e.target.files.length > 0) {
       const files = Array.from(e.target.files);
       files.forEach(file => {
-        uploadFile({ id: task._id, file, tag: uploadTag }, {
+        uploadFile({ id: task._id, file, tag: uploadTagRef.current }, {
           onSuccess: () => {
             toast.success("File uploaded successfully");
           },
@@ -388,19 +397,19 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
                     <DropdownMenuItem onClick={() => {
-                      setUploadTag('attachment');
+                      uploadTagRef.current = 'attachment';
                       setTimeout(() => document.getElementById('task-file-upload')?.click(), 50);
                     }}>
                       <Badge className="bg-gray-500 mr-2 text-[10px]">Attachment</Badge> Upload Attachment
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => {
-                      setUploadTag('draft');
+                      uploadTagRef.current = 'draft';
                       setTimeout(() => document.getElementById('task-file-upload')?.click(), 50);
                     }}>
                       <Badge className="bg-orange-500 mr-2 text-[10px]">Draft</Badge> Upload Draft
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => {
-                      setUploadTag('for_print');
+                      uploadTagRef.current = 'for_print';
                       setTimeout(() => document.getElementById('task-file-upload')?.click(), 50);
                     }}>
                       <Badge className="bg-green-500 mr-2 text-[10px]">For Print</Badge> Upload For Print
