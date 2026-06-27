@@ -88,8 +88,8 @@ export default function PublicFolderView({ params }: { params: Promise<{ folderI
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="h-screen overflow-y-auto bg-gray-50/50 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6 min-h-full pb-10">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-xl shadow-sm border">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-primary/10 rounded-lg">

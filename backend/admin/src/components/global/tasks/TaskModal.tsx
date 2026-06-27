@@ -41,12 +41,12 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
   return (
     <div className="relative group w-fit max-w-full mb-5 mt-1">
       {/* Dark container matching the sketch */}
-      <div className="flex items-center gap-2 bg-[#5a5a5a] p-1.5 pr-2 rounded-[16px] w-full min-w-[190px] shadow-sm relative z-10">
+      <div className="flex items-center gap-2 bg-[#5a5a5a] p-1.5 pr-2 rounded-[16px] w-full min-w-[190px] shadow-sm relative z-10 overflow-hidden">
         
-        {/* Left: Image Box */}
-        <a href={file.url} target="_blank" rel="noopener noreferrer" className="shrink-0 bg-white rounded-[12px] w-12 h-12 p-0.5 shadow-inner flex items-center justify-center overflow-hidden relative group-hover:opacity-90 transition-opacity">
-          {isImage ? (
-            <img src={file.url} alt={file.name} className="w-full h-full object-cover rounded-[10px]" />
+        {/* Left: Icon or Thumbnail */}
+        <a href={file.url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl bg-[#666666] flex items-center justify-center shrink-0 hover:bg-[#777777] transition-colors">
+          {file.url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+            <img src={file.url} alt="thumbnail" className="w-full h-full object-cover rounded-xl" />
           ) : (
             <File className="w-6 h-6 text-primary/80" />
           )}
@@ -54,17 +54,17 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
         
         {/* Right: Filename, Tag & Buttons */}
         <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-1 gap-0.5">
-          {/* Top: Tag */}
+          {/* Absolute Top Right Badge */}
           {file.tag === 'draft' ? (
-            <Badge className="bg-orange-500 hover:bg-orange-600 w-fit text-[8px] px-1 py-0 h-3.5 min-h-0 rounded uppercase leading-none border-0">Draft</Badge>
+            <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[8px] px-1.5 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Draft</div>
           ) : file.tag === 'for_print' ? (
-            <Badge className="bg-green-500 hover:bg-green-600 w-fit text-[8px] px-1 py-0 h-3.5 min-h-0 rounded uppercase leading-none border-0">For Print</Badge>
+            <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[8px] px-1.5 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">For Print</div>
           ) : (
-            <Badge className="bg-gray-500 hover:bg-gray-600 w-fit text-[8px] px-1 py-0 h-3.5 min-h-0 rounded uppercase leading-none border-0">Attachment</Badge>
+            <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[8px] px-1.5 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Attachment</div>
           )}
           
           {/* Bottom: Filename & Actions */}
-          <div className="flex justify-between items-center w-full min-w-0">
+          <div className="flex justify-between items-center w-full min-w-0 mt-2">
             <a href={file.url} target="_blank" rel="noopener noreferrer" className="truncate text-white font-medium text-[12px] tracking-wide hover:underline pr-2">
               {file.name}
             </a>
