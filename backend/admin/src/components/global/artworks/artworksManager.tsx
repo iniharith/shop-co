@@ -214,12 +214,29 @@ export default function ArtworksManager() {
     toast.loading(`Preparing ZIP with ${group.files.length} files...`);
     try {
       const zip = new JSZip();
+      const usedNames = new Set<string>();
+      
       const filePromises = group.files.map(async (file: any) => {
+        let baseName = file.originalName || "file";
+        let fileName = baseName;
+        let counter = 1;
+        while (usedNames.has(fileName)) {
+          const nameParts = baseName.split('.');
+          if (nameParts.length > 1) {
+            const ext = nameParts.pop();
+            fileName = `${nameParts.join('.')}(${counter}).${ext}`;
+          } else {
+            fileName = `${baseName}(${counter})`;
+          }
+          counter++;
+        }
+        usedNames.add(fileName);
+
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
         const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName || "file")}`;
         const response = await fetch(proxyUrl);
         const blob = await response.blob();
-        zip.file(file.originalName || "file", blob);
+        zip.file(fileName, blob);
       });
       await Promise.all(filePromises);
       const content = await zip.generateAsync({ type: "blob" });
