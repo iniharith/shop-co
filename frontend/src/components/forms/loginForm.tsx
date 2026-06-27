@@ -4,6 +4,7 @@ import Alert from "@/components/ui/alertBadge";
 import { useEffect, useState } from "react";
 import AnimatedButton from "../animation/animatedButton";
 import { Form, FormField } from "../ui/form";
+import { Button } from "../ui/button";
 import FormGeneratorV2 from "../global/formgenrator";
 import { FaEnvelope, FaLock } from "react-icons/fa6";
 import { useUIStore } from "@/store/uiStore";
@@ -64,17 +65,9 @@ export function LoginForm({ callBack }: { callBack?: () => void }) {
         )}
       />
 
-      <AnimatedButton
-        type="submit"
-        text="login"
-        loadingText="loging in..."
-        isLoading={isPending}
-        disabled={isPending}
-        className="capitalize"
-      />
-      {/* <Button type="submit" className="w-full">
-        Login
-      </Button> */}
+      <Button type="submit" className="w-full h-12 bg-primary rounded-2xl" disabled={isPending}>
+        {isPending ? "Logging in..." : "Login"}
+      </Button>
     </form>
     </Form>
   );

@@ -39,7 +39,7 @@ export const useAuth = (type: "login" | "signup" = "login") => {
 
   async function onSubmit(data: IApiResponse) {
     try {
-      await signIn("credentials", {
+      const res = await signIn("credentials", {
         email: data.user.email,
         token: data.accessToken,
         id: data.user._id,
@@ -47,6 +47,11 @@ export const useAuth = (type: "login" | "signup" = "login") => {
         avatar: data.user.avatar || "",
         redirect: false
       })
+      if (res?.error) {
+        toast.error("Session error: " + res.error);
+        setIsLoading(false);
+        return;
+      }
       const message = type === "login" ? "Login successful" : "Signup successful";
       toast.success(message);
       router.push("/home/profile");

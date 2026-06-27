@@ -45,8 +45,13 @@ export const useAuth = (type: "login" | "signup" = "login") => {
       redirect: false,
       verified: response.user.verified,
       avatar: response.user.avatar
-    }).then(() => {
+    }).then((res: any) => {
       setIsLoading(false)
+      if (res?.error) {
+        toast.error("Session error: " + res.error)
+        console.error("NextAuth signIn error:", res.error)
+        return
+      }
       localStorage.setItem("loginId", getValues("email"))
       router.push("/admin/dashboard")
     }).catch((err) => {
