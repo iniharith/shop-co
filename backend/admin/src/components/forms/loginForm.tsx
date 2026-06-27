@@ -38,16 +38,9 @@ export function LoginForm() {
         errors={errors}
         showError={false}
       />
-      <AnimatedButton
-        type="submit"
-        text="login"
-        loadingText="loging in..."
-        isLoading={isPending}
-        disabled={isPending}
-      />
-      {/* <Button type="submit" className="w-full">
-        Login
-      </Button> */}
+      <Button type="submit" className="w-full" disabled={isPending}>
+        {isPending ? "Logging in..." : "Login"}
+      </Button>
     </form>
   );
 }
