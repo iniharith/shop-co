@@ -318,7 +318,7 @@ export default function ProductionManager() {
     if (file.mimetype?.includes("image")) {
       return (
         <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
-          <ImageNext src={getFileUrl(file.path)} alt={file.originalName} width={150} height={150} quality={50} className="object-cover w-full h-full" />
+          <ImageNext src={getFileUrl(file.path)} alt={file.originalName} width={60} height={60} quality={50} className="object-cover w-full h-full" />
         </div>
       );
     }
