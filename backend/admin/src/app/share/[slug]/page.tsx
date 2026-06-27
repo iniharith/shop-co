@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Folder, FileText, Eye, Loader2, Upload, Download, Trash2, StickyNote, X, Check
+  Folder, FileText, Eye, Loader2, Upload, Download, Trash2, StickyNote, X, Check, Image as ImageIcon
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";

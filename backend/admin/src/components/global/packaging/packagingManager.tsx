@@ -315,6 +315,13 @@ export default function PackagingManager() {
   };
 
   const getFileThumbnail = (file: any) => {
+    if (file.mimetype?.includes("image")) {
+      return (
+        <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
+          <ImageNext src={getFileUrl(file.path)} alt={file.originalName} width={20} height={20} quality={50} className="object-cover w-full h-full" />
+        </div>
+      );
+    }
     return (
       <div className="w-full h-24 bg-muted/50 rounded-t-lg flex items-center justify-center">
         {getFileIcon(file.mimetype)}
