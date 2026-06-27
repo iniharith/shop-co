@@ -317,13 +317,13 @@ export default function ProductionManager() {
   const getFileThumbnail = (file: any) => {
     if (file.mimetype?.includes("image")) {
       return (
-        <div className="w-full h-40 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
-          <ImageNext src={getFileUrl(file.path)} alt={file.originalName} width={50} height={50} quality={50} className="object-cover w-full h-full" />
+        <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
+          <ImageNext src={getFileUrl(file.path)} alt={file.originalName} width={20} height={20} quality={50} className="object-cover w-full h-full" />
         </div>
       );
     }
     return (
-      <div className="w-full h-40 bg-muted/50 rounded-t-lg flex items-center justify-center">
+      <div className="w-full h-24 bg-muted/50 rounded-t-lg flex items-center justify-center">
         {getFileIcon(file.mimetype)}
       </div>
     );
@@ -336,7 +336,7 @@ export default function ProductionManager() {
     if (previewImage) {
       return (
         <div className={`${sizeClass} overflow-hidden bg-muted flex items-center justify-center shrink-0`}>
-          <ImageNext src={getFileUrl(previewImage.path)} alt={group.folderName} width={128} height={128} className="object-cover w-full h-full" />
+          <ImageNext src={getFileUrl(previewImage.path)} alt={group.folderName} width={40} height={40} className="object-cover w-full h-full" />
         </div>
       );
     }
@@ -496,24 +496,25 @@ export default function ProductionManager() {
                   </div>
                 </div>
                 
-                <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
+                <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3" : "flex flex-col gap-3"}>
                   {activeGroup.files.map((file: any) => (
                     viewMode === "grid" ? (
-                      <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow relative">
                         {getFileThumbnail(file)}
+                        {file.tag === 'draft' ? (
+                          <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[9px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Draft</div>
+                        ) : file.tag === 'for_print' ? (
+                          <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[9px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">For Print</div>
+                        ) : file.tag === 'attachment' ? (
+                          <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[9px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Attachment</div>
+                        ) : null}
                         <CardHeader className="p-4 pb-2 flex flex-col items-start justify-between bg-muted/5 border-b">
                           <div className="overflow-hidden w-full">
-                            <CardTitle className="text-sm truncate w-full flex items-center gap-2" title={file.originalName}>
+                            <CardTitle className="text-xs truncate w-full flex items-center gap-2" title={file.originalName}>
                                   {file.originalName}
-                                  {file.tag === 'draft' ? (
-                                    <Badge className="bg-orange-500 hover:bg-orange-600 shrink-0 text-[8px] px-1 py-0 h-4">Draft</Badge>
-                                  ) : file.tag === 'for_print' ? (
-                                    <Badge className="bg-green-500 hover:bg-green-600 shrink-0 text-[8px] px-1 py-0 h-4">For Print</Badge>
-                                  ) : file.tag === 'attachment' ? (
-                                    <Badge className="bg-gray-500 hover:bg-gray-600 shrink-0 text-[8px] px-1 py-0 h-4">Attachment</Badge>
-                                  ) : null}
+                                  
                             </CardTitle>
-                            <CardDescription className="text-xs truncate w-full">
+                            <CardDescription className="text-[10px] truncate w-full">
                               User: {activeGroup.folderName}
                             </CardDescription>
                           </div>
@@ -577,13 +578,7 @@ export default function ProductionManager() {
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
                               <h4 className="text-sm font-medium truncate" title={file.originalName}>{file.originalName}</h4>
-                              {file.tag === 'draft' ? (
-                                    <Badge className="bg-orange-500 hover:bg-orange-600 shrink-0 text-[8px] px-1 py-0 h-4">Draft</Badge>
-                                  ) : file.tag === 'for_print' ? (
-                                    <Badge className="bg-green-500 hover:bg-green-600 shrink-0 text-[8px] px-1 py-0 h-4">For Print</Badge>
-                                  ) : file.tag === 'attachment' ? (
-                                    <Badge className="bg-gray-500 hover:bg-gray-600 shrink-0 text-[8px] px-1 py-0 h-4">Attachment</Badge>
-                                  ) : null}
+                              
                             </div>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                               <span className="bg-muted px-1.5 py-0.5 rounded">{file.category || "Uncategorized"}</span>
@@ -633,7 +628,7 @@ export default function ProductionManager() {
         </div>
       ) : (
         // --- OUTSIDE (FOLDERS) ---
-        <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
+        <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3" : "flex flex-col gap-3"}>
           {groupedFiles.map((group) => {
             const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
             if (viewMode === "grid") {
