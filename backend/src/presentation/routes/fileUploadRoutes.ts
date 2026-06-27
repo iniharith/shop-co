@@ -285,6 +285,7 @@ router.post(
           orderId: orderId || undefined,
           taskId: taskId || undefined,
           category: shareCategory || 'artwork',
+          shareSlug: req.params.token, // Add shareSlug so backend enrichment works
           filename: (file as any).key || file.filename || file.originalname,
           originalName: file.originalname,
           mimetype: file.mimetype,
