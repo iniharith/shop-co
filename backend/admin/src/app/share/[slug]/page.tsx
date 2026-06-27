@@ -201,7 +201,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
                   {/* Preview */}
                   {isImage ? (
                     <div className="h-44 relative bg-muted/50 overflow-hidden flex items-center justify-center">
-                      <ImageIcon className="w-12 h-12 text-blue-400 opacity-50 group-hover:scale-110 transition-transform" />
+                      <Image src={file.path} alt={file.originalName} width={60} height={60} quality={50} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Button variant="secondary" size="sm" onClick={() => window.open(file.path, "_blank")} className="gap-1">
                           <Eye className="w-4 h-4" /> View
