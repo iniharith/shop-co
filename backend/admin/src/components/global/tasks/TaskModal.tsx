@@ -53,23 +53,23 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
         </a>
         
         {/* Right: Filename, Tag & Buttons */}
-        <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-1">
+        <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-1 gap-0.5">
           {/* Top: Tag */}
           {file.tag === 'draft' ? (
-            <Badge className="bg-orange-500 hover:bg-orange-600 mb-0.5 w-fit text-[10px] px-1.5 py-0 h-4 rounded-md">Draft</Badge>
+            <Badge className="bg-orange-500 hover:bg-orange-600 w-fit text-[8px] px-1 py-0 h-3.5 min-h-0 rounded uppercase leading-none border-0">Draft</Badge>
           ) : file.tag === 'for_print' ? (
-            <Badge className="bg-green-500 hover:bg-green-600 mb-0.5 w-fit text-[10px] px-1.5 py-0 h-4 rounded-md">For Print</Badge>
+            <Badge className="bg-green-500 hover:bg-green-600 w-fit text-[8px] px-1 py-0 h-3.5 min-h-0 rounded uppercase leading-none border-0">For Print</Badge>
           ) : (
-            <Badge className="bg-gray-500 hover:bg-gray-600 mb-0.5 w-fit text-[10px] px-1.5 py-0 h-4 rounded-md">Attachment</Badge>
+            <Badge className="bg-gray-500 hover:bg-gray-600 w-fit text-[8px] px-1 py-0 h-3.5 min-h-0 rounded uppercase leading-none border-0">Attachment</Badge>
           )}
           
           {/* Bottom: Filename & Actions */}
           <div className="flex justify-between items-center w-full min-w-0">
-            <a href={file.url} target="_blank" rel="noopener noreferrer" className="truncate text-white font-medium text-[13px] tracking-wide hover:underline pr-2 pb-1">
+            <a href={file.url} target="_blank" rel="noopener noreferrer" className="truncate text-white font-medium text-[12px] tracking-wide hover:underline pr-2">
               {file.name}
             </a>
             
-            <div className="flex items-center pb-1">
+            <div className="flex items-center">
               <Button 
                 variant="ghost" 
                 size="icon" 
