@@ -573,8 +573,27 @@ router.get(
     }
     
     try {
+      if (fileUrl.includes('amazonaws.com')) {
+        const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+        const { GetObjectCommand } = require('@aws-sdk/client-s3');
+        const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
+        
+        const urlObj = new URL(fileUrl);
+        const key = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+        
+        const command = new GetObjectCommand({
+          Bucket: S3_BUCKET_NAME,
+          Key: key,
+          ResponseContentDisposition: `attachment; filename="${fileName.replace(/"/g, '\\"')}"`
+        });
+        
+        const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        res.redirect(signedUrl);
+        return;
+      }
+
       const response = await fetch(fileUrl);
-      if (!response.ok) throw new Error("Failed to fetch from S3");
+      if (!response.ok) throw new Error("Failed to fetch from URL");
       
       res.setHeader('Content-Disposition', `attachment; filename="${fileName.replace(/"/g, '\\"')}"`);
       const contentType = response.headers.get('content-type') || 'application/octet-stream';
@@ -618,9 +637,28 @@ router.get(
     }
     
     try {
+      if (file.path.includes('amazonaws.com')) {
+        const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+        const { GetObjectCommand } = require('@aws-sdk/client-s3');
+        const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
+        
+        const urlObj = new URL(file.path);
+        const key = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+        
+        const command = new GetObjectCommand({
+          Bucket: S3_BUCKET_NAME,
+          Key: key,
+          ResponseContentDisposition: `attachment; filename="${file.originalName.replace(/"/g, '\\"')}"`
+        });
+        
+        const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        res.redirect(signedUrl);
+        return;
+      }
+
       // Import axios dynamically if not at top of file, or use global fetch
       const response = await fetch(file.path);
-      if (!response.ok) throw new Error("Failed to fetch from S3");
+      if (!response.ok) throw new Error("Failed to fetch from URL");
       
       res.setHeader('Content-Disposition', `attachment; filename="${file.originalName.replace(/"/g, '\\"')}"`);
       res.setHeader('Content-Type', file.mimetype || 'application/octet-stream');
