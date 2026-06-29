@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 
 const categories = [
   "ALL",
@@ -38,6 +39,7 @@ export default function ArtworksManager() {
   const { data: usersResponse, isPending: usersPending } = useUsers();
   const { data: tasksResponse, isPending: tasksPending } = useTasks();
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
+  const searchParams = useSearchParams();
 
   const isFetching = isFetchingFiles || isFetchingOrders;
 
@@ -172,6 +174,16 @@ export default function ArtworksManager() {
       };
     });
   }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab]);
+
+  React.useEffect(() => {
+    const folderQuery = searchParams.get("folder");
+    if (folderQuery && groupedFiles.length > 0 && !selectedFolder) {
+      const match = groupedFiles.find(g => g.folderName === folderQuery);
+      if (match) {
+        setSelectedFolder(`${match.folderName}-${match.orderId}-${match.taskId}`);
+      }
+    }
+  }, [searchParams, groupedFiles, selectedFolder]);
 
   const handleReview = (fileId: string, currentStatus: boolean, notes?: string) => {
     reviewFileMutate(
@@ -561,7 +573,14 @@ export default function ArtworksManager() {
                           {file.adminNotes && (
                             <div className="text-xs bg-primary/10 text-primary p-2 rounded-md italic flex items-start gap-2">
                               <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
-                              <span>{file.adminNotes}</span>
+                              <span title={file.adminNotes}>{file.adminNotes}</span>
+                            </div>
+                          )}
+                          
+                          {file.notes && (
+                            <div className="text-xs bg-amber-50 text-amber-600 p-2 rounded-md italic flex items-start gap-2 border border-amber-100">
+                              <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
+                              <span title={file.notes}>Customer: {file.notes}</span>
                             </div>
                           )}
                           
@@ -624,8 +643,13 @@ export default function ArtworksManager() {
                                 {file.adminReviewed ? "Reviewed" : "Pending"}
                               </span>
                               {file.adminNotes && (
-                                <span className="flex items-center gap-1 text-primary truncate">
+                                <span className="flex items-center gap-1 text-primary truncate" title={file.adminNotes}>
                                   <MessageSquare className="w-3 h-3" /> {file.adminNotes}
+                                </span>
+                              )}
+                              {file.notes && (
+                                <span className="flex items-center gap-1 text-amber-600 truncate" title={file.notes}>
+                                  <MessageSquare className="w-3 h-3" /> Customer: {file.notes}
                                 </span>
                               )}
                             </div>

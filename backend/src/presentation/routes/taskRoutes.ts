@@ -44,6 +44,10 @@ router.get(
       orderId: req.query.orderId as string,
     };
     
+    if (req.query.deleted === 'true') {
+      filters.isDeleted = true;
+    }
+    
     // If not admin, only show tasks linked to their username or orders (for simplicity, we'll just match their username)
     if (!['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(role)) {
       filters.customerUsername = authReq.user?.name || authReq.user?.email; // or however user is identified
@@ -169,10 +173,14 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const task = await taskRepository.findById(req.params.id);
     if (task) {
-      await deleteAllTaskFiles(task);
-      await taskRepository.delete(req.params.id);
+      if (req.query.permanent === 'true') {
+        await deleteAllTaskFiles(task);
+        await taskRepository.permanentDelete(req.params.id);
+      } else {
+        await taskRepository.delete(req.params.id);
+      }
     }
-    res.json({ success: true, message: 'Task deleted' });
+    res.json({ success: true, message: req.query.permanent === 'true' ? 'Task permanently deleted' : 'Task deleted' });
   })
 );
 

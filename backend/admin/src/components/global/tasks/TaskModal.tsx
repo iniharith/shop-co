@@ -19,6 +19,8 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { useOrders } from "@/hooks/useOrder";
 import { Check, ChevronsUpDown, Download as DownloadIcon } from "lucide-react";
 import { cn, forceDownload } from "@/lib/utils";
+import { useAllFiles } from "@/hooks/useAdminDashboard";
+import { useRouter } from "next/navigation";
 
 const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => {
   const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(file.url);
@@ -139,6 +141,9 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { mutate: deleteFile, isPending: isDeletingFile } = useDeleteTaskFile();
   const { data: usersData } = useUsers();
   const { data: ordersData } = useOrders();
+  const { data: allFilesData } = useAllFiles();
+  const router = useRouter();
+
   const admins = usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(u.role)) || [];
   const customers = usersData?.users?.filter((u: any) => u.role === 'client') || [];
   const allUsers = usersData?.users || [];
@@ -151,8 +156,34 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [userSearch, setUserSearch] = useState("");
   
   const [description, setDescription] = useState(task.description || "");
+  const [newComment, setNewComment] = useState("");
   const [activeTab, setActiveTab] = useState("comments");
-  const [commentText, setCommentText] = useState("");
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const combinedFiles = React.useMemo(() => {
+    let files = [...(task?.files || [])];
+    
+    // Add customer uploaded files from share link
+    const allFiles = (allFilesData as any)?.data || [];
+    const customerFiles = allFiles.filter((f: any) => {
+      // Don't duplicate if already in task.files (by some chance)
+      if (files.some(tf => tf.url === f.path)) return false;
+      
+      return (f.shareSlug && (f.shareSlug === task.title || f.shareSlug === task.customerUsername || f.shareSlug === task.orderId)) ||
+             (f.taskId === task._id) ||
+             (task.orderId && f.orderId === task.orderId && f.category === 'artwork') ||
+             (task.customerUsername && f._shareFolderName === task.customerUsername);
+    }).map((f: any) => ({
+      url: f.path,
+      name: f.originalName,
+      notes: f.notes || f.adminNotes, // Make sure to sync notes
+      tag: 'customer_upload',
+      _id: f._id
+    }));
+    
+    return [...files, ...customerFiles];
+  }, [task, allFilesData]);
+
   const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "");
   const [orderId, setOrderId] = useState(task.orderId || "");
   const [customerUsername, setCustomerUsername] = useState(task.customerUsername || "");
@@ -256,13 +287,13 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               </div>
 
               <div className="space-y-4 pt-4 border-t border-border/50">
-                {task.files && task.files.length > 0 && (
+                {combinedFiles && combinedFiles.length > 0 && (
                     <div className="mb-6 space-y-3">
                       <label className="text-sm font-semibold text-foreground flex items-center gap-2">
                         <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments
                       </label>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
-                        {task.files.map((file: any, idx: number) => (
+                        {combinedFiles.slice(0, 10).map((file: any, idx: number) => (
                           <FileAttachmentCard 
                             key={idx} 
                             task={task} 
@@ -272,6 +303,21 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                           />
                         ))}
                       </div>
+                      {combinedFiles.length > 10 && (
+                        <div className="mt-4 flex justify-center">
+                          <Button 
+                            variant="secondary" 
+                            className="w-full shadow-sm hover:shadow-md transition-shadow"
+                            onClick={() => {
+                              onClose();
+                              // Open Artworks Manager and try to pre-select the folder using task title
+                              router.push(`/admin/artworks?folder=${encodeURIComponent(task.title)}`);
+                            }}
+                          >
+                            View all {combinedFiles.length} files in Artworks Manager
+                          </Button>
+                        </div>
+                      )}
                     </div>)}
                 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

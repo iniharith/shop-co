@@ -26,6 +26,12 @@ export const useDeleteTask = () => {
     return { mutate, isPending };
 }
 
+export const usePermanentDeleteTask = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(['permanentDeleteTask'], (id: string) => import("@/api/tasks").then(m => m.permanentDeleteTask(session?.user.token, id)), ["tasks", "allFiles", "groupedFiles"]);
+    return { mutate, isPending };
+}
+
 export const useUploadTaskFile = () => {
     const { data: session } = useSession();
     const { mutate, isPending } = useMutationData(

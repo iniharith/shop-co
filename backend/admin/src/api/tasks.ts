@@ -25,6 +25,11 @@ export const deleteTask = async (token: string, id: string) => {
     return response.data;
 }
 
+export const permanentDeleteTask = async (token: string, id: string) => {
+    const response = await AxiosInstance(token).delete(`/api/tasks/${id}?permanent=true`);
+    return response.data;
+}
+
 export const addTaskComment = async (token: string, id: string, text: string) => {
     const response = await AxiosInstance(token).post(`/api/tasks/${id}/comments`, { text });
     return response.data;

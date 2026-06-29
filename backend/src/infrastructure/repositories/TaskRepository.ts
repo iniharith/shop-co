@@ -5,12 +5,19 @@ export class TaskRepository {
     return Task.create(data);
   }
 
-  async findAll(filters?: { status?: string; assignee?: string; orderId?: string; customerUsername?: string }): Promise<ITask[]> {
+  async findAll(filters?: { status?: string; assignee?: string; orderId?: string; customerUsername?: string; isDeleted?: boolean }): Promise<ITask[]> {
     const query: any = {};
     if (filters?.status) query.status = filters.status;
     if (filters?.assignee) query.assignee = filters.assignee;
     if (filters?.orderId) query.orderId = filters.orderId;
     if (filters?.customerUsername) query.customerUsername = filters.customerUsername;
+    
+    if (filters?.isDeleted === true) {
+      query.isDeleted = true;
+    } else {
+      query.isDeleted = { $ne: true };
+    }
+    
     return Task.find(query).sort({ createdAt: -1 });
   }
 
@@ -27,6 +34,10 @@ export class TaskRepository {
   }
 
   async delete(id: string): Promise<void> {
+    await Task.findByIdAndUpdate(id, { $set: { isDeleted: true } });
+  }
+
+  async permanentDelete(id: string): Promise<void> {
     await Task.findByIdAndDelete(id);
   }
 

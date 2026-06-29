@@ -5,15 +5,20 @@ import { useOrders } from "@/hooks/useOrder";
 import { useBulkDeleteOrders } from "@/hooks/useOrder";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import OrderCard from "../../table/orders/OrderCard";
-import { Search, PackageX, RefreshCw, Archive, Trash2 } from "lucide-react";
+import { Search, PackageX, RefreshCw, Archive, Trash2, Calendar, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useTasks, usePermanentDeleteTask } from "@/hooks/useTasks";
+import TaskModal from "../tasks/TaskModal";
 
 const HistoryManager = () => {
   const { data, isPending, refetch, isFetching } = useOrders();
+  const { data: deletedTasksData, isPending: isTasksPending, refetch: refetchTasks, isFetching: isFetchingTasks } = useTasks({ deleted: true });
+  const { mutate: permanentDeleteTaskMutate, isPending: isPermanentDeleting } = usePermanentDeleteTask();
   const { mutate: bulkDeleteMutate, isPending: isDeleting } = useBulkDeleteOrders();
   const [activeTab, setActiveTab] = useState("DONE");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTask, setSelectedTask] = useState<any>(null);
 
   const filteredOrders = useMemo(() => {
     let orders = data?.orders || [];
@@ -40,7 +45,21 @@ const HistoryManager = () => {
     return orders;
   }, [data, activeTab, searchQuery]);
 
-  if (isPending) return <DataTableSkeleton />;
+  const filteredTasks = useMemo(() => {
+    let tasks = deletedTasksData?.tasks || [];
+    if (searchQuery.trim()) {
+      const lowerQuery = searchQuery.toLowerCase();
+      tasks = tasks.filter((t: any) => 
+        t.title?.toLowerCase().includes(lowerQuery) ||
+        t.customerUsername?.toLowerCase().includes(lowerQuery) ||
+        t.orderId?.toLowerCase().includes(lowerQuery) ||
+        t._id?.toLowerCase().includes(lowerQuery)
+      );
+    }
+    return tasks;
+  }, [deletedTasksData, searchQuery]);
+
+  if (isPending || isTasksPending) return <DataTableSkeleton />;
 
   const handleDeleteAll = () => {
     if (filteredOrders.length === 0) return;
@@ -60,6 +79,7 @@ const HistoryManager = () => {
               <TabsTrigger value="DONE" className="rounded-lg">Done / Completed</TabsTrigger>
               <TabsTrigger value="CANCELLED" className="rounded-lg text-red-500 data-[state=active]:bg-red-500 data-[state=active]:text-white">Cancelled / Failed</TabsTrigger>
               <TabsTrigger value="ARCHIVED" className="rounded-lg text-indigo-500 data-[state=active]:bg-indigo-500 data-[state=active]:text-white">Archived</TabsTrigger>
+              <TabsTrigger value="DELETED_TASKS" className="rounded-lg text-slate-500 data-[state=active]:bg-slate-700 data-[state=active]:text-white">Deleted Tasks</TabsTrigger>
             </TabsList>
           </Tabs>
           
@@ -73,46 +93,117 @@ const HistoryManager = () => {
                 className="pl-9 h-10 w-full rounded-xl bg-background border-border"
               />
             </div>
-            <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="rounded-xl h-10 w-10 shadow-sm border-border shrink-0" title="Refresh History">
-              <RefreshCw className={`w-4 h-4 text-muted-foreground ${isFetching ? 'animate-spin' : ''}`} />
+            <Button variant="outline" size="icon" onClick={() => activeTab === 'DELETED_TASKS' ? refetchTasks() : refetch()} disabled={isFetching || isFetchingTasks} className="rounded-xl h-10 w-10 shadow-sm border-border shrink-0" title="Refresh History">
+              <RefreshCw className={`w-4 h-4 text-muted-foreground ${(isFetching || isFetchingTasks) ? 'animate-spin' : ''}`} />
             </Button>
-            <Button variant="destructive" onClick={handleDeleteAll} disabled={isDeleting || filteredOrders.length === 0} className="rounded-xl h-10 shadow-sm shrink-0" title="Delete All Displayed Orders">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete All
-            </Button>
+            {activeTab !== 'DELETED_TASKS' && (
+              <Button variant="destructive" onClick={handleDeleteAll} disabled={isDeleting || filteredOrders.length === 0} className="rounded-xl h-10 shadow-sm shrink-0" title="Delete All Displayed Orders">
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete All
+              </Button>
+            )}
           </div>
         </div>
         
-        {filteredOrders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center bg-card rounded-2xl border border-dashed border-border/60">
-            <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mb-4">
-              <PackageX className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-xl font-semibold mb-1 text-foreground">No orders found</h3>
-            <p className="text-muted-foreground text-sm max-w-sm">
-              We couldn't find any orders in this history view.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 pb-10">
-            {filteredOrders.map((order: any) => (
-              <div key={order._id} className={activeTab === "CANCELLED" ? "border-2 border-red-500 bg-red-50 rounded-2xl p-2 relative overflow-hidden" : activeTab === "ARCHIVED" ? "border-2 border-indigo-500 bg-indigo-50/50 rounded-2xl p-2 relative overflow-hidden" : ""}>
-                {activeTab === "CANCELLED" && (
-                  <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10">
-                    CANCELLED
-                  </div>
-                )}
-                {activeTab === "ARCHIVED" && (
-                  <div className="absolute top-0 right-0 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10 flex items-center gap-1">
-                    <Archive className="w-3 h-3" /> ARCHIVED
-                  </div>
-                )}
-                <div className={activeTab === "CANCELLED" ? "[&_*]:text-red-900" : activeTab === "ARCHIVED" ? "[&_*]:text-indigo-900" : ""}>
-                  <OrderCard order={order} />
-                </div>
+        {activeTab === 'DELETED_TASKS' ? (
+          filteredTasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center bg-card rounded-2xl border border-dashed border-border/60">
+              <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mb-4">
+                <Trash2 className="w-8 h-8 text-muted-foreground" />
               </div>
-            ))}
-          </div>
+              <h3 className="text-xl font-semibold mb-1 text-foreground">No deleted tasks</h3>
+              <p className="text-muted-foreground text-sm max-w-sm">
+                There are no deleted tasks in the history.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4 pb-10">
+              {filteredTasks.map((task: any) => (
+                <div key={task._id} className="flex items-center justify-between p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl">
+                  <div className="flex items-center gap-4 cursor-pointer flex-1" onClick={() => setSelectedTask(task)}>
+                    <div className="bg-slate-200 p-3 rounded-xl">
+                      <FileText className="w-6 h-6 text-slate-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-lg hover:underline">{task.title}</h4>
+                      <div className="flex gap-4 text-sm text-muted-foreground mt-1">
+                        {task.orderId && <span>Order: {task.orderId}</span>}
+                        {task.customerUsername && <span>Customer: {task.customerUsername}</span>}
+                        {task.category && <span>Category: {task.category}</span>}
+                        <span>Deleted on: {new Date(task.updatedAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm("Are you sure you want to permanently delete this task? All files will be removed. This cannot be undone.")) {
+                        permanentDeleteTaskMutate(task._id);
+                      }
+                    }}
+                    disabled={isPermanentDeleting}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" /> Permanently Delete
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )
+        ) : (
+          filteredOrders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center bg-card rounded-2xl border border-dashed border-border/60">
+              <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mb-4">
+                <PackageX className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-semibold mb-1 text-foreground">No orders found</h3>
+              <p className="text-muted-foreground text-sm max-w-sm">
+                We couldn't find any orders in this history view.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 pb-10">
+              {filteredOrders.map((order: any) => (
+                <div key={order._id} className={activeTab === "CANCELLED" ? "border-2 border-red-500 bg-red-50 rounded-2xl p-2 relative overflow-hidden" : activeTab === "ARCHIVED" ? "border-2 border-indigo-500 bg-indigo-50/50 rounded-2xl p-2 relative overflow-hidden" : ""}>
+                  {activeTab === "CANCELLED" && (
+                    <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10">
+                      CANCELLED
+                    </div>
+                  )}
+                  {activeTab === "ARCHIVED" && (
+                    <div className="absolute top-0 right-0 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10 flex items-center gap-1">
+                      <Archive className="w-3 h-3" /> ARCHIVED
+                    </div>
+                  )}
+                  <div className={activeTab === "CANCELLED" ? "[&_*]:text-red-900" : activeTab === "ARCHIVED" ? "[&_*]:text-indigo-900" : ""}>
+                    <OrderCard order={order} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        )}
+        
+        {selectedTask && (
+          <TaskModal 
+            isOpen={!!selectedTask}
+            onClose={() => setSelectedTask(null)}
+            task={selectedTask}
+            allUsers={[]}
+            orders={[]}
+            customers={[]}
+            updateTask={() => {}}
+            uploadFile={() => {}}
+            isUploading={false}
+            deleteFile={() => {}}
+            isDeletingFile={false}
+            addComment={() => {}}
+            isCommenting={false}
+            deleteCommentApi={() => {}}
+            isDeletingComment={false}
+          />
         )}
       </div>
     );
