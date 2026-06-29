@@ -24,6 +24,8 @@ const ALLOWED_MIME_TYPES = [
   'image/webp',
   'image/gif',
   'image/tiff',
+  'image/heic',
+  'image/heif',
   'application/pdf',
 ];
 
@@ -51,7 +53,7 @@ const upload = multer({
     } else {
       cb(
         new Error(
-          `Jenis fail "${file.mimetype}" tidak dibenarkan. Hanya JPG, PNG, PDF, TIFF, WEBP dibenarkan.`
+          `Jenis fail "${file.mimetype}" tidak dibenarkan. Hanya JPG, PNG, PDF, TIFF, WEBP, HEIC dibenarkan.`
         )
       );
     }

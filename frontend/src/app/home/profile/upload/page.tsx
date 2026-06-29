@@ -254,7 +254,7 @@ export default function UploadPage() {
                   ref={fileInputRef}
                   type="file"
                   multiple
-                  accept=".jpg,.jpeg,.png,.webp,.tiff,.pdf"
+                  accept=".jpg,.jpeg,.png,.webp,.tiff,.pdf,.heic,.heif"
                   className="hidden"
                   onChange={e => addFiles(Array.from(e.target.files || []))}
                 />
