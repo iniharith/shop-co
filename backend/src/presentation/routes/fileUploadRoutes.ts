@@ -66,7 +66,7 @@ const upload = multer({
 router.post(
   '/upload',
   authMiddilware,
-  upload.array('files', 10),
+  upload.array('files', 50),
   asyncHandler(async (req: Request, res: Response) => {
     const files = req.files as (Express.Multer.File & { path: string; filename: string })[];
     const { orderId, taskId, notes, userId: bodyUserId, category, tag } = req.body;
@@ -270,7 +270,7 @@ const decodeSharedToken = (req: any, res: any, next: any) => {
 router.post(
   '/shared/upload/:token',
   decodeSharedToken,
-  upload.array('files', 10),
+  upload.array('files', 50),
   asyncHandler(async (req: Request, res: Response) => {
     const files = req.files as (Express.Multer.File & { path: string; filename: string })[];
     const { taskId, orderId, userId, shareCategory } = req as any;
@@ -451,7 +451,7 @@ const decodeSharedSlug = async (req: any, res: any, next: any) => {
 router.post(
   '/s/:slug/upload',
   asyncHandler(decodeSharedSlug),
-  upload.array('files', 10),
+  upload.array('files', 50),
   asyncHandler(async (req: Request, res: Response) => {
     const files = req.files as (Express.Multer.File & { path: string; filename: string })[];
     const { taskId, orderId, userId, shareCategory, shareSlug } = req as any;
