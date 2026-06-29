@@ -54,6 +54,7 @@ const s3_1 = require("../../infrastructure/config/s3");
 const multer_s3_1 = __importDefault(require("multer-s3"));
 const multer_1 = __importDefault(require("multer"));
 const user_repository_1 = __importDefault(require("../../infrastructure/db/repositories/user.repository"));
+const notification_repository_1 = require("../../infrastructure/db/repositories/notification.repository");
 const FileUpload_1 = require("../../domain/entities/FileUpload");
 const redis_1 = require("../../infrastructure/redis/redis");
 const redis_constant_1 = require("../../shared/constants/redis.constant");
@@ -83,6 +84,9 @@ router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)
         assignee: req.query.assignee,
         orderId: req.query.orderId,
     };
+    if (req.query.deleted === 'true') {
+        filters.isDeleted = true;
+    }
     // If not admin, only show tasks linked to their username or orders (for simplicity, we'll just match their username)
     if (!['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(role)) {
         filters.customerUsername = ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.name) || ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.email); // or however user is identified
@@ -183,10 +187,15 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
 router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const task = yield TaskRepository_1.taskRepository.findById(req.params.id);
     if (task) {
-        yield deleteAllTaskFiles(task);
-        yield TaskRepository_1.taskRepository.delete(req.params.id);
+        if (req.query.permanent === 'true') {
+            yield deleteAllTaskFiles(task);
+            yield TaskRepository_1.taskRepository.permanentDelete(req.params.id);
+        }
+        else {
+            yield TaskRepository_1.taskRepository.delete(req.params.id);
+        }
     }
-    res.json({ success: true, message: 'Task deleted' });
+    res.json({ success: true, message: req.query.permanent === 'true' ? 'Task permanently deleted' : 'Task deleted' });
 })));
 // POST /api/tasks/:id/comments
 router.post('/:id/comments', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -214,6 +223,24 @@ router.post('/:id/comments', auth_middileware_1.default, (0, express_async_handl
     if (!task) {
         res.status(404).json({ success: false, message: 'Task not found' });
         return;
+    }
+    // Send notification to assignee if they are not the one commenting
+    if (task.assignee && task.assignee.toString() !== userId.toString()) {
+        try {
+            const notifRepo = new notification_repository_1.NotificationRepository();
+            yield notifRepo.createNotification({
+                userId: task.assignee.toString(),
+                title: 'New Task Comment',
+                message: `${userName} commented on task: ${task.title}`,
+                type: 'SYSTEM',
+                taskId: task._id.toString(),
+                link: `/admin/tasks?taskId=${task._id.toString()}`,
+                read: false
+            });
+        }
+        catch (err) {
+            console.error("Failed to send comment notification:", err);
+        }
     }
     res.json({ success: true, task });
 })));
@@ -274,7 +301,8 @@ router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'),
     }
     const fileUrl = req.file.location;
     const fileName = req.file.originalname || 'Attached File';
-    const task = yield TaskRepository_1.taskRepository.addFile(req.params.id, fileUrl, fileName);
+    const tag = req.body.tag || 'attachment';
+    const task = yield TaskRepository_1.taskRepository.addFile(req.params.id, fileUrl, fileName, tag);
     if (!task) {
         res.status(404).json({ success: false, message: 'Task not found' });
         return;
@@ -289,6 +317,7 @@ router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'),
             taskId: task._id,
             orderId: task.orderId || undefined,
             category: 'TASK',
+            tag: tag,
             filename: req.file.key || req.file.filename || req.file.originalname,
             originalName: fileName,
             mimetype: req.file.mimetype,
@@ -331,7 +360,7 @@ router.delete('/:id/files/:fileId', auth_middileware_1.default, (0, express_asyn
     // Delete from FileUpload collection
     try {
         const { FileUpload } = yield Promise.resolve().then(() => __importStar(require('../../domain/entities/FileUpload')));
-        yield FileUpload.findOneAndDelete({ path: fileUrl, taskId: id });
+        yield FileUpload.findOneAndDelete({ path: fileUrl });
     }
     catch (e) {
         console.error('Failed to delete task file from FileUpload:', e);

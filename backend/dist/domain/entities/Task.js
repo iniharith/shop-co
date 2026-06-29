@@ -59,11 +59,13 @@ const TaskSchema = new mongoose_1.Schema({
     category: { type: String, default: 'UNASSIGNED' },
     status: { type: String, enum: ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'], default: 'PLACED' },
     isDone: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
     statusUpdatedAt: { type: Date, default: Date.now },
     files: [{
             url: { type: String, required: true },
             name: { type: String, required: true },
-            notes: { type: String, default: '' }
+            notes: { type: String, default: '' },
+            tag: { type: String, enum: ['attachment', 'draft', 'for_print'], default: 'attachment' }
         }],
     comments: [TaskCommentSchema],
     activities: [TaskActivitySchema],

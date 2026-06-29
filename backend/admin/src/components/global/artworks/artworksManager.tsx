@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 
@@ -63,6 +64,7 @@ export default function ArtworksManager() {
 
   const [editingFileId, setEditingFileId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string>("");
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
   const allFiles: any[] = (response as any)?.data || [];
 
@@ -184,6 +186,37 @@ export default function ArtworksManager() {
       }
     }
   }, [searchParams, groupedFiles, selectedFolder]);
+
+  React.useEffect(() => {
+    setSelectedFiles([]);
+  }, [selectedFolder]);
+
+  const handleSelectAll = (files: any[]) => {
+    if (selectedFiles.length === files.length) {
+      setSelectedFiles([]);
+    } else {
+      setSelectedFiles(files.map(f => f._id));
+    }
+  };
+
+  const handleSelectFile = (fileId: string) => {
+    setSelectedFiles(prev => 
+      prev.includes(fileId) ? prev.filter(id => id !== fileId) : [...prev, fileId]
+    );
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedFiles.length === 0) return;
+    if (confirm(`Are you sure you want to delete ${selectedFiles.length} files?`)) {
+      bulkDeleteMutate(selectedFiles, {
+        onSuccess: () => {
+          toast.success("Files deleted successfully");
+          setSelectedFiles([]);
+          window.location.reload();
+        }
+      });
+    }
+  };
 
   const handleReview = (fileId: string, currentStatus: boolean, notes?: string) => {
     reviewFileMutate(
@@ -468,7 +501,26 @@ export default function ArtworksManager() {
                         {activeGroup.orderId && <p className="text-[14.4px] font-bold text-foreground/80">Order ID: {activeGroup.orderId}</p>}
                       </div>
                     </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap justify-end">
+                        {activeGroup.files.length > 0 && (
+                          <div className="flex items-center gap-3 mr-2 bg-muted/50 px-3 py-1.5 rounded-lg border">
+                            <div className="flex items-center space-x-2">
+                              <Checkbox 
+                                id="select-all" 
+                                checked={selectedFiles.length === activeGroup.files.length && activeGroup.files.length > 0}
+                                onCheckedChange={() => handleSelectAll(activeGroup.files)}
+                              />
+                              <label htmlFor="select-all" className="text-sm font-medium cursor-pointer select-none">
+                                Select All ({selectedFiles.length})
+                              </label>
+                            </div>
+                            {selectedFiles.length > 0 && (
+                              <Button variant="destructive" size="sm" className="h-7 px-2 text-xs" onClick={handleBulkDelete} disabled={isBulkDeleting}>
+                                <Trash2 className="w-3 h-3 mr-1" /> Delete Selected
+                              </Button>
+                            )}
+                          </div>
+                        )}
                           <Button 
                             variant="outline" 
                             size="sm" 
@@ -535,7 +587,14 @@ export default function ArtworksManager() {
                     <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3" : "flex flex-col gap-3"}>
                       {activeGroup.files.map((file: any) => (
                     viewMode === "grid" ? (
-                      <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow relative">
+                      <Card key={file._id} className={`overflow-hidden shadow-sm hover:shadow-md transition-shadow relative ${selectedFiles.includes(file._id) ? 'ring-2 ring-primary ring-offset-1' : ''}`}>
+                        <div className="absolute top-2 left-2 z-20">
+                          <Checkbox 
+                            checked={selectedFiles.includes(file._id)} 
+                            onCheckedChange={() => handleSelectFile(file._id)} 
+                            className="bg-white/80 data-[state=checked]:bg-primary"
+                          />
+                        </div>
                         {getFileThumbnail(file)}
                         {file.tag === 'draft' ? (
                           <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[9px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Draft</div>
@@ -622,8 +681,12 @@ export default function ArtworksManager() {
                         </CardContent>
                       </Card>
                     ) : (
-                      <div key={file._id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
+                      <div key={file._id} className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${selectedFiles.includes(file._id) ? 'bg-primary/5 border-primary/40' : 'hover:bg-muted/30'}`}>
                         <div className="flex items-center gap-4 min-w-0 flex-1">
+                          <Checkbox 
+                            checked={selectedFiles.includes(file._id)} 
+                            onCheckedChange={() => handleSelectFile(file._id)} 
+                          />
                           {getFileIcon(file.mimetype)}
                           <div className="min-w-0 flex-1">
                             {editingFileId === file._id ? (

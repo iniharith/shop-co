@@ -13,7 +13,7 @@ import TaskModal from "../tasks/TaskModal";
 
 const HistoryManager = () => {
   const { data, isPending, refetch, isFetching } = useOrders();
-  const { data: deletedTasksData, isPending: isTasksPending, refetch: refetchTasks, isFetching: isFetchingTasks } = useTasks({ deleted: true });
+  const { data: deletedTasksData, isPending: isTasksPending, refetch: refetchTasks, isFetching: isFetchingTasks } = useTasks({ deleted: 'true' });
   const { mutate: permanentDeleteTaskMutate, isPending: isPermanentDeleting } = usePermanentDeleteTask();
   const { mutate: bulkDeleteMutate, isPending: isDeleting } = useBulkDeleteOrders();
   const [activeTab, setActiveTab] = useState("DONE");

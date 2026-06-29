@@ -70,7 +70,7 @@ const upload = (0, multer_1.default)({
 router.post('/upload', auth_middileware_1.default, upload.array('files', 10), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
     const files = req.files;
-    const { orderId, taskId, notes, userId: bodyUserId, category } = req.body;
+    const { orderId, taskId, notes, userId: bodyUserId, category, tag } = req.body;
     const authReq = req;
     // If admin provides a userId in the body, upload on their behalf
     const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(authReq.role);
@@ -89,6 +89,7 @@ router.post('/upload', auth_middileware_1.default, upload.array('files', 10), (0
         orderId: orderId || undefined,
         taskId: taskId || undefined,
         category: category || undefined,
+        tag: tag || undefined,
         filename: file.key || file.filename || file.originalname,
         originalName: file.originalname,
         mimetype: file.mimetype,
@@ -245,6 +246,7 @@ router.post('/shared/upload/:token', decodeSharedToken, upload.array('files', 10
         orderId: orderId || undefined,
         taskId: taskId || undefined,
         category: shareCategory || 'artwork',
+        shareSlug: req.params.token, // Add shareSlug so backend enrichment works
         filename: file.key || file.filename || file.originalname,
         originalName: file.originalname,
         mimetype: file.mimetype,

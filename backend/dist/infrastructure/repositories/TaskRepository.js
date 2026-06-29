@@ -28,6 +28,12 @@ class TaskRepository {
                 query.orderId = filters.orderId;
             if (filters === null || filters === void 0 ? void 0 : filters.customerUsername)
                 query.customerUsername = filters.customerUsername;
+            if ((filters === null || filters === void 0 ? void 0 : filters.isDeleted) === true) {
+                query.isDeleted = true;
+            }
+            else {
+                query.isDeleted = { $ne: true };
+            }
             return Task_1.Task.find(query).sort({ createdAt: -1 });
         });
     }
@@ -48,6 +54,11 @@ class TaskRepository {
     }
     delete(id) {
         return __awaiter(this, void 0, void 0, function* () {
+            yield Task_1.Task.findByIdAndUpdate(id, { $set: { isDeleted: true } });
+        });
+    }
+    permanentDelete(id) {
+        return __awaiter(this, void 0, void 0, function* () {
             yield Task_1.Task.findByIdAndDelete(id);
         });
     }
@@ -66,9 +77,9 @@ class TaskRepository {
             return Task_1.Task.findByIdAndUpdate(taskId, { $pull: { comments: { _id: commentId } } }, { new: true });
         });
     }
-    addFile(taskId, url, name) {
+    addFile(taskId, url, name, tag) {
         return __awaiter(this, void 0, void 0, function* () {
-            return Task_1.Task.findByIdAndUpdate(taskId, { $push: { files: { url, name, notes: '' } } }, { new: true });
+            return Task_1.Task.findByIdAndUpdate(taskId, { $push: { files: { url, name, notes: '', tag: tag || 'attachment' } } }, { new: true });
         });
     }
     updateFileNotes(taskId, fileUrl, notes) {

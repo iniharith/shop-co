@@ -58,6 +58,13 @@ const NotificationSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: "Order",
     },
+    taskId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "Task",
+    },
+    link: {
+        type: String,
+    },
     read: {
         type: Boolean,
         default: false,
