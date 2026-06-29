@@ -156,7 +156,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [userSearch, setUserSearch] = useState("");
   
   const [description, setDescription] = useState(task.description || "");
-  const [newComment, setNewComment] = useState("");
+  const [commentText, setCommentText] = useState("");
   const [activeTab, setActiveTab] = useState("comments");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
