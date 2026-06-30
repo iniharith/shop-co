@@ -35,6 +35,7 @@ export const useAuth = (type: "login" | "signup" = "login") => {
   const form = useZodForm(schema, mutate);
   const { register, onFormSubmit, errors, reset, getValues, setValue } = form;
   function onSubmit(response: IApiResponse) {
+    toast.success("Debug: Backend login success, calling NextAuth...")
     signIn("credentials", {
       email: response.user.email,
       password: response.user.password,
@@ -47,6 +48,7 @@ export const useAuth = (type: "login" | "signup" = "login") => {
       verified: response.user.verified,
       avatar: response.user.avatar
     }).then((res: any) => {
+      toast.info("Debug: NextAuth returned")
       setIsLoading(false)
       if (res?.error) {
         toast.error("Session error: " + res.error)
@@ -58,10 +60,11 @@ export const useAuth = (type: "login" | "signup" = "login") => {
       document.cookie = `fallback_admin_token=${response.accessToken}; path=/; max-age=86400; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`;
       
       localStorage.setItem("loginId", getValues("email"))
+      toast.info("Debug: Redirecting to dashboard...")
       router.push("/admin/dashboard")
     }).catch((err) => {
       setIsLoading(false)
-      toast.error("Something went wrong")
+      toast.error("NextAuth error: " + err?.message)
       console.log(err, "err")
     })
 

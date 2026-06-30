@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import AnimatedButton from "../global/globalButton";
 import Alert from "../ui/alertBadge";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export function LoginForm() {
   const { register, errors, onFormSubmit, isPending, isSuccess } = useAuth();
@@ -43,6 +44,7 @@ export function LoginForm() {
         className="w-full" 
         disabled={isPending}
         onClick={(e) => {
+           toast.info("Debug: Button clicked!")
            // iOS 15 Safari debug: manually trigger form submit
            onFormSubmit(e as any);
         }}
