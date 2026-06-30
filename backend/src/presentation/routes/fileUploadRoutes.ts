@@ -588,6 +588,24 @@ router.get(
         });
         
         const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        
+        // If stream=true is passed, proxy the S3 file through the backend to avoid CORS errors in browser fetch
+        if (req.query.stream === 'true') {
+          const s3Response = await fetch(signedUrl);
+          if (!s3Response.ok) throw new Error("Failed to fetch from S3");
+          res.setHeader('Content-Disposition', `attachment; filename="${fileName.replace(/"/g, '\\"')}"`);
+          res.setHeader('Content-Type', s3Response.headers.get('content-type') || 'application/octet-stream');
+          
+          // Use Readable.fromWeb to pipe the web stream to the Node.js response
+          const { Readable } = require('stream');
+          if (s3Response.body) {
+            Readable.fromWeb(s3Response.body).pipe(res);
+          } else {
+            res.status(500).json({ success: false, message: 'No body in S3 response' });
+          }
+          return;
+        }
+
         res.redirect(signedUrl);
         return;
       }

@@ -35,6 +35,8 @@ const ALLOWED_MIME_TYPES = [
     'image/webp',
     'image/gif',
     'image/tiff',
+    'image/heic',
+    'image/heif',
     'application/pdf',
 ];
 // ─── Multer + S3 Storage ─────────────────────────
@@ -60,14 +62,14 @@ const upload = (0, multer_1.default)({
             cb(null, true);
         }
         else {
-            cb(new Error(`Jenis fail "${file.mimetype}" tidak dibenarkan. Hanya JPG, PNG, PDF, TIFF, WEBP dibenarkan.`));
+            cb(new Error(`Jenis fail "${file.mimetype}" tidak dibenarkan. Hanya JPG, PNG, PDF, TIFF, WEBP, HEIC dibenarkan.`));
         }
     },
 });
 // ─── POST /api/files/upload ───────────────────────────────
 // Customer uploads one or more files (requires auth middleware upstream)
 // Files are uploaded directly to AWS S3 — not stored locally.
-router.post('/upload', auth_middileware_1.default, upload.array('files', 10), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/upload', auth_middileware_1.default, upload.array('files', 50), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
     const files = req.files;
     const { orderId, taskId, notes, userId: bodyUserId, category, tag } = req.body;
@@ -234,7 +236,7 @@ const decodeSharedToken = (req, res, next) => {
         res.status(400).json({ success: false, message: 'Invalid token' });
     }
 };
-router.post('/shared/upload/:token', decodeSharedToken, upload.array('files', 10), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/shared/upload/:token', decodeSharedToken, upload.array('files', 50), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const files = req.files;
     const { taskId, orderId, userId, shareCategory } = req;
     if (!files || files.length === 0) {
@@ -374,7 +376,7 @@ const decodeSharedSlug = (req, res, next) => __awaiter(void 0, void 0, void 0, f
     req.shareCategory = link.taskId ? 'TASK' : 'artwork';
     next();
 });
-router.post('/s/:slug/upload', (0, express_async_handler_1.default)(decodeSharedSlug), upload.array('files', 10), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/s/:slug/upload', (0, express_async_handler_1.default)(decodeSharedSlug), upload.array('files', 50), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const files = req.files;
     const { taskId, orderId, userId, shareCategory, shareSlug } = req;
     if (!files || files.length === 0) {
@@ -471,9 +473,41 @@ router.get('/proxy-download', (0, express_async_handler_1.default)((req, res) =>
         return;
     }
     try {
+        if (fileUrl.includes('amazonaws.com')) {
+            const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+            const { GetObjectCommand } = require('@aws-sdk/client-s3');
+            const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
+            const urlObj = new URL(fileUrl);
+            const key = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+            const command = new GetObjectCommand({
+                Bucket: S3_BUCKET_NAME,
+                Key: key,
+                ResponseContentDisposition: `attachment; filename="${fileName.replace(/"/g, '\\"')}"`
+            });
+            const signedUrl = yield getSignedUrl(s3Client, command, { expiresIn: 3600 });
+            // If stream=true is passed, proxy the S3 file through the backend to avoid CORS errors in browser fetch
+            if (req.query.stream === 'true') {
+                const s3Response = yield fetch(signedUrl);
+                if (!s3Response.ok)
+                    throw new Error("Failed to fetch from S3");
+                res.setHeader('Content-Disposition', `attachment; filename="${fileName.replace(/"/g, '\\"')}"`);
+                res.setHeader('Content-Type', s3Response.headers.get('content-type') || 'application/octet-stream');
+                // Use Readable.fromWeb to pipe the web stream to the Node.js response
+                const { Readable } = require('stream');
+                if (s3Response.body) {
+                    Readable.fromWeb(s3Response.body).pipe(res);
+                }
+                else {
+                    res.status(500).json({ success: false, message: 'No body in S3 response' });
+                }
+                return;
+            }
+            res.redirect(signedUrl);
+            return;
+        }
         const response = yield fetch(fileUrl);
         if (!response.ok)
-            throw new Error("Failed to fetch from S3");
+            throw new Error("Failed to fetch from URL");
         res.setHeader('Content-Disposition', `attachment; filename="${fileName.replace(/"/g, '\\"')}"`);
         const contentType = response.headers.get('content-type') || 'application/octet-stream';
         res.setHeader('Content-Type', contentType);
@@ -508,10 +542,25 @@ router.get('/:id/download', (0, express_async_handler_1.default)((req, res) => _
         return;
     }
     try {
+        if (file.path.includes('amazonaws.com')) {
+            const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+            const { GetObjectCommand } = require('@aws-sdk/client-s3');
+            const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
+            const urlObj = new URL(file.path);
+            const key = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+            const command = new GetObjectCommand({
+                Bucket: S3_BUCKET_NAME,
+                Key: key,
+                ResponseContentDisposition: `attachment; filename="${file.originalName.replace(/"/g, '\\"')}"`
+            });
+            const signedUrl = yield getSignedUrl(s3Client, command, { expiresIn: 3600 });
+            res.redirect(signedUrl);
+            return;
+        }
         // Import axios dynamically if not at top of file, or use global fetch
         const response = yield fetch(file.path);
         if (!response.ok)
-            throw new Error("Failed to fetch from S3");
+            throw new Error("Failed to fetch from URL");
         res.setHeader('Content-Disposition', `attachment; filename="${file.originalName.replace(/"/g, '\\"')}"`);
         res.setHeader('Content-Type', file.mimetype || 'application/octet-stream');
         if (response.body) {
