@@ -34,6 +34,13 @@ export const AdminNavItems: NavItem[] = [
         isActive: false,
     },
     {
+        title: 'Print Drafts',
+        url: '/admin/print-drafts',
+        icon: 'printer',
+        shortcut: ['p', 'd'],
+        isActive: false,
+    },
+    {
         title: 'Tracking',
         url: '/admin/tracking',
         icon: 'supplier',
@@ -85,7 +92,7 @@ export const roleByNavItems = (role: string) => {
     } else if (role === "packaging") {
         allowedTitles = ['Tracking', 'Chat', 'Packaging', 'History'];
     } else if (role === "designer") {
-        allowedTitles = ['Artworks', 'Tasks', 'Chat'];
+        allowedTitles = ['Artworks', 'Print Drafts', 'Tasks', 'Chat'];
     }
 
     return AdminNavItems.filter(item => allowedTitles.includes(item.title));
