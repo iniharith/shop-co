@@ -132,8 +132,13 @@ body{
   outline: 0px transparent;
 }
 
-body.has-custom-bg,
-body.has-custom-bg .bg-background {
+body.has-custom-bg {
+  background-color: transparent !important;
+}
+
+body.has-custom-bg > main,
+body.has-custom-bg main.bg-background,
+body.has-custom-bg [data-sidebar="inset"] {
   background-color: transparent !important;
 }
 
