@@ -27,6 +27,7 @@ export const useAuth = (type: "login" | "signup" = "login") => {
     }
     if (mutationError) {
       setIsLoading(false)
+      toast.error((mutationError as any)?.response?.data?.message || (mutationError as Error).message || "Login failed")
     }
   }, [isPending, mutationError])
 
@@ -50,7 +51,7 @@ export const useAuth = (type: "login" | "signup" = "login") => {
       if (res?.error) {
         toast.error("Session error: " + res.error)
         console.error("NextAuth signIn error:", res.error)
-        return
+        // iOS 15 Safari drops the NextAuth cookie, but we don't abort here.
       }
       localStorage.setItem("loginId", getValues("email"))
       router.push("/admin/dashboard")
