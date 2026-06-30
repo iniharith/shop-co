@@ -74,7 +74,7 @@ const upload = (0, multer_1.default)({
 router.post('/upload', auth_middileware_1.default, upload.array('files', 50), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
     const files = req.files;
-    const { orderId, taskId, notes, userId: bodyUserId, category, tag } = req.body;
+    const { orderId, taskId, notes, userId: bodyUserId, category, tag, folderId } = req.body;
     const authReq = req;
     // If admin provides a userId in the body, upload on their behalf
     const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(authReq.role);
@@ -102,6 +102,7 @@ router.post('/upload', auth_middileware_1.default, upload.array('files', 50), (0
         path: file.location || file.path,
         notes: notes || undefined,
         adminReviewed: false,
+        folderId: folderId || undefined,
     })));
     // Optionally notify customer via WhatsApp
     const customerPhone = (_b = authReq.user) === null || _b === void 0 ? void 0 : _b.phone;
@@ -695,5 +696,18 @@ router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.de
     }
     yield FileUploadRepository_1.fileUploadRepository.delete(req.params.id);
     res.json({ success: true, message: 'Fail berjaya dipadam' });
+})));
+// ─── PUT /api/files/:id/move ─────────────────────────────────
+// Admin moves a file to a folder
+router.put('/:id/move', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { folderId } = req.body;
+    const { id } = req.params;
+    // We allow setting folderId to null/undefined to move it back to root
+    const updatedFile = yield FileUpload_1.FileUpload.findByIdAndUpdate(id, { folderId: folderId || null }, { new: true });
+    if (!updatedFile) {
+        res.status(404).json({ success: false, message: 'File not found' });
+        return;
+    }
+    res.json({ success: true, data: updatedFile, message: 'File moved successfully' });
 })));
 exports.default = router;

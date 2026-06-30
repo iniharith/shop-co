@@ -20,6 +20,7 @@ const admin_route_1 = __importDefault(require("../presentation/routes/admin.rout
 const notification_route_1 = __importDefault(require("../presentation/routes/notification.route"));
 const parcelRoutes_1 = __importDefault(require("../presentation/routes/parcelRoutes"));
 const fileUploadRoutes_1 = __importDefault(require("../presentation/routes/fileUploadRoutes"));
+const virtualFolderRoutes_1 = __importDefault(require("../presentation/routes/virtualFolderRoutes"));
 const taskRoutes_1 = __importDefault(require("../presentation/routes/taskRoutes"));
 const WhatsAppWebhookService_1 = __importDefault(require("../infrastructure/services/WhatsAppWebhookService"));
 const user_route_1 = __importDefault(require("../presentation/routes/user.route"));
@@ -54,7 +55,8 @@ app.use(api_constant_1.apiRoutes.PRODUCT, product_route_1.default);
 app.use(api_constant_1.apiRoutes.CART, cart_route_1.default);
 app.use(api_constant_1.apiRoutes.ORDER, order_route_1.default);
 app.use(api_constant_1.apiRoutes.ADMIN, admin_route_1.default);
-app.use(api_constant_1.apiRoutes.NOTIFICATION, notification_route_1.default);
+app.use('/api/notifications', notification_route_1.default);
+app.use('/api/folders', virtualFolderRoutes_1.default);
 const chatRoutes_1 = __importDefault(require("../presentation/routes/chatRoutes"));
 // ─── Kampung Cetak: Parcel Tracking & File Upload ────────
 app.use('/api/parcels', parcelRoutes_1.default);

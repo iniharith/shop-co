@@ -225,7 +225,6 @@ export default function ArtworksManager() {
         onSuccess: () => {
           toast.success("Files deleted successfully");
           setSelectedFiles([]);
-          window.location.reload();
         }
       });
     }
@@ -237,7 +236,6 @@ export default function ArtworksManager() {
       {
         onSuccess: () => {
           toast.success("File status updated!");
-          window.location.reload();
         },
       }
     );
@@ -251,7 +249,6 @@ export default function ArtworksManager() {
         onSuccess: () => {
           toast.success("Comment saved!");
           setCommentModalOpen(false);
-          window.location.reload();
         },
       }
     );
@@ -262,7 +259,6 @@ export default function ArtworksManager() {
     deleteFileMutate(fileId, {
       onSuccess: () => {
         toast.success("File deleted successfully!");
-        window.location.reload();
       },
     });
   };
@@ -359,7 +355,7 @@ export default function ArtworksManager() {
         }
         toast.success("Artwork uploaded successfully");
         setUploadModalOpen(false);
-        window.location.reload();
+        refetch();
       } catch (e: any) {
         toast.error(e.message || "Failed to upload artwork");
       }
@@ -652,7 +648,7 @@ export default function ArtworksManager() {
                               viewMode === "grid" ? (
                                 <Card key={folder._id} className="overflow-hidden shadow-sm hover:shadow-md cursor-pointer relative bg-primary/5 border-primary/20" onClick={() => setActiveSubFolderId(folder._id)}>
                                   <div className="absolute top-2 right-2 z-20">
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10 bg-white/50" onClick={(e) => { e.stopPropagation(); if(confirm('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id, { onSuccess: () => window.location.reload() }); }}>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10 bg-white/50" onClick={(e) => { e.stopPropagation(); if(confirm('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id); }}>
                                       <Trash2 className="w-3 h-3" />
                                     </Button>
                                   </div>
@@ -669,7 +665,7 @@ export default function ArtworksManager() {
                                     <Folder className="w-8 h-8 text-primary/70" fill="currentColor" />
                                     <span className="text-sm font-medium">{folder.name}</span>
                                   </div>
-                                  <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); if(confirm('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id, { onSuccess: () => window.location.reload() }); }}>
+                                  <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); if(confirm('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id); }}>
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
                                 </div>
@@ -697,7 +693,7 @@ export default function ArtworksManager() {
                           <div className="overflow-hidden w-full">
                             {editingFileId === file._id ? (
                                 <Input autoFocus value={editingName} onChange={(e) => setEditingName(e.target.value)} onBlur={() => {
-                                  if (editingName !== file.originalName) { renameFileMutate({ id: file._id, originalName: editingName }, { onSuccess: () => window.location.reload() }); }
+                                  if (editingName !== file.originalName) { renameFileMutate({ id: file._id, originalName: editingName }); }
                                   setEditingFileId(null);
                                 }} onKeyDown={(e) => { if(e.key === 'Enter') e.currentTarget.blur(); }} className="h-7 text-sm" />
                               ) : (
@@ -982,7 +978,6 @@ export default function ArtworksManager() {
                       onSuccess: () => { 
                         setCreateFolderModalOpen(false); 
                         setNewFolderName(""); 
-                        window.location.reload(); 
                       } 
                     }
                   );
@@ -1019,7 +1014,6 @@ export default function ArtworksManager() {
                       }
                       setMoveToFolderModalOpen(false);
                       setSelectedFiles([]);
-                      window.location.reload();
                     }}
                   >
                     <Folder className="w-5 h-5 text-muted-foreground" fill="currentColor" />
@@ -1036,7 +1030,6 @@ export default function ArtworksManager() {
                         }
                         setMoveToFolderModalOpen(false);
                         setSelectedFiles([]);
-                        window.location.reload();
                       }}
                     >
                       <Folder className="w-5 h-5 text-primary/70" fill="currentColor" />

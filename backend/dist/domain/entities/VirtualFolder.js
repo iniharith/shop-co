@@ -33,29 +33,11 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.FileUpload = void 0;
+exports.VirtualFolder = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
-const FileUploadSchema = new mongoose_1.Schema({
-    userId: { type: String, required: true, index: true },
-    orderId: { type: String, index: true },
+const VirtualFolderSchema = new mongoose_1.Schema({
+    name: { type: String, required: true },
+    userId: { type: String, index: true },
     taskId: { type: String, index: true },
-    category: { type: String },
-    filename: { type: String, required: true },
-    originalName: { type: String, required: true },
-    mimetype: { type: String, required: true },
-    size: { type: Number, required: true },
-    path: { type: String, required: true },
-    thumbnailPath: { type: String },
-    uploadedAt: { type: Date, default: Date.now },
-    notes: { type: String },
-    adminReviewed: { type: Boolean, default: false },
-    adminNotes: { type: String },
-    // Tag to classify files uploaded from task board
-    tag: { type: String, enum: ['attachment', 'draft', 'for_print'] },
-    // The exact share-link slug this file was uploaded through, if any.
-    // This is the single source of truth linking an upload back to its
-    // folder — independent of userId/orderId/taskId matching.
-    shareSlug: { type: String, index: true },
-    folderId: { type: String, index: true },
 }, { timestamps: true });
-exports.FileUpload = mongoose_1.default.model('FileUpload', FileUploadSchema);
+exports.VirtualFolder = mongoose_1.default.model('VirtualFolder', VirtualFolderSchema);
