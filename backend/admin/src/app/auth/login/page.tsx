@@ -29,21 +29,6 @@ export default function LoginPage({ className }: { className?: string }) {
 
             <LoginForm />
 
-            {/* iOS 15 Diagnostic Native Button OUTSIDE FORM */}
-            <button 
-              type="button" 
-              className="relative z-[9999]"
-              style={{ width: '100%', padding: '10px', background: 'blue', color: 'white', marginTop: '20px', cursor: 'pointer' }}
-              onClick={() => {
-                 alert("BLUE BUTTON OUTSIDE FORM CLICKED!");
-              }}
-              onTouchEnd={() => {
-                 alert("BLUE BUTTON OUTSIDE FORM TOUCHED!");
-              }}
-            >
-              IOS 15 BLUE BUTTON (OUTSIDE FORM)
-            </button>
-
           </div>
         </div>
       </div>
