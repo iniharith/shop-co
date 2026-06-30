@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import ThemeProvider from "./ThemeToggle/theme-provider";
+import BackgroundProvider from "./BackgroundProvider";
 import {
   SessionProvider,
   SessionProviderProps,
@@ -21,13 +22,15 @@ export default function Providers({
     <>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <SessionProvider session={session}>
-          <ReactQueryProvider>
-            <HeroUIProvider>
-              <LiveSessionMonitor>
-                <SocketProvider>{children}</SocketProvider>
-              </LiveSessionMonitor>
-            </HeroUIProvider>
-          </ReactQueryProvider>
+          <BackgroundProvider>
+            <ReactQueryProvider>
+              <HeroUIProvider>
+                <LiveSessionMonitor>
+                  <SocketProvider>{children}</SocketProvider>
+                </LiveSessionMonitor>
+              </HeroUIProvider>
+            </ReactQueryProvider>
+          </BackgroundProvider>
         </SessionProvider>
       </ThemeProvider>
     </>

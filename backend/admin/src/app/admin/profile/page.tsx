@@ -21,6 +21,7 @@ export default function ProfilePage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [themeBg, setThemeBg] = useState<string>("");
 
   useEffect(() => {
     if (session?.user) {
@@ -29,6 +30,10 @@ export default function ProfilePage() {
         email: session.user.email || "",
       });
       setAvatarPreview((session.user as any).avatar || null);
+      const storedTheme = localStorage.getItem(`theme-bg-${session.user.id}`);
+      if (storedTheme) {
+        setThemeBg(storedTheme);
+      }
     }
   }, [session]);
 
@@ -63,6 +68,47 @@ export default function ProfilePage() {
       console.error(error);
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleThemeBgChange = (value: string) => {
+    setThemeBg(value);
+    if (session?.user?.id) {
+      if (value) {
+        localStorage.setItem(`theme-bg-${session.user.id}`, value);
+        window.dispatchEvent(new CustomEvent('theme-bg-changed', { detail: value }));
+      } else {
+        localStorage.removeItem(`theme-bg-${session.user.id}`);
+        window.dispatchEvent(new CustomEvent('theme-bg-changed', { detail: null }));
+      }
+      toast.success("Background updated!");
+    }
+  };
+
+  const handleBgImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0] && session?.user?.token) {
+      const file = e.target.files[0];
+      try {
+        setUploading(true);
+        const formData = new FormData();
+        formData.append("files", file); // use the generic file upload endpoint
+        
+        const res = await AxiosInstance(session.user.token).post(`/api/files/upload`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        
+        if (res.data?.success && res.data.data && res.data.data.length > 0) {
+           const uploadedFile = res.data.data[0];
+           const fileUrl = uploadedFile.path.startsWith("http") ? uploadedFile.path : `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/files/download/${uploadedFile.path}`;
+           handleThemeBgChange(fileUrl);
+        } else {
+           toast.error("Failed to upload background image");
+        }
+      } catch (error: any) {
+        toast.error(error.message || "Failed to upload background image");
+      } finally {
+        setUploading(false);
+      }
     }
   };
 
@@ -147,6 +193,54 @@ export default function ProfilePage() {
                 {loading || uploading ? "Saving..." : "Save Changes"}
               </Button>
             </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>UI Settings</CardTitle>
+            <CardDescription>Personalize your dashboard appearance.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label>Global Background Color</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="color"
+                  value={themeBg && !themeBg.startsWith("http") && !themeBg.startsWith("data:") ? themeBg : "#ffffff"}
+                  onChange={(e) => handleThemeBgChange(e.target.value)}
+                  className="w-16 p-1 h-10"
+                />
+                <Button variant="outline" onClick={() => handleThemeBgChange("")}>
+                  Reset Color
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-4 border-t">
+              <Label>Global Background Image</Label>
+              <p className="text-xs text-muted-foreground mb-2">Upload an image to use as your dashboard background.</p>
+              <div className="flex items-center gap-4">
+                <Label htmlFor="bg-image-upload" className="cursor-pointer">
+                  <div className="flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                    {uploading ? "Uploading..." : "Upload Image"}
+                  </div>
+                </Label>
+                <Input
+                  id="bg-image-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleBgImageUpload}
+                  disabled={uploading}
+                />
+                {(themeBg && (themeBg.startsWith("http") || themeBg.startsWith("data:"))) && (
+                   <Button variant="outline" onClick={() => handleThemeBgChange("")}>
+                     Remove Image
+                   </Button>
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
