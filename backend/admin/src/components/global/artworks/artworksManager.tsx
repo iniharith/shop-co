@@ -974,7 +974,7 @@ export default function ArtworksManager() {
             <Button 
               disabled={isCreatingFolder || !newFolderName.trim()} 
               onClick={() => {
-                const activeGroup = groupedFiles.find((g: any) => g.folderId === selectedFolder);
+                const activeGroup = groupedFiles.find((g: any) => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
                 if (activeGroup) {
                   createFolderMutate(
                     { name: newFolderName, taskId: activeGroup.taskId, userId: activeGroup.userId },
@@ -1003,7 +1003,7 @@ export default function ArtworksManager() {
           </DialogHeader>
           <div className="py-4 flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-2">
             {(() => {
-              const activeGroup = groupedFiles.find((g: any) => g.folderId === selectedFolder);
+              const activeGroup = groupedFiles.find((g: any) => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
               const groupFolders = activeGroup ? virtualFolders.filter((f: any) => 
                 activeGroup.taskId ? f.taskId === activeGroup.taskId : f.userId === activeGroup.userId
               ) : [];
