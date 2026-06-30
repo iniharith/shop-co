@@ -8,18 +8,15 @@ import { useTasks } from "@/hooks/useTasks";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer } from "lucide-react";
+import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { forceDownload } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import ImageNext from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useSession } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
 
 const categories = [
   "ALL",
@@ -40,7 +37,6 @@ export default function ArtworksManager() {
   const { data: usersResponse, isPending: usersPending } = useUsers();
   const { data: tasksResponse, isPending: tasksPending } = useTasks();
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
-  const searchParams = useSearchParams();
 
   const isFetching = isFetchingFiles || isFetchingOrders;
 
@@ -64,7 +60,6 @@ export default function ArtworksManager() {
 
   const [editingFileId, setEditingFileId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string>("");
-  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
   const allFiles: any[] = (response as any)?.data || [];
 
@@ -177,47 +172,6 @@ export default function ArtworksManager() {
     });
   }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab]);
 
-  React.useEffect(() => {
-    const folderQuery = searchParams.get("folder");
-    if (folderQuery && groupedFiles.length > 0 && !selectedFolder) {
-      const match = groupedFiles.find(g => g.folderName === folderQuery);
-      if (match) {
-        setSelectedFolder(`${match.folderName}-${match.orderId}-${match.taskId}`);
-      }
-    }
-  }, [searchParams, groupedFiles, selectedFolder]);
-
-  React.useEffect(() => {
-    setSelectedFiles([]);
-  }, [selectedFolder]);
-
-  const handleSelectAll = (files: any[]) => {
-    if (selectedFiles.length === files.length) {
-      setSelectedFiles([]);
-    } else {
-      setSelectedFiles(files.map(f => f._id));
-    }
-  };
-
-  const handleSelectFile = (fileId: string) => {
-    setSelectedFiles(prev => 
-      prev.includes(fileId) ? prev.filter(id => id !== fileId) : [...prev, fileId]
-    );
-  };
-
-  const handleBulkDelete = () => {
-    if (selectedFiles.length === 0) return;
-    if (confirm(`Are you sure you want to delete ${selectedFiles.length} files?`)) {
-      bulkDeleteMutate(selectedFiles, {
-        onSuccess: () => {
-          toast.success("Files deleted successfully");
-          setSelectedFiles([]);
-          window.location.reload();
-        }
-      });
-    }
-  };
-
   const handleReview = (fileId: string, currentStatus: boolean, notes?: string) => {
     reviewFileMutate(
       { id: fileId, reviewed: !currentStatus, notes },
@@ -259,29 +213,12 @@ export default function ArtworksManager() {
     toast.loading(`Preparing ZIP with ${group.files.length} files...`);
     try {
       const zip = new JSZip();
-      const usedNames = new Set<string>();
-      
       const filePromises = group.files.map(async (file: any) => {
-        let baseName = file.originalName || "file";
-        let fileName = baseName;
-        let counter = 1;
-        while (usedNames.has(fileName)) {
-          const nameParts = baseName.split('.');
-          if (nameParts.length > 1) {
-            const ext = nameParts.pop();
-            fileName = `${nameParts.join('.')}(${counter}).${ext}`;
-          } else {
-            fileName = `${baseName}(${counter})`;
-          }
-          counter++;
-        }
-        usedNames.add(fileName);
-
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
         const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName || "file")}`;
         const response = await fetch(proxyUrl);
         const blob = await response.blob();
-        zip.file(fileName, blob);
+        zip.file(file.originalName || "file", blob);
       });
       await Promise.all(filePromises);
       const content = await zip.generateAsync({ type: "blob" });
@@ -367,24 +304,14 @@ export default function ArtworksManager() {
   const getFileThumbnail = (file: any) => {
     if (file.mimetype?.includes("image")) {
       return (
-        <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
-          <ImageNext src={getFileUrl(file.path)} alt={file.originalName} width={100} height={100} quality={50} className="object-cover w-full h-full" />
+        <div className="w-full h-40 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
+          <img src={getFileUrl(file.path)} alt={file.originalName} className="object-cover w-full h-full" loading="lazy" decoding="async" />
         </div>
       );
     }
     return (
-      <div className="w-full h-24 bg-muted/50 rounded-t-lg flex items-center justify-center">
+      <div className="w-full h-40 bg-muted/50 rounded-t-lg flex items-center justify-center">
         {getFileIcon(file.mimetype)}
-      </div>
-    );
-  };
-
-  // Folder-card preview: show the first image inside the folder so users can see
-  // at a glance what's in it, instead of always showing a generic folder icon.
-  const getFolderPreview = (group: any, sizeClass: string = "w-16 h-16 rounded-2xl") => {
-    return (
-      <div className={`${sizeClass} bg-primary/5 group-hover:bg-primary/10 flex items-center justify-center transition-colors shrink-0`}>
-        <Folder className="w-8 h-8 text-primary" />
       </div>
     );
   };
@@ -498,44 +425,11 @@ export default function ArtworksManager() {
                           <Folder className="w-5 h-5 text-primary" />
                           {activeGroup.folderName}
                         </h2>
-                        {activeGroup.orderId && <p className="text-[14.4px] font-bold text-foreground/80">Order ID: {activeGroup.orderId}</p>}
+                        {activeGroup.orderId && <p className="text-sm text-muted-foreground">Order ID: {activeGroup.orderId}</p>}
                       </div>
                     </div>
-                      <div className="flex items-center gap-2 flex-wrap justify-end">
-                        {activeGroup.files.length > 0 && (
-                          <div className="flex items-center gap-3 mr-2 bg-muted/50 px-3 py-1.5 rounded-lg border">
-                            <div className="flex items-center space-x-2">
-                              <Checkbox 
-                                id="select-all" 
-                                checked={selectedFiles.length === activeGroup.files.length && activeGroup.files.length > 0}
-                                onCheckedChange={() => handleSelectAll(activeGroup.files)}
-                              />
-                              <label htmlFor="select-all" className="text-sm font-medium cursor-pointer select-none">
-                                Select All ({selectedFiles.length})
-                              </label>
-                            </div>
-                            {selectedFiles.length > 0 && (
-                              <Button variant="destructive" size="sm" className="h-7 px-2 text-xs" onClick={handleBulkDelete} disabled={isBulkDeleting}>
-                                <Trash2 className="w-3 h-3 mr-1" /> Delete Selected
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                          {activeGroup.files.some((f: any) => f.tag === 'draft') && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-primary/50 text-primary hover:bg-primary/10"
-                              onClick={() => {
-                                const draftIds = activeGroup.files.filter((f: any) => f.tag === 'draft').map((f: any) => f._id).join(',');
-                                window.open(`/admin/print-drafts?ids=${draftIds}`, '_blank');
-                              }}
-                            >
-                              <Printer className="w-4 h-4 mr-2" /> Print Drafts
-                            </Button>
-                          )}
+                      <div className="flex items-center gap-2">
                           <Button 
-
                             variant="outline" 
                             size="sm" 
                             disabled={isGeneratingLink}
@@ -598,25 +492,11 @@ export default function ArtworksManager() {
                       </Button>
                     </div>
                   ) : (
-                    <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3" : "flex flex-col gap-3"}>
+                    <div className={viewMode === "grid" ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
                       {activeGroup.files.map((file: any) => (
                     viewMode === "grid" ? (
-                      <Card key={file._id} className={`overflow-hidden shadow-sm hover:shadow-md transition-shadow relative ${selectedFiles.includes(file._id) ? 'ring-2 ring-primary ring-offset-1' : ''}`}>
-                        <div className="absolute top-2 left-2 z-20">
-                          <Checkbox 
-                            checked={selectedFiles.includes(file._id)} 
-                            onCheckedChange={() => handleSelectFile(file._id)} 
-                            className="bg-white/80 data-[state=checked]:bg-primary"
-                          />
-                        </div>
+                      <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow" style={{ contentVisibility: "auto", containIntrinsicSize: "0 320px" }}>
                         {getFileThumbnail(file)}
-                        {file.tag === 'draft' ? (
-                          <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[9px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Draft</div>
-                        ) : file.tag === 'for_print' ? (
-                          <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[9px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">For Print</div>
-                        ) : file.tag === 'attachment' ? (
-                          <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[9px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Attachment</div>
-                        ) : null}
                         <CardHeader className="p-4 pb-2 flex flex-col items-start justify-between bg-muted/5 border-b">
                           <div className="overflow-hidden w-full">
                             {editingFileId === file._id ? (
@@ -625,12 +505,11 @@ export default function ArtworksManager() {
                                   setEditingFileId(null);
                                 }} onKeyDown={(e) => { if(e.key === 'Enter') e.currentTarget.blur(); }} className="h-7 text-sm" />
                               ) : (
-                                <CardTitle className="text-[10px] truncate w-full cursor-pointer hover:underline flex items-center gap-2" title={file.originalName} onClick={() => { setEditingFileId(file._id); setEditingName(file.originalName); }}>
+                                <CardTitle className="text-sm truncate w-full cursor-pointer hover:underline" title={file.originalName} onClick={() => { setEditingFileId(file._id); setEditingName(file.originalName); }}>
                                   {file.originalName}
-                                  
                                 </CardTitle>
                               )}
-                            <CardDescription className="text-[9px] truncate w-full">
+                            <CardDescription className="text-xs truncate w-full">
                               User: {activeGroup.folderName}
                             </CardDescription>
                           </div>
@@ -646,14 +525,7 @@ export default function ArtworksManager() {
                           {file.adminNotes && (
                             <div className="text-xs bg-primary/10 text-primary p-2 rounded-md italic flex items-start gap-2">
                               <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
-                              <span title={file.adminNotes}>{file.adminNotes}</span>
-                            </div>
-                          )}
-                          
-                          {file.notes && (
-                            <div className="text-xs bg-amber-50 text-amber-600 p-2 rounded-md italic flex items-start gap-2 border border-amber-100">
-                              <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
-                              <span title={file.notes}>Customer: {file.notes}</span>
+                              <span>{file.adminNotes}</span>
                             </div>
                           )}
                           
@@ -695,12 +567,8 @@ export default function ArtworksManager() {
                         </CardContent>
                       </Card>
                     ) : (
-                      <div key={file._id} className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${selectedFiles.includes(file._id) ? 'bg-primary/5 border-primary/40' : 'hover:bg-muted/30'}`}>
+                      <div key={file._id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
                         <div className="flex items-center gap-4 min-w-0 flex-1">
-                          <Checkbox 
-                            checked={selectedFiles.includes(file._id)} 
-                            onCheckedChange={() => handleSelectFile(file._id)} 
-                          />
                           {getFileIcon(file.mimetype)}
                           <div className="min-w-0 flex-1">
                             {editingFileId === file._id ? (
@@ -709,10 +577,7 @@ export default function ArtworksManager() {
                                   setEditingFileId(null);
                                 }} onKeyDown={(e) => { if(e.key === 'Enter') e.currentTarget.blur(); }} className="h-7 text-sm w-1/2" />
                               ) : (
-                                <div className="flex items-center gap-2">
-                                  <h4 className="text-sm font-medium truncate cursor-pointer hover:underline" title={file.originalName} onClick={() => { setEditingFileId(file._id); setEditingName(file.originalName); }}>{file.originalName}</h4>
-                                  
-                                </div>
+                                <h4 className="text-sm font-medium truncate cursor-pointer hover:underline" title={file.originalName} onClick={() => { setEditingFileId(file._id); setEditingName(file.originalName); }}>{file.originalName}</h4>
                               )}
                             <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                               <span className="bg-muted px-1.5 py-0.5 rounded">{file.category || "Uncategorized"}</span>
@@ -720,13 +585,8 @@ export default function ArtworksManager() {
                                 {file.adminReviewed ? "Reviewed" : "Pending"}
                               </span>
                               {file.adminNotes && (
-                                <span className="flex items-center gap-1 text-primary truncate" title={file.adminNotes}>
+                                <span className="flex items-center gap-1 text-primary truncate">
                                   <MessageSquare className="w-3 h-3" /> {file.adminNotes}
-                                </span>
-                              )}
-                              {file.notes && (
-                                <span className="flex items-center gap-1 text-amber-600 truncate" title={file.notes}>
-                                  <MessageSquare className="w-3 h-3" /> Customer: {file.notes}
                                 </span>
                               )}
                             </div>
@@ -768,7 +628,7 @@ export default function ArtworksManager() {
         </div>
       ) : (
         // --- OUTSIDE (FOLDERS) ---
-        <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3" : "flex flex-col gap-3"}>
+        <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
           {groupedFiles.map((group) => {
             const folderId = `${group.folderName}-${group.orderId}-${group.taskId}`;
             if (viewMode === "grid") {
@@ -799,11 +659,13 @@ export default function ArtworksManager() {
                     <Trash2 className="w-4 h-4 text-muted-foreground hover:text-red-600" />
                   </Button>
                   <CardContent className="p-6 flex flex-col items-center justify-center gap-4 text-center">
-                    {getFolderPreview(group)}
+                    <div className="w-16 h-16 rounded-2xl bg-primary/5 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+                      <Folder className="w-8 h-8 text-primary" />
+                    </div>
                     <div className="w-full">
                       <h3 className="font-semibold text-base truncate" title={group.folderName}>{group.folderName}</h3>
                       {group.orderId && (
-                        <p className="text-[12.8px] font-bold text-foreground/80 mt-1">
+                        <p className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded inline-block mt-1">
                           Order: {group.orderId}
                         </p>
                       )}
@@ -819,10 +681,12 @@ export default function ArtworksManager() {
                   className="flex items-center gap-4 p-4 border bg-card rounded-lg hover:bg-muted/30 cursor-pointer transition-colors" 
                   onClick={() => setSelectedFolder(folderId)}
                 >
-                  {getFolderPreview(group, "w-11 h-11 rounded-lg")}
+                  <div className="p-2.5 bg-primary/10 rounded-lg shrink-0">
+                    <Folder className="w-6 h-6 text-primary" />
+                  </div>
                   <div className="flex flex-col flex-1 min-w-0">
                     <span className="font-semibold text-base truncate">{group.folderName}</span>
-                    {group.orderId && <span className="text-[12.8px] font-bold text-foreground/80 truncate">Order ID: {group.orderId}</span>}
+                    {group.orderId && <span className="text-[10px] text-muted-foreground font-mono truncate">Order ID: {group.orderId}</span>}
                   </div>
                   <div className="shrink-0 flex items-center gap-2">
                     <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">{group.files.length} file(s)</span>
