@@ -39,16 +39,7 @@ export function LoginForm() {
         errors={errors}
         showError={false}
       />
-      <Button 
-        type="button" 
-        className="w-full" 
-        disabled={isPending}
-        onClick={(e) => {
-           toast.info("Debug: Button clicked!")
-           // iOS 15 Safari debug: manually trigger form submit
-           onFormSubmit(e as any);
-        }}
-      >
+      <Button type="submit" className="w-full" disabled={isPending}>
         {isPending ? "Logging in..." : "Login"}
       </Button>
     </form>
