@@ -53,6 +53,10 @@ export const useAuth = (type: "login" | "signup" = "login") => {
         console.error("NextAuth signIn error:", res.error)
         // iOS 15 Safari drops the NextAuth cookie, but we don't abort here.
       }
+      
+      // Fallback: manually set a raw cookie just in case NextAuth failed on iOS 15
+      document.cookie = `fallback_admin_token=${response.accessToken}; path=/; max-age=86400; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`;
+      
       localStorage.setItem("loginId", getValues("email"))
       router.push("/admin/dashboard")
     }).catch((err) => {
