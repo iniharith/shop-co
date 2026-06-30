@@ -100,5 +100,10 @@
       "react": "$react",
       "react-dom": "$react-dom"
     }
-  }
+  },
+  "browserslist": [
+    "last 2 versions",
+    "ios >= 15",
+    "not dead"
+  ]
 }
