@@ -39,22 +39,7 @@ export function LoginForm() {
         errors={errors}
         showError={false}
       />
-      <Button 
-        type="button" 
-        className="w-full relative z-50" 
-        style={{ touchAction: 'manipulation' }}
-        disabled={isPending}
-        onClick={(e) => {
-          toast.info("Debug: onClick registered!");
-          onFormSubmit(e as any);
-        }}
-        onTouchStart={(e) => {
-          if (!isPending) {
-             toast.info("Debug: onTouchStart registered!");
-             onFormSubmit(e as any);
-          }
-        }}
-      >
+      <Button type="submit" className="w-full" disabled={isPending}>
         {isPending ? "Logging in..." : "Login"}
       </Button>
     </form>

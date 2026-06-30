@@ -18,13 +18,10 @@ const useZodForm = <T extends z.ZodSchema>(
   const { handleSubmit, formState, ...rest } = form;
 
   const onFormSubmit = handleSubmit(
-    async (values) => {
-      toast.info("Debug: Form submit triggered! Validating...");
-      mutation(values);
-    },
+    async (values) => mutation(values),
     (err) => {
       Object.values(err).forEach((error: any) => {
-        if (error?.message) toast.error("Validation error: " + error.message.toString());
+        if (error?.message) toast.error(error.message.toString());
       });
     }
   );

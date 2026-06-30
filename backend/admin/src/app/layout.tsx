@@ -49,19 +49,6 @@ export default async function RootLayout({
           href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"
           rel="stylesheet"
         />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.onerror = function(message, source, lineno, colno, error) {
-                alert("JS CRASH: " + message + " at " + source + ":" + lineno);
-                return false;
-              };
-              window.addEventListener("unhandledrejection", function(event) {
-                alert("PROMISE CRASH: " + event.reason);
-              });
-            `,
-          }}
-        />
       </head>
       <body suppressHydrationWarning className={"overflow-hidden"}>
         <NextTopLoader shadow="0 0 10px #10b981" color="#10b981" showSpinner={false} />
