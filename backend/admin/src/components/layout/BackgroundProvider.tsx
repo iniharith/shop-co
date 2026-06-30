@@ -39,23 +39,32 @@ export default function BackgroundProvider({ children }: { children: React.React
 
   useEffect(() => {
     if (backgroundStr) {
-      // If it looks like a URL (starts with http or data:image), apply as background-image
-      if (backgroundStr.startsWith("http") || backgroundStr.startsWith("data:image")) {
-        document.body.style.backgroundImage = `url('${backgroundStr}')`;
-        document.body.style.backgroundColor = "";
-        document.body.style.backgroundSize = "cover";
-        document.body.style.backgroundPosition = "center";
-        document.body.style.backgroundAttachment = "fixed";
-      } else {
-        // Otherwise treat as color
-        document.body.style.backgroundColor = backgroundStr;
-        document.body.style.backgroundImage = "none";
-      }
+      document.body.classList.add("has-custom-bg");
     } else {
-       document.body.style.backgroundColor = "";
-       document.body.style.backgroundImage = "none";
+      document.body.classList.remove("has-custom-bg");
     }
   }, [backgroundStr]);
 
-  return <>{children}</>;
+  const isImage = backgroundStr?.startsWith("http") || backgroundStr?.startsWith("data:image");
+
+  return (
+    <>
+      {backgroundStr && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: -50,
+            pointerEvents: "none",
+            backgroundColor: isImage ? "transparent" : backgroundStr,
+            backgroundImage: isImage ? `url('${backgroundStr}')` : "none",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            opacity: isImage ? 0.3 : 1, // 30% opacity for images, full for colors
+          }}
+        />
+      )}
+      {children}
+    </>
+  );
 }

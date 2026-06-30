@@ -132,3 +132,16 @@ body{
   outline: 0px transparent;
 }
 
+body.has-custom-bg,
+body.has-custom-bg .bg-background {
+  background-color: transparent !important;
+}
+
+/* Ensure the sidebar also becomes transparent if needed, or slightly translucent */
+body.has-custom-bg .bg-sidebar {
+  background-color: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(8px);
+}
+.dark body.has-custom-bg .bg-sidebar {
+  background-color: rgba(0, 0, 0, 0.6) !important;
+}
