@@ -39,17 +39,32 @@ export function LoginForm() {
         errors={errors}
         showError={false}
       />
-      <Button type="submit" className="w-full" disabled={isPending}>
+      <Button 
+        type="submit" 
+        className="w-full relative z-50" 
+        style={{ touchAction: 'manipulation' }}
+        disabled={isPending}
+        onTouchEnd={(e) => {
+          // iOS 15 fallback: if standard click fails, touch end can trigger it
+          if (!isPending) {
+             toast.info("Debug: Touch registered!");
+          }
+        }}
+      >
         {isPending ? "Logging in..." : "Login"}
       </Button>
       
       {/* iOS 15 Diagnostic Native Button */}
       <button 
         type="button" 
-        style={{ width: '100%', padding: '10px', background: 'red', color: 'white', marginTop: '10px' }}
+        className="relative z-50"
+        style={{ width: '100%', padding: '10px', background: 'red', color: 'white', marginTop: '10px', touchAction: 'manipulation' }}
         onClick={() => {
            alert("NATIVE BUTTON CLICKED!");
            toast.info("Native button clicked!");
+        }}
+        onTouchEnd={() => {
+           alert("NATIVE BUTTON TOUCHED!");
         }}
       >
         IOS 15 NATIVE TEST BUTTON
