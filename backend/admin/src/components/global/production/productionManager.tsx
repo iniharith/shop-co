@@ -332,7 +332,10 @@ export default function ProductionManager() {
   };
 
   const getFileThumbnail = (file: any) => {
-    if (file.mimetype?.includes("image")) {
+    const isImage = file.mimetype?.includes("image") || (file.originalName && file.originalName.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+    const isHeic = file.mimetype?.includes("heic") || (file.originalName && file.originalName.toLowerCase().endsWith(".heic"));
+
+    if (isImage && !isHeic) {
       return (
         <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
           <ImageNext src={getFileUrl(file.path)} alt={file.originalName} width={100} height={100} quality={50} className="object-cover w-full h-full" />
@@ -341,7 +344,7 @@ export default function ProductionManager() {
     }
     return (
       <div className="w-full h-24 bg-muted/50 rounded-t-lg flex items-center justify-center">
-        {getFileIcon(file.mimetype)}
+        {getFileIcon(file.mimetype || (isHeic ? "image/heic" : ""))}
       </div>
     );
   };

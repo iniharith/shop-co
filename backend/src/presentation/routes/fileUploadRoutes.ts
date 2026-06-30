@@ -48,7 +48,10 @@ const upload = multer({
   storage,
   limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+    const isAllowedMime = ALLOWED_MIME_TYPES.includes(file.mimetype);
+    const isAllowedExt = file.originalname && (file.originalname.toLowerCase().endsWith('.heic') || file.originalname.toLowerCase().endsWith('.heif'));
+    
+    if (isAllowedMime || isAllowedExt) {
       cb(null, true);
     } else {
       cb(
