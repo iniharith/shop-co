@@ -42,6 +42,18 @@ export function LoginForm() {
       <Button type="submit" className="w-full" disabled={isPending}>
         {isPending ? "Logging in..." : "Login"}
       </Button>
+      
+      {/* iOS 15 Diagnostic Native Button */}
+      <button 
+        type="button" 
+        style={{ width: '100%', padding: '10px', background: 'red', color: 'white', marginTop: '10px' }}
+        onClick={() => {
+           alert("NATIVE BUTTON CLICKED!");
+           toast.info("Native button clicked!");
+        }}
+      >
+        IOS 15 NATIVE TEST BUTTON
+      </button>
     </form>
   );
 }
