@@ -13,7 +13,11 @@ import {
     reviewFile, 
     deleteFile,
     bulkDeleteFiles,
-    createShareLink
+    createShareLink,
+    getFolders,
+    createFolder,
+    deleteFolder,
+    moveFile
 } from "@/api/admin-dashboard";
 
 export const useParcelStats = () => {
@@ -96,4 +100,39 @@ export const useCreateShareLink = () => {
             createShareLink(session?.user?.token, data)
     );
     return { mutate, mutateAsync, isPending };
+}
+
+export const useFolders = () => {
+    const { data: session } = useSession();
+    return useQueryData(['virtualFolders'], () => getFolders(session?.user?.token));
+}
+
+export const useCreateFolder = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(
+        ['createFolder'],
+        (data: { name: string; taskId?: string; userId?: string }) => createFolder(session?.user?.token, data),
+        ['virtualFolders']
+    );
+    return { mutate, isPending };
+}
+
+export const useDeleteFolder = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(
+        ['deleteFolder'],
+        (id: string) => deleteFolder(session?.user?.token, id),
+        ['virtualFolders', 'allFiles', 'groupedFiles']
+    );
+    return { mutate, isPending };
+}
+
+export const useMoveFile = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(
+        ['moveFile'],
+        ({ fileId, folderId }: { fileId: string; folderId: string | null }) => moveFile(session?.user?.token, fileId, folderId),
+        ['allFiles', 'groupedFiles']
+    );
+    return { mutate, isPending };
 }

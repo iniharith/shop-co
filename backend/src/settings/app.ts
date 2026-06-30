@@ -16,6 +16,7 @@ import adminRoutes from '../presentation/routes/admin.route';
 import notificationRoutes from '../presentation/routes/notification.route';
 import parcelRoutes from '../presentation/routes/parcelRoutes';
 import fileUploadRoutes from '../presentation/routes/fileUploadRoutes';
+import virtualFolderRoutes from '../presentation/routes/virtualFolderRoutes';
 import taskRoutes from '../presentation/routes/taskRoutes';
 import whatsappWebhook from '../infrastructure/services/WhatsAppWebhookService';
 import userRoutes from '../presentation/routes/user.route';
@@ -59,7 +60,8 @@ app.use(apiRoutes.PRODUCT, productRoutes);
 app.use(apiRoutes.CART, cartRoutes);
 app.use(apiRoutes.ORDER, orderRoutes);
 app.use(apiRoutes.ADMIN, adminRoutes);
-app.use(apiRoutes.NOTIFICATION, notificationRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/folders', virtualFolderRoutes);
 
 import chatRoutes from '../presentation/routes/chatRoutes';
 

@@ -60,3 +60,23 @@ export const createShareLink = async (token: string, data: { folderName: string;
     const response = await AxiosInstance(token).post(`${FILES_URL}/share-link`, data);
     return response.data;
 }
+
+export const getFolders = async (token: string) => {
+    const response = await AxiosInstance(token).get(`/api/folders`);
+    return response.data;
+}
+
+export const createFolder = async (token: string, data: { name: string; taskId?: string; userId?: string }) => {
+    const response = await AxiosInstance(token).post(`/api/folders`, data);
+    return response.data;
+}
+
+export const deleteFolder = async (token: string, id: string) => {
+    const response = await AxiosInstance(token).delete(`/api/folders/${id}`);
+    return response.data;
+}
+
+export const moveFile = async (token: string, fileId: string, folderId: string | null) => {
+    const response = await AxiosInstance(token).put(`/api/files/${fileId}/move`, { folderId });
+    return response.data;
+}

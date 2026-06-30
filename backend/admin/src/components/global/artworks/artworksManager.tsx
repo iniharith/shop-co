@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useMemo } from "react";
-import { useAllFiles, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile, useCreateShareLink } from "@/hooks/useAdminDashboard";
+import { useAllFiles, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile, useCreateShareLink, useFolders, useCreateFolder, useDeleteFolder, useMoveFile } from "@/hooks/useAdminDashboard";
 import JSZip from "jszip";
 import { useOrders } from "@/hooks/useOrder";
 import { useUsers } from "@/hooks/useUsers";
@@ -54,8 +54,20 @@ export default function ArtworksManager() {
 
   // Upload Modal State
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [uploadData, setUploadData] = useState({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "" });
+  const [uploadData, setUploadData] = useState({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "", folderId: "" });
   const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
+
+  // Subfolder State
+  const [activeSubFolderId, setActiveSubFolderId] = useState<string | null>(null);
+  const [createFolderModalOpen, setCreateFolderModalOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [moveToFolderModalOpen, setMoveToFolderModalOpen] = useState(false);
+
+  const { data: virtualFoldersResponse, isPending: foldersPending } = useFolders();
+  const virtualFolders = virtualFoldersResponse?.data || [];
+  const { mutate: createFolderMutate, isPending: isCreatingFolder } = useCreateFolder();
+  const { mutate: deleteFolderMutate, isPending: isDeletingFolder } = useDeleteFolder();
+  const { mutate: moveFileMutate, isPending: isMovingFile } = useMoveFile();
 
   const { mutate: reviewFileMutate, isPending: isReviewing } = useReviewFile();
   const { mutate: deleteFileMutate, isPending: isDeleting } = useDeleteFile();
@@ -189,6 +201,7 @@ export default function ArtworksManager() {
 
   React.useEffect(() => {
     setSelectedFiles([]);
+    setActiveSubFolderId(null);
   }, [selectedFolder]);
 
   const handleSelectAll = (files: any[]) => {
@@ -325,6 +338,7 @@ export default function ArtworksManager() {
     formData.append("category", uploadData.category);
     formData.append("notes", uploadData.notes);
     if (uploadData.taskId) formData.append("taskId", uploadData.taskId);
+    if (uploadData.folderId) formData.append("folderId", uploadData.folderId);
     Array.from(uploadFiles).forEach(f => formData.append("files", f));
 
       try {
@@ -522,6 +536,11 @@ export default function ArtworksManager() {
                                 <Trash2 className="w-3 h-3 mr-1" /> Delete Selected
                               </Button>
                             )}
+                            {selectedFiles.length > 0 && (
+                              <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={() => setMoveToFolderModalOpen(true)}>
+                                <Folder className="w-3 h-3 mr-1" /> Move ({selectedFiles.length})
+                              </Button>
+                            )}
                           </div>
                         )}
                           {activeGroup.files.some((f: any) => f.tag === 'draft') && (
@@ -570,9 +589,18 @@ export default function ArtworksManager() {
                             <Download className="w-4 h-4 mr-2" /> Download All
                           </Button>
                         )}
+                        {!activeSubFolderId && (
+                          <Button 
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCreateFolderModalOpen(true)}
+                          >
+                            <Folder className="w-4 h-4 mr-2" /> New Folder
+                          </Button>
+                        )}
                         <Button 
                           onClick={() => {
-                            setUploadData({ userId: activeGroup.userId || "", orderId: activeGroup.orderId || "", category: activeGroup.taskId ? "TASK" : "DIGITAL PRINTING", notes: "", taskId: activeGroup.taskId || "" });
+                            setUploadData({ userId: activeGroup.userId || "", orderId: activeGroup.orderId || "", category: activeGroup.taskId ? "TASK" : "DIGITAL PRINTING", notes: "", taskId: activeGroup.taskId || "", folderId: "" });
                             setUploadModalOpen(true);
                           }}
                           size="sm"
@@ -582,27 +610,72 @@ export default function ArtworksManager() {
                       </div>
                   </div>
                   
-                  {activeGroup.files.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center p-12 border border-dashed rounded-xl bg-muted/20">
-                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                        <Folder className="w-8 h-8 text-primary" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-foreground mb-2">Folder is empty</h3>
-                      <p className="text-sm text-muted-foreground text-center max-w-sm mb-6">
-                        There are no artworks in this folder yet. Click the button below to add one.
-                      </p>
-                      <Button 
-                         onClick={() => {
-                           setUploadData({ userId: activeGroup.userId || "", orderId: activeGroup.orderId || "", category: "TASK", notes: "", taskId: activeGroup.taskId || "" });
-                           setUploadModalOpen(true);
-                         }}
-                       >
-                         <Plus className="w-4 h-4 mr-2" /> Add Artwork
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3" : "flex flex-col gap-3"}>
-                      {activeGroup.files.map((file: any) => (
+                  {(() => {
+                    const groupFolders = virtualFolders.filter((f: any) => 
+                      activeGroup.taskId ? f.taskId === activeGroup.taskId : f.userId === activeGroup.userId
+                    );
+                    const currentFolder = activeSubFolderId ? groupFolders.find(f => f._id === activeSubFolderId) : null;
+                    const visibleFolders = activeSubFolderId ? [] : groupFolders;
+                    const visibleFiles = activeGroup.files.filter((f: any) => 
+                      activeSubFolderId ? f.folderId === activeSubFolderId : (!f.folderId || f.folderId === 'null')
+                    );
+                    
+                    return (
+                      <>
+                        {activeSubFolderId && (
+                          <div className="flex items-center gap-2 mb-4 bg-muted/30 p-2 rounded-lg w-fit">
+                            <Button variant="ghost" size="sm" onClick={() => setActiveSubFolderId(null)}><ChevronLeft className="w-4 h-4 mr-1"/> Back</Button>
+                            <span className="text-sm font-semibold flex items-center"><Folder className="w-4 h-4 mr-2 text-primary"/> {currentFolder?.name}</span>
+                          </div>
+                        )}
+                        {visibleFiles.length === 0 && visibleFolders.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center p-12 border border-dashed rounded-xl bg-muted/20">
+                            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                              <Folder className="w-8 h-8 text-primary" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-foreground mb-2">Folder is empty</h3>
+                            <p className="text-sm text-muted-foreground text-center max-w-sm mb-6">
+                              There are no artworks or sub-folders here yet.
+                            </p>
+                            <Button 
+                              onClick={() => {
+                                setUploadData({ userId: activeGroup.userId || "", orderId: activeGroup.orderId || "", category: "TASK", notes: "", taskId: activeGroup.taskId || "", folderId: activeSubFolderId || "" });
+                                setUploadModalOpen(true);
+                              }}
+                            >
+                              <Plus className="w-4 h-4 mr-2" /> Add Artwork
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3" : "flex flex-col gap-3"}>
+                            {visibleFolders.map((folder: any) => (
+                              viewMode === "grid" ? (
+                                <Card key={folder._id} className="overflow-hidden shadow-sm hover:shadow-md cursor-pointer relative bg-primary/5 border-primary/20" onClick={() => setActiveSubFolderId(folder._id)}>
+                                  <div className="absolute top-2 right-2 z-20">
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10 bg-white/50" onClick={(e) => { e.stopPropagation(); if(confirm('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id, { onSuccess: () => window.location.reload() }); }}>
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                  <div className="w-full h-24 flex items-center justify-center">
+                                    <Folder className="w-12 h-12 text-primary/70" fill="currentColor" />
+                                  </div>
+                                  <CardHeader className="p-4 py-3 bg-muted/5 border-t">
+                                    <CardTitle className="text-xs text-center truncate">{folder.name}</CardTitle>
+                                  </CardHeader>
+                                </Card>
+                              ) : (
+                                <div key={folder._id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 cursor-pointer" onClick={() => setActiveSubFolderId(folder._id)}>
+                                  <div className="flex items-center gap-4 min-w-0 flex-1">
+                                    <Folder className="w-8 h-8 text-primary/70" fill="currentColor" />
+                                    <span className="text-sm font-medium">{folder.name}</span>
+                                  </div>
+                                  <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); if(confirm('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id, { onSuccess: () => window.location.reload() }); }}>
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              )
+                            ))}
+                            {visibleFiles.map((file: any) => (
                     viewMode === "grid" ? (
                       <Card key={file._id} className={`overflow-hidden shadow-sm hover:shadow-md transition-shadow relative ${selectedFiles.includes(file._id) ? 'ring-2 ring-primary ring-offset-1' : ''}`}>
                         <div className="absolute top-2 left-2 z-20">
@@ -768,6 +841,9 @@ export default function ArtworksManager() {
               </>
             );
           })()}
+              </>
+            );
+          })()}
         </div>
       ) : (
         // --- OUTSIDE (FOLDERS) ---
@@ -875,6 +951,104 @@ export default function ArtworksManager() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setCommentModalOpen(false)}>Cancel</Button>
             <Button onClick={handleSaveComment}>Save Note</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Create Folder Modal */}
+      <Dialog open={createFolderModalOpen} onOpenChange={setCreateFolderModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Sub-Folder</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Label>Folder Name</Label>
+            <Input
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              placeholder="e.g. Drafts, Raw Images"
+              className="mt-2"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateFolderModalOpen(false)}>Cancel</Button>
+            <Button 
+              disabled={isCreatingFolder || !newFolderName.trim()} 
+              onClick={() => {
+                const activeGroup = groupedFiles.find((g: any) => g.folderId === selectedFolder);
+                if (activeGroup) {
+                  createFolderMutate(
+                    { name: newFolderName, taskId: activeGroup.taskId, userId: activeGroup.userId },
+                    { 
+                      onSuccess: () => { 
+                        setCreateFolderModalOpen(false); 
+                        setNewFolderName(""); 
+                        window.location.reload(); 
+                      } 
+                    }
+                  );
+                }
+              }}
+            >
+              {isCreatingFolder ? "Creating..." : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move to Folder Modal */}
+      <Dialog open={moveToFolderModalOpen} onOpenChange={setMoveToFolderModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Move {selectedFiles.length} item(s)</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-2">
+            {(() => {
+              const activeGroup = groupedFiles.find((g: any) => g.folderId === selectedFolder);
+              const groupFolders = activeGroup ? virtualFolders.filter((f: any) => 
+                activeGroup.taskId ? f.taskId === activeGroup.taskId : f.userId === activeGroup.userId
+              ) : [];
+
+              return (
+                <>
+                  <Button 
+                    variant="outline" 
+                    className="justify-start gap-3 h-12 w-full"
+                    onClick={async () => {
+                      for (const fileId of selectedFiles) {
+                        await moveFileMutate({ fileId, folderId: null });
+                      }
+                      setMoveToFolderModalOpen(false);
+                      setSelectedFiles([]);
+                      window.location.reload();
+                    }}
+                  >
+                    <Folder className="w-5 h-5 text-muted-foreground" fill="currentColor" />
+                    <span>Root Folder</span>
+                  </Button>
+                  {groupFolders.map((folder: any) => (
+                    <Button 
+                      key={folder._id}
+                      variant="outline" 
+                      className="justify-start gap-3 h-12 w-full"
+                      onClick={async () => {
+                        for (const fileId of selectedFiles) {
+                          await moveFileMutate({ fileId, folderId: folder._id });
+                        }
+                        setMoveToFolderModalOpen(false);
+                        setSelectedFiles([]);
+                        window.location.reload();
+                      }}
+                    >
+                      <Folder className="w-5 h-5 text-primary/70" fill="currentColor" />
+                      <span>{folder.name}</span>
+                    </Button>
+                  ))}
+                </>
+              );
+            })()}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMoveToFolderModalOpen(false)}>Cancel</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

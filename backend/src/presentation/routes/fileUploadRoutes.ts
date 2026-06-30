@@ -72,7 +72,7 @@ router.post(
   upload.array('files', 50),
   asyncHandler(async (req: Request, res: Response) => {
     const files = req.files as (Express.Multer.File & { path: string; filename: string })[];
-    const { orderId, taskId, notes, userId: bodyUserId, category, tag } = req.body;
+    const { orderId, taskId, notes, userId: bodyUserId, category, tag, folderId } = req.body;
     const authReq = req as any;
     
     // If admin provides a userId in the body, upload on their behalf
@@ -106,6 +106,7 @@ router.post(
           path: (file as any).location || file.path,
           notes: notes || undefined,
           adminReviewed: false,
+          folderId: folderId || undefined,
         })
       )
     );
@@ -849,6 +850,31 @@ router.delete(
 
     await fileUploadRepository.delete(req.params.id);
     res.json({ success: true, message: 'Fail berjaya dipadam' });
+  })
+);
+
+// ─── PUT /api/files/:id/move ─────────────────────────────────
+// Admin moves a file to a folder
+router.put(
+  '/:id/move',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { folderId } = req.body;
+    const { id } = req.params;
+    
+    // We allow setting folderId to null/undefined to move it back to root
+    const updatedFile = await FileUpload.findByIdAndUpdate(
+      id,
+      { folderId: folderId || null },
+      { new: true }
+    );
+    
+    if (!updatedFile) {
+      res.status(404).json({ success: false, message: 'File not found' });
+      return;
+    }
+    
+    res.json({ success: true, data: updatedFile, message: 'File moved successfully' });
   })
 );
 
