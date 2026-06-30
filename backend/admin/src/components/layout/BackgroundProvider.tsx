@@ -60,7 +60,7 @@ export default function BackgroundProvider({ children }: { children: React.React
             backgroundImage: isImage ? `url('${backgroundStr}')` : "none",
             backgroundSize: "cover",
             backgroundPosition: "center",
-            opacity: isImage ? 0.3 : 1, // 30% opacity for images, full for colors
+            opacity: isImage ? 0.5 : 1, // 50% opacity for images, full for colors
           }}
         />
       )}
