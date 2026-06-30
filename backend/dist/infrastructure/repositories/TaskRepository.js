@@ -34,6 +34,10 @@ class TaskRepository {
             else {
                 query.isDeleted = { $ne: true };
             }
+            // Speed optimization: Only load tasks from the last 30 days by default to prevent massive payloads.
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            query.createdAt = { $gte: thirtyDaysAgo };
             return Task_1.Task.find(query).sort({ createdAt: -1 });
         });
     }

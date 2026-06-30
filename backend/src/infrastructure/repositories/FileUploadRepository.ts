@@ -23,6 +23,12 @@ export class FileUploadRepository {
         { orderId: { $regex: filters.search, $options: 'i' } },
       ];
     }
+    
+    // Speed optimization: Only load files from the last 30 days by default to prevent massive payloads.
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    query.uploadedAt = { $gte: thirtyDaysAgo };
+
     return FileUpload.find(query).sort({ uploadedAt: -1 });
   }
 
@@ -95,7 +101,13 @@ export class FileUploadRepository {
   }
 
   async getFilesGroupedByUser(): Promise<any[]> {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
     return FileUpload.aggregate([
+      {
+        $match: { uploadedAt: { $gte: thirtyDaysAgo } }
+      },
       {
         $group: {
           _id: '$userId',
