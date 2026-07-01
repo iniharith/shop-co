@@ -30,8 +30,10 @@ const WhatsAppWebhookService_1 = __importDefault(require("../infrastructure/serv
 const user_route_1 = __importDefault(require("../presentation/routes/user.route"));
 const sysadminRoutes_1 = __importDefault(require("../presentation/routes/sysadminRoutes"));
 const chatRoutes_1 = __importDefault(require("../presentation/routes/chatRoutes"));
+const bandwidthTracker_1 = require("../shared/utils/bandwidthTracker");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
+app.use(bandwidthTracker_1.bandwidthMiddleware);
 app.use((0, cookie_parser_1.default)());
 app.use((0, cors_1.default)({
     origin: true,

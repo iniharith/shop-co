@@ -26,10 +26,12 @@ import whatsappWebhook from '../infrastructure/services/WhatsAppWebhookService';
 import userRoutes from '../presentation/routes/user.route';
 import sysadminRoutes from '../presentation/routes/sysadminRoutes';
 import chatRoutes from '../presentation/routes/chatRoutes';
+import { bandwidthMiddleware } from '../shared/utils/bandwidthTracker';
 
 dotenv.config();
 const app = express();
 
+app.use(bandwidthMiddleware);
 app.use(cookieParser())
 app.use(
     cors({

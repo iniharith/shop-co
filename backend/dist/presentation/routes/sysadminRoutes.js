@@ -22,6 +22,10 @@ const os_1 = __importDefault(require("os"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const client_s3_1 = require("@aws-sdk/client-s3");
 const s3_1 = require("../../infrastructure/config/s3");
+const promises_1 = __importDefault(require("fs/promises"));
+const Task_1 = require("../../domain/entities/Task");
+const FileUpload_1 = require("../../domain/entities/FileUpload");
+const bandwidthTracker_1 = require("../../shared/utils/bandwidthTracker");
 const router = (0, express_1.Router)();
 // Middleware to restrict to sysadmin role only
 const requireSysadmin = (req, res, next) => {
@@ -36,12 +40,24 @@ router.use(auth_middileware_1.default);
 router.use(requireSysadmin);
 // ─── GET /api/sysadmin/health ─────────────────────────
 router.get('/health', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     // OS metrics
     const totalMem = os_1.default.totalmem();
     const freeMem = os_1.default.freemem();
     const usedMem = totalMem - freeMem;
     const cpuLoad = os_1.default.loadavg();
     const uptime = os_1.default.uptime();
+    // Disk usage (Node 18.15+ supports fs.statfs)
+    let diskTotal = 0;
+    let diskFree = 0;
+    try {
+        const stat = yield promises_1.default.statfs(process.platform === 'win32' ? 'C:\\\\' : '/');
+        diskTotal = stat.blocks * stat.bsize;
+        diskFree = stat.bfree * stat.bsize;
+    }
+    catch (err) {
+        console.error('Failed to get disk stats', err);
+    }
     // Database connection status
     const dbStateCode = mongoose_1.default.connection.readyState;
     let dbStatus = 'Unknown';
@@ -53,6 +69,23 @@ router.get('/health', (0, express_async_handler_1.default)((req, res) => __await
         dbStatus = 'Connecting';
     if (dbStateCode === 3)
         dbStatus = 'Disconnecting';
+    // Application data metrics
+    const taskTotal = yield Task_1.Task.countDocuments();
+    const artworkTotal = yield FileUpload_1.FileUpload.countDocuments();
+    // Storage used
+    const storageAgg = yield FileUpload_1.FileUpload.aggregate([{ $group: { _id: null, totalSize: { $sum: '$size' } } }]);
+    const storageUsed = ((_a = storageAgg[0]) === null || _a === void 0 ? void 0 : _a.totalSize) || 0;
+    // Progression chart (last 7 days of tasks created)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const progressionRaw = yield Task_1.Task.aggregate([
+        { $match: { createdAt: { $gte: sevenDaysAgo } } },
+        { $group: {
+                _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                count: { $sum: 1 }
+            } },
+        { $sort: { _id: 1 } }
+    ]);
     res.json({
         success: true,
         data: {
@@ -62,9 +95,20 @@ router.get('/health', (0, express_async_handler_1.default)((req, res) => __await
                 totalMem,
                 freeMem,
                 usedMem,
+                diskTotal,
+                diskFree
             },
             database: {
                 status: dbStatus,
+            },
+            application: {
+                taskTotal,
+                artworkTotal,
+                storageUsed,
+            },
+            charts: {
+                bandwidth: bandwidthTracker_1.bandwidthHistory,
+                progression: progressionRaw
             },
             timestamp: new Date()
         }
