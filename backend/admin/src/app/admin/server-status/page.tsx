@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Server, Database, Activity, Cpu, Download } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useSession } from "next-auth/react";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -28,17 +29,20 @@ interface HealthData {
 }
 
 export default function ServerHealthPage() {
+  const { data: session } = useSession();
   const [data, setData] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchHealth = async () => {
+  const fetchHealth = React.useCallback(async () => {
+    const token = (session?.user as any)?.token || (typeof window !== 'undefined' && localStorage.getItem('token')) || "";
+    if (!token) return;
+
     setLoading(true);
     try {
-      // Use standard fetch but we must include credentials since it's a protected sysadmin route
-      // Wait, we need to pass the JWT. In this app, we might use next-auth.
-      // But standard fetch doesn't send the token unless handled or cookies are used.
-      // Next-auth uses cookies by default on the same domain, so credentials: 'include' is needed.
       const res = await fetch(`${BACKEND}/api/sysadmin/health`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         credentials: "include",
       });
       const json = await res.json();
@@ -51,14 +55,17 @@ export default function ServerHealthPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session]);
 
   useEffect(() => {
+    const token = (session?.user as any)?.token || (typeof window !== 'undefined' && localStorage.getItem('token')) || "";
+    if (!token) return;
+
     fetchHealth();
     // Auto refresh every 30s
     const interval = setInterval(fetchHealth, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchHealth, session]);
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
