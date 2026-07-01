@@ -136,24 +136,24 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
   };
 
   if (loading) return (
-    <div className="flex h-screen w-full items-center justify-center bg-gray-50">
+    <div className="flex h-screen w-full items-center justify-center bg-background">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
     </div>
   );
 
   if (notFound) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="p-12 text-center text-muted-foreground bg-white border border-dashed rounded-xl shadow-sm max-w-md">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="p-12 text-center text-muted-foreground bg-card border border-dashed rounded-xl shadow-sm max-w-md">
         This link is invalid or has expired.
       </div>
     </div>
   );
 
   return (
-    <div className="h-screen overflow-y-auto bg-gray-50 p-4 md:p-8">
+    <div className="h-screen overflow-y-auto bg-background p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6 min-h-full pb-10">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-xl shadow-sm border">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-card p-6 rounded-xl shadow-sm border">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-primary/10 rounded-lg">
               <Folder className="w-7 h-7 text-primary" />
@@ -201,7 +201,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
 
         {/* Files Grid */}
         {files.length === 0 ? (
-          <div className="p-16 text-center text-muted-foreground bg-white border border-dashed rounded-xl shadow-sm">
+          <div className="p-16 text-center text-muted-foreground bg-card border border-dashed rounded-xl shadow-sm">
             <Upload className="w-10 h-10 mx-auto mb-3 opacity-30" />
             <p className="font-medium">No files yet</p>
             <p className="text-sm mt-1">Upload your artwork files using the button above</p>
@@ -212,7 +212,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
               const isImage = file.mimetype?.startsWith("image/");
               const noteEditor = noteState[file._id];
               return (
-                <Card key={file._id} className="overflow-hidden bg-white shadow-sm hover:shadow-md transition-all border group">
+                <Card key={file._id} className="overflow-hidden bg-card shadow-sm hover:shadow-md transition-all border group">
                   {/* Preview */}
                   {isImage ? (
                     <div className="h-44 relative bg-muted/50 overflow-hidden flex items-center justify-center group/thumb">
@@ -253,7 +253,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
 
                     {/* Existing note display */}
                     {file.notes && !noteEditor?.open && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-2 text-xs text-yellow-800">
+                      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-md p-2 text-xs text-yellow-600 dark:text-yellow-400">
                         <StickyNote className="w-3 h-3 inline mr-1" />
                         {file.notes}
                       </div>
@@ -290,14 +290,14 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
                         <Download className="w-3 h-3" /> Download
                       </Button>
                       <Button
-                        variant="outline" size="sm" className="h-8 w-8 p-0 text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700"
+                        variant="outline" size="sm" className="h-8 w-8 p-0 text-yellow-600 hover:bg-yellow-500/10 hover:text-yellow-700 dark:hover:text-yellow-400"
                         onClick={() => noteEditor?.open ? closeNote(file._id) : openNote(file)}
                         title="Add note"
                       >
                         <StickyNote className="w-3.5 h-3.5" />
                       </Button>
                       <Button
-                        variant="outline" size="sm" className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 hover:text-red-600"
+                        variant="outline" size="sm" className="h-8 w-8 p-0 text-red-500 hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
                         onClick={() => handleDelete(file._id)}
                         disabled={deletingId === file._id}
                         title="Delete file"
