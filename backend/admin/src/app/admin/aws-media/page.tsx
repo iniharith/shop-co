@@ -21,16 +21,22 @@ interface S3Object {
   storageClass: string;
 }
 
+import { useSession } from "next-auth/react";
+
 export default function AwsMediaPage() {
+  const { data: session, status } = useSession();
   const [items, setItems] = useState<S3Object[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
   const fetchMedia = async () => {
+    if (!session?.user?.token) return;
     setLoading(true);
     try {
       const res = await fetch(`${BACKEND}/api/sysadmin/aws-media`, {
-        credentials: "include",
+        headers: {
+          Authorization: `Bearer ${session.user.token}`
+        }
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || "Failed to fetch AWS media");
@@ -45,8 +51,12 @@ export default function AwsMediaPage() {
   };
 
   useEffect(() => {
-    fetchMedia();
-  }, []);
+    if (status !== "loading" && session?.user?.token) {
+      fetchMedia();
+    } else if (status === "unauthenticated") {
+      setLoading(false);
+    }
+  }, [session, status]);
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
