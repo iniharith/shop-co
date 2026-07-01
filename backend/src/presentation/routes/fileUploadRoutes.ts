@@ -317,7 +317,7 @@ router.post(
   '/share-link',
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
-    const { folderName, taskId, orderId, userId } = req.body;
+    const { folderName, taskId, orderId, userId, folderId } = req.body;
 
     if (!folderName) {
       res.status(400).json({ success: false, message: 'folderName diperlukan' });
@@ -350,7 +350,7 @@ router.post(
       } catch (e) {}
     }
 
-    if (!taskId && !resolvedOrderId && !resolvedUserId) {
+    if (!taskId && !resolvedOrderId && !resolvedUserId && !folderId) {
       res.status(400).json({
         success: false,
         message: 'Folder ini belum dikaitkan dengan order, task, atau pelanggan — tidak boleh jana share link',
@@ -363,6 +363,7 @@ router.post(
       taskId,
       orderId: resolvedOrderId,
       userId: resolvedUserId,
+      folderId,
     });
     res.json({ success: true, data: link });
   })
@@ -425,7 +426,8 @@ router.get(
     // customer upload through this link), and by taskId/orderId (covers
     // files the admin added directly to the folder before sharing it).
     const orConditions: any[] = [{ shareSlug: req.params.slug }];
-    if (link.taskId) orConditions.push({ taskId: link.taskId });
+    if (link.folderId) orConditions.push({ folderId: link.folderId });
+    else if (link.taskId) orConditions.push({ taskId: link.taskId });
     else if (link.orderId) orConditions.push({ orderId: link.orderId });
     else if (link.userId) orConditions.push({ userId: link.userId });
 
@@ -444,6 +446,7 @@ const decodeSharedSlug = async (req: any, res: any, next: any) => {
   req.userId = link.userId || 'customer';
   req.taskId = link.taskId;
   req.orderId = link.orderId;
+  req.folderId = link.folderId;
   req.shareSlug = req.params.slug;
   // Preserve folder type so the admin UI re-groups this upload into the
   // SAME folder the link was generated from (task folders are grouped by
@@ -458,7 +461,7 @@ router.post(
   upload.array('files', 50),
   asyncHandler(async (req: Request, res: Response) => {
     const files = req.files as (Express.Multer.File & { path: string; filename: string })[];
-    const { taskId, orderId, userId, shareCategory, shareSlug } = req as any;
+    const { taskId, orderId, userId, folderId, shareCategory, shareSlug } = req as any;
 
     if (!files || files.length === 0) {
       res.status(400).json({ success: false, message: 'Tiada fail dipilih' });
@@ -471,6 +474,7 @@ router.post(
           userId: userId || 'customer',
           orderId: orderId || undefined,
           taskId: taskId || undefined,
+          folderId: folderId || undefined,
           category: shareCategory || 'artwork',
           shareSlug,
           filename: (file as any).key || file.filename || file.originalname,

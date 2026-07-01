@@ -573,10 +573,11 @@ export default function ArtworksManager() {
                             onClick={async () => {
                                 try {
                                   const res = await createShareLink({
-                                    folderName: activeGroup.folderName,
+                                    folderName: activeSubFolderId ? (virtualFolders.find((f: any) => f._id === activeSubFolderId)?.name || activeGroup.folderName) : activeGroup.folderName,
                                     taskId: activeGroup.taskId || undefined,
                                     orderId: activeGroup.orderId || undefined,
                                     userId: activeGroup.userId || undefined,
+                                    folderId: activeSubFolderId || undefined,
                                   });
                                   const slug = res?.data?.slug;
                                   if (!slug) {
@@ -659,18 +660,16 @@ export default function ArtworksManager() {
                           <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3" : "flex flex-col gap-3"}>
                             {visibleFolders.map((folder: any) => (
                               viewMode === "grid" ? (
-                                <Card key={folder._id} className="overflow-hidden shadow-sm hover:shadow-md cursor-pointer relative bg-primary/5 border-primary/20" onClick={() => setActiveSubFolderId(folder._id)}>
+                                <Card key={folder._id} className="overflow-hidden shadow-sm hover:shadow-md cursor-pointer relative bg-primary/5 border-primary/20 flex flex-col h-full min-h-[250px]" onClick={() => setActiveSubFolderId(folder._id)}>
                                   <div className="absolute top-2 right-2 z-20">
                                     <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10 bg-white/50" onClick={(e) => { e.stopPropagation(); if(confirm('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id); }}>
                                       <Trash2 className="w-3 h-3" />
                                     </Button>
                                   </div>
-                                  <div className="w-full h-24 flex items-center justify-center">
-                                    <Folder className="w-12 h-12 text-primary/70" fill="currentColor" />
+                                  <div className="flex-1 flex flex-col items-center justify-center p-4 w-full">
+                                    <Folder className="w-16 h-16 text-primary/70 mb-3" fill="currentColor" />
+                                    <span className="text-sm font-semibold text-center line-clamp-2 w-full">{folder.name}</span>
                                   </div>
-                                  <CardHeader className="p-4 py-3 bg-muted/5 border-t">
-                                    <CardTitle className="text-xs text-center truncate">{folder.name}</CardTitle>
-                                  </CardHeader>
                                 </Card>
                               ) : (
                                 <div key={folder._id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 cursor-pointer" onClick={() => setActiveSubFolderId(folder._id)}>

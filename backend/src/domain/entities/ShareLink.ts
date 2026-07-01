@@ -6,6 +6,7 @@ export interface IShareLink extends Document {
   taskId?: string;
   orderId?: string;
   userId?: string;
+  folderId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +18,7 @@ const ShareLinkSchema = new Schema<IShareLink>(
     taskId: { type: String, index: true },
     orderId: { type: String, index: true },
     userId: { type: String, index: true },
+    folderId: { type: String, index: true },
   },
   { timestamps: true }
 );

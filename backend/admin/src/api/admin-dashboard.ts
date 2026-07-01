@@ -56,7 +56,7 @@ export const bulkDeleteFiles = async (token: string, fileIds: string[]) => {
     return response.data;
 }
 
-export const createShareLink = async (token: string, data: { folderName: string; taskId?: string; orderId?: string; userId?: string }) => {
+export const createShareLink = async (token: string, data: { folderName: string; taskId?: string; orderId?: string; userId?: string; folderId?: string }) => {
     const response = await AxiosInstance(token).post(`${FILES_URL}/share-link`, data);
     return response.data;
 }
