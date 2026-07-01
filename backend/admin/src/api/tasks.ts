@@ -60,3 +60,8 @@ export const deleteTaskComment = async (token: string, id: string, commentId: st
     const response = await AxiosInstance(token).delete(`/api/tasks/${id}/comments/${commentId}`);
     return response.data;
 }
+
+export const pinTaskComment = async (token: string, id: string, commentId: string, pinned: boolean) => {
+    const response = await AxiosInstance(token).put(`/api/tasks/${id}/comments/${commentId}/pin`, { pinned });
+    return response.data;
+}

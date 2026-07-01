@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import Image from "next/image";
+import ThemeToggle from "@/components/layout/ThemeToggle/theme-toggle";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -194,6 +195,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
                 <Download className="w-4 h-4" /> Download All
               </Button>
             )}
+            <ThemeToggle />
           </div>
         </div>
 

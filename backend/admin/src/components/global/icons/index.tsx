@@ -42,7 +42,9 @@ import {
   ChartBarStacked,
   Target,
   Store,
-  Truck
+  Truck,
+  Server,
+  Cloud
 } from "lucide-react";
 
 import { FaCartShopping } from "react-icons/fa6";
@@ -108,6 +110,8 @@ export const Icons = {
   box: LuBox,
   listTodo: ListTodo,
   message: MessageSquare,
+  server: Server,
+  cloud: Cloud,
   printer: Printer,
   history: History,
   packageBox: Package,

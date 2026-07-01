@@ -74,6 +74,14 @@ export class TaskRepository {
     );
   }
 
+  async pinComment(taskId: string, commentId: string, pinned: boolean): Promise<ITask | null> {
+    return Task.findOneAndUpdate(
+      { _id: taskId, 'comments._id': commentId },
+      { $set: { 'comments.$.pinned': pinned } },
+      { new: true }
+    );
+  }
+
   async addFile(taskId: string, url: string, name: string, tag?: string): Promise<ITask | null> {
     return Task.findByIdAndUpdate(
       taskId,

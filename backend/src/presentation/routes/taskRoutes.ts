@@ -257,6 +257,22 @@ router.delete(
   })
 );
 
+// PUT /api/tasks/:id/comments/:commentId/pin
+router.put(
+  '/:id/comments/:commentId/pin',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { pinned } = req.body;
+    const task = await taskRepository.pinComment(req.params.id, req.params.commentId, pinned);
+    if (!task) {
+      res.status(404).json({ success: false, message: 'Task or comment not found' });
+      return;
+    }
+    res.json({ success: true, task });
+  })
+);
+
+
 // PUT /api/tasks/:id/files/notes
 router.put(
   '/:id/files/notes',

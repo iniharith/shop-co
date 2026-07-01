@@ -9,6 +9,7 @@ export interface ITaskComment {
   userName: string;
   text: string;
   role?: string;
+  pinned?: boolean;
   createdAt: Date;
 }
 
@@ -44,6 +45,7 @@ const TaskCommentSchema = new Schema<ITaskComment>({
   userName: { type: String, required: true },
   text: { type: String, required: true },
   role: { type: String, default: 'admin' },
+  pinned: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -24,6 +24,8 @@ import virtualFolderRoutes from '../presentation/routes/virtualFolderRoutes';
 import taskRoutes from '../presentation/routes/taskRoutes';
 import whatsappWebhook from '../infrastructure/services/WhatsAppWebhookService';
 import userRoutes from '../presentation/routes/user.route';
+import sysadminRoutes from '../presentation/routes/sysadminRoutes';
+import chatRoutes from '../presentation/routes/chatRoutes';
 
 dotenv.config();
 const app = express();
@@ -67,13 +69,12 @@ app.use(apiRoutes.ADMIN, adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/folders', virtualFolderRoutes);
 
-import chatRoutes from '../presentation/routes/chatRoutes';
-
 // ─── Kampung Cetak: Parcel Tracking & File Upload ────────
 app.use('/api/parcels', parcelRoutes);
 app.use('/api/files', fileUploadRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/sysadmin', sysadminRoutes);
 
 // ─── WhatsApp Webhook (Meta callback verification) ───────
 // Callback URL: https://admin.kampungcetak.com/api/webhooks/whatsapp

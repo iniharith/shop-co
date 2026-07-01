@@ -11,9 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment } from "@/hooks/useTasks";
+import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
-import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2 } from "lucide-react";
+import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -168,6 +168,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { mutate: updateTask, isPending: isUpdating } = useUpdateTask();
   const { mutate: addComment, isPending: isCommenting } = useAddTaskComment();
   const { mutate: deleteCommentApi, isPending: isDeletingComment } = useDeleteTaskComment();
+  const { mutate: pinCommentApi, isPending: isPinningComment } = usePinTaskComment();
   const { mutate: uploadFile, isPending: isUploading } = useUploadTaskFile();
   const { mutate: deleteFile, isPending: isDeletingFile } = useDeleteTaskFile();
   const { data: usersData } = useUsers();
@@ -274,11 +275,11 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl w-[95vw] md:w-full p-0 overflow-hidden bg-background border-border shadow-xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[90vh] flex flex-col">
         <div className="flex flex-col md:flex-row h-full overflow-y-auto md:overflow-hidden">
           
-          {/* Main Content (Left, 2/3 width) */}
-          <div className="flex-none md:flex-1 flex flex-col md:border-r border-border/50 bg-background min-h-0 shrink-0 md:shrink">
+          {/* Main Content (Left, 70% width) */}
+          <div className="flex-none md:w-[70%] flex flex-col md:border-r border-border/50 bg-background min-h-0 shrink-0 md:shrink">
             <div className="p-4 md:p-6 border-b border-border/50 shrink-0">
               <DialogHeader>
                 <DialogTitle className="sr-only">Task Details</DialogTitle>
@@ -370,15 +371,25 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                           <Avatar className="w-8 h-8 border border-border/50 bg-muted shrink-0">
                             <AvatarFallback className="text-xs">{comment.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
-                          <div className="flex-1 bg-muted/40 rounded-xl rounded-tl-none p-3 border border-border/50">
+                          <div className={`flex-1 rounded-xl rounded-tl-none p-3 border border-border/50 ${comment.pinned ? 'bg-yellow-100/50 dark:bg-yellow-900/20 shadow-md' : 'bg-muted/40'}`}>
                             <div className="flex justify-between items-baseline mb-1">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold">{comment.userName}</span>
                                 {comment.role === 'client' && (
                                   <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-primary/20 text-primary">Customer</Badge>
                                 )}
+                                {comment.pinned && <Pin className="w-3 h-3 text-yellow-600 ml-1 inline" />}
                                 <div className="flex items-center gap-2">
                                   <span className="text-[10px] text-muted-foreground">{format(new Date(comment.createdAt), "MMM d, h:mm a")}</span>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className={`h-5 w-5 p-0 rounded-full shrink-0 ${comment.pinned ? 'text-yellow-600 hover:text-yellow-700 hover:bg-yellow-200/50' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+                                    onClick={() => pinCommentApi({ id: task._id, commentId: comment._id, pinned: !comment.pinned })}
+                                    disabled={isPinningComment}
+                                  >
+                                    <Pin className="h-3 w-3" />
+                                  </Button>
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
@@ -391,7 +402,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                 </div>
                               </div>
                             </div>
-                            <p className="text-sm text-foreground leading-relaxed">{comment.text}</p>
+                            <p className={`text-sm leading-relaxed ${comment.pinned ? 'font-bold text-foreground' : 'text-foreground'}`}>{comment.text}</p>
                           </div>
                         </div>
                       ))}
@@ -507,8 +518,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
             </div>
           </div>
           
-          {/* Sidebar (Right, 1/3 width) */}
-          <div className="w-full md:w-72 lg:w-80 bg-muted/10 p-4 md:p-6 space-y-6 shrink-0 md:overflow-y-auto">
+          {/* Sidebar (Right, 30% width) */}
+          <div className="w-full md:w-[30%] bg-muted/10 p-4 md:p-6 space-y-6 shrink-0 md:overflow-y-auto">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Properties</h3>
             
             <div className="space-y-4">

@@ -551,38 +551,12 @@ export default function ProductionManager() {
                           )}
                           
                           <div className="flex flex-col gap-2 mt-2">
-                            <div className="flex gap-2">
-                              <Button variant="secondary" size="sm" className="flex-1" onClick={() => window.open(getFileUrl(file.path), "_blank")}>
-                                <Eye className="w-4 h-4 mr-1" /> View
-                              </Button>
-                              <Button variant="outline" size="sm" className="flex-1" onClick={() => {
-                                setSelectedFile(file);
-                                setCommentText(file.adminNotes || "");
-                                setCommentModalOpen(true);
-                              }}>
-                                <MessageSquare className="w-4 h-4 mr-1" /> Note
-                              </Button>
-                            </div>
-                            <Button variant="secondary" size="sm" className="w-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-200" onClick={(e) => {
+                            <Button variant="secondary" size="lg" className="w-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-200 py-6 text-sm font-semibold" onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
                               forceDownload(getFileUrl(file.path), file.originalName);
                             }}>
-                              <Download className="w-4 h-4 mr-1" /> Download
-                            </Button>
-                            <Button
-                              variant={file.adminReviewed ? "outline" : "default"}
-                              size="sm"
-                              className="w-full"
-                              onClick={() => handleReview(file._id, file.adminReviewed, file.adminNotes)}
-                              disabled={isReviewing}
-                            >
-                              <CircleCheck className="w-4 h-4 mr-1" />
-                              {file.adminReviewed ? "Unmark Review" : "Mark as Reviewed"}
-                            </Button>
-                            
-                            <Button variant="destructive" size="sm" className="w-full" onClick={() => handleDelete(file._id)} disabled={isDeleting}>
-                              <Trash2 className="w-4 h-4 mr-1" /> Delete
+                              <Download className="w-5 h-5 mr-2" /> Download
                             </Button>
                           </div>
                         </CardContent>
@@ -610,28 +584,12 @@ export default function ProductionManager() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 ml-4 shrink-0">
-                          <Button variant="ghost" size="icon" onClick={() => window.open(getFileUrl(file.path), "_blank")} title="View">
-                            <Eye className="w-4 h-4 text-muted-foreground" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="hover:bg-blue-50" onClick={(e) => {
+                          <Button variant="ghost" size="icon" className="hover:bg-blue-50 h-10 w-10" onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             forceDownload(getFileUrl(file.path), file.originalName);
                           }} title="Download">
-                            <Download className="w-4 h-4 text-blue-500" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => {
-                            setSelectedFile(file);
-                            setCommentText(file.adminNotes || "");
-                            setCommentModalOpen(true);
-                          }} title="Add Note">
-                            <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                          </Button>
-                          <Button variant={file.adminReviewed ? "secondary" : "default"} size="icon" onClick={() => handleReview(file._id, file.adminReviewed, file.adminNotes)} title="Toggle Review">
-                            <CircleCheck className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(file._id)} disabled={isDeleting} title="Delete">
-                            <Trash2 className="w-4 h-4 text-red-500" />
+                            <Download className="w-5 h-5 text-blue-500" />
                           </Button>
                         </div>
                       </div>

@@ -13,15 +13,12 @@ export const AdminNavItems: NavItem[] = [
         shortcut: ['d', 'd'],
         items: [] // Empty array as there are no child items for Dashboard
     },
-
-
     {
         title: 'Users',
         url: '/admin/superAdmin/users',
         icon: 'user2',
         shortcut: ['u', 'u'],
         isActive: false,
-
     },
     {
         title: 'Orders',
@@ -86,6 +83,23 @@ export const AdminNavItems: NavItem[] = [
         shortcut: ['h', 'h'],
         isActive: false,
     },
+    {
+        title: 'Server Status',
+        url: '/admin/server-status',
+        icon: 'server',
+        shortcut: ['s', 's'],
+        isActive: false,
+        items: [
+            {
+                title: 'Health Dashboard',
+                url: '/admin/server-status',
+            },
+            {
+                title: 'AWS Media Server',
+                url: '/admin/aws-media',
+            }
+        ]
+    }
 ];
 
 export const roleByNavItems = (role: string) => {
@@ -97,6 +111,16 @@ export const roleByNavItems = (role: string) => {
         allowedTitles = ['Tracking', 'Chat', 'Packaging', 'History'];
     } else if (role === "designer") {
         allowedTitles = ['Artworks', 'Print Drafts', 'Tasks', 'Chat'];
+    } else if (role !== "sysadmin" && role !== "admin" && role !== "boss") {
+        // Only sysadmin, admin, boss can see Server Status by default, 
+        // wait, the prompt asked to add it FOR SYSADMIN. 
+        // We'll explicitly remove Server Status for non-sysadmins.
+        allowedTitles = allowedTitles.filter(title => title !== 'Server Status');
+    }
+
+    if (role === "admin" || role === "boss") {
+        // Only sysadmin gets Server Status. Remove for admin/boss as well.
+        allowedTitles = allowedTitles.filter(title => title !== 'Server Status');
     }
 
     return AdminNavItems.filter(item => allowedTitles.includes(item.title));

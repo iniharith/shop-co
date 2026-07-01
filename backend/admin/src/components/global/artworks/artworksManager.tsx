@@ -396,18 +396,22 @@ export default function ArtworksManager() {
 
     if (isImage) {
       return (
-        <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center relative">
-          {/* Use standard img instead of ImageNext to avoid domain restrictions and allow onError fallback */}
+        <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center relative group/thumb">
           <img 
             src={getFileUrl(file.path)} 
             alt={file.originalName} 
-            className="object-cover w-full h-full absolute inset-0 z-0"
+            className="object-cover w-full h-full absolute inset-0 z-0 transition-transform group-hover/thumb:scale-105" 
             onError={(e) => {
               e.currentTarget.style.display = 'none';
               const nextEl = e.currentTarget.nextElementSibling as HTMLElement;
               if (nextEl) nextEl.style.display = 'flex';
             }} 
           />
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center z-20">
+            <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(getFileUrl(file.path), "_blank"); }} className="gap-1 shadow-sm">
+              <Eye className="w-4 h-4" /> View
+            </Button>
+          </div>
           <div style={{ display: 'none' }} className="w-full h-full items-center justify-center z-10 bg-muted/50">
             {getFileIcon(file.mimetype || "image/jpeg")}
           </div>
@@ -691,7 +695,7 @@ export default function ArtworksManager() {
                           <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3" : "flex flex-col gap-3"}>
                             {visibleFolders.map((folder: any) => (
                               viewMode === "grid" ? (
-                                <Card key={folder._id} className="overflow-hidden shadow-sm hover:shadow-md cursor-pointer relative bg-primary/5 border-primary/20 flex flex-col h-full min-h-[250px]" onClick={() => setActiveSubFolderId(folder._id)}>
+                                <Card key={folder._id} className="overflow-hidden shadow-sm hover:shadow-md cursor-pointer relative bg-card hover:bg-accent/50 border-primary/20 flex flex-col h-full min-h-[250px]" onClick={() => setActiveSubFolderId(folder._id)}>
                                   <div className="absolute top-2 right-2 z-20">
                                     <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10 bg-white/50" onClick={(e) => { e.stopPropagation(); if(confirm('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id); }}>
                                       <Trash2 className="w-3 h-3" />
@@ -778,18 +782,13 @@ export default function ArtworksManager() {
                           )}
                           
                           <div className="flex flex-col gap-2 mt-2">
-                            <div className="flex gap-2">
-                              <Button variant="secondary" size="sm" className="flex-1" onClick={() => window.open(getFileUrl(file.path), "_blank")}>
-                                <Eye className="w-4 h-4 mr-1" /> View
-                              </Button>
-                              <Button variant="outline" size="sm" className="flex-1" onClick={() => {
-                                setSelectedFile(file);
-                                setCommentText(file.adminNotes || "");
-                                setCommentModalOpen(true);
-                              }}>
-                                <MessageSquare className="w-4 h-4 mr-1" /> Note
-                              </Button>
-                            </div>
+                            <Button variant="outline" size="sm" className="w-full" onClick={() => {
+                              setSelectedFile(file);
+                              setCommentText(file.adminNotes || "");
+                              setCommentModalOpen(true);
+                            }}>
+                              <MessageSquare className="w-4 h-4 mr-1" /> Note
+                            </Button>
                             <Button variant="secondary" size="sm" className="w-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-200" onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();

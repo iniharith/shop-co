@@ -77,3 +77,9 @@ export const useUpdateTaskFileNotes = () => {
     );
     return { mutate, isPending };
 }
+
+export const usePinTaskComment = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(['pinTaskComment'], ({ id, commentId, pinned }: any) => import("@/api/tasks").then(m => m.pinTaskComment(session?.user?.token, id, commentId, pinned)), ['tasks']);
+    return { mutate, isPending };
+}
