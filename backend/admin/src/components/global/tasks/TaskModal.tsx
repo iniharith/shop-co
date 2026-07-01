@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
-import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag } from "lucide-react";
+import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -39,6 +39,17 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
         onSuccess: () => toast.success("Notes saved and synced successfully")
       });
     }
+  };
+
+  const handleCopyLink = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+    // For task attachments, file.url is usually the full URL
+    const fileUrlStr = file.url.startsWith('http') ? file.url : `${backendUrl}/api/files/download/${file.url}`;
+    const shareLink = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(fileUrlStr)}&name=${encodeURIComponent(file.name)}&stream=true`;
+    navigator.clipboard.writeText(shareLink);
+    toast.success("Share link copied to clipboard");
   };
 
   return (
@@ -91,6 +102,15 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
                 title="Download"
               >
                 <DownloadIcon className="w-3.5 h-3.5" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="w-6 h-6 shrink-0 text-slate-400 hover:text-slate-500 hover:bg-white/10 rounded-full ml-0.5"
+                onClick={handleCopyLink}
+                title="Copy Share Link"
+              >
+                <Share2 className="w-3.5 h-3.5" />
               </Button>
               <Button 
                 variant="ghost" 

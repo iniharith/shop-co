@@ -8,7 +8,7 @@ import { useTasks } from "@/hooks/useTasks";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer } from "lucide-react";
+import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2 } from "lucide-react";
 import { forceDownload } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -373,6 +373,16 @@ export default function ArtworksManager() {
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
     return `${backendUrl}/${path}`;
   };
+
+  const handleCopyLink = (e: React.MouseEvent, file: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+    const shareLink = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName)}&stream=true`;
+    navigator.clipboard.writeText(shareLink);
+    toast.success("Share link copied to clipboard");
+  };
+
 
   const getFileThumbnail = (file: any) => {
     const isImage = file.mimetype?.includes("image") || (file.originalName && file.originalName.match(/\.(jpg|jpeg|png|gif|webp)$/i));
@@ -742,13 +752,18 @@ export default function ArtworksManager() {
                                 <MessageSquare className="w-4 h-4 mr-1" /> Note
                               </Button>
                             </div>
-                            <Button variant="secondary" size="sm" className="w-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-200" onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              forceDownload(getFileUrl(file.path), file.originalName);
-                            }}>
-                              <Download className="w-4 h-4 mr-1" /> Download
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button variant="secondary" size="sm" className="flex-1 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-200" onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                forceDownload(getFileUrl(file.path), file.originalName);
+                              }}>
+                                <Download className="w-4 h-4 mr-1" /> Download
+                              </Button>
+                              <Button variant="outline" size="sm" className="flex-1 text-slate-600 hover:text-slate-900 border-slate-200" onClick={(e) => handleCopyLink(e, file)}>
+                                <Share2 className="w-4 h-4 mr-1" /> Share
+                              </Button>
+                            </div>
                             <Button
                               variant={file.adminReviewed ? "outline" : "default"}
                               size="sm"
@@ -814,6 +829,9 @@ export default function ArtworksManager() {
                           forceDownload(getFileUrl(file.path), file.originalName);
                         }} title="Download">
                           <Download className="w-4 h-4 text-blue-500" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="hover:bg-slate-100" onClick={(e) => handleCopyLink(e, file)} title="Copy Share Link">
+                            <Share2 className="w-4 h-4 text-slate-500" />
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => {
                             setSelectedFile(file);
