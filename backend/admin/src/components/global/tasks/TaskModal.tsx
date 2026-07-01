@@ -65,10 +65,11 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
         <a href={file.url} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-[#666666] flex items-center justify-center shrink-0 hover:bg-[#777777] transition-colors">
           {file.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
             <Image 
-              src={file.url} 
+              src={file.url.startsWith('http') ? file.url : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${file.url}`} 
               alt="thumbnail" 
               width={40} 
               height={40} 
+              quality={60}
               className="w-full h-full object-cover rounded-lg" 
             />
           ) : (
