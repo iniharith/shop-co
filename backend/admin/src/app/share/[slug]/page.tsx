@@ -215,10 +215,22 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
                 <Card key={file._id} className="overflow-hidden bg-white shadow-sm hover:shadow-md transition-all border group">
                   {/* Preview */}
                   {isImage ? (
-                    <div className="h-44 relative bg-muted/50 overflow-hidden flex items-center justify-center">
-                      <Image src={file.path} alt={file.originalName} width={150} height={150} quality={50} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Button variant="secondary" size="sm" onClick={() => window.open(file.path, "_blank")} className="gap-1">
+                    <div className="h-44 relative bg-muted/50 overflow-hidden flex items-center justify-center group/thumb">
+                      <img 
+                        src={file.path.startsWith('http') ? file.path : `${BACKEND}/${file.path}`} 
+                        alt={file.originalName} 
+                        className="w-full h-full object-cover absolute inset-0 z-0 transition-transform group-hover/thumb:scale-105"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const nextEl = e.currentTarget.nextElementSibling as HTMLElement;
+                          if (nextEl) nextEl.style.display = 'flex';
+                        }} 
+                      />
+                      <div style={{ display: 'none' }} className="w-full h-full items-center justify-center z-10 bg-muted/50">
+                        <ImageIcon className="w-10 h-10 text-muted-foreground opacity-40" />
+                      </div>
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center z-20">
+                        <Button variant="secondary" size="sm" onClick={() => window.open(file.path.startsWith('http') ? file.path : `${BACKEND}/${file.path}`, "_blank")} className="gap-1 shadow-sm">
                           <Eye className="w-4 h-4" /> View
                         </Button>
                       </div>
