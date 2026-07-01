@@ -45,14 +45,16 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
     }
   };
 
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  let fileUrlStr = file.url.startsWith('http') ? file.url : `${backendUrl}/${file.url.replace(/^\/+/, '')}`;
+  fileUrlStr = fileUrlStr.replace(/\\/g, '/');
+  
+  const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(fileUrlStr)}&name=${encodeURIComponent(file.name)}&stream=true`;
+
   const handleCopyLink = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-    // For task attachments, file.url is usually the full URL or a relative path
-    const fileUrlStr = file.url.startsWith('http') ? file.url : `${backendUrl}/${file.url.replace(/^\/+/, '')}`.replace(/\\/g, '/');
-    const shareLink = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(fileUrlStr)}&name=${encodeURIComponent(file.name)}&stream=true`;
-    navigator.clipboard.writeText(shareLink);
+    navigator.clipboard.writeText(proxyUrl);
     toast.success("Share link copied to clipboard");
   };
 
@@ -63,25 +65,28 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
         
         {/* Left: Icon or Thumbnail */}
         <a 
-          href={(file.url.startsWith('http') ? file.url : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${file.url.replace(/^\/+/, '')}`).replace(/\\/g, '/')} 
+          href={proxyUrl} 
           target="_blank" 
           rel="noopener noreferrer" 
           className="w-8 h-8 rounded-lg bg-[#666666] flex items-center justify-center shrink-0 hover:bg-[#777777] transition-colors overflow-hidden"
         >
           {file.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
-            <Image 
-              src={(file.url.startsWith('http') ? file.url : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${file.url.replace(/^\/+/, '')}`).replace(/\\/g, '/')} 
-              alt="thumbnail" 
-              width={60}
-              height={60}
-              quality={60}
-              className="w-full h-full object-cover" 
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                const nextEl = e.currentTarget.nextElementSibling as HTMLElement;
-                if (nextEl) nextEl.style.display = 'flex';
-              }}
-            />
+            <>
+              <Image 
+                src={encodedFileUrl} 
+                alt="thumbnail" 
+                width={60}
+                height={60}
+                quality={60}
+                className="w-full h-full object-cover" 
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const nextEl = e.currentTarget.nextElementSibling as HTMLElement;
+                  if (nextEl) nextEl.style.display = 'flex';
+                }}
+              />
+              <File className="w-4 h-4 text-primary/80" style={{ display: 'none' }} />
+            </>
           ) : (
             <File className="w-4 h-4 text-primary/80" />
           )}
