@@ -69,10 +69,18 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
           className="w-8 h-8 rounded-lg bg-[#666666] flex items-center justify-center shrink-0 hover:bg-[#777777] transition-colors overflow-hidden"
         >
           {file.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
-            <img 
+            <Image 
               src={(file.url.startsWith('http') ? file.url : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${file.url.replace(/^\/+/, '')}`).replace(/\\/g, '/')} 
               alt="thumbnail" 
+              width={60}
+              height={60}
+              quality={60}
               className="w-full h-full object-cover" 
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                const nextEl = e.currentTarget.nextElementSibling as HTMLElement;
+                if (nextEl) nextEl.style.display = 'flex';
+              }}
             />
           ) : (
             <File className="w-4 h-4 text-primary/80" />

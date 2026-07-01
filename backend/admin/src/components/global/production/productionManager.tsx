@@ -342,9 +342,12 @@ export default function ProductionManager() {
     if (isImage) {
       return (
         <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center relative group/thumb">
-          <img 
+          <ImageNext 
             src={getFileUrl(file.path)} 
             alt={file.originalName} 
+            width={96}
+            height={96}
+            quality={60}
             className="object-cover w-full h-full absolute inset-0 z-0 transition-transform group-hover/thumb:scale-105" 
             onError={(e) => {
               e.currentTarget.style.display = 'none';

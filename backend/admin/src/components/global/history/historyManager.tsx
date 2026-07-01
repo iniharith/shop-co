@@ -24,6 +24,15 @@ const HistoryManager = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTask, setSelectedTask] = useState<any>(null);
 
+  React.useEffect(() => {
+    if (selectedTask && deletedTasksData?.tasks?.length > 0) {
+      const updatedTask = deletedTasksData.tasks.find((t: any) => t._id === selectedTask._id);
+      if (updatedTask && updatedTask !== selectedTask) {
+        setSelectedTask(updatedTask);
+      }
+    }
+  }, [deletedTasksData, selectedTask]);
+
   const filteredOrders = useMemo(() => {
     let orders = data?.orders || [];
     

@@ -96,7 +96,7 @@ export default function TasksManager() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [hiddenColumns, setHiddenColumns] = useState<string[]>([]);
-  const [collapsedSections, setCollapsedSections] = useState<string[]>([]);
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [collapsedColumns, setCollapsedColumns] = useState<string[]>([]);
   const [columnsPopoverOpen, setColumnsPopoverOpen] = useState(false);
   const [sortOption, setSortOption] = useState<"dateDesc" | "dateAsc" | "nameAsc" | "nameDesc">("dateDesc");
@@ -116,7 +116,14 @@ export default function TasksManager() {
         setSelectedTask(task);
       }
     }
-  }, [taskIdParam, tasks]);
+    
+    if (selectedTask && tasks.length > 0) {
+      const updatedTask = tasks.find((t: any) => t._id === selectedTask._id);
+      if (updatedTask && updatedTask !== selectedTask) {
+        setSelectedTask(updatedTask);
+      }
+    }
+  }, [taskIdParam, tasks, selectedTask]);
 
   const handleCreateTask = () => {
     if (!newTask.title) {
@@ -211,7 +218,7 @@ export default function TasksManager() {
   };
 
   const toggleSectionCollapse = (status: string) => {
-    setCollapsedSections(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]);
+    setExpandedSections(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]);
   };
 
   const toggleColumnCollapse = (status: string) => {
@@ -483,7 +490,7 @@ export default function TasksManager() {
           {columns.map(status => {
             const sectionTasks = sortedTasks.filter((t: any) => t.status === status);
             if (sectionTasks.length === 0) return null;
-            const isCollapsed = collapsedSections.includes(status);
+            const isCollapsed = !expandedSections.includes(status);
             return (
               <Collapsible key={status} open={!isCollapsed} onOpenChange={() => toggleSectionCollapse(status)} className="bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden">
                 <CollapsibleTrigger asChild>

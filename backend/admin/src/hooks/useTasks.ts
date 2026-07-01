@@ -65,7 +65,50 @@ export const useAddTaskComment = () => {
 
 export const useDeleteTaskComment = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['deleteTaskComment'], ({ id, commentId }: any) => deleteTaskComment(session?.user?.token, id, commentId), ['tasks']);
+    const client = useQueryClient();
+    
+    const { mutate, isPending } = useMutation({
+        mutationKey: ['deleteTaskComment'],
+        mutationFn: ({ id, commentId }: any) => 
+            import("@/api/tasks").then(m => m.deleteTaskComment(session?.user?.token, id, commentId)),
+        onMutate: async ({ id, commentId }) => {
+            await client.cancelQueries({ queryKey: ['tasks'] });
+            
+            const previousTasks = client.getQueriesData({ queryKey: ['tasks'] });
+            
+            client.setQueriesData({ queryKey: ['tasks'] }, (old: any) => {
+                if (!old) return old;
+                if (old.tasks) {
+                    return {
+                        ...old,
+                        tasks: old.tasks.map((task: any) => {
+                            if (task._id === id) {
+                                return {
+                                    ...task,
+                                    comments: task.comments?.filter((c: any) => c._id !== commentId)
+                                };
+                            }
+                            return task;
+                        })
+                    };
+                }
+                return old;
+            });
+            
+            return { previousTasks };
+        },
+        onError: (err, newTodo, context: any) => {
+            if (context?.previousTasks) {
+                context.previousTasks.forEach(([queryKey, data]: any) => {
+                    client.setQueryData(queryKey, data);
+                });
+            }
+        },
+        onSettled: () => {
+            client.invalidateQueries({ queryKey: ['tasks'] });
+        },
+    });
+    
     return { mutate, isPending };
 }
 
