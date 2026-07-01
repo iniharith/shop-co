@@ -35,7 +35,13 @@ export class ShareLinkRepository {
     else if (orderId) existing = await ShareLink.findOne({ orderId });
     else if (userId) existing = await ShareLink.findOne({ userId });
 
-    if (existing) return existing;
+    if (existing) {
+      if (existing.folderName !== folderName) {
+        existing.folderName = folderName;
+        await existing.save();
+      }
+      return existing;
+    }
 
     const base = slugify(folderName);
     let slug = base;
