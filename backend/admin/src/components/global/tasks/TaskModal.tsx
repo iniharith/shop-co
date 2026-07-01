@@ -1,6 +1,7 @@
 "use client";
 import { Badge } from "@/components/ui/badge";
 import React, { useState } from "react";
+import Image from "next/image";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -47,8 +48,14 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
         
         {/* Left: Icon or Thumbnail */}
         <a href={file.url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl bg-[#666666] flex items-center justify-center shrink-0 hover:bg-[#777777] transition-colors">
-          {file.url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-            <img src={file.url} alt="thumbnail" className="w-full h-full object-cover rounded-xl" />
+          {file.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
+            <Image 
+              src={file.url} 
+              alt="thumbnail" 
+              width={60} 
+              height={60} 
+              className="w-full h-full object-cover rounded-xl" 
+            />
           ) : (
             <File className="w-6 h-6 text-primary/80" />
           )}
