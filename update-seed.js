@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 ﻿const fs = require('fs');
 const names = [
   'A-DESIGN 2025-2026', 'D-4 QUL (1 PANEL)', 'D-4 QUL (SET)', 'D-1000 DINAR',

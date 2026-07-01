@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const fs = require('fs');
 let text = fs.readFileSync('frontend/src/constants/dummy-products.ts', 'utf8');
 

@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 "use client";
 import { motion, useSpring, useTransform } from "framer-motion";
 import { useEffect, useState } from "react";

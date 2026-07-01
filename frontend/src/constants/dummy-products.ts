@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 export const dummyProducts: any[] = [
   {
     "_id": "prod-100",

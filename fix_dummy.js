@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const fs = require('fs');
 let code = fs.readFileSync('frontend/src/constants/dummy-products.ts', 'utf8');
 code = code.replace(/4C \+ 0C/g, 'Single Side');

@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import IJwtService from "../../../domain/interfaces/jwt.ineterface";
 import { IUser, IUserDocument } from "../../../domain/interfaces/user.interface";
 import { Roles } from "../../../domain/types/user.type";

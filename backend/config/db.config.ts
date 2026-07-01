@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { config } from "dotenv";
 import mongoose from "mongoose";
 config();

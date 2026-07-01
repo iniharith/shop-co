@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import React from 'react';
 import { FaWhatsapp, FaEnvelope, FaPhone } from 'react-icons/fa6';
 

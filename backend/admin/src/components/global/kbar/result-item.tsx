@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import type { ActionId, ActionImpl } from 'kbar';
 import * as React from 'react';
 

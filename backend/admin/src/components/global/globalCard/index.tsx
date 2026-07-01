@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import Image from "next/image"
 import { Star } from "lucide-react"
 

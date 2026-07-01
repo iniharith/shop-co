@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 "use client"
 import { useCallback } from "react";
 import useEmblaCarousel from "embla-carousel-react";

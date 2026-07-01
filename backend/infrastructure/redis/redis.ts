@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { config } from "dotenv";
 import Redis from "ioredis";
 import { createRedisClient } from "../../config/redis.config";

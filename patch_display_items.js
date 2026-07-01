@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const fs = require('fs');
 const data = require('./display_items_data');
 

@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { Router } from "express";
 import ProductController from "../controllers/product.controller";
 

@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 "use client";
 import { Breadcrumbs } from "@/components/global/breadcrumb";
 import { products } from "@/constants/data";

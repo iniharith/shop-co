@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { Router } from "express";
 import { AdminController } from "../controllers/admin.controller";
 import authMiddilware from "../middlewares/auth.middileware";

@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 module.exports = {
   "prod-106": {
     _id: "prod-106",

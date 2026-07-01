@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { useSession } from "next-auth/react";
 import { getProfile, updateProfile, getStaff } from "@/api/user";
 import { useQueryData } from "./useQueryData";

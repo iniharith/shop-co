@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const fs = require('fs');
 
 const pricingData = JSON.parse(fs.readFileSync('frontend/paperbag_prices.json', 'utf8'));

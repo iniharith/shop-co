@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import type { NextFunction, Request, Response } from "express";
 import JwtService from "../../shared/utils/jwt";
 import userSchema from "../../infrastructure/db/models/user.model";

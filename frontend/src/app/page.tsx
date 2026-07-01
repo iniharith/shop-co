@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 "use client";
 
 import Hero from "@/components/page-sections/home/hero";

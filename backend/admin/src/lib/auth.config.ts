@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 // admin/auth.config.ts
 import { AuthOptions, DefaultSession, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";

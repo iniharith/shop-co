@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 export interface IProduct {
     _id: string;
     name: string;

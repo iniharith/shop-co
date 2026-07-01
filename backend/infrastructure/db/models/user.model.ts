@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs"
 import { Schema } from "mongoose";

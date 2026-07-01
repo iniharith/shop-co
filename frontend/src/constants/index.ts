@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 export const navItems: { label: string; href: string }[] = [];
 
 export const printingCategories = [

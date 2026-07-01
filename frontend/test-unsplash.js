@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const https = require('https');
 
 async function searchUnsplash(query) {

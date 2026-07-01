@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const fs = require('fs');
 let content = fs.readFileSync('frontend/src/constants/dummy-products.ts', 'utf8');
 // remove the export const dummyProducts: any[] = [ and the trailing ];

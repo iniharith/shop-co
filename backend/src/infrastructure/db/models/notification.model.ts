@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import mongoose, { Document, Schema } from "mongoose";
 import { NotificationDocument } from "../../../domain/interfaces/notification.interface";
 

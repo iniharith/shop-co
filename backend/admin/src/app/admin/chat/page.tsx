@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import React from "react";
 import ChatManager from "@/components/global/chat/ChatManager";
 

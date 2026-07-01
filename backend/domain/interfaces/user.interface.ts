@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { Document } from "mongoose";
 import { Roles } from "../types/user.type";
 

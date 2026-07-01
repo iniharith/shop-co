@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import type { JwtPayload } from "jsonwebtoken";
 import type { StringValue } from "ms";
 

@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const photobook = {
   "_id": "prod-143",
   "name": "Photobook",

@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import AxiosInstance from "@/utils/axios";
 
 export const getProducts = async (token: string) => {

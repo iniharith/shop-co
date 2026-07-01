@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const fs = require('fs');
 let code = fs.readFileSync('frontend/src/components/page-sections/shop/product-details.tsx', 'utf8');
 

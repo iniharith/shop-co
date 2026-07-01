@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {

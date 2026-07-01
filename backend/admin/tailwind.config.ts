@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import type { Config } from "tailwindcss";
 
 export default {

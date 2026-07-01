@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 "use client";
 import { HeroUIProvider } from "@heroui/system";
 import { ThemeProvider } from "next-themes";

@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { authConfig } from "@/config/auth.config";
 import { getServerSession } from "next-auth";
 import { SessionProvider } from "next-auth/react";

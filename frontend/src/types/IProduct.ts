@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 export interface IPrintingOption {
     name: string;
     isMultiSelect?: boolean;

@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
 import path from 'path';

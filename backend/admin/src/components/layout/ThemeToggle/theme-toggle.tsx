@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 'use client';
 import { MoonIcon, SunIcon } from '@radix-ui/react-icons';
 import { Monitor } from 'lucide-react';

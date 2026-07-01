@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { ShareLink, IShareLink } from '../../domain/entities/ShareLink';
 
 const slugify = (input: string): string =>

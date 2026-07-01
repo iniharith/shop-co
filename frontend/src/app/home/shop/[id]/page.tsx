@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 "use client";
 import Link from "next/link";
 import { ProductDetails } from "@/components/page-sections/shop/product-details";

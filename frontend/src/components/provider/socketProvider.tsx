@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { getSocket } from "../../utils/socket";

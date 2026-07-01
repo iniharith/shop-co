@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import React from "react";
 import ProductCarousel from "../../global/product-carousel";
 import { IProduct } from "@/types";

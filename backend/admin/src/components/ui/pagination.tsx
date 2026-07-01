@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import * as React from "react"
 import { ChevronLeft, ChevronRight, Ellipsis } from "lucide-react"
 

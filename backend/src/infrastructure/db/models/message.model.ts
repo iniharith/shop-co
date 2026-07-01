@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IMessageDocument extends Document {

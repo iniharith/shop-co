@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 "use client"
 import { ICategoryResponse, IProductByIdResponse, IProductResponse } from "@/types/api";
 import { useQueryData } from "./useQueryData"

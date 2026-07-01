@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { IProduct } from "./IProduct";
 
 export interface ICartItem {

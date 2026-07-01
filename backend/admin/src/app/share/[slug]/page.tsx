@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 "use client";
 
 import React, { useEffect, useState, use, useRef } from "react";

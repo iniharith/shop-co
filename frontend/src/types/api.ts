@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { IProduct } from "@/types/IProduct";
 import { IUser } from "@/types/IUser";
 import { IOrder } from "./IOrder";

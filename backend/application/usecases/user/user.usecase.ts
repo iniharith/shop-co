@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { IUser, IUserDocument } from "../../../domain/interfaces/user.interface";
 import { UserRepository } from "../../../infrastructure/db/repositories/user.repository";
 import { Roles } from "../../../domain/types/user.type";

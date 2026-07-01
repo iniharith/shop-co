@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const fs = require('fs');
 const data = JSON.parse(fs.readFileSync('parsed_prices.json', 'utf8'));
 

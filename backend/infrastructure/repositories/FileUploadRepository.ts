@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { FileUpload, IFileUpload } from '../../domain/entities/FileUpload';
 
 export class FileUploadRepository {

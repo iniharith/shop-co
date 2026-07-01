@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const fs = require('fs');
 const path = 'c:/Users/PRINTARA/Documents/GitHub/shop-co/frontend/src/constants/dummy-products.ts';
 let content = fs.readFileSync(path, 'utf8');

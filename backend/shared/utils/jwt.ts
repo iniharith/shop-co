@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import jwt from "jsonwebtoken";
 import type IJwtService from "../../domain/interfaces/jwt.ineterface";
 import type { StringValue } from "ms";

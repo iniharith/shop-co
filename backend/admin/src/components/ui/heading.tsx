@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 interface HeadingProps {
   title: string;
   description: string;

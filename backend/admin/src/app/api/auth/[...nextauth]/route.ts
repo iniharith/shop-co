@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { authConfig } from "@/lib/auth.config";
 import NextAuth from "next-auth";
 

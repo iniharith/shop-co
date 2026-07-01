@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 'use client';
 
 import { X as CrossIcon, Upload } from 'lucide-react';

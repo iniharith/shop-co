@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import axios from "axios";
 
 // ── User API calls bypass Next.js proxy and hit backend directly

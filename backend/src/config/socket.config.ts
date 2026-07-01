@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { Server } from "socket.io"
 import http from "http";
 import { config } from "dotenv";

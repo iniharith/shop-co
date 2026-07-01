@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { useSession } from "next-auth/react";
 import { useQueryData } from "./useQueryData";
 import { getProducts } from "@/api/products";

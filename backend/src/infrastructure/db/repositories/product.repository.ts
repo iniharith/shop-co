@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { FilterQuery } from "mongoose";
 import { IProduct, IProductDocument } from "../../../domain/interfaces/product.interface";
 import ProductModel from "../models/product.model";

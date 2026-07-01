@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 "use client";
 import React from "react";
 import ThemeProvider from "./ThemeToggle/theme-provider";

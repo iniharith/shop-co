@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Geist, Geist_Mono, DM_Sans } from "next/font/google";

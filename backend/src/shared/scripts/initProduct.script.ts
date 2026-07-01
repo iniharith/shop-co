@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { ProductRepository } from "../../infrastructure/db/repositories/product.repository";
 
 const data = [

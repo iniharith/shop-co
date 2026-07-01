@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const fs = require('fs');
 let content = fs.readFileSync('frontend/src/constants/dummy-products.ts', 'utf8');
 const matrixPricingData = require('./flyer_matrix.js').flyerMatrixPricing;

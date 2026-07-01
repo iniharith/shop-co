@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { Document, Types } from 'mongoose';
 import { IProduct, IProductDocument } from './product.interface';
 

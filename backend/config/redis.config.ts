@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import Redis from "ioredis";
 import { config } from "dotenv";
 config();

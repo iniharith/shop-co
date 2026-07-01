@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { useRegisterActions } from 'kbar';
 import { useTheme } from 'next-themes';
 

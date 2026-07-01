@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 'use client';
 import { useKBar } from 'kbar';
 import { Search } from 'lucide-react';

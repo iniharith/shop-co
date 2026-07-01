@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { Parcel, IParcel } from '../../domain/entities/Parcel';
 
 export class ParcelRepository {

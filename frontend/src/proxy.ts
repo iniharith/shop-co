@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 

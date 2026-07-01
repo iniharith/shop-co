@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 export const flyerMatrixPricing = [
   {
     "material": "80gsm Simili Paper",

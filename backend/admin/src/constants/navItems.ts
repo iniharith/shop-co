@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { NavItem } from "@/types";
 
 export const AdminNavItems: NavItem[] = [

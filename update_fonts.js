@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const fs = require('fs');
 
 let nav = fs.readFileSync('frontend/src/components/global/nav.tsx', 'utf8');

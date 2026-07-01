@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { heroui } from '@heroui/theme';
 import type { Config } from "tailwindcss";
 

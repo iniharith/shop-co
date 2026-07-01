@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { z } from "zod";
 
 export const otpSchema = z.object({

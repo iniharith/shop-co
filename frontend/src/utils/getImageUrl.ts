@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 export const getImageUrl = (imagePath: string) => {
   if (!imagePath) return "/placeholder.svg";
   if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {

@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import React from "react";
 import ProfileSidebar from "@/components/page-sections/profile/profileSidebar";
 import { Breadcrumbs } from "@/components/global/breadcrumb";

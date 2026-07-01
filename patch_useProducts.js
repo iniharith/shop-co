@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const fs = require('fs');
 let content = fs.readFileSync('frontend/src/hooks/useProducts.ts', 'utf8');
 

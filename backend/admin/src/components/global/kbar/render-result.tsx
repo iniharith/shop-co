@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { KBarResults, useMatches } from 'kbar';
 import ResultItem from './result-item';
 

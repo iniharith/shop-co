@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import mongoose, { Schema } from 'mongoose';
 import { IProductDocument } from '../../../domain/interfaces/product.interface';
 

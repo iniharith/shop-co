@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import React from 'react'
 import {marqueItems} from "@/constants"
 const Marque = ({className}:{className?:string}) => {

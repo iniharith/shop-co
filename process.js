@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const fs = require('fs');
 const content = fs.readFileSync('C:/Users/PRINTARA/.gemini/antigravity/brain/7e22e2c0-be22-4b85-9bf0-0805ed48b18d/.system_generated/steps/1092/content.md', 'utf8');
 const lines = content.split('\n');

@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import app from './app';
 import connectDB from '../config/db.config';
 import { PORT } from '../shared/constants';

@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 import { VirtualFolder, IVirtualFolder } from '../../domain/entities/VirtualFolder';
 
 class VirtualFolderRepository {

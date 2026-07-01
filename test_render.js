@@ -1,3 +1,7 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 require('ts-node/register');
 const React = require('react');
 const { renderToString } = require('react-dom/server');
