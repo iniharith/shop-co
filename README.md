@@ -203,6 +203,17 @@ The WebSocket flow ensures that all relevant parties get the updates instantly:
 
 ---
 
+## ✨ Recent Features & Progress (Admin UI & Artworks Manager)
+
+- **Dynamic UI Backgrounds**: Added the ability to set custom UI background images. The backgrounds are stored and manageable via the Profile page and apply a custom backdrop to the Artworks Manager.
+- **Granular Folder Sharing**: Upgraded the Share Link feature in the Artworks Manager. It now supports sharing specific sub-folders by generating short links uniquely scoped to a `folderId`, alongside the original group-sharing capability.
+- **UI Enhancements**: 
+  - Centered folder icons and labels in the grid layout for better aesthetics when stretched.
+  - Redesigned the artwork cards by removing the 'Mark as Reviewed' button from folder views.
+  - Positioned a floating 'Share' button cleanly at the top-right of the artwork thumbnails in grid view.
+
+---
+
 ## 🔮 Future Improvements
 
 - **Payment gateway integration**: Add payment options like Stripe or Razorpay for processing payments.
