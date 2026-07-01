@@ -390,21 +390,48 @@ export default function ArtworksManager() {
     toast.success("Share link copied to clipboard");
   };
 
-
   const getFileThumbnail = (file: any) => {
-    const isImage = file.mimetype?.includes("image") || (file.originalName && file.originalName.match(/\.(jpg|jpeg|png|gif|webp)$/i));
-    const isHeic = file.mimetype?.includes("heic") || (file.originalName && file.originalName.toLowerCase().endsWith(".heic"));
+    const isImage = file.mimetype?.includes("image") || (file.originalName && file.originalName.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i));
+    const isPdf = file.mimetype?.includes("pdf") || (file.originalName && file.originalName.toLowerCase().endsWith(".pdf"));
 
-    if (isImage && !isHeic) {
+    if (isImage) {
       return (
-        <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
-          <ImageNext src={getFileUrl(file.path)} alt={file.originalName} width={100} height={100} quality={50} className="object-cover w-full h-full" />
+        <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center relative">
+          {/* Use standard img instead of ImageNext to avoid domain restrictions and allow onError fallback */}
+          <img 
+            src={getFileUrl(file.path)} 
+            alt={file.originalName} 
+            className="object-cover w-full h-full absolute inset-0 z-0"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              const nextEl = e.currentTarget.nextElementSibling as HTMLElement;
+              if (nextEl) nextEl.style.display = 'flex';
+            }} 
+          />
+          <div style={{ display: 'none' }} className="w-full h-full items-center justify-center z-10 bg-muted/50">
+            {getFileIcon(file.mimetype || "image/jpeg")}
+          </div>
         </div>
       );
     }
+
+    if (isPdf) {
+      return (
+        <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center relative group">
+          <iframe 
+            src={`${getFileUrl(file.path)}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} 
+            className="absolute top-0 left-0 border-none overflow-hidden"
+            style={{ width: '400%', height: '400%', transform: 'scale(0.25)', transformOrigin: 'top left', pointerEvents: 'none' }}
+            tabIndex={-1}
+          />
+          <div className="absolute inset-0 z-10 bg-transparent"></div>
+        </div>
+      );
+    }
+
     return (
       <div className="w-full h-24 bg-muted/50 rounded-t-lg flex items-center justify-center">
-        {getFileIcon(file.mimetype || (isHeic ? "image/heic" : ""))}
+        {getFileIcon(file.mimetype)}
       </div>
     );
   };
