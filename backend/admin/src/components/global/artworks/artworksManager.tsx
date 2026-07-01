@@ -550,6 +550,16 @@ export default function ArtworksManager() {
               setTimeout(() => setSelectedFolder(null), 0);
               return null;
             }
+            
+            const groupFolders = virtualFolders.filter((f: any) => 
+              activeGroup.taskId ? f.taskId === activeGroup.taskId : f.userId === activeGroup.userId
+            );
+            const visibleFiles = activeGroup.files.filter((f: any) => 
+              activeSubFolderId ? f.folderId === activeSubFolderId : (!f.folderId || f.folderId === 'null')
+            );
+            const currentFolder = activeSubFolderId ? groupFolders.find(f => f._id === activeSubFolderId) : null;
+            const visibleFolders = activeSubFolderId ? [] : groupFolders;
+
             return (
               <>
                   <div className="flex items-center gap-4 mb-4 pb-4 border-b justify-between">
@@ -566,13 +576,13 @@ export default function ArtworksManager() {
                       </div>
                     </div>
                       <div className="flex items-center gap-2 flex-wrap justify-end">
-                        {activeGroup.files.length > 0 && (
+                        {visibleFiles.length > 0 && (
                           <div className="flex items-center gap-3 mr-2 bg-muted/50 px-3 py-1.5 rounded-lg border">
                             <div className="flex items-center space-x-2">
                               <Checkbox 
                                 id="select-all" 
-                                checked={selectedFiles.length === activeGroup.files.length && activeGroup.files.length > 0}
-                                onCheckedChange={() => handleSelectAll(activeGroup.files)}
+                                checked={selectedFiles.length === visibleFiles.length && visibleFiles.length > 0}
+                                onCheckedChange={() => handleSelectAll(visibleFiles)}
                               />
                               <label htmlFor="select-all" className="text-sm font-medium cursor-pointer select-none">
                                 Select All ({selectedFiles.length})
@@ -590,13 +600,13 @@ export default function ArtworksManager() {
                             )}
                           </div>
                         )}
-                          {activeGroup.files.some((f: any) => f.tag === 'draft') && (
+                          {visibleFiles.some((f: any) => f.tag === 'draft') && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="border-primary/50 text-primary hover:bg-primary/10"
                               onClick={() => {
-                                const draftIds = activeGroup.files.filter((f: any) => f.tag === 'draft').map((f: any) => f._id).join(',');
+                                const draftIds = visibleFiles.filter((f: any) => f.tag === 'draft').map((f: any) => f._id).join(',');
                                 window.open(`/admin/print-drafts?ids=${draftIds}`, '_blank');
                               }}
                             >
@@ -632,8 +642,8 @@ export default function ArtworksManager() {
                           >
                           <Folder className="w-4 h-4 mr-2" /> {isGeneratingLink ? "Generating..." : "Share Link"}
                         </Button>
-                        {activeGroup.files.length > 0 && (
-                          <Button variant="secondary" size="sm" onClick={(e) => handleDownloadAll(activeGroup, e)}>
+                        {visibleFiles.length > 0 && (
+                          <Button variant="secondary" size="sm" onClick={(e) => handleDownloadAll({ ...activeGroup, files: visibleFiles }, e)}>
                             <Download className="w-4 h-4 mr-2" /> Download All
                           </Button>
                         )}
@@ -660,15 +670,6 @@ export default function ArtworksManager() {
                   </div>
                   
                   {(() => {
-                    const groupFolders = virtualFolders.filter((f: any) => 
-                      activeGroup.taskId ? f.taskId === activeGroup.taskId : f.userId === activeGroup.userId
-                    );
-                    const currentFolder = activeSubFolderId ? groupFolders.find(f => f._id === activeSubFolderId) : null;
-                    const visibleFolders = activeSubFolderId ? [] : groupFolders;
-                    const visibleFiles = activeGroup.files.filter((f: any) => 
-                      activeSubFolderId ? f.folderId === activeSubFolderId : (!f.folderId || f.folderId === 'null')
-                    );
-                    
                     return (
                       <>
                         {activeSubFolderId && (
@@ -726,7 +727,7 @@ export default function ArtworksManager() {
                             {visibleFiles.map((file: any) => (
                     viewMode === "grid" ? (
                       <Card key={file._id} className={`overflow-hidden shadow-sm hover:shadow-md transition-shadow relative ${selectedFiles.includes(file._id) ? 'ring-2 ring-primary ring-offset-1' : ''}`}>
-                        <div className="absolute top-2 left-2 z-20">
+                        <div className="absolute top-2 left-2 z-30">
                           <Checkbox 
                             checked={selectedFiles.includes(file._id)} 
                             onCheckedChange={() => handleSelectFile(file._id)} 
@@ -741,7 +742,7 @@ export default function ArtworksManager() {
                         ) : file.tag === 'attachment' ? (
                           <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[9px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Attachment</div>
                         ) : null}
-                        <div className={`absolute right-2 z-20 ${file.tag ? 'top-6' : 'top-2'}`}>
+                        <div className={`absolute right-2 z-30 ${file.tag ? 'top-6' : 'top-2'}`}>
                           <Button variant="secondary" size="icon" className="w-7 h-7 rounded-full bg-white/90 hover:bg-white text-slate-700 shadow-sm transition-all hover:scale-105" onClick={(e) => handleCopyLink(e, file)} title="Copy Share Link">
                             <Share2 className="w-3.5 h-3.5" />
                           </Button>
