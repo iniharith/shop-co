@@ -158,8 +158,17 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
               <Folder className="w-7 h-7 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">{folderName}</h1>
-              <p className="text-sm text-muted-foreground">{files.length} file{files.length !== 1 ? "s" : ""}</p>
+              {folderName.includes(" / ") ? (
+                <>
+                  <div className="text-xs font-semibold text-muted-foreground mb-1 tracking-wider uppercase">
+                    {folderName.split(" / ")[0]}
+                  </div>
+                  <h1 className="text-2xl font-bold leading-none">{folderName.split(" / ").slice(1).join(" / ")}</h1>
+                </>
+              ) : (
+                <h1 className="text-xl font-bold">{folderName}</h1>
+              )}
+              <p className="text-sm text-muted-foreground mt-1">{files.length} file{files.length !== 1 ? "s" : ""}</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">

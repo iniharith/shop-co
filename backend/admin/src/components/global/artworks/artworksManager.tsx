@@ -604,7 +604,7 @@ export default function ArtworksManager() {
                             onClick={async () => {
                                 try {
                                   const res = await createShareLink({
-                                    folderName: activeSubFolderId ? (virtualFolders.find((f: any) => f._id === activeSubFolderId)?.name || activeGroup.folderName) : activeGroup.folderName,
+                                    folderName: activeSubFolderId ? `${activeGroup.folderName} / ${virtualFolders.find((f: any) => f._id === activeSubFolderId)?.name || activeGroup.folderName}` : activeGroup.folderName,
                                     taskId: activeGroup.taskId || undefined,
                                     orderId: activeGroup.orderId || undefined,
                                     userId: activeGroup.userId || undefined,
