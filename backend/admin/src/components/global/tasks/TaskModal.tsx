@@ -48,6 +48,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
   let fileUrlStr = file.url.startsWith('http') ? file.url : `${backendUrl}/${file.url.replace(/^\/+/, '')}`;
   fileUrlStr = fileUrlStr.replace(/\\/g, '/');
+  const encodedFileUrl = encodeURI(fileUrlStr);
   
   const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(fileUrlStr)}&name=${encodeURIComponent(file.name)}&stream=true`;
 
