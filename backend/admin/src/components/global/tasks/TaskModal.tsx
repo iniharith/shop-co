@@ -59,7 +59,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
   return (
     <div className="relative group w-fit max-w-full mb-6 mt-1">
       {/* Dark container matching the sketch */}
-      <div className="flex items-center gap-1.5 bg-[#5a5a5a] p-1 pr-1.5 rounded-[12px] w-full min-w-[140px] shadow-sm relative z-10 overflow-hidden">
+      <div className="flex items-center gap-1.5 bg-[#5a5a5a] p-1.5 pb-3 pr-1.5 rounded-[12px] w-full min-w-[140px] shadow-sm relative z-10 overflow-visible">
         
         {/* Left: Icon or Thumbnail */}
         <a 
@@ -69,12 +69,9 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
           className="w-8 h-8 rounded-lg bg-[#666666] flex items-center justify-center shrink-0 hover:bg-[#777777] transition-colors overflow-hidden"
         >
           {file.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
-            <Image 
+            <img 
               src={(file.url.startsWith('http') ? file.url : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${file.url.replace(/^\/+/, '')}`).replace(/\\/g, '/')} 
               alt="thumbnail" 
-              width={40} 
-              height={40} 
-              quality={60}
               className="w-full h-full object-cover" 
             />
           ) : (
@@ -83,7 +80,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
         </a>
         
         {/* Right: Filename, Tag & Buttons */}
-        <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-0.5 gap-0.5">
+        <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-0.5 gap-0.5 pt-3">
           {/* Absolute Top Right Badge */}
           {file.tag === 'draft' ? (
             <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Draft</div>
@@ -144,7 +141,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
       </div>
 
       {/* Notes Box - Yellow Pill overlapping */}
-      <div className="absolute -bottom-[14px] left-1/2 -translate-x-1/2 z-20 shadow-md bg-[#fde047] rounded-[4px] flex items-center w-[85%] transition-all focus-within:ring-2 focus-within:ring-white">
+      <div className="absolute -bottom-[16px] left-1/2 -translate-x-1/2 z-20 shadow-md bg-[#fde047] rounded-[4px] flex items-center w-[85%] transition-all focus-within:ring-2 focus-within:ring-white">
         <Input 
           value={notes}
           onChange={e => setNotes(e.target.value)}
