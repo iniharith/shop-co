@@ -28,7 +28,8 @@ import { useAllFiles } from "@/hooks/useAdminDashboard";
 import { useRouter } from "next/navigation";
 
 const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => {
-  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(file.url);
+  const isImageFile = file.mimetype?.includes("image") || (file.name || file.url).match(/\.(jpeg|jpg|gif|png|webp|heic)$/i);
+  const isPdfFile = file.mimetype?.includes("pdf") || (file.name || file.url).match(/\.pdf$/i);
   const [notes, setNotes] = useState(file.notes || "");
   const { mutate: updateNotes, isPending } = useUpdateTaskFileNotes();
 
@@ -71,7 +72,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
           rel="noopener noreferrer" 
           className="w-8 h-8 rounded-lg bg-[#666666] flex items-center justify-center shrink-0 hover:bg-[#777777] transition-colors overflow-hidden relative group/thumb"
         >
-          {(file.name || file.url).match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
+          {isImageFile ? (
             <>
               <Image 
                 src={encodedFileUrl} 
@@ -89,7 +90,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
               />
               <File className="w-4 h-4 text-primary/80 relative z-10" style={{ display: 'none' }} />
             </>
-          ) : (file.name || file.url).match(/\.pdf$/i) ? (
+          ) : isPdfFile ? (
             <div className="w-full h-full overflow-hidden flex items-center justify-center relative">
               <iframe 
                 src={`${proxyUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} 
