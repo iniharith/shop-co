@@ -702,6 +702,11 @@ export default function ArtworksManager() {
                         ) : file.tag === 'attachment' ? (
                           <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[9px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Attachment</div>
                         ) : null}
+                        <div className={`absolute right-2 z-20 ${file.tag ? 'top-6' : 'top-2'}`}>
+                          <Button variant="secondary" size="icon" className="w-7 h-7 rounded-full bg-white/90 hover:bg-white text-slate-700 shadow-sm transition-all hover:scale-105" onClick={(e) => handleCopyLink(e, file)} title="Copy Share Link">
+                            <Share2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                         <CardHeader className="p-4 pb-2 flex flex-col items-start justify-between bg-muted/5 border-b">
                           <div className="overflow-hidden w-full">
                             {editingFileId === file._id ? (
@@ -755,27 +760,12 @@ export default function ArtworksManager() {
                                 <MessageSquare className="w-4 h-4 mr-1" /> Note
                               </Button>
                             </div>
-                            <div className="flex gap-2">
-                              <Button variant="secondary" size="sm" className="flex-1 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-200" onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                forceDownload(getFileUrl(file.path), file.originalName);
-                              }}>
-                                <Download className="w-4 h-4 mr-1" /> Download
-                              </Button>
-                              <Button variant="outline" size="sm" className="flex-1 text-slate-600 hover:text-slate-900 border-slate-200" onClick={(e) => handleCopyLink(e, file)}>
-                                <Share2 className="w-4 h-4 mr-1" /> Share
-                              </Button>
-                            </div>
-                            <Button
-                              variant={file.adminReviewed ? "outline" : "default"}
-                              size="sm"
-                              className="w-full"
-                              onClick={() => handleReview(file._id, file.adminReviewed, file.adminNotes)}
-                              disabled={isReviewing}
-                            >
-                              <CircleCheck className="w-4 h-4 mr-1" />
-                              {file.adminReviewed ? "Unmark Review" : "Mark as Reviewed"}
+                            <Button variant="secondary" size="sm" className="w-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-200" onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              forceDownload(getFileUrl(file.path), file.originalName);
+                            }}>
+                              <Download className="w-4 h-4 mr-1" /> Download
                             </Button>
                             
                             <Button variant="destructive" size="sm" className="w-full" onClick={() => handleDelete(file._id)} disabled={isDeleting}>
@@ -833,8 +823,8 @@ export default function ArtworksManager() {
                         }} title="Download">
                           <Download className="w-4 h-4 text-blue-500" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="hover:bg-slate-100" onClick={(e) => handleCopyLink(e, file)} title="Copy Share Link">
-                            <Share2 className="w-4 h-4 text-slate-500" />
+                          <Button variant="default" size="icon" onClick={(e) => handleCopyLink(e, file)} title="Copy Share Link">
+                            <Share2 className="w-4 h-4" />
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => {
                             setSelectedFile(file);
@@ -843,11 +833,8 @@ export default function ArtworksManager() {
                           }} title="Add Note">
                             <MessageSquare className="w-4 h-4 text-muted-foreground" />
                           </Button>
-                          <Button variant={file.adminReviewed ? "secondary" : "default"} size="icon" onClick={() => handleReview(file._id, file.adminReviewed, file.adminNotes)} title="Toggle Review">
-                            <CircleCheck className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(file._id)} disabled={isDeleting} title="Delete">
-                            <Trash2 className="w-4 h-4 text-red-500" />
+                          <Button variant="ghost" size="icon" className="hover:bg-red-50 text-red-500" onClick={() => handleDelete(file._id)} title="Delete">
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
