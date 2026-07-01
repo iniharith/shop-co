@@ -69,9 +69,9 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
           href={proxyUrl} 
           target="_blank" 
           rel="noopener noreferrer" 
-          className="w-8 h-8 rounded-lg bg-[#666666] flex items-center justify-center shrink-0 hover:bg-[#777777] transition-colors overflow-hidden"
+          className="w-8 h-8 rounded-lg bg-[#666666] flex items-center justify-center shrink-0 hover:bg-[#777777] transition-colors overflow-hidden relative group/thumb"
         >
-          {file.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
+          {(file.name || file.url).match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
             <>
               <Image 
                 src={encodedFileUrl} 
@@ -79,17 +79,29 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
                 width={60}
                 height={60}
                 quality={60}
-                className="w-full h-full object-cover" 
+                unoptimized={true}
+                className="w-full h-full object-cover absolute inset-0 z-0" 
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                   const nextEl = e.currentTarget.nextElementSibling as HTMLElement;
                   if (nextEl) nextEl.style.display = 'flex';
                 }}
               />
-              <File className="w-4 h-4 text-primary/80" style={{ display: 'none' }} />
+              <File className="w-4 h-4 text-primary/80 relative z-10" style={{ display: 'none' }} />
             </>
+          ) : (file.name || file.url).match(/\.pdf$/i) ? (
+            <div className="w-full h-full overflow-hidden flex items-center justify-center relative">
+              <iframe 
+                src={`${proxyUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} 
+                className="absolute top-0 left-0 border-none overflow-hidden"
+                style={{ width: '400%', height: '400%', transform: 'scale(0.25)', transformOrigin: 'top left', pointerEvents: 'none' }}
+                tabIndex={-1}
+              />
+              {/* Optional overlay to prevent interaction with iframe inside a tag */}
+              <div className="absolute inset-0 z-10"></div>
+            </div>
           ) : (
-            <File className="w-4 h-4 text-primary/80" />
+            <File className="w-4 h-4 text-primary/80 relative z-10" />
           )}
         </a>
         
