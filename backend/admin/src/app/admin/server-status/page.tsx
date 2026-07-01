@@ -118,17 +118,17 @@ export default function ServerHealthPage() {
                 <div className="min-w-[120px]">
                   <div className="text-gray-500 text-xs font-medium mb-1">Avg tasks/day</div>
                   <div className="text-4xl font-semibold mb-6 tracking-tight">
-                    {(data.charts.progression.reduce((acc: number, curr: any) => acc + curr.count, 0) / Math.max(1, data.charts.progression.length)).toFixed(1)}
+                    {((data.charts?.progression || []).reduce((acc: number, curr: any) => acc + curr.count, 0) / Math.max(1, (data.charts?.progression || []).length)).toFixed(1)}
                   </div>
                   <div className="text-blue-400 text-xs font-medium mb-1 flex items-center">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-1.5"></div>
                     Completed
                   </div>
-                  <div className="text-2xl font-semibold">{data.application.taskTotal}</div>
+                  <div className="text-2xl font-semibold">{data.application?.taskTotal || 0}</div>
                 </div>
                 <div className="flex-1 h-[140px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data.charts.progression}>
+                    <BarChart data={data.charts?.progression || []}>
                       <Tooltip 
                         cursor={{fill: '#242731'}} 
                         contentStyle={{backgroundColor: '#171923', border: '1px solid #374151', borderRadius: '12px', color: '#fff'}} 
@@ -164,19 +164,19 @@ export default function ServerHealthPage() {
               <div className="text-sm font-semibold text-gray-500 mb-4">Disk capacity</div>
               <div className="flex justify-between items-end mb-6">
                 <div className="text-4xl font-bold tracking-tight">
-                  {data.server.diskTotal > 0 ? ((1 - (data.server.diskFree / data.server.diskTotal)) * 100).toFixed(0) : 0}
+                  {(data.server.diskTotal || 0) > 0 ? ((1 - ((data.server.diskFree || 0) / (data.server.diskTotal || 1))) * 100).toFixed(0) : 0}
                   <span className="text-xl font-semibold text-gray-400 ml-1">%</span>
                 </div>
               </div>
               <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
                 <div 
                   className="bg-black h-full rounded-full" 
-                  style={{ width: `${data.server.diskTotal > 0 ? ((1 - (data.server.diskFree / data.server.diskTotal)) * 100) : 0}%` }}
+                  style={{ width: `${(data.server.diskTotal || 0) > 0 ? ((1 - ((data.server.diskFree || 0) / (data.server.diskTotal || 1))) * 100) : 0}%` }}
                 ></div>
               </div>
               <div className="flex justify-between mt-3 text-xs text-gray-500 font-medium">
-                <span>{formatBytes(data.server.diskTotal - data.server.diskFree)} used</span>
-                <span>{formatBytes(data.server.diskTotal)} total</span>
+                <span>{formatBytes((data.server.diskTotal || 0) - (data.server.diskFree || 0))} used</span>
+                <span>{formatBytes(data.server.diskTotal || 0)} total</span>
               </div>
             </div>
 
@@ -187,16 +187,16 @@ export default function ServerHealthPage() {
                 <div className="h-[60px] w-full mr-2">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={[
-                      {v: data.server.cpuLoad[2]}, 
-                      {v: data.server.cpuLoad[1]}, 
-                      {v: data.server.cpuLoad[0]}
+                      {v: data.server.cpuLoad?.[2] || 0}, 
+                      {v: data.server.cpuLoad?.[1] || 0}, 
+                      {v: data.server.cpuLoad?.[0] || 0}
                     ]}>
                       <Area type="monotone" dataKey="v" stroke="#3b82f6" strokeWidth={3} fill="#3b82f6" fillOpacity={0.1} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
                 <div className="text-4xl font-bold text-white tracking-tight leading-none mb-1">
-                  {data.server.cpuLoad[0].toFixed(1)}
+                  {(data.server.cpuLoad?.[0] || 0).toFixed(1)}
                   <span className="text-[10px] text-gray-500 ml-1 uppercase font-semibold">Avg</span>
                 </div>
               </div>
@@ -207,13 +207,13 @@ export default function ServerHealthPage() {
               <div className="text-sm text-gray-400 font-medium">Data transfer</div>
               <div className="flex justify-between items-end mt-2">
                 <div className="text-3xl font-bold text-white tracking-tight leading-none mb-1">
-                  {formatBytes(data.charts.bandwidth[data.charts.bandwidth.length - 1]?.bytesOut || 0)}
+                  {formatBytes(data.charts?.bandwidth?.[(data.charts?.bandwidth?.length || 1) - 1]?.bytesOut || 0)}
                   <span className="text-[10px] text-gray-500 ml-1 uppercase font-semibold">/s</span>
                 </div>
               </div>
               <div className="h-[40px] w-full mt-2">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={data.charts.bandwidth.slice(-15)}>
+                  <LineChart data={(data.charts?.bandwidth || []).slice(-15)}>
                     <Line type="stepAfter" dataKey="bytesOut" stroke="#ef4444" strokeWidth={3} dot={{ r: 4, fill: '#ef4444', strokeWidth: 0 }} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -246,8 +246,8 @@ export default function ServerHealthPage() {
                   <div className="text-xs text-gray-500">MongoDB cluster</div>
                 </div>
               </div>
-              <div className={`text-sm font-bold px-3 py-1 rounded-full ${data.database.status === 'Connected' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                {data.database.status}
+              <div className={`text-sm font-bold px-3 py-1 rounded-full ${data.database?.status === 'Connected' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                {data.database?.status || 'Unknown'}
               </div>
             </div>
           </div>
@@ -260,7 +260,7 @@ export default function ServerHealthPage() {
           <div className="bg-[#1E212B] rounded-3xl p-6 mb-8 relative overflow-hidden">
             <div className="text-gray-400 text-sm mb-2 text-center font-medium relative z-10">Total Artwork Files</div>
             <div className="text-6xl font-bold text-center text-white my-6 tracking-tighter relative z-10">
-              {data.application.artworkTotal}
+              {data.application?.artworkTotal || 0}
             </div>
             <div className="flex justify-center mt-2 relative z-10">
               <span className="bg-[#064e3b] text-[#4ade80] px-4 py-1.5 rounded-full text-xs font-bold flex items-center">
@@ -289,7 +289,7 @@ export default function ServerHealthPage() {
                   <div className="text-xs text-gray-500 font-medium">Uploaded volume</div>
                 </div>
               </div>
-              <div className="font-bold text-white">{formatBytes(data.application.storageUsed)}</div>
+              <div className="font-bold text-white">{formatBytes(data.application?.storageUsed || 0)}</div>
             </div>
 
             <div className="flex items-center justify-between p-4 rounded-2xl hover:bg-[#1E212B] transition-colors group">
@@ -302,7 +302,7 @@ export default function ServerHealthPage() {
                   <div className="text-xs text-gray-500 font-medium">Physical capacity</div>
                 </div>
               </div>
-              <div className="font-bold text-white">{formatBytes(data.server.diskTotal)}</div>
+              <div className="font-bold text-white">{formatBytes(data.server.diskTotal || 0)}</div>
             </div>
           </div>
 
