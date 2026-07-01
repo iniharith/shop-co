@@ -104,7 +104,7 @@ export default function ProfilePage() {
         
         if (res.data?.success && res.data.data && res.data.data.length > 0) {
            const uploadedFile = res.data.data[0];
-           const fileUrl = uploadedFile.path.startsWith("http") ? uploadedFile.path : `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/files/download/${uploadedFile.path}`;
+           const fileUrl = uploadedFile.path.startsWith("http") ? uploadedFile.path : `${process.env.NEXT_PUBLIC_BACKEND_URL}/${uploadedFile.path.replace(/^\/+/, '')}`.replace(/\\/g, '/');
            handleThemeBgChange(fileUrl);
            if (session?.user?.id) {
              localStorage.setItem(`theme-bg-id-${session.user.id}`, uploadedFile._id);

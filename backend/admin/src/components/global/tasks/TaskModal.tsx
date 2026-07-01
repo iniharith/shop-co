@@ -49,28 +49,33 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
     e.preventDefault();
     e.stopPropagation();
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-    // For task attachments, file.url is usually the full URL
-    const fileUrlStr = file.url.startsWith('http') ? file.url : `${backendUrl}/api/files/download/${file.url}`;
+    // For task attachments, file.url is usually the full URL or a relative path
+    const fileUrlStr = file.url.startsWith('http') ? file.url : `${backendUrl}/${file.url.replace(/^\/+/, '')}`.replace(/\\/g, '/');
     const shareLink = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(fileUrlStr)}&name=${encodeURIComponent(file.name)}&stream=true`;
     navigator.clipboard.writeText(shareLink);
     toast.success("Share link copied to clipboard");
   };
 
   return (
-    <div className="relative group w-fit max-w-full mb-4 mt-1">
+    <div className="relative group w-fit max-w-full mb-6 mt-1">
       {/* Dark container matching the sketch */}
       <div className="flex items-center gap-1.5 bg-[#5a5a5a] p-1 pr-1.5 rounded-[12px] w-full min-w-[140px] shadow-sm relative z-10 overflow-hidden">
         
         {/* Left: Icon or Thumbnail */}
-        <a href={file.url} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-[#666666] flex items-center justify-center shrink-0 hover:bg-[#777777] transition-colors">
+        <a 
+          href={(file.url.startsWith('http') ? file.url : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${file.url.replace(/^\/+/, '')}`).replace(/\\/g, '/')} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="w-8 h-8 rounded-lg bg-[#666666] flex items-center justify-center shrink-0 hover:bg-[#777777] transition-colors overflow-hidden"
+        >
           {file.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
             <Image 
-              src={file.url.startsWith('http') ? file.url : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${file.url}`} 
+              src={(file.url.startsWith('http') ? file.url : `${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/${file.url.replace(/^\/+/, '')}`).replace(/\\/g, '/')} 
               alt="thumbnail" 
               width={40} 
               height={40} 
               quality={60}
-              className="w-full h-full object-cover rounded-lg" 
+              className="w-full h-full object-cover" 
             />
           ) : (
             <File className="w-4 h-4 text-primary/80" />
@@ -81,11 +86,11 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
         <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-0.5 gap-0.5">
           {/* Absolute Top Right Badge */}
           {file.tag === 'draft' ? (
-            <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[7px] px-1 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Draft</div>
+            <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Draft</div>
           ) : file.tag === 'for_print' ? (
-            <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[7px] px-1 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">For Print</div>
+            <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">For Print</div>
           ) : (
-            <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[7px] px-1 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Attachment</div>
+            <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Attachment</div>
           )}
           
           {/* Bottom: Filename & Actions */}
@@ -139,7 +144,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
       </div>
 
       {/* Notes Box - Yellow Pill overlapping */}
-      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-20 shadow-md bg-[#fde047] rounded-[4px] flex items-center w-[75%] transition-all focus-within:ring-2 focus-within:ring-white">
+      <div className="absolute -bottom-[14px] left-1/2 -translate-x-1/2 z-20 shadow-md bg-[#fde047] rounded-[4px] flex items-center w-[85%] transition-all focus-within:ring-2 focus-within:ring-white">
         <Input 
           value={notes}
           onChange={e => setNotes(e.target.value)}
@@ -367,7 +372,11 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
                   <TabsContent value="comments" className="mt-0">
                     <div className="space-y-4">
-                      {task.comments?.map((comment: any, idx: number) => (
+                      {[...(task.comments || [])].sort((a: any, b: any) => {
+                        if (a.pinned && !b.pinned) return -1;
+                        if (!a.pinned && b.pinned) return 1;
+                        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                      }).map((comment: any, idx: number) => (
                         <div key={idx} className="flex gap-3">
                           <Avatar className="w-8 h-8 border border-border/50 bg-muted shrink-0">
                             <AvatarFallback className="text-xs">{comment.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
