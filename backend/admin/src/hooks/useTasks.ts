@@ -5,6 +5,7 @@
 import { useSession } from "next-auth/react";
 import { useQueryData } from "./useQueryData";
 import { useMutationData } from "./useMutation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getTasks, createTask, updateTask, deleteTask, addTaskComment, deleteTaskComment } from "@/api/tasks";
 
 export const useTasks = (filters?: any) => {
@@ -80,6 +81,51 @@ export const useUpdateTaskFileNotes = () => {
 
 export const usePinTaskComment = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['pinTaskComment'], ({ id, commentId, pinned }: any) => import("@/api/tasks").then(m => m.pinTaskComment(session?.user?.token, id, commentId, pinned)), ['tasks']);
+    const client = useQueryClient();
+    
+    const { mutate, isPending } = useMutation({
+        mutationKey: ['pinTaskComment'],
+        mutationFn: ({ id, commentId, pinned }: any) => 
+            import("@/api/tasks").then(m => m.pinTaskComment(session?.user?.token, id, commentId, pinned)),
+        onMutate: async ({ id, commentId, pinned }) => {
+            await client.cancelQueries({ queryKey: ['tasks'] });
+            
+            const previousTasks = client.getQueriesData({ queryKey: ['tasks'] });
+            
+            client.setQueriesData({ queryKey: ['tasks'] }, (old: any) => {
+                if (!old) return old;
+                if (old.tasks) {
+                    return {
+                        ...old,
+                        tasks: old.tasks.map((task: any) => {
+                            if (task._id === id) {
+                                return {
+                                    ...task,
+                                    comments: task.comments?.map((c: any) => 
+                                        c._id === commentId ? { ...c, pinned } : c
+                                    )
+                                };
+                            }
+                            return task;
+                        })
+                    };
+                }
+                return old;
+            });
+            
+            return { previousTasks };
+        },
+        onError: (err, newTodo, context: any) => {
+            if (context?.previousTasks) {
+                context.previousTasks.forEach(([queryKey, data]: any) => {
+                    client.setQueryData(queryKey, data);
+                });
+            }
+        },
+        onSettled: () => {
+            client.invalidateQueries({ queryKey: ['tasks'] });
+        },
+    });
+    
     return { mutate, isPending };
 }
