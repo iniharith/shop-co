@@ -92,6 +92,7 @@ export default function ProfilePage() {
         setUploading(true);
         const formData = new FormData();
         formData.append("files", file); // use the generic file upload endpoint
+        formData.append("category", "UI_BACKGROUND"); // Hide from Artworks
         
         const res = await AxiosInstance(session.user.token).post(`/api/files/upload`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
@@ -101,6 +102,9 @@ export default function ProfilePage() {
            const uploadedFile = res.data.data[0];
            const fileUrl = uploadedFile.path.startsWith("http") ? uploadedFile.path : `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/files/download/${uploadedFile.path}`;
            handleThemeBgChange(fileUrl);
+           if (session?.user?.id) {
+             localStorage.setItem(`theme-bg-id-${session.user.id}`, uploadedFile._id);
+           }
         } else {
            toast.error("Failed to upload background image");
         }
@@ -110,6 +114,21 @@ export default function ProfilePage() {
         setUploading(false);
       }
     }
+  };
+
+  const handleRemoveBgImage = async () => {
+    const fileId = session?.user?.id ? localStorage.getItem(`theme-bg-id-${session.user.id}`) : null;
+    if (fileId && session?.user?.token) {
+      try {
+        await AxiosInstance(session.user.token).delete(`/api/files/${fileId}`);
+      } catch (e) {
+        console.error("Failed to delete background file", e);
+      }
+    }
+    if (session?.user?.id) {
+      localStorage.removeItem(`theme-bg-id-${session.user.id}`);
+    }
+    handleThemeBgChange("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -234,12 +253,18 @@ export default function ProfilePage() {
                   onChange={handleBgImageUpload}
                   disabled={uploading}
                 />
-                {(themeBg && (themeBg.startsWith("http") || themeBg.startsWith("data:"))) && (
-                   <Button variant="outline" onClick={() => handleThemeBgChange("")}>
-                     Remove Image
-                   </Button>
-                )}
               </div>
+              {(themeBg && (themeBg.startsWith("http") || themeBg.startsWith("data:"))) && (
+                <div className="mt-4 flex flex-col gap-3">
+                  <div className="relative w-40 h-24 rounded-md overflow-hidden border shadow-sm">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={themeBg} alt="Background Preview" className="w-full h-full object-cover" />
+                  </div>
+                  <Button variant="outline" className="w-40 text-red-500 hover:text-red-600 border-red-200 hover:bg-red-50" onClick={handleRemoveBgImage}>
+                    Delete Background
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

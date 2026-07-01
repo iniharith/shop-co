@@ -93,6 +93,9 @@ export default function ArtworksManager() {
       });
     }
 
+    // Hide background images from Artworks Manager
+    result = result.filter((file: any) => file.category !== "UI_BACKGROUND");
+
     const q = searchQuery.trim().toLowerCase();
     if (!q) return result;
 
