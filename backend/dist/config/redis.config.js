@@ -4,6 +4,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createRedisClient = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const ioredis_1 = __importDefault(require("ioredis"));
 const dotenv_1 = require("dotenv");
 (0, dotenv_1.config)();

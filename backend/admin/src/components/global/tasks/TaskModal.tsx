@@ -57,39 +57,39 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
   };
 
   return (
-    <div className="relative group w-fit max-w-full mb-5 mt-1">
+    <div className="relative group w-fit max-w-full mb-4 mt-1">
       {/* Dark container matching the sketch */}
-      <div className="flex items-center gap-2 bg-[#5a5a5a] p-1.5 pr-2 rounded-[16px] w-full min-w-[190px] shadow-sm relative z-10 overflow-hidden">
+      <div className="flex items-center gap-1.5 bg-[#5a5a5a] p-1 pr-1.5 rounded-[12px] w-full min-w-[140px] shadow-sm relative z-10 overflow-hidden">
         
         {/* Left: Icon or Thumbnail */}
-        <a href={file.url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl bg-[#666666] flex items-center justify-center shrink-0 hover:bg-[#777777] transition-colors">
+        <a href={file.url} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-[#666666] flex items-center justify-center shrink-0 hover:bg-[#777777] transition-colors">
           {file.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
             <Image 
               src={file.url} 
               alt="thumbnail" 
-              width={60} 
-              height={60} 
-              className="w-full h-full object-cover rounded-xl" 
+              width={40} 
+              height={40} 
+              className="w-full h-full object-cover rounded-lg" 
             />
           ) : (
-            <File className="w-6 h-6 text-primary/80" />
+            <File className="w-4 h-4 text-primary/80" />
           )}
         </a>
         
         {/* Right: Filename, Tag & Buttons */}
-        <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-1 gap-0.5">
+        <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-0.5 gap-0.5">
           {/* Absolute Top Right Badge */}
           {file.tag === 'draft' ? (
-            <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[8px] px-1.5 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Draft</div>
+            <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[7px] px-1 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Draft</div>
           ) : file.tag === 'for_print' ? (
-            <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[8px] px-1.5 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">For Print</div>
+            <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[7px] px-1 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">For Print</div>
           ) : (
-            <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[8px] px-1.5 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Attachment</div>
+            <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[7px] px-1 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Attachment</div>
           )}
           
           {/* Bottom: Filename & Actions */}
-          <div className="flex justify-between items-center w-full min-w-0 mt-2">
-            <a href={file.url} target="_blank" rel="noopener noreferrer" className="truncate text-white font-medium text-[12px] tracking-wide hover:underline pr-2">
+          <div className="flex justify-between items-center w-full min-w-0 mt-1">
+            <a href={file.url} target="_blank" rel="noopener noreferrer" className="truncate text-white font-medium text-[10px] tracking-wide hover:underline pr-1">
               {file.name}
             </a>
             
@@ -97,7 +97,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="w-6 h-6 shrink-0 text-blue-400 hover:text-blue-500 hover:bg-white/10 rounded-full"
+                className="w-5 h-5 shrink-0 text-blue-400 hover:text-blue-500 hover:bg-white/10 rounded-full"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -105,21 +105,21 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
                 }}
                 title="Download"
               >
-                <DownloadIcon className="w-3.5 h-3.5" />
+                <DownloadIcon className="w-3 h-3" />
               </Button>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="w-6 h-6 shrink-0 text-slate-400 hover:text-slate-500 hover:bg-white/10 rounded-full ml-0.5"
+                className="w-5 h-5 shrink-0 text-slate-400 hover:text-slate-500 hover:bg-white/10 rounded-full ml-0.5"
                 onClick={handleCopyLink}
                 title="Copy Share Link"
               >
-                <Share2 className="w-3.5 h-3.5" />
+                <Share2 className="w-3 h-3" />
               </Button>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="w-6 h-6 shrink-0 text-red-400 hover:text-red-500 hover:bg-white/10 rounded-full ml-0.5"
+                className="w-5 h-5 shrink-0 text-red-400 hover:text-red-500 hover:bg-white/10 rounded-full ml-0.5"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -130,7 +130,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
                 disabled={isDeletingFile}
                 title="Delete"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-3 h-3" />
               </Button>
             </div>
           </div>
@@ -138,7 +138,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
       </div>
 
       {/* Notes Box - Yellow Pill overlapping */}
-      <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-20 shadow-md bg-[#fde047] rounded-[6px] flex items-center w-[70%] transition-all focus-within:ring-2 focus-within:ring-white">
+      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-20 shadow-md bg-[#fde047] rounded-[4px] flex items-center w-[75%] transition-all focus-within:ring-2 focus-within:ring-white">
         <Input 
           value={notes}
           onChange={e => setNotes(e.target.value)}
@@ -324,7 +324,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                       <label className="text-sm font-semibold text-foreground flex items-center gap-2">
                         <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments
                       </label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
                         {combinedFiles.slice(0, 10).map((file: any, idx: number) => (
                           <FileAttachmentCard 
                             key={idx} 

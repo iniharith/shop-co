@@ -12,6 +12,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const app_1 = __importDefault(require("./app"));
 const db_config_1 = __importDefault(require("../config/db.config"));
 const constants_1 = require("../shared/constants");

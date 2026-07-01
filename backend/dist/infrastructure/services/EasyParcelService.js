@@ -13,6 +13,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.easyParcelService = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const axios_1 = __importDefault(require("axios"));
 // ─── EasyParcel Marketplace OAuth2 Configuration ─────────────────────────────
 // Uses Client Credentials grant — token is obtained server-to-server.

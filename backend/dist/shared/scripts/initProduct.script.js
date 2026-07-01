@@ -9,6 +9,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const product_repository_1 = require("../../infrastructure/db/repositories/product.repository");
 const data = [
     { name: 'Brown Shirt', description: 'Stylish brown shirt', price: 25, category: 'shirt', sizes: [{ size: 'M', stock: 10 }], images: ['/brown-shirt-0.webp', '/brown-shirt-1.webp', '/brown-shirt-2.webp'], rating: 4.5 },

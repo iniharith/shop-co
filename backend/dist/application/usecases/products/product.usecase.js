@@ -10,6 +10,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductUsecase = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const product_repository_1 = require("../../../infrastructure/db/repositories/product.repository");
 const cart_repository_1 = require("../../../infrastructure/db/repositories/cart.repository");
 const redis_1 = require("../../../infrastructure/redis/redis");

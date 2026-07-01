@@ -10,6 +10,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.fileUploadRepository = exports.FileUploadRepository = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const FileUpload_1 = require("../../domain/entities/FileUpload");
 class FileUploadRepository {
     create(data) {

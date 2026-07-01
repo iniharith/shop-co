@@ -4,6 +4,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.uploadAvatar = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const multer_1 = __importDefault(require("multer"));
 const s3_1 = require("../../infrastructure/config/s3");
 const multer_s3_1 = __importDefault(require("multer-s3"));

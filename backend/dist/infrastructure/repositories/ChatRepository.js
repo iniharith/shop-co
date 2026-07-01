@@ -10,6 +10,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.chatRepository = exports.ChatRepository = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const conversation_model_1 = require("../db/models/conversation.model");
 const message_model_1 = require("../db/models/message.model");
 class ChatRepository {

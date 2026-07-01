@@ -1,5 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const socket_io_1 = require("socket.io");
 const dotenv_1 = require("dotenv");
 (0, dotenv_1.config)();

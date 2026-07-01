@@ -12,6 +12,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const express_1 = require("express");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const multer_1 = __importDefault(require("multer"));
@@ -269,7 +273,7 @@ router.post('/shared/upload/:token', decodeSharedToken, upload.array('files', 50
 // Admin: create (or reuse) a short, name-based share link for a folder
 // e.g. { folderName: "Ahmad Ali", taskId, orderId, userId } -> { slug: "ahmad-ali" }
 router.post('/share-link', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { folderName, taskId, orderId, userId } = req.body;
+    const { folderName, taskId, orderId, userId, folderId } = req.body;
     if (!folderName) {
         res.status(400).json({ success: false, message: 'folderName diperlukan' });
         return;
@@ -299,7 +303,7 @@ router.post('/share-link', auth_middileware_1.default, (0, express_async_handler
         }
         catch (e) { }
     }
-    if (!taskId && !resolvedOrderId && !resolvedUserId) {
+    if (!taskId && !resolvedOrderId && !resolvedUserId && !folderId) {
         res.status(400).json({
             success: false,
             message: 'Folder ini belum dikaitkan dengan order, task, atau pelanggan — tidak boleh jana share link',
@@ -311,6 +315,7 @@ router.post('/share-link', auth_middileware_1.default, (0, express_async_handler
         taskId,
         orderId: resolvedOrderId,
         userId: resolvedUserId,
+        folderId,
     });
     res.json({ success: true, data: link });
 })));
@@ -353,7 +358,9 @@ router.get('/s/:slug', (0, express_async_handler_1.default)((req, res) => __awai
     // customer upload through this link), and by taskId/orderId (covers
     // files the admin added directly to the folder before sharing it).
     const orConditions = [{ shareSlug: req.params.slug }];
-    if (link.taskId)
+    if (link.folderId)
+        orConditions.push({ folderId: link.folderId });
+    else if (link.taskId)
         orConditions.push({ taskId: link.taskId });
     else if (link.orderId)
         orConditions.push({ orderId: link.orderId });
@@ -372,6 +379,7 @@ const decodeSharedSlug = (req, res, next) => __awaiter(void 0, void 0, void 0, f
     req.userId = link.userId || 'customer';
     req.taskId = link.taskId;
     req.orderId = link.orderId;
+    req.folderId = link.folderId;
     req.shareSlug = req.params.slug;
     // Preserve folder type so the admin UI re-groups this upload into the
     // SAME folder the link was generated from (task folders are grouped by
@@ -381,7 +389,7 @@ const decodeSharedSlug = (req, res, next) => __awaiter(void 0, void 0, void 0, f
 });
 router.post('/s/:slug/upload', (0, express_async_handler_1.default)(decodeSharedSlug), upload.array('files', 50), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const files = req.files;
-    const { taskId, orderId, userId, shareCategory, shareSlug } = req;
+    const { taskId, orderId, userId, folderId, shareCategory, shareSlug } = req;
     if (!files || files.length === 0) {
         res.status(400).json({ success: false, message: 'Tiada fail dipilih' });
         return;
@@ -390,6 +398,7 @@ router.post('/s/:slug/upload', (0, express_async_handler_1.default)(decodeShared
         userId: userId || 'customer',
         orderId: orderId || undefined,
         taskId: taskId || undefined,
+        folderId: folderId || undefined,
         category: shareCategory || 'artwork',
         shareSlug,
         filename: file.key || file.filename || file.originalname,

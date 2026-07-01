@@ -34,6 +34,10 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VirtualFolder = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const mongoose_1 = __importStar(require("mongoose"));
 const VirtualFolderSchema = new mongoose_1.Schema({
     name: { type: String, required: true },

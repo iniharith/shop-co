@@ -1,6 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.REDIS_CHANNELS = exports.REDIS_KEYS = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 exports.REDIS_KEYS = {
     PRODUCTS: "products",
     CATEGORIES: "categories",

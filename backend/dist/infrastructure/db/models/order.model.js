@@ -33,6 +33,10 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const mongoose_1 = __importStar(require("mongoose"));
 const OrderedProductSchema = new mongoose_1.Schema({
     product: {

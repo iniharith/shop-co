@@ -3,6 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const express_1 = __importDefault(require("express"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const cors_1 = __importDefault(require("cors"));
@@ -24,6 +28,8 @@ const virtualFolderRoutes_1 = __importDefault(require("../presentation/routes/vi
 const taskRoutes_1 = __importDefault(require("../presentation/routes/taskRoutes"));
 const WhatsAppWebhookService_1 = __importDefault(require("../infrastructure/services/WhatsAppWebhookService"));
 const user_route_1 = __importDefault(require("../presentation/routes/user.route"));
+const sysadminRoutes_1 = __importDefault(require("../presentation/routes/sysadminRoutes"));
+const chatRoutes_1 = __importDefault(require("../presentation/routes/chatRoutes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 app.use((0, cookie_parser_1.default)());
@@ -57,12 +63,12 @@ app.use(api_constant_1.apiRoutes.ORDER, order_route_1.default);
 app.use(api_constant_1.apiRoutes.ADMIN, admin_route_1.default);
 app.use('/api/notifications', notification_route_1.default);
 app.use('/api/folders', virtualFolderRoutes_1.default);
-const chatRoutes_1 = __importDefault(require("../presentation/routes/chatRoutes"));
 // ─── Kampung Cetak: Parcel Tracking & File Upload ────────
 app.use('/api/parcels', parcelRoutes_1.default);
 app.use('/api/files', fileUploadRoutes_1.default);
 app.use('/api/tasks', taskRoutes_1.default);
 app.use('/api/chat', chatRoutes_1.default);
+app.use('/api/sysadmin', sysadminRoutes_1.default);
 // ─── WhatsApp Webhook (Meta callback verification) ───────
 // Callback URL: https://admin.kampungcetak.com/api/webhooks/whatsapp
 app.use('/api/webhooks/whatsapp', WhatsAppWebhookService_1.default);

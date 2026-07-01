@@ -34,6 +34,10 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ConversationModel = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const mongoose_1 = __importStar(require("mongoose"));
 const ConversationSchema = new mongoose_1.Schema({
     participants: [

@@ -34,12 +34,17 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Task = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const mongoose_1 = __importStar(require("mongoose"));
 const TaskCommentSchema = new mongoose_1.Schema({
     userId: { type: String, required: true },
     userName: { type: String, required: true },
     text: { type: String, required: true },
     role: { type: String, default: 'admin' },
+    pinned: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
 });
 const TaskActivitySchema = new mongoose_1.Schema({

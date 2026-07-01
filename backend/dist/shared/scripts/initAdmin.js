@@ -10,6 +10,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.initAdmin = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const dotenv_1 = require("dotenv");
 const user_type_1 = require("../../domain/types/user.type");
 const user_repository_1 = require("../../infrastructure/db/repositories/user.repository");

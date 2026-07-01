@@ -34,6 +34,10 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ShareLink = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const mongoose_1 = __importStar(require("mongoose"));
 const ShareLinkSchema = new mongoose_1.Schema({
     slug: { type: String, required: true, unique: true, index: true },
@@ -41,5 +45,6 @@ const ShareLinkSchema = new mongoose_1.Schema({
     taskId: { type: String, index: true },
     orderId: { type: String, index: true },
     userId: { type: String, index: true },
+    folderId: { type: String, index: true },
 }, { timestamps: true });
 exports.ShareLink = mongoose_1.default.model('ShareLink', ShareLinkSchema);

@@ -493,21 +493,24 @@ export default function ArtworksManager() {
             </button>
           </div>
           <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
-            <DialogTrigger asChild>
-              <Button><Plus className="w-4 h-4 mr-2" /> Upload Artwork</Button>
-            </DialogTrigger>
+            <Button onClick={() => {
+              setUploadData({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "", folderId: "" });
+              setUploadModalOpen(true);
+            }}><Plus className="w-4 h-4 mr-2" /> Upload Artwork</Button>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Upload Artwork for User</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={uploadData.category} onChange={e => setUploadData({ ...uploadData, category: e.target.value })}>
-                    {categories.filter(c => c !== "ALL").map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
+                {!(uploadData.userId || uploadData.taskId || uploadData.orderId) && (
+                  <div className="space-y-2">
+                    <Label>Category</Label>
+                    <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={uploadData.category} onChange={e => setUploadData({ ...uploadData, category: e.target.value })}>
+                      {categories.filter(c => c !== "ALL").map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>Files *</Label>
                   <Input type="file" multiple onChange={e => setUploadFiles(e.target.files)} />
@@ -645,7 +648,8 @@ export default function ArtworksManager() {
                         )}
                         <Button 
                           onClick={() => {
-                            setUploadData({ userId: activeGroup.userId || "", orderId: activeGroup.orderId || "", category: activeGroup.taskId ? "TASK" : "DIGITAL PRINTING", notes: "", taskId: activeGroup.taskId || "", folderId: "" });
+                            const inferredCategory = activeGroup.taskId ? "TASK" : (activeGroup.files?.length > 0 ? activeGroup.files[0].category : (activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING"));
+                            setUploadData({ userId: activeGroup.userId || "", orderId: activeGroup.orderId || "", category: inferredCategory, notes: "", taskId: activeGroup.taskId || "", folderId: activeSubFolderId || "" });
                             setUploadModalOpen(true);
                           }}
                           size="sm"
@@ -684,7 +688,8 @@ export default function ArtworksManager() {
                             </p>
                             <Button 
                               onClick={() => {
-                                setUploadData({ userId: activeGroup.userId || "", orderId: activeGroup.orderId || "", category: "TASK", notes: "", taskId: activeGroup.taskId || "", folderId: activeSubFolderId || "" });
+                                const inferredCategory = activeGroup.taskId ? "TASK" : (activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING");
+                                setUploadData({ userId: activeGroup.userId || "", orderId: activeGroup.orderId || "", category: inferredCategory, notes: "", taskId: activeGroup.taskId || "", folderId: activeSubFolderId || "" });
                                 setUploadModalOpen(true);
                               }}
                             >

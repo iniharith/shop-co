@@ -45,6 +45,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const express_1 = require("express");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const TaskRepository_1 = require("../../infrastructure/repositories/TaskRepository");
@@ -249,6 +253,16 @@ router.delete('/:id/comments/:commentId', auth_middileware_1.default, (0, expres
     const task = yield TaskRepository_1.taskRepository.deleteComment(req.params.id, req.params.commentId);
     if (!task) {
         res.status(404).json({ success: false, message: 'Task not found' });
+        return;
+    }
+    res.json({ success: true, task });
+})));
+// PUT /api/tasks/:id/comments/:commentId/pin
+router.put('/:id/comments/:commentId/pin', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { pinned } = req.body;
+    const task = yield TaskRepository_1.taskRepository.pinComment(req.params.id, req.params.commentId, pinned);
+    if (!task) {
+        res.status(404).json({ success: false, message: 'Task or comment not found' });
         return;
     }
     res.json({ success: true, task });

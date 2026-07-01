@@ -10,6 +10,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.taskRepository = exports.TaskRepository = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const Task_1 = require("../../domain/entities/Task");
 class TaskRepository {
     create(data) {
@@ -79,6 +83,11 @@ class TaskRepository {
     deleteComment(taskId, commentId) {
         return __awaiter(this, void 0, void 0, function* () {
             return Task_1.Task.findByIdAndUpdate(taskId, { $pull: { comments: { _id: commentId } } }, { new: true });
+        });
+    }
+    pinComment(taskId, commentId, pinned) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return Task_1.Task.findOneAndUpdate({ _id: taskId, 'comments._id': commentId }, { $set: { 'comments.$.pinned': pinned } }, { new: true });
         });
     }
     addFile(taskId, url, name, tag) {

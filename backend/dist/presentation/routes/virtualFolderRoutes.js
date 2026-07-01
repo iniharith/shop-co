@@ -12,6 +12,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const express_1 = require("express");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const auth_middileware_1 = __importDefault(require("../middlewares/auth.middileware"));

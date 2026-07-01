@@ -10,6 +10,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parcelRepository = exports.ParcelRepository = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const Parcel_1 = require("../../domain/entities/Parcel");
 class ParcelRepository {
     create(data) {

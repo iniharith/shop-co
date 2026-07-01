@@ -13,6 +13,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteFromS3 = exports.S3_BUCKET_NAME = exports.s3Client = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const client_s3_1 = require("@aws-sdk/client-s3");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();

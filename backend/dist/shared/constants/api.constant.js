@@ -1,6 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.apiRoutes = exports.messages = exports.statusCodes = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 exports.statusCodes = {
     OK: 200,
     CREATED: 201,
