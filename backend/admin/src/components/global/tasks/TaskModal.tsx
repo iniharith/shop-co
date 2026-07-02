@@ -92,7 +92,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
           ) : isPdfFile ? (
             <div className="w-full h-full overflow-hidden flex items-center justify-center relative">
               <iframe 
-                src={`${proxyUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} 
+                src={`${proxyUrl}&inline=true#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} 
                 className="absolute top-0 left-0 border-none overflow-hidden"
                 style={{ width: '400%', height: '400%', transform: 'scale(0.25)', transformOrigin: 'top left', pointerEvents: 'none' }}
                 tabIndex={-1}
