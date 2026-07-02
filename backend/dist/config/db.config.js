@@ -18,6 +18,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 const dotenv_1 = require("dotenv");
 const mongoose_1 = __importDefault(require("mongoose"));
+const dns_1 = __importDefault(require("dns"));
+// Bypass Telekom Malaysia's broken IPv6 DNS by forcing Google's DNS
+dns_1.default.setServers(['8.8.8.8', '8.8.4.4']);
 (0, dotenv_1.config)();
 const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -25,6 +28,8 @@ const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
         yield mongoose_1.default.connect(mongoURI, {
             dbName: 'shop-co',
             authSource: "admin",
+            family: 4, // Force IPv4 to bypass dual-stack DNS issues
+            serverSelectionTimeoutMS: 5000,
         });
         console.log("MongoDB connected 🟢 to ", mongoURI);
     }

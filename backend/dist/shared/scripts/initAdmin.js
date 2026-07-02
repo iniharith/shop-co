@@ -20,9 +20,11 @@ const user_repository_1 = require("../../infrastructure/db/repositories/user.rep
 (0, dotenv_1.config)();
 const initAdmin = () => __awaiter(void 0, void 0, void 0, function* () {
     const userRepository = new user_repository_1.UserRepository();
-    let user = yield userRepository.findByEmail(process.env.ADMIN_EMAIL);
+    const adminEmail = process.env.ADMIN_EMAIL || "admin@kampungcetak.com";
+    const adminPassword = process.env.ADMIN_PASSWORD || "admin";
+    let user = yield userRepository.findByEmail(adminEmail);
     if (!user) {
-        user = yield userRepository.create({ email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD, role: user_type_1.Roles.ADMIN, name: "Admin", verified: true });
+        user = yield userRepository.create({ email: adminEmail, password: adminPassword, role: user_type_1.Roles.ADMIN, name: "Admin", verified: true });
     }
     console.log("🎉 Admin created successfully");
 });

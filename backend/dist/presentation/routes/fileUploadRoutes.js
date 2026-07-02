@@ -75,7 +75,7 @@ const upload = (0, multer_1.default)({
 // ─── POST /api/files/upload ───────────────────────────────
 // Customer uploads one or more files (requires auth middleware upstream)
 // Files are uploaded directly to AWS S3 — not stored locally.
-router.post('/upload', auth_middileware_1.default, upload.array('files', 50), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/upload', auth_middileware_1.default, upload.array('files', 100), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
     const files = req.files;
     const { orderId, taskId, notes, userId: bodyUserId, category, tag, folderId } = req.body;
@@ -243,7 +243,7 @@ const decodeSharedToken = (req, res, next) => {
         res.status(400).json({ success: false, message: 'Invalid token' });
     }
 };
-router.post('/shared/upload/:token', decodeSharedToken, upload.array('files', 50), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/shared/upload/:token', decodeSharedToken, upload.array('files', 100), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const files = req.files;
     const { taskId, orderId, userId, shareCategory } = req;
     if (!files || files.length === 0) {
@@ -387,7 +387,7 @@ const decodeSharedSlug = (req, res, next) => __awaiter(void 0, void 0, void 0, f
     req.shareCategory = link.taskId ? 'TASK' : 'artwork';
     next();
 });
-router.post('/s/:slug/upload', (0, express_async_handler_1.default)(decodeSharedSlug), upload.array('files', 50), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/s/:slug/upload', (0, express_async_handler_1.default)(decodeSharedSlug), upload.array('files', 100), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const files = req.files;
     const { taskId, orderId, userId, folderId, shareCategory, shareSlug } = req;
     if (!files || files.length === 0) {

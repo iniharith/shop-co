@@ -27,13 +27,13 @@ const Task_1 = require("../../domain/entities/Task");
 const FileUpload_1 = require("../../domain/entities/FileUpload");
 const bandwidthTracker_1 = require("../../shared/utils/bandwidthTracker");
 const router = (0, express_1.Router)();
-// Middleware to restrict to sysadmin role only
+// Middleware to restrict to sysadmin, admin, boss role
 const requireSysadmin = (req, res, next) => {
-    if (req.user && req.user.role === 'sysadmin') {
+    if (req.user && ['sysadmin', 'admin', 'boss'].includes(req.user.role)) {
         next();
     }
     else {
-        res.status(403).json({ success: false, message: 'Access denied. Sysadmin only.' });
+        res.status(403).json({ success: false, message: 'Access denied. Requires elevated permissions.' });
     }
 };
 router.use(auth_middileware_1.default);

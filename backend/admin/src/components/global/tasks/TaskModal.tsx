@@ -79,8 +79,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
                 alt="thumbnail" 
                 width={60}
                 height={60}
-                quality={60}
-                unoptimized={true}
+                quality={40}
                 className="w-full h-full object-cover absolute inset-0 z-0" 
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
