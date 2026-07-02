@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "admin-mobile",
+    "name": "KampungCetak Admin",
     "slug": "admin-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,8 +11,9 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "com.kampungcetak.admin",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#000000",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -28,15 +29,21 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#000000",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 200
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4da5e40c-155f-4161-a0a9-c380a4635f62"
+      }
     }
   }
 }

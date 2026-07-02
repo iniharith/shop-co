@@ -3,6 +3,9 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { View, ActivityIndicator } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
+
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { token, checkAuth } = useAuthStore();
@@ -14,6 +17,7 @@ export default function RootLayout() {
     const initAuth = async () => {
       await checkAuth();
       setIsReady(true);
+      SplashScreen.hideAsync();
     };
     initAuth();
   }, []);
