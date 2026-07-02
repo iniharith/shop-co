@@ -19,12 +19,12 @@ export default function DashboardScreen() {
   const fetchData = async () => {
     try {
       const [orderRes, parcelRes, fileRes] = await Promise.all([
-        api.get('/admin/order'),
-        api.get('/admin/parcel/stats'),
-        api.get('/admin/file/stats').catch(() => ({ data: { totalFiles: 0, totalSize: 0, pendingReview: 0 } }))
+        api.get('/orders'),
+        api.get('/parcels/stats').catch(() => ({ data: { total: 0, pending: 0, in_transit: 0, delivered: 0, failed: 0 } })),
+        api.get('/files/stats').catch(() => ({ data: { totalFiles: 0, totalSize: 0, pendingReview: 0 } }))
       ]);
       
-      if (orderRes.data && orderRes.data.orders) setOrders(orderRes.data.orders);
+      if (orderRes.data) setOrders(orderRes.data.orders || orderRes.data || []);
       if (parcelRes.data) setParcelStats(parcelRes.data);
       if (fileRes.data) setFileStats(fileRes.data);
       

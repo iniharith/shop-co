@@ -15,9 +15,14 @@ export default function RootLayout() {
 
   useEffect(() => {
     const initAuth = async () => {
-      await checkAuth();
-      setIsReady(true);
-      SplashScreen.hideAsync();
+      try {
+        await checkAuth();
+      } catch (e) {
+        console.error('Auth check error:', e);
+      } finally {
+        setIsReady(true);
+        SplashScreen.hideAsync();
+      }
     };
     initAuth();
   }, []);

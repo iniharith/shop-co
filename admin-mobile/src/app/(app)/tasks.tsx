@@ -1,9 +1,30 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { useSyncStore } from '../../store/useSyncStore';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import api from '../../services/api';
 
 export default function TasksScreen() {
-  const { orders } = useSyncStore();
+  const [orders, setOrders] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchOrders = async () => {
+    try {
+      const res = await api.get('/orders');
+      if (res.data) setOrders(res.data.orders || res.data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchOrders();
+  };
   
   // Group orders loosely by status for the task view
   const pendingTasks = orders.filter(o => o.status === 'pending');
@@ -20,7 +41,11 @@ export default function TasksScreen() {
         </View>
       </View>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        className="flex-1" 
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="hsl(45, 93%, 47%)" />}
+      >
         
         {/* To Do Section */}
         <View className="mb-6">
