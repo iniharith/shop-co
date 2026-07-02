@@ -625,6 +625,7 @@ router.get('/:id/info', (0, express_async_handler_1.default)((req, res) => __awa
             mimetype: file.mimetype,
             size: file.size,
             createdAt: file.createdAt,
+            path: file.path,
         }
     });
 })));

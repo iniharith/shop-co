@@ -26,7 +26,8 @@ export default function SingleFileSharePage({ params }: { params: Promise<{ id: 
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  const previewUrl = `${BACKEND}/api/files/${id}/preview`;
+  // These URLs are built after file info is loaded so we can pass the filename
+  const proxyBase = `${BACKEND}/api/files/proxy-download`;
   const downloadUrl = `${BACKEND}/api/files/${id}/download`;
 
   useEffect(() => {
@@ -81,7 +82,7 @@ export default function SingleFileSharePage({ params }: { params: Promise<{ id: 
               <div className="bg-black/40 min-h-[300px] flex items-center justify-center relative">
                 {isImage ? (
                   <img
-                    src={previewUrl}
+                    src={`${proxyBase}?url=${encodeURIComponent(file.path)}&name=${encodeURIComponent(file.originalName)}&stream=true&inline=true`}
                     alt={file.originalName}
                     className="max-w-full max-h-[500px] object-contain rounded"
                     onError={(e) => {
@@ -90,7 +91,7 @@ export default function SingleFileSharePage({ params }: { params: Promise<{ id: 
                   />
                 ) : isPdf ? (
                   <iframe
-                    src={`${previewUrl}&inline=true`}
+                    src={`${proxyBase}?url=${encodeURIComponent(file.path)}&name=${encodeURIComponent(file.originalName)}&stream=true&inline=true`}
                     className="w-full h-[500px] border-none"
                     title={file.originalName}
                   />

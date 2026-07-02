@@ -750,6 +750,7 @@ router.get(
         mimetype: file.mimetype,
         size: (file as any).size,
         createdAt: (file as any).createdAt,
+        path: file.path,
       }
     });
   })
