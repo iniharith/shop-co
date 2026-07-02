@@ -21,7 +21,47 @@ export const useCreateTask = () => {
 
 export const useUpdateTask = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['updateTask'], ({ id, data }: any) => updateTask(session?.user?.token, id, data), ['tasks']);
+    const client = useQueryClient();
+
+    const { mutate, isPending } = useMutation({
+        mutationKey: ['updateTask'],
+        mutationFn: ({ id, data }: any) => updateTask(session?.user?.token, id, data),
+        onMutate: async ({ id, data }) => {
+            await client.cancelQueries({ queryKey: ['tasks'] });
+            
+            const previousTasks = client.getQueriesData({ queryKey: ['tasks'] });
+            
+            client.setQueriesData({ queryKey: ['tasks'] }, (old: any) => {
+                if (!old) return old;
+                if (old.tasks) {
+                    return {
+                        ...old,
+                        tasks: old.tasks.map((task: any) => {
+                            if (task._id === id) {
+                                return { ...task, ...data };
+                            }
+                            return task;
+                        })
+                    };
+                }
+                return old;
+            });
+            
+            return { previousTasks };
+        },
+        onError: (err, newTodo, context: any) => {
+            if (context?.previousTasks) {
+                context.previousTasks.forEach(([queryKey, data]: any) => {
+                    client.setQueryData(queryKey, data);
+                });
+            }
+            import("sonner").then(m => m.toast.error("Failed to update task", { description: err.message }));
+        },
+        onSettled: () => {
+            client.invalidateQueries({ queryKey: ['tasks'] });
+        },
+    });
+    
     return { mutate, isPending };
 }
 
