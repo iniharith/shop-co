@@ -60,27 +60,63 @@ export default function SingleFileSharePage({ params }: { params: Promise<{ id: 
   // ── Loading ──────────────────────────────────────────────
   if (loading) return (
     <div className="flex h-screen w-full items-center justify-center bg-background">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex flex-col items-center gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="text-sm text-muted-foreground">Loading file…</span>
+      </div>
     </div>
   );
 
   // ── Not Found ────────────────────────────────────────────
   if (notFound) return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="p-12 text-center text-muted-foreground bg-card border border-dashed rounded-xl shadow-sm max-w-md">
+      <div
+        className="p-12 text-center text-muted-foreground rounded-2xl max-w-md"
+        style={{
+          background: "hsl(var(--card) / 0.7)",
+          backdropFilter: "blur(20px) saturate(1.4)",
+          WebkitBackdropFilter: "blur(20px) saturate(1.4)",
+          border: "1px solid hsl(var(--border) / 0.6)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+        }}
+      >
         <AlertCircle className="w-10 h-10 mx-auto mb-4 text-destructive/60" />
-        <h2 className="text-lg font-semibold mb-2">File Not Found</h2>
+        <h2 className="text-lg font-semibold mb-2 text-foreground">File Not Found</h2>
         <p className="text-sm">This link is invalid or the file has been removed.</p>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen bg-background overflow-x-hidden">
 
-      {/* ── Header ─────────────────────────────────────────── */}
-      <header className="sticky top-0 z-10 border-b bg-card/80 backdrop-blur-md shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+      {/* ── Gradient mesh background ─────────────────────────── */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+      >
+        {/* Light mode blobs */}
+        <div className="dark:hidden absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-emerald-300/30 blur-[120px]" />
+        <div className="dark:hidden absolute top-1/2 right-0 w-[400px] h-[400px] rounded-full bg-sky-300/20 blur-[100px]" />
+        <div className="dark:hidden absolute bottom-0 left-1/3 w-[350px] h-[350px] rounded-full bg-emerald-200/25 blur-[100px]" />
+        {/* Dark mode blobs */}
+        <div className="hidden dark:block absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-yellow-500/15 blur-[140px]" />
+        <div className="hidden dark:block absolute top-1/3 right-0 w-[400px] h-[400px] rounded-full bg-yellow-400/10 blur-[120px]" />
+        <div className="hidden dark:block absolute bottom-0 left-1/4 w-[350px] h-[350px] rounded-full bg-amber-500/10 blur-[120px]" />
+      </div>
+
+      {/* ── Header ──────────────────────────────────────────── */}
+      <header
+        className="sticky top-0 z-20"
+        style={{
+          background: "hsl(var(--card) / 0.6)",
+          backdropFilter: "blur(20px) saturate(1.4)",
+          WebkitBackdropFilter: "blur(20px) saturate(1.4)",
+          borderBottom: "1px solid hsl(var(--border) / 0.5)",
+          boxShadow: "0 1px 24px rgba(0,0,0,0.08)",
+        }}
+      >
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg overflow-hidden shrink-0">
               <Image src="/logo.png" width={28} height={28} alt="Kampung Cetak" className="object-contain w-full h-full" />
@@ -92,23 +128,32 @@ export default function SingleFileSharePage({ params }: { params: Promise<{ id: 
         </div>
       </header>
 
-      {/* ── Main Content ────────────────────────────────────── */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+      {/* ── Main ────────────────────────────────────────────── */}
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-5">
 
         {/* File Info Card */}
-        <div className="bg-card border rounded-xl shadow-sm p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div
+          className="rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4"
+          style={{
+            background: "hsl(var(--card) / 0.7)",
+            backdropFilter: "blur(20px) saturate(1.4)",
+            WebkitBackdropFilter: "blur(20px) saturate(1.4)",
+            border: "1px solid hsl(var(--border) / 0.6)",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.12)",
+          }}
+        >
           {/* Icon */}
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
             {isImage ? (
               <ImageIcon className="w-6 h-6 text-primary" />
             ) : isPdf ? (
-              <FileText className="w-6 h-6 text-red-500" />
+              <FileText className="w-6 h-6 text-red-500 dark:text-red-400" />
             ) : (
               <File className="w-6 h-6 text-muted-foreground" />
             )}
           </div>
 
-          {/* Name & Meta */}
+          {/* Filename & Meta */}
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-semibold text-foreground truncate" title={file.originalName}>
               {file.originalName}
@@ -134,7 +179,7 @@ export default function SingleFileSharePage({ params }: { params: Promise<{ id: 
             </div>
           </div>
 
-          {/* Download Button */}
+          {/* Download */}
           <a href={downloadUrl} download={file.originalName} className="shrink-0 w-full sm:w-auto">
             <Button className="w-full sm:w-auto gap-2">
               <Download className="w-4 h-4" />
@@ -145,8 +190,21 @@ export default function SingleFileSharePage({ params }: { params: Promise<{ id: 
 
         {/* Preview Card */}
         {previewSrc && (
-          <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b">
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{
+              background: "hsl(var(--card) / 0.7)",
+              backdropFilter: "blur(20px) saturate(1.4)",
+              WebkitBackdropFilter: "blur(20px) saturate(1.4)",
+              border: "1px solid hsl(var(--border) / 0.6)",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.12)",
+            }}
+          >
+            {/* Card header */}
+            <div
+              className="flex items-center justify-between px-4 py-3"
+              style={{ borderBottom: "1px solid hsl(var(--border) / 0.5)" }}
+            >
               <span className="text-sm font-medium text-foreground">Preview</span>
               <a
                 href={previewSrc}
@@ -159,21 +217,19 @@ export default function SingleFileSharePage({ params }: { params: Promise<{ id: 
               </a>
             </div>
 
-            {/* Image Preview */}
+            {/* Image */}
             {isImage && (
-              <div className="bg-muted/30 flex items-center justify-center p-4 min-h-[300px]">
+              <div className="bg-muted/20 flex items-center justify-center p-4 min-h-[280px]">
                 <img
                   src={previewSrc}
                   alt={file.originalName}
-                  className="max-w-full max-h-[600px] object-contain rounded-lg shadow"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
+                  className="max-w-full max-h-[600px] object-contain rounded-xl shadow-md"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                 />
               </div>
             )}
 
-            {/* PDF Preview */}
+            {/* PDF */}
             {isPdf && (
               <div className="w-full h-[600px]">
                 <iframe
