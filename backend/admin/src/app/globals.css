@@ -132,21 +132,90 @@ body{
   outline: 0px transparent;
 }
 
-body.has-custom-bg {
-  background-color: transparent !important;
-}
-
+/* ---------- GLOBAL GLASSMORPHIC UI OVERRIDES ---------- */
+body.has-custom-bg,
 body.has-custom-bg > main,
 body.has-custom-bg main.bg-background,
 body.has-custom-bg [data-sidebar="inset"] {
   background-color: transparent !important;
 }
 
-/* Ensure the sidebar also becomes transparent if needed, or slightly translucent */
-body.has-custom-bg .bg-sidebar {
-  background-color: rgba(255, 255, 255, 0.6) !important;
-  backdrop-filter: blur(8px);
+/* Base text color to ensure readability against dynamic backgrounds */
+body.has-custom-bg {
+  color: hsl(var(--foreground));
 }
-.dark body.has-custom-bg .bg-sidebar {
-  background-color: rgba(0, 0, 0, 0.6) !important;
+
+/* Glassmorphic Cards, Popovers, Sidebars, Modals */
+body.has-custom-bg .bg-card,
+body.has-custom-bg .bg-popover,
+body.has-custom-bg .bg-sidebar,
+body.has-custom-bg [data-sidebar="sidebar"],
+body.has-custom-bg [role="dialog"],
+body.has-custom-bg [role="menu"] {
+  background-color: hsl(var(--card) / 0.45) !important;
+  backdrop-filter: blur(16px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.2) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Fallbacks for Dark Theme Specificity */
+.dark body.has-custom-bg .bg-card,
+.dark body.has-custom-bg .bg-popover,
+.dark body.has-custom-bg .bg-sidebar,
+.dark body.has-custom-bg [data-sidebar="sidebar"],
+.dark body.has-custom-bg [role="dialog"],
+.dark body.has-custom-bg [role="menu"] {
+  background-color: rgba(10, 10, 10, 0.5) !important;
+}
+
+/* Glassmorphic Muted Elements (e.g. Tab Lists, Secondary containers) */
+body.has-custom-bg .bg-muted {
+  background-color: hsl(var(--muted) / 0.35) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+/* Active Tabs and Highlighted States */
+body.has-custom-bg [data-state="active"] {
+  background-color: hsl(var(--card) / 0.6) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Glassmorphic Buttons */
+body.has-custom-bg .bg-primary,
+body.has-custom-bg .bg-secondary,
+body.has-custom-bg .bg-destructive {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+body.has-custom-bg .bg-primary {
+  background-color: hsl(var(--primary) / 0.65) !important;
+}
+body.has-custom-bg .bg-primary:hover {
+  background-color: hsl(var(--primary) / 0.8) !important;
+}
+
+body.has-custom-bg .bg-secondary {
+  background-color: hsl(var(--secondary) / 0.65) !important;
+}
+body.has-custom-bg .bg-secondary:hover {
+  background-color: hsl(var(--secondary) / 0.8) !important;
+}
+
+body.has-custom-bg .bg-destructive {
+  background-color: hsl(var(--destructive) / 0.65) !important;
+}
+body.has-custom-bg .bg-destructive:hover {
+  background-color: hsl(var(--destructive) / 0.8) !important;
+}
+
+/* Table overrides to ensure rows remain visible */
+body.has-custom-bg tr:hover,
+body.has-custom-bg .hover\:bg-muted:hover {
+  background-color: hsl(var(--muted) / 0.4) !important;
 }
