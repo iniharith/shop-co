@@ -171,17 +171,23 @@ body.has-custom-bg [role="menu"] {
 
 /* Glassmorphic Muted Elements (e.g. Tab Lists, Secondary containers) */
 body.has-custom-bg .bg-muted {
-  background-color: hsl(var(--muted) / 0.7) !important;
+  background-color: hsl(var(--muted) / 0.8) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
+}
+.dark body.has-custom-bg .bg-muted {
+  background-color: rgba(20, 20, 20, 0.85) !important;
 }
 
 /* Active Tabs and Highlighted States */
 body.has-custom-bg [data-state="active"] {
-  background-color: hsl(var(--card) / 0.85) !important;
+  background-color: hsl(var(--card) / 0.9) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   border-color: rgba(255, 255, 255, 0.2) !important;
+}
+.dark body.has-custom-bg [data-state="active"] {
+  background-color: rgba(40, 40, 40, 0.9) !important;
 }
 
 /* Glassmorphic Buttons */
