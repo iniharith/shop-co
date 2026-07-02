@@ -384,8 +384,7 @@ export default function ArtworksManager() {
   const handleCopyLink = (e: React.MouseEvent, file: any) => {
     e.preventDefault();
     e.stopPropagation();
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-    const shareLink = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName)}&stream=true`;
+    const shareLink = `${window.location.origin}/share/file/${file._id}`;
     navigator.clipboard.writeText(shareLink);
     toast.success("Share link copied to clipboard");
   };
@@ -1091,3 +1090,4 @@ export default function ArtworksManager() {
     </div>
   );
 }
+

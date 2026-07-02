@@ -56,7 +56,8 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
   const handleCopyLink = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    navigator.clipboard.writeText(proxyUrl);
+    const cleanShareLink = `${window.location.origin}/share/file/${file._id || file.id}`;
+    navigator.clipboard.writeText(cleanShareLink);
     toast.success("Share link copied to clipboard");
   };
 

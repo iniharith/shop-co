@@ -732,6 +732,29 @@ router.get(
   })
 );
 
+// ─── GET /api/files/:id/info ──────────────────────────────
+// Public: returns basic file metadata for share page display (no auth needed)
+router.get(
+  '/:id/info',
+  asyncHandler(async (req: Request, res: Response) => {
+    const file = await fileUploadRepository.findById(req.params.id);
+    if (!file) {
+      res.status(404).json({ success: false, message: 'File not found' });
+      return;
+    }
+    res.json({
+      success: true,
+      data: {
+        id: (file as any)._id,
+        originalName: file.originalName,
+        mimetype: file.mimetype,
+        size: (file as any).size,
+        createdAt: (file as any).createdAt,
+      }
+    });
+  })
+);
+
 // 📝 PUT /api/files/:id/review 
 // Admin marks a file as reviewed (optionally with notes)
 router.put(
