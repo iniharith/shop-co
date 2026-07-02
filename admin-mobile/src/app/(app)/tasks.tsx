@@ -62,11 +62,15 @@ export default function TasksScreen() {
             </View>
           ) : (
             pendingTasks.map((task, idx) => (
-              <TouchableOpacity key={idx} className="bg-card border border-border p-4 rounded-xl mb-3 shadow-sm active:opacity-70 flex-row justify-between items-center">
-                <View>
-                  <Text className="text-foreground font-semibold text-base mb-1">Order #{task.id}</Text>
-                  <Text className="text-muted-foreground text-xs">{task.item || 'Unknown item'}</Text>
+              <TouchableOpacity key={idx} className="bg-white p-4 rounded-xl mb-3 border border-slate-200 shadow-sm active:opacity-70">
+                <View className="flex-row justify-between items-start mb-2">
+                  <Text className="text-slate-900 font-bold text-base flex-1 mr-2" numberOfLines={2}>
+                    Order #{task.id}
+                  </Text>
                 </View>
+                <Text className="text-slate-500 text-sm mb-3" numberOfLines={3}>
+                  {task.item || 'No description provided.'}
+                </Text>
                 <View className="w-6 h-6 rounded-full border-2 border-muted flex items-center justify-center" />
               </TouchableOpacity>
             ))

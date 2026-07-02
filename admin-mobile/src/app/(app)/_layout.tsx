@@ -1,35 +1,58 @@
-import { Drawer } from 'expo-router/drawer';
-import { LayoutDashboard, CheckSquare, Package, Image as ImageIcon, Box } from 'lucide-react-native';
+import { Tabs } from 'expo-router';
+import { useAuthStore } from '../../store/useAuthStore';
+import { LayoutDashboard, CheckSquare, ShoppingBag, Image as ImageIcon } from 'lucide-react-native';
+import { View, ActivityIndicator } from 'react-native';
 
 export default function AppLayout() {
+  const { user, isReady } = useAuthStore();
+
+  if (!isReady) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator size="large" color="#0f172a" />
+      </View>
+    );
+  }
+
   return (
-    <Drawer
+    <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: '#0f172a', elevation: 0, shadowOpacity: 0 },
-        headerTintColor: '#ffffff',
-        drawerStyle: { backgroundColor: '#0f172a', width: 280 },
-        drawerActiveTintColor: '#0f172a',
-        drawerActiveBackgroundColor: 'hsl(45, 93%, 47%)',
-        drawerInactiveTintColor: '#94a3b8',
-        drawerLabelStyle: { fontSize: 16, fontWeight: '600', marginLeft: -10 },
+        headerStyle: { backgroundColor: '#ffffff', elevation: 1, shadowOpacity: 0.1 },
+        headerTintColor: '#0f172a',
+        headerTitleStyle: { fontWeight: 'bold' },
+        tabBarStyle: { backgroundColor: '#ffffff', borderTopWidth: 1, borderTopColor: '#e2e8f0', height: 60, paddingBottom: 8, paddingTop: 8 },
+        tabBarActiveTintColor: '#0f172a',
+        tabBarInactiveTintColor: '#94a3b8',
       }}
     >
-      <Drawer.Screen
+      <Tabs.Screen
         name="index"
         options={{
-          drawerLabel: 'Dashboard',
           title: 'Dashboard',
-          drawerIcon: ({ color, size }) => <LayoutDashboard size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <LayoutDashboard size={size} color={color} />,
         }}
       />
-      <Drawer.Screen
+      <Tabs.Screen
         name="tasks"
         options={{
-          drawerLabel: 'Tasks',
-          title: 'Tasks Kanban',
-          drawerIcon: ({ color, size }) => <CheckSquare size={size} color={color} />,
+          title: 'Tasks',
+          tabBarIcon: ({ color, size }) => <CheckSquare size={size} color={color} />,
         }}
       />
-    </Drawer>
+      <Tabs.Screen
+        name="orders"
+        options={{
+          title: 'Orders',
+          tabBarIcon: ({ color, size }) => <ShoppingBag size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="artworks"
+        options={{
+          title: 'Artworks',
+          tabBarIcon: ({ color, size }) => <ImageIcon size={size} color={color} />,
+        }}
+      />
+    </Tabs>
   );
 }

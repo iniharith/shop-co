@@ -1,1 +1,4 @@
-MyPoints.txt
+node_modules/
+admin-desktop/dist/
+admin-desktop/node_modules/
+process_logo.js

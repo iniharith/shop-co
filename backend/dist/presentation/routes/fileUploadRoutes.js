@@ -491,19 +491,28 @@ router.get('/proxy-download', (0, express_async_handler_1.default)((req, res) =>
             const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
             const urlObj = new URL(fileUrl);
             const key = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
-            const command = new GetObjectCommand({
+            const disposition = req.query.inline === 'true' ? 'inline' : 'attachment';
+            const commandParams = {
                 Bucket: S3_BUCKET_NAME,
                 Key: key,
-                ResponseContentDisposition: `attachment; filename="${fileName.replace(/"/g, '\\"')}"`
-            });
+                ResponseContentDisposition: `${disposition}; filename="${fileName.replace(/"/g, '\\"')}"`
+            };
+            if (req.query.inline === 'true' && fileName.toLowerCase().endsWith('.pdf')) {
+                commandParams.ResponseContentType = 'application/pdf';
+            }
+            const command = new GetObjectCommand(commandParams);
             const signedUrl = yield getSignedUrl(s3Client, command, { expiresIn: 3600 });
             // If stream=true is passed, proxy the S3 file through the backend to avoid CORS errors in browser fetch
             if (req.query.stream === 'true') {
                 const s3Response = yield fetch(signedUrl);
                 if (!s3Response.ok)
                     throw new Error("Failed to fetch from S3");
-                res.setHeader('Content-Disposition', `attachment; filename="${fileName.replace(/"/g, '\\"')}"`);
-                res.setHeader('Content-Type', s3Response.headers.get('content-type') || 'application/octet-stream');
+                res.setHeader('Content-Disposition', `${disposition}; filename="${fileName.replace(/"/g, '\\"')}"`);
+                let contentType = s3Response.headers.get('content-type') || 'application/octet-stream';
+                if (req.query.inline === 'true' && fileName.toLowerCase().endsWith('.pdf')) {
+                    contentType = 'application/pdf';
+                }
+                res.setHeader('Content-Type', contentType);
                 // Use Readable.fromWeb to pipe the web stream to the Node.js response
                 const { Readable } = require('stream');
                 if (s3Response.body) {
@@ -599,6 +608,25 @@ router.get('/:id/preview', (0, express_async_handler_1.default)((req, res) => __
         return;
     }
     res.redirect(file.path);
+})));
+// ─── GET /api/files/:id/info ──────────────────────────────
+// Public: returns basic file metadata for share page display (no auth needed)
+router.get('/:id/info', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const file = yield FileUploadRepository_1.fileUploadRepository.findById(req.params.id);
+    if (!file) {
+        res.status(404).json({ success: false, message: 'File not found' });
+        return;
+    }
+    res.json({
+        success: true,
+        data: {
+            id: file._id,
+            originalName: file.originalName,
+            mimetype: file.mimetype,
+            size: file.size,
+            createdAt: file.createdAt,
+        }
+    });
 })));
 // 📝 PUT /api/files/:id/review 
 // Admin marks a file as reviewed (optionally with notes)
