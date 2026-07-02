@@ -152,7 +152,7 @@ body.has-custom-bg .bg-sidebar,
 body.has-custom-bg [data-sidebar="sidebar"],
 body.has-custom-bg [role="dialog"],
 body.has-custom-bg [role="menu"] {
-  background-color: hsl(var(--card) / 0.45) !important;
+  background-color: hsl(var(--card) / 0.8) !important;
   backdrop-filter: blur(16px) saturate(1.2) !important;
   -webkit-backdrop-filter: blur(16px) saturate(1.2) !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
@@ -166,19 +166,19 @@ body.has-custom-bg [role="menu"] {
 .dark body.has-custom-bg [data-sidebar="sidebar"],
 .dark body.has-custom-bg [role="dialog"],
 .dark body.has-custom-bg [role="menu"] {
-  background-color: rgba(10, 10, 10, 0.5) !important;
+  background-color: rgba(10, 10, 10, 0.85) !important;
 }
 
 /* Glassmorphic Muted Elements (e.g. Tab Lists, Secondary containers) */
 body.has-custom-bg .bg-muted {
-  background-color: hsl(var(--muted) / 0.35) !important;
+  background-color: hsl(var(--muted) / 0.7) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
 }
 
 /* Active Tabs and Highlighted States */
 body.has-custom-bg [data-state="active"] {
-  background-color: hsl(var(--card) / 0.6) !important;
+  background-color: hsl(var(--card) / 0.85) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   border-color: rgba(255, 255, 255, 0.2) !important;
