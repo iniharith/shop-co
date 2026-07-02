@@ -594,11 +594,15 @@ router.get(
         const key = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
         
         const disposition = req.query.inline === 'true' ? 'inline' : 'attachment';
-        const command = new GetObjectCommand({
+        const commandParams: any = {
           Bucket: S3_BUCKET_NAME,
           Key: key,
           ResponseContentDisposition: `${disposition}; filename="${fileName.replace(/"/g, '\\"')}"`
-        });
+        };
+        if (req.query.inline === 'true' && fileName.toLowerCase().endsWith('.pdf')) {
+          commandParams.ResponseContentType = 'application/pdf';
+        }
+        const command = new GetObjectCommand(commandParams);
         
         const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
         
@@ -607,7 +611,12 @@ router.get(
           const s3Response = await fetch(signedUrl);
           if (!s3Response.ok) throw new Error("Failed to fetch from S3");
           res.setHeader('Content-Disposition', `${disposition}; filename="${fileName.replace(/"/g, '\\"')}"`);
-          res.setHeader('Content-Type', s3Response.headers.get('content-type') || 'application/octet-stream');
+          
+          let contentType = s3Response.headers.get('content-type') || 'application/octet-stream';
+          if (req.query.inline === 'true' && fileName.toLowerCase().endsWith('.pdf')) {
+            contentType = 'application/pdf';
+          }
+          res.setHeader('Content-Type', contentType);
           
           // Use Readable.fromWeb to pipe the web stream to the Node.js response
           const { Readable } = require('stream');
