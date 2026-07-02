@@ -65,13 +65,13 @@ export default function ServerHealthPage() {
   };
 
   if (loading && !data) {
-    return <div className="min-h-screen bg-[#0a0f16] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>;
+    return <div className="min-h-screen bg-transparent flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>;
   }
 
   if (!data) return null;
 
   return (
-    <div className="min-h-screen bg-[#0a0f16] text-white p-4 md:p-8 font-sans h-[calc(100vh-theme(spacing.16))] overflow-y-auto">
+    <div className="min-h-screen bg-transparent text-white p-4 md:p-8 font-sans h-[calc(100vh-theme(spacing.16))] overflow-y-auto">
       {/* Header matching the image */}
       <div className="flex flex-wrap items-center justify-between mb-8 gap-4">
         <div className="flex flex-wrap items-center space-x-2 md:space-x-6">
@@ -102,7 +102,7 @@ export default function ServerHealthPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Progression Chart */}
-            <div className="md:col-span-2 bg-[#171923] p-6 rounded-[28px] border border-gray-800">
+            <div className="md:col-span-2 bg-card/40 backdrop-blur-md p-6 rounded-[28px] border border-white/10">
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center font-medium">
                   <div className="w-6 h-6 bg-blue-500 rounded-md flex items-center justify-center mr-3 text-white">
@@ -142,7 +142,7 @@ export default function ServerHealthPage() {
             </div>
 
             {/* RAM Usage */}
-            <div className="bg-[#4ade80] text-[#064e3b] p-6 rounded-[28px] flex flex-col justify-between relative overflow-hidden">
+            <div className="bg-green-500/10 backdrop-blur-md text-green-400 p-6 rounded-[28px] flex flex-col justify-between relative overflow-hidden border border-green-500/20">
               <div className="font-semibold text-sm z-10 opacity-90">RAM usage level</div>
               <div className="text-6xl font-bold z-10 text-right tracking-tighter mt-4">
                 {((data.server.usedMem / data.server.totalMem) * 100).toFixed(0)}<span className="text-2xl font-semibold ml-1 opacity-80">%</span>
@@ -160,7 +160,7 @@ export default function ServerHealthPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Disk Usage */}
-            <div className="bg-white text-black p-6 rounded-[28px]">
+            <div className="bg-card/40 backdrop-blur-md text-white p-6 rounded-[28px] border border-white/10">
               <div className="text-sm font-semibold text-gray-500 mb-4">Disk capacity</div>
               <div className="flex justify-between items-end mb-6">
                 <div className="text-4xl font-bold tracking-tight">
@@ -181,7 +181,7 @@ export default function ServerHealthPage() {
             </div>
 
             {/* CPU Usage */}
-            <div className="bg-[#171923] p-6 rounded-[28px] border border-gray-800 flex flex-col justify-between">
+            <div className="bg-card/40 backdrop-blur-md p-6 rounded-[28px] border border-white/10 flex flex-col justify-between">
               <div className="text-sm text-gray-400 font-medium">CPU Load</div>
               <div className="flex items-end justify-between mt-2">
                 <div className="h-[60px] w-full mr-2">
@@ -203,7 +203,7 @@ export default function ServerHealthPage() {
             </div>
 
             {/* Bandwidth */}
-            <div className="bg-[#171923] p-6 rounded-[28px] border border-gray-800 flex flex-col justify-between">
+            <div className="bg-card/40 backdrop-blur-md p-6 rounded-[28px] border border-white/10 flex flex-col justify-between">
               <div className="text-sm text-gray-400 font-medium">Data transfer</div>
               <div className="flex justify-between items-end mt-2">
                 <div className="text-3xl font-bold text-white tracking-tight leading-none mb-1">
@@ -223,7 +223,7 @@ export default function ServerHealthPage() {
 
           {/* Database & System Uptime Footer */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-[#171923] p-6 rounded-[28px] border border-gray-800 flex justify-between items-center">
+            <div className="bg-card/40 backdrop-blur-md p-6 rounded-[28px] border border-white/10 flex justify-between items-center">
               <div className="flex items-center space-x-4">
                 <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
                   <Activity size={20} />
@@ -236,7 +236,7 @@ export default function ServerHealthPage() {
               <div className="text-lg font-bold text-white">{formatUptime(data.server.uptime)}</div>
             </div>
             
-            <div className="bg-[#171923] p-6 rounded-[28px] border border-gray-800 flex justify-between items-center">
+            <div className="bg-card/40 backdrop-blur-md p-6 rounded-[28px] border border-white/10 flex justify-between items-center">
               <div className="flex items-center space-x-4">
                 <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400">
                   <Database size={20} />
@@ -254,10 +254,10 @@ export default function ServerHealthPage() {
         </div>
 
         {/* Right Sidebar - Analytics */}
-        <div className="bg-[#171923] rounded-[32px] p-8 border border-gray-800 flex flex-col">
+        <div className="bg-card/40 backdrop-blur-md rounded-[32px] p-8 border border-white/10 flex flex-col">
           <h2 className="text-xl font-bold mb-8">System Analytics & Files</h2>
           
-          <div className="bg-[#1E212B] rounded-3xl p-6 mb-8 relative overflow-hidden">
+          <div className="bg-background/40 backdrop-blur-sm rounded-3xl p-6 mb-8 relative overflow-hidden border border-white/5">
             <div className="text-gray-400 text-sm mb-2 text-center font-medium relative z-10">Total Artwork Files</div>
             <div className="text-6xl font-bold text-center text-white my-6 tracking-tighter relative z-10">
               {data.application?.artworkTotal || 0}

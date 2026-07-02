@@ -10,9 +10,12 @@ config();
 
 export const initAdmin = async () => {
     const userRepository = new UserRepository();
-    let user = await userRepository.findByEmail(process.env.ADMIN_EMAIL as string);
+    const adminEmail = process.env.ADMIN_EMAIL || "admin@kampungcetak.com";
+    const adminPassword = process.env.ADMIN_PASSWORD || "admin";
+
+    let user = await userRepository.findByEmail(adminEmail);
     if (!user) {
-        user = await userRepository.create({ email: process.env.ADMIN_EMAIL as string, password: process.env.ADMIN_PASSWORD as string, role: Roles.ADMIN, name: "Admin", verified: true });
+        user = await userRepository.create({ email: adminEmail, password: adminPassword, role: Roles.ADMIN, name: "Admin", verified: true });
     }
     console.log("🎉 Admin created successfully");
 }

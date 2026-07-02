@@ -16,12 +16,12 @@ import path from 'path';
 
 const router = Router();
 
-// Middleware to restrict to sysadmin role only
+// Middleware to restrict to sysadmin, admin, boss role
 const requireSysadmin = (req: any, res: Response, next: any) => {
-  if (req.user && req.user.role === 'sysadmin') {
+  if (req.user && ['sysadmin', 'admin', 'boss'].includes(req.user.role)) {
     next();
   } else {
-    res.status(403).json({ success: false, message: 'Access denied. Sysadmin only.' });
+    res.status(403).json({ success: false, message: 'Access denied. Requires elevated permissions.' });
   }
 };
 

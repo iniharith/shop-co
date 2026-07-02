@@ -118,10 +118,5 @@ export const roleByNavItems = (role: string) => {
         allowedTitles = allowedTitles.filter(title => title !== 'Server Status');
     }
 
-    if (role === "admin" || role === "boss") {
-        // Only sysadmin gets Server Status. Remove for admin/boss as well.
-        allowedTitles = allowedTitles.filter(title => title !== 'Server Status');
-    }
-
     return AdminNavItems.filter(item => allowedTitles.includes(item.title));
 };
