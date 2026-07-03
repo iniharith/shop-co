@@ -1,0 +1,19 @@
+{
+  "name": "kampungcetak-admin",
+  "version": "1.0.0",
+  "description": "Desktop application for Kampungcetak Admin",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "prebuild": "node build-icon.js",
+    "build": "electron-packager . --out=dist --overwrite"
+  },
+  "author": "Kampungcetak",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^31.3.1",
+    "electron-packager": "^17.1.2",
+    "png-to-ico": "^2.1.8",
+    "sharp": "^0.33.4"
+  }
+}

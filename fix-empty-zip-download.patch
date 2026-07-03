@@ -1,0 +1,380 @@
+diff --git a/backend/admin/src/app/share/[slug]/page.tsx b/backend/admin/src/app/share/[slug]/page.tsx
+index f3a64bd..8d4bf12 100644
+--- a/backend/admin/src/app/share/[slug]/page.tsx
++++ b/backend/admin/src/app/share/[slug]/page.tsx
+@@ -130,21 +130,52 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
+     try {
+       const JSZip = (await import("jszip")).default;
+       const zip = new JSZip();
++      const usedNames = new Set<string>();
++      const failed: string[] = [];
+ 
+       await Promise.all(
+         files.map(async (file: any) => {
+           try {
+-            const proxyUrl = `${BACKEND}/api/files/proxy-download?url=${encodeURIComponent(file.path)}&name=${encodeURIComponent(file.originalName || "file")}`;
++            // stream=true is required here: without it the backend just
++            // redirects to the (private) S3 URL, and a fetch() from the
++            // browser can't read a cross-origin redirected response unless
++            // the S3 bucket has matching CORS rules — it fails silently for
++            // every file, so we'd still "successfully" generate a ZIP with
++            // nothing inside it. stream=true makes the backend fetch the
++            // file itself and pipe the bytes back, which needs no CORS.
++            const proxyUrl = `${BACKEND}/api/files/proxy-download?url=${encodeURIComponent(file.path)}&name=${encodeURIComponent(file.originalName || "file")}&stream=true`;
+             const res = await fetch(proxyUrl);
+-            if (!res.ok) return;
++            if (!res.ok) {
++              failed.push(file.originalName || "file");
++              return;
++            }
+             const blob = await res.blob();
+-            zip.file(file.originalName || "file", blob);
++            if (blob.size === 0) {
++              failed.push(file.originalName || "file");
++              return;
++            }
++
++            // Avoid silently overwriting same-named files inside the zip
++            let name = file.originalName || "file";
++            let counter = 1;
++            while (usedNames.has(name)) {
++              const parts = (file.originalName || "file").split(".");
++              const ext = parts.length > 1 ? `.${parts.pop()}` : "";
++              name = `${parts.join(".")}(${counter})${ext}`;
++              counter++;
++            }
++            usedNames.add(name);
++            zip.file(name, blob);
+           } catch {
+-            // skip files that fail
++            failed.push(file.originalName || "file");
+           }
+         })
+       );
+ 
++      if (Object.keys(zip.files).length === 0) {
++        throw new Error("Could not download any files. Please try again.");
++      }
++
+       const zipBlob = await zip.generateAsync({ type: "blob" });
+       const url = URL.createObjectURL(zipBlob);
+       const a = document.createElement("a");
+@@ -154,7 +185,12 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
+       a.click();
+       document.body.removeChild(a);
+       URL.revokeObjectURL(url);
+-      toast.success("Download ready!", { id: toastId });
++
++      if (failed.length) {
++        toast.warning(`Downloaded with ${failed.length} file(s) skipped (failed to fetch).`, { id: toastId });
++      } else {
++        toast.success("Download ready!", { id: toastId });
++      }
+     } catch (err: any) {
+       toast.error(err.message || "Download failed", { id: toastId });
+     } finally {
+diff --git a/backend/admin/src/components/global/artworks/artworksManager.tsx b/backend/admin/src/components/global/artworks/artworksManager.tsx
+index 7bd529f..43d2295 100644
+--- a/backend/admin/src/components/global/artworks/artworksManager.tsx
++++ b/backend/admin/src/components/global/artworks/artworksManager.tsx
+@@ -276,7 +276,8 @@ export default function ArtworksManager() {
+     try {
+       const zip = new JSZip();
+       const usedNames = new Set<string>();
+-      
++      const failed: string[] = [];
++
+       const filePromises = group.files.map(async (file: any) => {
+         let baseName = file.originalName || "file";
+         let fileName = baseName;
+@@ -295,11 +296,33 @@ export default function ArtworksManager() {
+ 
+         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+         const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName || "file")}&stream=true`;
+-        const response = await fetch(proxyUrl);
+-        const blob = await response.blob();
+-        zip.file(fileName, blob);
++        try {
++          const response = await fetch(proxyUrl);
++          // Without this check, a failed fetch (403/404/502) still resolves
++          // and its error body gets added to the zip as if it were the real
++          // file — producing an archive that looks fine but only contains
++          // broken/unopenable "files". Skip it instead so the ZIP only ever
++          // contains real file content.
++          if (!response.ok) {
++            failed.push(baseName);
++            return;
++          }
++          const blob = await response.blob();
++          if (blob.size === 0) {
++            failed.push(baseName);
++            return;
++          }
++          zip.file(fileName, blob);
++        } catch {
++          failed.push(baseName);
++        }
+       });
+       await Promise.all(filePromises);
++
++      if (Object.keys(zip.files).length === 0) {
++        throw new Error("Could not download any files");
++      }
++
+       const content = await zip.generateAsync({ type: "blob" });
+       const url = URL.createObjectURL(content);
+       const link = document.createElement("a");
+@@ -310,7 +333,11 @@ export default function ArtworksManager() {
+       document.body.removeChild(link);
+       URL.revokeObjectURL(url);
+       toast.dismiss();
+-      toast.success("Download started!");
++      if (failed.length) {
++        toast.warning(`Downloaded with ${failed.length} file(s) skipped (failed to fetch)`);
++      } else {
++        toast.success("Download started!");
++      }
+     } catch (error) {
+       toast.dismiss();
+       toast.error("Failed to create ZIP");
+diff --git a/backend/admin/src/components/global/packaging/packagingManager.tsx b/backend/admin/src/components/global/packaging/packagingManager.tsx
+index bc9dfcd..1900734 100644
+--- a/backend/admin/src/components/global/packaging/packagingManager.tsx
++++ b/backend/admin/src/components/global/packaging/packagingManager.tsx
+@@ -216,7 +216,8 @@ export default function PackagingManager() {
+     try {
+       const zip = new JSZip();
+       const usedNames = new Set<string>();
+-      
++      const failed: string[] = [];
++
+       const filePromises = group.files.map(async (file: any) => {
+         let baseName = file.originalName || "file";
+         let fileName = baseName;
+@@ -235,11 +236,33 @@ export default function PackagingManager() {
+ 
+         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+         const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName || "file")}&stream=true`;
+-        const response = await fetch(proxyUrl);
+-        const blob = await response.blob();
+-        zip.file(fileName, blob);
++        try {
++          const response = await fetch(proxyUrl);
++          // Without this check, a failed fetch (403/404/502) still resolves
++          // and its error body gets added to the zip as if it were the real
++          // file — producing an archive that looks fine but only contains
++          // broken/unopenable "files". Skip it instead so the ZIP only ever
++          // contains real file content.
++          if (!response.ok) {
++            failed.push(baseName);
++            return;
++          }
++          const blob = await response.blob();
++          if (blob.size === 0) {
++            failed.push(baseName);
++            return;
++          }
++          zip.file(fileName, blob);
++        } catch {
++          failed.push(baseName);
++        }
+       });
+       await Promise.all(filePromises);
++
++      if (Object.keys(zip.files).length === 0) {
++        throw new Error("Could not download any files");
++      }
++
+       const content = await zip.generateAsync({ type: "blob" });
+       const url = URL.createObjectURL(content);
+       const link = document.createElement("a");
+@@ -250,7 +273,11 @@ export default function PackagingManager() {
+       document.body.removeChild(link);
+       URL.revokeObjectURL(url);
+       toast.dismiss();
+-      toast.success("Download started!");
++      if (failed.length) {
++        toast.warning(`Downloaded with ${failed.length} file(s) skipped (failed to fetch)`);
++      } else {
++        toast.success("Download started!");
++      }
+     } catch (error) {
+       toast.dismiss();
+       toast.error("Failed to create ZIP");
+diff --git a/backend/admin/src/components/global/production/productionManager.tsx b/backend/admin/src/components/global/production/productionManager.tsx
+index 94fcaad..c8f3b9f 100644
+--- a/backend/admin/src/components/global/production/productionManager.tsx
++++ b/backend/admin/src/components/global/production/productionManager.tsx
+@@ -212,7 +212,8 @@ export default function ProductionManager() {
+     try {
+       const zip = new JSZip();
+       const usedNames = new Set<string>();
+-      
++      const failed: string[] = [];
++
+       const filePromises = group.files.map(async (file: any) => {
+         let baseName = file.originalName || "file";
+         let fileName = baseName;
+@@ -231,11 +232,33 @@ export default function ProductionManager() {
+ 
+         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+         const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName || "file")}&stream=true`;
+-        const response = await fetch(proxyUrl);
+-        const blob = await response.blob();
+-        zip.file(fileName, blob);
++        try {
++          const response = await fetch(proxyUrl);
++          // Without this check, a failed fetch (403/404/502) still resolves
++          // and its error body gets added to the zip as if it were the real
++          // file — producing an archive that looks fine but only contains
++          // broken/unopenable "files". Skip it instead so the ZIP only ever
++          // contains real file content.
++          if (!response.ok) {
++            failed.push(baseName);
++            return;
++          }
++          const blob = await response.blob();
++          if (blob.size === 0) {
++            failed.push(baseName);
++            return;
++          }
++          zip.file(fileName, blob);
++        } catch {
++          failed.push(baseName);
++        }
+       });
+       await Promise.all(filePromises);
++
++      if (Object.keys(zip.files).length === 0) {
++        throw new Error("Could not download any files");
++      }
++
+       const content = await zip.generateAsync({ type: "blob" });
+       const url = URL.createObjectURL(content);
+       const link = document.createElement("a");
+@@ -246,7 +269,11 @@ export default function ProductionManager() {
+       document.body.removeChild(link);
+       URL.revokeObjectURL(url);
+       toast.dismiss();
+-      toast.success("Download started!");
++      if (failed.length) {
++        toast.warning(`Downloaded with ${failed.length} file(s) skipped (failed to fetch)`);
++      } else {
++        toast.success("Download started!");
++      }
+     } catch (error) {
+       toast.dismiss();
+       toast.error("Failed to create ZIP");
+diff --git a/backend/src/presentation/routes/fileUploadRoutes.ts b/backend/src/presentation/routes/fileUploadRoutes.ts
+index fa92b06..563e7cc 100644
+--- a/backend/src/presentation/routes/fileUploadRoutes.ts
++++ b/backend/src/presentation/routes/fileUploadRoutes.ts
+@@ -464,26 +464,75 @@ router.get(
+     }
+ 
+     const archiver = require('archiver');
++    const { Readable } = require('stream');
+     const folderName = (link.folderName || 'files').replace(/[^a-zA-Z0-9 _-]/g, '_');
+ 
++    // Resolve a fetchable URL for each file. Files stored on S3 are almost
++    // always in a private bucket (downloads elsewhere in this app go through
++    // a signed URL), so fetching file.path directly returns 403 for every
++    // file. That failure was being swallowed by `if (!fileRes.ok) continue`,
++    // so the loop finished having appended zero entries and the ZIP was
++    // still finalized and sent — a "successful" download with nothing
++    // inside. Signing S3 URLs here fixes that.
++    const resolveDownloadUrl = async (filePath: string): Promise<string> => {
++      if (!filePath.includes('amazonaws.com')) return filePath;
++      try {
++        const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
++        const { GetObjectCommand } = require('@aws-sdk/client-s3');
++        const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
++        const urlObj = new URL(filePath);
++        const key = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
++        return await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: S3_BUCKET_NAME, Key: key }), { expiresIn: 300 });
++      } catch (e) {
++        console.warn(`Could not sign URL for ${filePath}:`, e);
++        return filePath;
++      }
++    };
++
++    let addedCount = 0;
++    const skipped: string[] = [];
++
++    // Sign/fetch every file BEFORE opening the response, so that if every
++    // single file fails we can return a clear JSON error instead of sending
++    // a 200 OK with an empty zip body.
++    const preparedFiles: { name: string; stream: any }[] = [];
++    for (const file of files) {
++      try {
++        const downloadUrl = await resolveDownloadUrl(file.path);
++        const fileRes = await fetch(downloadUrl);
++        if (!fileRes.ok || !fileRes.body) {
++          skipped.push(file.originalName);
++          console.warn(`[download-all] Skipping ${file.originalName}: HTTP ${fileRes.status}`);
++          continue;
++        }
++        preparedFiles.push({ name: file.originalName, stream: fileRes.body });
++        addedCount++;
++      } catch (e) {
++        skipped.push(file.originalName);
++        console.warn(`[download-all] Skipping ${file.originalName}:`, e);
++      }
++    }
++
++    if (addedCount === 0) {
++      res.status(502).json({
++        success: false,
++        message: 'Could not fetch any files for this folder from storage. Please try again or contact support.',
++      });
++      return;
++    }
++
+     res.setHeader('Content-Type', 'application/zip');
+     res.setHeader('Content-Disposition', `attachment; filename="${folderName}.zip"`);
++    if (skipped.length) {
++      res.setHeader('X-Skipped-Files', String(skipped.length));
++    }
+ 
+     const archive = archiver('zip', { zlib: { level: 6 } });
+     archive.on('error', (err: any) => { console.error('Archive error:', err); res.end(); });
+     archive.pipe(res);
+ 
+-    // Fetch each file from S3 and append to archive
+-    for (const file of files) {
+-      try {
+-        const fileRes = await fetch(file.path);
+-        if (!fileRes.ok) continue;
+-        const { Readable } = require('stream');
+-        const stream = fileRes.body ? Readable.fromWeb(fileRes.body) : null;
+-        if (stream) archive.append(stream, { name: file.originalName });
+-      } catch (e) {
+-        console.warn(`Skipping file ${file.originalName}:`, e);
+-      }
++    for (const { name, stream } of preparedFiles) {
++      archive.append(Readable.fromWeb(stream), { name });
+     }
+ 
+     await archive.finalize();
+@@ -697,7 +746,20 @@ router.get(
+       }
+     } catch (err) {
+       console.error("Error streaming proxy file:", err);
+-      res.redirect(fileUrl);
++      // Only fall back to a redirect for plain navigations (e.g. the user
++      // clicked a direct download link). A bulk "Download All" request calls
++      // this endpoint with fetch()+stream=true and expects real file bytes
++      // back — redirecting it to a possibly-private S3 URL used to make the
++      // fetch "succeed" with an empty/AccessDenied body, which is how a
++      // whole batch of files could silently end up as 0 bytes inside the
++      // generated ZIP. So for stream requests we return a real error instead.
++      if (!res.headersSent) {
++        if (req.query.stream === 'true') {
++          res.status(502).json({ success: false, message: 'Failed to fetch file for download' });
++        } else {
++          res.redirect(fileUrl);
++        }
++      }
+     }
+   })
+ );

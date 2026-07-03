@@ -216,7 +216,8 @@ export default function PackagingManager() {
     try {
       const zip = new JSZip();
       const usedNames = new Set<string>();
-      
+      const failed: string[] = [];
+
       const filePromises = group.files.map(async (file: any) => {
         let baseName = file.originalName || "file";
         let fileName = baseName;
@@ -235,11 +236,33 @@ export default function PackagingManager() {
 
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
         const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName || "file")}&stream=true`;
-        const response = await fetch(proxyUrl);
-        const blob = await response.blob();
-        zip.file(fileName, blob);
+        try {
+          const response = await fetch(proxyUrl);
+          // Without this check, a failed fetch (403/404/502) still resolves
+          // and its error body gets added to the zip as if it were the real
+          // file — producing an archive that looks fine but only contains
+          // broken/unopenable "files". Skip it instead so the ZIP only ever
+          // contains real file content.
+          if (!response.ok) {
+            failed.push(baseName);
+            return;
+          }
+          const blob = await response.blob();
+          if (blob.size === 0) {
+            failed.push(baseName);
+            return;
+          }
+          zip.file(fileName, blob);
+        } catch {
+          failed.push(baseName);
+        }
       });
       await Promise.all(filePromises);
+
+      if (Object.keys(zip.files).length === 0) {
+        throw new Error("Could not download any files");
+      }
+
       const content = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(content);
       const link = document.createElement("a");
@@ -250,7 +273,11 @@ export default function PackagingManager() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       toast.dismiss();
-      toast.success("Download started!");
+      if (failed.length) {
+        toast.warning(`Downloaded with ${failed.length} file(s) skipped (failed to fetch)`);
+      } else {
+        toast.success("Download started!");
+      }
     } catch (error) {
       toast.dismiss();
       toast.error("Failed to create ZIP");

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    :root {
+      --titlebar-height: 32px;
+      --glass-bg: transparent; /* Completely transparent for seamless background */
+      --glass-border: transparent; /* No border */
+      --text-color: rgba(255, 255, 255, 0.9);
+      --hover-bg: rgba(255, 255, 255, 0.1);
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: transparent;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    #titlebar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: var(--titlebar-height);
+      background: var(--glass-bg);
+      border-bottom: 1px solid var(--glass-border);
+      -webkit-app-region: drag;
+      color: var(--text-color);
+      user-select: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .titlebar-left {
+      display: flex;
+      align-items: center;
+      padding-left: 10px;
+      height: 100%;
+    }
+
+    .titlebar-icon {
+      width: 16px;
+      height: 16px;
+      margin-right: 12px;
+      border-radius: 3px;
+      opacity: 0.9;
+    }
+
+    .titlebar-menu {
+      display: flex;
+      align-items: center;
+      -webkit-app-region: no-drag;
+      height: 100%;
+    }
+
+    .menu-item {
+      font-size: 12px;
+      padding: 0 10px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      color: rgba(255, 255, 255, 0.7);
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .menu-item:hover {
+      background: var(--hover-bg);
+      color: rgba(255, 255, 255, 1);
+    }
+
+    .titlebar-controls {
+      display: flex;
+      height: 100%;
+      -webkit-app-region: no-drag;
+    }
+
+    .control-btn {
+      width: 46px;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .control-btn:hover {
+      background: var(--hover-bg);
+    }
+
+    .control-btn.close:hover {
+      background: rgba(232, 17, 35, 0.9); /* Windows 11 red */
+    }
+
+    .control-btn svg {
+      width: 10px;
+      height: 10px;
+      fill: var(--text-color);
+      stroke: var(--text-color);
+      stroke-width: 0.5px;
+    }
+
+    .control-btn.close:hover svg {
+      fill: #ffffff;
+      stroke: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <div id="titlebar">
+    <div class="titlebar-left">
+      <img src="icon.png" class="titlebar-icon" alt="Icon" />
+      <div class="titlebar-menu">
+        <div class="menu-item">Kampungcetak Admin</div>
+        <div class="menu-item">File</div>
+        <div class="menu-item">View</div>
+        <div class="menu-item">Window</div>
+      </div>
+    </div>
+    <!-- Native Windows 11 controls will appear here via WCO -->
+  </div>
+  <script>
+    // Scripts for custom controls removed, as WCO handles it natively
+  </script>
+</body>
+</html>

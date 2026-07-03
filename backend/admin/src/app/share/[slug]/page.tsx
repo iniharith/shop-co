@@ -130,20 +130,51 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
     try {
       const JSZip = (await import("jszip")).default;
       const zip = new JSZip();
+      const usedNames = new Set<string>();
+      const failed: string[] = [];
 
       await Promise.all(
         files.map(async (file: any) => {
           try {
-            const proxyUrl = `${BACKEND}/api/files/proxy-download?url=${encodeURIComponent(file.path)}&name=${encodeURIComponent(file.originalName || "file")}`;
+            // stream=true is required here: without it the backend just
+            // redirects to the (private) S3 URL, and a fetch() from the
+            // browser can't read a cross-origin redirected response unless
+            // the S3 bucket has matching CORS rules — it fails silently for
+            // every file, so we'd still "successfully" generate a ZIP with
+            // nothing inside it. stream=true makes the backend fetch the
+            // file itself and pipe the bytes back, which needs no CORS.
+            const proxyUrl = `${BACKEND}/api/files/proxy-download?url=${encodeURIComponent(file.path)}&name=${encodeURIComponent(file.originalName || "file")}&stream=true`;
             const res = await fetch(proxyUrl);
-            if (!res.ok) return;
+            if (!res.ok) {
+              failed.push(file.originalName || "file");
+              return;
+            }
             const blob = await res.blob();
-            zip.file(file.originalName || "file", blob);
+            if (blob.size === 0) {
+              failed.push(file.originalName || "file");
+              return;
+            }
+
+            // Avoid silently overwriting same-named files inside the zip
+            let name = file.originalName || "file";
+            let counter = 1;
+            while (usedNames.has(name)) {
+              const parts = (file.originalName || "file").split(".");
+              const ext = parts.length > 1 ? `.${parts.pop()}` : "";
+              name = `${parts.join(".")}(${counter})${ext}`;
+              counter++;
+            }
+            usedNames.add(name);
+            zip.file(name, blob);
           } catch {
-            // skip files that fail
+            failed.push(file.originalName || "file");
           }
         })
       );
+
+      if (Object.keys(zip.files).length === 0) {
+        throw new Error("Could not download any files. Please try again.");
+      }
 
       const zipBlob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(zipBlob);
@@ -154,7 +185,12 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("Download ready!", { id: toastId });
+
+      if (failed.length) {
+        toast.warning(`Downloaded with ${failed.length} file(s) skipped (failed to fetch).`, { id: toastId });
+      } else {
+        toast.success("Download ready!", { id: toastId });
+      }
     } catch (err: any) {
       toast.error(err.message || "Download failed", { id: toastId });
     } finally {
