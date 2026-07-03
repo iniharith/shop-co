@@ -86,7 +86,7 @@ export default function OrdersScreen() {
         keyExtractor={(item) => item._id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="hsl(45, 93%, 47%)" />}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 140 }}
         ListEmptyComponent={
           <View className="py-10 items-center justify-center">
             <Text className="text-muted-foreground">No orders found.</Text>

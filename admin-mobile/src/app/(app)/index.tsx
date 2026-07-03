@@ -81,7 +81,7 @@ export default function DashboardScreen() {
             <Text className="text-muted-foreground mt-4 text-sm">Loading dashboard...</Text>
           </View>
         ) : (
-          <View className="gap-4 pb-10">
+          <View className="gap-4 pb-36">
             {/* Top 4 Cards Grid (2x2) */}
             <View className="flex-row gap-4">
               <View className="flex-1 bg-card border border-border p-4 rounded-xl shadow-sm">
