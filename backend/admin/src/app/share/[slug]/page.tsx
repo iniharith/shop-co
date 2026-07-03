@@ -27,6 +27,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
   const [notFound, setNotFound] = useState(false);
   const [noteState, setNoteState] = useState<Record<string, { open: boolean; value: string; saving: boolean }>>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   const fetchFiles = async () => {
     try {
@@ -122,13 +123,28 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
     }
   };
 
-  const handleDownloadAll = () => {
-    const a = document.createElement("a");
-    a.href = `${BACKEND}/api/files/s/${slug}/download-all`;
-    a.download = `${folderName || "files"}.zip`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const handleDownloadAll = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    const toastId = toast.loading("Preparing ZIP download…");
+    try {
+      const res = await fetch(`${BACKEND}/api/files/s/${slug}/download-all`);
+      if (!res.ok) throw new Error("Download failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${folderName || "files"}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Download started!", { id: toastId });
+    } catch (err: any) {
+      toast.error(err.message || "Download failed", { id: toastId });
+    } finally {
+      setDownloading(false);
+    }
   };
 
   if (loading) return (
@@ -187,8 +203,9 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
               </Button>
             </label>
             {files.length > 0 && (
-              <Button onClick={handleDownloadAll} className="w-full sm:w-auto gap-2">
-                <Download className="w-4 h-4" /> Download All
+              <Button onClick={handleDownloadAll} disabled={downloading} className="w-full sm:w-auto gap-2">
+                {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {downloading ? "Preparing ZIP…" : "Download All"}
               </Button>
             )}
             <ThemeToggle />
