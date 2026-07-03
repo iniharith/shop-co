@@ -1,55 +1,42 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { LayoutDashboard, CheckSquare, ShoppingBag, Image as ImageIcon } from 'lucide-react-native';
+import { LayoutDashboard, CheckSquare, ShoppingBag, ImageIcon } from 'lucide-react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { THEME } from '../constants/theme';
 
-export default function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  const icons: Record<string, (color: string) => React.ReactNode> = {
-    index: (color) => <LayoutDashboard size={22} color={color} />,
-    tasks: (color) => <CheckSquare size={22} color={color} />,
-    orders: (color) => <ShoppingBag size={22} color={color} />,
-    artworks: (color) => <ImageIcon size={22} color={color} />,
-  };
+const TABS: Record<string, { label: string; icon: (color: string, focused: boolean) => React.ReactNode }> = {
+  index:    { label: 'Dashboard', icon: (c, f) => <LayoutDashboard size={22} color={c} strokeWidth={f ? 2.5 : 1.8} /> },
+  tasks:    { label: 'Tasks',     icon: (c, f) => <CheckSquare     size={22} color={c} strokeWidth={f ? 2.5 : 1.8} /> },
+  orders:   { label: 'Orders',    icon: (c, f) => <ShoppingBag     size={22} color={c} strokeWidth={f ? 2.5 : 1.8} /> },
+  artworks: { label: 'Artworks',  icon: (c, f) => <ImageIcon       size={22} color={c} strokeWidth={f ? 2.5 : 1.8} /> },
+};
 
-  const labels: Record<string, string> = {
-    index: 'Dashboard',
-    tasks: 'Tasks',
-    orders: 'Orders',
-    artworks: 'Artworks',
-  };
-
+export default function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   return (
-    <View style={styles.wrapper} pointerEvents="box-none">
-      <BlurView intensity={60} tint="dark" style={styles.blurContainer}>
-        <View style={styles.inner}>
+    <View style={s.wrapper} pointerEvents="box-none">
+      <BlurView intensity={Platform.OS === 'ios' ? 80 : 0} tint="dark" style={s.blur}>
+        <View style={s.inner}>
           {state.routes.map((route, index) => {
-            const isFocused = state.index === index;
-            const color = isFocused ? '#f59e0b' : '#94a3b8';
-
-            const onPress = () => {
-              const event = navigation.emit({
-                type: 'tabPress',
-                target: route.key,
-                canPreventDefault: true,
-              });
-              if (!isFocused && !event.defaultPrevented) {
-                navigation.navigate(route.name);
-              }
-            };
+            const focused = state.index === index;
+            const color   = focused ? THEME.primary : '#6b7280';
+            const tab     = TABS[route.name];
+            if (!tab) return null;
 
             return (
               <TouchableOpacity
                 key={route.key}
-                onPress={onPress}
-                style={styles.tab}
+                onPress={() => {
+                  const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+                  if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
+                }}
+                style={s.tab}
                 activeOpacity={0.7}
               >
-                {isFocused && <View style={styles.activePill} />}
-                {icons[route.name]?.(color)}
-                <Text style={[styles.label, { color }]}>
-                  {labels[route.name]}
-                </Text>
+                {/* Gold active pill indicator */}
+                <View style={[s.pill, { opacity: focused ? 1 : 0 }]} />
+                {tab.icon(color, focused)}
+                <Text style={[s.label, { color, fontWeight: focused ? '700' : '400' }]}>{tab.label}</Text>
               </TouchableOpacity>
             );
           })}
@@ -59,52 +46,50 @@ export default function FloatingTabBar({ state, descriptors, navigation }: Botto
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   wrapper: {
+    // KEY: absolute so it floats above ALL content
     position: 'absolute',
-    bottom: 28,
-    left: 24,
-    right: 24,
-    alignItems: 'center',
-    zIndex: 100,
+    bottom: 24,
+    left: 20,
+    right: 20,
+    zIndex: 9999,
+    elevation: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.7,
+    shadowRadius: 32,
   },
-  blurContainer: {
-    width: '100%',
-    borderRadius: 32,
+  blur: {
+    borderRadius: 30,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    backgroundColor: Platform.OS === 'android' ? 'rgba(15, 23, 42, 0.88)' : 'transparent',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 20,
+    borderColor: 'rgba(255,255,255,0.10)',
+    // Android: BlurView doesn't blur natively — use opaque dark glass color
+    backgroundColor: Platform.OS === 'android' ? 'rgba(8, 8, 18, 0.94)' : 'transparent',
   },
   inner: {
     flexDirection: 'row',
     paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
-    gap: 4,
-    position: 'relative',
+    paddingVertical: 5,
+    gap: 3,
   },
-  activePill: {
-    position: 'absolute',
-    top: -4,
-    width: 32,
+  pill: {
+    width: 28,
     height: 3,
-    backgroundColor: '#f59e0b',
     borderRadius: 99,
+    backgroundColor: THEME.primary,
+    position: 'absolute',
+    top: -1,
   },
   label: {
     fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
 });

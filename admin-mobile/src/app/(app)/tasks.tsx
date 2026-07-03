@@ -1,119 +1,136 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, StyleSheet, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import api from '../../services/api';
+import { THEME } from '../../constants/theme';
+
+const STATUSES = [
+  { key: 'TODO',          label: 'To Do',       color: '#94a3b8' },
+  { key: 'IN_PROGRESS',   label: 'In Progress', color: '#f59e0b' },
+  { key: 'IN_PRODUCTION', label: 'Production',  color: '#a78bfa' },
+  { key: 'DONE',          label: 'Done',        color: '#22c55e' },
+  { key: 'CANCELLED',     label: 'Cancelled',   color: '#ef4444' },
+];
+
+function getStatusMeta(status: string) {
+  const s = status?.toUpperCase();
+  return (
+    STATUSES.find(x => x.key === s) ||
+    (s?.includes('PROGRESS') ? STATUSES[1] : null) ||
+    (s?.includes('PROD')     ? STATUSES[2] : null) ||
+    (s?.includes('DONE') || s?.includes('COMPLET') ? STATUSES[3] : null) ||
+    (s?.includes('CANCEL')   ? STATUSES[4] : null) ||
+    STATUSES[0]
+  );
+}
 
 export default function TasksScreen() {
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [tasks, setTasks]       = useState<any[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [refreshing, setRefresh] = useState(false);
+  const [filter, setFilter]     = useState('ALL');
 
   const fetchTasks = async () => {
     try {
       const res = await api.get('/tasks');
-      if (res.data) {
-        const all = res.data.data || res.data.tasks || res.data || [];
-        setTasks(Array.isArray(all) ? all : []);
-      }
-    } catch (e) {
-      console.error('Failed to fetch tasks:', e);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+      const all = res.data?.data || res.data?.tasks || res.data || [];
+      setTasks(Array.isArray(all) ? all : []);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); setRefresh(false); }
   };
 
   useEffect(() => { fetchTasks(); }, []);
-  const onRefresh = () => { setRefreshing(true); fetchTasks(); };
 
-  // Group by task status
-  const todoTasks       = tasks.filter(t => t.status === 'todo'        || t.status === 'TO_DO'       || t.status === 'pending');
-  const inProgressTasks = tasks.filter(t => t.status === 'in_progress' || t.status === 'IN_PROGRESS' || t.status === 'processing');
-  const doneTasks       = tasks.filter(t => t.status === 'done'        || t.status === 'DONE'        || t.status === 'completed');
+  const filtered = filter === 'ALL'
+    ? tasks
+    : tasks.filter(t => getStatusMeta(t.status)?.key === filter);
 
-  const statusColor: Record<string, string> = {
-    todo: '#94a3b8',
-    TO_DO: '#94a3b8',
-    pending: '#94a3b8',
-    in_progress: '#f59e0b',
-    IN_PROGRESS: '#f59e0b',
-    processing: '#f59e0b',
-    done: '#22c55e',
-    DONE: '#22c55e',
-    completed: '#22c55e',
-  };
-
-  const TaskCard = ({ task }: { task: any }) => {
-    const color = statusColor[task.status] || '#94a3b8';
-    return (
-      <TouchableOpacity
-        className="bg-card border border-border p-4 rounded-xl mb-3 shadow-sm active:opacity-70"
-        style={{ borderLeftWidth: 3, borderLeftColor: color }}
-      >
-        <View className="flex-row justify-between items-start mb-1">
-          <Text className="text-foreground font-semibold text-sm flex-1 mr-2" numberOfLines={2}>
-            {task.title || task.name || `Task #${task._id?.slice(-6) || '?'}`}
-          </Text>
-          <View style={{ backgroundColor: color + '22', borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 }}>
-            <Text style={{ color, fontSize: 10, fontWeight: '700', textTransform: 'uppercase' }}>
-              {task.status?.replace(/_/g, ' ') || 'unknown'}
-            </Text>
-          </View>
-        </View>
-        {task.description ? (
-          <Text className="text-muted-foreground text-xs mt-1" numberOfLines={2}>{task.description}</Text>
-        ) : null}
-        {task.orderId ? (
-          <Text className="text-muted-foreground text-xs mt-1">Order: {typeof task.orderId === 'object' ? task.orderId?._id?.slice(-6) : String(task.orderId).slice(-6)}</Text>
-        ) : null}
-      </TouchableOpacity>
-    );
-  };
-
-  const Section = ({ title, items, accentColor }: { title: string; items: any[]; accentColor: string }) => (
-    <View className="mb-6">
-      <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-lg font-bold text-foreground">{title}</Text>
-        <View style={{ backgroundColor: accentColor + '22', borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 }}>
-          <Text style={{ color: accentColor, fontSize: 12, fontWeight: '700' }}>{items.length}</Text>
-        </View>
-      </View>
-      {items.length === 0 ? (
-        <View className="bg-card border border-border border-dashed p-6 rounded-xl items-center justify-center">
-          <Text className="text-muted-foreground text-sm font-medium">No tasks here</Text>
-        </View>
-      ) : (
-        items.map((task, idx) => <TaskCard key={task._id || idx} task={task} />)
-      )}
-    </View>
+  if (loading) return (
+    <LinearGradient colors={['#0a0a14', '#100a1e', '#0a0a14']} style={s.center}>
+      <ActivityIndicator size="large" color={THEME.primary} />
+    </LinearGradient>
   );
 
   return (
-    <View className="flex-1 bg-background pt-12 px-5">
-      <View className="flex-row justify-between items-center mb-6">
-        <View>
-          <Text className="text-3xl font-extrabold tracking-tight text-foreground">Tasks</Text>
-          <Text className="text-muted-foreground text-sm mt-1 font-medium">
-            Manage your operational workflow
-          </Text>
-        </View>
-      </View>
+    <LinearGradient colors={['#0a0a14', '#100a1e', '#0a0a14']} style={s.screen}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="hsl(45, 93%, 47%)" />
-          <Text className="text-muted-foreground mt-3 text-sm">Loading tasks…</Text>
-        </View>
-      ) : (
-        <ScrollView
-          className="flex-1"
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="hsl(45, 93%, 47%)" />}
-        >
-          <Section title="To Do"       items={todoTasks}       accentColor="#94a3b8" />
-          <Section title="In Progress" items={inProgressTasks} accentColor="#f59e0b" />
-          <Section title="Done"        items={doneTasks}       accentColor="#22c55e" />
-        </ScrollView>
-      )}
-    </View>
+      {/* Header */}
+      <BlurView intensity={20} tint="dark" style={s.header}>
+        <Text style={s.pageTitle}>Tasks</Text>
+        <Text style={s.pageSub}>Manage your operational workflow</Text>
+      </BlurView>
+
+      {/* Status Filter Tabs */}
+      <FlatList
+        horizontal showsHorizontalScrollIndicator={false}
+        data={[{ key: 'ALL', label: 'All', color: THEME.primary }, ...STATUSES]}
+        keyExtractor={i => i.key}
+        style={{ maxHeight: 44, paddingHorizontal: 16 }}
+        contentContainerStyle={{ gap: 8, alignItems: 'center' }}
+        renderItem={({ item }) => {
+          const active = filter === item.key;
+          return (
+            <TouchableOpacity
+              onPress={() => setFilter(item.key)}
+              style={[s.chip, active && { backgroundColor: item.color + '33', borderColor: item.color }]}
+            >
+              <Text style={[s.chipText, active && { color: item.color, fontWeight: '700' }]}>{item.label}</Text>
+            </TouchableOpacity>
+          );
+        }}
+      />
+
+      <FlatList
+        data={filtered}
+        keyExtractor={item => item._id}
+        contentContainerStyle={{ padding: 16, paddingBottom: 130, gap: 10 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefresh(true); fetchTasks(); }} tintColor={THEME.primary} />}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <BlurView intensity={15} tint="dark" style={[s.glassCard, { alignItems: 'center', paddingVertical: 40 }]}>
+            <Text style={{ color: THEME.mutedForeground }}>No tasks in this category</Text>
+          </BlurView>
+        }
+        renderItem={({ item }) => {
+          const meta = getStatusMeta(item.status);
+          return (
+            <BlurView intensity={15} tint="dark" style={[s.glassCard, { borderLeftWidth: 3, borderLeftColor: meta?.color || '#94a3b8' }]}>
+              <View style={s.taskHeader}>
+                <Text style={s.taskTitle} numberOfLines={2}>{item.title || `Task #${item._id?.slice(-6)}`}</Text>
+                <View style={[s.badge, { backgroundColor: (meta?.color || '#94a3b8') + '22' }]}>
+                  <Text style={[s.badgeText, { color: meta?.color || '#94a3b8' }]}>{meta?.label || item.status}</Text>
+                </View>
+              </View>
+              {item.description ? <Text style={s.taskDesc} numberOfLines={3}>{item.description}</Text> : null}
+              <View style={s.taskFooter}>
+                {item.category ? <Text style={s.taskMeta}>📁 {item.category}</Text> : null}
+                {item.orderId  ? <Text style={s.taskMeta}>🛒 Order #{typeof item.orderId === 'object' ? item.orderId?._id?.slice(-6) : String(item.orderId).slice(-6)}</Text> : null}
+                <Text style={[s.taskMeta, { marginLeft: 'auto' }]}>{new Date(item.createdAt).toLocaleDateString('en-MY')}</Text>
+              </View>
+            </BlurView>
+          );
+        }}
+      />
+    </LinearGradient>
   );
 }
+
+const s = StyleSheet.create({
+  screen: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  header: { paddingTop: 54, paddingBottom: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: THEME.glassBorder, marginBottom: 12 },
+  pageTitle: { fontSize: 24, fontWeight: '800', color: THEME.foreground, letterSpacing: -0.5 },
+  pageSub: { color: THEME.mutedForeground, fontSize: 13, marginTop: 2 },
+  chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: THEME.glassBorder, backgroundColor: THEME.glass },
+  chipText: { color: THEME.mutedForeground, fontSize: 12 },
+  glassCard: { borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 14 },
+  taskHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
+  taskTitle: { color: THEME.foreground, fontWeight: '700', fontSize: 14, flex: 1 },
+  badge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
+  badgeText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+  taskDesc: { color: THEME.mutedForeground, fontSize: 12, marginTop: 8, lineHeight: 18 },
+  taskFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 10, flexWrap: 'wrap' },
+  taskMeta: { color: THEME.mutedForeground, fontSize: 11 },
+});

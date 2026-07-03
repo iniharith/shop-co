@@ -1,20 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import {
+  View, Text, TouchableOpacity, ScrollView,
+  ActivityIndicator, RefreshControl, StyleSheet, StatusBar
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useRouter } from 'expo-router';
-import { Box, Truck, FileText, CircleCheckBig, CircleAlert, RefreshCw } from 'lucide-react-native';
+import { Box, Truck, FileText, CircleCheckBig, CircleAlert, Wifi, WifiOff } from 'lucide-react-native';
 import api from '../../services/api';
 import socketService from '../../services/socket';
+import { THEME } from '../../constants/theme';
 
 export default function DashboardScreen() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
-  
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [live, setLive] = useState(false);
-  
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [parcelStats, setParcelStats] = useState({ total: 0, pending: 0, in_transit: 0, delivered: 0, failed: 0 });
   const [fileStats, setFileStats] = useState({ totalFiles: 0, totalSize: 0, pendingReview: 0 });
 
@@ -22,175 +26,139 @@ export default function DashboardScreen() {
     try {
       const [orderRes, parcelRes, fileRes] = await Promise.all([
         api.get('/orders'),
-        api.get('/parcels/stats').catch(() => ({ data: { total: 0, pending: 0, in_transit: 0, delivered: 0, failed: 0 } })),
-        api.get('/files/stats').catch(() => ({ data: { totalFiles: 0, totalSize: 0, pendingReview: 0 } }))
+        api.get('/parcels/stats').catch(() => ({ data: {} })),
+        api.get('/files/stats').catch(() => ({ data: { data: {} } })),
       ]);
-      
       if (orderRes.data) setOrders(orderRes.data.orders || orderRes.data || []);
-      if (parcelRes.data) setParcelStats(parcelRes.data);
-      if (fileRes.data) setFileStats(fileRes.data);
-      
-    } catch (error) {
-      console.error('Dashboard fetch error:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+      if (parcelRes.data) setParcelStats({ total: 0, pending: 0, in_transit: 0, delivered: 0, failed: 0, ...parcelRes.data });
+      const fs = fileRes.data?.data || fileRes.data || {};
+      setFileStats({ totalFiles: fs.totalFiles || 0, totalSize: fs.totalSize || 0, pendingReview: fs.pendingReview || 0 });
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); setRefreshing(false); }
   };
 
   useEffect(() => {
     fetchData();
-
     socketService.connect();
-    const offConnect = socketService.on('connect' as any, () => setLive(true));
-    const offOrder = socketService.on('order_placed', () => fetchData());
-    const offNotif = socketService.on('notification', () => fetchData());
+    const offConnect    = socketService.on('connect'     as any, () => setLive(true));
+    const offDisconnect = socketService.on('disconnect'  as any, () => setLive(false));
+    const offOrder      = socketService.on('order_placed' as any, fetchData);
+    const offNotif      = socketService.on('notification' as any, fetchData);
     setLive(!!socketService.socket?.connected);
-
-    return () => {
-      offConnect();
-      offOrder();
-      offNotif();
-      socketService.disconnect();
-    };
+    return () => { offConnect(); offDisconnect(); offOrder(); offNotif(); socketService.disconnect(); };
   }, []);
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchData();
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    router.replace('/login');
-  };
-
-  const totalOrders = orders.length;
-
   return (
-    <View style={{ flex: 1, backgroundColor: '#0f172a', paddingTop: 52, paddingHorizontal: 20 }}>
-      {/* Header Section */}
-      <View className="flex-row justify-between items-center mb-6">
+    <LinearGradient colors={['#0a0a14', '#100a1e', '#0a0a14']} style={s.screen}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
+      {/* Header */}
+      <BlurView intensity={20} tint="dark" style={s.header}>
         <View>
-          <Text className="text-2xl font-bold tracking-tight text-foreground">Hi, Welcome back 👋</Text>
-          <View className="flex-row items-center gap-1.5 mt-1">
-            <View className={`h-1.5 w-1.5 rounded-full ${live ? 'bg-emerald-500' : 'bg-red-500'}`} />
-            <Text className="text-muted-foreground text-sm font-medium">
-              <Text className="text-primary">{user?.name || 'Admin'}</Text> · {live ? 'Live' : 'Offline'}
+          <Text style={s.greeting}>Hi, Welcome back 👋</Text>
+          <View style={s.liveRow}>
+            {live ? <Wifi size={12} color={THEME.success} /> : <WifiOff size={12} color={THEME.destructive} />}
+            <Text style={s.liveText}>
+              <Text style={{ color: THEME.primary }}>{user?.name || 'Admin'}</Text>
+              {'  ·  '}{live ? 'Live' : 'Offline'}
             </Text>
           </View>
         </View>
-        <TouchableOpacity 
-          onPress={handleLogout} 
-          className="bg-card border border-border px-4 py-2 rounded-md active:opacity-70 shadow-sm"
-        >
-          <Text className="text-foreground text-sm font-medium">Logout</Text>
+        <TouchableOpacity onPress={async () => { await logout(); router.replace('/login'); }} style={s.logoutBtn}>
+          <Text style={s.logoutText}>Logout</Text>
         </TouchableOpacity>
-      </View>
+      </BlurView>
 
-      <ScrollView 
-        className="flex-1" 
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130, paddingTop: 12 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="hsl(45, 93%, 47%)" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor={THEME.primary} />}
       >
         {loading && !refreshing ? (
-          <View className="py-10 items-center justify-center">
-            <ActivityIndicator size="small" color="#f59e0b" />
-            <Text style={{ color: '#94a3b8', marginTop: 16, fontSize: 14 }}>Loading dashboard...</Text>
+          <View style={{ paddingVertical: 80, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={THEME.primary} />
+            <Text style={{ color: THEME.mutedForeground, marginTop: 14, fontSize: 14 }}>Loading dashboard...</Text>
           </View>
         ) : (
-          <View style={{ gap: 16, paddingBottom: 120 }}>
-            {/* Top 4 Cards Grid (2x2) */}
-            <View className="flex-row gap-4">
-              <View className="flex-1 bg-card border border-border p-4 rounded-xl shadow-sm">
-                <View className="flex-row justify-between items-center mb-2">
-                  <Text className="text-foreground text-sm font-medium">Total Orders</Text>
-                  <Box size={16} color="#888" />
-                </View>
-                <Text className="text-2xl font-bold text-foreground mb-1">{totalOrders}</Text>
-                <Text className="text-xs text-muted-foreground">Total orders placed</Text>
-              </View>
-
-              <View className="flex-1 bg-card border border-border p-4 rounded-xl shadow-sm">
-                <View className="flex-row justify-between items-center mb-2">
-                  <Text className="text-foreground text-sm font-medium">Active Deliveries</Text>
-                  <Truck size={16} color="#888" />
-                </View>
-                <Text className="text-2xl font-bold text-foreground mb-1">{parcelStats.in_transit + parcelStats.pending}</Text>
-                <Text className="text-xs text-muted-foreground">{parcelStats.in_transit} in transit, {parcelStats.pending} pending</Text>
-              </View>
+          <>
+            {/* Stat Cards */}
+            <View style={s.row}>
+              <GlassCard title="Total Orders"     value={orders.length}                              sub="orders placed"                                      icon={<Box size={16} color={THEME.primary} />} />
+              <GlassCard title="Active Deliveries" value={parcelStats.in_transit + parcelStats.pending} sub={`${parcelStats.in_transit} transit · ${parcelStats.pending} pending`} icon={<Truck size={16} color="#60a5fa" />} />
+            </View>
+            <View style={[s.row, { marginTop: 10 }]}>
+              <GlassCard title="Total Artworks"   value={fileStats.totalFiles}                       sub={`${(fileStats.totalSize/1024/1024).toFixed(1)} MB used`}               icon={<FileText size={16} color="#a78bfa" />} />
+              <GlassCard title="Pending Reviews"  value={fileStats.pendingReview}                    sub="needing review"                                     icon={<CircleAlert size={16} color={THEME.warning} />} />
             </View>
 
-            <View className="flex-row gap-4">
-              <View className="flex-1 bg-card border border-border p-4 rounded-xl shadow-sm">
-                <View className="flex-row justify-between items-center mb-2">
-                  <Text className="text-foreground text-sm font-medium">Total Artworks</Text>
-                  <FileText size={16} color="#888" />
+            {/* Delivery Status */}
+            <BlurView intensity={20} tint="dark" style={[s.glassCard, { marginTop: 14 }]}>
+              <Text style={s.cardTitle}>Delivery Status Overview</Text>
+              <Text style={s.cardSub}>All parcels grouped by current status</Text>
+              <View style={s.divider} />
+              {[
+                { label: 'Delivered', value: parcelStats.delivered, icon: <CircleCheckBig size={16} color={THEME.success} />, color: THEME.success },
+                { label: 'In Transit', value: parcelStats.in_transit, icon: <Truck size={16} color="#60a5fa" />, color: '#60a5fa' },
+                { label: 'Pending',   value: parcelStats.pending,   icon: <Box size={16} color={THEME.warning} />, color: THEME.warning },
+                { label: 'Failed',    value: parcelStats.failed,    icon: <CircleAlert size={16} color={THEME.destructive} />, color: THEME.destructive },
+              ].map(({ label, value, icon, color }) => (
+                <View key={label} style={s.deliveryRow}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>{icon}<Text style={s.deliveryLabel}>{label}</Text></View>
+                  <Text style={[s.deliveryValue, { color }]}>{value}</Text>
                 </View>
-                <Text className="text-2xl font-bold text-foreground mb-1">{fileStats.totalFiles}</Text>
-                <Text className="text-xs text-muted-foreground">{(fileStats.totalSize / 1024 / 1024).toFixed(2)} MB total storage used</Text>
-              </View>
-
-              <View className="flex-1 bg-card border border-border p-4 rounded-xl shadow-sm">
-                <View className="flex-row justify-between items-center mb-2">
-                  <Text className="text-foreground text-sm font-medium">Pending Reviews</Text>
-                  <CircleAlert size={16} color="#888" />
-                </View>
-                <Text className="text-2xl font-bold text-foreground mb-1">{fileStats.pendingReview}</Text>
-                <Text className="text-xs text-muted-foreground">Artworks needing review</Text>
-              </View>
-            </View>
-
-            {/* Delivery Status Overview */}
-            <View className="bg-card border border-border p-5 rounded-xl shadow-sm mt-2">
-              <Text className="text-lg font-bold text-foreground mb-1">Delivery Status Overview</Text>
-              <Text className="text-sm text-muted-foreground mb-5">All parcels grouped by current status</Text>
-              
-              <View className="flex-col gap-4">
-                <View className="flex-row justify-between items-center">
-                  <View className="flex-row items-center gap-2">
-                    <CircleCheckBig size={16} color="#22c55e" />
-                    <Text className="text-foreground text-sm font-medium">Delivered</Text>
-                  </View>
-                  <Text className="text-foreground font-semibold">{parcelStats.delivered || 0}</Text>
-                </View>
-                
-                <View className="flex-row justify-between items-center">
-                  <View className="flex-row items-center gap-2">
-                    <Truck size={16} color="#3b82f6" />
-                    <Text className="text-foreground text-sm font-medium">In Transit</Text>
-                  </View>
-                  <Text className="text-foreground font-semibold">{parcelStats.in_transit || 0}</Text>
-                </View>
-                
-                <View className="flex-row justify-between items-center">
-                  <View className="flex-row items-center gap-2">
-                    <Box size={16} color="#eab308" />
-                    <Text className="text-foreground text-sm font-medium">Pending</Text>
-                  </View>
-                  <Text className="text-foreground font-semibold">{parcelStats.pending || 0}</Text>
-                </View>
-                
-                <View className="flex-row justify-between items-center">
-                  <View className="flex-row items-center gap-2">
-                    <CircleAlert size={16} color="#ef4444" />
-                    <Text className="text-foreground text-sm font-medium">Failed</Text>
-                  </View>
-                  <Text className="text-foreground font-semibold">{parcelStats.failed || 0}</Text>
-                </View>
-              </View>
-            </View>
+              ))}
+            </BlurView>
 
             {/* Recent Activity */}
-            <View className="bg-card border border-border p-5 rounded-xl shadow-sm mt-2">
-              <Text className="text-lg font-bold text-foreground mb-1">Recent Activity</Text>
-              <Text className="text-sm text-muted-foreground mb-4">Check the latest deliveries or artwork uploads.</Text>
-              <Text className="text-sm text-muted-foreground">More details coming soon or view directly in Tracking / Artworks pages.</Text>
-            </View>
-
-          </View>
+            <BlurView intensity={20} tint="dark" style={[s.glassCard, { marginTop: 10 }]}>
+              <Text style={s.cardTitle}>Recent Activity</Text>
+              <Text style={s.cardSub}>Latest deliveries or artwork uploads</Text>
+              <View style={s.divider} />
+              {orders.slice(0, 5).length > 0 ? orders.slice(0, 5).map((o: any) => (
+                <View key={o._id} style={[s.deliveryRow]}>
+                  <Text style={{ color: THEME.mutedForeground, fontSize: 12 }}>Order #{o._id?.slice(-6).toUpperCase()}</Text>
+                  <Text style={{ color: THEME.primary, fontSize: 12, fontWeight: '700' }}>RM {o.totalAmount?.toFixed(2)}</Text>
+                </View>
+              )) : (
+                <Text style={{ color: THEME.mutedForeground, fontSize: 13 }}>No recent activity yet.</Text>
+              )}
+            </BlurView>
+          </>
         )}
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
+
+function GlassCard({ title, value, sub, icon }: { title: string; value: number; sub: string; icon: React.ReactNode }) {
+  return (
+    <BlurView intensity={20} tint="dark" style={s.statCard}>
+      <View style={s.statHeader}><Text style={s.statTitle}>{title}</Text>{icon}</View>
+      <Text style={s.statValue}>{value}</Text>
+      <Text style={s.statSub}>{sub}</Text>
+    </BlurView>
+  );
+}
+
+const s = StyleSheet.create({
+  screen: { flex: 1 },
+  header: { paddingTop: 54, paddingBottom: 16, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: THEME.glassBorder },
+  greeting: { fontSize: 20, fontWeight: '700', color: THEME.foreground },
+  liveRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  liveText: { color: THEME.mutedForeground, fontSize: 13 },
+  logoutBtn: { borderWidth: 1, borderColor: THEME.glassBorder, backgroundColor: THEME.glass, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
+  logoutText: { color: THEME.foreground, fontSize: 13, fontWeight: '500' },
+  row: { flexDirection: 'row', gap: 10 },
+  glassCard: { borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 16 },
+  statCard: { flex: 1, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 14 },
+  statHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  statTitle: { color: THEME.foreground, fontSize: 12, fontWeight: '500', flex: 1 },
+  statValue: { color: THEME.foreground, fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
+  statSub: { color: THEME.mutedForeground, fontSize: 10, marginTop: 2, lineHeight: 14 },
+  cardTitle: { color: THEME.foreground, fontSize: 15, fontWeight: '700' },
+  cardSub: { color: THEME.mutedForeground, fontSize: 12, marginTop: 2 },
+  divider: { height: 1, backgroundColor: THEME.glassBorder, marginVertical: 12 },
+  deliveryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: THEME.glassBorder },
+  deliveryLabel: { color: THEME.foreground, fontSize: 14, fontWeight: '500' },
+  deliveryValue: { fontSize: 15, fontWeight: '700' },
+});

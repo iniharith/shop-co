@@ -1,199 +1,207 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, FlatList, ActivityIndicator, RefreshControl, TouchableOpacity, Linking, TextInput } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, RefreshControl, TouchableOpacity, StyleSheet, StatusBar, TextInput, Linking, Alert } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import api from '../../services/api';
-import { FileText, Image as ImageIcon, Download, Folder, ChevronLeft, Search, X } from 'lucide-react-native';
+import { Folder, FileText, ImageIcon, Download, ChevronLeft, Search, X, Trash2, Share2 } from 'lucide-react-native';
+import { THEME } from '../../constants/theme';
+
+const CATEGORIES = ['ALL', 'DIGITAL PRINTING', 'DISPLAY ITEM', 'DIGITAL OFFSET', 'PREMIUM GIFT', 'APPAREL', 'FRAME', 'WEDDING PRODUCT', 'FOOD PACKAGING'];
 
 export default function ArtworksScreen() {
-  const [groupedFiles, setGroupedFiles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [groups, setGroups]         = useState<any[]>([]);
+  const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // Navigation State
-  const [selectedFolder, setSelectedFolder] = useState<any>(null);
+  const [search, setSearch]         = useState('');
+  const [selected, setSelected]     = useState<any>(null);
+  const [catFilter, setCatFilter]   = useState('ALL');
+  const [deleting, setDeleting]     = useState<string | null>(null);
 
-  const fetchFiles = async () => {
+  const fetchGroups = async () => {
     try {
-      const response = await api.get('/files/grouped');
-      if (response.data?.success) {
-        setGroupedFiles(response.data.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch grouped files:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+      const res = await api.get('/files/grouped');
+      setGroups(res.data?.data || []);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); setRefreshing(false); }
   };
 
-  useEffect(() => {
-    fetchFiles();
-  }, []);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchFiles();
-  };
+  useEffect(() => { fetchGroups(); }, []);
 
   const filteredGroups = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return groupedFiles;
-    
-    return groupedFiles.filter(g => 
-      g.folderName?.toLowerCase().includes(q) || 
-      g.orderId?.toLowerCase().includes(q) ||
-      g.taskId?.toLowerCase().includes(q)
-    );
-  }, [groupedFiles, searchQuery]);
+    let result = groups;
+    if (catFilter !== 'ALL') result = result.filter(g => g.category === catFilter || g.files?.some((f: any) => f.category === catFilter));
+    const q = search.toLowerCase();
+    if (q) result = result.filter(g => g.folderName?.toLowerCase().includes(q) || g.orderId?.toLowerCase().includes(q));
+    return result;
+  }, [groups, search, catFilter]);
 
-  const getFileIcon = (mimetype: string) => {
-    if (mimetype?.includes('pdf')) return <FileText size={24} color="#ef4444" />;
-    return <ImageIcon size={24} color="#3b82f6" />;
-  };
-
-  const formatSize = (bytes: number) => {
-    if (!bytes) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  };
-
-  const handleDownload = (url: string) => {
-    Linking.openURL(url);
-  };
-
-  if (loading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#0f172a" />
-      </View>
-    );
-  }
-
-  // --- FOLDER CONTENTS VIEW ---
-  if (selectedFolder) {
-    return (
-      <View className="flex-1 bg-slate-50 pt-4">
-        {/* Header */}
-        <View className="px-4 pb-4 border-b border-slate-200 bg-white">
-          <TouchableOpacity 
-            onPress={() => setSelectedFolder(null)}
-            className="flex-row items-center mb-2"
-          >
-            <ChevronLeft size={20} color="#64748b" />
-            <Text className="text-slate-500 font-medium ml-1">Back</Text>
-          </TouchableOpacity>
-          <View className="flex-row items-center mt-2">
-            <View className="w-10 h-10 rounded-full bg-slate-100 items-center justify-center mr-3">
-              <Folder size={20} color="#0f172a" />
-            </View>
-            <View>
-              <Text className="text-xl font-bold text-slate-900">{selectedFolder.folderName}</Text>
-              {selectedFolder.orderId && (
-                <Text className="text-sm text-slate-500 font-medium">Order ID: {selectedFolder.orderId}</Text>
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* Files List */}
-        <FlatList
-          data={selectedFolder.files}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-          ListEmptyComponent={
-            <View className="py-20 items-center justify-center border border-dashed border-slate-300 rounded-xl bg-white mt-4">
-              <Folder size={48} color="#cbd5e1" className="mb-4" />
-              <Text className="text-slate-500 font-semibold text-lg">Folder is empty</Text>
-            </View>
+  const deleteFile = async (fileId: string) => {
+    Alert.alert('Delete File', 'Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        setDeleting(fileId);
+        try {
+          await api.delete(`/files/${fileId}`);
+          if (selected) {
+            const updated = { ...selected, files: selected.files.filter((f: any) => f._id !== fileId) };
+            setSelected(updated);
           }
-          renderItem={({ item }) => (
-            <View className="bg-white p-4 rounded-xl mb-3 border border-slate-200 shadow-sm flex-row items-center">
-              <View className="h-12 w-12 rounded-lg bg-slate-100 items-center justify-center mr-4">
-                {getFileIcon(item.mimetype)}
-              </View>
-              <View className="flex-1 mr-2">
-                <Text className="text-slate-900 font-semibold text-base mb-1" numberOfLines={1}>
-                  {item.originalName}
-                </Text>
-                <Text className="text-slate-500 text-xs">
-                  {formatSize(item.size)} • {new Date(item.createdAt).toLocaleDateString()}
-                </Text>
-              </View>
-              <TouchableOpacity 
-                onPress={() => handleDownload(item.path)}
-                className="bg-slate-100 p-2.5 rounded-lg"
-              >
-                <Download size={18} color="#0f172a" />
-              </TouchableOpacity>
-            </View>
-          )}
-        />
-      </View>
-    );
-  }
+          fetchGroups();
+        } catch { Alert.alert('Error', 'Failed to delete file'); }
+        finally { setDeleting(null); }
+      }},
+    ]);
+  };
 
-  // --- FOLDERS OVERVIEW ---
+  if (loading) return (
+    <LinearGradient colors={['#0a0a14', '#100a1e', '#0a0a14']} style={s.center}>
+      <ActivityIndicator size="large" color={THEME.primary} />
+    </LinearGradient>
+  );
+
+  // ── Inside a folder ──────────────────────────────────────
+  if (selected) return (
+    <LinearGradient colors={['#0a0a14', '#100a1e', '#0a0a14']} style={s.screen}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <BlurView intensity={20} tint="dark" style={s.header}>
+        <TouchableOpacity onPress={() => setSelected(null)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+          <ChevronLeft size={18} color={THEME.primary} />
+          <Text style={{ color: THEME.primary, fontWeight: '600', fontSize: 14 }}>Back to Artworks</Text>
+        </TouchableOpacity>
+        <Text style={s.pageTitle} numberOfLines={1}>{selected.folderName}</Text>
+        <Text style={s.pageSub}>{selected.files?.length || 0} files{selected.orderId ? `  ·  Order #${selected.orderId.slice(-6)}` : ''}</Text>
+      </BlurView>
+
+      <FlatList
+        data={selected.files}
+        keyExtractor={i => i._id}
+        contentContainerStyle={{ padding: 16, paddingBottom: 130, gap: 10 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchGroups(); }} tintColor={THEME.primary} />}
+        ListEmptyComponent={
+          <BlurView intensity={15} tint="dark" style={[s.glassCard, { alignItems: 'center', paddingVertical: 40 }]}>
+            <Text style={{ color: THEME.mutedForeground }}>No files in this folder.</Text>
+          </BlurView>
+        }
+        renderItem={({ item }) => {
+          const isImage = item.mimetype?.includes('image') || item.originalName?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+          const isPdf   = item.mimetype?.includes('pdf') || item.originalName?.toLowerCase().endsWith('.pdf');
+          const iconBg  = isPdf ? '#2d1515' : isImage ? '#1e3a5f' : '#1a1a2e';
+          const iconClr = isPdf ? '#f87171' : isImage ? '#60a5fa' : '#a78bfa';
+
+          return (
+            <BlurView intensity={15} tint="dark" style={s.glassCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[s.iconBox, { backgroundColor: iconBg }]}>
+                  {isImage ? <ImageIcon size={20} color={iconClr} /> : <FileText size={20} color={iconClr} />}
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={{ color: THEME.foreground, fontWeight: '600', fontSize: 13 }} numberOfLines={1}>{item.originalName}</Text>
+                  <Text style={{ color: THEME.mutedForeground, fontSize: 11, marginTop: 2 }}>
+                    {item.category || 'N/A'}  ·  {new Date(item.createdAt).toLocaleDateString('en-MY')}
+                  </Text>
+                  {item.notes ? <Text style={{ color: THEME.warning, fontSize: 11, marginTop: 2 }}>📝 {item.notes}</Text> : null}
+                  {item.adminNotes ? <Text style={{ color: THEME.primary, fontSize: 11, marginTop: 2 }}>🔖 {item.adminNotes}</Text> : null}
+                </View>
+                <View style={{ gap: 8 }}>
+                  <TouchableOpacity onPress={() => Linking.openURL(item.path)} style={[s.iconBtn, { backgroundColor: '#1e3a5f' }]}>
+                    <Download size={14} color="#60a5fa" />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => deleteFile(item._id)} disabled={deleting === item._id} style={[s.iconBtn, { backgroundColor: '#2d1515' }]}>
+                    {deleting === item._id ? <ActivityIndicator size="small" color="#f87171" /> : <Trash2 size={14} color="#f87171" />}
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {item.tag ? (
+                <View style={{ alignSelf: 'flex-start', marginTop: 10 }}>
+                  <View style={[s.tagBadge, item.tag === 'draft' ? { backgroundColor: '#3b2a10' } : item.tag === 'for_print' ? { backgroundColor: '#14291a' } : { backgroundColor: '#1a1a1a' }]}>
+                    <Text style={{ color: item.tag === 'draft' ? '#fbbf24' : item.tag === 'for_print' ? '#4ade80' : '#94a3b8', fontSize: 10, fontWeight: '700', textTransform: 'uppercase' }}>{item.tag}</Text>
+                  </View>
+                </View>
+              ) : null}
+            </BlurView>
+          );
+        }}
+      />
+    </LinearGradient>
+  );
+
+  // ── Folder list ──────────────────────────────────────────
   return (
-    <View className="flex-1 bg-slate-50 px-4 pt-4">
-      <Text className="text-2xl font-bold text-slate-900 mb-4">Artwork Folders</Text>
+    <LinearGradient colors={['#0a0a14', '#100a1e', '#0a0a14']} style={s.screen}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* Search Bar */}
-      <View className="flex-row items-center bg-white border border-slate-200 rounded-xl px-3 py-2 mb-4 shadow-sm">
-        <Search size={18} color="#94a3b8" />
-        <TextInput
-          placeholder="Search folders, orders, tasks..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          className="flex-1 ml-2 text-slate-900 h-8"
-          placeholderTextColor="#94a3b8"
-        />
-        {searchQuery ? (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <X size={16} color="#94a3b8" />
-          </TouchableOpacity>
-        ) : null}
-      </View>
+      <BlurView intensity={20} tint="dark" style={s.header}>
+        <Text style={s.pageTitle}>Artworks</Text>
+        <Text style={s.pageSub}>{groups.length} artwork folders</Text>
+        <View style={s.searchBox}>
+          <Search size={14} color={THEME.mutedForeground} />
+          <TextInput placeholder="Search folders, orders..." placeholderTextColor={THEME.mutedForeground} value={search} onChangeText={setSearch} style={s.searchInput} />
+          {search ? <TouchableOpacity onPress={() => setSearch('')}><X size={14} color={THEME.mutedForeground} /></TouchableOpacity> : null}
+        </View>
+      </BlurView>
+
+      {/* Category filter */}
+      <FlatList
+        horizontal showsHorizontalScrollIndicator={false}
+        data={CATEGORIES} keyExtractor={i => i}
+        style={{ maxHeight: 44, paddingHorizontal: 16 }}
+        contentContainerStyle={{ gap: 8, alignItems: 'center' }}
+        renderItem={({ item }) => {
+          const active = catFilter === item;
+          return (
+            <TouchableOpacity onPress={() => setCatFilter(item)} style={[s.chip, active && { backgroundColor: THEME.primary + '22', borderColor: THEME.primary }]}>
+              <Text style={[s.chipText, active && { color: THEME.primary, fontWeight: '700' }]}>{item === 'ALL' ? 'All' : item}</Text>
+            </TouchableOpacity>
+          );
+        }}
+      />
 
       <FlatList
         data={filteredGroups}
-        keyExtractor={(item, index) => `${item.folderName}-${item.orderId}-${index}`}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0f172a" />}
+        keyExtractor={(item, i) => `${item.folderName}-${item.orderId}-${i}`}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchGroups(); }} tintColor={THEME.primary} />}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 130, gap: 10 }}
         ListEmptyComponent={
-          <View className="py-20 items-center justify-center">
-            <Text className="text-slate-500">No artwork folders found.</Text>
-          </View>
+          <BlurView intensity={15} tint="dark" style={[s.glassCard, { alignItems: 'center', paddingVertical: 40 }]}>
+            <Text style={{ color: THEME.mutedForeground }}>No artwork folders found.</Text>
+          </BlurView>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity 
-            onPress={() => setSelectedFolder(item)}
-            className="bg-white p-4 rounded-xl mb-3 border border-slate-200 shadow-sm flex-row items-center"
-          >
-            <View className="h-12 w-12 rounded-xl bg-slate-100 items-center justify-center mr-4">
-              <Folder size={24} color="#0f172a" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-slate-900 font-bold text-base mb-1" numberOfLines={1}>
-                {item.folderName || 'Unassigned'}
-              </Text>
-              <View className="flex-row items-center">
-                <Text className="text-slate-500 text-xs font-medium">
-                  {item.files?.length || 0} Files
-                </Text>
-                {item.orderId && (
-                  <>
-                    <Text className="text-slate-300 mx-2">•</Text>
-                    <Text className="text-slate-400 text-xs">Order: {item.orderId}</Text>
-                  </>
-                )}
+          <TouchableOpacity onPress={() => setSelected(item)} activeOpacity={0.75}>
+            <BlurView intensity={15} tint="dark" style={s.glassCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={[s.iconBox, { backgroundColor: '#1a1a0a' }]}>
+                  <Folder size={22} color={THEME.primary} />
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={{ color: THEME.foreground, fontWeight: '700', fontSize: 14 }} numberOfLines={1}>{item.folderName || 'Unassigned'}</Text>
+                  <Text style={{ color: THEME.mutedForeground, fontSize: 12, marginTop: 2 }}>
+                    {item.files?.length || 0} files{item.orderId ? `  ·  Order #${item.orderId.slice(-6)}` : ''}
+                  </Text>
+                </View>
+                <ChevronLeft size={16} color={THEME.mutedForeground} style={{ transform: [{ rotate: '180deg' }] }} />
               </View>
-            </View>
+            </BlurView>
           </TouchableOpacity>
         )}
       />
-    </View>
+    </LinearGradient>
   );
 }
+
+const s = StyleSheet.create({
+  screen: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  header: { paddingTop: 54, paddingBottom: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: THEME.glassBorder, marginBottom: 12 },
+  pageTitle: { fontSize: 24, fontWeight: '800', color: THEME.foreground, letterSpacing: -0.5 },
+  pageSub: { color: THEME.mutedForeground, fontSize: 13, marginTop: 2 },
+  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: THEME.glassBorder, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginTop: 10, gap: 8 },
+  searchInput: { flex: 1, color: THEME.foreground, fontSize: 14, height: 20 },
+  chip: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: THEME.glassBorder, backgroundColor: THEME.glass },
+  chipText: { color: THEME.mutedForeground, fontSize: 11 },
+  glassCard: { borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 14 },
+  iconBox: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  tagBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+});

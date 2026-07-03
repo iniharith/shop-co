@@ -1,132 +1,189 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, RefreshControl, TouchableOpacity, StyleSheet, StatusBar, TextInput, Alert } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import api from '../../services/api';
-import socketService from '../../services/socket';
-import { ShoppingBag, Package, Truck, CheckCircle, XCircle } from 'lucide-react-native';
+import { ShoppingBag, Package, Truck, CheckCircle2, XCircle, Search, ChevronDown, Trash2, Archive } from 'lucide-react-native';
+import { THEME } from '../../constants/theme';
+
+const STATUS_CYCLE: Record<string, string> = { PLACED: 'SHIPPED', SHIPPED: 'DELIVERED', DELIVERED: 'DELIVERED', CANCELLED: 'CANCELLED' };
+const STATUS_META: Record<string, { color: string; bg: string; label: string }> = {
+  PLACED:    { color: '#60a5fa', bg: '#1e3a5f', label: 'Placed' },
+  SHIPPED:   { color: '#fbbf24', bg: '#3b2a10', label: 'Shipped' },
+  DELIVERED: { color: '#4ade80', bg: '#14291a', label: 'Delivered' },
+  CANCELLED: { color: '#f87171', bg: '#2d1515', label: 'Cancelled' },
+};
+const FILTERS = ['ALL', 'PLACED', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
 
 export default function OrdersScreen() {
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState('ALL');
+  const [orders, setOrders]       = useState<any[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [refreshing, setRefresh]  = useState(false);
+  const [filter, setFilter]       = useState('ALL');
+  const [search, setSearch]       = useState('');
+  const [updating, setUpdating]   = useState<string | null>(null);
 
   const fetchOrders = async () => {
     try {
-      const response = await api.get('/orders');
-      if (response.data?.success) {
-        setOrders(response.data.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch orders:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+      const res = await api.get('/admin/orders');
+      setOrders(res.data?.orders || res.data?.data || res.data || []);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); setRefresh(false); }
   };
 
-  useEffect(() => {
-    fetchOrders();
-    socketService.connect();
-    // New order came in over the socket — just refetch, keeps status logic
-    // in one place instead of merging a partial payload by hand.
-    const off = socketService.on('order_placed', () => fetchOrders());
-    return () => {
-      off();
-      socketService.disconnect();
-    };
-  }, []);
+  useEffect(() => { fetchOrders(); }, []);
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchOrders();
+  const updateStatus = async (id: string, currentStatus: string) => {
+    const next = STATUS_CYCLE[currentStatus];
+    if (!next || next === currentStatus) return;
+    setUpdating(id);
+    try {
+      await api.put(`/orders/${id}`, { status: next });
+      setOrders(prev => prev.map(o => o._id === id ? { ...o, orderStatus: next } : o));
+    } catch (e) { Alert.alert('Error', 'Failed to update order status'); }
+    finally { setUpdating(null); }
   };
 
-  const filteredOrders = filter === 'ALL' ? orders : orders.filter(o => o.orderStatus === filter);
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'PLACED': return <Package size={20} color="#3b82f6" />;
-      case 'SHIPPED': return <Truck size={20} color="#f59e0b" />;
-      case 'DELIVERED': return <CheckCircle size={20} color="#10b981" />;
-      case 'CANCELLED': return <XCircle size={20} color="#ef4444" />;
-      default: return <ShoppingBag size={20} color="#888" />;
-    }
+  const deleteOrder = (id: string) => {
+    Alert.alert('Delete Order', 'Are you sure you want to delete this order?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        try {
+          await api.delete(`/admin/orders/${id}`);
+          setOrders(prev => prev.filter(o => o._id !== id));
+        } catch (e) { Alert.alert('Error', 'Failed to delete order'); }
+      }},
+    ]);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PLACED': return 'bg-blue-100 text-blue-800';
-      case 'SHIPPED': return 'bg-yellow-100 text-yellow-800';
-      case 'DELIVERED': return 'bg-emerald-100 text-emerald-800';
-      case 'CANCELLED': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const filtered = orders.filter(o => {
+    const matchStatus = filter === 'ALL' || o.orderStatus === filter;
+    const q = search.toLowerCase();
+    const matchSearch = !q || o._id?.toLowerCase().includes(q) || o.customerName?.toLowerCase().includes(q) || o.totalAmount?.toString().includes(q);
+    return matchStatus && matchSearch;
+  });
 
-  if (loading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" color="hsl(45, 93%, 47%)" />
-      </View>
-    );
-  }
+  if (loading) return (
+    <LinearGradient colors={['#0a0a14', '#100a1e', '#0a0a14']} style={s.center}>
+      <ActivityIndicator size="large" color={THEME.primary} />
+    </LinearGradient>
+  );
 
   return (
-    <View className="flex-1 bg-background px-4 pt-4">
-      <Text className="text-2xl font-bold text-foreground mb-4">Orders Overview</Text>
+    <LinearGradient colors={['#0a0a14', '#100a1e', '#0a0a14']} style={s.screen}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* Filter Tabs */}
-      <View className="flex-row gap-2 mb-4">
-        {['ALL', 'PLACED', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map((status) => (
-          <TouchableOpacity
-            key={status}
-            onPress={() => setFilter(status)}
-            className={`px-3 py-1.5 rounded-full border ${filter === status ? 'border-primary bg-primary/10' : 'border-border bg-card'}`}
-          >
-            <Text className={`text-xs font-semibold ${filter === status ? 'text-primary' : 'text-muted-foreground'}`}>
-              {status}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <BlurView intensity={20} tint="dark" style={s.header}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View>
+            <Text style={s.pageTitle}>Orders</Text>
+            <Text style={s.pageSub}>{orders.length} total orders</Text>
+          </View>
+        </View>
+        {/* Search */}
+        <View style={s.searchBox}>
+          <Search size={14} color={THEME.mutedForeground} />
+          <TextInput placeholder="Search by name, ID, amount..." placeholderTextColor={THEME.mutedForeground} value={search} onChangeText={setSearch} style={s.searchInput} />
+        </View>
+      </BlurView>
+
+      {/* Filter chips */}
+      <FlatList
+        horizontal showsHorizontalScrollIndicator={false}
+        data={FILTERS} keyExtractor={i => i}
+        style={{ maxHeight: 44, paddingHorizontal: 16 }}
+        contentContainerStyle={{ gap: 8, alignItems: 'center' }}
+        renderItem={({ item }) => {
+          const active = filter === item;
+          const meta = STATUS_META[item];
+          return (
+            <TouchableOpacity onPress={() => setFilter(item)} style={[s.chip, active && { backgroundColor: (meta?.color || THEME.primary) + '22', borderColor: meta?.color || THEME.primary }]}>
+              <Text style={[s.chipText, active && { color: meta?.color || THEME.primary, fontWeight: '700' }]}>{meta?.label || item}</Text>
+            </TouchableOpacity>
+          );
+        }}
+      />
 
       <FlatList
-        data={filteredOrders}
-        keyExtractor={(item) => item._id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="hsl(45, 93%, 47%)" />}
+        data={filtered}
+        keyExtractor={item => item._id}
+        contentContainerStyle={{ padding: 16, paddingBottom: 130, gap: 10 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefresh(true); fetchOrders(); }} tintColor={THEME.primary} />}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
         ListEmptyComponent={
-          <View className="py-10 items-center justify-center">
-            <Text className="text-muted-foreground">No orders found.</Text>
-          </View>
+          <BlurView intensity={15} tint="dark" style={[s.glassCard, { alignItems: 'center', paddingVertical: 40 }]}>
+            <Text style={{ color: THEME.mutedForeground }}>No orders found.</Text>
+          </BlurView>
         }
-        renderItem={({ item }) => (
-          <View className="bg-card p-4 rounded-xl mb-3 border border-border shadow-sm flex-row items-center">
-            <View className="h-12 w-12 rounded-full bg-secondary items-center justify-center mr-4">
-              {getStatusIcon(item.orderStatus)}
-            </View>
-            <View className="flex-1">
-              <View className="flex-row justify-between items-start mb-1">
-                <Text className="text-foreground font-semibold flex-1 mr-2" numberOfLines={1}>
-                  {item._id.substring(item._id.length - 8).toUpperCase()}
-                </Text>
-                <Text className="text-foreground font-bold">RM {item.totalAmount?.toFixed(2)}</Text>
-              </View>
-              <View className="flex-row justify-between items-center mt-2">
-                <Text className="text-muted-foreground text-xs">
-                  {new Date(item.createdAt).toLocaleDateString()}
-                </Text>
-                <View className={`px-2 py-0.5 rounded-full ${getStatusColor(item.orderStatus).split(' ')[0]}`}>
-                  <Text className={`text-[10px] font-bold ${getStatusColor(item.orderStatus).split(' ')[1]}`}>
-                    {item.orderStatus}
-                  </Text>
+        renderItem={({ item }) => {
+          const meta = STATUS_META[item.orderStatus] || { color: '#94a3b8', bg: '#1a1a1a', label: item.orderStatus };
+          const isUpdating = updating === item._id;
+          const canAdvance = STATUS_CYCLE[item.orderStatus] && STATUS_CYCLE[item.orderStatus] !== item.orderStatus;
+          return (
+            <BlurView intensity={15} tint="dark" style={s.glassCard}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.orderId}>#{item._id?.slice(-8).toUpperCase()}</Text>
+                  {item.customerName ? <Text style={s.customerName}>{item.customerName}</Text> : null}
                 </View>
+                <Text style={[s.amount, { color: THEME.primary }]}>RM {Number(item.totalAmount || 0).toFixed(2)}</Text>
               </View>
-            </View>
-          </View>
-        )}
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+                <View style={[s.badge, { backgroundColor: meta.bg }]}>
+                  <Text style={[s.badgeText, { color: meta.color }]}>{meta.label}</Text>
+                </View>
+                <Text style={{ color: THEME.mutedForeground, fontSize: 11 }}>{new Date(item.createdAt).toLocaleDateString('en-MY')}</Text>
+              </View>
+
+              {/* Payment Info */}
+              <View style={[s.divider, { marginVertical: 10 }]} />
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <Text style={s.infoText}>💳 {item.paymentMethod || 'N/A'}</Text>
+                <Text style={[s.infoText, { color: item.paymentStatus === 'PAID' ? '#4ade80' : THEME.warning }]}>{item.paymentStatus || 'PENDING'}</Text>
+              </View>
+
+              {/* Actions */}
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                {canAdvance && (
+                  <TouchableOpacity onPress={() => updateStatus(item._id, item.orderStatus)} disabled={isUpdating}
+                    style={[s.actionBtn, { flex: 1, backgroundColor: meta.color + '22', borderColor: meta.color }]}>
+                    {isUpdating ? <ActivityIndicator size="small" color={meta.color} /> : (
+                      <Text style={{ color: meta.color, fontSize: 12, fontWeight: '700' }}>
+                        → {STATUS_META[STATUS_CYCLE[item.orderStatus]]?.label || 'Advance'}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => deleteOrder(item._id)} style={[s.actionBtn, { backgroundColor: '#2d1515', borderColor: '#ef4444' }]}>
+                  <Trash2 size={14} color="#ef4444" />
+                </TouchableOpacity>
+              </View>
+            </BlurView>
+          );
+        }}
       />
-    </View>
+    </LinearGradient>
   );
 }
+
+const s = StyleSheet.create({
+  screen: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  header: { paddingTop: 54, paddingBottom: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: THEME.glassBorder, marginBottom: 12 },
+  pageTitle: { fontSize: 24, fontWeight: '800', color: THEME.foreground, letterSpacing: -0.5 },
+  pageSub: { color: THEME.mutedForeground, fontSize: 13, marginTop: 2 },
+  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: THEME.glassBorder, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginTop: 10, gap: 8 },
+  searchInput: { flex: 1, color: THEME.foreground, fontSize: 14, height: 20 },
+  chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: THEME.glassBorder, backgroundColor: THEME.glass },
+  chipText: { color: THEME.mutedForeground, fontSize: 12 },
+  glassCard: { borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 14 },
+  orderId: { color: THEME.foreground, fontWeight: '800', fontSize: 15 },
+  customerName: { color: THEME.mutedForeground, fontSize: 12, marginTop: 2 },
+  amount: { fontSize: 18, fontWeight: '800' },
+  badge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3 },
+  badgeText: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  divider: { height: 1, backgroundColor: THEME.glassBorder },
+  infoText: { color: THEME.mutedForeground, fontSize: 12 },
+  actionBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 4 },
+});
