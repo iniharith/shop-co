@@ -107,7 +107,6 @@ export default function TasksScreen() {
         <ScrollView
           className="flex-1"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 140 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="hsl(45, 93%, 47%)" />}
         >
           <Section title="To Do"       items={todoTasks}       accentColor="#94a3b8" />

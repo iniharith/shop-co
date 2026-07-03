@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
 import api from '../../services/api';
+import socketService from '../../services/socket';
 import { ShoppingBag, Package, Truck, CheckCircle, XCircle } from 'lucide-react-native';
 
 export default function OrdersScreen() {
@@ -25,6 +26,14 @@ export default function OrdersScreen() {
 
   useEffect(() => {
     fetchOrders();
+    socketService.connect();
+    // New order came in over the socket — just refetch, keeps status logic
+    // in one place instead of merging a partial payload by hand.
+    const off = socketService.on('order_placed', () => fetchOrders());
+    return () => {
+      off();
+      socketService.disconnect();
+    };
   }, []);
 
   const onRefresh = () => {
@@ -86,7 +95,7 @@ export default function OrdersScreen() {
         keyExtractor={(item) => item._id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="hsl(45, 93%, 47%)" />}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 140 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
         ListEmptyComponent={
           <View className="py-10 items-center justify-center">
             <Text className="text-muted-foreground">No orders found.</Text>
