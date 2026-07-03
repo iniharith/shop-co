@@ -128,21 +128,21 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
     setDownloading(true);
     const toastId = toast.loading("Preparing ZIP download…");
     try {
-      const res = await fetch(`${BACKEND}/api/files/s/${slug}/download-all`);
-      if (!res.ok) throw new Error("Download failed");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${folderName || "files"}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Use a hidden iframe so the browser downloads via Content-Disposition: attachment
+      // without opening a new visible tab. Falls back to window.open if iframe fails.
+      const url = `${BACKEND}/api/files/s/${slug}/download-all`;
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = url;
+      document.body.appendChild(iframe);
       toast.success("Download started!", { id: toastId });
+      // Clean up iframe after download has had time to start
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+        setDownloading(false);
+      }, 5000);
     } catch (err: any) {
       toast.error(err.message || "Download failed", { id: toastId });
-    } finally {
       setDownloading(false);
     }
   };
