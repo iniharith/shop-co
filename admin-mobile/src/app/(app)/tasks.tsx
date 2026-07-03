@@ -1,34 +1,91 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import api from '../../services/api';
 
 export default function TasksScreen() {
-  const [orders, setOrders] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchOrders = async () => {
+  const fetchTasks = async () => {
     try {
-      const res = await api.get('/orders');
-      if (res.data) setOrders(res.data.orders || res.data || []);
+      const res = await api.get('/tasks');
+      if (res.data) {
+        const all = res.data.data || res.data.tasks || res.data || [];
+        setTasks(Array.isArray(all) ? all : []);
+      }
     } catch (e) {
-      console.error(e);
+      console.error('Failed to fetch tasks:', e);
     } finally {
+      setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  useEffect(() => { fetchTasks(); }, []);
+  const onRefresh = () => { setRefreshing(true); fetchTasks(); };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchOrders();
+  // Group by task status
+  const todoTasks       = tasks.filter(t => t.status === 'todo'        || t.status === 'TO_DO'       || t.status === 'pending');
+  const inProgressTasks = tasks.filter(t => t.status === 'in_progress' || t.status === 'IN_PROGRESS' || t.status === 'processing');
+  const doneTasks       = tasks.filter(t => t.status === 'done'        || t.status === 'DONE'        || t.status === 'completed');
+
+  const statusColor: Record<string, string> = {
+    todo: '#94a3b8',
+    TO_DO: '#94a3b8',
+    pending: '#94a3b8',
+    in_progress: '#f59e0b',
+    IN_PROGRESS: '#f59e0b',
+    processing: '#f59e0b',
+    done: '#22c55e',
+    DONE: '#22c55e',
+    completed: '#22c55e',
   };
-  
-  // Group orders loosely by status for the task view
-  const pendingTasks = orders.filter(o => o.status === 'pending');
-  const activeTasks = orders.filter(o => o.status === 'processing');
+
+  const TaskCard = ({ task }: { task: any }) => {
+    const color = statusColor[task.status] || '#94a3b8';
+    return (
+      <TouchableOpacity
+        className="bg-card border border-border p-4 rounded-xl mb-3 shadow-sm active:opacity-70"
+        style={{ borderLeftWidth: 3, borderLeftColor: color }}
+      >
+        <View className="flex-row justify-between items-start mb-1">
+          <Text className="text-foreground font-semibold text-sm flex-1 mr-2" numberOfLines={2}>
+            {task.title || task.name || `Task #${task._id?.slice(-6) || '?'}`}
+          </Text>
+          <View style={{ backgroundColor: color + '22', borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 }}>
+            <Text style={{ color, fontSize: 10, fontWeight: '700', textTransform: 'uppercase' }}>
+              {task.status?.replace(/_/g, ' ') || 'unknown'}
+            </Text>
+          </View>
+        </View>
+        {task.description ? (
+          <Text className="text-muted-foreground text-xs mt-1" numberOfLines={2}>{task.description}</Text>
+        ) : null}
+        {task.orderId ? (
+          <Text className="text-muted-foreground text-xs mt-1">Order: {typeof task.orderId === 'object' ? task.orderId?._id?.slice(-6) : String(task.orderId).slice(-6)}</Text>
+        ) : null}
+      </TouchableOpacity>
+    );
+  };
+
+  const Section = ({ title, items, accentColor }: { title: string; items: any[]; accentColor: string }) => (
+    <View className="mb-6">
+      <View className="flex-row items-center justify-between mb-3">
+        <Text className="text-lg font-bold text-foreground">{title}</Text>
+        <View style={{ backgroundColor: accentColor + '22', borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 }}>
+          <Text style={{ color: accentColor, fontSize: 12, fontWeight: '700' }}>{items.length}</Text>
+        </View>
+      </View>
+      {items.length === 0 ? (
+        <View className="bg-card border border-border border-dashed p-6 rounded-xl items-center justify-center">
+          <Text className="text-muted-foreground text-sm font-medium">No tasks here</Text>
+        </View>
+      ) : (
+        items.map((task, idx) => <TaskCard key={task._id || idx} task={task} />)
+      )}
+    </View>
+  );
 
   return (
     <View className="flex-1 bg-background pt-12 px-5">
@@ -41,69 +98,22 @@ export default function TasksScreen() {
         </View>
       </View>
 
-      <ScrollView 
-        className="flex-1" 
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="hsl(45, 93%, 47%)" />}
-      >
-        
-        {/* To Do Section */}
-        <View className="mb-6">
-          <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-lg font-bold text-foreground">To Do</Text>
-            <View className="bg-muted px-2 py-0.5 rounded-full">
-              <Text className="text-muted-foreground text-xs font-bold">{pendingTasks.length}</Text>
-            </View>
-          </View>
-          
-          {pendingTasks.length === 0 ? (
-            <View className="bg-card border border-border p-6 rounded-xl border-dashed items-center justify-center">
-              <Text className="text-muted-foreground text-sm font-medium">No pending tasks</Text>
-            </View>
-          ) : (
-            pendingTasks.map((task, idx) => (
-              <TouchableOpacity key={idx} className="bg-white p-4 rounded-xl mb-3 border border-slate-200 shadow-sm active:opacity-70">
-                <View className="flex-row justify-between items-start mb-2">
-                  <Text className="text-slate-900 font-bold text-base flex-1 mr-2" numberOfLines={2}>
-                    Order #{task.id}
-                  </Text>
-                </View>
-                <Text className="text-slate-500 text-sm mb-3" numberOfLines={3}>
-                  {task.item || 'No description provided.'}
-                </Text>
-                <View className="w-6 h-6 rounded-full border-2 border-muted flex items-center justify-center" />
-              </TouchableOpacity>
-            ))
-          )}
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="hsl(45, 93%, 47%)" />
+          <Text className="text-muted-foreground mt-3 text-sm">Loading tasks…</Text>
         </View>
-
-        {/* In Progress Section */}
-        <View className="mb-8">
-          <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-lg font-bold text-foreground">In Progress</Text>
-            <View className="bg-primary/20 px-2 py-0.5 rounded-full">
-              <Text className="text-primary text-xs font-bold">{activeTasks.length}</Text>
-            </View>
-          </View>
-          
-          {activeTasks.length === 0 ? (
-            <View className="bg-card border border-border p-6 rounded-xl border-dashed items-center justify-center">
-              <Text className="text-muted-foreground text-sm font-medium">No active tasks</Text>
-            </View>
-          ) : (
-            activeTasks.map((task, idx) => (
-              <TouchableOpacity key={idx} className="bg-card border border-primary/50 p-4 rounded-xl mb-3 shadow-sm active:opacity-70 flex-row justify-between items-center">
-                <View>
-                  <Text className="text-foreground font-semibold text-base mb-1">Order #{task.id}</Text>
-                  <Text className="text-primary text-xs font-medium">Processing...</Text>
-                </View>
-                <View className="w-6 h-6 rounded-full bg-primary flex items-center justify-center" />
-              </TouchableOpacity>
-            ))
-          )}
-        </View>
-
-      </ScrollView>
+      ) : (
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="hsl(45, 93%, 47%)" />}
+        >
+          <Section title="To Do"       items={todoTasks}       accentColor="#94a3b8" />
+          <Section title="In Progress" items={inProgressTasks} accentColor="#f59e0b" />
+          <Section title="Done"        items={doneTasks}       accentColor="#22c55e" />
+        </ScrollView>
+      )}
     </View>
   );
 }

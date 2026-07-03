@@ -123,16 +123,12 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
   };
 
   const handleDownloadAll = () => {
-    files.forEach((file, index) => {
-      setTimeout(() => {
-        const a = document.createElement("a");
-        a.href = `${BACKEND}/api/files/${file._id}/download`;
-        a.download = file.originalName || "file";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }, index * 300);
-    });
+    const a = document.createElement("a");
+    a.href = `${BACKEND}/api/files/s/${slug}/download-all`;
+    a.download = `${folderName || "files"}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   if (loading) return (

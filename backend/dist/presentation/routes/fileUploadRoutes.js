@@ -369,6 +369,51 @@ router.get('/s/:slug', (0, express_async_handler_1.default)((req, res) => __awai
     const files = yield FileUpload_1.FileUpload.find({ $or: orConditions }).sort({ uploadedAt: -1 });
     res.json({ success: true, data: files, folderName: link.folderName });
 })));
+// 🌐 Public: Download all files in a shared folder as a single ZIP
+router.get('/s/:slug/download-all', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
+    if (!link) {
+        res.status(404).json({ success: false, message: 'Link not found' });
+        return;
+    }
+    const orConditions = [{ shareSlug: req.params.slug }];
+    if (link.folderId)
+        orConditions.push({ folderId: link.folderId });
+    else if (link.taskId)
+        orConditions.push({ taskId: link.taskId });
+    else if (link.orderId)
+        orConditions.push({ orderId: link.orderId });
+    else if (link.userId)
+        orConditions.push({ userId: link.userId });
+    const files = yield FileUpload_1.FileUpload.find({ $or: orConditions }).sort({ uploadedAt: -1 });
+    if (!files.length) {
+        res.status(404).json({ success: false, message: 'No files found' });
+        return;
+    }
+    const archiver = require('archiver');
+    const folderName = (link.folderName || 'files').replace(/[^a-zA-Z0-9 _-]/g, '_');
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${folderName}.zip"`);
+    const archive = archiver('zip', { zlib: { level: 6 } });
+    archive.on('error', (err) => { console.error('Archive error:', err); res.end(); });
+    archive.pipe(res);
+    // Fetch each file from S3 and append to archive
+    for (const file of files) {
+        try {
+            const fileRes = yield fetch(file.path);
+            if (!fileRes.ok)
+                continue;
+            const { Readable } = require('stream');
+            const stream = fileRes.body ? Readable.fromWeb(fileRes.body) : null;
+            if (stream)
+                archive.append(stream, { name: file.originalName });
+        }
+        catch (e) {
+            console.warn(`Skipping file ${file.originalName}:`, e);
+        }
+    }
+    yield archive.finalize();
+})));
 // 🌐 Public: Upload files to a folder using a short slug
 const decodeSharedSlug = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);

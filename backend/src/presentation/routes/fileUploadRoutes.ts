@@ -440,6 +440,56 @@ router.get(
   })
 );
 
+// 🌐 Public: Download all files in a shared folder as a single ZIP
+router.get(
+  '/s/:slug/download-all',
+  asyncHandler(async (req: Request, res: Response) => {
+    const link = await shareLinkRepository.findBySlug(req.params.slug);
+    if (!link) {
+      res.status(404).json({ success: false, message: 'Link not found' });
+      return;
+    }
+
+    const orConditions: any[] = [{ shareSlug: req.params.slug }];
+    if (link.folderId) orConditions.push({ folderId: link.folderId });
+    else if (link.taskId) orConditions.push({ taskId: link.taskId });
+    else if (link.orderId) orConditions.push({ orderId: link.orderId });
+    else if (link.userId) orConditions.push({ userId: link.userId });
+
+    const files = await FileUpload.find({ $or: orConditions }).sort({ uploadedAt: -1 });
+
+    if (!files.length) {
+      res.status(404).json({ success: false, message: 'No files found' });
+      return;
+    }
+
+    const archiver = require('archiver');
+    const folderName = (link.folderName || 'files').replace(/[^a-zA-Z0-9 _-]/g, '_');
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${folderName}.zip"`);
+
+    const archive = archiver('zip', { zlib: { level: 6 } });
+    archive.on('error', (err: any) => { console.error('Archive error:', err); res.end(); });
+    archive.pipe(res);
+
+    // Fetch each file from S3 and append to archive
+    for (const file of files) {
+      try {
+        const fileRes = await fetch(file.path);
+        if (!fileRes.ok) continue;
+        const { Readable } = require('stream');
+        const stream = fileRes.body ? Readable.fromWeb(fileRes.body) : null;
+        if (stream) archive.append(stream, { name: file.originalName });
+      } catch (e) {
+        console.warn(`Skipping file ${file.originalName}:`, e);
+      }
+    }
+
+    await archive.finalize();
+  })
+);
+
 // 🌐 Public: Upload files to a folder using a short slug
 const decodeSharedSlug = async (req: any, res: any, next: any) => {
   const link = await shareLinkRepository.findBySlug(req.params.slug);

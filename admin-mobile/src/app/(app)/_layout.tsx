@@ -1,19 +1,7 @@
 import { Tabs } from 'expo-router';
-import { useAuthStore } from '../../store/useAuthStore';
 import { LayoutDashboard, CheckSquare, ShoppingBag, Image as ImageIcon } from 'lucide-react-native';
-import { View, ActivityIndicator } from 'react-native';
 
 export default function AppLayout() {
-  const { user, isReady } = useAuthStore();
-
-  if (!isReady) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" color="#0f172a" />
-      </View>
-    );
-  }
-
   return (
     <Tabs
       screenOptions={{
