@@ -126,26 +126,42 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
   const handleDownloadAll = async () => {
     if (downloading) return;
     setDownloading(true);
-    const toastId = toast.loading("Preparing ZIP download…");
+    const toastId = toast.loading(`Packing ${files.length} file(s)…`);
     try {
-      // Use a hidden iframe so the browser downloads via Content-Disposition: attachment
-      // without opening a new visible tab. Falls back to window.open if iframe fails.
-      const url = `${BACKEND}/api/files/s/${slug}/download-all`;
-      const iframe = document.createElement("iframe");
-      iframe.style.display = "none";
-      iframe.src = url;
-      document.body.appendChild(iframe);
-      toast.success("Download started!", { id: toastId });
-      // Clean up iframe after download has had time to start
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-        setDownloading(false);
-      }, 5000);
+      const JSZip = (await import("jszip")).default;
+      const zip = new JSZip();
+
+      await Promise.all(
+        files.map(async (file: any) => {
+          try {
+            const proxyUrl = `${BACKEND}/api/files/proxy-download?url=${encodeURIComponent(file.path)}&name=${encodeURIComponent(file.originalName || "file")}`;
+            const res = await fetch(proxyUrl);
+            if (!res.ok) return;
+            const blob = await res.blob();
+            zip.file(file.originalName || "file", blob);
+          } catch {
+            // skip files that fail
+          }
+        })
+      );
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${folderName || "files"}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Download ready!", { id: toastId });
     } catch (err: any) {
       toast.error(err.message || "Download failed", { id: toastId });
+    } finally {
       setDownloading(false);
     }
   };
+
 
   if (loading) return (
     <div className="flex h-screen w-full items-center justify-center bg-background">
