@@ -1,0 +1,30 @@
+# Exclude node_modules - EAS installs fresh anyway
+node_modules/
+
+# Exclude build outputs
+android/
+ios/
+dist/
+build/
+
+# Exclude test files
+__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+
+# Exclude git artifacts
+.git/
+.github/
+
+# Exclude IDE/editor config
+.vscode/
+.idea/
+
+# Exclude logs
+*.log
+npm-debug.log*
+
+# Exclude env files
+.env.local
+.env.development

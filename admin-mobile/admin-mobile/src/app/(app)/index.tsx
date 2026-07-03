@@ -4,7 +4,6 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useRouter } from 'expo-router';
 import { Box, Truck, FileText, CircleCheckBig, CircleAlert, RefreshCw } from 'lucide-react-native';
 import api from '../../services/api';
-import socketService from '../../services/socket';
 
 export default function DashboardScreen() {
   const { user, logout } = useAuthStore();
@@ -12,7 +11,6 @@ export default function DashboardScreen() {
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [live, setLive] = useState(false);
   
   const [orders, setOrders] = useState([]);
   const [parcelStats, setParcelStats] = useState({ total: 0, pending: 0, in_transit: 0, delivered: 0, failed: 0 });
@@ -40,19 +38,6 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     fetchData();
-
-    socketService.connect();
-    const offConnect = socketService.on('connect' as any, () => setLive(true));
-    const offOrder = socketService.on('order_placed', () => fetchData());
-    const offNotif = socketService.on('notification', () => fetchData());
-    setLive(!!socketService.socket?.connected);
-
-    return () => {
-      offConnect();
-      offOrder();
-      offNotif();
-      socketService.disconnect();
-    };
   }, []);
 
   const onRefresh = () => {
@@ -68,17 +53,14 @@ export default function DashboardScreen() {
   const totalOrders = orders.length;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0f172a', paddingTop: 52, paddingHorizontal: 20 }}>
+    <View className="flex-1 bg-background pt-12 px-5">
       {/* Header Section */}
       <View className="flex-row justify-between items-center mb-6">
         <View>
           <Text className="text-2xl font-bold tracking-tight text-foreground">Hi, Welcome back 👋</Text>
-          <View className="flex-row items-center gap-1.5 mt-1">
-            <View className={`h-1.5 w-1.5 rounded-full ${live ? 'bg-emerald-500' : 'bg-red-500'}`} />
-            <Text className="text-muted-foreground text-sm font-medium">
-              <Text className="text-primary">{user?.name || 'Admin'}</Text> · {live ? 'Live' : 'Offline'}
-            </Text>
-          </View>
+          <Text className="text-muted-foreground text-sm mt-1 font-medium">
+            <Text className="text-primary">{user?.name || 'Admin'}</Text>
+          </Text>
         </View>
         <TouchableOpacity 
           onPress={handleLogout} 
@@ -95,11 +77,11 @@ export default function DashboardScreen() {
       >
         {loading && !refreshing ? (
           <View className="py-10 items-center justify-center">
-            <ActivityIndicator size="small" color="#f59e0b" />
-            <Text style={{ color: '#94a3b8', marginTop: 16, fontSize: 14 }}>Loading dashboard...</Text>
+            <ActivityIndicator size="small" color="hsl(45, 93%, 47%)" />
+            <Text className="text-muted-foreground mt-4 text-sm">Loading dashboard...</Text>
           </View>
         ) : (
-          <View style={{ gap: 16, paddingBottom: 120 }}>
+          <View className="gap-4 pb-10">
             {/* Top 4 Cards Grid (2x2) */}
             <View className="flex-row gap-4">
               <View className="flex-1 bg-card border border-border p-4 rounded-xl shadow-sm">

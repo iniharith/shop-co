@@ -1,86 +1,60 @@
 import React from 'react';
-import { View, Pressable, StyleSheet, Platform, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LayoutDashboard, CheckSquare, ShoppingBag, Image as ImageIcon } from 'lucide-react-native';
+import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
-const ICONS: Record<string, any> = {
-  index: LayoutDashboard,
-  tasks: CheckSquare,
-  orders: ShoppingBag,
-  artworks: ImageIcon,
-};
+export default function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const icons: Record<string, (color: string) => React.ReactNode> = {
+    index: (color) => <LayoutDashboard size={22} color={color} />,
+    tasks: (color) => <CheckSquare size={22} color={color} />,
+    orders: (color) => <ShoppingBag size={22} color={color} />,
+    artworks: (color) => <ImageIcon size={22} color={color} />,
+  };
 
-const GOLD = 'hsl(45, 93%, 47%)';
-const GOLD_FOREGROUND = 'hsl(0, 0%, 9%)';
-const MUTED = 'hsl(0, 0%, 58%)';
-
-function TabButton({
-  isFocused,
-  onPress,
-  Icon,
-}: {
-  isFocused: boolean;
-  onPress: () => void;
-  Icon: any;
-}) {
-  const scale = React.useRef(new Animated.Value(1)).current;
-
-  const animateTo = (value: number) => {
-    Animated.spring(scale, {
-      toValue: value,
-      useNativeDriver: true,
-      speed: 30,
-      bounciness: 9,
-    }).start();
+  const labels: Record<string, string> = {
+    index: 'Dashboard',
+    tasks: 'Tasks',
+    orders: 'Orders',
+    artworks: 'Artworks',
   };
 
   return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={() => animateTo(0.88)}
-      onPressOut={() => animateTo(1)}
-      style={styles.tabButton}
-      hitSlop={10}
-    >
-      <Animated.View
-        style={[styles.iconWrap, isFocused && styles.iconWrapActive, { transform: [{ scale }] }]}
-      >
-        <Icon size={21} color={isFocused ? GOLD_FOREGROUND : MUTED} strokeWidth={isFocused ? 2.5 : 2} />
-      </Animated.View>
-    </Pressable>
-  );
-}
+    <View style={styles.wrapper} pointerEvents="box-none">
+      <BlurView intensity={60} tint="dark" style={styles.blurContainer}>
+        <View style={styles.inner}>
+          {state.routes.map((route, index) => {
+            const isFocused = state.index === index;
+            const color = isFocused ? '#f59e0b' : '#94a3b8';
 
-export default function FloatingTabBar({ state, navigation }: any) {
-  const insets = useSafeAreaInsets();
+            const onPress = () => {
+              const event = navigation.emit({
+                type: 'tabPress',
+                target: route.key,
+                canPreventDefault: true,
+              });
+              if (!isFocused && !event.defaultPrevented) {
+                navigation.navigate(route.name);
+              }
+            };
 
-  return (
-    <View pointerEvents="box-none" style={[styles.wrapper, { bottom: insets.bottom + 14 }]}>
-      <View style={styles.shadowWrap}>
-        <BlurView intensity={65} tint="dark" style={styles.blur}>
-          <View style={styles.tint} />
-          <View style={styles.row}>
-            {state.routes.map((route: any, index: number) => {
-              const isFocused = state.index === index;
-              const Icon = ICONS[route.name] || LayoutDashboard;
-
-              const onPress = () => {
-                const event = navigation.emit({
-                  type: 'tabPress',
-                  target: route.key,
-                  canPreventDefault: true,
-                });
-                if (!isFocused && !event.defaultPrevented) {
-                  navigation.navigate(route.name);
-                }
-              };
-
-              return <TabButton key={route.key} isFocused={isFocused} onPress={onPress} Icon={Icon} />;
-            })}
-          </View>
-        </BlurView>
-      </View>
+            return (
+              <TouchableOpacity
+                key={route.key}
+                onPress={onPress}
+                style={styles.tab}
+                activeOpacity={0.7}
+              >
+                {isFocused && <View style={styles.activePill} />}
+                {icons[route.name]?.(color)}
+                <Text style={[styles.label, { color }]}>
+                  {labels[route.name]}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </BlurView>
     </View>
   );
 }
@@ -88,52 +62,49 @@ export default function FloatingTabBar({ state, navigation }: any) {
 const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
+    bottom: 28,
     left: 24,
     right: 24,
     alignItems: 'center',
+    zIndex: 100,
   },
-  shadowWrap: {
+  blurContainer: {
     width: '100%',
-    borderRadius: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 14,
-  },
-  blur: {
     borderRadius: 32,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(234, 179, 8, 0.18)',
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: Platform.OS === 'android' ? 'rgba(15, 23, 42, 0.88)' : 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 20,
   },
-  tint: {
-    ...StyleSheet.absoluteFillObject,
-    // Android's BlurView falls back to a plain view, so we lean on a darker
-    // tint there; iOS gets real native blur underneath this subtle overlay.
-    backgroundColor: Platform.OS === 'android' ? 'rgba(8, 8, 8, 0.78)' : 'rgba(8, 8, 8, 0.32)',
-  },
-  row: {
+  inner: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    height: 64,
+    paddingVertical: 10,
     paddingHorizontal: 8,
   },
-  tabButton: {
+  tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100%',
+    paddingVertical: 6,
+    gap: 4,
+    position: 'relative',
   },
-  iconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
+  activePill: {
+    position: 'absolute',
+    top: -4,
+    width: 32,
+    height: 3,
+    backgroundColor: '#f59e0b',
+    borderRadius: 99,
   },
-  iconWrapActive: {
-    backgroundColor: GOLD,
+  label: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
 });
