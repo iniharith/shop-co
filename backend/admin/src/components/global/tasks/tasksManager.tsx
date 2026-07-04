@@ -459,7 +459,7 @@ export default function TasksManager() {
                     <CardContent className="p-3 flex flex-col gap-2">
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex items-start gap-2 flex-1">
-                          <div onClick={(e) => handleTaskSelect(e, task._id, sortedTasks)} className="cursor-pointer shrink-0 mt-0.5 w-4 h-4 flex items-center justify-center">
+                          <div onClick={(e) => handleTaskSelect(e, task._id, columnTasks)} className="cursor-pointer shrink-0 mt-0.5 w-4 h-4 flex items-center justify-center">
                             <Checkbox 
                               checked={selectedTaskIds.includes(task._id)}
                               className="w-full h-full pointer-events-none"
@@ -573,7 +573,7 @@ export default function TasksManager() {
                     {sectionTasks.map((task: any) => (
                       <div key={task._id} className="group grid grid-cols-12 gap-2 items-center py-2 hover:bg-muted/30 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-border/30" onClick={() => setSelectedTask(task)}>
                         <div className="col-span-6 font-medium text-sm flex items-center gap-2 px-2">
-                           <div onClick={(e) => handleTaskSelect(e, task._id, sortedTasks)} className="cursor-pointer shrink-0 w-4 h-4 flex items-center justify-center">
+                           <div onClick={(e) => handleTaskSelect(e, task._id, sectionTasks)} className="cursor-pointer shrink-0 w-4 h-4 flex items-center justify-center">
                              <Checkbox 
                                checked={selectedTaskIds.includes(task._id)}
                                className="w-full h-full pointer-events-none"
