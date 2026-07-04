@@ -104,8 +104,38 @@ export default function TasksManager() {
   const [sortOption, setSortOption] = useState<"dateDesc" | "dateAsc" | "nameAsc" | "nameDesc">("dateAsc");
   const [deletedTaskIds, setDeletedTaskIds] = useState<string[]>([]);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+  const [lastSelectedTaskId, setLastSelectedTaskId] = useState<string | null>(null);
   
-  const toggleTaskSelection = (id: string) => setSelectedTaskIds(prev => prev.includes(id) ? prev.filter(tid => tid !== id) : [...prev, id]);
+  const toggleTaskSelection = (id: string) => {
+    setSelectedTaskIds(prev => prev.includes(id) ? prev.filter(tid => tid !== id) : [...prev, id]);
+    setLastSelectedTaskId(id);
+  };
+  
+  const handleTaskSelect = (e: React.MouseEvent, id: string, tasksList: any[]) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (e.shiftKey && lastSelectedTaskId) {
+      const startIdx = tasksList.findIndex((t: any) => t._id === lastSelectedTaskId);
+      const endIdx = tasksList.findIndex((t: any) => t._id === id);
+      if (startIdx !== -1 && endIdx !== -1) {
+        const min = Math.min(startIdx, endIdx);
+        const max = Math.max(startIdx, endIdx);
+        const rangeIds = tasksList.slice(min, max + 1).map((t: any) => t._id);
+        
+        setSelectedTaskIds(prev => {
+          const isSelected = prev.includes(id);
+          if (isSelected) {
+            return prev.filter(tid => !rangeIds.includes(tid));
+          } else {
+            return Array.from(new Set([...prev, ...rangeIds]));
+          }
+        });
+        setLastSelectedTaskId(id);
+        return;
+      }
+    }
+    toggleTaskSelection(id);
+  };
   const toggleAllSelection = (tasksList: any[]) => {
     const allSelected = tasksList.every(t => selectedTaskIds.includes(t._id));
     if (allSelected) {
@@ -429,12 +459,12 @@ export default function TasksManager() {
                     <CardContent className="p-3 flex flex-col gap-2">
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex items-start gap-2 flex-1">
-                          <Checkbox 
-                            checked={selectedTaskIds.includes(task._id)}
-                            onCheckedChange={() => toggleTaskSelection(task._id)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="mt-0.5 w-4 h-4 shrink-0"
-                          />
+                          <div onClick={(e) => handleTaskSelect(e, task._id, filteredTasks)} className="cursor-pointer shrink-0 mt-0.5 w-4 h-4 flex items-center justify-center">
+                            <Checkbox 
+                              checked={selectedTaskIds.includes(task._id)}
+                              className="w-full h-full pointer-events-none"
+                            />
+                          </div>
                           <button type="button" onClick={(e) => toggleTaskDone(task, e)} className="shrink-0 mt-0.5 text-muted-foreground hover:text-emerald-500 transition-colors">
                             {task.isDone ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Circle className="w-4 h-4" />}
                           </button>
@@ -543,12 +573,12 @@ export default function TasksManager() {
                     {sectionTasks.map((task: any) => (
                       <div key={task._id} className="group grid grid-cols-12 gap-2 items-center py-2 hover:bg-muted/30 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-border/30" onClick={() => setSelectedTask(task)}>
                         <div className="col-span-6 font-medium text-sm flex items-center gap-2 px-2">
-                           <Checkbox 
-                             checked={selectedTaskIds.includes(task._id)}
-                             onCheckedChange={() => toggleTaskSelection(task._id)}
-                             onClick={(e) => e.stopPropagation()}
-                             className="w-4 h-4 shrink-0"
-                           />
+                           <div onClick={(e) => handleTaskSelect(e, task._id, filteredTasks)} className="cursor-pointer shrink-0 w-4 h-4 flex items-center justify-center">
+                             <Checkbox 
+                               checked={selectedTaskIds.includes(task._id)}
+                               className="w-full h-full pointer-events-none"
+                             />
+                           </div>
                            <button type="button" onClick={(e) => toggleTaskDone(task, e)} className="shrink-0 text-muted-foreground hover:text-emerald-500 transition-colors">
                              {task.isDone ? <CheckCircle className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
                            </button>

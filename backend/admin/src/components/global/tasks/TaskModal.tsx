@@ -526,7 +526,10 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   const files = Array.from(e.dataTransfer.files);
                   files.forEach(file => {
                     uploadFile({ id: task._id, file, tag: 'attachment' }, {
-                      onSuccess: () => toast.success("File uploaded successfully"),
+                      onSuccess: () => {
+                        toast.success("File uploaded successfully");
+                        refetch();
+                      },
                       onError: () => toast.error("Failed to upload file")
                     });
                   });
