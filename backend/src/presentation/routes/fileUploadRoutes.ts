@@ -21,18 +21,6 @@ const router = Router();
 
 const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB || '500', 10);
 
-const ALLOWED_MIME_TYPES = [
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-  'image/tiff',
-  'image/heic',
-  'image/heif',
-  'application/pdf',
-];
-
 // ─── Multer + S3 Storage ─────────────────────────
 const storage = multerS3({
   s3: s3Client,
@@ -52,16 +40,6 @@ const upload = multer({
   storage,
   limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const isAllowedMime = ALLOWED_MIME_TYPES.includes(file.mimetype);
-    const isAllowedExt = file.originalname && (file.originalname.toLowerCase().endsWith('.heic') || file.originalname.toLowerCase().endsWith('.heif'));
-    
-    if (isAllowedMime || isAllowedExt) {
-      cb(null, true);
-    } else {
-      cb(
-        new Error(
-          `Jenis fail "${file.mimetype}" tidak dibenarkan. Hanya JPG, PNG, PDF, TIFF, WEBP, HEIC dibenarkan.`
-        )
       );
     }
   },
