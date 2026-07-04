@@ -23,6 +23,8 @@ import { format, isToday, isTomorrow } from "date-fns";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { useSearchParams } from "next/navigation";
 import TaskModal from "./TaskModal";
+import { Checkbox } from "@/components/ui/checkbox";
+import { X } from "lucide-react";
 
 const DueDateDisplay = ({ task, updateTask, className }: { task: any, updateTask: any, className?: string }) => {
   const dateObj = task.dueDate ? new Date(task.dueDate) : null;
@@ -99,8 +101,19 @@ export default function TasksManager() {
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [collapsedColumns, setCollapsedColumns] = useState<string[]>([]);
   const [columnsPopoverOpen, setColumnsPopoverOpen] = useState(false);
-  const [sortOption, setSortOption] = useState<"dateDesc" | "dateAsc" | "nameAsc" | "nameDesc">("dateDesc");
+  const [sortOption, setSortOption] = useState<"dateDesc" | "dateAsc" | "nameAsc" | "nameDesc">("dateAsc");
   const [deletedTaskIds, setDeletedTaskIds] = useState<string[]>([]);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+  
+  const toggleTaskSelection = (id: string) => setSelectedTaskIds(prev => prev.includes(id) ? prev.filter(tid => tid !== id) : [...prev, id]);
+  const toggleAllSelection = (tasksList: any[]) => {
+    const allSelected = tasksList.every(t => selectedTaskIds.includes(t._id));
+    if (allSelected) {
+      setSelectedTaskIds(prev => prev.filter(id => !tasksList.some(t => t._id === id)));
+    } else {
+      setSelectedTaskIds(prev => Array.from(new Set([...prev, ...tasksList.map(t => t._id)])));
+    }
+  };
   
   const { mutate: createTask, isPending: isCreating } = useCreateTask();
   const { mutate: updateTask } = useUpdateTask();
@@ -416,6 +429,12 @@ export default function TasksManager() {
                     <CardContent className="p-3 flex flex-col gap-2">
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex items-start gap-2 flex-1">
+                          <Checkbox 
+                            checked={selectedTaskIds.includes(task._id)}
+                            onCheckedChange={() => toggleTaskSelection(task._id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-0.5 w-4 h-4 shrink-0"
+                          />
                           <button type="button" onClick={(e) => toggleTaskDone(task, e)} className="shrink-0 mt-0.5 text-muted-foreground hover:text-emerald-500 transition-colors">
                             {task.isDone ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Circle className="w-4 h-4" />}
                           </button>
@@ -508,7 +527,14 @@ export default function TasksManager() {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <div className="grid grid-cols-12 gap-4 p-2 border-b border-border/50 bg-muted/10 font-medium text-xs text-muted-foreground">
-                    <div className="col-span-6 px-2">Task Name</div>
+                    <div className="col-span-6 px-2 flex items-center gap-2">
+                      <Checkbox 
+                        checked={sectionTasks.length > 0 && sectionTasks.every((t: any) => selectedTaskIds.includes(t._id))}
+                        onCheckedChange={() => toggleAllSelection(sectionTasks)}
+                        className="w-3.5 h-3.5 shrink-0"
+                      />
+                      Task Name
+                    </div>
                     <div className="col-span-2">Assignee</div>
                     <div className="col-span-2 pr-2">Status</div>
                     <div className="col-span-2 pr-4">Due Date</div>
@@ -517,6 +543,12 @@ export default function TasksManager() {
                     {sectionTasks.map((task: any) => (
                       <div key={task._id} className="group grid grid-cols-12 gap-2 items-center py-2 hover:bg-muted/30 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-border/30" onClick={() => setSelectedTask(task)}>
                         <div className="col-span-6 font-medium text-sm flex items-center gap-2 px-2">
+                           <Checkbox 
+                             checked={selectedTaskIds.includes(task._id)}
+                             onCheckedChange={() => toggleTaskSelection(task._id)}
+                             onClick={(e) => e.stopPropagation()}
+                             className="w-4 h-4 shrink-0"
+                           />
                            <button type="button" onClick={(e) => toggleTaskDone(task, e)} className="shrink-0 text-muted-foreground hover:text-emerald-500 transition-colors">
                              {task.isDone ? <CheckCircle className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
                            </button>
@@ -565,6 +597,63 @@ export default function TasksManager() {
               </Collapsible>
             );
           })}
+        </div>
+      )}
+
+      {/* Floating Action Bar */}
+      {selectedTaskIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-background/60 backdrop-blur-xl text-foreground shadow-2xl rounded-2xl flex items-center gap-2 p-2 px-4 border border-border/50 animate-in slide-in-from-bottom-5">
+          <span className="text-sm font-bold bg-muted/80 backdrop-blur-sm px-3 py-1.5 rounded-xl mr-2 whitespace-nowrap">
+            {selectedTaskIds.length} selected
+          </span>
+          
+          <Select onValueChange={(v) => {
+            selectedTaskIds.forEach(id => updateTask({ id, data: { assignee: v === "unassigned" ? null : v } }));
+            toast.success(`Assigned ${selectedTaskIds.length} tasks`);
+          }}>
+            <SelectTrigger className="h-9 bg-transparent border-0 hover:bg-muted/50 focus:ring-0 shadow-none">
+              <User className="w-4 h-4 mr-2 opacity-70 shrink-0" /> Assign
+            </SelectTrigger>
+            <SelectContent className="bg-background/80 backdrop-blur-xl border-border/50">
+              <SelectItem value="unassigned">Unassigned</SelectItem>
+              {usersData?.users?.map((u: any) => <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+
+          <Select onValueChange={(v) => {
+            selectedTaskIds.forEach(id => updateTask({ id, data: { status: v } }));
+            toast.success(`Moved ${selectedTaskIds.length} tasks to ${v.replace(/_/g, " ")}`);
+          }}>
+            <SelectTrigger className="h-9 bg-transparent border-0 hover:bg-muted/50 focus:ring-0 shadow-none">
+              <ArrowDownUp className="w-4 h-4 mr-2 opacity-70 shrink-0" /> Status
+            </SelectTrigger>
+            <SelectContent className="bg-background/80 backdrop-blur-xl border-border/50">
+              {columns.map(s => <SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>)}
+            </SelectContent>
+          </Select>
+
+          <div className="w-px h-6 bg-border/50 mx-1 hidden sm:block" />
+
+          <Button variant="ghost" size="sm" className="hover:bg-emerald-500/10 hover:text-emerald-500" onClick={() => {
+            selectedTaskIds.forEach(id => updateTask({ id, data: { isDone: true } }));
+            toast.success(`Marked ${selectedTaskIds.length} tasks complete`);
+            setSelectedTaskIds([]);
+          }}>
+            <CheckCircle className="w-4 h-4 mr-2 shrink-0" /> Complete
+          </Button>
+
+          <Button variant="ghost" size="sm" className="hover:bg-red-500/10 hover:text-red-500" onClick={() => {
+            if (confirm(`Delete ${selectedTaskIds.length} tasks?`)) {
+              selectedTaskIds.forEach(id => deleteTask(id));
+              setSelectedTaskIds([]);
+            }
+          }}>
+            <Trash2 className="w-4 h-4 mr-2 shrink-0" /> Delete
+          </Button>
+
+          <Button variant="ghost" size="icon" className="hover:bg-muted/80 ml-2 rounded-full shrink-0" onClick={() => setSelectedTaskIds([])}>
+            <X className="w-4 h-4" />
+          </Button>
         </div>
       )}
 

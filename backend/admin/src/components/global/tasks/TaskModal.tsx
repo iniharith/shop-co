@@ -221,6 +221,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [commentText, setCommentText] = useState("");
   const [activeTab, setActiveTab] = useState("comments");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isDragOverComment, setIsDragOverComment] = useState(false);
 
   const combinedFiles = React.useMemo(() => {
     let files = [...(task?.files || [])];
@@ -473,18 +474,36 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                     </div>
                                   </div>
                                 )}
-                                {activityItems.map((item: any, idx: number) => (
-                                  <div key={`a-${idx}`} className="flex gap-3 items-center text-sm py-1">
-                                    <Avatar className="w-6 h-6 border border-border/50 bg-muted shrink-0 text-[10px]">
-                                      <AvatarFallback>{item.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 text-muted-foreground">
-                                      <span className="font-semibold text-foreground mr-1">{item.userName}</span>
-                                      {item.action}
-                                      <span className="text-[10px] ml-2 text-muted-foreground/70">• {format(new Date(item.createdAt), "MMM d, h:mm a")}</span>
+                                {activityItems.map((item: any, idx: number) => {
+                                  const isUpload = item.action.includes('uploaded a file');
+                                  const matchingFile = (isUpload && item.details) ? task.files?.find((f: any) => f.name === item.details || f.url === item.details) : null;
+                                  const isImage = matchingFile && (matchingFile.url.match(/\.(jpeg|jpg|gif|png|webp|heic)$/i) || matchingFile.name?.match(/\.(jpeg|jpg|gif|png|webp|heic)$/i));
+                                  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+                                  const proxyUrl = matchingFile ? `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(matchingFile.url.startsWith('http') ? matchingFile.url : `${backendUrl}/${matchingFile.url.replace(/^\/+/, '')}`)}&name=${encodeURIComponent(matchingFile.name)}&stream=true` : "";
+
+                                  return (
+                                    <div key={`a-${idx}`} className={`flex gap-3 items-start text-sm py-1 ${isImage ? 'mt-2 mb-2' : ''}`}>
+                                      <Avatar className="w-6 h-6 border border-border/50 bg-muted shrink-0 text-[10px] mt-0.5">
+                                        <AvatarFallback>{item.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                      </Avatar>
+                                      <div className="flex-1 text-muted-foreground">
+                                        <div>
+                                          <span className="font-semibold text-foreground mr-1">{item.userName}</span>
+                                          {item.action} {item.details && !isImage && <span className="font-medium text-foreground/80 ml-1 break-all">{item.details}</span>}
+                                          <span className="text-[10px] ml-2 text-muted-foreground/70 whitespace-nowrap">• {format(new Date(item.createdAt), "MMM d, h:mm a")}</span>
+                                        </div>
+                                        {isImage && (
+                                          <div className="mt-2">
+                                            <a href={proxyUrl} target="_blank" rel="noopener noreferrer" className="block max-w-[250px] rounded-lg overflow-hidden border border-border/50 shadow-sm hover:opacity-90 transition-opacity bg-black/5">
+                                              <img src={proxyUrl} alt={item.details} className="w-full h-auto object-cover max-h-[150px]" loading="lazy" />
+                                            </a>
+                                            <span className="text-[10px] text-muted-foreground mt-1 block truncate max-w-[250px]">{item.details}</span>
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </>
                             )}
                           </div>
@@ -496,7 +515,31 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               </div>
             </div>
             
-            <div className="p-4 border-y md:border-y-0 md:border-t border-border/50 bg-muted/10 shrink-0">
+            <div 
+              className={`p-4 border-y md:border-y-0 md:border-t border-border/50 shrink-0 transition-colors relative ${isDragOverComment ? 'bg-primary/10 border-primary border-dashed' : 'bg-muted/10'}`}
+              onDragOver={(e) => { e.preventDefault(); setIsDragOverComment(true); }}
+              onDragLeave={(e) => { e.preventDefault(); setIsDragOverComment(false); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragOverComment(false);
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                  const files = Array.from(e.dataTransfer.files);
+                  files.forEach(file => {
+                    uploadFile({ id: task._id, file, tag: 'attachment' }, {
+                      onSuccess: () => toast.success("File uploaded successfully"),
+                      onError: () => toast.error("Failed to upload file")
+                    });
+                  });
+                }
+              }}
+            >
+              {isDragOverComment && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-10 rounded-b-lg">
+                  <p className="text-sm font-bold text-primary flex items-center gap-2">
+                    <DownloadIcon className="w-4 h-4 animate-bounce" /> Drop files to attach
+                  </p>
+                </div>
+              )}
               <div className="flex gap-2">
                 <input 
                   type="file" 

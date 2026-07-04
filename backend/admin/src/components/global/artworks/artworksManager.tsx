@@ -81,6 +81,7 @@ export default function ArtworksManager() {
   const [editingFileId, setEditingFileId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string>("");
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [isDragOverFolder, setIsDragOverFolder] = useState<boolean>(false);
 
   const allFiles: any[] = (response as any)?.data || [];
 
@@ -587,7 +588,50 @@ export default function ArtworksManager() {
             const visibleFolders = activeSubFolderId ? [] : groupFolders;
 
             return (
-              <>
+              <div 
+                className={`relative transition-colors rounded-xl ${isDragOverFolder ? 'bg-primary/5 border border-primary border-dashed p-4' : ''}`}
+                onDragOver={(e) => { e.preventDefault(); setIsDragOverFolder(true); }}
+                onDragLeave={(e) => { e.preventDefault(); setIsDragOverFolder(false); }}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  setIsDragOverFolder(false);
+                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    const files = Array.from(e.dataTransfer.files);
+                    const formData = new FormData();
+                    if (activeGroup.userId) formData.append("userId", activeGroup.userId);
+                    if (activeGroup.orderId) formData.append("orderId", activeGroup.orderId);
+                    if (activeGroup.taskId) formData.append("taskId", activeGroup.taskId);
+                    if (activeSubFolderId) formData.append("folderId", activeSubFolderId);
+                    formData.append("category", activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING");
+                    files.forEach(f => formData.append("files", f));
+
+                    const uploadPromise = fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/files/upload`, {
+                      method: 'POST',
+                      headers: { Authorization: `Bearer ${(session as any)?.user?.token}` },
+                      body: formData
+                    }).then(res => {
+                      if (!res.ok) throw new Error("Upload failed");
+                      return res.json();
+                    });
+
+                    toast.promise(uploadPromise, {
+                      loading: 'Uploading files...',
+                      success: () => {
+                        refetch();
+                        return 'Files uploaded successfully';
+                      },
+                      error: 'Failed to upload files'
+                    });
+                  }
+                }}
+              >
+                {isDragOverFolder && (
+                  <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm rounded-xl">
+                    <p className="text-lg font-bold text-primary flex items-center gap-2">
+                      <DownloadIcon className="w-6 h-6 animate-bounce" /> Drop files to upload to this folder
+                    </p>
+                  </div>
+                )}
                   <div className="flex items-center gap-4 mb-4 pb-4 border-b justify-between">
                     <div className="flex items-center gap-4">
                       <Button variant="ghost" size="sm" onClick={() => setSelectedFolder(null)}>
@@ -906,7 +950,7 @@ export default function ArtworksManager() {
               </>
             );
           })()}
-              </>
+              </div>
             );
           })()}
         </div>
