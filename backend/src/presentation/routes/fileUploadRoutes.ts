@@ -19,7 +19,7 @@ import OrderRepository from '../../infrastructure/db/repositories/order.reposito
 
 const router = Router();
 
-const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB || '50', 10);
+const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB || '500', 10);
 
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',

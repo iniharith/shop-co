@@ -31,7 +31,7 @@ const ShareLinkRepository_1 = require("../../infrastructure/repositories/ShareLi
 const ShareLink_1 = require("../../domain/entities/ShareLink");
 const order_repository_1 = __importDefault(require("../../infrastructure/db/repositories/order.repository"));
 const router = (0, express_1.Router)();
-const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB || '50', 10);
+const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB || '500', 10);
 const ALLOWED_MIME_TYPES = [
     'image/jpeg',
     'image/jpg',
@@ -391,26 +391,71 @@ router.get('/s/:slug/download-all', (0, express_async_handler_1.default)((req, r
         return;
     }
     const archiver = require('archiver');
+    const { Readable } = require('stream');
     const folderName = (link.folderName || 'files').replace(/[^a-zA-Z0-9 _-]/g, '_');
+    // Resolve a fetchable URL for each file. Files stored on S3 are almost
+    // always in a private bucket (downloads elsewhere in this app go through
+    // a signed URL), so fetching file.path directly returns 403 for every
+    // file. That failure was being swallowed by `if (!fileRes.ok) continue`,
+    // so the loop finished having appended zero entries and the ZIP was
+    // still finalized and sent — a "successful" download with nothing
+    // inside. Signing S3 URLs here fixes that.
+    const resolveDownloadUrl = (filePath) => __awaiter(void 0, void 0, void 0, function* () {
+        if (!filePath.includes('amazonaws.com'))
+            return filePath;
+        try {
+            const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+            const { GetObjectCommand } = require('@aws-sdk/client-s3');
+            const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
+            const urlObj = new URL(filePath);
+            const key = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+            return yield getSignedUrl(s3Client, new GetObjectCommand({ Bucket: S3_BUCKET_NAME, Key: key }), { expiresIn: 300 });
+        }
+        catch (e) {
+            console.warn(`Could not sign URL for ${filePath}:`, e);
+            return filePath;
+        }
+    });
+    let addedCount = 0;
+    const skipped = [];
+    // Sign/fetch every file BEFORE opening the response, so that if every
+    // single file fails we can return a clear JSON error instead of sending
+    // a 200 OK with an empty zip body.
+    const preparedFiles = [];
+    for (const file of files) {
+        try {
+            const downloadUrl = yield resolveDownloadUrl(file.path);
+            const fileRes = yield fetch(downloadUrl);
+            if (!fileRes.ok || !fileRes.body) {
+                skipped.push(file.originalName);
+                console.warn(`[download-all] Skipping ${file.originalName}: HTTP ${fileRes.status}`);
+                continue;
+            }
+            preparedFiles.push({ name: file.originalName, stream: fileRes.body });
+            addedCount++;
+        }
+        catch (e) {
+            skipped.push(file.originalName);
+            console.warn(`[download-all] Skipping ${file.originalName}:`, e);
+        }
+    }
+    if (addedCount === 0) {
+        res.status(502).json({
+            success: false,
+            message: 'Could not fetch any files for this folder from storage. Please try again or contact support.',
+        });
+        return;
+    }
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="${folderName}.zip"`);
+    if (skipped.length) {
+        res.setHeader('X-Skipped-Files', String(skipped.length));
+    }
     const archive = archiver('zip', { zlib: { level: 6 } });
     archive.on('error', (err) => { console.error('Archive error:', err); res.end(); });
     archive.pipe(res);
-    // Fetch each file from S3 and append to archive
-    for (const file of files) {
-        try {
-            const fileRes = yield fetch(file.path);
-            if (!fileRes.ok)
-                continue;
-            const { Readable } = require('stream');
-            const stream = fileRes.body ? Readable.fromWeb(fileRes.body) : null;
-            if (stream)
-                archive.append(stream, { name: file.originalName });
-        }
-        catch (e) {
-            console.warn(`Skipping file ${file.originalName}:`, e);
-        }
+    for (const { name, stream } of preparedFiles) {
+        archive.append(Readable.fromWeb(stream), { name });
     }
     yield archive.finalize();
 })));
@@ -587,7 +632,21 @@ router.get('/proxy-download', (0, express_async_handler_1.default)((req, res) =>
     }
     catch (err) {
         console.error("Error streaming proxy file:", err);
-        res.redirect(fileUrl);
+        // Only fall back to a redirect for plain navigations (e.g. the user
+        // clicked a direct download link). A bulk "Download All" request calls
+        // this endpoint with fetch()+stream=true and expects real file bytes
+        // back — redirecting it to a possibly-private S3 URL used to make the
+        // fetch "succeed" with an empty/AccessDenied body, which is how a
+        // whole batch of files could silently end up as 0 bytes inside the
+        // generated ZIP. So for stream requests we return a real error instead.
+        if (!res.headersSent) {
+            if (req.query.stream === 'true') {
+                res.status(502).json({ success: false, message: 'Failed to fetch file for download' });
+            }
+            else {
+                res.redirect(fileUrl);
+            }
+        }
     }
 })));
 // ─── GET /api/files/:id ───────────────────────────────────

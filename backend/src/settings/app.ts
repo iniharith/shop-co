@@ -50,8 +50,8 @@ app.options("*", cors({
 }));
 
 // -------------------- util middleware-------------------------------
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '500mb' }));
+app.use(express.urlencoded({ extended: true, limit: '500mb' }));
 
 app.use(express.static(path.join(__dirname, '../../public')));
 app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
