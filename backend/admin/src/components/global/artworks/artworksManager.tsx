@@ -628,7 +628,7 @@ export default function ArtworksManager() {
                 {isDragOverFolder && (
                   <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm rounded-xl">
                     <p className="text-lg font-bold text-primary flex items-center gap-2">
-                      <DownloadIcon className="w-6 h-6 animate-bounce" /> Drop files to upload to this folder
+                      <Download className="w-6 h-6 animate-bounce" /> Drop files to upload to this folder
                     </p>
                   </div>
                 )}
