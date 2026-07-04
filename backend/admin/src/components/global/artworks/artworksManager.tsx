@@ -363,37 +363,40 @@ export default function ArtworksManager() {
   const handleUploadSubmit = async () => {
     if (!uploadFiles || uploadFiles.length === 0) return toast.error("Please select a file");
 
-    const formData = new FormData();
-    if (uploadData.userId) formData.append("userId", uploadData.userId);
-    if (uploadData.orderId) formData.append("orderId", uploadData.orderId);
-    formData.append("category", uploadData.category);
-    formData.append("notes", uploadData.notes);
-    if (uploadData.taskId) formData.append("taskId", uploadData.taskId);
-    if (uploadData.folderId) formData.append("folderId", uploadData.folderId);
-    Array.from(uploadFiles).forEach(f => formData.append("files", f));
+    try {
+      const token = session?.user?.token || localStorage.getItem('token') || ""; 
+      
+      const uploadPromises = Array.from(uploadFiles).map(async (f) => {
+        const formData = new FormData();
+        if (uploadData.userId) formData.append("userId", uploadData.userId);
+        if (uploadData.orderId) formData.append("orderId", uploadData.orderId);
+        formData.append("category", uploadData.category);
+        formData.append("notes", uploadData.notes);
+        if (uploadData.taskId) formData.append("taskId", uploadData.taskId);
+        if (uploadData.folderId) formData.append("folderId", uploadData.folderId);
+        formData.append("files", f);
 
-      try {
-        const token = session?.user?.token || localStorage.getItem('token') || ""; 
-          
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/files/upload`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/files/upload`, {
           method: "POST",
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
+          headers: { 'Authorization': `Bearer ${token}` },
           body: formData,
         });
 
         if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          console.error("Upload error response:", errorData);
-          throw new Error(errorData.message || "Upload failed");
+          const errText = await res.text();
+          console.error("Upload error response:", errText);
+          throw new Error(errText || "Upload failed");
         }
-        toast.success("Artwork uploaded successfully");
-        setUploadModalOpen(false);
-        refetch();
-      } catch (e: any) {
-        toast.error(e.message || "Failed to upload artwork");
-      }
+        return res.json();
+      });
+
+      await Promise.all(uploadPromises);
+      toast.success("Artwork uploaded successfully");
+      setUploadModalOpen(false);
+      refetch();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to upload artwork");
+    }
   };
 
   const getFileIcon = (mimetype: string) => {
@@ -598,19 +601,22 @@ export default function ArtworksManager() {
                   setIsDragOverFolder(false);
                   if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                     const files = Array.from(e.dataTransfer.files);
-                    const formData = new FormData();
-                    if (activeGroup.userId) formData.append("userId", activeGroup.userId);
-                    if (activeGroup.orderId) formData.append("orderId", activeGroup.orderId);
-                    if (activeGroup.taskId) formData.append("taskId", activeGroup.taskId);
-                    if (activeSubFolderId) formData.append("folderId", activeSubFolderId);
-                    formData.append("category", activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING");
-                    files.forEach(f => formData.append("files", f));
+                    const token = (session as any)?.user?.token || localStorage.getItem('token') || "";
+                    
+                    const uploadPromises = files.map(async (f) => {
+                      const formData = new FormData();
+                      if (activeGroup.userId) formData.append("userId", activeGroup.userId);
+                      if (activeGroup.orderId) formData.append("orderId", activeGroup.orderId);
+                      if (activeGroup.taskId) formData.append("taskId", activeGroup.taskId);
+                      if (activeSubFolderId) formData.append("folderId", activeSubFolderId);
+                      formData.append("category", activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING");
+                      formData.append("files", f);
 
-                    const uploadPromise = fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/files/upload`, {
-                      method: 'POST',
-                      headers: { Authorization: `Bearer ${(session as any)?.user?.token || localStorage.getItem('token') || ""}` },
-                      body: formData
-                    }).then(async res => {
+                      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/files/upload`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${token}` },
+                        body: formData
+                      });
                       if (!res.ok) {
                         const errText = await res.text();
                         console.error("Upload error details:", errText);
@@ -619,8 +625,8 @@ export default function ArtworksManager() {
                       return res.json();
                     });
 
-                    toast.promise(uploadPromise, {
-                      loading: 'Uploading files...',
+                    toast.promise(Promise.all(uploadPromises), {
+                      loading: `Uploading ${files.length} files...`,
                       success: () => {
                         refetch();
                         return 'Files uploaded successfully';
