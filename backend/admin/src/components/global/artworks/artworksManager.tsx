@@ -607,10 +607,14 @@ export default function ArtworksManager() {
 
                     const uploadPromise = fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/files/upload`, {
                       method: 'POST',
-                      headers: { Authorization: `Bearer ${(session as any)?.user?.token}` },
+                      headers: { Authorization: `Bearer ${(session as any)?.user?.token || localStorage.getItem('token') || ""}` },
                       body: formData
-                    }).then(res => {
-                      if (!res.ok) throw new Error("Upload failed");
+                    }).then(async res => {
+                      if (!res.ok) {
+                        const errText = await res.text();
+                        console.error("Upload error details:", errText);
+                        throw new Error(errText || "Upload failed");
+                      }
                       return res.json();
                     });
 
