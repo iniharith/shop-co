@@ -590,10 +590,11 @@ export default function ArtworksManager() {
             return (
               <div 
                 className={`relative transition-colors rounded-xl ${isDragOverFolder ? 'bg-primary/5 border border-primary border-dashed p-4' : ''}`}
-                onDragOver={(e) => { e.preventDefault(); setIsDragOverFolder(true); }}
-                onDragLeave={(e) => { e.preventDefault(); setIsDragOverFolder(false); }}
+                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverFolder(true); }}
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverFolder(true); }}
                 onDrop={async (e) => {
                   e.preventDefault();
+                  e.stopPropagation();
                   setIsDragOverFolder(false);
                   if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                     const files = Array.from(e.dataTransfer.files);
@@ -630,8 +631,11 @@ export default function ArtworksManager() {
                 }}
               >
                 {isDragOverFolder && (
-                  <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm rounded-xl">
-                    <p className="text-lg font-bold text-primary flex items-center gap-2">
+                  <div 
+                    className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm rounded-xl"
+                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverFolder(false); }}
+                  >
+                    <p className="text-lg font-bold text-primary flex items-center gap-2 pointer-events-none">
                       <Download className="w-6 h-6 animate-bounce" /> Drop files to upload to this folder
                     </p>
                   </div>

@@ -517,10 +517,11 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
             
             <div 
               className={`p-4 border-y md:border-y-0 md:border-t border-border/50 shrink-0 transition-colors relative ${isDragOverComment ? 'bg-primary/10 border-primary border-dashed' : 'bg-muted/10'}`}
-              onDragOver={(e) => { e.preventDefault(); setIsDragOverComment(true); }}
-              onDragLeave={(e) => { e.preventDefault(); setIsDragOverComment(false); }}
+              onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(true); }}
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(true); }}
               onDrop={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 setIsDragOverComment(false);
                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                   const files = Array.from(e.dataTransfer.files);
@@ -537,8 +538,11 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               }}
             >
               {isDragOverComment && (
-                <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-10 rounded-b-lg">
-                  <p className="text-sm font-bold text-primary flex items-center gap-2">
+                <div 
+                  className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50 rounded-b-lg"
+                  onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(false); }}
+                >
+                  <p className="text-sm font-bold text-primary flex items-center gap-2 pointer-events-none">
                     <DownloadIcon className="w-4 h-4 animate-bounce" /> Drop files to attach
                   </p>
                 </div>
