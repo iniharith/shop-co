@@ -40,9 +40,8 @@ const upload = multer({
   storage,
   limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-      );
-    }
-  },
+    cb(null, true);
+  }
 });
 
 // ─── POST /api/files/upload ───────────────────────────────

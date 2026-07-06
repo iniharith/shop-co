@@ -32,17 +32,6 @@ const ShareLink_1 = require("../../domain/entities/ShareLink");
 const order_repository_1 = __importDefault(require("../../infrastructure/db/repositories/order.repository"));
 const router = (0, express_1.Router)();
 const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB || '500', 10);
-const ALLOWED_MIME_TYPES = [
-    'image/jpeg',
-    'image/jpg',
-    'image/png',
-    'image/webp',
-    'image/gif',
-    'image/tiff',
-    'image/heic',
-    'image/heif',
-    'application/pdf',
-];
 // ─── Multer + S3 Storage ─────────────────────────
 const storage = (0, multer_s3_1.default)({
     s3: s3_1.s3Client,
@@ -62,15 +51,8 @@ const upload = (0, multer_1.default)({
     storage,
     limits: { fileSize: MAX_FILE_SIZE_MB * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
-        const isAllowedMime = ALLOWED_MIME_TYPES.includes(file.mimetype);
-        const isAllowedExt = file.originalname && (file.originalname.toLowerCase().endsWith('.heic') || file.originalname.toLowerCase().endsWith('.heif'));
-        if (isAllowedMime || isAllowedExt) {
-            cb(null, true);
-        }
-        else {
-            cb(new Error(`Jenis fail "${file.mimetype}" tidak dibenarkan. Hanya JPG, PNG, PDF, TIFF, WEBP, HEIC dibenarkan.`));
-        }
-    },
+        cb(null, true);
+    }
 });
 // ─── POST /api/files/upload ───────────────────────────────
 // Customer uploads one or more files (requires auth middleware upstream)
