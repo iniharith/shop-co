@@ -17,4 +17,6 @@ router.get("/status/:status", auth_middileware_1.authMiddilware, orderController
 router.get("/:orderId", auth_middileware_1.authMiddilware, orderController.getOrderById.bind(orderController));
 router.put("/:orderId", auth_middileware_1.authMiddilware, orderController.updateOrderStatus.bind(orderController));
 router.put("/:orderId/archive", auth_middileware_1.authMiddilware, orderController.archiveOrder.bind(orderController));
+router.post("/:orderId/ship", auth_middileware_1.authMiddilware, orderController.createShipment.bind(orderController));
+router.get("/:orderId/tracking", auth_middileware_1.authMiddilware, orderController.getTracking.bind(orderController));
 exports.default = router;

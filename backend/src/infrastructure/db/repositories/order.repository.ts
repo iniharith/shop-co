@@ -26,6 +26,10 @@ export class OrderRepository {
         return await this.orderModel.findById(orderId).populate("products.product").populate("userId");
     }
 
+    async getOrderByAwb(awb: string): Promise<IOrderDocument | null> {
+        return await this.orderModel.findOne({ easyparcelAwb: awb }).populate("products.product").populate("userId");
+    }
+
     async createOrder(order: Partial<IOrder>): Promise<IOrderDocument> {
         return await this.orderModel.create(order);
     }

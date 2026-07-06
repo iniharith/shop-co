@@ -38,3 +38,8 @@ export const getPreviousAddress = async (token: string) => {
     return response.data;
 };
 
+export const getTracking = async (token: string, id: string) => {
+    const response = await AxiosInstance(token).get(`${ORDER_URL}/${id}/tracking`);
+    return response.data;
+};
+

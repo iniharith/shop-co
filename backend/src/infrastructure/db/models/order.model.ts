@@ -100,6 +100,14 @@ const OrderSchema: Schema = new Schema(
       type: String,
       default: '',
     },
+    easyparcelOrderNo: {
+      type: String,
+      default: '',
+    },
+    easyparcelAwb: {
+      type: String,
+      default: '',
+    },
   },
   { timestamps: true }
 );

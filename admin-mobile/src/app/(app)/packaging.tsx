@@ -42,6 +42,17 @@ export default function PackagingScreen() {
     }
   };
 
+  const createEasyParcelShipment = async (id: string) => {
+    try {
+      Alert.alert('Processing', 'Generating EasyParcel AWB...');
+      await api.post(`/orders/${id}/ship`);
+      Alert.alert('Success', 'Shipment created successfully!');
+      fetchOrders();
+    } catch (e) {
+      Alert.alert('Error', 'Could not create EasyParcel shipment.');
+    }
+  };
+
   return (
     <View className="flex-1 bg-background pt-14 px-5">
       <View className="flex-row items-center gap-3 mb-6">
@@ -69,9 +80,14 @@ export default function PackagingScreen() {
                 <Text className="text-foreground font-semibold">{item._id?.slice(-8).toUpperCase()}</Text>
                 <Text className="text-muted-foreground text-xs">Ready to pack & ship</Text>
               </View>
-              <TouchableOpacity onPress={() => markShipped(item._id)} className="bg-primary/10 px-3 py-1.5 rounded-lg">
-                <Text className="text-primary text-xs font-semibold">Ship</Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                <TouchableOpacity onPress={() => createEasyParcelShipment(item._id)} className="bg-primary/20 px-3 py-1.5 rounded-lg border border-primary/50">
+                  <Text className="text-primary text-xs font-bold">EP Ship</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => markShipped(item._id)} className="bg-secondary px-3 py-1.5 rounded-lg">
+                  <Text className="text-foreground text-xs font-semibold">Manual Ship</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         />

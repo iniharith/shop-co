@@ -155,4 +155,33 @@ export class OrderController {
 
 
     
+    /**
+     * @description Create EasyParcel Shipment
+     * @Method POST
+     * @Access PRIVATE
+     * @Route /api/orders/:orderId/ship
+     */
+    async createShipment(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            const order = await this.orderUsecase.createShipment(req.params.orderId);
+            res.status(statusCodes.OK).json({ message: "Shipment created successfully", order });
+        } catch (error: any) {
+            next(error);
+        }
+    }
+
+    /**
+     * @description Get live tracking status
+     * @Method GET
+     * @Access PRIVATE
+     * @Route /api/orders/:orderId/tracking
+     */
+    async getTracking(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            const tracking = await this.orderUsecase.getTracking(req.params.orderId);
+            res.status(statusCodes.OK).json({ message: "Tracking status fetched successfully", tracking });
+        } catch (error: any) {
+            next(error);
+        }
+    }
 }

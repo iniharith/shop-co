@@ -30,5 +30,8 @@ router.put("/:orderId", authMiddilware, orderController.updateOrderStatus.bind(o
 
 router.put("/:orderId/archive", authMiddilware, orderController.archiveOrder.bind(orderController));
 
+router.post("/:orderId/ship", authMiddilware, orderController.createShipment.bind(orderController));
+router.get("/:orderId/tracking", authMiddilware, orderController.getTracking.bind(orderController));
+
 export default router;
 

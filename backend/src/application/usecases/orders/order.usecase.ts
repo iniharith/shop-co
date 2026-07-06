@@ -14,6 +14,9 @@ import { RedisService } from "../../../infrastructure/redis/redis";
 import { REDIS_CHANNELS, REDIS_KEYS } from "../../../shared/constants/redis.constant";
 import { IUserDocument } from "../../../domain/interfaces/user.interface";
 import WhatsAppService from "../../../infrastructure/whatsapp/whatsapp.service";
+import { easyparcelService } from "../../../infrastructure/services/easyparcel.service";
+import { calculateOrderTotalWeight } from "../../utils/weightCalculator";
+
 export class OrderUsecase {
     private readonly orderRepository: OrderRepository
     private readonly productRepository: ProductRepository
@@ -232,6 +235,87 @@ export class OrderUsecase {
         return address;
     }
 
+    async createShipment(orderId: string): Promise<IOrderDocument> {
+        const order = await this.orderRepository.getOrderById(orderId);
+        if (!order) throw new Error("Order not found");
+        if (order.easyparcelAwb) throw new Error("Shipment already created for this order");
 
+        const weight = calculateOrderTotalWeight(order.products);
 
+        const epResult = await easyparcelService.submitOrder({
+            weight: weight.toString(),
+            content: 'Printing Materials / Custom Products',
+            value: order.totalAmount.toString(),
+            customerName: order.customerName,
+            customerPhone: (order.userId as any)?.phoneNumber || '0000000000',
+            address: order.address
+        });
+
+        const updatedOrder = await this.orderRepository.updateOrder(orderId, {
+            easyparcelOrderNo: epResult.orderNo,
+            easyparcelAwb: epResult.awb,
+            trackingNumber: epResult.awb,
+            orderStatus: 'SHIPPED' // Automatically update status
+        });
+
+        // Invalidate caches
+        await this.redisService.del(REDIS_KEYS.ORDERS);
+        await this.redisService.del(REDIS_KEYS.ORDERS + orderId);
+        if (order.userId) await this.redisService.del(REDIS_KEYS.ORDERS + (order.userId as any)?._id);
+
+        return updatedOrder as IOrderDocument;
+    }
+
+    async getTracking(orderId: string): Promise<any> {
+        const order = await this.orderRepository.getOrderById(orderId);
+        if (!order) throw new Error("Order not found");
+        if (!order.easyparcelAwb) throw new Error("No tracking number available for this order");
+
+        return await easyparcelService.getTrackingStatus(order.easyparcelAwb);
+    }
+
+    async processEasyParcelWebhook(payload: any): Promise<boolean> {
+        try {
+            const awb = payload.awb || payload.tracking_number;
+            const newStatus = payload.status || payload.status_name;
+
+            if (!awb || !newStatus) {
+                console.log("Invalid webhook payload:", payload);
+                return false;
+            }
+
+            const order = await this.orderRepository.getOrderByAwb(awb);
+            if (!order) {
+                console.log(`Order not found for AWB: ${awb}`);
+                return false;
+            }
+
+            let sysStatus = order.orderStatus;
+            if (newStatus.toLowerCase().includes('deliver')) {
+                sysStatus = 'DELIVERED';
+            } else if (newStatus.toLowerCase().includes('transit')) {
+                sysStatus = 'IN_TRANSIT';
+            }
+
+            if (sysStatus !== order.orderStatus) {
+                await this.orderRepository.updateOrder(order._id.toString(), { orderStatus: sysStatus });
+                
+                await this.redisService.del(REDIS_KEYS.ORDERS);
+                await this.redisService.del(REDIS_KEYS.ORDERS + order._id.toString());
+                if (order.userId) await this.redisService.del(REDIS_KEYS.ORDERS + (order.userId as any)?._id);
+            }
+
+            // WhatsApp Notification
+            const user = order.userId as any;
+            if (user && user.phoneNumber) {
+                const message = `*KAMPUNGCETAK ORDER UPDATE*\n\nHi ${order.customerName},\nYour order \`${order._id.toString().slice(-8).toUpperCase()}\` tracking status has been updated by EasyParcel.\n\n*Status:* ${newStatus}\n*AWB:* ${awb}\n\nYou can track your parcel live on our website!`;
+                await WhatsAppService.sendMessage(user.phoneNumber, message);
+            }
+
+            return true;
+        } catch (e) {
+            console.error("Webhook processing error:", e);
+            return false;
+        }
+    }
 }

@@ -165,5 +165,39 @@ class OrderController {
             }
         });
     }
+    /**
+     * @description Create EasyParcel Shipment
+     * @Method POST
+     * @Access PRIVATE
+     * @Route /api/orders/:orderId/ship
+     */
+    createShipment(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const order = yield this.orderUsecase.createShipment(req.params.orderId);
+                res.status(api_constant_1.statusCodes.OK).json({ message: "Shipment created successfully", order });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    /**
+     * @description Get live tracking status
+     * @Method GET
+     * @Access PRIVATE
+     * @Route /api/orders/:orderId/tracking
+     */
+    getTracking(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const tracking = yield this.orderUsecase.getTracking(req.params.orderId);
+                res.status(api_constant_1.statusCodes.OK).json({ message: "Tracking status fetched successfully", tracking });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
 }
 exports.OrderController = OrderController;

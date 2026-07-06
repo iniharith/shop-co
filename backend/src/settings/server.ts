@@ -9,6 +9,7 @@ import { config } from 'dotenv';
 import initProduct from '../shared/scripts/initProduct.script';
 import { initAdmin } from '../shared/scripts/initAdmin';
 import http from 'http';
+import productRouter from "../presentation/routes/product.route";
 import connectSocket from '../config/socket.config';
 import { RedisService } from '../infrastructure/redis/redis';
 import { REDIS_CHANNELS } from '../shared/constants/redis.constant';

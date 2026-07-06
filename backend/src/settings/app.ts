@@ -27,6 +27,7 @@ import userRoutes from '../presentation/routes/user.route';
 import sysadminRoutes from '../presentation/routes/sysadminRoutes';
 import chatRoutes from '../presentation/routes/chatRoutes';
 import appRoutes from '../presentation/routes/appRoutes';
+import webhookRouter from '../presentation/routes/webhook.route';
 import { bandwidthMiddleware } from '../shared/utils/bandwidthTracker';
 
 dotenv.config();
@@ -68,6 +69,7 @@ app.use('/api/user', userRoutes);
 app.use(apiRoutes.PRODUCT, productRoutes);
 app.use(apiRoutes.CART, cartRoutes);
 app.use(apiRoutes.ORDER, orderRoutes);
+app.use('/api/webhooks', webhookRouter);
 app.use(apiRoutes.ADMIN, adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/folders', virtualFolderRoutes);

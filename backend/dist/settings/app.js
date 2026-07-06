@@ -31,6 +31,7 @@ const user_route_1 = __importDefault(require("../presentation/routes/user.route"
 const sysadminRoutes_1 = __importDefault(require("../presentation/routes/sysadminRoutes"));
 const chatRoutes_1 = __importDefault(require("../presentation/routes/chatRoutes"));
 const appRoutes_1 = __importDefault(require("../presentation/routes/appRoutes"));
+const webhook_route_1 = __importDefault(require("../presentation/routes/webhook.route"));
 const bandwidthTracker_1 = require("../shared/utils/bandwidthTracker");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -63,6 +64,7 @@ app.use('/api/user', user_route_1.default);
 app.use(api_constant_1.apiRoutes.PRODUCT, product_route_1.default);
 app.use(api_constant_1.apiRoutes.CART, cart_route_1.default);
 app.use(api_constant_1.apiRoutes.ORDER, order_route_1.default);
+app.use('/api/webhooks', webhook_route_1.default);
 app.use(api_constant_1.apiRoutes.ADMIN, admin_route_1.default);
 app.use('/api/notifications', notification_route_1.default);
 app.use('/api/folders', virtualFolderRoutes_1.default);

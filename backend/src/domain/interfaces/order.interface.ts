@@ -25,6 +25,9 @@ export interface IAddress {
 
 export interface IOrder {
   userId: Types.ObjectId | IUser | string;
+  trackingNumber?: string;
+  easyparcelOrderNo?: string;
+  easyparcelAwb?: string;
   customerName: string;
   orderNotes?: string;
   products: IOrderedProduct[];

@@ -55,6 +55,8 @@ const TaskRepository_1 = require("../../../infrastructure/repositories/TaskRepos
 const redis_1 = require("../../../infrastructure/redis/redis");
 const redis_constant_1 = require("../../../shared/constants/redis.constant");
 const whatsapp_service_1 = __importDefault(require("../../../infrastructure/whatsapp/whatsapp.service"));
+const easyparcel_service_1 = require("../../../infrastructure/services/easyparcel.service");
+const weightCalculator_1 = require("../../utils/weightCalculator");
 class OrderUsecase {
     constructor() {
         this.orderRepository = new order_repository_1.OrderRepository();
@@ -256,6 +258,90 @@ class OrderUsecase {
             const address = yield this.orderRepository.getDistintValues(userId, "address");
             yield this.redisService.set(redis_constant_1.REDIS_KEYS.ADDRESS + userId, JSON.stringify(address), 60 * 60 * 24);
             return address;
+        });
+    }
+    createShipment(orderId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            const order = yield this.orderRepository.getOrderById(orderId);
+            if (!order)
+                throw new Error("Order not found");
+            if (order.easyparcelAwb)
+                throw new Error("Shipment already created for this order");
+            const weight = (0, weightCalculator_1.calculateOrderTotalWeight)(order.products);
+            const epResult = yield easyparcel_service_1.easyparcelService.submitOrder({
+                weight: weight.toString(),
+                content: 'Printing Materials / Custom Products',
+                value: order.totalAmount.toString(),
+                customerName: order.customerName,
+                customerPhone: ((_a = order.userId) === null || _a === void 0 ? void 0 : _a.phoneNumber) || '0000000000',
+                address: order.address
+            });
+            const updatedOrder = yield this.orderRepository.updateOrder(orderId, {
+                easyparcelOrderNo: epResult.orderNo,
+                easyparcelAwb: epResult.awb,
+                trackingNumber: epResult.awb,
+                orderStatus: 'SHIPPED' // Automatically update status
+            });
+            // Invalidate caches
+            yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS);
+            yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + orderId);
+            if (order.userId)
+                yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + ((_b = order.userId) === null || _b === void 0 ? void 0 : _b._id));
+            return updatedOrder;
+        });
+    }
+    getTracking(orderId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const order = yield this.orderRepository.getOrderById(orderId);
+            if (!order)
+                throw new Error("Order not found");
+            if (!order.easyparcelAwb)
+                throw new Error("No tracking number available for this order");
+            return yield easyparcel_service_1.easyparcelService.getTrackingStatus(order.easyparcelAwb);
+        });
+    }
+    processEasyParcelWebhook(payload) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            try {
+                const awb = payload.awb || payload.tracking_number;
+                const newStatus = payload.status || payload.status_name;
+                if (!awb || !newStatus) {
+                    console.log("Invalid webhook payload:", payload);
+                    return false;
+                }
+                const order = yield this.orderRepository.getOrderByAwb(awb);
+                if (!order) {
+                    console.log(`Order not found for AWB: ${awb}`);
+                    return false;
+                }
+                let sysStatus = order.orderStatus;
+                if (newStatus.toLowerCase().includes('deliver')) {
+                    sysStatus = 'DELIVERED';
+                }
+                else if (newStatus.toLowerCase().includes('transit')) {
+                    sysStatus = 'IN_TRANSIT';
+                }
+                if (sysStatus !== order.orderStatus) {
+                    yield this.orderRepository.updateOrder(order._id.toString(), { orderStatus: sysStatus });
+                    yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS);
+                    yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + order._id.toString());
+                    if (order.userId)
+                        yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + ((_a = order.userId) === null || _a === void 0 ? void 0 : _a._id));
+                }
+                // WhatsApp Notification
+                const user = order.userId;
+                if (user && user.phoneNumber) {
+                    const message = `*KAMPUNGCETAK ORDER UPDATE*\n\nHi ${order.customerName},\nYour order \`${order._id.toString().slice(-8).toUpperCase()}\` tracking status has been updated by EasyParcel.\n\n*Status:* ${newStatus}\n*AWB:* ${awb}\n\nYou can track your parcel live on our website!`;
+                    yield whatsapp_service_1.default.sendMessage(user.phoneNumber, message);
+                }
+                return true;
+            }
+            catch (e) {
+                console.error("Webhook processing error:", e);
+                return false;
+            }
         });
     }
 }

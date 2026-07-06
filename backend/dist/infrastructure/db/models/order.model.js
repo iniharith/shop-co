@@ -123,6 +123,14 @@ const OrderSchema = new mongoose_1.Schema({
         type: String,
         default: '',
     },
+    easyparcelOrderNo: {
+        type: String,
+        default: '',
+    },
+    easyparcelAwb: {
+        type: String,
+        default: '',
+    },
 }, { timestamps: true });
 const OrderModel = mongoose_1.default.model('Order', OrderSchema);
 exports.default = OrderModel;

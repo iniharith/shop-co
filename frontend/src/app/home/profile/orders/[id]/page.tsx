@@ -15,6 +15,7 @@ import OrderDetailsSkeleton from "@/components/loading/OrderDetailsSkeleton"
 import { OrderProgressTracker } from "@/components/global/order-progress-tracker"
 import { OrderStatusBadge } from "@/components/global/order-status-badge"
 import { getImageUrl } from "@/utils/getImageUrl"
+import { LiveTracking } from "@/components/global/LiveTracking"
 
 const OrderDetail = () => {
   const { id } = useParams()
@@ -110,6 +111,10 @@ const OrderDetail = () => {
         <h2 className="text-lg font-bold mb-4">Order Progress</h2>
         <OrderProgressTracker steps={orderSteps} currentStatus={order.orderStatus} />
       </Card>
+
+      {order.easyparcelAwb && (
+        <LiveTracking orderId={order._id} awb={order.easyparcelAwb} />
+      )}
 
       <div className="grid md:grid-cols-3 gap-8">
         {/* Order Items */}

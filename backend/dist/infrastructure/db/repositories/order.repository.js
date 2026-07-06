@@ -33,6 +33,11 @@ class OrderRepository {
             return yield this.orderModel.findById(orderId).populate("products.product").populate("userId");
         });
     }
+    getOrderByAwb(awb) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.orderModel.findOne({ easyparcelAwb: awb }).populate("products.product").populate("userId");
+        });
+    }
     createOrder(order) {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.orderModel.create(order);
