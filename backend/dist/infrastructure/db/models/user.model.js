@@ -34,7 +34,8 @@ const UserSchema = new mongoose_2.Schema({
         state: { type: String },
         zip: { type: String },
         country: { type: String }
-    }
+    },
+    expoPushToken: { type: String, default: null }
 }, { timestamps: true });
 UserSchema.pre("save", function (next) {
     return __awaiter(this, void 0, void 0, function* () {

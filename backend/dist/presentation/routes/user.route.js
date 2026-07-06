@@ -44,4 +44,15 @@ router.post("/profile/avatar", auth_middileware_1.default, uploadAvatar_middlewa
     yield user_model_1.default.findByIdAndUpdate(userId, { avatar: avatarUrl });
     res.json({ success: true, avatarUrl });
 })));
+router.put("/push-token", auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const userId = req.userId || ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id);
+    if (!userId)
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+    const { token } = req.body;
+    if (!token)
+        return res.status(400).json({ success: false, message: "Token is required" });
+    yield user_model_1.default.findByIdAndUpdate(userId, { expoPushToken: token });
+    res.json({ success: true, message: "Token updated" });
+})));
 exports.default = router;

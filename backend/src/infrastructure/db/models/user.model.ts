@@ -21,7 +21,8 @@ const UserSchema: Schema = new Schema({
         state: { type: String },
         zip: { type: String },
         country: { type: String }
-    }
+    },
+    expoPushToken: { type: String, default: null }
 }, { timestamps: true });
 
 

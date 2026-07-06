@@ -35,4 +35,14 @@ router.post("/profile/avatar", authMiddleware, uploadAvatar.single('avatar'), as
     res.json({ success: true, avatarUrl });
 }));
 
+
+router.put("/push-token", authMiddleware, asyncHandler(async (req: any, res: any) => {
+    const userId = req.userId || req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, message: "Unauthorized" });
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ success: false, message: "Token is required" });
+    await User.findByIdAndUpdate(userId, { expoPushToken: token });
+    res.json({ success: true, message: "Token updated" });
+}));
+
 export default router;

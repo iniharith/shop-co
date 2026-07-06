@@ -26,6 +26,7 @@ import whatsappWebhook from '../infrastructure/services/WhatsAppWebhookService';
 import userRoutes from '../presentation/routes/user.route';
 import sysadminRoutes from '../presentation/routes/sysadminRoutes';
 import chatRoutes from '../presentation/routes/chatRoutes';
+import appRoutes from '../presentation/routes/appRoutes';
 import { bandwidthMiddleware } from '../shared/utils/bandwidthTracker';
 
 dotenv.config();
@@ -81,6 +82,9 @@ app.use('/api/sysadmin', sysadminRoutes);
 // ─── WhatsApp Webhook (Meta callback verification) ───────
 // Callback URL: https://admin.kampungcetak.com/api/webhooks/whatsapp
 app.use('/api/webhooks/whatsapp', whatsappWebhook);
+
+// Mobile App Routes
+app.use('/api/app', appRoutes);
 
 // ─── Admin Panel (served at admin.kampungcetak.com) ──────
 const adminPath = path.join(__dirname, '../../admin');

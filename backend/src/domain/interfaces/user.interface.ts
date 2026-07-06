@@ -20,6 +20,7 @@ export interface IUser {
         zip?: string;
         country?: string;
     };
+    expoPushToken?: string;
 }
 
 

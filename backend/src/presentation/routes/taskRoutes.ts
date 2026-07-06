@@ -15,6 +15,7 @@ import { NotificationRepository } from '../../infrastructure/db/repositories/not
 import { FileUpload } from '../../domain/entities/FileUpload';
 import { RedisService } from '../../infrastructure/redis/redis';
 import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
+import { sendPushNotification } from '../../services/pushNotification.service';
 
 const redisService = new RedisService();
 
