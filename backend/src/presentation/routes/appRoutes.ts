@@ -10,7 +10,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     res.json({
       success: true,
-      version: '1.7.5',
+      version: '1.7.7',
       apkUrl: 'https://admin.kampungcetak.com/downloads/app-release.apk',
       forceUpdate: false,
       message: 'New update available!',
