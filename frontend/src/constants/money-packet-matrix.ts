@@ -1,7 +1,3 @@
-/**
- * Coded by Harith
- * Kampungcetak ®
- */
 export const moneyPacketMatrixPricing = [
   {
     "material": "Portrait (Vertical)",

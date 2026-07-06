@@ -3296,7 +3296,7 @@ export const dummyProducts: any[] = [
     ]
   },
   {
-      "_id": "prod-114",
+      "_id": "prod-141",
       "name": "Paper Bag",
       "description": "Premium paper bags with your custom design, perfect for retail, events, and corporate gifts. Available in various sizes and materials.",
       "price": 0,
@@ -3306,97 +3306,41 @@ export const dummyProducts: any[] = [
       "reviews": 128,
       "category": "paper-bag",
       "images": [
-            "/images/products/digital_printing.png"
+        "/images/products/digital_printing.png"
       ],
       "printingOptions": [
-            {
-                  "name": "Material",
-                  "isMultiSelect": false,
-                  "options": [
-                        {
-                              "label": "157gsm Art Paper",
-                              "priceAdd": 0
-                        },
-                        {
-                              "label": "210gsm Art Card",
-                              "priceAdd": 0
-                        }
-                  ]
-            },
-            {
-                  "name": "Lamination",
-                  "isMultiSelect": false,
-                  "options": [
-                        {
-                              "label": "1 Side Gloss Lamination",
-                              "priceAdd": 0
-                        },
-                        {
-                              "label": "1 Side Matt Lamination",
-                              "priceAdd": 0
-                        },
-                        {
-                              "label": "1 Side Matt Lamination + 1 Side Spot UV",
-                              "priceAdd": 0
-                        }
-                  ]
-            },
-            {
-                  "name": "Size",
-                  "isMultiSelect": false,
-                  "options": [
-                        {
-                              "label": "PB01 (203mm H x 180mm W x 80mm G)",
-                              "priceAdd": 0
-                        },
-                        {
-                              "label": "PB02 (203mm H x 222mm W x 80mm G)",
-                              "priceAdd": 0
-                        },
-                        {
-                              "label": "PB03 (343mm H x 220mm W x 80mm G)",
-                              "priceAdd": 0
-                        },
-                        {
-                              "label": "PB04 (380mm H x 350mm W x 100mm G)",
-                              "priceAdd": 0
-                        },
-                        {
-                              "label": "PB05 (432mm H x 305mm W x 140mm G)",
-                              "priceAdd": 0
-                        },
-                        {
-                              "label": "PB06 (210mm H x 250mm W x 110mm G)",
-                              "priceAdd": 0
-                        },
-                        {
-                              "label": "PB07 (210mm H x 250mm W x 90mm G)",
-                              "priceAdd": 0
-                        },
-                        {
-                              "label": "PB08 (135mm H x 175mm W x 80mm G)",
-                              "priceAdd": 0
-                        },
-                        {
-                              "label": "PB09 (340mm H x 250mm W x 120mm G)",
-                              "priceAdd": 0
-                        },
-                        {
-                              "label": "PB10 (200mm H x 310mm W x 110mm G)",
-                              "priceAdd": 0
-                        }
-                  ]
-            }
+        {
+          "name": "Material",
+          "isMultiSelect": false,
+          "options": [
+            { "label": "157gsm Art Paper", "priceAdd": 0 },
+            { "label": "210gsm Art Card", "priceAdd": 0 }
+          ]
+        },
+        {
+          "name": "Lamination",
+          "isMultiSelect": false,
+          "options": [
+            { "label": "1 Side Gloss Lamination", "priceAdd": 0 },
+            { "label": "1 Side Matt Lamination", "priceAdd": 0 },
+            { "label": "1 Side Matt Lamination + 1 Side Spot UV", "priceAdd": 0 }
+          ]
+        },
+        {
+          "name": "Design",
+          "isMultiSelect": false,
+          "options": [{"label":"PB01","priceAdd":0},{"label":"PB02","priceAdd":0},{"label":"PB03","priceAdd":0},{"label":"PB04","priceAdd":0},{"label":"PB05","priceAdd":0},{"label":"PB06","priceAdd":0},{"label":"PB07","priceAdd":0},{"label":"PB08","priceAdd":0},{"label":"PB09","priceAdd":0},{"label":"PB10","priceAdd":0}]
+        }
       ],
       "matrixPricing": {
-            "enabled": true,
-            "hideQuantityGrid": false,
-            "pricingData": [
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB01 (203mm H x 180mm W x 80mm G)",
-                        "quantityPrices": {
+        "enabled": true,
+        "hideQuantityGrid": false,
+        "pricingData": [
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB01",
+                    "quantityPrices": {
                               "100": 860.2,
                               "200": 958.2,
                               "300": 1055.8,
@@ -3412,13 +3356,13 @@ export const dummyProducts: any[] = [
                               "8000": 10351.8,
                               "9000": 11593.2,
                               "10000": 12688.2
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB02 (203mm H x 222mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB02 ",
+                    "quantityPrices": {
                               "100": 880,
                               "200": 987.4,
                               "300": 1095,
@@ -3434,13 +3378,13 @@ export const dummyProducts: any[] = [
                               "8000": 13323.4,
                               "9000": 14975.6,
                               "10000": 16480.6
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB03 (343mm H x 220mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB03",
+                    "quantityPrices": {
                               "100": 938.6,
                               "200": 1055.8,
                               "300": 1222,
@@ -3456,13 +3400,13 @@ export const dummyProducts: any[] = [
                               "8000": 15816.2,
                               "9000": 17673.2,
                               "10000": 19530.6
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB04 (380mm H x 350mm W x 100mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB04",
+                    "quantityPrices": {
                               "100": 1554.4,
                               "200": 1828,
                               "300": 2131.2,
@@ -3478,13 +3422,13 @@ export const dummyProducts: any[] = [
                               "8000": 23118,
                               "9000": 25806,
                               "10000": 28523.6
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB05 (432mm H x 305mm W x 140mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB05",
+                    "quantityPrices": {
                               "100": 1554.4,
                               "200": 1828,
                               "300": 2131.2,
@@ -3500,13 +3444,13 @@ export const dummyProducts: any[] = [
                               "8000": 23118,
                               "9000": 25806,
                               "10000": 28523.6
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB06 (210mm H x 250mm W x 110mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB06",
+                    "quantityPrices": {
                               "100": 1049.4,
                               "200": 1133.2,
                               "300": 1238,
@@ -3522,13 +3466,13 @@ export const dummyProducts: any[] = [
                               "8000": 15022.8,
                               "9000": 16846.8,
                               "10000": 18672.4
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB07 (210mm H x 250mm W x 90mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB07",
+                    "quantityPrices": {
                               "100": 1049.4,
                               "200": 1133.2,
                               "300": 1238,
@@ -3544,13 +3488,13 @@ export const dummyProducts: any[] = [
                               "8000": 15022.8,
                               "9000": 16846.8,
                               "10000": 18672.4
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB08 (135mm H x 175mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB08",
+                    "quantityPrices": {
                               "100": 1040.8,
                               "200": 1102.4,
                               "300": 1192.2,
@@ -3566,13 +3510,13 @@ export const dummyProducts: any[] = [
                               "8000": 10327.6,
                               "9000": 11539.6,
                               "10000": 12812.8
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB09 (340mm H x 250mm W x 120mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB09",
+                    "quantityPrices": {
                               "100": 1076.2,
                               "200": 1209.8,
                               "300": 1457.2,
@@ -3588,13 +3532,13 @@ export const dummyProducts: any[] = [
                               "8000": 18907.4,
                               "9000": 21179.2,
                               "10000": 23224.2
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB10 (200mm H x 310mm W x 110mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB10",
+                    "quantityPrices": {
                               "100": 1065.2,
                               "200": 1147.8,
                               "300": 1251.8,
@@ -3610,13 +3554,13 @@ export const dummyProducts: any[] = [
                               "8000": 14656.4,
                               "9000": 16462,
                               "10000": 18206.8
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB01 (203mm H x 180mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB01",
+                    "quantityPrices": {
                               "100": 889.6,
                               "200": 987.4,
                               "300": 1085.2,
@@ -3632,13 +3576,13 @@ export const dummyProducts: any[] = [
                               "8000": 10811.2,
                               "9000": 12111.4,
                               "10000": 13264.8
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB02 (203mm H x 222mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB02",
+                    "quantityPrices": {
                               "100": 909.2,
                               "200": 1016.6,
                               "300": 1124.2,
@@ -3654,13 +3598,13 @@ export const dummyProducts: any[] = [
                               "8000": 13949,
                               "9000": 15679.2,
                               "10000": 17262.6
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB03 (343mm H x 220mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB03",
+                    "quantityPrices": {
                               "100": 967.8,
                               "200": 1085.2,
                               "300": 1261,
@@ -3676,13 +3620,13 @@ export const dummyProducts: any[] = [
                               "8000": 16617.6,
                               "9000": 18572.6,
                               "10000": 20517.8
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB04 (380mm H x 350mm W x 100mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB04",
+                    "quantityPrices": {
                               "100": 1583.6,
                               "200": 1886.6,
                               "300": 2199.4,
@@ -3698,13 +3642,13 @@ export const dummyProducts: any[] = [
                               "8000": 24525.6,
                               "9000": 27370,
                               "10000": 30283.2
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB05 (432mm H x 305mm W x 140mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB05",
+                    "quantityPrices": {
                               "100": 1583.6,
                               "200": 1886.6,
                               "300": 2199.4,
@@ -3720,13 +3664,13 @@ export const dummyProducts: any[] = [
                               "8000": 24525.6,
                               "9000": 27370,
                               "10000": 30283.2
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB06 (210mm H x 250mm W x 110mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB06",
+                    "quantityPrices": {
                               "100": 1049.4,
                               "200": 1133.2,
                               "300": 1238,
@@ -3742,13 +3686,13 @@ export const dummyProducts: any[] = [
                               "8000": 15022.8,
                               "9000": 16846.8,
                               "10000": 18672.4
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB07 (210mm H x 250mm W x 90mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB07",
+                    "quantityPrices": {
                               "100": 1049.4,
                               "200": 1133.2,
                               "300": 1238,
@@ -3764,13 +3708,13 @@ export const dummyProducts: any[] = [
                               "8000": 15022.8,
                               "9000": 16846.8,
                               "10000": 18672.4
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB08 (135mm H x 175mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB08",
+                    "quantityPrices": {
                               "100": 1040.8,
                               "200": 1102.4,
                               "300": 1192.2,
@@ -3786,13 +3730,13 @@ export const dummyProducts: any[] = [
                               "8000": 10327.6,
                               "9000": 11539.6,
                               "10000": 12812.8
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB09 (340mm H x 250mm W x 120mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB09",
+                    "quantityPrices": {
                               "100": 1076.2,
                               "200": 1209.8,
                               "300": 1457.2,
@@ -3808,13 +3752,13 @@ export const dummyProducts: any[] = [
                               "8000": 18907.4,
                               "9000": 21179.2,
                               "10000": 23224.2
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB10 (200mm H x 310mm W x 110mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB10",
+                    "quantityPrices": {
                               "100": 1065.2,
                               "200": 1147.8,
                               "300": 1251.8,
@@ -3830,13 +3774,13 @@ export const dummyProducts: any[] = [
                               "8000": 14656.4,
                               "9000": 16462,
                               "10000": 18206.8
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB01 (203mm H x 180mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB01",
+                    "quantityPrices": {
                               "100": 1486,
                               "200": 1583.6,
                               "300": 1681.6,
@@ -3852,13 +3796,13 @@ export const dummyProducts: any[] = [
                               "8000": 14085.8,
                               "9000": 15728,
                               "10000": 17223.6
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB02 (203mm H x 222mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB02",
+                    "quantityPrices": {
                               "100": 1652,
                               "200": 1749.8,
                               "300": 1857.4,
@@ -3874,13 +3818,13 @@ export const dummyProducts: any[] = [
                               "8000": 18181.6,
                               "9000": 20390.6,
                               "10000": 22433.8
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB03 (343mm H x 220mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB03",
+                    "quantityPrices": {
                               "100": 1701,
                               "200": 1818.2,
                               "300": 2045,
@@ -3896,13 +3840,13 @@ export const dummyProducts: any[] = [
                               "8000": 21857.2,
                               "9000": 24408.2,
                               "10000": 26949.8
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB04 (380mm H x 350mm W x 100mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB04",
+                    "quantityPrices": {
                               "100": 2874,
                               "200": 3196.6,
                               "300": 3519,
@@ -3918,13 +3862,13 @@ export const dummyProducts: any[] = [
                               "8000": 33460,
                               "9000": 37379.6,
                               "10000": 41328.8
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB05 (432mm H x 305mm W x 140mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB05",
+                    "quantityPrices": {
                               "100": 2874,
                               "200": 3196.6,
                               "300": 3519,
@@ -3940,13 +3884,13 @@ export const dummyProducts: any[] = [
                               "8000": 33460,
                               "9000": 37379.6,
                               "10000": 41328.8
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB06 (210mm H x 250mm W x 110mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB06",
+                    "quantityPrices": {
                               "100": 1670.4,
                               "200": 1754.2,
                               "300": 1859,
@@ -3962,13 +3906,13 @@ export const dummyProducts: any[] = [
                               "8000": 18107.6,
                               "9000": 20288.6,
                               "10000": 22471
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB07 (210mm H x 250mm W x 90mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB07",
+                    "quantityPrices": {
                               "100": 1670.4,
                               "200": 1754.2,
                               "300": 1859,
@@ -3984,13 +3928,13 @@ export const dummyProducts: any[] = [
                               "8000": 18107.6,
                               "9000": 20288.6,
                               "10000": 22471
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB08 (135mm H x 175mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB08",
+                    "quantityPrices": {
                               "100": 1661.8,
                               "200": 1723.4,
                               "300": 1813.2,
@@ -4006,13 +3950,13 @@ export const dummyProducts: any[] = [
                               "8000": 11988.6,
                               "9000": 13379.2,
                               "10000": 14831.6
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB09 (340mm H x 250mm W x 120mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB09",
+                    "quantityPrices": {
                               "100": 1697.2,
                               "200": 1830.8,
                               "300": 2078.2,
@@ -4028,13 +3972,13 @@ export const dummyProducts: any[] = [
                               "8000": 23429.8,
                               "9000": 26238,
                               "10000": 28819.6
-                        }
-                  },
-                  {
-                        "material": "157gsm Art Paper",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB10 (200mm H x 310mm W x 110mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "157gsm Art Paper",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB10",
+                    "quantityPrices": {
                               "100": 1686.2,
                               "200": 1768.8,
                               "300": 1872.8,
@@ -4050,13 +3994,13 @@ export const dummyProducts: any[] = [
                               "8000": 17663.6,
                               "9000": 19816.4,
                               "10000": 21908.4
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB01 (203mm H x 180mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB01",
+                    "quantityPrices": {
                               "100": 958.2,
                               "200": 1075.4,
                               "300": 1182.8,
@@ -4072,13 +4016,13 @@ export const dummyProducts: any[] = [
                               "8000": 11691.2,
                               "9000": 13137.6,
                               "10000": 14467
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB02 (203mm H x 222mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB02",
+                    "quantityPrices": {
                               "100": 977.6,
                               "200": 1095,
                               "300": 1222,
@@ -4094,13 +4038,13 @@ export const dummyProducts: any[] = [
                               "8000": 15366.6,
                               "9000": 17204,
                               "10000": 19081
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB03 (343mm H x 220mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB03",
+                    "quantityPrices": {
                               "100": 997,
                               "200": 1153.6,
                               "300": 1349.2,
@@ -4116,13 +4060,13 @@ export const dummyProducts: any[] = [
                               "8000": 18084,
                               "9000": 20214.8,
                               "10000": 22482.6
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB04 (380mm H x 350mm W x 100mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB04",
+                    "quantityPrices": {
                               "100": 1681.6,
                               "200": 2023.6,
                               "300": 2385.2,
@@ -4138,13 +4082,13 @@ export const dummyProducts: any[] = [
                               "8000": 29129.6,
                               "9000": 32648.6,
                               "10000": 36167.6
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB05 (432mm H x 305mm W x 140mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB05",
+                    "quantityPrices": {
                               "100": 1681.6,
                               "200": 2023.6,
                               "300": 2385.2,
@@ -4160,13 +4104,13 @@ export const dummyProducts: any[] = [
                               "8000": 29129.6,
                               "9000": 32648.6,
                               "10000": 36167.6
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB06 (210mm H x 250mm W x 110mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB06",
+                    "quantityPrices": {
                               "100": 1072.6,
                               "200": 1171.8,
                               "300": 1292.2,
@@ -4182,13 +4126,13 @@ export const dummyProducts: any[] = [
                               "8000": 16313,
                               "9000": 18296.4,
                               "10000": 20281.8
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB07 (210mm H x 250mm W x 90mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB07",
+                    "quantityPrices": {
                               "100": 1072.6,
                               "200": 1171.8,
                               "300": 1292.2,
@@ -4204,13 +4148,13 @@ export const dummyProducts: any[] = [
                               "8000": 16313,
                               "9000": 18296.4,
                               "10000": 20281.8
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB08 (135mm H x 175mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB08",
+                    "quantityPrices": {
                               "100": 1060.2,
                               "200": 1129.6,
                               "300": 1227,
@@ -4226,13 +4170,13 @@ export const dummyProducts: any[] = [
                               "8000": 10987,
                               "9000": 12278.6,
                               "10000": 13631.8
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB09 (340mm H x 250mm W x 120mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB09",
+                    "quantityPrices": {
                               "100": 1111,
                               "200": 1267.8,
                               "300": 1538.6,
@@ -4248,13 +4192,13 @@ export const dummyProducts: any[] = [
                               "8000": 20842.8,
                               "9000": 23353.8,
                               "10000": 25638.2
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Gloss Lamination",
-                        "design": "PB10 (200mm H x 310mm W x 110mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Gloss Lamination",
+                    "design": "PB10",
+                    "quantityPrices": {
                               "100": 1105,
                               "200": 1207.6,
                               "300": 1331.4,
@@ -4270,13 +4214,13 @@ export const dummyProducts: any[] = [
                               "8000": 16590.6,
                               "9000": 18633.4,
                               "10000": 20615.6
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB01 (203mm H x 180mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB01",
+                    "quantityPrices": {
                               "100": 987.4,
                               "200": 1104.6,
                               "300": 1212.2,
@@ -4292,13 +4236,13 @@ export const dummyProducts: any[] = [
                               "8000": 12121,
                               "9000": 13646.2,
                               "10000": 15053.6
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB02 (203mm H x 222mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB02",
+                    "quantityPrices": {
                               "100": 1007,
                               "200": 1124.2,
                               "300": 1251.2,
@@ -4314,13 +4258,13 @@ export const dummyProducts: any[] = [
                               "8000": 15992.2,
                               "9000": 17927.6,
                               "10000": 19863
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB03 (343mm H x 220mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB03",
+                    "quantityPrices": {
                               "100": 1026.4,
                               "200": 1182.8,
                               "300": 1388,
@@ -4336,13 +4280,13 @@ export const dummyProducts: any[] = [
                               "8000": 18885.6,
                               "9000": 21114,
                               "10000": 23460
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB04 (380mm H x 350mm W x 100mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB04",
+                    "quantityPrices": {
                               "100": 1710.8,
                               "200": 2072.6,
                               "300": 2453.6,
@@ -4358,13 +4302,13 @@ export const dummyProducts: any[] = [
                               "8000": 30693.6,
                               "9000": 34290.8,
                               "10000": 38122.6
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB05 (432mm H x 305mm W x 140mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB05",
+                    "quantityPrices": {
                               "100": 1710.8,
                               "200": 2072.6,
                               "300": 2453.6,
@@ -4380,13 +4324,13 @@ export const dummyProducts: any[] = [
                               "8000": 30693.6,
                               "9000": 34290.8,
                               "10000": 38122.6
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB06 (210mm H x 250mm W x 110mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB06",
+                    "quantityPrices": {
                               "100": 1072.6,
                               "200": 1171.8,
                               "300": 1292.2,
@@ -4402,13 +4346,13 @@ export const dummyProducts: any[] = [
                               "8000": 16313,
                               "9000": 18296.4,
                               "10000": 20281.8
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB07 (210mm H x 250mm W x 90mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB07",
+                    "quantityPrices": {
                               "100": 1072.6,
                               "200": 1171.8,
                               "300": 1292.2,
@@ -4424,13 +4368,13 @@ export const dummyProducts: any[] = [
                               "8000": 16313,
                               "9000": 18296.4,
                               "10000": 20281.8
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB08 (135mm H x 175mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB08",
+                    "quantityPrices": {
                               "100": 1060.2,
                               "200": 1129.6,
                               "300": 1227,
@@ -4446,13 +4390,13 @@ export const dummyProducts: any[] = [
                               "8000": 10987,
                               "9000": 12278.6,
                               "10000": 13631.8
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB09 (340mm H x 250mm W x 120mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB09",
+                    "quantityPrices": {
                               "100": 1111,
                               "200": 1267.8,
                               "300": 1538.6,
@@ -4468,13 +4412,13 @@ export const dummyProducts: any[] = [
                               "8000": 20842.8,
                               "9000": 23353.8,
                               "10000": 25638.2
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination",
-                        "design": "PB10 (200mm H x 310mm W x 110mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination",
+                    "design": "PB10",
+                    "quantityPrices": {
                               "100": 1105,
                               "200": 1207.6,
                               "300": 1331.4,
@@ -4490,13 +4434,13 @@ export const dummyProducts: any[] = [
                               "8000": 16590.6,
                               "9000": 18633.4,
                               "10000": 20615.6
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB01 (203mm H x 180mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB01",
+                    "quantityPrices": {
                               "100": 1583.6,
                               "200": 1701,
                               "300": 1808.4,
@@ -4512,13 +4456,13 @@ export const dummyProducts: any[] = [
                               "8000": 15327.2,
                               "9000": 17165.2,
                               "10000": 18905
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB02 (203mm H x 222mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB02",
+                    "quantityPrices": {
                               "100": 1740.2,
                               "200": 1857.4,
                               "300": 1984.4,
@@ -4534,13 +4478,13 @@ export const dummyProducts: any[] = [
                               "8000": 20234.4,
                               "9000": 22639.2,
                               "10000": 25024
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB03 (343mm H x 220mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB03",
+                    "quantityPrices": {
                               "100": 1769.4,
                               "200": 1916.2,
                               "300": 2170,
@@ -4556,13 +4500,13 @@ export const dummyProducts: any[] = [
                               "8000": 24124.8,
                               "9000": 26940.2,
                               "10000": 29892.2
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB04 (380mm H x 350mm W x 100mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB04",
+                    "quantityPrices": {
                               "100": 3010.8,
                               "200": 3392,
                               "300": 3773.2,
@@ -4578,13 +4522,13 @@ export const dummyProducts: any[] = [
                               "8000": 40195,
                               "9000": 44906.6,
                               "10000": 49891.6
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB05 (432mm H x 305mm W x 140mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB05",
+                    "quantityPrices": {
                               "100": 3010.8,
                               "200": 3392,
                               "300": 3773.2,
@@ -4600,13 +4544,13 @@ export const dummyProducts: any[] = [
                               "8000": 40195,
                               "9000": 44906.6,
                               "10000": 49891.6
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB06 (210mm H x 250mm W x 110mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB06",
+                    "quantityPrices": {
                               "100": 1693.6,
                               "200": 1792.8,
                               "300": 1913.2,
@@ -4622,13 +4566,13 @@ export const dummyProducts: any[] = [
                               "8000": 19397.8,
                               "9000": 21738.2,
                               "10000": 24080.4
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB07 (210mm H x 250mm W x 90mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB07",
+                    "quantityPrices": {
                               "100": 1693.6,
                               "200": 1792.8,
                               "300": 1913.2,
@@ -4644,13 +4588,13 @@ export const dummyProducts: any[] = [
                               "8000": 19397.8,
                               "9000": 21738.2,
                               "10000": 24080.4
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB08 (135mm H x 175mm W x 80mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB08",
+                    "quantityPrices": {
                               "100": 1681.2,
                               "200": 1750.6,
                               "300": 1848,
@@ -4666,13 +4610,13 @@ export const dummyProducts: any[] = [
                               "8000": 12648,
                               "9000": 14118.2,
                               "10000": 15650.6
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB09 (340mm H x 250mm W x 120mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB09",
+                    "quantityPrices": {
                               "100": 1732,
                               "200": 1888.8,
                               "300": 2159.6,
@@ -4688,13 +4632,13 @@ export const dummyProducts: any[] = [
                               "8000": 25365.2,
                               "9000": 28412.6,
                               "10000": 31233.6
-                        }
-                  },
-                  {
-                        "material": "210gsm Art Card",
-                        "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
-                        "design": "PB10 (200mm H x 310mm W x 110mm G)",
-                        "quantityPrices": {
+                    }
+          },
+          {
+                    "material": "210gsm Art Card",
+                    "lamination": "1 Side Matt Lamination + 1 Side Spot UV",
+                    "design": "PB10",
+                    "quantityPrices": {
                               "100": 1726,
                               "200": 1828.6,
                               "300": 1952.4,
@@ -4710,11 +4654,11 @@ export const dummyProducts: any[] = [
                               "8000": 19870.6,
                               "9000": 22294.6,
                               "10000": 24658
-                        }
-                  }
-            ]
+                    }
+          }
+]
       }
-},
+    },
   {
     "_id": "prod-115",
     "name": "Certificate",
@@ -10295,4 +10239,203 @@ export const dummyProducts: any[] = [
       "Standard"
     ]
   }
+,
+  {
+    "_id": "prod-259",
+    "name": "Personalised Flag",
+    "description": "High-quality Personalised Flag with premium materials and vibrant printing. Perfect for display item needs.",
+    "price": 255,
+    "originalPrice": 306,
+    "discount": 20,
+    "rating": 4.8,
+    "reviews": 42,
+    "category": "display-item",
+    "images": ["/images/products/display_item.png"],
+    "colors": ["Standard"],
+    "sizes": ["Standard"],
+    "printingOptions": [
+      {
+        "name": "Type & Size",
+        "options": [
+          { "label": "Standard", "priceAdd": 0 }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "prod-260",
+    "name": "Popup Backdrop",
+    "description": "High-quality Popup Backdrop with premium materials and vibrant printing. Perfect for display item needs.",
+    "price": 1700,
+    "originalPrice": 2040,
+    "discount": 20,
+    "rating": 4.8,
+    "reviews": 42,
+    "category": "display-item",
+    "images": ["/images/products/display_item.png"],
+    "colors": ["Standard"],
+    "sizes": ["Standard"],
+    "printingOptions": [
+      {
+        "name": "Type & Size",
+        "options": [
+          { "label": "Standard", "priceAdd": 0 }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "prod-261",
+    "name": "Popup Table",
+    "description": "High-quality Popup Table with premium materials and vibrant printing. Perfect for display item needs.",
+    "price": 500,
+    "originalPrice": 600,
+    "discount": 20,
+    "rating": 4.8,
+    "reviews": 42,
+    "category": "display-item",
+    "images": ["/images/products/display_item.png"],
+    "colors": ["Standard"],
+    "sizes": ["Standard"],
+    "printingOptions": [
+      {
+        "name": "Type & Size",
+        "options": [
+          { "label": "Standard", "priceAdd": 0 }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "prod-262",
+    "name": "Promotion Counter",
+    "description": "High-quality Promotion Counter with premium materials and vibrant printing. Perfect for display item needs.",
+    "price": 300,
+    "originalPrice": 360,
+    "discount": 20,
+    "rating": 4.8,
+    "reviews": 42,
+    "category": "display-item",
+    "images": ["/images/products/display_item.png"],
+    "colors": ["Standard"],
+    "sizes": ["Standard"],
+    "printingOptions": [
+      {
+        "name": "Type & Size",
+        "options": [
+          { "label": "Standard", "priceAdd": 0 }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "prod-263",
+    "name": "Roll Up Bunting",
+    "description": "High-quality Roll Up Bunting with premium materials and vibrant printing. Perfect for display item needs.",
+    "price": 130,
+    "originalPrice": 156,
+    "discount": 20,
+    "rating": 4.8,
+    "reviews": 42,
+    "category": "display-item",
+    "images": ["/images/products/display_item.png"],
+    "colors": ["Standard"],
+    "sizes": ["Standard"],
+    "printingOptions": [
+      {
+        "name": "Type & Size",
+        "options": [
+          { "label": "Standard", "priceAdd": 0 }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "prod-264",
+    "name": "Wind Flag",
+    "description": "High-quality Wind Flag with premium materials and vibrant printing. Perfect for display item needs.",
+    "price": 222,
+    "originalPrice": 266,
+    "discount": 20,
+    "rating": 4.8,
+    "reviews": 42,
+    "category": "display-item",
+    "images": ["/images/products/display_item.png"],
+    "colors": ["Standard"],
+    "sizes": ["Standard"],
+    "printingOptions": [
+      {
+        "name": "Type & Size",
+        "options": [
+          { "label": "Standard", "priceAdd": 0 }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "prod-265",
+    "name": "Human Standee",
+    "description": "High-quality Human Standee with premium materials and vibrant printing. Perfect for display item needs.",
+    "price": 350,
+    "originalPrice": 420,
+    "discount": 20,
+    "rating": 4.8,
+    "reviews": 42,
+    "category": "display-item",
+    "images": ["/images/products/display_item.png"],
+    "colors": ["Standard"],
+    "sizes": ["Standard"],
+    "printingOptions": [
+      {
+        "name": "Type & Size",
+        "options": [
+          { "label": "Standard", "priceAdd": 0 }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "prod-266",
+    "name": "Tripod Stand",
+    "description": "High-quality Tripod Stand with premium materials and vibrant printing. Perfect for display item needs.",
+    "price": 55,
+    "originalPrice": 66,
+    "discount": 20,
+    "rating": 4.8,
+    "reviews": 42,
+    "category": "display-item",
+    "images": ["/images/products/display_item.png"],
+    "colors": ["Standard"],
+    "sizes": ["Standard"],
+    "printingOptions": [
+      {
+        "name": "Type & Size",
+        "options": [
+          { "label": "Standard", "priceAdd": 0 }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "prod-267",
+    "name": "Water Bag",
+    "description": "High-quality Water Bag with premium materials and vibrant printing. Perfect for display item needs.",
+    "price": 35,
+    "originalPrice": 42,
+    "discount": 20,
+    "rating": 4.8,
+    "reviews": 42,
+    "category": "display-item",
+    "images": ["/images/products/display_item.png"],
+    "colors": ["Standard"],
+    "sizes": ["Standard"],
+    "printingOptions": [
+      {
+        "name": "Type & Size",
+        "options": [
+          { "label": "Standard", "priceAdd": 0 }
+        ]
+      }
+    ]
+  },
 ];
