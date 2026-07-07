@@ -230,13 +230,17 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const combinedFiles = React.useMemo(() => {
     let files = [...(task?.files || [])];
     
-    // Add customer uploaded files from share link
+    // Add customer uploaded files from share link or public upload portal
     const allFiles = (allFilesData as any)?.data || [];
     const customerFiles = allFiles.filter((f: any) => {
       // Don't duplicate if already in task.files (by some chance)
       if (files.some(tf => tf.url === f.path)) return false;
       
-      return (f.shareSlug && (f.shareSlug === task.title || f.shareSlug === task.customerUsername || f.shareSlug === task.orderId)) ||
+      // Auto-sync files matching the task's Order ID and Customer Username
+      const matchesOrderAndUser = Boolean(task.orderId && task.customerUsername && f.orderId === task.orderId && f.userId === task.customerUsername);
+      
+      return matchesOrderAndUser ||
+             (f.shareSlug && (f.shareSlug === task.title || f.shareSlug === task.customerUsername || f.shareSlug === task.orderId)) ||
              (f.taskId === task._id) ||
              (task.orderId && f.orderId === task.orderId && f.category === 'artwork') ||
              (task.customerUsername && f._shareFolderName === task.customerUsername);

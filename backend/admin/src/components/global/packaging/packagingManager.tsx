@@ -518,251 +518,150 @@ export default function PackagingManager() {
       </Tabs>
 
       {groupedFiles.length === 0 ? (
-        <div className="p-8 text-center text-muted-foreground border border-dashed rounded-xl">
+        <div className="p-8 text-center text-muted-foreground border border-dashed rounded-xl bg-card">
           No files in packaging right now.
         </div>
-      ) : selectedFolder ? (
-        // --- INSIDE A FOLDER ---
-        <div className="space-y-4">
-          {(() => {
-            const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId || ""}` === selectedFolder);
-            if (!activeGroup) {
-              setTimeout(() => setSelectedFolder(null), 0);
-              return null;
-            }
-            return (
-              <>
-                <div className="flex items-center gap-4 mb-4 pb-4 border-b">
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedFolder(null)}>
-                    <ChevronLeft className="w-4 h-4 mr-1" /> Back
-                  </Button>
-                  <div>
-                    <h2 className="text-lg font-bold flex items-center gap-2">
-                      <Folder className="w-5 h-5 text-primary" />
-                      {activeGroup.folderName}
-                    </h2>
-                    {(activeGroup.orderId || activeGroup.taskId) && (
-                      <p className="text-[14.4px] font-bold text-foreground/80">
-                        {activeGroup.taskId ? `Task ID: ${activeGroup.taskId}` : `Order ID: ${activeGroup.orderId}`}
-                      </p>
-                    )}
-                    
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="text-xs font-semibold">Change Status:</span>
-                      <select 
-                        className="h-8 text-xs bg-background border border-border/50 rounded px-2 focus:ring-0"
-                        value={activeGroup.orderStatus}
-                        onChange={(e) => handleStatusChange(activeGroup, e.target.value)}
-                        disabled={isUpdatingStatus}
-                      >
-                        {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'].map(s => (
-                          <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
-                        ))}
-                      </select>
+      ) : (
+        <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-220px)] min-h-[600px]">
+          
+          {/* LEFT PANEL (MASTER) */}
+          <div className="w-full lg:w-1/3 xl:w-1/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
+            <div className="p-4 border-b bg-muted/30 font-semibold text-sm flex justify-between items-center shrink-0">
+              <span>Task Folders</span>
+              <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">{groupedFiles.length}</span>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {groupedFiles.map((group) => {
+                const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
+                const isSelected = selectedFolder === folderId;
+                return (
+                  <div 
+                    key={folderId} 
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                      isSelected 
+                        ? 'bg-primary/10 border-l-4 border-primary shadow-sm' 
+                        : 'border border-transparent hover:bg-muted'
+                    }`}
+                    onClick={() => setSelectedFolder(folderId)}
+                  >
+                    <div className="w-10 h-10 rounded-md shrink-0 relative overflow-hidden bg-primary/5 flex items-center justify-center">
+                      <button type="button" onClick={(e) => handleAdvanceFlow(group, e)} className="absolute -top-1 -left-1 z-10 text-muted-foreground hover:text-emerald-500 transition-colors" title="Mark as Shipped">
+                        <CheckCircle className="w-4 h-4 bg-background rounded-full" />
+                      </button>
+                      {getFolderPreview(group, "w-10 h-10")}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                       <h3 className="font-semibold text-sm truncate" title={group.folderName}>{group.folderName}</h3>
+                       {group.orderId && <p className="text-xs text-muted-foreground truncate font-medium">Order: {group.orderId}</p>}
+                    </div>
+                    <div className="shrink-0 flex items-center gap-2">
+                      <span className="text-[10px] font-medium bg-background border px-1.5 py-0.5 rounded-full">{group.files.length}</span>
+                      <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-primary translate-x-1' : 'text-muted-foreground'}`} />
                     </div>
                   </div>
-                  <div className="ml-auto">
-                    <Button variant="secondary" size="sm" onClick={(e) => handleDownloadAll(activeGroup, e)}>
-                      <Download className="w-4 h-4 mr-2" /> Download All
-                    </Button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* RIGHT PANEL (DETAIL) */}
+          <div className="w-full lg:w-2/3 xl:w-3/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
+            {selectedFolder ? (() => {
+              const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId || ""}` === selectedFolder);
+              if (!activeGroup) {
+                setTimeout(() => setSelectedFolder(null), 0);
+                return null;
+              }
+              return (
+                <div className="flex flex-col h-full">
+                  <div className="p-4 sm:p-6 border-b bg-muted/10 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center shrink-0">
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2 truncate">
+                        <Folder className="w-6 h-6 text-primary shrink-0" />
+                        <span className="truncate">{activeGroup.folderName}</span>
+                      </h2>
+                      {(activeGroup.orderId || activeGroup.taskId) && (
+                        <p className="text-sm font-bold text-foreground/80 mt-1.5 bg-background border px-2 py-1 rounded-md inline-block">
+                          {activeGroup.taskId ? `Task ID: ${activeGroup.taskId}` : `Order ID: ${activeGroup.orderId}`}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto shrink-0">
+                      <div className="flex items-center gap-2 bg-background border rounded-md p-1 pl-3 shadow-sm">
+                        <span className="text-xs font-semibold text-muted-foreground">Status:</span>
+                        <select 
+                          className="h-9 text-sm font-bold bg-transparent border-0 rounded px-2 focus:ring-0 w-full sm:w-40"
+                          value={activeGroup.orderStatus}
+                          onChange={(e) => {
+                            if (activeGroup.isTask && activeGroup.taskId) {
+                              handleStatusChange(activeGroup, e.target.value);
+                            } else if (activeGroup.orderId) {
+                              updateOrderStatus({ id: activeGroup.orderId, status: e.target.value }, {
+                                onSuccess: () => toast.success("Order status updated!")
+                              });
+                            }
+                          }}
+                          disabled={isUpdatingStatus}
+                        >
+                          {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'].map(s => (
+                            <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <Button variant="secondary" onClick={(e) => handleDownloadAll(activeGroup, e)} className="shadow-sm h-11 sm:h-10">
+                        <Download className="w-4 h-4 mr-2" /> Download All
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                
-                <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3" : "flex flex-col gap-3"}>
-                  {activeGroup.files.map((file: any) => (
-                    viewMode === "grid" ? (
-                      <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow relative">
-                        {getFileThumbnail(file)}
-                        {file.tag === 'draft' ? (
-                          <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Draft</div>
-                        ) : file.tag === 'for_print' ? (
-                          <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">For Print</div>
-                        ) : file.tag === 'attachment' ? (
-                          <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Attachment</div>
-                        ) : null}
-                        <CardHeader className="p-4 pb-2 flex flex-col items-start justify-between bg-muted/5 border-b">
-                          <div className="overflow-hidden w-full">
-                            <CardTitle className="text-[10px] truncate w-full flex items-center gap-2" title={file.originalName}>
+                  
+                  <div className="p-4 sm:p-6 flex-1 overflow-y-auto bg-muted/5 relative">
+                    <h3 className="font-semibold text-sm mb-4 text-muted-foreground uppercase tracking-wider">{activeGroup.files.length} Attachments</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                      {activeGroup.files.map((file: any) => (
+                        <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow relative bg-background border-muted group/card">
+                          {getFileThumbnail(file)}
+                          {file.tag === 'draft' ? (
+                            <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Draft</div>
+                          ) : file.tag === 'for_print' ? (
+                            <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">For Print</div>
+                          ) : file.tag === 'attachment' ? (
+                            <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Attachment</div>
+                          ) : null}
+                          <CardHeader className="p-3 pb-2 border-b bg-muted/10">
+                            <CardTitle className="text-xs truncate w-full" title={file.originalName}>
                               {file.originalName}
-                              
                             </CardTitle>
-                            <CardDescription className="text-[9px] truncate w-full">
-                              User: {activeGroup.folderName}
-                            </CardDescription>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-3 flex flex-col gap-3">
-                          <div className="text-xs text-muted-foreground flex justify-between items-center">
-                            <span className="bg-muted px-2 py-1 rounded-md">{file.category || "Uncategorized"}</span>
-                            <span className={file.adminReviewed ? "text-green-500 font-semibold" : "text-amber-500 font-semibold"}>
-                              {file.adminReviewed ? "Reviewed" : "Pending"}
-                            </span>
-                          </div>
-                          
-                          {file.adminNotes && (
-                            <div className="text-xs bg-primary/10 text-primary p-2 rounded-md italic flex items-start gap-2">
-                              <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
-                              <span>{file.adminNotes}</span>
-                            </div>
-                          )}
-                          
-                          <div className="flex flex-col gap-2 mt-2">
-                            <Button variant="secondary" size="lg" className="w-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-200 py-6 text-sm font-semibold" onClick={(e) => {
+                          </CardHeader>
+                          <CardContent className="p-3 flex flex-col gap-2">
+                            <Button variant="secondary" size="sm" className="w-full bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 h-9 font-semibold" onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
                               forceDownload(getFileUrl(file.path), file.originalName);
                             }}>
-                              <Download className="w-5 h-5 mr-2" /> Download
+                              <Download className="w-4 h-4 mr-2" /> Download
                             </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      <div key={file._id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
-                        <div className="flex items-center gap-4 min-w-0 flex-1">
-                          {getFileIcon(file.mimetype)}
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <h4 className="text-sm font-medium truncate" title={file.originalName}>{file.originalName}</h4>
-                              
-                            </div>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                              <span className="bg-muted px-1.5 py-0.5 rounded">{file.category || "Uncategorized"}</span>
-                              <span className={file.adminReviewed ? "text-green-500 font-medium" : "text-amber-500 font-medium"}>
-                                {file.adminReviewed ? "Reviewed" : "Pending"}
-                              </span>
-                              {file.adminNotes && (
-                                <span className="flex items-center gap-1 text-primary truncate">
-                                  <MessageSquare className="w-3 h-3" /> {file.adminNotes}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 ml-4 shrink-0">
-                          <Button variant="ghost" size="icon" className="hover:bg-blue-50 h-10 w-10" onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            forceDownload(getFileUrl(file.path), file.originalName);
-                          }} title="Download">
-                            <Download className="w-5 h-5 text-blue-500" />
-                          </Button>
-                        </div>
-                      </div>
-                    )
-                  ))}
-                </div>
-              </>
-            );
-          })()}
-        </div>
-      ) : (
-        // --- OUTSIDE (FOLDERS) ---
-        <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3" : "flex flex-col gap-3"}>
-          {groupedFiles.map((group) => {
-            const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
-            if (viewMode === "grid") {
-              return (
-                <Card 
-                  key={folderId} 
-                  className="cursor-pointer overflow-hidden shadow-sm hover:shadow-md hover:border-primary/50 transition-all group relative" 
-                  onClick={() => setSelectedFolder(folderId)}
-                >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-red-50 hover:text-red-600"
-                    onClick={(e) => handleDeleteFolder(group, e)}
-                    disabled={isBulkDeleting}
-                    title="Delete Folder and All Files"
-                  >
-                    <Trash2 className="w-4 h-4 text-muted-foreground hover:text-red-600" />
-                  </Button>
-                  <CardContent className="p-6 flex flex-col items-center justify-center gap-4 text-center">
-                    {getFolderPreview(group)}
-                    <div className="w-full">
-                      <button type="button" onClick={(e) => handleAdvanceFlow(group, e)} className="absolute top-2 left-2 z-10 text-muted-foreground hover:text-emerald-500 transition-colors" title="Mark as Shipped">
-                        <CheckCircle className="w-6 h-6 bg-background rounded-full" />
-                      </button>
-                      <h3 className="font-semibold text-base truncate" title={group.folderName}>{group.folderName}</h3>
-                      {group.orderId && (
-                        <p className="text-[12.8px] font-bold text-foreground/80 mt-1 mb-2">
-                          Order: {group.orderId}
-                        </p>
-                      )}
-                      {group.orderId && (
-                        <select 
-                          className="h-7 w-full text-xs bg-background border border-border/50 rounded px-2 focus:ring-0"
-                          value={group.orderStatus}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={(e) => updateOrderStatus({ id: group.orderId, status: e.target.value }, {
-                            onSuccess: () => toast.success("Order status updated!"),
-                            onError: () => toast.error("Failed to update order status")
-                          })}
-                          disabled={isUpdatingStatus}
-                        >
-                          {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'].map(s => (
-                            <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
-                          ))}
-                        </select>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-2 font-medium">{group.files.length} item(s)</p>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            } else {
-              return (
-                <div 
-                  key={folderId} 
-                  className="flex items-center gap-4 p-4 border bg-card rounded-lg hover:bg-muted/30 cursor-pointer transition-colors" 
-                  onClick={() => setSelectedFolder(folderId)}
-                >
-                  <div className="rounded-lg shrink-0 relative overflow-hidden w-11 h-11 bg-primary/10 flex items-center justify-center">
-                    <button type="button" onClick={(e) => handleAdvanceFlow(group, e)} className="absolute -top-1 -left-1 z-10 text-muted-foreground hover:text-emerald-500 transition-colors" title="Mark as Shipped">
-                      <CheckCircle className="w-6 h-6 bg-background rounded-full" />
-                    </button>
-                    {getFolderPreview(group, "w-11 h-11")}
-                  </div>
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <span className="font-semibold text-base truncate">{group.folderName}</span>
-                    {group.orderId && <span className="text-[12.8px] font-bold text-foreground/80 truncate">Order ID: {group.orderId}</span>}
-                  </div>
-                  {group.orderId && (
-                    <div className="shrink-0 mr-4" onClick={(e) => e.stopPropagation()}>
-                        <select 
-                          className="h-8 text-xs bg-background border border-border/50 rounded px-2 focus:ring-0"
-                          value={group.orderStatus}
-                          onChange={(e) => updateOrderStatus({ id: group.orderId, status: e.target.value }, {
-                            onSuccess: () => toast.success("Order status updated!"),
-                            onError: () => toast.error("Failed to update order status")
-                          })}
-                          disabled={isUpdatingStatus}
-                        >
-                          {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'].map(s => (
-                            <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
-                          ))}
-                        </select>
-                    </div>
-                  )}
-                  <div className="shrink-0 flex items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">{group.files.length} file(s)</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 hover:bg-red-50 hover:text-red-600 ml-1"
-                      onClick={(e) => handleDeleteFolder(group, e)}
-                      disabled={isBulkDeleting}
-                      title="Delete Folder and All Files"
-                    >
-                      <Trash2 className="w-4 h-4 text-muted-foreground hover:text-red-600" />
-                    </Button>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </div>
               );
-            }
-          })}
+            })() : (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center space-y-5 bg-muted/10">
+                <div className="w-24 h-24 bg-background border rounded-full flex items-center justify-center shadow-sm">
+                  <Folder className="w-12 h-12 text-muted-foreground/40" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-foreground mb-2">Select a Task</h3>
+                  <p className="text-sm max-w-sm mx-auto text-muted-foreground/80 leading-relaxed">
+                    Click on a folder from the list on the left to view its task details, update its status, and download files for packaging.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

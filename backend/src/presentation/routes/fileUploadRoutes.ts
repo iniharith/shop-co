@@ -630,6 +630,74 @@ const decodeSharedSlug = async (req: any, res: any, next: any) => {
   next();
 };
 
+// 🌐 Public: Get presigned URL for direct S3 upload via CUSTOMER UPLOAD PORTAL
+router.post(
+  '/customer/upload-url',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { filename, contentType, orderId, username } = req.body;
+    if (!filename || !orderId || !username) {
+      res.status(400).json({ success: false, message: 'Filename, orderId, and username required' });
+      return;
+    }
+
+    const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+    const { PutObjectCommand } = require('@aws-sdk/client-s3');
+    const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
+    
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const key = `kampungcetak/customer_uploads/${username}/${uniqueSuffix}-${safeFilename}`;
+
+    const command = new PutObjectCommand({
+      Bucket: S3_BUCKET_NAME,
+      Key: key,
+      ContentType: contentType || 'application/octet-stream'
+    });
+
+    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    
+    res.json({
+      success: true,
+      url: uploadUrl,
+      key: key,
+      publicUrl: `https://${S3_BUCKET_NAME}.s3.ap-southeast-5.amazonaws.com/${key}`,
+      userId: username,
+      orderId,
+      category: 'CUSTOMER_UPLOAD'
+    });
+  })
+);
+
+// 🌐 Public: Save metadata after direct S3 upload via CUSTOMER UPLOAD PORTAL
+router.post(
+  '/customer/save-metadata',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { files, orderId, username } = req.body;
+    if (!files || !Array.isArray(files) || files.length === 0 || !orderId || !username) {
+      res.status(400).json({ success: false, message: 'Files, orderId, and username required' });
+      return;
+    }
+
+    const savedFiles = await Promise.all(
+      files.map((f: any) =>
+        fileUploadRepository.create({
+          userId: username,
+          orderId: orderId,
+          category: 'CUSTOMER_UPLOAD',
+          filename: f.key,
+          originalName: f.originalName,
+          mimetype: f.mimetype,
+          size: f.size,
+          path: f.path,
+          adminReviewed: false,
+        })
+      )
+    );
+
+    res.json({ success: true, data: savedFiles });
+  })
+);
+
 // 🌐 Public: Get presigned URL for direct S3 upload via shared link
 router.post(
   '/s/:slug/upload-url',
