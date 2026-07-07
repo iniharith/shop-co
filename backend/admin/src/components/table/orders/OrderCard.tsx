@@ -11,7 +11,7 @@ import OrderInfo from "@/components/global/orderInfo";
 import { cn } from "@/lib/utils";
 import { Package, CircleUserRound, MapPin, CreditCard, ShoppingBag, Trash2, Truck, Archive, ArchiveRestore, ChevronDown, ChevronUp, Printer } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useDeleteOrder, useUpdateOrderStatus, useToggleArchiveOrder } from "@/hooks/useOrder";
+import { useDeleteOrder, useUpdateOrderStatus, useToggleArchiveOrder, useCreateShipment } from "@/hooks/useOrder";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -69,6 +69,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
   const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder();
   const { mutate: updateStatus, isPending: isUpdating } = useUpdateOrderStatus();
   const { mutate: toggleArchive, isPending: isArchiving } = useToggleArchiveOrder();
+  const { mutate: createShipment, isPending: isShipping } = useCreateShipment();
   
   const [localStatus, setLocalStatus] = React.useState<string>(order.orderStatus as string);
   const [isMinimized, setIsMinimized] = React.useState<boolean>(false);
@@ -171,6 +172,25 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
                 <SelectItem value="FAILED">Failed</SelectItem>
               </SelectContent>
             </Select>
+            {!(order as any).easyparcelAwb && (order.orderStatus === "PACKAGING" || order.orderStatus === "SHIPPED") && (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  createShipment(order._id as string, {
+                    onSuccess: () => {
+                      toast.success("Shipment created successfully!");
+                      queryClient.invalidateQueries({ queryKey: ['orders'] });
+                    },
+                    onError: () => toast.error("Failed to create shipment")
+                  });
+                }}
+                disabled={isShipping}
+                className="px-2 py-1 bg-primary/10 rounded border border-primary/20 hover:bg-primary/20 text-primary transition-colors text-[10px] font-bold uppercase tracking-wider"
+                title="Create EasyParcel Shipment"
+              >
+                {isShipping ? "Shipping..." : "EP Ship"}
+              </button>
+            )}
             <button 
               onClick={() => {
                 if ((order as any).awbUrl) {

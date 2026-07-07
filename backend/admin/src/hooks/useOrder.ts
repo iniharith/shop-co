@@ -45,4 +45,8 @@ export const useBulkDeleteOrders = () => {
     return { mutate, isPending }
 }
 
-
+export const useCreateShipment = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(['createShipment'], (orderId: string) => import("@/api/orders").then(m => m.createShipment(session?.user.token, orderId)), ["orders"])
+    return { mutate, isPending }
+}
