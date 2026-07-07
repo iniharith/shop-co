@@ -227,7 +227,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const uploadingFiles = Object.values(uploads).filter(u => u.taskId === task._id && (u.status === 'uploading' || u.status === 'error'));
 
   // Sync upload store with actual task files to catch any stuck uploads
-  useEffect(() => {
+  React.useEffect(() => {
     uploadingFiles.forEach(u => {
       if (u.status !== 'uploading' || !u.file) return;
       const isUploaded = task.files?.some((f: any) => f.fileName === u.name && f.size === u.file?.size) || 
