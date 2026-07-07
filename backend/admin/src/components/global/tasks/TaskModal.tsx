@@ -226,6 +226,18 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { uploads, addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
   const uploadingFiles = Object.values(uploads).filter(u => u.taskId === task._id && (u.status === 'uploading' || u.status === 'error'));
 
+  // Sync upload store with actual task files to catch any stuck uploads
+  useEffect(() => {
+    uploadingFiles.forEach(u => {
+      if (u.status !== 'uploading' || !u.file) return;
+      const isUploaded = task.files?.some((f: any) => f.fileName === u.name && f.size === u.file?.size) || 
+                         task.artworks?.some((a: any) => a.fileName === u.name && a.size === u.file?.size);
+      if (isUploaded) {
+        updateStatus(u.id, 'success');
+      }
+    });
+  }, [task.files, task.artworks, uploadingFiles, updateStatus]);
+
   const combinedFiles = React.useMemo(() => {
     let files = [...(task?.files || [])];
     
