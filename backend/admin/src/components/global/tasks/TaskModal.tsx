@@ -529,7 +529,6 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                     uploadFile({ id: task._id, file, tag: 'attachment' }, {
                       onSuccess: () => {
                         toast.success("File uploaded successfully");
-                        refetch();
                       },
                       onError: () => toast.error("Failed to upload file")
                     });
