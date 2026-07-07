@@ -38,7 +38,7 @@ const FileUploadSchema = new Schema<IFileUpload>(
     size: { type: Number, required: true },
     path: { type: String, required: true },
     thumbnailPath: { type: String },
-    uploadedAt: { type: Date, default: Date.now },
+    uploadedAt: { type: Date, default: Date.now, index: true },
     notes: { type: String },
     adminReviewed: { type: Boolean, default: false },
     adminNotes: { type: String },
@@ -52,5 +52,7 @@ const FileUploadSchema = new Schema<IFileUpload>(
   },
   { timestamps: true }
 );
+
+FileUploadSchema.index({ createdAt: -1 });
 
 export const FileUpload = mongoose.model<IFileUpload>('FileUpload', FileUploadSchema);
