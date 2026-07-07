@@ -365,6 +365,12 @@ export default function PackagingManager() {
     return `${backendUrl}/${path}`;
   };
 
+  const getThumbnailUrl = (path: string) => {
+    const rawUrl = getFileUrl(path);
+    // Free global CDN proxy to automatically downscale 50MB S3 images to 200px thumbnails
+    return `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&w=200&h=200&fit=cover`;
+  };
+
   const getFileThumbnail = (file: any) => {
     const isImage = file.mimetype?.includes("image") || (file.originalName && file.originalName.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i));
     const isPdf = file.mimetype?.includes("pdf") || (file.originalName && file.originalName.toLowerCase().endsWith(".pdf"));
@@ -373,7 +379,7 @@ export default function PackagingManager() {
       return (
         <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center relative group/thumb">
           <img 
-            src={getFileUrl(file.path)} 
+            src={getThumbnailUrl(file.path)} 
             alt={file.originalName || "thumbnail"} 
             className="object-cover w-full h-full absolute inset-0 z-0 transition-transform group-hover/thumb:scale-105" 
             loading="lazy"
