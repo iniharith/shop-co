@@ -12,7 +12,7 @@ import { useUsers } from "@/hooks/useUsers";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, CheckCircle } from "lucide-react";
+import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, CheckCircle, User, Tag, Calendar, Link } from "lucide-react";
 import { forceDownload } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -574,6 +574,19 @@ export default function PackagingManager() {
                 setTimeout(() => setSelectedFolder(null), 0);
                 return null;
               }
+              
+              const tasks = (tasksResponse as any)?.tasks || [];
+              const orders = (ordersResponse as any)?.orders || [];
+              const users = (usersResponse as any)?.data || [];
+              const activeTask = activeGroup.isTask && activeGroup.taskId ? tasks.find((t: any) => t._id === activeGroup.taskId) : null;
+              const activeOrder = (!activeGroup.isTask && activeGroup.orderId) ? orders.find((o: any) => o._id === activeGroup.orderId || o.orderId === activeGroup.orderId) : null;
+              const activeUser = activeTask?.assignee ? users.find((u: any) => u._id === activeTask.assignee) : null;
+              
+              const descriptionText = activeTask?.description ? activeTask.description : (activeOrder?.items ? activeOrder.items.map((item: any) => `${item.name} (${item.quantity}x)`).join('\n') : "No description provided.");
+              const assigneeName = activeUser ? (activeUser.name || activeUser.email) : "Unassigned";
+              const categoryName = activeTask?.category ? activeTask.category.replace(/_/g, ' ') : "N/A";
+              const dueDate = activeTask?.dueDate ? format(new Date(activeTask.dueDate), 'dd MMM yyyy') : "N/A";
+
               return (
                 <div className="flex flex-col h-full">
                   <div className="p-4 sm:p-6 border-b bg-muted/10 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center shrink-0">
@@ -625,8 +638,53 @@ export default function PackagingManager() {
                       </Button>
                     </div>
                   </div>
+
+                  {/* Task / Order Details Card */}
+                  <div className="px-4 sm:px-6 py-4 border-b bg-card">
+                    <div className="flex flex-col xl:flex-row gap-6">
+                      {/* Description */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Description</h3>
+                        <div className="bg-muted/30 border rounded-lg p-3 sm:p-4 text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed max-h-[150px] overflow-y-auto">
+                          {descriptionText}
+                        </div>
+                      </div>
+                      
+                      {/* Properties Grid */}
+                      <div className="w-full xl:w-72 shrink-0">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Properties</h3>
+                        <div className="bg-muted/30 border rounded-lg p-3 sm:p-4 space-y-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1.5"><User className="w-3.5 h-3.5"/> Assignee</span>
+                            <span className="text-xs font-semibold truncate max-w-[120px] text-right">{assigneeName}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1.5"><Tag className="w-3.5 h-3.5"/> Category</span>
+                            <span className="text-xs font-semibold truncate max-w-[120px] text-right">{categoryName}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5"/> Due Date</span>
+                            <span className="text-xs font-semibold truncate max-w-[120px] text-right">{dueDate}</span>
+                          </div>
+                          
+                          <div className="pt-3 mt-3 border-t flex flex-wrap gap-2">
+                            {activeGroup.orderId && (
+                              <a href={`/admin/orders?search=${activeGroup.orderId}`} target="_blank" className="flex-1 text-center bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-1.5 px-2 rounded-md transition-colors">
+                                View Order
+                              </a>
+                            )}
+                            {(activeGroup.orderId || activeGroup.folderName) && (
+                              <a href={`/admin/artworks?folder=${encodeURIComponent(activeGroup.folderName)}`} target="_blank" className="flex-1 text-center bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-1.5 px-2 rounded-md transition-colors">
+                                View Artworks
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   
-                  <div className="p-4 sm:p-6 flex-1 overflow-y-auto bg-muted/5 relative">
+                  <div className="p-4 sm:p-6 flex-1 overflow-y-auto min-h-0 bg-background/50 relative">
                     <h3 className="font-semibold text-sm mb-4 text-muted-foreground uppercase tracking-wider">{activeGroup.files.length} Attachments</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                       {activeGroup.files.map((file: any) => (
