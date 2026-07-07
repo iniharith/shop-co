@@ -372,12 +372,12 @@ export default function PackagingManager() {
     if (isImage) {
       return (
         <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center relative group/thumb">
-          <ImageNext 
+          <img 
             src={getFileUrl(file.path)} 
             alt={file.originalName || "thumbnail"} 
-            fill
-            sizes="96px"
-            className="object-cover transition-transform group-hover/thumb:scale-105 z-0" 
+            className="object-cover w-full h-full absolute inset-0 z-0 transition-transform group-hover/thumb:scale-105" 
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
               const nextEl = e.currentTarget.nextElementSibling as HTMLElement;
@@ -400,7 +400,7 @@ export default function PackagingManager() {
       return (
         <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center relative group">
           <iframe 
-            src={`${getFileUrl(file.path)}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} 
+            src={`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName || "file")}&inline=true#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} 
             className="absolute top-0 left-0 border-none overflow-hidden"
             style={{ width: '400%', height: '400%', transform: 'scale(0.25)', transformOrigin: 'top left', pointerEvents: 'none' }}
             tabIndex={-1}
