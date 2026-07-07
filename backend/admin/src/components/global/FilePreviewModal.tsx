@@ -1,6 +1,5 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import { getFileUrl } from '@/lib/utils';
 import { X, ExternalLink, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -15,10 +14,17 @@ export const FilePreviewModal = ({
 }) => {
   if (!file) return null;
 
+  const getFileUrl = (path: string) => {
+    if (!path) return "";
+    if (path.startsWith('http')) return path;
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+    return `${backendUrl}/${path}`;
+  };
+
   const isImage = file.mimetype?.includes("image") || (file.originalName && file.originalName.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i));
   const isPdf = file.mimetype?.includes("pdf") || (file.originalName && file.originalName.toLowerCase().endsWith(".pdf"));
 
-  const fileUrl = getFileUrl(file.path);
+  const fileUrl = getFileUrl(file.path || file.url);
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
   const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(fileUrl)}&name=${encodeURIComponent(file.originalName || "file")}&inline=true#toolbar=0`;
 
