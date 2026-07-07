@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -106,6 +139,80 @@ router.post('/upload', auth_middileware_1.default, upload.array('files', 100), (
     res.status(201).json({
         success: true,
         message: `${savedFiles.length} fail berjaya dimuat naik`,
+        data: savedFiles,
+        count: savedFiles.length,
+    });
+})));
+// ─── POST /api/files/presigned-url ────────────────────────
+// Get a presigned URL to upload file directly to S3
+router.post('/presigned-url', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const { filename, contentType } = req.body;
+    if (!filename || !contentType) {
+        res.status(400).json({ success: false, message: 'filename and contentType are required' });
+        return;
+    }
+    const { PutObjectCommand } = require('@aws-sdk/client-s3');
+    const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+    const userId = req.userId || ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || 'unknown';
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const key = `kampungcetak/uploads/${userId}/${uniqueSuffix}-${filename.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const command = new PutObjectCommand({
+        Bucket: s3_1.S3_BUCKET_NAME,
+        Key: key,
+        ContentType: contentType,
+    });
+    const signedUrl = yield getSignedUrl(s3_1.s3Client, command, { expiresIn: 3600 });
+    const fileUrl = `https://${s3_1.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-southeast-5'}.amazonaws.com/${key}`;
+    res.json({ success: true, signedUrl, fileUrl, key });
+})));
+// ─── POST /api/files/save-metadata ────────────────────────
+// Client calls this after direct S3 upload succeeds
+router.post('/save-metadata', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c;
+    const { orderId, taskId, notes, userId: bodyUserId, category, tag, folderId, files } = req.body;
+    const authReq = req;
+    // If admin provides a userId in the body, upload on their behalf
+    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(authReq.role);
+    const userId = (isAdmin && bodyUserId) ? bodyUserId : authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
+    if (!userId && !taskId) {
+        res.status(401).json({ success: false, message: 'Log masuk atau Task diperlukan' });
+        return;
+    }
+    if (!files || !Array.isArray(files) || files.length === 0) {
+        res.status(400).json({ success: false, message: 'Tiada fail metadata diberikan' });
+        return;
+    }
+    const savedFiles = yield Promise.all(files.map((file) => FileUploadRepository_1.fileUploadRepository.create({
+        userId: userId || 'admin',
+        orderId: orderId || undefined,
+        taskId: taskId || undefined,
+        category: category || undefined,
+        tag: tag || undefined,
+        filename: file.key || file.filename || file.originalname,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+        path: file.fileUrl || file.path,
+        notes: notes || undefined,
+        adminReviewed: false,
+        folderId: folderId || undefined,
+    })));
+    // Optionally notify customer via WhatsApp
+    const customerPhone = (_b = authReq.user) === null || _b === void 0 ? void 0 : _b.phone;
+    const customerName = ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.name) || 'Pelanggan';
+    if (customerPhone) {
+        WhatsAppService_1.whatsAppService
+            .sendFileUploadConfirmation({
+            phone: customerPhone,
+            customerName: customerName,
+            fileCount: savedFiles.length,
+        })
+            .catch((err) => console.error('Failed to send WhatsApp notification:', err));
+    }
+    res.status(201).json({
+        success: true,
+        message: `${savedFiles.length} fail berjaya direkodkan`,
         data: savedFiles,
         count: savedFiles.length,
     });
@@ -459,6 +566,138 @@ const decodeSharedSlug = (req, res, next) => __awaiter(void 0, void 0, void 0, f
     req.shareCategory = link.taskId ? 'TASK' : 'artwork';
     next();
 });
+// 🌐 Public: Get presigned URL for direct S3 upload via CUSTOMER UPLOAD PORTAL
+router.post('/customer/upload-url', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { filename, contentType, orderId, username } = req.body;
+    if (!filename || !orderId || !username) {
+        res.status(400).json({ success: false, message: 'Filename, orderId, and username required' });
+        return;
+    }
+    const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+    const { PutObjectCommand } = require('@aws-sdk/client-s3');
+    const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const key = `kampungcetak/customer_uploads/${username}/${uniqueSuffix}-${safeFilename}`;
+    const command = new PutObjectCommand({
+        Bucket: S3_BUCKET_NAME,
+        Key: key,
+        ContentType: contentType || 'application/octet-stream'
+    });
+    const uploadUrl = yield getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    res.json({
+        success: true,
+        url: uploadUrl,
+        key: key,
+        publicUrl: `https://${S3_BUCKET_NAME}.s3.ap-southeast-5.amazonaws.com/${key}`,
+        userId: username,
+        orderId,
+        category: 'CUSTOMER_UPLOAD'
+    });
+})));
+// 🌐 Public: Save metadata after direct S3 upload via CUSTOMER UPLOAD PORTAL
+router.post('/customer/save-metadata', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { files, orderId, username, phoneNumber, item } = req.body;
+    if (!files || !Array.isArray(files) || files.length === 0 || !orderId || !username) {
+        res.status(400).json({ success: false, message: 'Files, orderId, and username required' });
+        return;
+    }
+    // 1. Create a Task for this upload
+    const { Task } = yield Promise.resolve().then(() => __importStar(require('../../domain/entities/Task')));
+    const newTask = new Task({
+        title: `Artwork Upload: #${orderId}`,
+        description: `Phone Number: ${phoneNumber || 'N/A'}\nItem: ${item || 'N/A'}`,
+        orderId: orderId,
+        customerUsername: username,
+        status: 'PLACED',
+        category: 'UNASSIGNED',
+        assignee: null,
+        files: files.map((f) => ({
+            url: f.path,
+            name: f.originalName,
+            tag: 'attachment'
+        }))
+    });
+    const savedTask = yield newTask.save();
+    // 2. Save FileUpload entries
+    const savedFiles = yield Promise.all(files.map((f) => FileUploadRepository_1.fileUploadRepository.create({
+        userId: username,
+        orderId: orderId,
+        category: 'CUSTOMER_UPLOAD',
+        filename: f.key,
+        originalName: f.originalName,
+        mimetype: f.mimetype,
+        size: f.size,
+        path: f.path,
+        taskId: savedTask._id.toString(),
+        adminReviewed: false,
+    })));
+    res.json({ success: true, data: savedFiles, task: savedTask });
+})));
+// 🌐 Public: Get presigned URL for direct S3 upload via shared link
+router.post('/s/:slug/upload-url', (0, express_async_handler_1.default)(decodeSharedSlug), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { filename, contentType } = req.body;
+    if (!filename) {
+        res.status(400).json({ success: false, message: 'Filename required' });
+        return;
+    }
+    const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+    const { PutObjectCommand } = require('@aws-sdk/client-s3');
+    const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
+    // Get variables decoded from the slug
+    const userId = req.userId || 'customer';
+    const taskId = req.taskId;
+    const orderId = req.orderId;
+    const folderId = req.folderId;
+    const shareCategory = req.shareCategory || 'artwork';
+    const shareSlug = req.shareSlug;
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const key = `kampungcetak/uploads/${userId}/${uniqueSuffix}-${safeFilename}`;
+    const command = new PutObjectCommand({
+        Bucket: S3_BUCKET_NAME,
+        Key: key,
+        ContentType: contentType || 'application/octet-stream'
+    });
+    const uploadUrl = yield getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    // We also need to save the file metadata to the database immediately 
+    // because the customer uploads directly to S3 and we don't have a backend callback.
+    // Wait, if they upload directly to S3, we should save metadata AFTER they finish uploading.
+    // We can return the metadata info and let the frontend call a separate route, 
+    // or just assume they will finish it. But wait, it's safer to have the frontend save metadata.
+    // Since the frontend is just /share/[slug]/page.tsx, let's just return the URL and let the frontend save metadata!
+    res.json({
+        success: true,
+        url: uploadUrl,
+        key: key,
+        publicUrl: `https://${S3_BUCKET_NAME}.s3.ap-southeast-5.amazonaws.com/${key}`,
+        userId, taskId, orderId, folderId, shareCategory, shareSlug
+    });
+})));
+// 🌐 Public: Save metadata after direct S3 upload via shared link
+router.post('/s/:slug/save-metadata', (0, express_async_handler_1.default)(decodeSharedSlug), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { files } = req.body;
+    if (!files || !Array.isArray(files) || files.length === 0) {
+        res.status(400).json({ success: false, message: 'Files required' });
+        return;
+    }
+    const { taskId, orderId, userId, folderId, shareCategory, shareSlug } = req;
+    const savedFiles = yield Promise.all(files.map((f) => FileUploadRepository_1.fileUploadRepository.create({
+        userId: userId || 'customer',
+        orderId: orderId || undefined,
+        taskId: taskId || undefined,
+        folderId: folderId || undefined,
+        category: shareCategory || 'artwork',
+        shareSlug,
+        filename: f.key,
+        originalName: f.originalName,
+        mimetype: f.mimetype,
+        size: f.size,
+        path: f.path,
+        adminReviewed: false,
+    })));
+    res.json({ success: true, data: savedFiles });
+})));
 router.post('/s/:slug/upload', (0, express_async_handler_1.default)(decodeSharedSlug), upload.array('files', 100), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const files = req.files;
     const { taskId, orderId, userId, folderId, shareCategory, shareSlug } = req;

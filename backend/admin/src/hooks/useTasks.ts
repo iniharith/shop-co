@@ -10,7 +10,7 @@ import { getTasks, createTask, updateTask, deleteTask, addTaskComment, deleteTas
 
 export const useTasks = (filters?: any) => {
     const { data: session } = useSession();
-    return useQueryData(['tasks', filters], () => getTasks(session?.user?.token, filters), { refetchInterval: 3000 });
+    return useQueryData(['tasks', filters], () => getTasks(session?.user?.token, filters));
 }
 
 export const useCreateTask = () => {

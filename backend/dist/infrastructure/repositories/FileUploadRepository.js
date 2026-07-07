@@ -47,7 +47,7 @@ class FileUploadRepository {
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             query.uploadedAt = { $gte: thirtyDaysAgo };
-            return FileUpload_1.FileUpload.find(query).sort({ uploadedAt: -1 });
+            return FileUpload_1.FileUpload.find(query).sort({ uploadedAt: -1 }).lean();
         });
     }
     findById(id) {

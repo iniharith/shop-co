@@ -42,7 +42,7 @@ class TaskRepository {
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             query.createdAt = { $gte: thirtyDaysAgo };
-            return Task_1.Task.find(query).sort({ createdAt: -1 });
+            return Task_1.Task.find(query).sort({ createdAt: -1 }).lean();
         });
     }
     findById(id) {

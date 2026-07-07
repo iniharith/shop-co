@@ -19,6 +19,7 @@ export const useQueryData = (
     queryKey,
     queryFn,
     refetchInterval: options?.refetchInterval,
+    staleTime: options?.staleTime !== undefined ? options.staleTime : 60000,
   });
   return { data, isPending, isFetched, refetch, isFetching };
 };

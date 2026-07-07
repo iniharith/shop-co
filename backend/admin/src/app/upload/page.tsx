@@ -11,6 +11,8 @@ const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 export default function CustomerUploadPortal() {
   const [orderId, setOrderId] = useState("");
   const [username, setUsername] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [item, setItem] = useState("");
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -32,6 +34,14 @@ export default function CustomerUploadPortal() {
     }
     if (!username.trim()) {
       toast.error("Please enter your Username");
+      return;
+    }
+    if (!phoneNumber.trim()) {
+      toast.error("Please enter your Phone Number");
+      return;
+    }
+    if (!item.trim()) {
+      toast.error("Please enter the Item name");
       return;
     }
     if (selectedFiles.length === 0) {
@@ -56,7 +66,9 @@ export default function CustomerUploadPortal() {
             filename: file.name, 
             contentType: file.type,
             orderId: orderId.trim(),
-            username: username.trim()
+            username: username.trim(),
+            phoneNumber: phoneNumber.trim(),
+            item: item.trim()
           })
         });
         
@@ -92,7 +104,9 @@ export default function CustomerUploadPortal() {
         body: JSON.stringify({ 
           files: uploadedFiles,
           orderId: orderId.trim(),
-          username: username.trim()
+          username: username.trim(),
+          phoneNumber: phoneNumber.trim(),
+          item: item.trim()
         })
       });
       
@@ -131,6 +145,8 @@ export default function CustomerUploadPortal() {
               setSuccess(false);
               setOrderId("");
               setUsername("");
+              setPhoneNumber("");
+              setItem("");
             }}
           >
             Upload More Files
@@ -167,6 +183,26 @@ export default function CustomerUploadPortal() {
                 placeholder="Your name" 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
+                className="bg-black/50 border-white/10 focus-visible:ring-yellow-500"
+                disabled={uploading}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white/80">Phone Number <span className="text-red-500">*</span></label>
+              <Input 
+                placeholder="e.g. +60123456789" 
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className="bg-black/50 border-white/10 focus-visible:ring-yellow-500"
+                disabled={uploading}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white/80">Item <span className="text-red-500">*</span></label>
+              <Input 
+                placeholder="e.g. Business Card, Banner" 
+                value={item}
+                onChange={(e) => setItem(e.target.value)}
                 className="bg-black/50 border-white/10 focus-visible:ring-yellow-500"
                 disabled={uploading}
               />

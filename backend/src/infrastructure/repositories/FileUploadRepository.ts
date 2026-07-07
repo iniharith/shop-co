@@ -33,7 +33,7 @@ export class FileUploadRepository {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     query.uploadedAt = { $gte: thirtyDaysAgo };
 
-    return FileUpload.find(query).sort({ uploadedAt: -1 });
+    return FileUpload.find(query).sort({ uploadedAt: -1 }).lean() as unknown as Promise<IFileUpload[]>;
   }
 
   async findById(id: string): Promise<IFileUpload | null> {

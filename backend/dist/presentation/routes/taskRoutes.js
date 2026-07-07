@@ -78,7 +78,6 @@ const taskStorage = (0, multer_s3_1.default)({
 });
 const taskUpload = (0, multer_1.default)({ storage: taskStorage });
 const router = (0, express_1.Router)();
-// GET /api/tasks
 router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     const authReq = req;
@@ -336,6 +335,41 @@ router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'),
             originalName: fileName,
             mimetype: req.file.mimetype,
             size: req.file.size,
+            path: fileUrl,
+        });
+    }
+    catch (e) {
+        console.error('Failed to sync task file to FileUpload:', e);
+    }
+    res.json({ success: true, task });
+})));
+// POST /api/tasks/:id/files/save-metadata
+router.post('/:id/files/save-metadata', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const { fileUrl, fileName, tag, fileKey, mimetype, size } = req.body;
+    if (!fileUrl || !fileName) {
+        res.status(400).json({ success: false, message: 'fileUrl and fileName are required' });
+        return;
+    }
+    const task = yield TaskRepository_1.taskRepository.addFile(req.params.id, fileUrl, fileName, tag || 'attachment');
+    if (!task) {
+        res.status(404).json({ success: false, message: 'Task not found' });
+        return;
+    }
+    try {
+        const { FileUpload } = yield Promise.resolve().then(() => __importStar(require('../../domain/entities/FileUpload')));
+        const authReq = req;
+        const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id) || 'admin';
+        yield FileUpload.create({
+            userId: userId,
+            taskId: task._id,
+            orderId: task.orderId || undefined,
+            category: 'TASK',
+            tag: tag || 'attachment',
+            filename: fileKey || fileName,
+            originalName: fileName,
+            mimetype: mimetype || 'application/octet-stream',
+            size: size || 0,
             path: fileUrl,
         });
     }

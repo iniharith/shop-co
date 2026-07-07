@@ -672,11 +672,31 @@ router.post(
 router.post(
   '/customer/save-metadata',
   asyncHandler(async (req: Request, res: Response) => {
-    const { files, orderId, username } = req.body;
+    const { files, orderId, username, phoneNumber, item } = req.body;
     if (!files || !Array.isArray(files) || files.length === 0 || !orderId || !username) {
       res.status(400).json({ success: false, message: 'Files, orderId, and username required' });
       return;
     }
+
+    // 1. Create a Task for this upload
+    const { Task } = await import('../../domain/entities/Task');
+    const newTask = new Task({
+      title: `Artwork Upload: #${orderId}`,
+      description: `Phone Number: ${phoneNumber || 'N/A'}\nItem: ${item || 'N/A'}`,
+      orderId: orderId,
+      customerUsername: username,
+      status: 'PLACED',
+      category: 'UNASSIGNED',
+      assignee: null,
+      files: files.map((f: any) => ({
+        url: f.path,
+        name: f.originalName,
+        tag: 'attachment'
+      }))
+    });
+    const savedTask = await newTask.save();
+
+    // 2. Save FileUpload entries
 
     const savedFiles = await Promise.all(
       files.map((f: any) =>
@@ -689,12 +709,13 @@ router.post(
           mimetype: f.mimetype,
           size: f.size,
           path: f.path,
+          taskId: savedTask._id.toString(),
           adminReviewed: false,
         })
       )
     );
 
-    res.json({ success: true, data: savedFiles });
+    res.json({ success: true, data: savedFiles, task: savedTask });
   })
 );
 
