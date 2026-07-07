@@ -16,6 +16,7 @@ import { Badge } from '../ui/badge';
 import { useNotifications } from '@/hooks/useNotification';
 import { useEffect, useState } from 'react';
 import NotificationsDrawer from '../global/notifications-drawer';
+import UploadMonitor from '../global/upload-monitor';
 
 export default function Header() {
   const { data: notificationsResponse } = useNotifications();
@@ -56,6 +57,8 @@ export default function Header() {
             <SearchInput />
           </div>
           
+          <UploadMonitor />
+
           <div className="relative cursor-pointer mx-2" onClick={() => setIsNotificationsOpen(true)}>
             <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
             {unreadCount > 0 && (

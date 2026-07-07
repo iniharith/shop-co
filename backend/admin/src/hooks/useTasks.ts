@@ -81,7 +81,8 @@ export const useUploadTaskFile = () => {
     const { data: session } = useSession();
     const { mutate, isPending } = useMutationData(
         ['uploadTaskFile'],
-        (data: { id: string, file: File, tag?: string }) => import("@/api/tasks").then(m => m.uploadTaskFile(session?.user.token, data.id, data.file, data.tag)),
+        (data: { id: string, file: File, tag?: string, onProgress?: (percent: number) => void }) => 
+            import("@/api/tasks").then(m => m.uploadTaskFile(session?.user.token, data.id, data.file, data.tag, data.onProgress)),
         ["tasks", "allFiles", "groupedFiles"]
     )
     return { mutate, isPending }

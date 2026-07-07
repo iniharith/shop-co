@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
+import { useUploadStore } from '@/store/uploadStore';
 import { useUsers } from "@/hooks/useUsers";
 import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin } from "lucide-react";
 import { format } from "date-fns";
@@ -222,7 +223,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [activeTab, setActiveTab] = useState("comments");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isDragOverComment, setIsDragOverComment] = useState(false);
-  const [uploadingFiles, setUploadingFiles] = useState<{ id: string, name: string, tag: string }[]>([]);
+  const { uploads, addUpload, updateProgress, updateStatus } = useUploadStore();
+  const uploadingFiles = Object.values(uploads).filter(u => u.taskId === task._id && u.status === 'uploading');
 
   const combinedFiles = React.useMemo(() => {
     let files = [...(task?.files || [])];
@@ -288,18 +290,28 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       const files = Array.from(e.target.files);
       files.forEach(file => {
         const id = Math.random().toString(36).substring(7);
-        setUploadingFiles(prev => [...prev, { id, name: file.name, tag: uploadTagRef.current }]);
+        const tag = uploadTagRef.current;
         
-        uploadFile({ id: task._id, file, tag: uploadTagRef.current }, {
-          onSuccess: () => {
-            setUploadingFiles(prev => prev.filter(f => f.id !== id));
-            toast.success("File uploaded successfully");
-          },
-          onError: () => {
-            setUploadingFiles(prev => prev.filter(f => f.id !== id));
-            toast.error("Failed to upload file")
+        addUpload({ id, name: file.name, tag, taskId: task._id });
+        
+        uploadFile(
+          { 
+            id: task._id, 
+            file, 
+            tag, 
+            onProgress: (percent) => updateProgress(id, percent) 
+          }, 
+          {
+            onSuccess: () => {
+              updateStatus(id, 'success');
+              toast.success("File uploaded successfully");
+            },
+            onError: (err) => {
+              updateStatus(id, 'error', err.message || "Failed to upload file");
+              toast.error("Failed to upload file")
+            }
           }
-        });
+        );
       });
       // reset input
       e.target.value = '';
