@@ -222,6 +222,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [activeTab, setActiveTab] = useState("comments");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isDragOverComment, setIsDragOverComment] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<{ id: string, name: string, tag: string }[]>([]);
 
   const combinedFiles = React.useMemo(() => {
     let files = [...(task?.files || [])];
@@ -286,11 +287,18 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     if (e.target.files && e.target.files.length > 0) {
       const files = Array.from(e.target.files);
       files.forEach(file => {
+        const id = Math.random().toString(36).substring(7);
+        setUploadingFiles(prev => [...prev, { id, name: file.name, tag: uploadTagRef.current }]);
+        
         uploadFile({ id: task._id, file, tag: uploadTagRef.current }, {
           onSuccess: () => {
+            setUploadingFiles(prev => prev.filter(f => f.id !== id));
             toast.success("File uploaded successfully");
           },
-          onError: () => toast.error("Failed to upload file")
+          onError: () => {
+            setUploadingFiles(prev => prev.filter(f => f.id !== id));
+            toast.error("Failed to upload file")
+          }
         });
       });
       // reset input
@@ -350,12 +358,40 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               </div>
 
               <div className="space-y-4 pt-4 border-t border-border/50">
-                {combinedFiles && combinedFiles.length > 0 && (
+                {(combinedFiles && combinedFiles.length > 0) || uploadingFiles.length > 0 ? (
                     <div className="mb-6 space-y-3">
                       <label className="text-sm font-semibold text-foreground flex items-center gap-2">
                         <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments
                       </label>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
+                        {uploadingFiles.map(f => (
+                          <div key={f.id} className="relative group w-fit max-w-full mb-6 mt-1 opacity-70 animate-pulse">
+                            <div className="flex items-center gap-1.5 bg-[#5a5a5a] p-1.5 pb-3 pr-1.5 rounded-[12px] w-full min-w-[140px] shadow-sm relative z-10 overflow-visible">
+                              <div className="w-8 h-8 rounded-lg bg-[#666666] flex items-center justify-center shrink-0">
+                                <LoaderCircle className="w-4 h-4 text-white animate-spin" />
+                              </div>
+                              <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-0.5 gap-0.5 pt-3">
+                                {f.tag === 'draft' ? (
+                                  <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Draft</div>
+                                ) : f.tag === 'for_print' ? (
+                                  <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">For Print</div>
+                                ) : (
+                                  <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Attachment</div>
+                                )}
+                                <div className="flex justify-between items-center w-full min-w-0 mt-1">
+                                  <span className="truncate text-white font-medium text-[10px] tracking-wide pr-1">
+                                    {f.name}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="absolute -bottom-4 left-[5%] right-[5%] z-0">
+                              <div className="w-full bg-[#fae863] text-black text-[10px] font-medium p-1 px-3 rounded-b-[12px] shadow-sm text-center">
+                                Uploading...
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                         {combinedFiles.slice(0, 10).map((file: any, idx: number) => (
                           <FileAttachmentCard 
                             key={idx} 
@@ -381,7 +417,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                           </Button>
                         </div>
                       )}
-                    </div>)}
+                    </div>
+                ) : null}
                 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                   <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-4">
@@ -553,17 +590,15 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   className="hidden" 
                   multiple
                   onChange={handleFileUpload}
-                  disabled={isUploading}
                 />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button 
-                      disabled={isUploading} 
                       variant="outline"
                       size="icon" 
                       className="shrink-0 shadow-sm"
                     >
-                      {isUploading ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+                      <Paperclip className="w-4 h-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
