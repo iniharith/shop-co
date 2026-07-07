@@ -54,16 +54,48 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
     setUploading(true);
     const toastId = toast.loading("Uploading files...");
     try {
-      const formData = new FormData();
-      Array.from(e.target.files).forEach(f => formData.append("files", f));
-      const res = await fetch(`${BACKEND}/api/files/s/${slug}/upload`, {
-        method: "POST",
-        body: formData,
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Upload failed");
+      const uploadedFiles = [];
+      
+      for (let i = 0; i < e.target.files.length; i++) {
+        const file = e.target.files[i];
+        
+        // 1. Get presigned URL
+        const urlRes = await fetch(`${BACKEND}/api/files/s/${slug}/upload-url`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: file.name, contentType: file.type })
+        });
+        
+        if (!urlRes.ok) throw new Error("Gagal mendapatkan link muat naik");
+        const { url, key, publicUrl, userId, taskId, orderId, folderId, shareCategory } = await urlRes.json();
+        
+        // 2. Upload directly to S3
+        const s3Res = await fetch(url, {
+          method: "PUT",
+          headers: { "Content-Type": file.type || "application/octet-stream" },
+          body: file
+        });
+        
+        if (!s3Res.ok) throw new Error("Gagal memuat naik fail ke S3");
+        
+        uploadedFiles.push({
+          key,
+          originalName: file.name,
+          mimetype: file.type,
+          size: file.size,
+          path: publicUrl
+        });
       }
+
+      // 3. Save metadata
+      const metaRes = await fetch(`${BACKEND}/api/files/s/${slug}/save-metadata`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files: uploadedFiles })
+      });
+      
+      if (!metaRes.ok) throw new Error("Gagal menyimpan metadata fail");
+      // Success is handled below
       toast.success("Files uploaded successfully!", { id: toastId });
       await fetchFiles();
     } catch (err: any) {

@@ -630,6 +630,94 @@ const decodeSharedSlug = async (req: any, res: any, next: any) => {
   next();
 };
 
+// 🌐 Public: Get presigned URL for direct S3 upload via shared link
+router.post(
+  '/s/:slug/upload-url',
+  asyncHandler(decodeSharedSlug),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { filename, contentType } = req.body;
+    if (!filename) {
+      res.status(400).json({ success: false, message: 'Filename required' });
+      return;
+    }
+
+    const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+    const { PutObjectCommand } = require('@aws-sdk/client-s3');
+    const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
+    
+    // Get variables decoded from the slug
+    const userId = (req as any).userId || 'customer';
+    const taskId = (req as any).taskId;
+    const orderId = (req as any).orderId;
+    const folderId = (req as any).folderId;
+    const shareCategory = (req as any).shareCategory || 'artwork';
+    const shareSlug = (req as any).shareSlug;
+
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const key = `kampungcetak/uploads/${userId}/${uniqueSuffix}-${safeFilename}`;
+
+    const command = new PutObjectCommand({
+      Bucket: S3_BUCKET_NAME,
+      Key: key,
+      ContentType: contentType || 'application/octet-stream'
+    });
+
+    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    
+    // We also need to save the file metadata to the database immediately 
+    // because the customer uploads directly to S3 and we don't have a backend callback.
+    // Wait, if they upload directly to S3, we should save metadata AFTER they finish uploading.
+    // We can return the metadata info and let the frontend call a separate route, 
+    // or just assume they will finish it. But wait, it's safer to have the frontend save metadata.
+    // Since the frontend is just /share/[slug]/page.tsx, let's just return the URL and let the frontend save metadata!
+    
+    res.json({
+      success: true,
+      url: uploadUrl,
+      key: key,
+      publicUrl: `https://${S3_BUCKET_NAME}.s3.ap-southeast-5.amazonaws.com/${key}`,
+      userId, taskId, orderId, folderId, shareCategory, shareSlug
+    });
+  })
+);
+
+// 🌐 Public: Save metadata after direct S3 upload via shared link
+router.post(
+  '/s/:slug/save-metadata',
+  asyncHandler(decodeSharedSlug),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { files } = req.body;
+    if (!files || !Array.isArray(files) || files.length === 0) {
+      res.status(400).json({ success: false, message: 'Files required' });
+      return;
+    }
+
+    const { taskId, orderId, userId, folderId, shareCategory, shareSlug } = req as any;
+
+    const savedFiles = await Promise.all(
+      files.map((f: any) =>
+        fileUploadRepository.create({
+          userId: userId || 'customer',
+          orderId: orderId || undefined,
+          taskId: taskId || undefined,
+          folderId: folderId || undefined,
+          category: shareCategory || 'artwork',
+          shareSlug,
+          filename: f.key,
+          originalName: f.originalName,
+          mimetype: f.mimetype,
+          size: f.size,
+          path: f.path,
+          adminReviewed: false,
+        })
+      )
+    );
+
+    res.json({ success: true, data: savedFiles });
+  })
+);
+
 router.post(
   '/s/:slug/upload',
   asyncHandler(decodeSharedSlug),
