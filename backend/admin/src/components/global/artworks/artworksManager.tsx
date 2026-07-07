@@ -426,10 +426,12 @@ export default function ArtworksManager() {
     if (isImage) {
       return (
         <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center relative group/thumb">
-          <img 
+          <ImageNext 
             src={getFileUrl(file.path)} 
-            alt={file.originalName} 
-            className="object-cover w-full h-full absolute inset-0 z-0 transition-transform group-hover/thumb:scale-105" 
+            alt={file.originalName || "thumbnail"} 
+            fill
+            sizes="96px"
+            className="object-cover transition-transform group-hover/thumb:scale-105 z-0" 
             onError={(e) => {
               e.currentTarget.style.display = 'none';
               const nextEl = e.currentTarget.nextElementSibling as HTMLElement;
