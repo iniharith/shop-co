@@ -172,7 +172,7 @@ router.get(
       { $project: { durationMs: { $subtract: ["$updatedAt", "$createdAt"] } } },
       { $group: { _id: null, avgDurationMs: { $avg: "$durationMs" } } }
     ]);
-    const avgTimeHours = timeAgg[0]?.avgDurationMs ? (timeAgg[0].avgDurationMs / (1000 * 60 * 60)).toFixed(1) : 0;
+    const avgTimeMinutes = timeAgg[0]?.avgDurationMs ? (timeAgg[0].avgDurationMs / (1000 * 60)).toFixed(1) : 0;
 
     // 4. File Quantity (attached to their assigned tasks)
     const filesAgg = await Task.aggregate([
@@ -219,10 +219,10 @@ router.get(
 
     const detailedTasks = detailedTasksRaw.map(t => {
       const fileCount = t.files ? t.files.length : 0;
-      let timeTookHours = null;
+      let timeTookMinutes = null;
       if (t.isDone && t.updatedAt && t.createdAt) {
         const timeTookMs = new Date(t.updatedAt).getTime() - new Date(t.createdAt).getTime();
-        timeTookHours = (timeTookMs / (1000 * 60 * 60)).toFixed(1);
+        timeTookMinutes = (timeTookMs / (1000 * 60)).toFixed(1);
       }
       return {
         _id: t._id,
@@ -230,7 +230,7 @@ router.get(
         status: t.status,
         isDone: t.isDone,
         fileCount,
-        timeTookHours
+        timeTookMinutes
       };
     });
 
@@ -239,7 +239,7 @@ router.get(
       data: {
         tasksAssigned,
         tasksCompleted,
-        avgTimeHours,
+        avgTimeMinutes,
         fileQuantity,
         efficiency,
         chartData,
