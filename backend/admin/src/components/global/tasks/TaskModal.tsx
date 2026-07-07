@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
 import { useUploadStore } from '@/store/uploadStore';
 import { useUsers } from "@/hooks/useUsers";
-import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin } from "lucide-react";
+import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -223,7 +223,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [activeTab, setActiveTab] = useState("comments");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isDragOverComment, setIsDragOverComment] = useState(false);
-  const { uploads, addUpload, updateProgress, updateStatus } = useUploadStore();
+  const { uploads, addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
   const uploadingFiles = Object.values(uploads).filter(u => u.taskId === task._id && u.status === 'uploading');
 
   const combinedFiles = React.useMemo(() => {
@@ -383,6 +383,16 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                 <LoaderCircle className="w-4 h-4 text-white animate-spin" />
                               </div>
                               <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-0.5 gap-0.5 pt-3">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeUpload(f.id);
+                                  }}
+                                  className="absolute top-1 left-1 p-0.5 bg-black/50 hover:bg-red-500 rounded-full text-white transition-colors z-20"
+                                  title="Cancel Upload"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
                                 {f.tag === 'draft' ? (
                                   <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Draft</div>
                                 ) : f.tag === 'for_print' ? (

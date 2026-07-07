@@ -47,11 +47,13 @@ export default function UploadMonitor() {
                   {upload.status === 'error' && <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />}
                   <span className="text-xs font-medium truncate" title={upload.name}>{upload.name}</span>
                 </div>
-                {(upload.status === 'success' || upload.status === 'error') && (
-                  <button onClick={() => removeUpload(upload.id)} className="text-muted-foreground hover:text-foreground shrink-0 transition-colors">
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
+                <button 
+                  onClick={() => removeUpload(upload.id)} 
+                  className="text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+                  title={upload.status === 'uploading' ? 'Cancel Upload' : 'Dismiss'}
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
               
               {upload.status === 'uploading' && (
