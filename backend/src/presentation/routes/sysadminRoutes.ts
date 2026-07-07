@@ -235,10 +235,16 @@ router.get(
 
       // START TIME
       let startTime = new Date(t.createdAt).getTime();
-      const assignActivities = t.activities?.filter((a: any) => a.action === 'assigned this task');
-      if (assignActivities && assignActivities.length > 0) {
-        const lastAssign = assignActivities[assignActivities.length - 1];
-        startTime = new Date(lastAssign.createdAt).getTime();
+      const inDesignActivity = t.activities?.find((a: any) => a.action.includes('to IN DESIGN'));
+      if (inDesignActivity) {
+        startTime = new Date(inDesignActivity.createdAt).getTime();
+      } else {
+        // Fallback: If IN DESIGN is missing, try looking for assignment as secondary fallback
+        const assignActivities = t.activities?.filter((a: any) => a.action === 'assigned this task' || a.action.includes('assigned this task'));
+        if (assignActivities && assignActivities.length > 0) {
+          const lastAssign = assignActivities[assignActivities.length - 1];
+          startTime = new Date(lastAssign.createdAt).getTime();
+        }
       }
 
       // END TIME
