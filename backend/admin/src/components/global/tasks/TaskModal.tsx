@@ -23,12 +23,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useOrders } from "@/hooks/useOrder";
+import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import { Check, ChevronsUpDown, Download as DownloadIcon } from "lucide-react";
 import { cn, forceDownload } from "@/lib/utils";
 import { useAllFiles } from "@/hooks/useAdminDashboard";
 import { useRouter } from "next/navigation";
 
-const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => {
+const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview }: any) => {
   const isImageFile = file.mimetype?.includes("image") || (file.name || file.url).match(/\.(jpeg|jpg|gif|png|webp|heic)$/i);
   const isPdfFile = file.mimetype?.includes("pdf") || (file.name || file.url).match(/\.pdf$/i);
   const [notes, setNotes] = useState(file.notes || "");
@@ -120,7 +121,19 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => 
           
           {/* Bottom: Filename & Actions */}
           <div className="flex justify-between items-center w-full min-w-0 mt-1">
-            <a href={file.url} target="_blank" rel="noopener noreferrer" className="truncate text-white font-medium text-[10px] tracking-wide hover:underline pr-1">
+            <a 
+              href={file.url} 
+              onClick={(e) => {
+                e.preventDefault();
+                const isImageOrPdf = file.mimetype?.includes("image") || file.mimetype?.includes("pdf") || (file.name || file.url).match(/\.(jpeg|jpg|gif|png|webp|heic|pdf)$/i);
+                if (isImageOrPdf && onPreview) {
+                  onPreview(file);
+                } else {
+                  window.open(file.url, "_blank");
+                }
+              }}
+              className="truncate text-white font-medium text-[10px] tracking-wide hover:underline pr-1 cursor-pointer"
+            >
               {file.name}
             </a>
             
@@ -223,9 +236,16 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [activeTab, setActiveTab] = useState("comments");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isDragOverComment, setIsDragOverComment] = useState(false);
+  const [previewFile, setPreviewFile] = useState<any>(null);
   const { uploads, addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
   const uploadingFiles = Object.values(uploads).filter(u => u.taskId === task._id && (u.status === 'uploading' || u.status === 'error'));
 
+  const allFiles = (allFilesData as any)?.data || [];
+  const customerUploadOrderIds = Array.from(new Set(allFiles.filter((f: any) => f.orderId).map((f: any) => f.orderId))) as string[];
+  const customOrderIds = customerUploadOrderIds.filter(id => !orders.some((o: any) => o._id === id || o.orderId === id));
+
+  const customerUploadUsernames = Array.from(new Set(allFiles.filter((f: any) => f.userId).map((f: any) => f.userId))) as string[];
+  const customUsernames = customerUploadUsernames.filter(name => !customers.some((c: any) => c.name === name || c.email === name));
 
   const combinedFiles = React.useMemo(() => {
     let files = [...(task?.files || [])];
@@ -458,13 +478,14 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                             </div>
                           </div>
                         ))}
-                        {combinedFiles.slice(0, 10).map((file: any, idx: number) => (
+                        {combinedFiles.map((file: any) => (
                           <FileAttachmentCard 
-                            key={idx} 
+                            key={file.url} 
                             task={task} 
                             file={file} 
                             deleteFile={deleteFile} 
                             isDeletingFile={isDeletingFile} 
+                            onPreview={() => setPreviewFile(file)}
                           />
                         ))}
                       </div>
@@ -475,7 +496,6 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                             className="w-full shadow-sm hover:shadow-md transition-shadow"
                             onClick={() => {
                               onClose();
-                              // Open Artworks Manager and try to pre-select the folder using task title
                               router.push(`/admin/artworks?folder=${encodeURIComponent(task.title)}`);
                             }}
                           >
@@ -827,6 +847,21 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                               Order #{(o as any).orderId}
                             </CommandItem>
                           ))}
+                          {customOrderIds.map((id: string) => (
+                             <CommandItem
+                               key={`custom-${id}`}
+                               value={id}
+                               onSelect={() => {
+                                 setOrderId(id);
+                                 handleSaveDetails({ orderId: id });
+                                 setOpenOrderBox(false);
+                                 setOrderSearch("");
+                               }}
+                             >
+                               <Check className={cn("mr-2 h-4 w-4", orderId === id ? "opacity-100" : "opacity-0")} />
+                               <span className="text-muted-foreground italic truncate">Order #{id} (From Uploads)</span>
+                             </CommandItem>
+                           ))}
                         </CommandGroup>
                       </CommandList>
                     </Command>
@@ -886,6 +921,21 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                               {c.name} ({c.email})
                             </CommandItem>
                           ))}
+                          {customUsernames.map((username: string) => (
+                             <CommandItem
+                               key={`custom-${username}`}
+                               value={username}
+                               onSelect={() => {
+                                 setCustomerUsername(username);
+                                 handleSaveDetails({ customerUsername: username });
+                                 setOpenUserBox(false);
+                                 setUserSearch("");
+                               }}
+                             >
+                               <Check className={cn("mr-2 h-4 w-4", customerUsername === username ? "opacity-100" : "opacity-0")} />
+                               <span className="text-muted-foreground italic truncate">{username} (From Uploads)</span>
+                             </CommandItem>
+                           ))}
                         </CommandGroup>
                       </CommandList>
                     </Command>
@@ -954,6 +1004,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
           </div>
         </div>
       </DialogContent>
+      <FilePreviewModal isOpen={!!previewFile} onClose={() => setPreviewFile(null)} file={previewFile} />
     </Dialog>
   );
 }

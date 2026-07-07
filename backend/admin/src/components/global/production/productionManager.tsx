@@ -16,6 +16,7 @@ import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck,
 import { forceDownload } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import ImageNext from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -51,6 +52,7 @@ export default function ProductionManager() {
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [previewFile, setPreviewFile] = useState<any>(null);
   const [commentText, setCommentText] = useState("");
 
   // Upload Modal State
@@ -391,7 +393,7 @@ export default function ProductionManager() {
             }} 
           />
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center z-20">
-            <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(getFileUrl(file.path), "_blank"); }} className="gap-1 shadow-sm">
+            <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewFile(file); }} className="gap-1 shadow-sm">
               <Eye className="w-4 h-4" /> View
             </Button>
           </div>
@@ -710,6 +712,7 @@ export default function ProductionManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <FilePreviewModal isOpen={!!previewFile} onClose={() => setPreviewFile(null)} file={previewFile} />
     </div>
   );
 }
