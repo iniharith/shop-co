@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Loader2, Activity, User, CheckCircle, Clock, File, TrendingUp } from "lucide-react";
+import { Loader2, Activity, User, CheckCircle, Clock, File, TrendingUp, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts';
@@ -61,7 +61,14 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-transparent text-white p-4 md:p-8 font-sans h-[calc(100vh-theme(spacing.16))] overflow-y-auto">
+    <>
+      <style>{`
+        @media print {
+          @page { size: A4 portrait; margin: 15mm; }
+          body { background: white; -webkit-print-color-adjust: exact; }
+        }
+      `}</style>
+      <div className="min-h-screen bg-transparent text-white p-4 md:p-8 font-sans h-[calc(100vh-theme(spacing.16))] overflow-y-auto print:hidden">
       {/* Header matching server-status */}
       <div className="flex flex-wrap items-center justify-between mb-8 gap-4">
         <div className="flex flex-wrap items-center space-x-2 md:space-x-6">
@@ -76,9 +83,9 @@ export default function ReportsPage() {
           </div>
         </div>
         
-        <div className="w-full md:w-64">
+        <div className="w-full md:w-auto flex items-center gap-4">
           <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-            <SelectTrigger className="w-full bg-gray-800 border-gray-700 text-white">
+            <SelectTrigger className="w-64 bg-gray-800 border-gray-700 text-white">
               <SelectValue placeholder="Select a staff member" />
             </SelectTrigger>
             <SelectContent className="bg-gray-800 border-gray-700 text-white">
@@ -89,6 +96,15 @@ export default function ReportsPage() {
               ))}
             </SelectContent>
           </Select>
+          
+          {selectedUserId && reportData && (
+            <button 
+              onClick={() => window.print()}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+            >
+              <Printer className="w-4 h-4" /> Print (A4)
+            </button>
+          )}
         </div>
       </div>
 
@@ -185,7 +201,69 @@ export default function ReportsPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+
+      {/* --- A4 Print Layout --- */}
+      {selectedUserId && reportData && (
+        <div className="hidden print:block bg-white text-black p-4 text-sm w-full font-sans">
+          <div className="border-b-2 border-gray-900 pb-4 mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 uppercase tracking-wider">Staff Performance Report</h1>
+            <p className="text-gray-600 mt-2 font-medium">
+              Staff Name: <span className="text-black">{users.find((u: any) => u._id === selectedUserId)?.name || "Unknown"}</span>
+            </p>
+            <p className="text-gray-600 font-medium">
+              Date: <span className="text-black">{format(new Date(), 'dd MMMM yyyy, hh:mm a')}</span>
+            </p>
+          </div>
+
+          <div className="flex gap-8 mb-8 border border-gray-300 p-4 rounded-lg bg-gray-50">
+            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Total Assigned</span><span className="text-xl font-bold">{reportData.tasksAssigned}</span></div>
+            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Total Completed</span><span className="text-xl font-bold">{reportData.tasksCompleted}</span></div>
+            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Avg Time</span><span className="text-xl font-bold">{reportData.avgTimeHours}h</span></div>
+            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Files Handled</span><span className="text-xl font-bold">{reportData.fileQuantity}</span></div>
+            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Efficiency</span><span className="text-xl font-bold">{reportData.efficiency}%</span></div>
+          </div>
+
+          <h3 className="text-lg font-bold text-gray-900 mb-4 uppercase tracking-wide">Detailed Task List</h3>
+          
+          <table className="w-full text-left border-collapse border border-gray-300">
+            <thead>
+              <tr className="bg-gray-100 text-gray-800 text-xs uppercase tracking-wider">
+                <th className="border border-gray-300 p-2">Task Name</th>
+                <th className="border border-gray-300 p-2 w-24">Status</th>
+                <th className="border border-gray-300 p-2 w-20 text-center">Files</th>
+                <th className="border border-gray-300 p-2 w-24 text-center">Time (hrs)</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm">
+              {reportData.detailedTasks?.map((task: any, index: number) => (
+                <tr key={task._id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                  <td className="border border-gray-300 p-2 font-medium">{task.title}</td>
+                  <td className="border border-gray-300 p-2 text-xs">
+                    <span className={`px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${task.isDone ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                      {task.status.replace(/_/g, ' ')}
+                    </span>
+                  </td>
+                  <td className="border border-gray-300 p-2 text-center font-semibold text-gray-700">{task.fileCount}</td>
+                  <td className="border border-gray-300 p-2 text-center font-semibold text-gray-700">
+                    {task.timeTookHours !== null ? task.timeTookHours : '-'}
+                  </td>
+                </tr>
+              ))}
+              {(!reportData.detailedTasks || reportData.detailedTasks.length === 0) && (
+                <tr>
+                  <td colSpan={4} className="border border-gray-300 p-4 text-center text-gray-500 italic">No tasks found for this staff member.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          
+          <div className="mt-8 text-center text-xs text-gray-400">
+            Report generated by System Administrator
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

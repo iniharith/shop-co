@@ -211,6 +211,29 @@ router.get(
       });
     }
 
+    // 7. Detailed Tasks for Report Printing
+    const detailedTasksRaw = await Task.find({ assignee: userId, isDeleted: false })
+      .select('title status isDone files createdAt updatedAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const detailedTasks = detailedTasksRaw.map(t => {
+      const fileCount = t.files ? t.files.length : 0;
+      let timeTookHours = null;
+      if (t.isDone && t.updatedAt && t.createdAt) {
+        const timeTookMs = new Date(t.updatedAt).getTime() - new Date(t.createdAt).getTime();
+        timeTookHours = (timeTookMs / (1000 * 60 * 60)).toFixed(1);
+      }
+      return {
+        _id: t._id,
+        title: t.title,
+        status: t.status,
+        isDone: t.isDone,
+        fileCount,
+        timeTookHours
+      };
+    });
+
     res.json({
       success: true,
       data: {
@@ -219,7 +242,8 @@ router.get(
         avgTimeHours,
         fileQuantity,
         efficiency,
-        chartData
+        chartData,
+        detailedTasks
       }
     });
   })
