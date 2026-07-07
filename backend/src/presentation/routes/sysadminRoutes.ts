@@ -179,13 +179,8 @@ router.get(
     // 2. Tasks Completed
     const tasksCompleted = await Task.countDocuments({ assignee: userId, isDeleted: false, isDone: true });
 
-    // 3. Average Task Time (in hours)
-    const timeAgg = await Task.aggregate([
-      { $match: { assignee: userId, isDeleted: false, isDone: true } },
-      { $project: { durationMs: { $subtract: ["$updatedAt", "$createdAt"] } } },
-      { $group: { _id: null, avgDurationMs: { $avg: "$durationMs" } } }
-    ]);
-    const avgTimeFormatted = formatMsToDuration(timeAgg[0]?.avgDurationMs);
+    // 3. Average Task Time
+    // Computed below using activities array
 
     // 4. File Quantity (attached to their assigned tasks)
     const filesAgg = await Task.aggregate([
@@ -226,17 +221,43 @@ router.get(
 
     // 7. Detailed Tasks for Report Printing
     const detailedTasksRaw = await Task.find({ assignee: userId, isDeleted: false })
-      .select('title status isDone files createdAt updatedAt')
+      .select('title status isDone files createdAt updatedAt activities')
       .sort({ createdAt: -1 })
       .lean();
+
+    let totalDurationMs = 0;
+    let completedCountForAvg = 0;
 
     const detailedTasks = detailedTasksRaw.map(t => {
       const fileCount = t.files ? t.files.length : 0;
       let timeTookFormatted = "-";
-      if (t.isDone && t.updatedAt && t.createdAt) {
-        const timeTookMs = new Date(t.updatedAt).getTime() - new Date(t.createdAt).getTime();
-        timeTookFormatted = formatMsToDuration(timeTookMs);
+      let timeTookMs = null;
+
+      // START TIME
+      let startTime = new Date(t.createdAt).getTime();
+      const assignActivities = t.activities?.filter((a: any) => a.action === 'assigned this task');
+      if (assignActivities && assignActivities.length > 0) {
+        const lastAssign = assignActivities[assignActivities.length - 1];
+        startTime = new Date(lastAssign.createdAt).getTime();
       }
+
+      // END TIME
+      const doneDesignActivity = t.activities?.find((a: any) => 
+        a.action.includes('to DONE DESIGN') && new Date(a.createdAt).getTime() >= startTime
+      );
+      
+      if (doneDesignActivity) {
+         timeTookMs = new Date(doneDesignActivity.createdAt).getTime() - startTime;
+      } else if (['DONE_DESIGN', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED'].includes(t.status)) {
+         timeTookMs = new Date(t.updatedAt).getTime() - startTime;
+      }
+
+      if (timeTookMs !== null && timeTookMs >= 0) {
+        timeTookFormatted = formatMsToDuration(timeTookMs);
+        totalDurationMs += timeTookMs;
+        completedCountForAvg++;
+      }
+
       return {
         _id: t._id,
         title: t.title,
@@ -246,6 +267,9 @@ router.get(
         timeTookFormatted
       };
     });
+
+    const avgDurationMs = completedCountForAvg > 0 ? totalDurationMs / completedCountForAvg : 0;
+    const avgTimeFormatted = formatMsToDuration(avgDurationMs);
 
     res.json({
       success: true,
