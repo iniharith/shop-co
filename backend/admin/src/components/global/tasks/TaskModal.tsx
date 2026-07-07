@@ -200,7 +200,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { mutate: addComment, isPending: isCommenting } = useAddTaskComment();
   const { mutate: deleteCommentApi, isPending: isDeletingComment } = useDeleteTaskComment();
   const { mutate: pinCommentApi, isPending: isPinningComment } = usePinTaskComment();
-  const { mutate: uploadFile, isPending: isUploading } = useUploadTaskFile();
+  const { mutateAsync: uploadFile, isPending: isUploading } = useUploadTaskFile();
   const { mutate: deleteFile, isPending: isDeletingFile } = useDeleteTaskFile();
   const { data: usersData } = useUsers();
   const { data: ordersData } = useOrders();
@@ -226,17 +226,6 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { uploads, addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
   const uploadingFiles = Object.values(uploads).filter(u => u.taskId === task._id && (u.status === 'uploading' || u.status === 'error'));
 
-  // Sync upload store with actual task files to catch any stuck uploads
-  React.useEffect(() => {
-    uploadingFiles.forEach(u => {
-      if (u.status !== 'uploading' || !u.file) return;
-      const isUploaded = task.files?.some((f: any) => f.fileName === u.name && f.size === u.file?.size) || 
-                         task.artworks?.some((a: any) => a.fileName === u.name && a.size === u.file?.size);
-      if (isUploaded) {
-        updateStatus(u.id, 'success');
-      }
-    });
-  }, [task.files, task.artworks, uploadingFiles, updateStatus]);
 
   const combinedFiles = React.useMemo(() => {
     let files = [...(task?.files || [])];
@@ -307,25 +296,21 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
         
         addUpload({ id, name: file.name, tag, taskId: task._id, file, abortController });
         
-        uploadFile(
-          { 
-            id: task._id, 
-            file, 
-            tag, 
-            onProgress: (percent) => updateProgress(id, percent),
-            abortController 
-          }, 
-          {
-            onSuccess: () => {
-              updateStatus(id, 'success');
-              toast.success("File uploaded successfully");
-            },
-            onError: (err) => {
-              updateStatus(id, 'error', err.message || "Failed to upload file");
-              toast.error("Failed to upload file")
-            }
+        uploadFile({ 
+          id: task._id, 
+          file, 
+          tag, 
+          onProgress: (percent) => updateProgress(id, percent),
+          abortController 
+        })
+        .then(() => {
+          updateStatus(id, 'success');
+        })
+        .catch((err) => {
+          if (err.message !== "Upload cancelled") {
+            updateStatus(id, 'error', err.message || "Failed to upload file");
           }
-        );
+        });
       });
       // reset input
       e.target.value = '';
@@ -340,21 +325,21 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     removeUpload(upload.id);
     addUpload({ id: upload.id, name: upload.name, tag: upload.tag, taskId: upload.taskId, file: upload.file, abortController });
     
-    uploadFile(
-      { id: upload.taskId, file: upload.file, tag: upload.tag, onProgress: (percent) => updateProgress(upload.id, percent), abortController }, 
-      {
-        onSuccess: () => {
-          updateStatus(upload.id, 'success');
-          toast.success("File uploaded successfully");
-        },
-        onError: (err) => {
-          if (err.message !== "Upload cancelled") {
-            updateStatus(upload.id, 'error', err.message || "Failed to upload file");
-            toast.error(err.message || "Failed to upload file");
-          }
-        }
+    uploadFile({ 
+      id: upload.taskId, 
+      file: upload.file, 
+      tag: upload.tag, 
+      onProgress: (percent) => updateProgress(upload.id, percent), 
+      abortController 
+    })
+    .then(() => {
+      updateStatus(upload.id, 'success');
+    })
+    .catch((err) => {
+      if (err.message !== "Upload cancelled") {
+        updateStatus(upload.id, 'error', err.message || "Failed to upload file");
       }
-    );
+    });
   };
 
   const handleDeleteComment = (commentId: string) => {
@@ -640,12 +625,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                   const files = Array.from(e.dataTransfer.files);
                   files.forEach(file => {
-                    uploadFile({ id: task._id, file, tag: 'attachment' }, {
-                      onSuccess: () => {
-                        toast.success("File uploaded successfully");
-                      },
-                      onError: () => toast.error("Failed to upload file")
-                    });
+                    uploadFile({ id: task._id, file, tag: 'attachment' })
+                      .catch(() => {});
                   });
                 }
               }}

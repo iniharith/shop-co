@@ -247,6 +247,11 @@ router.get(
         }
       }
 
+      if (t.title.includes('raven61763')) {
+        const fs = require('fs');
+        fs.appendFileSync('debug_task.log', `--- DEBUG TASK ---\nTitle: ${t.title}\nCreatedAt: ${t.createdAt}\nActivities: ${JSON.stringify(t.activities, null, 2)}\nCalculated Start Time: ${new Date(startTime).toISOString()}\n\n`);
+      }
+
       // END TIME
       const doneDesignActivity = t.activities?.find((a: any) => 
         a.action.includes('to DONE DESIGN') && new Date(a.createdAt).getTime() >= startTime

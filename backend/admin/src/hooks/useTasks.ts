@@ -79,13 +79,13 @@ export const usePermanentDeleteTask = () => {
 
 export const useUploadTaskFile = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(
+    const { mutate, mutateAsync, isPending } = useMutationData(
         ['uploadTaskFile'],
         (data: { id: string, file: File, tag?: string, onProgress?: (percent: number) => void, abortController?: AbortController }) => 
             import("@/api/tasks").then(m => m.uploadTaskFile(session?.user.token, data.id, data.file, data.tag, data.onProgress, data.abortController)),
         ["tasks", "allFiles", "groupedFiles"]
     )
-    return { mutate, isPending }
+    return { mutate, mutateAsync, isPending }
 }
 
 export const useDeleteTaskFile = () => {
