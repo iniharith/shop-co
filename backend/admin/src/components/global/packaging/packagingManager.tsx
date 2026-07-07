@@ -414,13 +414,23 @@ export default function PackagingManager() {
             tabIndex={-1}
           />
           <div className="absolute inset-0 z-10 bg-transparent"></div>
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+            <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewFile(file); }} className="gap-1 shadow-sm">
+              <Eye className="w-4 h-4" /> View
+            </Button>
+          </div>
         </div>
       );
     }
 
     return (
-      <div className="w-full h-24 bg-muted/50 rounded-t-lg flex items-center justify-center">
+      <div className="w-full h-24 bg-muted/50 rounded-t-lg flex items-center justify-center relative group">
         {getFileIcon(file.mimetype)}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+          <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewFile(file); }} className="gap-1 shadow-sm">
+            <Eye className="w-4 h-4" /> View
+          </Button>
+        </div>
       </div>
     );
   };

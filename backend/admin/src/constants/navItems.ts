@@ -113,7 +113,7 @@ export const roleByNavItems = (role: string) => {
     let allowedTitles = AdminNavItems.map(item => item.title); // Default: all allowed
     
     if (role === "production") {
-        allowedTitles = ['Tracking', 'Chat', 'Production', 'History'];
+        allowedTitles = ['Tracking', 'Chat', 'Production', 'Packaging', 'History'];
     } else if (role === "packaging") {
         allowedTitles = ['Tracking', 'Chat', 'Packaging', 'History'];
     } else if (role === "designer") {
