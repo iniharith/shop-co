@@ -126,52 +126,57 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
   const handleDownloadAll = async () => {
     if (downloading) return;
     setDownloading(true);
-    const toastId = toast.loading(`Packing ${files.length} file(s)…`);
+    const toastId = toast.loading(`Packing files... (0/${files.length})`);
     try {
       const JSZip = (await import("jszip")).default;
       const zip = new JSZip();
       const usedNames = new Set<string>();
       const failed: string[] = [];
+      let completedCount = 0;
 
-      await Promise.all(
-        files.map(async (file: any) => {
-          try {
-            // stream=true is required here: without it the backend just
-            // redirects to the (private) S3 URL, and a fetch() from the
-            // browser can't read a cross-origin redirected response unless
-            // the S3 bucket has matching CORS rules — it fails silently for
-            // every file, so we'd still "successfully" generate a ZIP with
-            // nothing inside it. stream=true makes the backend fetch the
-            // file itself and pipe the bytes back, which needs no CORS.
-            const proxyUrl = `${BACKEND}/api/files/proxy-download?url=${encodeURIComponent(file.path)}&name=${encodeURIComponent(file.originalName || "file")}&stream=true`;
-            const res = await fetch(proxyUrl);
-            if (!res.ok) {
+      for (let i = 0; i < files.length; i += 3) {
+        const chunk = files.slice(i, i + 3);
+        await Promise.all(
+          chunk.map(async (file: any) => {
+            try {
+              // stream=true is required here: without it the backend just
+              // The backend redirects to the S3 URL. Since you fixed the AWS CORS rules, 
+              // the browser can now securely download directly from S3 at full speed
+              // without bottlenecking your Node.js backend server!
+              const proxyUrl = `${BACKEND}/api/files/proxy-download?url=${encodeURIComponent(file.path)}&name=${encodeURIComponent(file.originalName || "file")}`;
+              const res = await fetch(proxyUrl);
+              if (!res.ok) {
+                failed.push(file.originalName || "file");
+                return;
+              }
+              const blob = await res.blob();
+              if (blob.size === 0) {
+                failed.push(file.originalName || "file");
+                return;
+              }
+
+              // Avoid silently overwriting same-named files inside the zip
+              let name = file.originalName || "file";
+              let counter = 1;
+              while (usedNames.has(name)) {
+                const parts = (file.originalName || "file").split(".");
+                const ext = parts.length > 1 ? `.${parts.pop()}` : "";
+                name = `${parts.join(".")}(${counter})${ext}`;
+                counter++;
+              }
+              usedNames.add(name);
+              zip.file(name, blob);
+            } catch (err) {
               failed.push(file.originalName || "file");
-              return;
+            } finally {
+              completedCount++;
+              toast.loading(`Packing files... (${completedCount}/${files.length})`, { id: toastId });
             }
-            const blob = await res.blob();
-            if (blob.size === 0) {
-              failed.push(file.originalName || "file");
-              return;
-            }
+          })
+        );
+      }
 
-            // Avoid silently overwriting same-named files inside the zip
-            let name = file.originalName || "file";
-            let counter = 1;
-            while (usedNames.has(name)) {
-              const parts = (file.originalName || "file").split(".");
-              const ext = parts.length > 1 ? `.${parts.pop()}` : "";
-              name = `${parts.join(".")}(${counter})${ext}`;
-              counter++;
-            }
-            usedNames.add(name);
-            zip.file(name, blob);
-          } catch {
-            failed.push(file.originalName || "file");
-          }
-        })
-      );
-
+      toast.loading("Zipping files...", { id: toastId });
       if (Object.keys(zip.files).length === 0) {
         throw new Error("Could not download any files. Please try again.");
       }

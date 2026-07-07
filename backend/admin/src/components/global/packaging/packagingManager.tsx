@@ -214,53 +214,55 @@ export default function PackagingManager() {
 
   const handleDownloadAll = async (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    toast.loading(`Preparing ZIP with ${group.files.length} files...`);
+    const toastId = toast.loading(`Preparing ZIP... (0/${group.files.length})`);
     try {
       const zip = new JSZip();
       const usedNames = new Set<string>();
       const failed: string[] = [];
+      let completedCount = 0;
 
-      const filePromises = group.files.map(async (file: any) => {
-        let baseName = file.originalName || "file";
-        let fileName = baseName;
-        let counter = 1;
-        while (usedNames.has(fileName)) {
-          const nameParts = baseName.split('.');
-          if (nameParts.length > 1) {
-            const ext = nameParts.pop();
-            fileName = `${nameParts.join('.')}(${counter}).${ext}`;
-          } else {
-            fileName = `${baseName}(${counter})`;
+      for (let i = 0; i < group.files.length; i += 3) {
+        const chunk = group.files.slice(i, i + 3);
+        await Promise.all(chunk.map(async (file: any) => {
+          let baseName = file.originalName || "file";
+          let fileName = baseName;
+          let counter = 1;
+          while (usedNames.has(fileName)) {
+            const nameParts = baseName.split('.');
+            if (nameParts.length > 1) {
+              const ext = nameParts.pop();
+              fileName = `${nameParts.join('.')}(${counter}).${ext}`;
+            } else {
+              fileName = `${baseName}(${counter})`;
+            }
+            counter++;
           }
-          counter++;
-        }
-        usedNames.add(fileName);
+          usedNames.add(fileName);
 
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-        const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName || "file")}&stream=true`;
-        try {
-          const response = await fetch(proxyUrl);
-          // Without this check, a failed fetch (403/404/502) still resolves
-          // and its error body gets added to the zip as if it were the real
-          // file — producing an archive that looks fine but only contains
-          // broken/unopenable "files". Skip it instead so the ZIP only ever
-          // contains real file content.
-          if (!response.ok) {
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+          const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName || "file")}`;
+          try {
+            const response = await fetch(proxyUrl);
+            if (!response.ok) {
+              failed.push(baseName);
+              return;
+            }
+            const blob = await response.blob();
+            if (blob.size === 0) {
+              failed.push(baseName);
+              return;
+            }
+            zip.file(fileName, blob);
+          } catch {
             failed.push(baseName);
-            return;
+          } finally {
+            completedCount++;
+            toast.loading(`Preparing ZIP... (${completedCount}/${group.files.length})`, { id: toastId });
           }
-          const blob = await response.blob();
-          if (blob.size === 0) {
-            failed.push(baseName);
-            return;
-          }
-          zip.file(fileName, blob);
-        } catch {
-          failed.push(baseName);
-        }
-      });
-      await Promise.all(filePromises);
+        }));
+      }
 
+      toast.loading("Zipping files...", { id: toastId });
       if (Object.keys(zip.files).length === 0) {
         throw new Error("Could not download any files");
       }

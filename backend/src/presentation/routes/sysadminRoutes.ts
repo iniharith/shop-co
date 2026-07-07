@@ -235,21 +235,30 @@ router.get(
 
       // START TIME
       let startTime = new Date(t.createdAt).getTime();
-      const inDesignActivity = t.activities?.find((a: any) => a.action.includes('to IN DESIGN'));
-      if (inDesignActivity) {
-        startTime = new Date(inDesignActivity.createdAt).getTime();
+      
+      // Get the LAST IN DESIGN or IN_DESIGN activity
+      const inDesignActivities = t.activities?.filter((a: any) => a.action.includes('to IN DESIGN') || a.action.includes('to IN_DESIGN'));
+      if (inDesignActivities && inDesignActivities.length > 0) {
+        startTime = new Date(inDesignActivities[inDesignActivities.length - 1].createdAt).getTime();
       } else {
-        // Fallback: If IN DESIGN is missing, try looking for assignment as secondary fallback
-        const assignActivities = t.activities?.filter((a: any) => a.action === 'assigned this task' || a.action.includes('assigned this task'));
-        if (assignActivities && assignActivities.length > 0) {
-          const lastAssign = assignActivities[assignActivities.length - 1];
-          startTime = new Date(lastAssign.createdAt).getTime();
+        // Fallback 1: Try IN PROGRESS or PENDING ARTWORK
+        const progressActivities = t.activities?.filter((a: any) => a.action.includes('to IN PROGRESS') || a.action.includes('to IN_PROGRESS') || a.action.includes('to PENDING'));
+        if (progressActivities && progressActivities.length > 0) {
+          startTime = new Date(progressActivities[progressActivities.length - 1].createdAt).getTime();
+        } else {
+          // Fallback 2: Assignment
+          const assignActivities = t.activities?.filter((a: any) => a.action.toLowerCase().includes('assign'));
+          if (assignActivities && assignActivities.length > 0) {
+            startTime = new Date(assignActivities[assignActivities.length - 1].createdAt).getTime();
+          } else {
+            // Fallback 3: Use the VERY LAST activity logged before DONE DESIGN
+            // This ensures if they took any action 10 mins ago, we use it!
+            const doneDesignIndex = t.activities?.findIndex((a: any) => a.action.includes('to DONE DESIGN') || a.action.includes('to DONE_DESIGN'));
+            if (doneDesignIndex > 0) {
+               startTime = new Date(t.activities[doneDesignIndex - 1].createdAt).getTime();
+            }
+          }
         }
-      }
-
-      if (t.title.includes('raven61763')) {
-        const fs = require('fs');
-        fs.appendFileSync('debug_task.log', `--- DEBUG TASK ---\nTitle: ${t.title}\nCreatedAt: ${t.createdAt}\nActivities: ${JSON.stringify(t.activities, null, 2)}\nCalculated Start Time: ${new Date(startTime).toISOString()}\n\n`);
       }
 
       // END TIME

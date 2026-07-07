@@ -38,6 +38,15 @@ const router = Router();
 
 // GET /api/tasks
 router.get(
+  '/debug-tasks',
+  asyncHandler(async (req: Request, res: Response) => {
+    const taskRepository = new TaskRepository();
+    const tasks = await taskRepository.getAllTasks({ limit: 100 });
+    res.json(tasks.filter(t => t.title.toLowerCase().includes('raven')));
+  })
+);
+
+router.get(
   '/',
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
