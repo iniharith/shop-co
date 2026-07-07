@@ -145,7 +145,7 @@ export default function ReportsPage() {
             <MetricCard 
               icon={<Clock className="w-5 h-5 text-orange-400" />} 
               title="Avg Time Taken" 
-              value={`${reportData.avgTimeMinutes}m`} 
+              value={reportData.avgTimeFormatted || "-"} 
             />
             <MetricCard 
               icon={<File className="w-5 h-5 text-purple-400" />} 
@@ -219,7 +219,7 @@ export default function ReportsPage() {
           <div className="flex gap-8 mb-8 border border-gray-300 p-4 rounded-lg bg-gray-50">
             <div><span className="text-gray-500 font-semibold text-xs uppercase block">Total Assigned</span><span className="text-xl font-bold">{reportData.tasksAssigned}</span></div>
             <div><span className="text-gray-500 font-semibold text-xs uppercase block">Total Completed</span><span className="text-xl font-bold">{reportData.tasksCompleted}</span></div>
-            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Avg Time</span><span className="text-xl font-bold">{reportData.avgTimeMinutes}m</span></div>
+            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Avg Time</span><span className="text-xl font-bold">{reportData.avgTimeFormatted || "-"}</span></div>
             <div><span className="text-gray-500 font-semibold text-xs uppercase block">Files Handled</span><span className="text-xl font-bold">{reportData.fileQuantity}</span></div>
             <div><span className="text-gray-500 font-semibold text-xs uppercase block">Efficiency</span><span className="text-xl font-bold">{reportData.efficiency}%</span></div>
           </div>
@@ -232,7 +232,7 @@ export default function ReportsPage() {
                 <th className="border border-gray-300 p-2">Task Name</th>
                 <th className="border border-gray-300 p-2 w-24">Status</th>
                 <th className="border border-gray-300 p-2 w-20 text-center">Files</th>
-                <th className="border border-gray-300 p-2 w-24 text-center">Time (min)</th>
+                <th className="border border-gray-300 p-2 w-40 text-center">Time Took</th>
               </tr>
             </thead>
             <tbody className="text-sm">
@@ -246,7 +246,7 @@ export default function ReportsPage() {
                   </td>
                   <td className="border border-gray-300 p-2 text-center font-semibold text-gray-700">{task.fileCount}</td>
                   <td className="border border-gray-300 p-2 text-center font-semibold text-gray-700">
-                    {task.timeTookMinutes !== null ? task.timeTookMinutes : '-'}
+                    {task.timeTookFormatted || '-'}
                   </td>
                 </tr>
               ))}

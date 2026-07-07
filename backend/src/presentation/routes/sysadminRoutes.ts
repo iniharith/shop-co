@@ -160,6 +160,19 @@ router.get(
       return;
     }
 
+    const formatMsToDuration = (ms: number | undefined | null) => {
+      if (!ms || isNaN(ms)) return "00 DAYS 00HRS 00MIN";
+      const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+      
+      const d = String(days).padStart(2, '0');
+      const h = String(hours).padStart(2, '0');
+      const m = String(minutes).padStart(2, '0');
+      
+      return `${d} DAYS ${h}HRS ${m}MIN`;
+    };
+
     // 1. Total Assigned Tasks
     const tasksAssigned = await Task.countDocuments({ assignee: userId, isDeleted: false });
 
@@ -172,7 +185,7 @@ router.get(
       { $project: { durationMs: { $subtract: ["$updatedAt", "$createdAt"] } } },
       { $group: { _id: null, avgDurationMs: { $avg: "$durationMs" } } }
     ]);
-    const avgTimeMinutes = timeAgg[0]?.avgDurationMs ? (timeAgg[0].avgDurationMs / (1000 * 60)).toFixed(1) : 0;
+    const avgTimeFormatted = formatMsToDuration(timeAgg[0]?.avgDurationMs);
 
     // 4. File Quantity (attached to their assigned tasks)
     const filesAgg = await Task.aggregate([
@@ -219,10 +232,10 @@ router.get(
 
     const detailedTasks = detailedTasksRaw.map(t => {
       const fileCount = t.files ? t.files.length : 0;
-      let timeTookMinutes = null;
+      let timeTookFormatted = "-";
       if (t.isDone && t.updatedAt && t.createdAt) {
         const timeTookMs = new Date(t.updatedAt).getTime() - new Date(t.createdAt).getTime();
-        timeTookMinutes = (timeTookMs / (1000 * 60)).toFixed(1);
+        timeTookFormatted = formatMsToDuration(timeTookMs);
       }
       return {
         _id: t._id,
@@ -230,7 +243,7 @@ router.get(
         status: t.status,
         isDone: t.isDone,
         fileCount,
-        timeTookMinutes
+        timeTookFormatted
       };
     });
 
@@ -239,7 +252,7 @@ router.get(
       data: {
         tasksAssigned,
         tasksCompleted,
-        avgTimeMinutes,
+        avgTimeFormatted,
         fileQuantity,
         efficiency,
         chartData,
