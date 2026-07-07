@@ -24,6 +24,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import AxiosInstance from "@/utils/axios";
+import { uploadToS3Directly } from "@/utils/s3Upload";
 
 const categories = [
   "ALL",
@@ -367,27 +369,22 @@ export default function ArtworksManager() {
       const token = session?.user?.token || localStorage.getItem('token') || ""; 
       
       const uploadPromises = Array.from(uploadFiles).map(async (f) => {
-        const formData = new FormData();
-        if (uploadData.userId) formData.append("userId", uploadData.userId);
-        if (uploadData.orderId) formData.append("orderId", uploadData.orderId);
-        formData.append("category", uploadData.category);
-        formData.append("notes", uploadData.notes);
-        if (uploadData.taskId) formData.append("taskId", uploadData.taskId);
-        if (uploadData.folderId) formData.append("folderId", uploadData.folderId);
-        formData.append("files", f);
+        // 1. Direct S3 Upload
+        const uploadedData = await uploadToS3Directly(token, f);
+        
+        // 2. Save Metadata
+        const metadata = {
+          userId: uploadData.userId || undefined,
+          orderId: uploadData.orderId || undefined,
+          taskId: uploadData.taskId || undefined,
+          folderId: uploadData.folderId || undefined,
+          category: uploadData.category,
+          notes: uploadData.notes,
+          files: [uploadedData]
+        };
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/files/upload`, {
-          method: "POST",
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: formData,
-        });
-
-        if (!res.ok) {
-          const errText = await res.text();
-          console.error("Upload error response:", errText);
-          throw new Error(errText || "Upload failed");
-        }
-        return res.json();
+        const res = await AxiosInstance(token).post("/api/files/save-metadata", metadata);
+        return res.data;
       });
 
       await Promise.all(uploadPromises);
@@ -604,25 +601,21 @@ export default function ArtworksManager() {
                     const token = (session as any)?.user?.token || localStorage.getItem('token') || "";
                     
                     const uploadPromises = files.map(async (f) => {
-                      const formData = new FormData();
-                      if (activeGroup.userId) formData.append("userId", activeGroup.userId);
-                      if (activeGroup.orderId) formData.append("orderId", activeGroup.orderId);
-                      if (activeGroup.taskId) formData.append("taskId", activeGroup.taskId);
-                      if (activeSubFolderId) formData.append("folderId", activeSubFolderId);
-                      formData.append("category", activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING");
-                      formData.append("files", f);
+                      // 1. Direct S3 Upload
+                      const uploadedData = await uploadToS3Directly(token, f);
+                      
+                      // 2. Save Metadata
+                      const metadata = {
+                        userId: activeGroup.userId || undefined,
+                        orderId: activeGroup.orderId || undefined,
+                        taskId: activeGroup.taskId || undefined,
+                        folderId: activeSubFolderId || undefined,
+                        category: activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING",
+                        files: [uploadedData]
+                      };
 
-                      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/files/upload`, {
-                        method: 'POST',
-                        headers: { Authorization: `Bearer ${token}` },
-                        body: formData
-                      });
-                      if (!res.ok) {
-                        const errText = await res.text();
-                        console.error("Upload error details:", errText);
-                        throw new Error(errText || "Upload failed");
-                      }
-                      return res.json();
+                      const res = await AxiosInstance(token).post("/api/files/save-metadata", metadata);
+                      return res.data;
                     });
 
                     toast.promise(Promise.all(uploadPromises), {

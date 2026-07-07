@@ -376,6 +376,49 @@ router.post(
   })
 );
 
+// POST /api/tasks/:id/files/save-metadata
+router.post(
+  '/:id/files/save-metadata',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { fileUrl, fileName, tag, fileKey, mimetype, size } = req.body;
+    
+    if (!fileUrl || !fileName) {
+      res.status(400).json({ success: false, message: 'fileUrl and fileName are required' });
+      return;
+    }
+
+    const task = await taskRepository.addFile(req.params.id, fileUrl, fileName, tag || 'attachment');
+    if (!task) {
+      res.status(404).json({ success: false, message: 'Task not found' });
+      return;
+    }
+
+    try {
+      const { FileUpload } = await import('../../domain/entities/FileUpload');
+      const authReq = req as any;
+      const userId = authReq.userId || authReq.user?.id || 'admin';
+
+      await FileUpload.create({
+        userId: userId,
+        taskId: task._id,
+        orderId: task.orderId || undefined,
+        category: 'TASK',
+        tag: tag || 'attachment',
+        filename: fileKey || fileName,
+        originalName: fileName,
+        mimetype: mimetype || 'application/octet-stream',
+        size: size || 0,
+        path: fileUrl,
+      });
+    } catch (e) {
+      console.error('Failed to sync task file to FileUpload:', e);
+    }
+
+    res.json({ success: true, task });
+  })
+);
+
 // DELETE /api/tasks/:id/files/:fileId
 router.delete(
   '/:id/files/:fileId',

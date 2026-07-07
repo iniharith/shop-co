@@ -10,6 +10,8 @@ import Link from 'next/link';
 import { Breadcrumbs } from "@/components/global/breadcrumb";
 import { useSession } from "next-auth/react";
 import { useGetOrders } from "@/hooks/useOrder";
+import { uploadToS3Directly } from "@/utils/s3Upload";
+
 
 interface UploadedFile {
   _id: string;
@@ -131,20 +133,33 @@ export default function UploadPage() {
     setUploading(true);
     setError('');
 
-    const formData = new FormData();
-    queue.forEach(q => formData.append('files', q.file));
-    if (orderId) formData.append('orderId', orderId);
-    if (notes) formData.append('notes', notes);
-
     try {
-      const res = await fetch(`${API}/api/files/upload`, {
-        method: 'POST',
-        body: formData,
-        headers: { Authorization: `Bearer ${token}` },
-        credentials: 'include',
+      const uploadPromises = queue.map(async (q) => {
+        // 1. Direct S3 Upload
+        const uploadedData = await uploadToS3Directly(token, q.file, API);
+        
+        // 2. Save Metadata
+        const metadata = {
+          orderId: orderId,
+          notes: notes || undefined,
+          files: [uploadedData]
+        };
+
+        const res = await fetch(`${API}/api/files/save-metadata`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(metadata)
+        });
+
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message);
+        return data;
       });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message);
+
+      await Promise.all(uploadPromises);
 
       setUploadSuccess(true);
       setQueue([]);

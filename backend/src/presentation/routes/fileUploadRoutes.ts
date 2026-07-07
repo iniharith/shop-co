@@ -116,6 +116,101 @@ router.post(
     });
   })
 );
+// ─── POST /api/files/presigned-url ────────────────────────
+// Get a presigned URL to upload file directly to S3
+router.post(
+  '/presigned-url',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { filename, contentType } = req.body;
+    if (!filename || !contentType) {
+      res.status(400).json({ success: false, message: 'filename and contentType are required' });
+      return;
+    }
+
+    const { PutObjectCommand } = require('@aws-sdk/client-s3');
+    const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+    const userId = (req as any).userId || (req as any).user?.id || 'unknown';
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const key = `kampungcetak/uploads/${userId}/${uniqueSuffix}-${filename.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+
+    const command = new PutObjectCommand({
+      Bucket: S3_BUCKET_NAME,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    const fileUrl = `https://${S3_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-southeast-5'}.amazonaws.com/${key}`;
+
+    res.json({ success: true, signedUrl, fileUrl, key });
+  })
+);
+
+// ─── POST /api/files/save-metadata ────────────────────────
+// Client calls this after direct S3 upload succeeds
+router.post(
+  '/save-metadata',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { orderId, taskId, notes, userId: bodyUserId, category, tag, folderId, files } = req.body;
+    const authReq = req as any;
+    
+    // If admin provides a userId in the body, upload on their behalf
+    const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(authReq.role);
+    const userId = (isAdmin && bodyUserId) ? bodyUserId : authReq.userId || authReq.user?.id;
+
+    if (!userId && !taskId) {
+      res.status(401).json({ success: false, message: 'Log masuk atau Task diperlukan' });
+      return;
+    }
+
+    if (!files || !Array.isArray(files) || files.length === 0) {
+      res.status(400).json({ success: false, message: 'Tiada fail metadata diberikan' });
+      return;
+    }
+
+    const savedFiles = await Promise.all(
+      files.map((file: any) =>
+        fileUploadRepository.create({
+          userId: userId || 'admin',
+          orderId: orderId || undefined,
+          taskId: taskId || undefined,
+          category: category || undefined,
+          tag: tag || undefined,
+          filename: file.key || file.filename || file.originalname,
+          originalName: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          path: file.fileUrl || file.path,
+          notes: notes || undefined,
+          adminReviewed: false,
+          folderId: folderId || undefined,
+        })
+      )
+    );
+
+    // Optionally notify customer via WhatsApp
+    const customerPhone = authReq.user?.phone;
+    const customerName = authReq.user?.name || 'Pelanggan';
+    if (customerPhone) {
+      whatsAppService
+        .sendFileUploadConfirmation({
+          phone: customerPhone,
+          customerName: customerName,
+          fileCount: savedFiles.length,
+        })
+        .catch((err) => console.error('Failed to send WhatsApp notification:', err));
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `${savedFiles.length} fail berjaya direkodkan`,
+      data: savedFiles,
+      count: savedFiles.length,
+    });
+  })
+);
 
 // ─── GET /api/files/my ────────────────────────────────────
 // Customer views their own uploaded files

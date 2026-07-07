@@ -39,11 +39,21 @@ export const addTaskComment = async (token: string, id: string, text: string) =>
     return response.data;
 }
 
+import { uploadToS3Directly } from "@/utils/s3Upload";
+
 export const uploadTaskFile = async (token: string, taskId: string, file: File, tag?: string) => {
-    const formData = new FormData();
-    if (tag) formData.append('tag', tag);
-    formData.append('file', file);
-    const response = await AxiosInstance(token).post(`/api/tasks/${taskId}/files`, formData);
+    // 1. Upload directly to S3
+    const uploadedData = await uploadToS3Directly(token, file);
+    
+    // 2. Save metadata to backend
+    const response = await AxiosInstance(token).post(`/api/tasks/${taskId}/files/save-metadata`, {
+        fileUrl: uploadedData.fileUrl,
+        fileName: uploadedData.name,
+        fileKey: uploadedData.key,
+        mimetype: uploadedData.type,
+        size: uploadedData.size,
+        tag: tag || 'attachment'
+    });
     return response.data;
 }
 

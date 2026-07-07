@@ -22,6 +22,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "next-auth/react";
+import AxiosInstance from "@/utils/axios";
+import { uploadToS3Directly } from "@/utils/s3Upload";
 
 const categories = [
   "ALL",
@@ -318,29 +320,28 @@ export default function PackagingManager() {
     
     if (!uploadFiles || uploadFiles.length === 0) return toast.error("Please select a file");
 
-    const formData = new FormData();
-    formData.append("userId", uploadData.userId);
-    formData.append("orderId", uploadData.orderId);
-    formData.append("category", uploadData.category);
-    formData.append("notes", uploadData.notes);
-    Array.from(uploadFiles).forEach(f => formData.append("files", f));
-
       try {
         const token = session?.user?.token || localStorage.getItem('token') || ""; 
           
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/files/upload`, {
-          method: "POST",
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData,
+        const uploadPromises = Array.from(uploadFiles).map(async (f) => {
+          // 1. Direct S3 Upload
+          const uploadedData = await uploadToS3Directly(token, f);
+          
+          // 2. Save Metadata
+          const metadata = {
+            userId: uploadData.userId || undefined,
+            orderId: uploadData.orderId || undefined,
+            category: uploadData.category || "DIGITAL PRINTING",
+            notes: uploadData.notes || undefined,
+            files: [uploadedData]
+          };
+
+          const res = await AxiosInstance(token).post("/api/files/save-metadata", metadata);
+          return res.data;
         });
 
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          console.error("Upload error response:", errorData);
-          throw new Error(errorData.message || "Upload failed");
-        }
+        await Promise.all(uploadPromises);
+
         toast.success("Artwork uploaded successfully");
         setUploadModalOpen(false);
         window.location.reload();
