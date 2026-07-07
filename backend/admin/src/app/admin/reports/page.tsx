@@ -228,31 +228,31 @@ export default function ReportsPage() {
           
           <table className="w-full text-left border-collapse border border-gray-300">
             <thead>
-              <tr className="bg-gray-100 text-gray-800 text-xs uppercase tracking-wider">
-                <th className="border border-gray-300 p-2">Task Name</th>
-                <th className="border border-gray-300 p-2 w-24">Status</th>
-                <th className="border border-gray-300 p-2 w-20 text-center">Files</th>
-                <th className="border border-gray-300 p-2 w-40 text-center">Time Took</th>
+              <tr className="bg-gray-100 text-gray-800 text-[10px] uppercase tracking-wider">
+                <th className="border border-gray-300 py-1 px-2">Task Name</th>
+                <th className="border border-gray-300 py-1 px-2 w-24">Status</th>
+                <th className="border border-gray-300 py-1 px-2 w-16 text-center">Files</th>
+                <th className="border border-gray-300 py-1 px-2 w-24 text-center">Time Took</th>
               </tr>
             </thead>
-            <tbody className="text-sm">
+            <tbody className="text-xs">
               {reportData.detailedTasks?.map((task: any, index: number) => (
                 <tr key={task._id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                  <td className="border border-gray-300 p-2 font-medium">{task.title}</td>
-                  <td className="border border-gray-300 p-2 text-xs">
-                    <span className={`px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${task.isDone ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                  <td className="border border-gray-300 py-1 px-2 font-medium">{task.title}</td>
+                  <td className="border border-gray-300 py-1 px-2 text-[10px]">
+                    <span className={`px-1 py-0.5 rounded-sm font-bold uppercase tracking-wider ${task.isDone ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                       {task.status.replace(/_/g, ' ')}
                     </span>
                   </td>
-                  <td className="border border-gray-300 p-2 text-center font-semibold text-gray-700">{task.fileCount}</td>
-                  <td className="border border-gray-300 p-2 text-center font-semibold text-gray-700">
+                  <td className="border border-gray-300 py-1 px-2 text-center font-semibold text-gray-700">{task.fileCount}</td>
+                  <td className="border border-gray-300 py-1 px-2 text-center font-semibold text-gray-700">
                     {task.timeTookFormatted || '-'}
                   </td>
                 </tr>
               ))}
               {(!reportData.detailedTasks || reportData.detailedTasks.length === 0) && (
                 <tr>
-                  <td colSpan={4} className="border border-gray-300 p-4 text-center text-gray-500 italic">No tasks found for this staff member.</td>
+                  <td colSpan={4} className="border border-gray-300 py-2 text-center text-gray-500 italic">No tasks found for this staff member.</td>
                 </tr>
               )}
             </tbody>
