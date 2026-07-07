@@ -551,8 +551,8 @@ export default function PackagingManager() {
                       {getFolderPreview(group, "w-10 h-10")}
                     </div>
                     <div className="flex-1 min-w-0">
-                       <h3 className="font-semibold text-sm truncate" title={group.folderName}>{group.folderName}</h3>
-                       {group.orderId && <p className="text-xs text-muted-foreground truncate font-medium">Order: {group.orderId}</p>}
+                       <h3 className="font-semibold text-sm line-clamp-2 leading-tight" title={group.folderName}>{group.folderName}</h3>
+                       {group.orderId && <p className="text-xs text-muted-foreground truncate font-medium mt-0.5">Order: {group.orderId}</p>}
                     </div>
                     <div className="shrink-0 flex items-center gap-2">
                       <span className="text-[10px] font-medium bg-background border px-1.5 py-0.5 rounded-full">{group.files.length}</span>
@@ -609,8 +609,17 @@ export default function PackagingManager() {
                           ))}
                         </select>
                       </div>
+                      <Button 
+                        variant="outline" 
+                        onClick={(e) => handleAdvanceFlow(activeGroup, e)} 
+                        className="shadow-sm h-11 sm:h-10 border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                        title="Mark as Shipped"
+                      >
+                        <CheckCircle className="w-5 h-5 sm:mr-2" /> 
+                        <span className="hidden sm:inline">Shipped</span>
+                      </Button>
                       <Button variant="secondary" onClick={(e) => handleDownloadAll(activeGroup, e)} className="shadow-sm h-11 sm:h-10">
-                        <Download className="w-4 h-4 mr-2" /> Download All
+                        <Download className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Download</span>
                       </Button>
                     </div>
                   </div>
