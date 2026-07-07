@@ -84,6 +84,13 @@ export const AdminNavItems: NavItem[] = [
         isActive: false,
     },
     {
+        title: 'Reports',
+        url: '/admin/reports',
+        icon: 'kanban',
+        shortcut: ['r', 'r'],
+        isActive: false,
+    },
+    {
         title: 'Server Status',
         url: '/admin/server-status',
         icon: 'server',
@@ -112,10 +119,8 @@ export const roleByNavItems = (role: string) => {
     } else if (role === "designer") {
         allowedTitles = ['Artworks', 'Print Drafts', 'Tasks', 'Chat'];
     } else if (role !== "sysadmin" && role !== "admin" && role !== "boss") {
-        // Only sysadmin, admin, boss can see Server Status by default, 
-        // wait, the prompt asked to add it FOR SYSADMIN. 
-        // We'll explicitly remove Server Status for non-sysadmins.
-        allowedTitles = allowedTitles.filter(title => title !== 'Server Status');
+        // Only sysadmin, admin, boss can see Server Status and Reports
+        allowedTitles = allowedTitles.filter(title => title !== 'Server Status' && title !== 'Reports');
     }
 
     return AdminNavItems.filter(item => allowedTitles.includes(item.title));

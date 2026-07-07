@@ -150,4 +150,79 @@ router.get(
   })
 );
 
+// ─── GET /api/sysadmin/reports ─────────────────────────
+router.get(
+  '/reports',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { userId } = req.query;
+    if (!userId) {
+      res.status(400).json({ success: false, message: 'userId is required' });
+      return;
+    }
+
+    // 1. Total Assigned Tasks
+    const tasksAssigned = await Task.countDocuments({ assignee: userId, isDeleted: false });
+
+    // 2. Tasks Completed
+    const tasksCompleted = await Task.countDocuments({ assignee: userId, isDeleted: false, isDone: true });
+
+    // 3. Average Task Time (in hours)
+    const timeAgg = await Task.aggregate([
+      { $match: { assignee: userId, isDeleted: false, isDone: true } },
+      { $project: { durationMs: { $subtract: ["$updatedAt", "$createdAt"] } } },
+      { $group: { _id: null, avgDurationMs: { $avg: "$durationMs" } } }
+    ]);
+    const avgTimeHours = timeAgg[0]?.avgDurationMs ? (timeAgg[0].avgDurationMs / (1000 * 60 * 60)).toFixed(1) : 0;
+
+    // 4. File Quantity (attached to their assigned tasks)
+    const filesAgg = await Task.aggregate([
+      { $match: { assignee: userId, isDeleted: false } },
+      { $project: { fileCount: { $size: { $ifNull: ["$files", []] } } } },
+      { $group: { _id: null, totalFiles: { $sum: "$fileCount" } } }
+    ]);
+    const fileQuantity = filesAgg[0]?.totalFiles || 0;
+
+    // 5. Efficiency
+    const efficiency = tasksAssigned > 0 ? Math.round((tasksCompleted / tasksAssigned) * 100) : 0;
+
+    // 6. Chart Data (Last 30 Days completion)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const chartDataRaw = await Task.aggregate([
+      { $match: { assignee: userId, isDeleted: false, isDone: true, updatedAt: { $gte: thirtyDaysAgo } } },
+      { $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$updatedAt" } },
+          completed: { $sum: 1 }
+      }},
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Fill in missing days
+    const chartData = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const found = chartDataRaw.find(c => c._id === dateStr);
+      chartData.push({
+        date: dateStr,
+        completed: found ? found.completed : 0
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        tasksAssigned,
+        tasksCompleted,
+        avgTimeHours,
+        fileQuantity,
+        efficiency,
+        chartData
+      }
+    });
+  })
+);
+
 export default router;
