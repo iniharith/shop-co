@@ -12,9 +12,11 @@ export interface UploadItem {
   progress: number;
   status: UploadStatus;
   errorMessage?: string;
-  taskId?: string; // To link back to specific tasks in TaskModal
-  tag?: string; // e.g. 'attachment', 'draft', 'for_print'
+  taskId?: string;
+  tag?: string;
   createdAt: number;
+  file?: File; // Store the original file for retry
+  abortController?: AbortController; // To actually cancel the XHR request
 }
 
 interface UploadStore {
@@ -72,6 +74,10 @@ export const useUploadStore = create<UploadStore>((set) => ({
   
   removeUpload: (id) => set((state) => {
     const newUploads = { ...state.uploads };
+    const upload = newUploads[id];
+    if (upload && upload.abortController) {
+      upload.abortController.abort();
+    }
     delete newUploads[id];
     return { uploads: newUploads };
   }),

@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
 import { useUploadStore } from '@/store/uploadStore';
 import { useUsers } from "@/hooks/useUsers";
-import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X } from "lucide-react";
+import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -224,7 +224,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isDragOverComment, setIsDragOverComment] = useState(false);
   const { uploads, addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
-  const uploadingFiles = Object.values(uploads).filter(u => u.taskId === task._id && u.status === 'uploading');
+  const uploadingFiles = Object.values(uploads).filter(u => u.taskId === task._id && (u.status === 'uploading' || u.status === 'error'));
 
   const combinedFiles = React.useMemo(() => {
     let files = [...(task?.files || [])];
@@ -291,15 +291,17 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       files.forEach(file => {
         const id = Math.random().toString(36).substring(7);
         const tag = uploadTagRef.current;
+        const abortController = new AbortController();
         
-        addUpload({ id, name: file.name, tag, taskId: task._id });
+        addUpload({ id, name: file.name, tag, taskId: task._id, file, abortController });
         
         uploadFile(
           { 
             id: task._id, 
             file, 
             tag, 
-            onProgress: (percent) => updateProgress(id, percent) 
+            onProgress: (percent) => updateProgress(id, percent),
+            abortController 
           }, 
           {
             onSuccess: () => {
@@ -316,6 +318,31 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       // reset input
       e.target.value = '';
     }
+  };
+
+  const handleRetryUpload = (upload: any) => {
+    if (!upload.file) return;
+    updateStatus(upload.id, 'uploading', undefined);
+    updateProgress(upload.id, 0);
+    const abortController = new AbortController();
+    removeUpload(upload.id);
+    addUpload({ id: upload.id, name: upload.name, tag: upload.tag, taskId: upload.taskId, file: upload.file, abortController });
+    
+    uploadFile(
+      { id: upload.taskId, file: upload.file, tag: upload.tag, onProgress: (percent) => updateProgress(upload.id, percent), abortController }, 
+      {
+        onSuccess: () => {
+          updateStatus(upload.id, 'success');
+          toast.success("File uploaded successfully");
+        },
+        onError: (err) => {
+          if (err.message !== "Upload cancelled") {
+            updateStatus(upload.id, 'error', err.message || "Failed to upload file");
+            toast.error(err.message || "Failed to upload file");
+          }
+        }
+      }
+    );
   };
 
   const handleDeleteComment = (commentId: string) => {
@@ -377,10 +404,14 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                       </label>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
                         {uploadingFiles.map(f => (
-                          <div key={f.id} className="relative group w-fit max-w-full mb-6 mt-1 opacity-70 animate-pulse">
-                            <div className="flex items-center gap-1.5 bg-[#5a5a5a] p-1.5 pb-3 pr-1.5 rounded-[12px] w-full min-w-[140px] shadow-sm relative z-10 overflow-visible">
-                              <div className="w-8 h-8 rounded-lg bg-[#666666] flex items-center justify-center shrink-0">
-                                <LoaderCircle className="w-4 h-4 text-white animate-spin" />
+                          <div key={f.id} className={`relative group w-fit max-w-full mb-6 mt-1 opacity-70 ${f.status === 'uploading' ? 'animate-pulse' : ''}`}>
+                            <div className={`flex items-center gap-1.5 p-1.5 pb-3 pr-1.5 rounded-[12px] w-full min-w-[140px] shadow-sm relative z-10 overflow-visible ${f.status === 'error' ? 'bg-[#ffcfcf]' : 'bg-[#5a5a5a]'}`}>
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${f.status === 'error' ? 'bg-[#ff9999]' : 'bg-[#666666]'}`}>
+                                {f.status === 'uploading' ? (
+                                  <LoaderCircle className="w-4 h-4 text-white animate-spin" />
+                                ) : (
+                                  <AlertCircle className="w-4 h-4 text-white" />
+                                )}
                               </div>
                               <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-0.5 gap-0.5 pt-3">
                                 <button
@@ -389,10 +420,22 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                     removeUpload(f.id);
                                   }}
                                   className="absolute top-1 left-1 p-0.5 bg-black/50 hover:bg-red-500 rounded-full text-white transition-colors z-20"
-                                  title="Cancel Upload"
+                                  title={f.status === 'error' ? 'Dismiss' : 'Cancel Upload'}
                                 >
                                   <X className="w-3 h-3" />
                                 </button>
+                                {f.status === 'error' && f.file && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRetryUpload(f);
+                                    }}
+                                    className="absolute top-1 left-5 ml-1 p-0.5 bg-blue-500 hover:bg-blue-600 rounded-full text-white transition-colors z-20"
+                                    title="Retry Upload"
+                                  >
+                                    <RefreshCw className="w-3 h-3" />
+                                  </button>
+                                )}
                                 {f.tag === 'draft' ? (
                                   <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Draft</div>
                                 ) : f.tag === 'for_print' ? (
@@ -401,15 +444,15 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                   <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Attachment</div>
                                 )}
                                 <div className="flex justify-between items-center w-full min-w-0 mt-1">
-                                  <span className="truncate text-white font-medium text-[10px] tracking-wide pr-1">
+                                  <span className={`truncate font-medium text-[10px] tracking-wide pr-1 ${f.status === 'error' ? 'text-red-900' : 'text-white'}`}>
                                     {f.name}
                                   </span>
                                 </div>
                               </div>
                             </div>
                             <div className="absolute -bottom-4 left-[5%] right-[5%] z-0">
-                              <div className="w-full bg-[#fae863] text-black text-[10px] font-medium p-1 px-3 rounded-b-[12px] shadow-sm text-center">
-                                Uploading...
+                              <div className={`w-full text-[10px] font-medium p-1 px-3 rounded-b-[12px] shadow-sm text-center ${f.status === 'error' ? 'bg-red-500 text-white' : 'bg-[#fae863] text-black'}`}>
+                                {f.status === 'uploading' ? `Uploading... ${f.progress}%` : 'Failed'}
                               </div>
                             </div>
                           </div>

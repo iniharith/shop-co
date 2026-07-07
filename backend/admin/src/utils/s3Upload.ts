@@ -4,7 +4,7 @@
  */
 import AxiosInstance from "./axios";
 
-export const uploadToS3Directly = async (token: string, file: File, onProgress?: (percent: number) => void) => {
+export const uploadToS3Directly = async (token: string, file: File, onProgress?: (percent: number) => void, abortController?: AbortController) => {
   // 1. Get presigned URL from backend
   const presignRes = await AxiosInstance(token).post("/api/files/presigned-url", {
     filename: file.name,
@@ -44,6 +44,13 @@ export const uploadToS3Directly = async (token: string, file: File, onProgress?:
     
     xhr.onerror = () => reject(new Error("XHR network error during S3 upload"));
     
+    if (abortController) {
+      abortController.signal.addEventListener('abort', () => {
+        xhr.abort();
+        reject(new Error("Upload cancelled"));
+      });
+    }
+
     xhr.open("PUT", signedUrl, true);
     xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
     xhr.send(file);

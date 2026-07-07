@@ -5,14 +5,56 @@ import { Badge } from '../ui/badge';
 import { useUploadStore } from '@/store/uploadStore';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Progress } from '../ui/progress';
+import { uploadTaskFile } from '@/api/tasks';
+import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 
 export default function UploadMonitor() {
-  const { uploads, removeUpload, clearCompleted } = useUploadStore();
+  const { data: session } = useSession();
+  const { uploads, removeUpload, clearCompleted, updateStatus, updateProgress, addUpload } = useUploadStore();
   const uploadList = Object.values(uploads).sort((a, b) => b.createdAt - a.createdAt);
   
   const activeCount = uploadList.filter(u => u.status === 'uploading').length;
   const errorCount = uploadList.filter(u => u.status === 'error').length;
   const totalCount = uploadList.length;
+
+  const handleRetry = async (upload: any) => {
+    if (!upload.file || !upload.taskId) return;
+    const token = (session?.user as any)?.token;
+    if (!token) return;
+
+    // Reset upload status to uploading
+    updateStatus(upload.id, 'uploading', undefined);
+    updateProgress(upload.id, 0);
+
+    // Create a new abort controller
+    const abortController = new AbortController();
+    
+    // We update the store with the new abort controller via a workaround or just let addUpload override it
+    // Wait, addUpload overrides everything. Let's just remove and re-add to be clean
+    removeUpload(upload.id);
+    addUpload({
+      id: upload.id,
+      name: upload.name,
+      taskId: upload.taskId,
+      tag: upload.tag,
+      file: upload.file,
+      abortController
+    });
+
+    try {
+      await uploadTaskFile(token, upload.taskId, upload.file, upload.tag, (percent) => {
+        updateProgress(upload.id, percent);
+      }, abortController);
+      updateStatus(upload.id, 'success');
+      toast.success(`Retry successful: ${upload.name}`);
+    } catch (err: any) {
+      if (err.message !== "Upload cancelled") {
+        updateStatus(upload.id, 'error', err.message || "Failed to upload file");
+        toast.error(`Retry failed: ${upload.name}`);
+      }
+    }
+  };
 
   if (totalCount === 0) return null;
 
@@ -64,9 +106,19 @@ export default function UploadMonitor() {
               )}
 
               {upload.status === 'error' && (
-                <p className="text-[10px] text-red-500 font-medium bg-red-500/10 p-1.5 rounded truncate" title={upload.errorMessage}>
-                  {upload.errorMessage || 'Upload failed'}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="flex-1 text-[10px] text-red-500 font-medium bg-red-500/10 p-1.5 rounded truncate" title={upload.errorMessage}>
+                    {upload.errorMessage || 'Upload failed'}
+                  </p>
+                  {upload.file && upload.taskId && (
+                    <button 
+                      onClick={() => handleRetry(upload)}
+                      className="text-[10px] font-medium px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-white transition-colors"
+                    >
+                      Retry
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           ))}
