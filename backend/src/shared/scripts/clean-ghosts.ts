@@ -6,8 +6,8 @@ async function run() {
   await mongoose.connect(process.env.MONGO_URI || 'mongodb+srv://Admin_Harith:nutella210620@cluster0.dcoixot.mongodb.net/shop-co?retryWrites=true&w=majority&appName=Kampungcetak');
   console.log('Connected');
   
-  const Task = mongoose.connection.db.collection('tasks');
-  const FileUpload = mongoose.connection.db.collection('fileuploads');
+  const Task = mongoose.connection.db!.collection('tasks');
+  const FileUpload = mongoose.connection.db!.collection('fileuploads');
   
   const tasks = await Task.find({ 'files': { $exists: true, $not: { $size: 0 } } }).toArray();
   let fixedCount = 0;

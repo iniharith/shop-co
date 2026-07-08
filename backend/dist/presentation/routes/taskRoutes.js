@@ -126,7 +126,7 @@ const deleteAllTaskFiles = (task) => __awaiter(void 0, void 0, void 0, function*
 });
 // PUT /api/tasks/:id
 router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     const oldTask = yield TaskRepository_1.taskRepository.findById(req.params.id);
     // If someone is being newly assigned to a task that's still "In Progress",
     // automatically advance it to "In Design" — being assigned implies design work
@@ -166,8 +166,15 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
         const newStatus = req.body.status.replace(/_/g, ' ');
         yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `changed status from ${oldStatus} to ${newStatus}`);
     }
-    if (req.body.assignee && ((_g = oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) === null || _g === void 0 ? void 0 : _g.toString()) !== req.body.assignee) {
-        yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `assigned this task`);
+    if (req.body.assignee !== undefined && ((_g = oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) === null || _g === void 0 ? void 0 : _g.toString()) !== ((_h = (req.body.assignee || undefined)) === null || _h === void 0 ? void 0 : _h.toString())) {
+        if (req.body.assignee) {
+            const assignedUser = yield user_repository_1.default.findById(req.body.assignee);
+            const assigneeName = assignedUser ? (assignedUser.name || assignedUser.email) : 'Unknown User';
+            yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `assigned to ${assigneeName}`);
+        }
+        else {
+            yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `unassigned this task`);
+        }
     }
     if (req.body.description !== undefined && req.body.description !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.description)) {
         // Do not log description changes as activity
