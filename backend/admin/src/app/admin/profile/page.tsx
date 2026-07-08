@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import AxiosInstance from "@/utils/axios";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import Image from "next/image";
 
 const PREDEFINED_AVATARS = [
   "Felix", "Aneka", "Jude", "Leo", "Mia", "Oliver", 
