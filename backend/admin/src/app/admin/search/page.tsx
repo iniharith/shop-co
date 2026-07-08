@@ -76,17 +76,20 @@ export default function SearchResultsPage() {
       const firstFile = groupFiles[0];
       let folderName = "Unassigned";
       let orderIdStr = "";
+      let customerStr = "";
       
       if (firstFile.category === 'TASK' && firstFile.taskId) {
         const task = tasks.find((t: any) => t._id === firstFile.taskId);
         folderName = task ? task.title : "Deleted Task";
         orderIdStr = task?.orderId || "";
+        customerStr = task?.customerUsername || "";
       } else {
         if (firstFile._shareFolderName) {
           folderName = firstFile._shareFolderName;
         } else {
           const user = users.find((u: any) => u._id?.toString() === firstFile.userId?.toString());
           folderName = user?.name || firstFile.userId;
+          customerStr = user?.email || user?.username || "";
         }
         orderIdStr = firstFile.orderId || "";
       }
@@ -99,6 +102,7 @@ export default function SearchResultsPage() {
         key,
         folderName,
         orderId: orderIdStr,
+        customerUsername: customerStr,
         category: folderCategory,
         files: groupFiles,
       };
@@ -107,7 +111,8 @@ export default function SearchResultsPage() {
     // Filter the grouped array based on query
     return groupedArray.filter((g) => 
       String(g.folderName || "").toLowerCase().includes(queryLower) ||
-      String(g.orderId || "").toLowerCase().includes(queryLower)
+      String(g.orderId || "").toLowerCase().includes(queryLower) ||
+      String(g.customerUsername || "").toLowerCase().includes(queryLower)
     );
   }, [files, tasks, users, queryLower]);
 
