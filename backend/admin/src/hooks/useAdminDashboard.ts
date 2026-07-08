@@ -75,13 +75,13 @@ export const useReviewFile = () => {
 
 export const useDeleteFile = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['deleteFile'], (id: string) => deleteFile(session?.user?.token, id), ['groupedFiles', 'allFiles']);
+    const { mutate, isPending } = useMutationData(['deleteFile'], (id: string) => deleteFile(session?.user?.token, id), ['groupedFiles', 'allFiles', 'tasks']);
     return { mutate, isPending };
 }
 
 export const useBulkDeleteFiles = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['bulkDeleteFiles'], (fileIds: string[]) => bulkDeleteFiles(session?.user?.token, fileIds), ['groupedFiles', 'allFiles']);
+    const { mutate, isPending } = useMutationData(['bulkDeleteFiles'], (fileIds: string[]) => bulkDeleteFiles(session?.user?.token, fileIds), ['groupedFiles', 'allFiles', 'tasks']);
     return { mutate, isPending };
 }
 
