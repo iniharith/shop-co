@@ -86,10 +86,15 @@ export default function SearchResultsPage() {
         orderIdStr = firstFile.orderId || "";
       }
 
+      let folderCategory = 'ARTWORK';
+      if (firstFile.category === 'PACKAGING') folderCategory = 'PACKAGING';
+      else if (firstFile.category === 'PRODUCTION') folderCategory = 'PRODUCTION';
+
       return {
         key,
         folderName,
         orderId: orderIdStr,
+        category: folderCategory,
         files: groupFiles,
       };
     });
@@ -100,6 +105,57 @@ export default function SearchResultsPage() {
       g.orderId.toLowerCase().includes(queryLower)
     );
   }, [files, tasks, users, queryLower]);
+
+  const artworkFolders = matchingFolders.filter(f => f.category === 'ARTWORK');
+  const productionFolders = matchingFolders.filter(f => f.category === 'PRODUCTION');
+  const packagingFolders = matchingFolders.filter(f => f.category === 'PACKAGING');
+
+  const renderFolderSection = (title: string, folderList: typeof matchingFolders) => (
+    <div className="space-y-4">
+      <h2 className="text-xl font-bold tracking-tight uppercase">{title}</h2>
+      {isLoadingFiles ? (
+        <p className="text-muted-foreground text-sm">Searching folders...</p>
+      ) : folderList.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          {folderList.map((group) => (
+            <Card 
+              key={group.key} 
+              className="cursor-pointer overflow-hidden shadow-sm hover:shadow-md hover:border-primary/50 transition-all group relative"
+              onClick={() => {
+                const firstFile = group.files[0];
+                if (firstFile?.taskId) {
+                  router.push(`/admin/tasks?taskId=${firstFile.taskId}`);
+                } else if (firstFile?.category === 'PACKAGING') {
+                  router.push(`/admin/packaging`);
+                } else if (firstFile?.category === 'PRODUCTION') {
+                  router.push(`/admin/production`);
+                } else {
+                  router.push(`/admin/artworks`);
+                }
+              }}
+            >
+              <CardContent className="p-6 flex flex-col items-center justify-center gap-4 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-sm relative group-hover:scale-105 transition-transform">
+                  <Folder className="w-8 h-8 text-primary" />
+                </div>
+                <div className="w-full">
+                  <h3 className="font-semibold text-base truncate" title={group.folderName}>{group.folderName}</h3>
+                  {group.orderId && (
+                    <p className="text-[12.8px] font-bold text-foreground/80 mt-1 truncate">
+                      Order: {group.orderId}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1 font-medium">{group.files.length} item(s)</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <p className="text-muted-foreground text-sm italic">No matching folders found.</p>
+      )}
+    </div>
+  );
 
   return (
     <PageContainer scrollable={true}>
@@ -141,51 +197,13 @@ export default function SearchResultsPage() {
         </div>
 
         <Separator />
-
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold tracking-tight uppercase">ARTWORKS/PRODUCTION OR PACKAGING FOLDER</h2>
-          {isLoadingFiles ? (
-            <p className="text-muted-foreground text-sm">Searching folders...</p>
-          ) : matchingFolders.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-              {matchingFolders.map((group) => (
-                <Card 
-                  key={group.key} 
-                  className="cursor-pointer overflow-hidden shadow-sm hover:shadow-md hover:border-primary/50 transition-all group relative"
-                  onClick={() => {
-                    const firstFile = group.files[0];
-                    if (firstFile?.taskId) {
-                      router.push(`/admin/tasks?taskId=${firstFile.taskId}`);
-                    } else if (firstFile?.category === 'PACKAGING') {
-                      router.push(`/admin/packaging`);
-                    } else if (firstFile?.category === 'PRODUCTION') {
-                      router.push(`/admin/production`);
-                    } else {
-                      router.push(`/admin/artworks`);
-                    }
-                  }}
-                >
-                  <CardContent className="p-6 flex flex-col items-center justify-center gap-4 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-sm relative group-hover:scale-105 transition-transform">
-                      <Folder className="w-8 h-8 text-primary" />
-                    </div>
-                    <div className="w-full">
-                      <h3 className="font-semibold text-base truncate" title={group.folderName}>{group.folderName}</h3>
-                      {group.orderId && (
-                        <p className="text-[12.8px] font-bold text-foreground/80 mt-1 truncate">
-                          Order: {group.orderId}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-1 font-medium">{group.files.length} item(s)</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <p className="text-muted-foreground text-sm italic">No matching folders found.</p>
-          )}
-        </div>
+        {renderFolderSection("ARTWORK FOLDER", artworkFolders)}
+        
+        <Separator />
+        {renderFolderSection("PRODUCTION FOLDER", productionFolders)}
+        
+        <Separator />
+        {renderFolderSection("PACKAGING FOLDER", packagingFolders)}
       </div>
     </PageContainer>
   );
