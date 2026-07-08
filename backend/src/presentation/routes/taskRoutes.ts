@@ -440,6 +440,18 @@ router.delete(
     // Find the file in the task's array
     const fileIndex = task.files.findIndex((f: any) => f._id?.toString() === fileId || f.url.includes(fileId));
     if (fileIndex === -1) {
+      // It might be a FileUpload document (customer file attached virtually)
+      try {
+        const { FileUpload } = await import('../../domain/entities/FileUpload');
+        const fileDoc = await FileUpload.findById(fileId);
+        if (fileDoc) {
+          if (fileDoc.path) await deleteFromS3(fileDoc.path).catch(console.error);
+          await FileUpload.findByIdAndDelete(fileId);
+          res.json({ success: true, message: 'File deleted from task', task });
+          return;
+        }
+      } catch(e) {}
+      
       res.status(404).json({ success: false, message: 'File not found in task' });
       return;
     }
