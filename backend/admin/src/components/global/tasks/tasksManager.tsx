@@ -21,7 +21,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from "sonner";
 import { format, isToday, isTomorrow } from "date-fns";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import TaskModal from "./TaskModal";
 import { Checkbox } from "@/components/ui/checkbox";
 import { X } from "lucide-react";
@@ -91,6 +91,7 @@ export default function TasksManager() {
   
   const searchParams = useSearchParams();
   const taskIdParam = searchParams.get('taskId');
+  const router = useRouter();
   
   const { data: usersData } = useUsers();
   
@@ -692,7 +693,14 @@ export default function TasksManager() {
         <TaskModal 
           task={tasks.find((t: any) => t._id === selectedTask._id) || selectedTask} 
           isOpen={!!selectedTask} 
-          onClose={() => setSelectedTask(null)} 
+          onClose={() => {
+            setSelectedTask(null);
+            if (taskIdParam) {
+              const newUrl = new URL(window.location.href);
+              newUrl.searchParams.delete('taskId');
+              router.replace(newUrl.pathname + newUrl.search);
+            }
+          }} 
         />
       )}
     </div>
