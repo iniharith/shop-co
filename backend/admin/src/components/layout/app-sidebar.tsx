@@ -257,9 +257,9 @@ export default function AppSidebar() {
                 <DropdownMenuItem
                 className="hover:bg-sidebar-accent/50 cursor-pointer"
                   onClick={() => {
+                    document.cookie = 'fallback_admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
                     signOut({
-                      callbackUrl:
-                        `${window.location.origin}/auth/login` as string,
+                      callbackUrl: `${window.location.origin}/auth/login` as string,
                     });
                     setOpenMobile(false);
                   }}
