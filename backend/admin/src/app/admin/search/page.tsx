@@ -7,7 +7,9 @@ import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTasks } from "@/hooks/useTasks";
-import { useAllFiles } from "@/hooks/useAdminDashboard";
+import { useAllFiles, useGroupedFiles } from "@/hooks/useAdminDashboard";
+import { useUsers } from "@/hooks/useUsers";
+import { useOrders } from "@/hooks/useOrder";
 import { Folder, File as FileIcon, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -18,11 +20,14 @@ export default function SearchResultsPage() {
   const queryLower = q.toLowerCase();
 
   const { data: tasksData, isLoading: isLoadingTasks } = useTasks();
-  const { data: filesData, isLoading: isLoadingFiles } = useAllFiles();
+  const { data: filesData, isLoading: isLoadingFiles } = useGroupedFiles();
+  const { data: usersData } = useUsers();
+  const { data: ordersData } = useOrders();
 
   const tasks = tasksData?.tasks || [];
-  const files = filesData?.files || filesData?.allFiles || [];
-  const users = filesData?.users || [];
+  const files = (filesData as any)?.data || [];
+  const users = usersData?.users || [];
+  const orders = ordersData?.orders || [];
 
   // Filter Tasks
   const matchingTasks = useMemo(() => {
