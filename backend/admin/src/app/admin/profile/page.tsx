@@ -32,6 +32,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [themeBg, setThemeBg] = useState<string>("");
+  const [fontColor, setFontColor] = useState<string>("#000000");
+  const [buttonColor, setButtonColor] = useState<string>("#10b981");
+  const [pointColor, setPointColor] = useState<string>("#10b981");
 
   useEffect(() => {
     if (session?.user) {
@@ -40,10 +43,18 @@ export default function ProfilePage() {
         email: session.user.email || "",
       });
       setAvatarPreview((session.user as any).avatar || null);
+      
       const storedTheme = localStorage.getItem(`theme-bg-${session.user.id}`);
-      if (storedTheme) {
-        setThemeBg(storedTheme);
-      }
+      if (storedTheme) setThemeBg(storedTheme);
+      
+      const storedFont = localStorage.getItem(`theme-font-${session.user.id}`);
+      if (storedFont) setFontColor(storedFont);
+      
+      const storedButton = localStorage.getItem(`theme-button-${session.user.id}`);
+      if (storedButton) setButtonColor(storedButton);
+      
+      const storedPoint = localStorage.getItem(`theme-point-${session.user.id}`);
+      if (storedPoint) setPointColor(storedPoint);
     }
   }, [session]);
 
@@ -213,7 +224,7 @@ export default function ProfilePage() {
                         setAvatarFile(null);
                       }}
                     >
-                      <Image src={url} alt={`Avatar ${i+1}`} width={80} height={80} className="w-full h-full object-cover" />
+                      <img src={url} alt={`Avatar ${i+1}`} className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>
@@ -253,18 +264,101 @@ export default function ProfilePage() {
             <CardDescription>Personalize your dashboard appearance.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label>Global Background Color</Label>
-              <div className="flex gap-2">
-                <Input
-                  type="color"
-                  value={themeBg && !themeBg.startsWith("http") && !themeBg.startsWith("data:") ? themeBg : "#ffffff"}
-                  onChange={(e) => handleThemeBgChange(e.target.value)}
-                  className="w-16 p-1 h-10"
-                />
-                <Button variant="outline" onClick={() => handleThemeBgChange("")}>
-                  Reset Color
-                </Button>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Global Background Color</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={themeBg && !themeBg.startsWith("http") && !themeBg.startsWith("data:") ? themeBg : "#ffffff"}
+                    onChange={(e) => handleThemeBgChange(e.target.value)}
+                    className="w-16 p-1 h-10"
+                  />
+                  <Button variant="outline" onClick={() => handleThemeBgChange("")}>
+                    Reset Color
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Font Color</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={fontColor}
+                    onChange={(e) => {
+                      setFontColor(e.target.value);
+                      if (session?.user?.id) {
+                        localStorage.setItem(`theme-font-${session.user.id}`, e.target.value);
+                        window.dispatchEvent(new CustomEvent('theme-font-changed', { detail: e.target.value }));
+                      }
+                    }}
+                    className="w-16 p-1 h-10"
+                  />
+                  <Button variant="outline" onClick={() => {
+                    setFontColor("#000000");
+                    if (session?.user?.id) {
+                      localStorage.removeItem(`theme-font-${session.user.id}`);
+                      window.dispatchEvent(new CustomEvent('theme-font-changed', { detail: null }));
+                    }
+                  }}>
+                    Reset Color
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Button Color</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={buttonColor}
+                    onChange={(e) => {
+                      setButtonColor(e.target.value);
+                      if (session?.user?.id) {
+                        localStorage.setItem(`theme-button-${session.user.id}`, e.target.value);
+                        window.dispatchEvent(new CustomEvent('theme-button-changed', { detail: e.target.value }));
+                      }
+                    }}
+                    className="w-16 p-1 h-10"
+                  />
+                  <Button variant="outline" onClick={() => {
+                    setButtonColor("#10b981");
+                    if (session?.user?.id) {
+                      localStorage.removeItem(`theme-button-${session.user.id}`);
+                      window.dispatchEvent(new CustomEvent('theme-button-changed', { detail: null }));
+                    }
+                  }}>
+                    Reset Color
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Point Color</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="color"
+                    value={pointColor}
+                    onChange={(e) => {
+                      setPointColor(e.target.value);
+                      if (session?.user?.id) {
+                        localStorage.setItem(`theme-point-${session.user.id}`, e.target.value);
+                        window.dispatchEvent(new CustomEvent('theme-point-changed', { detail: e.target.value }));
+                      }
+                    }}
+                    className="w-16 p-1 h-10"
+                  />
+                  <Button variant="outline" onClick={() => {
+                    setPointColor("#10b981");
+                    if (session?.user?.id) {
+                      localStorage.removeItem(`theme-point-${session.user.id}`);
+                      window.dispatchEvent(new CustomEvent('theme-point-changed', { detail: null }));
+                    }
+                  }}>
+                    Reset Color
+                  </Button>
+                </div>
               </div>
             </div>
 
