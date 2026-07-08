@@ -20,7 +20,7 @@ export default function SearchResultsPage() {
   const queryLower = q.toLowerCase();
 
   const { data: tasksData, isLoading: isLoadingTasks } = useTasks();
-  const { data: filesData, isLoading: isLoadingFiles } = useGroupedFiles();
+  const { data: filesData, isLoading: isLoadingFiles } = useAllFiles();
   const { data: usersData } = useUsers();
   const { data: ordersData } = useOrders();
 
