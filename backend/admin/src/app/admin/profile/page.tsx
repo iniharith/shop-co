@@ -14,6 +14,11 @@ import { toast } from "sonner";
 import AxiosInstance from "@/utils/axios";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
+const PREDEFINED_AVATARS = [
+  "Felix", "Aneka", "Jude", "Leo", "Mia", "Oliver", 
+  "Sophia", "Lucas", "Ava", "Mason", "Isabella", "Ethan"
+].map(seed => `https://api.dicebear.com/7.x/micah/svg?seed=${seed}`);
+
 export default function ProfilePage() {
   const { data: session, update } = useSession();
   
@@ -141,9 +146,13 @@ export default function ProfilePage() {
 
     try {
       setLoading(true);
-      const res = await AxiosInstance(session.user.token).put(`/api/user/profile`, formData);
+      const updatePayload: any = { ...formData };
+      if (avatarPreview && avatarPreview.startsWith("https://api.dicebear.com") && !avatarFile) {
+        updatePayload.avatar = avatarPreview;
+      }
+      const res = await AxiosInstance(session.user.token).put(`/api/user/profile`, updatePayload);
       toast.success("Profile updated successfully");
-      await update({ name: formData.name, email: formData.email });
+      await update({ name: formData.name, email: formData.email, ...(updatePayload.avatar ? { avatar: updatePayload.avatar } : {}) });
       
       if (avatarFile) {
         await handleUploadAvatar();
@@ -188,6 +197,24 @@ export default function ProfilePage() {
                     className="hidden"
                     onChange={handleAvatarChange}
                   />
+                </div>
+              </div>
+
+              <div className="space-y-3 pb-4">
+                <Label className="text-center block w-full text-muted-foreground text-xs uppercase tracking-wider">Or Choose a 3D Avatar</Label>
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 pt-2">
+                  {PREDEFINED_AVATARS.map((url, i) => (
+                    <div 
+                      key={i} 
+                      className={`cursor-pointer rounded-full overflow-hidden border-2 transition-all hover:scale-110 ${avatarPreview === url ? 'border-primary shadow-md scale-110' : 'border-transparent bg-muted/30 hover:border-primary/50'}`}
+                      onClick={() => {
+                        setAvatarPreview(url);
+                        setAvatarFile(null);
+                      }}
+                    >
+                      <Image src={url} alt={`Avatar ${i+1}`} width={80} height={80} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
                 </div>
               </div>
 
