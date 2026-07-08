@@ -648,11 +648,13 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                 setIsDragOverComment(false);
                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                   const files = Array.from(e.dataTransfer.files);
+                  
+                  // Post a single comment for all dropped files
+                  const fileNames = files.map(f => f.name).join(', ');
+                  addComment({ id: task._id, text: `Attached ${files.length} file(s): ${fileNames}` });
+
                   files.forEach(file => {
                     uploadFile({ id: task._id, file, tag: 'attachment' })
-                      .then(() => {
-                        addComment({ id: task._id, text: `Attached a file: ${file.name}` });
-                      })
                       .catch(() => {});
                   });
                 }
