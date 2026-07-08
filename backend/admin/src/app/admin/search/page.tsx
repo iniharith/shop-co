@@ -133,14 +133,13 @@ export default function SearchResultsPage() {
               className="cursor-pointer overflow-hidden shadow-sm hover:shadow-md hover:border-primary/50 transition-all group relative"
               onClick={() => {
                 const firstFile = group.files[0];
-                if (firstFile?.taskId) {
-                  router.push(`/admin/tasks?taskId=${firstFile.taskId}`);
-                } else if (firstFile?.category === 'PACKAGING') {
-                  router.push(`/admin/packaging`);
+                const qs = `?folder=${encodeURIComponent(group.folderName)}`;
+                if (firstFile?.category === 'PACKAGING') {
+                  router.push(`/admin/packaging${qs}`);
                 } else if (firstFile?.category === 'PRODUCTION') {
-                  router.push(`/admin/production`);
+                  router.push(`/admin/production${qs}`);
                 } else {
-                  router.push(`/admin/artworks`);
+                  router.push(`/admin/artworks${qs}`);
                 }
               }}
             >

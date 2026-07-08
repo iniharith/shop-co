@@ -698,7 +698,7 @@ export default function TasksManager() {
             if (taskIdParam) {
               const newUrl = new URL(window.location.href);
               newUrl.searchParams.delete('taskId');
-              router.replace(newUrl.pathname + newUrl.search);
+              window.history.replaceState(null, '', newUrl.pathname + newUrl.search);
             }
           }} 
         />
