@@ -29,7 +29,7 @@ import { cn, forceDownload } from "@/lib/utils";
 import { useAllFiles } from "@/hooks/useAdminDashboard";
 import { useRouter } from "next/navigation";
 
-const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview }: any) => {
+const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview, onDeleteLocal }: any) => {
   const isImageFile = file.mimetype?.includes("image") || (file.name || file.url).match(/\.(jpeg|jpg|gif|png|webp|heic)$/i);
   const isPdfFile = file.mimetype?.includes("pdf") || (file.name || file.url).match(/\.pdf$/i);
   const [notes, setNotes] = useState(file.notes || "");
@@ -168,7 +168,9 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview 
                   e.preventDefault();
                   e.stopPropagation();
                   if (confirm('Are you sure you want to delete this file?')) {
-                    deleteFile({ id: task._id, fileId: file._id || file.url.split('/').pop() });
+                    const fid = file._id || file.url.split('/').pop();
+                    if (onDeleteLocal) onDeleteLocal(fid);
+                    deleteFile({ id: task._id, fileId: fid });
                   }
                 }}
                 disabled={isDeletingFile}
@@ -239,6 +241,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [previewFile, setPreviewFile] = useState<any>(null);
   const { uploads, addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
   const uploadingFiles = Object.values(uploads).filter(u => u.taskId === task._id && (u.status === 'uploading' || u.status === 'error'));
+  const [deletedFileIds, setDeletedFileIds] = useState<string[]>([]);
 
   const allFiles = (allFilesData as any)?.data || [];
   const customerUploadOrderIds = Array.from(new Set(allFiles.filter((f: any) => f.orderId).map((f: any) => f.orderId))) as string[];
@@ -272,8 +275,11 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       _id: f._id
     }));
     
-    return [...files, ...customerFiles];
-  }, [task, allFilesData]);
+    return [...files, ...customerFiles].filter(f => {
+      const fid = f._id || f.url?.split('/').pop();
+      return !deletedFileIds.includes(fid);
+    });
+  }, [task, allFilesData, deletedFileIds]);
 
   const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "");
   const [orderId, setOrderId] = useState(task.orderId || "");
@@ -485,7 +491,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                             file={file} 
                             deleteFile={deleteFile} 
                             isDeletingFile={isDeletingFile} 
-                            onPreview={() => setPreviewFile(file)}
+                            onPreview={setPreviewFile}
+                            onDeleteLocal={(fid: string) => setDeletedFileIds(prev => [...prev, fid])}
                           />
                         ))}
                       </div>

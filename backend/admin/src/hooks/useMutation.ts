@@ -30,16 +30,17 @@ export const useMutationData = (mutationKey: MutationKey,
             if (onSuccess) onSuccess(data);
         },
 
-        onSettled: async () => {
+        onSettled: () => {
             if (!queryKey) return;
             if (Array.isArray(queryKey) && queryKey.length > 0 && typeof queryKey[0] === 'string') {
                 const keys = queryKey as string[];
                 // check if it's multiple top-level keys like ['groupedFiles', 'allFiles']
                 if (keys.every(k => typeof k === 'string')) {
-                     return await Promise.all(keys.map(k => client.invalidateQueries({ queryKey: [k] })));
+                     keys.forEach(k => client.invalidateQueries({ queryKey: [k] }));
+                     return;
                 }
             }
-            return await client.invalidateQueries({ queryKey: queryKey as QueryKey, exact: true })
+            client.invalidateQueries({ queryKey: queryKey as QueryKey, exact: true })
         }
     })
     return { mutate, isPending, isSuccess, isError, ...rest }
