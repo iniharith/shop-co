@@ -650,6 +650,9 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   const files = Array.from(e.dataTransfer.files);
                   files.forEach(file => {
                     uploadFile({ id: task._id, file, tag: 'attachment' })
+                      .then(() => {
+                        addComment({ id: task._id, text: `Attached a file: ${file.name}` });
+                      })
                       .catch(() => {});
                   });
                 }

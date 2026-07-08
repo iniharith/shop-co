@@ -148,8 +148,14 @@ router.put(
       const newStatus = req.body.status.replace(/_/g, ' ');
       await taskRepository.addActivity(req.params.id, userId, userName, `changed status from ${oldStatus} to ${newStatus}`);
     }
-    if (req.body.assignee && oldTask?.assignee?.toString() !== req.body.assignee) {
-      await taskRepository.addActivity(req.params.id, userId, userName, `assigned this task`);
+    if (req.body.assignee !== undefined && oldTask?.assignee?.toString() !== (req.body.assignee || undefined)?.toString()) {
+      if (req.body.assignee) {
+        const assignedUser = await UserRepository.findById(req.body.assignee);
+        const assigneeName = assignedUser ? (assignedUser.name || assignedUser.email) : 'Unknown User';
+        await taskRepository.addActivity(req.params.id, userId, userName, `assigned to ${assigneeName}`);
+      } else {
+        await taskRepository.addActivity(req.params.id, userId, userName, `unassigned this task`);
+      }
     }
     if (req.body.description !== undefined && req.body.description !== oldTask?.description) {
       // Do not log description changes as activity
