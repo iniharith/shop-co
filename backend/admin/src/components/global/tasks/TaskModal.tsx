@@ -478,7 +478,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                             </div>
                           </div>
                         ))}
-                        {combinedFiles.map((file: any) => (
+                        {combinedFiles.slice(0, 12).map((file: any) => (
                           <FileAttachmentCard 
                             key={file.url} 
                             task={task} 
@@ -489,7 +489,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                           />
                         ))}
                       </div>
-                      {combinedFiles.length > 10 && (
+                      {combinedFiles.length > 12 && (
                         <div className="mt-4 flex justify-center">
                           <Button 
                             variant="secondary" 

@@ -21,18 +21,19 @@ export const FilePreviewModal = ({
     return `${backendUrl}/${path}`;
   };
 
-  const isImage = file.mimetype?.includes("image") || (file.originalName && file.originalName.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i));
-  const isPdf = file.mimetype?.includes("pdf") || (file.originalName && file.originalName.toLowerCase().endsWith(".pdf"));
+  const fileName = file.originalName || file.name || "";
+  const isImage = file.mimetype?.includes("image") || fileName.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i);
+  const isPdf = file.mimetype?.includes("pdf") || fileName.toLowerCase().endsWith(".pdf");
 
   const fileUrl = getFileUrl(file.path || file.url);
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-  const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(fileUrl)}&name=${encodeURIComponent(file.originalName || "file")}&inline=true#toolbar=0`;
+  const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(fileUrl)}&name=${encodeURIComponent(fileName)}&inline=true#toolbar=0`;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-[95vw] w-full max-h-[95vh] h-full flex flex-col p-0 overflow-hidden bg-black/95 border-none shadow-2xl z-[100]">
         <div className="flex items-center justify-between p-3 bg-black/60 text-white z-10 absolute top-0 left-0 right-0 backdrop-blur-sm">
-          <DialogTitle className="text-sm font-medium truncate pr-4 max-w-[70%]">{file.originalName}</DialogTitle>
+          <DialogTitle className="text-sm font-medium truncate pr-4 max-w-[70%]">{fileName}</DialogTitle>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 h-8 w-8" onClick={() => window.open(fileUrl, "_blank")} title="Open in new tab">
               <ExternalLink className="w-4 h-4" />
@@ -40,7 +41,7 @@ export const FilePreviewModal = ({
             <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 h-8 w-8" onClick={() => {
               const link = document.createElement('a');
               link.href = fileUrl;
-              link.download = file.originalName;
+              link.download = fileName;
               document.body.appendChild(link);
               link.click();
               document.body.removeChild(link);
@@ -59,14 +60,14 @@ export const FilePreviewModal = ({
           {isImage ? (
             <img 
               src={fileUrl} 
-              alt={file.originalName} 
+              alt={fileName} 
               className="max-w-full max-h-full object-contain rounded-md"
             />
           ) : isPdf ? (
             <iframe 
               src={proxyUrl} 
               className="w-full h-full border-none bg-white rounded-md"
-              title={file.originalName}
+              title={fileName}
             />
           ) : (
             <div className="text-white flex flex-col items-center bg-zinc-900 p-8 rounded-xl border border-zinc-700">
