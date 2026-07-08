@@ -33,9 +33,9 @@ export default function SearchResultsPage() {
   const matchingTasks = useMemo(() => {
     if (!queryLower) return [];
     return tasks.filter((t: any) => 
-      t.title?.toLowerCase().includes(queryLower) ||
-      t.orderId?.toLowerCase().includes(queryLower) ||
-      t.customerUsername?.toLowerCase().includes(queryLower)
+      String(t.title || "").toLowerCase().includes(queryLower) ||
+      String(t.orderId || "").toLowerCase().includes(queryLower) ||
+      String(t.customerUsername || "").toLowerCase().includes(queryLower)
     );
   }, [tasks, queryLower]);
 
@@ -106,8 +106,8 @@ export default function SearchResultsPage() {
 
     // Filter the grouped array based on query
     return groupedArray.filter((g) => 
-      g.folderName.toLowerCase().includes(queryLower) ||
-      g.orderId.toLowerCase().includes(queryLower)
+      String(g.folderName || "").toLowerCase().includes(queryLower) ||
+      String(g.orderId || "").toLowerCase().includes(queryLower)
     );
   }, [files, tasks, users, queryLower]);
 
