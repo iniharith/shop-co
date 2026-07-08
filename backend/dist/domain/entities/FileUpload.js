@@ -50,7 +50,7 @@ const FileUploadSchema = new mongoose_1.Schema({
     size: { type: Number, required: true },
     path: { type: String, required: true },
     thumbnailPath: { type: String },
-    uploadedAt: { type: Date, default: Date.now },
+    uploadedAt: { type: Date, default: Date.now, index: true },
     notes: { type: String },
     adminReviewed: { type: Boolean, default: false },
     adminNotes: { type: String },
@@ -62,4 +62,5 @@ const FileUploadSchema = new mongoose_1.Schema({
     shareSlug: { type: String, index: true },
     folderId: { type: String, index: true },
 }, { timestamps: true });
+FileUploadSchema.index({ createdAt: -1 });
 exports.FileUpload = mongoose_1.default.model('FileUpload', FileUploadSchema);

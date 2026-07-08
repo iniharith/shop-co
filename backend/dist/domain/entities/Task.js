@@ -75,4 +75,5 @@ const TaskSchema = new mongoose_1.Schema({
     comments: [TaskCommentSchema],
     activities: [TaskActivitySchema],
 }, { timestamps: true });
+TaskSchema.index({ createdAt: -1 });
 exports.Task = mongoose_1.default.model('Task', TaskSchema);

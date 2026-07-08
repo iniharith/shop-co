@@ -679,22 +679,20 @@ router.post(
     }
 
     // 1. Create a Task for this upload
-    const { Task } = await import('../../domain/entities/Task');
-    const newTask = new Task({
+    const savedTask = await taskRepository.create({
       title: `Artwork Upload: #${orderId}`,
       description: `Phone Number: ${phoneNumber || 'N/A'}\nItem: ${item || 'N/A'}`,
       orderId: orderId,
       customerUsername: username,
       status: 'PLACED',
       category: 'UNASSIGNED',
-      assignee: null,
+      assignee: undefined,
       files: files.map((f: any) => ({
         url: f.path,
         name: f.originalName,
         tag: 'attachment'
       }))
     });
-    const savedTask = await newTask.save();
 
     // 2. Save FileUpload entries
 
