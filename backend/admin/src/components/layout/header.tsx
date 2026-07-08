@@ -9,6 +9,7 @@ import { SidebarTrigger } from '../ui/sidebar';
 import { Separator } from '../ui/separator';
 import { Breadcrumbs } from '../global/breadCrumb';
 import SearchInput from '../global/searchInput';
+import SyncButton from '../global/sync-button';
 import { UserNav } from './user-nav';
 import ThemeToggle from './ThemeToggle/theme-toggle';
 import { Bell } from 'lucide-react';
@@ -53,7 +54,8 @@ export default function Header() {
         </div>
 
         <div className='flex items-center gap-2 px-4'>
-          <div className='hidden md:flex'>
+          <div className='hidden md:flex items-center gap-2'>
+            <SyncButton />
             <SearchInput />
           </div>
           
