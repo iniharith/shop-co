@@ -487,7 +487,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                             </div>
                             <div className="absolute -bottom-4 left-[5%] right-[5%] z-0">
                               <div className={`w-full text-[10px] font-medium p-1 px-3 rounded-b-[12px] shadow-sm text-center ${f.status === 'error' ? 'bg-red-500 text-white' : 'bg-[#fae863] text-black'}`}>
-                                {f.status === 'uploading' ? `Uploading... ${f.progress}%` : 'Failed'}
+                                {f.status === 'uploading' ? `Uploading... ${f.progress}%` : f.status === 'success' ? 'Uploaded!' : 'Failed'}
                               </div>
                             </div>
                           </div>
