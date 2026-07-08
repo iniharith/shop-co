@@ -16,8 +16,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import Image from "next/image";
 
 const PREDEFINED_AVATARS = [
-  "Felix", "Aneka", "Jude", "Leo", "Mia", "Oliver", 
-  "Sophia", "Lucas", "Ava", "Mason", "Isabella", "Ethan"
+  "Ahmad", "Siti", "Ali", "Aisyah", "Muthu", "MeiLing", 
+  "Farid", "Nurul", "Chong", "Devi", "Amir", "Fatima"
 ].map(seed => `https://api.dicebear.com/7.x/micah/svg?seed=${seed}`);
 
 export default function ProfilePage() {
