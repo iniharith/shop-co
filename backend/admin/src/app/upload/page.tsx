@@ -272,9 +272,16 @@ export default function CustomerUploadPortal() {
         </div>
       </div>
       
-      <p className="text-xs text-white/30 mt-8">
-        By uploading, you agree that this artwork is final and ready for production.
-      </p>
+      <div className="text-center mt-8 space-y-2">
+        <p className="text-xs text-white/40 font-medium">
+          By uploading, you agree that this artwork is final and ready for production.
+        </p>
+        <p className="text-[11px] text-white/30">
+          For your privacy and security, all uploaded files are automatically permanently deleted after 30 days.
+          <br />
+          Please refer to our Terms & Conditions for more details regarding our data policy.
+        </p>
+      </div>
     </div>
   );
 }
