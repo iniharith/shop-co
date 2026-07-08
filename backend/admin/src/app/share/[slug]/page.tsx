@@ -54,8 +54,6 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
     setUploading(true);
     const toastId = toast.loading("Uploading files...");
     try {
-      const uploadedFiles = [];
-      
       for (let i = 0; i < e.target.files.length; i++) {
         const file = e.target.files[i];
         
@@ -67,7 +65,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
         });
         
         if (!urlRes.ok) throw new Error("Gagal mendapatkan link muat naik");
-        const { url, key, publicUrl, userId, taskId, orderId, folderId, shareCategory } = await urlRes.json();
+        const { url, key, publicUrl } = await urlRes.json();
         
         // 2. Upload directly to S3
         const s3Res = await fetch(url, {
@@ -78,24 +76,24 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
         
         if (!s3Res.ok) throw new Error("Gagal memuat naik fail ke S3");
         
-        uploadedFiles.push({
+        const fileData = {
           key,
           originalName: file.name,
           mimetype: file.type,
           size: file.size,
           path: publicUrl
+        };
+
+        // 3. Save metadata immediately
+        const metaRes = await fetch(`${BACKEND}/api/files/s/${slug}/save-metadata`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ files: [fileData] })
         });
+        
+        if (!metaRes.ok) throw new Error("Gagal menyimpan metadata fail");
       }
 
-      // 3. Save metadata
-      const metaRes = await fetch(`${BACKEND}/api/files/s/${slug}/save-metadata`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ files: uploadedFiles })
-      });
-      
-      if (!metaRes.ok) throw new Error("Gagal menyimpan metadata fail");
-      // Success is handled below
       toast.success("Files uploaded successfully!", { id: toastId });
       await fetchFiles();
     } catch (err: any) {
@@ -321,6 +319,8 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
                       <img 
                         src={file.path.startsWith('http') ? file.path : `${BACKEND}/${file.path}`} 
                         alt={file.originalName} 
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover absolute inset-0 z-0 transition-transform group-hover/thumb:scale-105"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
