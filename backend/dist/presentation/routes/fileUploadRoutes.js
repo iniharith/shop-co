@@ -26,6 +26,7 @@ const FileUpload_1 = require("../../domain/entities/FileUpload");
 const WhatsAppService_1 = require("../../infrastructure/services/WhatsAppService");
 const auth_middileware_1 = __importDefault(require("../middlewares/auth.middileware"));
 const TaskRepository_1 = require("../../infrastructure/repositories/TaskRepository");
+const Task_1 = require("../../domain/entities/Task");
 const user_repository_1 = __importDefault(require("../../infrastructure/db/repositories/user.repository"));
 const ShareLinkRepository_1 = require("../../infrastructure/repositories/ShareLinkRepository");
 const ShareLink_1 = require("../../domain/entities/ShareLink");
@@ -719,6 +720,9 @@ router.delete('/s/:slug/files/:id', (0, express_async_handler_1.default)((req, r
         console.warn('[SharedDelete] S3 delete failed:', err.message);
     }
     yield FileUploadRepository_1.fileUploadRepository.delete(req.params.id);
+    if (file.path) {
+        yield Task_1.Task.updateMany({ "files.url": file.path }, { $pull: { files: { url: file.path } } });
+    }
     res.json({ success: true, message: 'File deleted' });
 })));
 // 🌐 Public: Add/update a note on a file from a shared folder
@@ -983,6 +987,8 @@ router.post('/bulk-delete', auth_middileware_1.default, (0, express_async_handle
             yield FileUploadRepository_1.fileUploadRepository.delete(id);
             if (file.path) {
                 yield (0, s3_1.deleteFromS3)(file.path);
+                // Remove file from any Task that references it
+                yield Task_1.Task.updateMany({ "files.url": file.path }, { $pull: { files: { url: file.path } } });
             }
             deletedCount++;
         }
@@ -1017,6 +1023,8 @@ router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.de
     try {
         if (file.path) {
             yield (0, s3_1.deleteFromS3)(file.path);
+            // Remove file from any Task that references it
+            yield Task_1.Task.updateMany({ "files.url": file.path }, { $pull: { files: { url: file.path } } });
         }
     }
     catch (err) {

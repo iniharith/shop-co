@@ -12,6 +12,7 @@ import { FileUpload } from '../../domain/entities/FileUpload';
 import { whatsAppService } from '../../infrastructure/services/WhatsAppService';
 import authMiddilware from '../middlewares/auth.middileware';
 import { taskRepository } from '../../infrastructure/repositories/TaskRepository';
+import { Task } from '../../domain/entities/Task';
 import UserRepository from '../../infrastructure/db/repositories/user.repository';
 import { shareLinkRepository } from '../../infrastructure/repositories/ShareLinkRepository';
 import { ShareLink } from '../../domain/entities/ShareLink';
@@ -874,6 +875,12 @@ router.delete(
       console.warn('[SharedDelete] S3 delete failed:', err.message);
     }
     await fileUploadRepository.delete(req.params.id);
+    if (file.path) {
+      await Task.updateMany(
+        { "files.url": file.path },
+        { $pull: { files: { url: file.path } } }
+      );
+    }
     res.json({ success: true, message: 'File deleted' });
   })
 );
@@ -1202,6 +1209,11 @@ router.post(
         await fileUploadRepository.delete(id);
         if (file.path) {
           await deleteFromS3(file.path);
+          // Remove file from any Task that references it
+          await Task.updateMany(
+            { "files.url": file.path },
+            { $pull: { files: { url: file.path } } }
+          );
         }
         deletedCount++;
       } catch (err: any) {
@@ -1244,6 +1256,11 @@ router.delete(
     try {
       if (file.path) {
         await deleteFromS3(file.path);
+        // Remove file from any Task that references it
+        await Task.updateMany(
+          { "files.url": file.path },
+          { $pull: { files: { url: file.path } } }
+        );
       }
     } catch (err: any) {
       console.warn('[FileUpload] Could not delete from S3:', err.message);
