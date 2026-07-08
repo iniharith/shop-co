@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
 import { useUploadStore } from '@/store/uploadStore';
 import { useUsers } from "@/hooks/useUsers";
-import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw } from "lucide-react";
+import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -240,7 +240,11 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [isDragOverComment, setIsDragOverComment] = useState(false);
   const [previewFile, setPreviewFile] = useState<any>(null);
   const { uploads, addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
-  const uploadingFiles = Object.values(uploads).filter(u => u.taskId === task._id && (u.status === 'uploading' || u.status === 'error'));
+  const uploadingFiles = Object.values(uploads).filter(u => 
+    u.taskId === task._id && 
+    (u.status === 'uploading' || u.status === 'error' || 
+      (u.status === 'success' && !task.files?.some((cf: any) => cf.name === u.name)))
+  );
   const [deletedFileIds, setDeletedFileIds] = useState<string[]>([]);
 
   const allFiles = (allFilesData as any)?.data || [];
@@ -335,6 +339,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
         })
         .then(() => {
           updateStatus(id, 'success');
+          setTimeout(() => removeUpload(id), 5000);
         })
         .catch((err) => {
           if (err.message !== "Upload cancelled") {
@@ -364,6 +369,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     })
     .then(() => {
       updateStatus(upload.id, 'success');
+      setTimeout(() => removeUpload(upload.id), 5000);
     })
     .catch((err) => {
       if (err.message !== "Upload cancelled") {
@@ -436,6 +442,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                               <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${f.status === 'error' ? 'bg-[#ff9999]' : 'bg-[#666666]'}`}>
                                 {f.status === 'uploading' ? (
                                   <LoaderCircle className="w-4 h-4 text-white animate-spin" />
+                                ) : f.status === 'success' ? (
+                                  <CheckCircle className="w-4 h-4 text-[#4ade80]" />
                                 ) : (
                                   <AlertCircle className="w-4 h-4 text-white" />
                                 )}
