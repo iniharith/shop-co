@@ -17,6 +17,11 @@ import { useSession } from "next-auth/react";
 import { uploadUserAvatar } from "@/api/users";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
+const PREDEFINED_AVATARS = [
+  "Ahmad", "Siti", "Ali", "Aisyah", "Muthu", "MeiLing", 
+  "Farid", "Nurul", "Chong", "Devi", "Amir", "Fatima"
+].map(seed => `https://api.dicebear.com/7.x/micah/svg?seed=${seed}`);
+
 interface UserFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -27,7 +32,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
   const isEditing = !!initialData;
   const { mutate: createUser, isPending: isCreating } = useCreateUser();
   const { mutate: updateUser, isPending: isUpdating } = useUpdateUser();
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -99,9 +104,13 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
       return;
     }
 
-    const payload = { ...formData };
+    const payload: any = { ...formData };
     if (isEditing && !payload.password) {
-      delete (payload as any).password;
+      delete payload.password;
+    }
+
+    if (avatarPreview && avatarPreview.startsWith("https://api.dicebear.com") && !avatarFile) {
+      payload.avatar = avatarPreview;
     }
 
     if (isEditing) {
@@ -118,6 +127,16 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
               await handleUploadAvatar(targetId);
             }
             toast.success("User updated successfully");
+            
+            // Sync session if the updated user is the currently logged-in user
+            if (session?.user?.id === targetId) {
+              await update({ 
+                name: payload.name, 
+                email: payload.email,
+                ...(payload.avatar ? { avatar: payload.avatar } : {})
+              });
+            }
+            
             onOpenChange(false);
             window.location.reload();
           },
@@ -170,6 +189,25 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
               />
             </div>
           </div>
+
+          <div className="space-y-3 pb-2">
+            <Label className="text-center block w-full text-muted-foreground text-xs uppercase tracking-wider">Or Choose a 3D Avatar</Label>
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 pt-2">
+              {PREDEFINED_AVATARS.map((url, i) => (
+                <div 
+                  key={i} 
+                  className={`cursor-pointer rounded-full overflow-hidden border-2 transition-all hover:scale-110 ${avatarPreview === url ? 'border-primary shadow-md scale-110' : 'border-transparent bg-muted/30 hover:border-primary/50'}`}
+                  onClick={() => {
+                    setAvatarPreview(url);
+                    setAvatarFile(null);
+                  }}
+                >
+                  <img src={url} alt={`Avatar ${i+1}`} className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label>Name</Label>
             <Input 

@@ -35,7 +35,8 @@ export default function SearchResultsPage() {
     return tasks.filter((t: any) => 
       String(t.title || "").toLowerCase().includes(queryLower) ||
       String(t.orderId || "").toLowerCase().includes(queryLower) ||
-      String(t.customerUsername || "").toLowerCase().includes(queryLower)
+      String(t.customerUsername || "").toLowerCase().includes(queryLower) ||
+      JSON.stringify(t).toLowerCase().includes(queryLower)
     );
   }, [tasks, queryLower]);
 
@@ -195,6 +196,11 @@ export default function SearchResultsPage() {
                       {task.orderId && <span>Order: <span className="font-medium text-foreground">{task.orderId}</span></span>}
                       {task.customerUsername && <span>Customer: <span className="font-medium text-foreground">{task.customerUsername}</span></span>}
                       <span>Status: <span className="font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full text-xs">{task.status.replace(/_/g, ' ')}</span></span>
+                      {task.description && (
+                        <span className="mt-1 line-clamp-2 text-xs italic">
+                          "{task.description}"
+                        </span>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
