@@ -15,7 +15,18 @@ import { FileUpload } from '../../domain/entities/FileUpload';
 import { bandwidthHistory } from '../../shared/utils/bandwidthTracker';
 import path from 'path';
 
+import { getOnlineUsersCount } from '../../infrastructure/socket/socketHandler';
+
 const router = Router();
+
+router.get('/online-users', (req: Request, res: Response) => {
+    try {
+        const count = getOnlineUsersCount();
+        res.status(200).json({ count });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch online users count' });
+    }
+});
 
 // Middleware to restrict to sysadmin, admin, boss role
 const requireSysadmin = (req: any, res: Response, next: any) => {

@@ -9,6 +9,12 @@ import { Roles } from "./types/api";
 export default withAuth(
   async function middleware(req) {
     const path = req.nextUrl.pathname
+    
+    // Explicitly bypass /upload to guarantee no redirects happen
+    if (path.startsWith("/upload")) {
+      return NextResponse.next();
+    }
+
     let token = req.nextauth.token;
     
     // iOS 15 Safari Fallback: If NextAuth failed to set the token, check our manual fallback cookie
@@ -68,7 +74,6 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ token }) => {
-     
         return true;
       },
     }
@@ -79,6 +84,6 @@ export const config = {
   matcher: [
     "/auth/:path*",
     "/admin/:path*",
-    "/((?!api|share|_next/static|_next/image|favicon.ico).*)"
+    "/((?!api|share|upload|_next/static|_next/image|favicon.ico).*)"
   ]
 }

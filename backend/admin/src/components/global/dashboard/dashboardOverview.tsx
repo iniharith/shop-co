@@ -4,23 +4,30 @@
  */
 "use client";
 import React from "react";
-import { useParcelStats, useFileStats } from "@/hooks/useAdminDashboard";
+import { useParcelStats, useFileStats, useOnlineUsers, useFolders } from "@/hooks/useAdminDashboard";
 import { useOrders } from "@/hooks/useOrder";
-import { Box, Truck, FileText, CircleCheckBig, CircleAlert, RefreshCw, Loader2, Package, Archive, Layers } from "lucide-react";
+import { useTasks } from "@/hooks/useTasks";
+import { Box, Truck, FileText, CircleCheckBig, CircleAlert, RefreshCw, Loader2, Package, Archive, Layers, Users, FolderOpen, ClipboardList } from "lucide-react";
 
 export default function DashboardOverview() {
   const { data: orderData, isPending: ordersPending, refetch: refetchOrders, isFetching: isFetchingOrders } = useOrders();
   const { data: parcelStats, isPending: parcelsPending, refetch: refetchParcels, isFetching: isFetchingParcels } = useParcelStats();
   const { data: fileStats, isPending: filesPending, refetch: refetchFiles, isFetching: isFetchingFiles } = useFileStats();
+  const { data: onlineData, refetch: refetchOnlineUsers } = useOnlineUsers();
+  const { data: taskData, refetch: refetchTasks, isPending: tasksPending } = useTasks();
+  const { data: folderData, refetch: refetchFolders, isPending: foldersPending } = useFolders();
 
   const isFetching = isFetchingOrders || isFetchingParcels || isFetchingFiles;
   const handleRefresh = () => {
     refetchOrders();
     refetchParcels();
     refetchFiles();
+    refetchOnlineUsers();
+    refetchTasks();
+    refetchFolders();
   };
 
-  if (ordersPending || parcelsPending || filesPending) {
+  if (ordersPending || parcelsPending || filesPending || tasksPending || foldersPending) {
     return (
       <div className="flex justify-center items-center h-[50vh]">
         <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
@@ -33,6 +40,11 @@ export default function DashboardOverview() {
 
   const parcelData = (parcelStats as any)?.data || { total: 0, pending: 0, in_transit: 0, delivered: 0, failed: 0 };
   const fileData = (fileStats as any)?.data || { totalFiles: 0, totalSize: 0, pendingReview: 0 };
+  
+  const totalTasks = (taskData as any)?.tasks?.length || 0;
+  const totalFolders = (folderData as any)?.data?.length || 0;
+  const onlineUsers = (onlineData as any)?.count || 0;
+  const activeDeliveries = (parcelData.in_transit || 0) + (parcelData.pending || 0);
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0 || !bytes) return "0 Bytes";
@@ -103,6 +115,39 @@ export default function DashboardOverview() {
                 <span>{parcelData.delivered} delivered</span>
                 <span>{parcelData.total} total parcels</span>
               </div>
+            </div>
+          </div>
+
+          {/* New Requested Metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-card/40 backdrop-blur-md p-4 rounded-[24px] border border-white/10 flex flex-col justify-center group hover:bg-card/60 transition-colors">
+              <div className="flex justify-between items-center mb-1">
+                <div className="text-gray-400 text-xs font-semibold flex items-center gap-1.5"><Truck size={14}/> Active Deliveries</div>
+              </div>
+              <div className="text-2xl font-bold text-white tracking-tight">{activeDeliveries}</div>
+            </div>
+
+            <div className="bg-card/40 backdrop-blur-md p-4 rounded-[24px] border border-white/10 flex flex-col justify-center group hover:bg-card/60 transition-colors">
+              <div className="flex justify-between items-center mb-1">
+                <div className="text-gray-400 text-xs font-semibold flex items-center gap-1.5"><ClipboardList size={14}/> Total Tasks</div>
+              </div>
+              <div className="text-2xl font-bold text-white tracking-tight">{totalTasks}</div>
+            </div>
+
+            <div className="bg-card/40 backdrop-blur-md p-4 rounded-[24px] border border-white/10 flex flex-col justify-center group hover:bg-card/60 transition-colors">
+              <div className="flex justify-between items-center mb-1">
+                <div className="text-gray-400 text-xs font-semibold flex items-center gap-1.5"><FolderOpen size={14}/> Total Folders</div>
+              </div>
+              <div className="text-2xl font-bold text-white tracking-tight">{totalFolders}</div>
+            </div>
+
+            <div className="bg-card/40 backdrop-blur-md p-4 rounded-[24px] border border-green-500/20 flex flex-col justify-center group hover:bg-card/60 transition-colors relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-green-500/10 blur-xl rounded-full pointer-events-none"></div>
+              <div className="flex justify-between items-center mb-1 relative z-10">
+                <div className="text-green-400/80 text-xs font-semibold flex items-center gap-1.5"><Users size={14}/> Users Online</div>
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div>
+              </div>
+              <div className="text-2xl font-bold text-white tracking-tight relative z-10">{onlineUsers}</div>
             </div>
           </div>
 

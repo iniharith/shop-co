@@ -70,6 +70,7 @@ export default function ArtworksManager() {
   const [newFolderName, setNewFolderName] = useState("");
   const [moveToFolderModalOpen, setMoveToFolderModalOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<any>(null);
+  const [previewList, setPreviewList] = useState<any[]>([]);
 
   const { data: virtualFoldersResponse, isPending: foldersPending } = useFolders();
   const virtualFolders = virtualFoldersResponse?.data || [];
@@ -427,7 +428,7 @@ export default function ArtworksManager() {
     toast.success("Share link copied to clipboard");
   };
 
-  const getFileThumbnail = (file: any) => {
+  const getFileThumbnail = (file: any, contextFiles: any[] = []) => {
     const isImage = file.mimetype?.includes("image") || (file.originalName && file.originalName.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i));
     const isPdf = file.mimetype?.includes("pdf") || (file.originalName && file.originalName.toLowerCase().endsWith(".pdf"));
 
@@ -447,7 +448,7 @@ export default function ArtworksManager() {
             }} 
           />
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center z-20">
-            <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewFile(file); }} className="gap-1 shadow-sm">
+            <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewFile(file); setPreviewList(contextFiles); }} className="gap-1 shadow-sm">
               <Eye className="w-4 h-4" /> View
             </Button>
           </div>
@@ -469,7 +470,7 @@ export default function ArtworksManager() {
           />
           <div className="absolute inset-0 z-10 bg-transparent"></div>
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center z-20">
-            <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewFile(file); }} className="gap-1 shadow-sm">
+            <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewFile(file); setPreviewList(contextFiles); }} className="gap-1 shadow-sm">
               <Eye className="w-4 h-4" /> View
             </Button>
           </div>
@@ -481,7 +482,7 @@ export default function ArtworksManager() {
       <div className="w-full h-24 bg-muted/50 rounded-t-lg flex items-center justify-center relative group/thumb">
         {getFileIcon(file.mimetype)}
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center z-20">
-          <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewFile(file); }} className="gap-1 shadow-sm">
+          <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewFile(file); setPreviewList(contextFiles); }} className="gap-1 shadow-sm">
             <Eye className="w-4 h-4" /> View
           </Button>
         </div>
@@ -503,7 +504,7 @@ export default function ArtworksManager() {
 
   return (
     <div className="space-y-6">
-      <FilePreviewModal file={previewFile} isOpen={!!previewFile} onClose={() => setPreviewFile(null)} />
+      <FilePreviewModal file={previewFile} files={previewList} onNavigate={setPreviewFile} isOpen={!!previewFile} onClose={() => setPreviewFile(null)} />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-2 w-full max-w-md">
           <div className="relative w-full">
@@ -882,7 +883,7 @@ export default function ArtworksManager() {
                             className="bg-white/80 data-[state=checked]:bg-primary"
                           />
                         </div>
-                        {getFileThumbnail(file)}
+                        {getFileThumbnail(file, visibleFiles)}
                         {file.tag === 'draft' ? (
                           <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Draft</div>
                         ) : file.tag === 'for_print' ? (
@@ -996,7 +997,7 @@ export default function ArtworksManager() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 ml-4 shrink-0">
-                          <Button variant="ghost" size="icon" onClick={() => setPreviewFile(file)} title="View">
+                          <Button variant="ghost" size="icon" onClick={() => { setPreviewFile(file); setPreviewList(visibleFiles); }} title="View">
                             <Eye className="w-4 h-4 text-muted-foreground" />
                           </Button>
                           <Button variant="ghost" size="icon" className="hover:bg-blue-50" onClick={(e) => {
@@ -1237,7 +1238,7 @@ export default function ArtworksManager() {
         </DialogContent>
       </Dialog>
       
-      <FilePreviewModal isOpen={!!previewFile} onClose={() => setPreviewFile(null)} file={previewFile} />
+      <FilePreviewModal isOpen={!!previewFile} onClose={() => setPreviewFile(null)} file={previewFile} files={previewList} onNavigate={setPreviewFile} />
     </div>
   );
 }

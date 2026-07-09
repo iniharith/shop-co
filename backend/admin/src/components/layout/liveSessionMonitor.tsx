@@ -15,7 +15,7 @@ const LiveSessionMonitor = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (status === "loading") return;
     
-    if (status === "unauthenticated" && !pathname.startsWith("/auth") && !pathname.startsWith("/share")) {
+    if (status === "unauthenticated" && !pathname.startsWith("/auth") && !pathname.startsWith("/share") && !pathname.startsWith("/upload")) {
       // Clear fallback token to break infinite redirect loops
       document.cookie = 'fallback_admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       

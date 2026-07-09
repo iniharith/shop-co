@@ -54,3 +54,7 @@ export const getReceiverSocketId = (userId: string) => {
     console.log("🟡 getReceiverSocketId", getd, userSocketMap)
     return getd
 }
+
+export const getOnlineUsersCount = () => {
+    return userSocketMap.size;
+}

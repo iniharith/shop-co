@@ -1,17 +1,47 @@
-import React from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import { X, ExternalLink, Download } from 'lucide-react';
+import { X, ExternalLink, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export const FilePreviewModal = ({ 
   isOpen, 
   onClose, 
-  file 
+  file,
+  files = [],
+  onNavigate
 }: { 
   isOpen: boolean; 
   onClose: () => void; 
-  file: any | null; 
+  file: any | null;
+  files?: any[];
+  onNavigate?: (file: any) => void;
 }) => {
+  const currentIndex = files.findIndex(f => f._id === file?._id);
+  const hasNext = currentIndex >= 0 && currentIndex < files.length - 1;
+  const hasPrev = currentIndex > 0;
+
+  const handleNext = useCallback(() => {
+    if (hasNext && onNavigate) {
+      onNavigate(files[currentIndex + 1]);
+    }
+  }, [hasNext, currentIndex, files, onNavigate]);
+
+  const handlePrev = useCallback(() => {
+    if (hasPrev && onNavigate) {
+      onNavigate(files[currentIndex - 1]);
+    }
+  }, [hasPrev, currentIndex, files, onNavigate]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') handleNext();
+      if (e.key === 'ArrowLeft') handlePrev();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, handleNext, handlePrev]);
+
   if (!file) return null;
 
   const getFileUrl = (path: string) => {
@@ -33,7 +63,9 @@ export const FilePreviewModal = ({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-[95vw] w-full max-h-[95vh] h-full flex flex-col p-0 overflow-hidden bg-black/95 border-none shadow-2xl z-[100]">
         <div className="flex items-center justify-between p-3 bg-black/60 text-white z-10 absolute top-0 left-0 right-0 backdrop-blur-sm">
-          <DialogTitle className="text-sm font-medium truncate pr-4 max-w-[70%]">{fileName}</DialogTitle>
+          <DialogTitle className="text-sm font-medium truncate pr-4 max-w-[70%]">
+            {fileName} {files.length > 1 && currentIndex >= 0 && <span className="text-gray-400 ml-2">({currentIndex + 1} of {files.length})</span>}
+          </DialogTitle>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 h-8 w-8" onClick={() => window.open(fileUrl, "_blank")} title="Open in new tab">
               <ExternalLink className="w-4 h-4" />
@@ -56,12 +88,21 @@ export const FilePreviewModal = ({
           </div>
         </div>
         
-        <div className="flex-1 flex items-center justify-center p-2 pt-14 pb-4 overflow-hidden relative">
+        <div className="flex-1 flex items-center justify-center p-2 pt-14 pb-4 overflow-hidden relative group">
+          {hasPrev && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/50 hover:bg-black/80 text-white opacity-0 group-hover:opacity-100 transition-all z-20 backdrop-blur-sm border border-white/10"
+            >
+              <ChevronLeft size={32} />
+            </button>
+          )}
+
           {isImage ? (
             <img 
               src={fileUrl} 
               alt={fileName} 
-              className="max-w-full max-h-full object-contain rounded-md"
+              className="max-w-full max-h-full object-contain rounded-md select-none"
             />
           ) : isPdf ? (
             <iframe 
@@ -80,6 +121,15 @@ export const FilePreviewModal = ({
                 Download File
               </Button>
             </div>
+          )}
+
+          {hasNext && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); handleNext(); }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/50 hover:bg-black/80 text-white opacity-0 group-hover:opacity-100 transition-all z-20 backdrop-blur-sm border border-white/10"
+            >
+              <ChevronRight size={32} />
+            </button>
           )}
         </div>
       </DialogContent>

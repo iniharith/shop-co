@@ -140,3 +140,22 @@ export const useMoveFile = () => {
     );
     return { mutate, isPending };
 }
+
+export const useOnlineUsers = () => {
+    const { data: session } = useSession();
+    return useQueryData(
+        ['onlineUsers'],
+        async () => {
+            const token = session?.user?.token;
+            if (!token) return { count: 0 };
+            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+            const res = await fetch(`${backendUrl}/api/sysadmin/online-users`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            return res.json();
+        },
+        { refetchInterval: 10000 }
+    );
+}
