@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
 import { Button } from "@/components/ui/button";
@@ -468,11 +469,10 @@ export default function TasksManager() {
                           data-task-row="true"
                           className={`
                             group grid grid-cols-12 gap-2 items-center py-2 px-2 rounded-lg
-                            transition-colors cursor-pointer select-none
-                            border border-transparent
+                            transition-all cursor-pointer select-none
                             ${isSelected
-                              ? "bg-primary/8 border-primary/25 hover:bg-primary/12"
-                              : "hover:bg-muted/30 hover:border-border/30"
+                              ? "bg-blue-50 dark:bg-blue-950/40 ring-2 ring-blue-500 ring-inset"
+                              : "border border-transparent hover:bg-muted/30 hover:border-border/30"
                             }
                           `}
                           onClick={e => handleRowClick(task, e, listOrderedIds)}
@@ -480,7 +480,7 @@ export default function TasksManager() {
                           {/* Left accent bar when selected */}
                           <div className={`col-span-6 font-medium text-sm flex items-center gap-2 px-2 relative`}>
                             {isSelected && (
-                              <span className="absolute -left-2 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full" />
+                              <span className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-5 bg-blue-500 rounded-full" />
                             )}
                             <button
                               type="button"
@@ -489,10 +489,10 @@ export default function TasksManager() {
                             >
                               {task.isDone
                                 ? <CheckCircle className="w-5 h-5 text-emerald-500" />
-                                : <Circle className={`w-5 h-5 ${isSelected ? "text-primary/60" : ""}`} />
+                                : <Circle className={`w-5 h-5 ${isSelected ? "text-blue-500" : ""}`} />
                               }
                             </button>
-                            <span className={`truncate ${task.isDone ? "text-muted-foreground line-through" : ""}`}>
+                            <span className={`truncate ${task.isDone ? "text-muted-foreground line-through" : ""} ${isSelected ? "text-blue-700 dark:text-blue-300 font-semibold" : ""}`}>
                               {task.title}
                             </span>
                           </div>
@@ -549,12 +549,11 @@ export default function TasksManager() {
       )}
 
       {/* ── Floating Bulk Action Toolbar ─────────────────────────────────────
-          Slides up from the bottom whenever 1+ tasks are selected.
-          Shift+click to select a range. Single click in selection mode toggles.
-          Escape or clicking the × clears the selection.
+          Rendered via portal directly on document.body so it escapes the
+          ScrollArea's overflow clipping that would otherwise hide it.
       ─────────────────────────────────────────────────────────────────────── */}
-      {selectedIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-card border border-border shadow-2xl rounded-2xl px-3 py-2 animate-in slide-in-from-bottom-3 duration-150">
+      {selectedIds.size > 0 && typeof document !== "undefined" && createPortal(
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-1 bg-card border border-border shadow-2xl rounded-2xl px-3 py-2 animate-in slide-in-from-bottom-3 duration-150">
 
           {/* Count */}
           <span className="text-sm font-semibold text-foreground px-2 mr-1">
@@ -650,7 +649,8 @@ export default function TasksManager() {
           >
             <X className="w-3.5 h-3.5" />
           </Button>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
