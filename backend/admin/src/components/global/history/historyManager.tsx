@@ -18,6 +18,7 @@ import TaskModal from "../tasks/TaskModal";
 const HistoryManager = () => {
   const { data, isPending, refetch, isFetching } = useOrders();
   const { data: deletedTasksData, isPending: isTasksPending, refetch: refetchTasks, isFetching: isFetchingTasks } = useTasks({ deleted: 'true' });
+  const deletedTasks = (deletedTasksData as any);
   const { mutate: permanentDeleteTaskMutate, isPending: isPermanentDeleting } = usePermanentDeleteTask();
   const { mutate: bulkDeleteMutate, isPending: isDeleting } = useBulkDeleteOrders();
   const [activeTab, setActiveTab] = useState("DONE");
@@ -25,8 +26,8 @@ const HistoryManager = () => {
   const [selectedTask, setSelectedTask] = useState<any>(null);
 
   React.useEffect(() => {
-    if (selectedTask && deletedTasksData?.tasks?.length > 0) {
-      const updatedTask = deletedTasksData.tasks.find((t: any) => t._id === selectedTask._id);
+    if (selectedTask && deletedTasks?.tasks?.length > 0) {
+      const updatedTask = deletedTasks.tasks.find((t: any) => t._id === selectedTask._id);
       if (updatedTask && updatedTask !== selectedTask) {
         setSelectedTask(updatedTask);
       }
@@ -59,7 +60,7 @@ const HistoryManager = () => {
   }, [data, activeTab, searchQuery]);
 
   const filteredTasks = useMemo(() => {
-    let tasks = deletedTasksData?.tasks || [];
+    let tasks = deletedTasks?.tasks || [];
     if (searchQuery.trim()) {
       const lowerQuery = searchQuery.toLowerCase();
       tasks = tasks.filter((t: any) => 
@@ -204,18 +205,6 @@ const HistoryManager = () => {
             isOpen={!!selectedTask}
             onClose={() => setSelectedTask(null)}
             task={selectedTask}
-            allUsers={[]}
-            orders={[]}
-            customers={[]}
-            updateTask={() => {}}
-            uploadFile={() => {}}
-            isUploading={false}
-            deleteFile={() => {}}
-            isDeletingFile={false}
-            addComment={() => {}}
-            isCommenting={false}
-            deleteCommentApi={() => {}}
-            isDeletingComment={false}
           />
         )}
       </div>
