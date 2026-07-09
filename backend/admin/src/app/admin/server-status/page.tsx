@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Loader2, Activity, Database, Server, Archive, Globe, Train, Cloud } from "lucide-react";
+import { Loader2, Activity, Database, Server, Archive, Globe, Train, Cloud, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { useSession } from "next-auth/react";
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -13,6 +14,32 @@ export default function ServerHealthPage() {
   const { data: session } = useSession();
   const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Deployments state
+  const [deploymentsModalOpen, setDeploymentsModalOpen] = useState(false);
+  const [deployments, setDeployments] = useState<any[]>([]);
+  const [loadingDeployments, setLoadingDeployments] = useState(false);
+
+  const fetchDeployments = async () => {
+    const token = (session?.user as any)?.token || (typeof window !== 'undefined' && localStorage.getItem('token')) || "";
+    if (!token) return;
+    
+    setDeploymentsModalOpen(true);
+    setLoadingDeployments(true);
+    try {
+      const res = await fetch(`${BACKEND}/api/sysadmin/deployments`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: "include",
+      });
+      const json = await res.json();
+      if (json.success) setDeployments(json.data);
+      else throw new Error("Failed");
+    } catch(e) {
+      toast.error("Failed to load deployment history");
+    } finally {
+      setLoadingDeployments(false);
+    }
+  };
 
   const fetchHealth = React.useCallback(async () => {
     const token = (session?.user as any)?.token || (typeof window !== 'undefined' && localStorage.getItem('token')) || "";
@@ -224,13 +251,14 @@ export default function ServerHealthPage() {
           {/* External Services & Infrastructure Footer */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Vercel Status */}
-            <div className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between items-start h-[130px] group hover:border-white/20 transition-all">
+            {/* Vercel Status */}
+            <div onClick={fetchDeployments} className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between items-start h-[130px] group hover:border-white/20 transition-all cursor-pointer hover:bg-card/60">
               <div className="flex items-center space-x-3 w-full">
                 <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center shrink-0">
                   <Globe size={18} />
                 </div>
                 <div className="overflow-hidden">
-                  <div className="text-white font-semibold truncate">Vercel (Frontend)</div>
+                  <div className="text-white font-semibold truncate group-hover:text-blue-400 transition-colors">Vercel (Frontend)</div>
                   <div className="text-xs text-gray-500 truncate">kampungcetak.com</div>
                 </div>
               </div>
@@ -239,17 +267,18 @@ export default function ServerHealthPage() {
                   <div className={`w-1.5 h-1.5 rounded-full mr-2 ${data.external?.vercel?.readyState === 'READY' ? 'bg-green-400' : 'bg-gray-400'}`}></div>
                   {data.external?.vercel?.readyState || 'UNKNOWN'}
                 </div>
+                <div className="text-xs text-gray-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">View history</div>
               </div>
             </div>
             
             {/* Railway Status */}
-            <div className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between items-start h-[130px] group hover:border-white/20 transition-all">
+            <div onClick={fetchDeployments} className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between items-start h-[130px] group hover:border-white/20 transition-all cursor-pointer hover:bg-card/60">
               <div className="flex items-center space-x-3 w-full">
                 <div className="w-10 h-10 rounded-full bg-[#13111C] border border-white/10 text-white flex items-center justify-center shrink-0">
                   <Train size={18} />
                 </div>
                 <div className="overflow-hidden">
-                  <div className="text-white font-semibold truncate">Railway (Backend)</div>
+                  <div className="text-white font-semibold truncate group-hover:text-purple-400 transition-colors">Railway (Backend)</div>
                   <div className="text-xs text-gray-500 truncate">{data.external?.railway?.environment || 'Production'}</div>
                 </div>
               </div>
@@ -258,6 +287,7 @@ export default function ServerHealthPage() {
                   <div className={`w-1.5 h-1.5 rounded-full mr-2 ${data.external?.railway?.status === 'ACTIVE' ? 'bg-green-400' : 'bg-red-400'}`}></div>
                   {data.external?.railway?.status || 'UNKNOWN'}
                 </div>
+                <div className="text-xs text-gray-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">View history</div>
               </div>
             </div>
 
@@ -362,6 +392,88 @@ export default function ServerHealthPage() {
           </button>
         </div>
       </div>
+
+      <Dialog open={deploymentsModalOpen} onOpenChange={setDeploymentsModalOpen}>
+        <DialogContent className="max-w-4xl bg-[#111] text-white border-white/10 rounded-2xl h-[80vh] flex flex-col p-0 overflow-hidden">
+          <DialogHeader className="p-6 border-b border-white/10 pb-4 bg-[#111] shrink-0">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Globe className="w-5 h-5 text-blue-400" />
+              Deployment History
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto p-0 bg-[#0a0a0a]">
+            {loadingDeployments ? (
+              <div className="h-full flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
+              </div>
+            ) : (
+              <div className="w-full">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-gray-400 uppercase bg-[#161616] sticky top-0 border-b border-white/5 z-10">
+                    <tr>
+                      <th className="px-6 py-4 font-semibold">Deployment</th>
+                      <th className="px-6 py-4 font-semibold">Status</th>
+                      <th className="px-6 py-4 font-semibold">Environment</th>
+                      <th className="px-6 py-4 font-semibold text-right">Age</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deployments.map((dep, i) => (
+                      <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="font-medium text-white mb-1 line-clamp-1 flex items-center gap-2">
+                            {dep.service.includes('Vercel') ? <Globe className="w-3.5 h-3.5 text-blue-400" /> : <Train className="w-3.5 h-3.5 text-purple-400" />}
+                            {dep.commitMessage}
+                          </div>
+                          <div className="text-xs text-gray-500 flex items-center gap-2">
+                            <span className="bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded border border-gray-700">{dep.branch}</span>
+                            {dep.url && (
+                              <a href={dep.url} target="_blank" rel="noreferrer" className="hover:text-blue-400 truncate max-w-[200px]">
+                                {dep.url.replace('https://', '')}
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className={`flex items-center gap-2 font-medium px-2.5 py-1 rounded-full w-fit ${
+                            ['READY', 'SUCCESS'].includes(dep.status) ? 'bg-emerald-500/10 text-emerald-400' :
+                            ['ERROR', 'FAILED'].includes(dep.status) ? 'bg-red-500/10 text-red-400' :
+                            'bg-yellow-500/10 text-yellow-400'
+                          }`}>
+                            {['READY', 'SUCCESS'].includes(dep.status) ? <CheckCircle2 className="w-3.5 h-3.5" /> : 
+                             ['ERROR', 'FAILED'].includes(dep.status) ? <XCircle className="w-3.5 h-3.5" /> : 
+                             <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                            {dep.status}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-gray-300 font-medium capitalize flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                            {dep.environment}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="text-gray-400 flex items-center justify-end gap-1.5">
+                            <Clock className="w-3 h-3" />
+                            {formatDistanceToNow(new Date(dep.createdAt))} ago
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {deployments.length === 0 && !loadingDeployments && (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                          No deployment history available.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

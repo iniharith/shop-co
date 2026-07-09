@@ -162,6 +162,110 @@ router.get(
     });
   })
 );
+// ─── GET /api/sysadmin/deployments ─────────────────────────
+router.get(
+  '/deployments',
+  asyncHandler(async (req: Request, res: Response) => {
+    let vercelDeployments: any[] = [];
+    let railwayDeployments: any[] = [];
+
+    // Fetch Vercel Deployments
+    if (process.env.VERCEL_ACCESS_TOKEN && process.env.VERCEL_PROJECT_ID) {
+      try {
+        const vRes = await axios.get(`https://api.vercel.com/v6/deployments?projectId=${process.env.VERCEL_PROJECT_ID}&limit=10`, {
+          headers: { Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}` }
+        });
+        vercelDeployments = (vRes.data.deployments || []).map((d: any) => ({
+          id: d.id,
+          service: 'Vercel (Frontend)',
+          status: d.readyState,
+          commitMessage: d.meta?.githubCommitMessage?.split('\n')[0] || 'Manual Deployment',
+          branch: d.meta?.githubCommitRef || 'main',
+          environment: 'Production',
+          createdAt: d.createdAt,
+          url: `https://${d.url}`
+        }));
+      } catch (e: any) {
+        console.error('Vercel deployments error', e.message);
+      }
+    }
+
+    // Fetch Railway Deployments
+    if (process.env.RAILWAY_API_TOKEN) {
+      try {
+        const query = `
+          query {
+            projects {
+              edges {
+                node {
+                  id
+                  name
+                  environments {
+                    edges {
+                      node {
+                        name
+                        deployments(first: 10) {
+                          edges {
+                            node {
+                              id
+                              status
+                              createdAt
+                              meta
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `;
+        const rRes = await axios.post('https://backboard.railway.app/graphql/v2', { query }, {
+          headers: { Authorization: `Bearer ${process.env.RAILWAY_API_TOKEN}` }
+        });
+        
+        // Parse GraphQL response
+        const projects = rRes.data?.data?.projects?.edges || [];
+        projects.forEach((p: any) => {
+          const envs = p.node?.environments?.edges || [];
+          envs.forEach((env: any) => {
+            const deps = env.node?.deployments?.edges || [];
+            deps.forEach((d: any) => {
+              railwayDeployments.push({
+                id: d.node.id,
+                service: 'Railway (Backend)',
+                status: d.node.status,
+                commitMessage: 'Backend Deployment',
+                branch: 'main',
+                environment: env.node.name,
+                createdAt: new Date(d.node.createdAt).getTime(),
+                url: null
+              });
+            });
+          });
+        });
+        
+        // Sort by newest
+        railwayDeployments.sort((a, b) => b.createdAt - a.createdAt);
+        railwayDeployments = railwayDeployments.slice(0, 10);
+      } catch (e: any) {
+        console.error('Railway deployments error', e.message);
+      }
+    }
+
+    const allDeployments = [...vercelDeployments, ...railwayDeployments]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 20);
+
+    res.json({
+      success: true,
+      data: allDeployments
+    });
+  })
+);
+
 
 // ─── GET /api/sysadmin/aws-media ─────────────────────────
 router.get(
