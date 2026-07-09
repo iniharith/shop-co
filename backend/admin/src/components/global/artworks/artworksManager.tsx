@@ -12,7 +12,7 @@ import { useTasks } from "@/hooks/useTasks";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2 } from "lucide-react";
+import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2, Upload } from "lucide-react";
 import { forceDownload } from "@/lib/utils";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import { toast } from "sonner";
@@ -563,7 +563,55 @@ export default function ArtworksManager() {
                 )}
                 <div className="space-y-2">
                   <Label>Files *</Label>
-                  <Input type="file" multiple onChange={e => setUploadFiles(e.target.files)} />
+                  <div className="border-2 border-dashed border-border/50 rounded-xl p-6 text-center bg-muted/10 relative hover:bg-muted/20 transition-colors group">
+                    <input 
+                      type="file" 
+                      multiple 
+                      onChange={e => setUploadFiles(e.target.files)}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      title="Click to select files"
+                    />
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <h3 className="text-base font-medium mb-1">Upload your artwork</h3>
+                    <p className="text-xs text-muted-foreground mb-4">Drag and drop or click to browse files</p>
+                    <Button variant="outline" size="sm" className="border-border/50 pointer-events-none relative z-0">
+                      Select Files
+                    </Button>
+                  </div>
+
+                  {uploadFiles && uploadFiles.length > 0 && (
+                    <div className="bg-muted/10 rounded-lg p-3 border border-border/50 space-y-2 max-h-40 overflow-y-auto mt-2 custom-scrollbar">
+                      <h4 className="text-xs font-medium text-muted-foreground mb-2">{uploadFiles.length} File(s) Selected</h4>
+                      {Array.from(uploadFiles).map((file, i) => (
+                        <div key={i} className="flex items-center justify-between bg-background p-2 rounded border border-border/50">
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            {file.type.includes('image') ? (
+                              <ImageIcon className="w-4 h-4 text-blue-400 shrink-0" />
+                            ) : (
+                              <FileText className="w-4 h-4 text-gray-400 shrink-0" />
+                            )}
+                            <div className="truncate">
+                              <p className="text-xs font-medium truncate">{file.name}</p>
+                              <p className="text-[10px] text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                            </div>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const dt = new DataTransfer();
+                              Array.from(uploadFiles).filter((_, index) => index !== i).forEach(f => dt.items.add(f));
+                              setUploadFiles(dt.files.length > 0 ? dt.files : null);
+                            }}
+                            className="p-1 hover:bg-muted/50 rounded text-muted-foreground hover:text-foreground transition-colors z-20 relative"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Admin Notes</Label>

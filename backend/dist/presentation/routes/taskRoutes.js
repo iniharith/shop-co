@@ -396,6 +396,19 @@ router.delete('/:id/files/:fileId', auth_middileware_1.default, (0, express_asyn
     // Find the file in the task's array
     const fileIndex = task.files.findIndex((f) => { var _a; return ((_a = f._id) === null || _a === void 0 ? void 0 : _a.toString()) === fileId || f.url.includes(fileId); });
     if (fileIndex === -1) {
+        // It might be a FileUpload document (customer file attached virtually)
+        try {
+            const { FileUpload } = yield Promise.resolve().then(() => __importStar(require('../../domain/entities/FileUpload')));
+            const fileDoc = yield FileUpload.findById(fileId);
+            if (fileDoc) {
+                if (fileDoc.path)
+                    yield (0, s3_1.deleteFromS3)(fileDoc.path).catch(console.error);
+                yield FileUpload.findByIdAndDelete(fileId);
+                res.json({ success: true, message: 'File deleted from task', task });
+                return;
+            }
+        }
+        catch (e) { }
         res.status(404).json({ success: false, message: 'File not found in task' });
         return;
     }
