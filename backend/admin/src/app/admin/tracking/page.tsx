@@ -19,7 +19,7 @@ export default function TrackingPage() {
           </p>
         </div>
         
-        <div className="w-full">
+        <div className="w-full bg-background/40 backdrop-blur-md border border-white/10 p-6 rounded-2xl shadow-xl">
           <TrackingList />
         </div>
       </div>

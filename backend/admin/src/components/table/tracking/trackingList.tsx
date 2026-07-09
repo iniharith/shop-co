@@ -41,12 +41,12 @@ export default function TrackingList() {
 
   if (parcels.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
-        <div className="bg-slate-50 p-4 rounded-full mb-4">
-          <PackageX className="w-8 h-8 text-slate-400" />
+      <div className="flex flex-col items-center justify-center py-20 bg-background/50 rounded-3xl border border-border/50 shadow-sm border-dashed">
+        <div className="bg-primary/10 p-4 rounded-full mb-4">
+          <PackageX className="w-8 h-8 text-primary/60" />
         </div>
-        <h3 className="font-display text-lg font-bold text-slate-900">No Parcels Found</h3>
-        <p className="text-slate-500 text-sm mt-1">There are no active shipments to track right now.</p>
+        <h3 className="font-display text-lg font-bold text-foreground">No Parcels Found</h3>
+        <p className="text-muted-foreground text-sm mt-1">There are no active shipments to track right now.</p>
       </div>
     );
   }
@@ -90,12 +90,12 @@ export default function TrackingList() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm border-dashed">
-          <div className="bg-slate-50 p-4 rounded-full mb-4">
-            <Search className="w-8 h-8 text-slate-400" />
+        <div className="flex flex-col items-center justify-center py-20 bg-background/50 rounded-3xl border border-border/50 shadow-sm border-dashed">
+          <div className="bg-primary/10 p-4 rounded-full mb-4">
+            <Search className="w-8 h-8 text-primary/60" />
           </div>
-          <h3 className="font-display text-lg font-bold text-slate-900">No results found</h3>
-          <p className="text-slate-500 text-sm mt-1">Try adjusting your search query or courier filter.</p>
+          <h3 className="font-display text-lg font-bold text-foreground">No results found</h3>
+          <p className="text-muted-foreground text-sm mt-1">Try adjusting your search query or courier filter.</p>
         </div>
       )}
     </div>
