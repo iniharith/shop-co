@@ -75,6 +75,7 @@ export default function ChatManager() {
   };
 
   const getParticipantName = (conv: any) => {
+    if (!conv) return "Unknown User";
     if (conv.source === 'tiktok') return `TikTok: ${conv.tiktokUsername || 'User'}`;
     if (conv.source === 'shopee') return `Shopee: ${conv.shopeeUsername || 'User'}`;
     if (conv.whatsappPhone) return `WhatsApp: ${conv.whatsappPhone}`;
