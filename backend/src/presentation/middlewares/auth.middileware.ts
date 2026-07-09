@@ -85,4 +85,14 @@ export const refreshTokenMidllWare = async (req: AuthRequest, res: Response, nex
     }
 }
 
+export const authorizeRoles = (...roles: string[]) => {
+    return (req: AuthRequest, res: Response, next: NextFunction) => {
+        if (!req.role || !roles.includes(req.role)) {
+            res.status(statusCodes.UNAUTHORIZED).json({ message: "Access denied: insufficient role" });
+            return;
+        }
+        next();
+    };
+};
+
 export default authMiddilware

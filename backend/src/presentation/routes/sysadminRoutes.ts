@@ -3,7 +3,7 @@
  */
 import { Router, Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
-import authMiddilware from '../middlewares/auth.middileware';
+import authMiddilware, { authorizeRoles } from '../middlewares/auth.middileware';
 import os from 'os';
 import mongoose from 'mongoose';
 import { ListObjectsV2Command, HeadBucketCommand } from '@aws-sdk/client-s3';
