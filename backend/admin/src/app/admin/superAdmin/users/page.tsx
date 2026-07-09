@@ -24,7 +24,7 @@ export default function Page(props: pageProps) {
   return (
     <>
       <PageContainer scrollable={true}>
-        <div className="flex flex-1 flex-col space-y-4">
+        <div className="flex flex-1 flex-col space-y-4 bg-background/40 backdrop-blur-md border border-white/10 p-6 rounded-2xl shadow-xl">
           <div className="flex items-start justify-between">
             <Heading title="Users 🫰" description="Data Listing And Actions " />
             <div className="flex  w-1/2 items-center justify-end gap-2">
