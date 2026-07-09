@@ -448,7 +448,7 @@ export default function PackagingManager() {
   if (isPending) return <div className="flex justify-center p-8"><p>Loading artworks...</p></div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-2 w-full max-w-md">
           <div className="relative w-full">

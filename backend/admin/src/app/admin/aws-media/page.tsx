@@ -69,7 +69,7 @@ export default function AwsMediaPage() {
   const filteredItems = items.filter(item => item.key.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 h-[calc(100vh-theme(spacing.16))] overflow-y-auto bg-background">
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 h-[calc(100vh-theme(spacing.16))] overflow-y-auto bg-background/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl m-4">
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">AWS Media Server</h2>
         <Button onClick={fetchMedia} variant="outline" disabled={loading}>

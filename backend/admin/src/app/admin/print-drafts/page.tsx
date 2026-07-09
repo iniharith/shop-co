@@ -53,7 +53,7 @@ export default function PrintDraftsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
+      <div className="flex h-full flex-1 items-center justify-center bg-transparent">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -61,8 +61,8 @@ export default function PrintDraftsPage() {
 
   if (drafts.length === 0) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <p className="text-muted-foreground">No drafts found in the system to print.</p>
+      <div className="flex h-full flex-1 items-center justify-center bg-transparent">
+        <p className="text-muted-foreground bg-background/40 backdrop-blur-md border border-white/10 p-6 rounded-2xl shadow-xl">No drafts found in the system to print.</p>
       </div>
     );
   }
@@ -79,24 +79,24 @@ export default function PrintDraftsPage() {
   if (itemsPerPage === 10) gridColsRows = "grid-cols-2 grid-rows-5";
 
   return (
-    <div className="h-full w-full overflow-y-auto bg-gray-50 flex flex-col p-6 print:p-0 print:bg-white print:overflow-visible">
+    <div className="h-full w-full overflow-y-auto bg-transparent flex flex-col p-6 print:p-0 print:bg-white print:overflow-visible">
       {/* SCREEN PREVIEW HEADER */}
-      <div className="mb-6 no-print w-full flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+      <div className="mb-6 no-print w-full flex justify-between items-center bg-background/40 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-xl">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Print Drafts</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold tracking-tight">Print Drafts</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             {drafts.length} total drafts. Will generate {pages.length} pages.
           </p>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-md border border-gray-200">
-            <LayoutGrid className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Layout:</span>
+          <div className="flex items-center gap-2 bg-background/50 px-3 py-2 rounded-lg border border-white/10">
+            <LayoutGrid className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Layout:</span>
             <select 
               value={itemsPerPage} 
               onChange={(e) => setItemsPerPage(Number(e.target.value))}
-              className="bg-transparent text-sm font-semibold outline-none cursor-pointer"
+              className="bg-transparent text-sm font-semibold outline-none cursor-pointer border-none"
             >
               <option value={4}>4 per page (2x2)</option>
               <option value={6}>6 per page (2x3)</option>

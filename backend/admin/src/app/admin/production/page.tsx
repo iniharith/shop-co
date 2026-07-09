@@ -11,7 +11,7 @@ import ProductionManager from "@/components/global/production/productionManager"
 export default function ProductionPage() {
   return (
     <PageContainer scrollable={true}>
-      <div className="flex flex-1 flex-col space-y-4">
+      <div className="flex flex-1 flex-col space-y-4 bg-background/40 backdrop-blur-md border border-white/10 p-6 rounded-2xl shadow-xl">
         <div className="flex items-start justify-between">
           <Heading
             title="Production Manager 🖨️"

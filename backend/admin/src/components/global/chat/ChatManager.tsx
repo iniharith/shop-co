@@ -83,10 +83,10 @@ export default function ChatManager() {
   };
 
   return (
-    <div className="flex h-full border border-border/50 rounded-xl bg-card overflow-hidden shadow-sm">
+    <div className="flex h-full border border-white/10 rounded-2xl bg-background/40 backdrop-blur-md overflow-hidden shadow-xl">
       {/* Sidebar: Conversations List */}
-      <div className="w-1/3 min-w-[300px] border-r border-border/50 bg-muted/10 flex flex-col">
-        <div className="p-4 border-b border-border/50 bg-background flex justify-between items-center">
+      <div className="w-1/3 min-w-[300px] border-r border-white/10 bg-transparent flex flex-col">
+        <div className="p-4 border-b border-white/10 bg-transparent flex justify-between items-center">
           <h2 className="font-semibold text-lg flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-primary" /> Inbox
           </h2>
@@ -133,12 +133,12 @@ export default function ChatManager() {
           </div>
         </div>
         
-        <div className="p-3 border-b border-border/50 bg-muted/5 flex flex-col gap-3">
+        <div className="p-3 border-b border-white/10 bg-transparent flex flex-col gap-3">
           <Input 
             placeholder="Search username..." 
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="h-9 bg-background text-sm"
+            className="h-9 bg-background/20 text-sm border-white/10"
           />
           <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
             {['all', 'internal', 'whatsapp', 'tiktok', 'shopee'].map(pf => (
@@ -164,7 +164,7 @@ export default function ChatManager() {
             <div
               key={conv._id}
               onClick={() => setActiveConvId(conv._id)}
-              className={`p-4 border-b border-border/50 cursor-pointer transition-colors flex items-center gap-3 ${activeConvId === conv._id ? 'bg-primary/5 border-l-4 border-l-primary' : 'hover:bg-muted/30'}`}
+              className={`p-4 border-b border-white/10 cursor-pointer transition-colors flex items-center gap-3 ${activeConvId === conv._id ? 'bg-primary/20 border-l-4 border-l-primary' : 'hover:bg-muted/30'}`}
             >
               <Avatar className="w-10 h-10 border border-border/50">
                 <AvatarFallback>{getParticipantName(conv).substring(0, 2).toUpperCase()}</AvatarFallback>
@@ -203,10 +203,10 @@ export default function ChatManager() {
       </div>
 
       {/* Main Area: Chat Window */}
-      <div className="flex-1 flex flex-col bg-background relative">
+      <div className="flex-1 flex flex-col bg-transparent relative">
         {activeConvId ? (
           <>
-            <div className="p-4 border-b border-border/50 flex items-center justify-between shadow-sm z-10 bg-background/95 backdrop-blur">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between shadow-sm z-10 bg-background/40 backdrop-blur-md">
               <h3 className="font-semibold text-lg">
                 {getParticipantName(conversations.find((c: any) => c._id === activeConvId))}
               </h3>
@@ -222,7 +222,7 @@ export default function ChatManager() {
               </Button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col bg-muted/5">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col bg-transparent">
               {messages.map((msg: any) => {
                 const isMe = msg.senderId?._id?.toString() === currentUserId || (msg.senderRole && ['admin','sysadmin','boss','designer','production','packaging'].includes(msg.senderRole) && msg.senderId?._id?.toString() === currentUserId) || msg.senderId === currentUserId;
                 return (
@@ -239,7 +239,7 @@ export default function ChatManager() {
               })}
             </div>
             
-            <div className="shrink-0 p-4 border-t border-border/50 bg-background">
+            <div className="shrink-0 p-4 border-t border-white/10 bg-background/40 backdrop-blur-md">
               <div className="flex gap-2">
                 <Input
                   placeholder="Type your message..."
