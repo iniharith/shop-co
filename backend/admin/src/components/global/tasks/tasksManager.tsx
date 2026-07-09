@@ -1,18 +1,17 @@
-/**
- * Coded by Harith
- * Kampungcetak ®
- */
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LayoutGrid, List, Plus, Calendar, User as User, MessageSquare, Trash2, ChevronDown, ChevronRight, Settings2, Check, RefreshCw, CheckCircle, Circle, ArrowDownUp } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  LayoutGrid, List, Plus, Calendar, MessageSquare, Trash2,
+  ChevronDown, ChevronRight, Settings2, Check, RefreshCw,
+  CheckCircle, Circle, ArrowDownUp, X, UserCheck, CalendarClock, Layers,
+} from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -21,27 +20,18 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from "sonner";
 import { format, isToday, isTomorrow } from "date-fns";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
-import { useSearchParams, useRouter } from "next/navigation";
 import TaskModal from "./TaskModal";
-import { Checkbox } from "@/components/ui/checkbox";
-import { X } from "lucide-react";
 
-const DueDateDisplay = ({ task, updateTask, className }: { task: any, updateTask: any, className?: string }) => {
+// ─── Due Date Display ─────────────────────────────────────────────────────────
+const DueDateDisplay = ({ task, updateTask, className }: { task: any; updateTask: any; className?: string }) => {
   const dateObj = task.dueDate ? new Date(task.dueDate) : null;
   let displayText = "Set Due Date";
   let colorClass = "text-muted-foreground";
 
   if (dateObj) {
-    if (isToday(dateObj)) {
-      displayText = "Today";
-      colorClass = "text-red-500 font-bold";
-    } else if (isTomorrow(dateObj)) {
-      displayText = "Tomorrow";
-      colorClass = "text-yellow-600 font-bold dark:text-yellow-500";
-    } else {
-      displayText = format(dateObj, "dd MMM");
-      colorClass = "text-muted-foreground font-medium";
-    }
+    if (isToday(dateObj)) { displayText = "Today"; colorClass = "text-red-500 font-bold"; }
+    else if (isTomorrow(dateObj)) { displayText = "Tomorrow"; colorClass = "text-yellow-600 font-bold dark:text-yellow-500"; }
+    else { displayText = format(dateObj, "dd MMM"); colorClass = "text-muted-foreground font-medium"; }
   }
 
   return (
@@ -53,19 +43,9 @@ const DueDateDisplay = ({ task, updateTask, className }: { task: any, updateTask
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
-        <CalendarUI
-          mode="single"
-          selected={dateObj || undefined}
-          onSelect={(date) => updateTask({ id: task._id, data: { dueDate: date } })}
-          initialFocus
-        />
+        <CalendarUI mode="single" selected={dateObj || undefined} onSelect={(date) => updateTask({ id: task._id, data: { dueDate: date } })} initialFocus />
         <div className="p-2 border-t border-border/50">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="w-full text-muted-foreground hover:text-red-500 hover:bg-red-50"
-            onClick={() => updateTask({ id: task._id, data: { dueDate: null } })}
-          >
+          <Button variant="ghost" size="sm" className="w-full text-muted-foreground hover:text-red-500 hover:bg-red-50" onClick={() => updateTask({ id: task._id, data: { dueDate: null } })}>
             Clear Date
           </Button>
         </div>
@@ -74,240 +54,213 @@ const DueDateDisplay = ({ task, updateTask, className }: { task: any, updateTask
   );
 };
 
-// Simple hash function to generate a consistent color index for a given string
+// ─── User colour helper ───────────────────────────────────────────────────────
 const getUserColor = (id: string) => {
-  if (!id) return `hsl(0, 0%, 50%)`;
+  const colors = ["bg-red-500","bg-orange-500","bg-amber-500","bg-green-500","bg-emerald-500","bg-teal-500","bg-cyan-500","bg-blue-500","bg-indigo-500","bg-violet-500","bg-purple-500","bg-fuchsia-500","bg-pink-500","bg-rose-500","bg-sky-500","bg-lime-500"];
   let hash = 0;
-  const str = id.toString();
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  // Generate a distinct hue from 0 to 360, keeping saturation and lightness constant for vibrant but readable colors
-  const h = Math.abs(hash) % 360;
-  return `hsl(${h}, 70%, 50%)`;
+  for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
 };
 
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function TasksManager() {
   const { data: response, isPending, refetch, isFetching } = useTasks();
   const tasks = (response as any)?.tasks || [];
-  
-  const searchParams = useSearchParams();
-  const taskIdParam = searchParams.get('taskId');
-  const router = useRouter();
-  
   const { data: usersData } = useUsers();
-  
-  const [viewMode, setViewMode] = useState<"board" | "list">("board");
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<any>(null);
-  const [hiddenColumns, setHiddenColumns] = useState<string[]>([]);
-  const [expandedSections, setExpandedSections] = useState<string[]>([]);
-  const [collapsedColumns, setCollapsedColumns] = useState<string[]>([]);
+
+  const [viewMode, setViewMode]                     = useState<"board" | "list">("board");
+  const [isCreateOpen, setIsCreateOpen]             = useState(false);
+  const [selectedTask, setSelectedTask]             = useState<any>(null);
+  const [hiddenColumns, setHiddenColumns]           = useState<string[]>([]);
+  const [collapsedSections, setCollapsedSections]   = useState<string[]>([]);
+  const [collapsedColumns, setCollapsedColumns]     = useState<string[]>([]);
   const [columnsPopoverOpen, setColumnsPopoverOpen] = useState(false);
-  const [sortOption, setSortOption] = useState<"dateDesc" | "dateAsc" | "nameAsc" | "nameDesc">("dateAsc");
-  const [deletedTaskIds, setDeletedTaskIds] = useState<string[]>([]);
-  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
-  const [lastSelectedTaskId, setLastSelectedTaskId] = useState<string | null>(null);
-  
-  const toggleTaskSelection = (id: string) => {
-    setSelectedTaskIds(prev => prev.includes(id) ? prev.filter(tid => tid !== id) : [...prev, id]);
-    setLastSelectedTaskId(id);
-  };
-  
-  const handleTaskSelect = (e: React.MouseEvent, id: string, tasksList: any[]) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (e.shiftKey && lastSelectedTaskId) {
-      const startIdx = tasksList.findIndex((t: any) => t._id === lastSelectedTaskId);
-      const endIdx = tasksList.findIndex((t: any) => t._id === id);
-      if (startIdx !== -1 && endIdx !== -1) {
-        const min = Math.min(startIdx, endIdx);
-        const max = Math.max(startIdx, endIdx);
-        const rangeIds = tasksList.slice(min, max + 1).map((t: any) => t._id);
-        
-        setSelectedTaskIds(prev => {
-          const isSelected = prev.includes(id);
-          if (isSelected) {
-            return prev.filter(tid => !rangeIds.includes(tid));
-          } else {
-            return Array.from(new Set([...prev, ...rangeIds]));
-          }
-        });
-        setLastSelectedTaskId(id);
-        return;
-      }
-    }
-    toggleTaskSelection(id);
-  };
-  const toggleAllSelection = (tasksList: any[]) => {
-    const allSelected = tasksList.every(t => selectedTaskIds.includes(t._id));
-    if (allSelected) {
-      setSelectedTaskIds(prev => prev.filter(id => !tasksList.some(t => t._id === id)));
-    } else {
-      setSelectedTaskIds(prev => Array.from(new Set([...prev, ...tasksList.map(t => t._id)])));
-    }
-  };
-  
+  const [sortOption, setSortOption]                 = useState<"dateDesc"|"dateAsc"|"nameAsc"|"nameDesc">("dateDesc");
+  const [deletedTaskIds, setDeletedTaskIds]         = useState<string[]>([]);
+  const [searchQuery, setSearchQuery]               = useState("");
+  const [optimisticStatuses, setOptimisticStatuses] = useState<Record<string, string>>({});
+  const [newTask, setNewTask]                       = useState({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
+
   const { mutate: createTask, isPending: isCreating } = useCreateTask();
-  const { mutate: updateTask } = useUpdateTask();
-  const { mutate: deleteTask } = useDeleteTask();
+  const { mutate: updateTask }  = useUpdateTask();
+  const { mutate: deleteTask }  = useDeleteTask();
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [newTask, setNewTask] = useState({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
+  // ── Asana-style multi-select ──────────────────────────────────────────────
+  // No checkboxes. Click a row to open it. Shift+click to add to selection.
+  // Clicking outside any row clears the selection.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const lastClickedIdRef              = useRef<string | null>(null);
 
-  React.useEffect(() => {
-    if (taskIdParam && tasks.length > 0) {
-      const task = tasks.find((t: any) => t._id === taskIdParam);
-      if (task && (!selectedTask || selectedTask._id !== task._id)) {
+  // Pressing Escape clears selection
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setSelectedIds(new Set()); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  // Flat ordered list used for shift-click range selection (list view only).
+  // Keep this stable — it's the same order the rows are rendered in.
+  const flatOrderedIds: string[] = [];
+
+  const handleRowClick = useCallback(
+    (task: any, e: React.MouseEvent, orderedIds: string[]) => {
+      if (e.shiftKey) {
+        e.preventDefault(); // prevent text highlight
+        const last = lastClickedIdRef.current;
+        if (last && orderedIds.includes(last) && orderedIds.includes(task._id)) {
+          const a = orderedIds.indexOf(last);
+          const b = orderedIds.indexOf(task._id);
+          const [start, end] = a < b ? [a, b] : [b, a];
+          const range = orderedIds.slice(start, end + 1);
+          setSelectedIds(prev => {
+            const next = new Set(prev);
+            range.forEach(id => next.add(id));
+            return next;
+          });
+        } else {
+          // No prior anchor — just toggle this one
+          setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.has(task._id) ? next.delete(task._id) : next.add(task._id);
+            return next;
+          });
+        }
+        lastClickedIdRef.current = task._id;
+      } else if (selectedIds.size > 0) {
+        // Selection mode active — single click toggles without opening modal
+        setSelectedIds(prev => {
+          const next = new Set(prev);
+          next.has(task._id) ? next.delete(task._id) : next.add(task._id);
+          return next;
+        });
+        lastClickedIdRef.current = task._id;
+      } else {
+        // Normal click — open modal
         setSelectedTask(task);
+        lastClickedIdRef.current = task._id;
       }
-    }
-    
-    if (selectedTask && tasks.length > 0) {
-      const updatedTask = tasks.find((t: any) => t._id === selectedTask._id);
-      if (updatedTask && updatedTask !== selectedTask) {
-        setSelectedTask(updatedTask);
-      }
-    }
-  }, [taskIdParam, tasks, selectedTask]);
+    },
+    [selectedIds]
+  );
 
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+    lastClickedIdRef.current = null;
+  }, []);
+
+  const applyBulkUpdate = useCallback((data: Record<string, any>) => {
+    const ids = Array.from(selectedIds);
+    ids.forEach(id => updateTask({ id, data }));
+    toast.success(`Updated ${ids.length} task${ids.length > 1 ? "s" : ""}`);
+    clearSelection();
+  }, [selectedIds, updateTask, clearSelection]);
+
+  // ── Bulk toolbar popover state ────────────────────────────────────────────
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+  const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
+  const [bulkDateOpen,   setBulkDateOpen]   = useState(false);
+
+  // ── Standard handlers ─────────────────────────────────────────────────────
   const handleCreateTask = () => {
-    if (!newTask.title) {
-      toast.error("Title is required");
-      return;
-    }
+    if (!newTask.title) { toast.error("Title is required"); return; }
     createTask(newTask, {
       onSuccess: () => {
         toast.success("Task created!");
         setIsCreateOpen(false);
         setNewTask({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
-      }
+      },
     });
   };
 
-  const [optimisticStatuses, setOptimisticStatuses] = useState<Record<string, string>>({});
-
   const handleStatusChange = (taskId: string, newStatus: string) => {
-    const currentTask = tasks.find((t: any) => t._id === taskId);
-    const oldStatus = currentTask?.status;
-
+    const old = tasks.find((t: any) => t._id === taskId)?.status;
     setOptimisticStatuses(prev => ({ ...prev, [taskId]: newStatus }));
     updateTask({ id: taskId, data: { status: newStatus } }, {
       onSuccess: () => {
-        toast.success("Task details updated!", {
+        toast.success("Status updated!", {
           duration: 5000,
-          action: {
-            label: "Undo",
-            onClick: () => {
-              setOptimisticStatuses(prev => ({ ...prev, [taskId]: oldStatus }));
-              updateTask({ id: taskId, data: { status: oldStatus } });
-            }
-          }
+          action: { label: "Undo", onClick: () => { setOptimisticStatuses(prev => ({ ...prev, [taskId]: old })); updateTask({ id: taskId, data: { status: old } }); } },
         });
-      }
+      },
     });
   };
 
   const handleDelete = (taskId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    // Optimistically hide the task
     setDeletedTaskIds(prev => [...prev, taskId]);
     let cancelled = false;
-
     toast.success("Task deleted!", {
       duration: 5000,
-      action: {
-        label: "Undo",
-        onClick: () => {
-          cancelled = true;
-          setDeletedTaskIds(prev => prev.filter(id => id !== taskId));
-        }
-      }
+      action: { label: "Undo", onClick: () => { cancelled = true; setDeletedTaskIds(prev => prev.filter(id => id !== taskId)); } },
     });
-
-    setTimeout(() => {
-      if (!cancelled) {
-        deleteTask(taskId);
-      }
-    }, 5000);
+    setTimeout(() => { if (!cancelled) deleteTask(taskId); }, 5000);
   };
-
-  const columns = ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'];
-
-  const visibleColumns = columns.filter(s => !hiddenColumns.includes(s));
-
-  // Sort tasks based on selected option
-  const sortedTasks = [...tasks]
-    .filter((t: any) => !deletedTaskIds.includes(t._id))
-    .filter((t: any) => 
-      t.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      t.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.customerUsername?.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .sort((a: any, b: any) => {
-      // Sort by createdAt only — not statusUpdatedAt — so assignee/dueDate changes never move a task
-      if (sortOption === "dateDesc") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      if (sortOption === "dateAsc") return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      if (sortOption === "nameAsc") return (a.title || "").localeCompare(b.title || "");
-      if (sortOption === "nameDesc") return (b.title || "").localeCompare(a.title || "");
-      return 0;
-    });
 
   const toggleTaskDone = (task: any, e: React.MouseEvent) => {
     e.stopPropagation();
     updateTask({ id: task._id, data: { isDone: !task.isDone } });
   };
 
-  const toggleColumnVisibility = (status: string) => {
-    setHiddenColumns(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]);
-  };
+  // ── Columns / visibility ──────────────────────────────────────────────────
+  const columns = [
+    'PLACED','IN_PROGRESS','PENDING_ARTWORK','ARTWORK_REVIEWED','ARTWORK_REJECTED',
+    'IN_DESIGN','PEMBETULAN','DONE_DESIGN','IN_PRODUCTION','HOLD_PRINTING',
+    'DONE_PRINTING','PACKAGING','SHIPPED','IN_TRANSIT','DELIVERED','CANCELLED','FAILED',
+  ];
+  const visibleColumns = columns.filter(s => !hiddenColumns.includes(s));
 
-  const toggleSectionCollapse = (status: string) => {
-    setExpandedSections(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]);
-  };
+  const toggleColumnVisibility = (s: string) => setHiddenColumns(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+  const toggleSectionCollapse  = (s: string) => setCollapsedSections(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+  const toggleColumnCollapse   = (s: string) => setCollapsedColumns(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
-  const toggleColumnCollapse = (status: string) => {
-    setCollapsedColumns(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]);
-  };
+  // ── Sorted / filtered task list ───────────────────────────────────────────
+  const sortedTasks = [...tasks]
+    .filter((t: any) => !deletedTaskIds.includes(t._id))
+    .filter((t: any) =>
+      t.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.customerUsername?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a: any, b: any) => {
+      if (sortOption === "dateDesc") return new Date(b.statusUpdatedAt || b.createdAt).getTime() - new Date(a.statusUpdatedAt || a.createdAt).getTime();
+      if (sortOption === "dateAsc")  return new Date(a.statusUpdatedAt || a.createdAt).getTime() - new Date(b.statusUpdatedAt || b.createdAt).getTime();
+      if (sortOption === "nameAsc")  return (a.title || "").localeCompare(b.title || "");
+      if (sortOption === "nameDesc") return (b.title || "").localeCompare(a.title || "");
+      return 0;
+    });
 
-  if (isPending) return <div className="p-8 text-center text-muted-foreground">Loading tasks...</div>;
+  // Build a flat ordered list of all list-view task IDs (for shift-click range)
+  // This runs during render so it always reflects the current sort/filter order.
+  const listOrderedIds: string[] = [];
+  columns.forEach(status => {
+    sortedTasks.filter((t: any) => t.status === status).forEach((t: any) => listOrderedIds.push(t._id));
+  });
+
+  if (isPending) return <div className="p-8 text-center text-muted-foreground">Loading tasks…</div>;
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-full min-w-0 overflow-hidden px-1">
-      {/* Top Toolbar */}
+
+      {/* ── Top Toolbar ─────────────────────────────────────────────────── */}
       <div className="flex justify-between items-center bg-card p-4 rounded-xl border border-border/50 shadow-sm flex-wrap gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
+          {/* View toggle */}
           <div className="flex items-center bg-muted/50 p-1 rounded-lg border border-border/50">
-            <Button
-              variant={viewMode === "list" ? "secondary" : "ghost"}
-              size="sm"
-              className="h-8 px-3 rounded-md"
-              onClick={() => setViewMode("list")}
-            >
+            <Button variant={viewMode === "list"  ? "secondary" : "ghost"} size="sm" className="h-8 px-3 rounded-md" onClick={() => { setViewMode("list");  clearSelection(); }}>
               <List className="w-4 h-4 mr-2" /> List View
             </Button>
-            <Button
-              variant={viewMode === "board" ? "secondary" : "ghost"}
-              size="sm"
-              className="h-8 px-3 rounded-md"
-              onClick={() => setViewMode("board")}
-            >
+            <Button variant={viewMode === "board" ? "secondary" : "ghost"} size="sm" className="h-8 px-3 rounded-md" onClick={() => { setViewMode("board"); clearSelection(); }}>
               <LayoutGrid className="w-4 h-4 mr-2" /> Board View
             </Button>
           </div>
 
+          {/* Column visibility (board only) */}
           {viewMode === "board" && (
             <Popover open={columnsPopoverOpen} onOpenChange={setColumnsPopoverOpen}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 px-3 rounded-md gap-2">
-                  <Settings2 className="w-4 h-4" />
-                  Columns
-                  {hiddenColumns.length > 0 && (
-                    <Badge variant="secondary" className="rounded-full h-5 px-1.5 text-[10px]">
-                      {visibleColumns.length}/{columns.length}
-                    </Badge>
-                  )}
+                  <Settings2 className="w-4 h-4" /> Columns
+                  {hiddenColumns.length > 0 && <Badge variant="secondary" className="rounded-full h-5 px-1.5 text-[10px]">{visibleColumns.length}/{columns.length}</Badge>}
                   <ChevronDown className="w-3.5 h-3.5 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -317,20 +270,15 @@ export default function TasksManager() {
                     <CommandGroup heading="Show / hide columns">
                       {columns.map(status => {
                         const isVisible = !hiddenColumns.includes(status);
-                        const count = tasks.filter((t: any) => t.status === status).length;
                         return (
-                          <CommandItem
-                            key={status}
-                            onSelect={() => toggleColumnVisibility(status)}
-                            className="flex items-center justify-between cursor-pointer"
-                          >
+                          <CommandItem key={status} onSelect={() => toggleColumnVisibility(status)} className="flex items-center justify-between cursor-pointer">
                             <span className="flex items-center gap-2">
                               <span className={`flex h-4 w-4 items-center justify-center rounded-sm border ${isVisible ? "bg-primary border-primary text-primary-foreground" : "border-border/60"}`}>
                                 {isVisible && <Check className="h-3 w-3" />}
                               </span>
                               {status.replace(/_/g, " ")}
                             </span>
-                            <span className="text-xs text-muted-foreground">{count}</span>
+                            <span className="text-xs text-muted-foreground">{tasks.filter((t: any) => t.status === status).length}</span>
                           </CommandItem>
                         );
                       })}
@@ -341,271 +289,248 @@ export default function TasksManager() {
             </Popover>
           )}
 
+          {/* Sort */}
           <Select value={sortOption} onValueChange={(v: any) => setSortOption(v)}>
             <SelectTrigger className="h-8 px-3 text-sm rounded-md w-40 gap-2 font-medium">
-              <ArrowDownUp className="w-4 h-4 shrink-0" />
-              <SelectValue />
+              <ArrowDownUp className="w-4 h-4 shrink-0" /><SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="dateDesc">Newest First</SelectItem>
               <SelectItem value="dateAsc">Oldest First</SelectItem>
-              <SelectItem value="nameAsc">Name (A-Z)</SelectItem>
-              <SelectItem value="nameDesc">Name (Z-A)</SelectItem>
+              <SelectItem value="nameAsc">Name (A–Z)</SelectItem>
+              <SelectItem value="nameDesc">Name (Z–A)</SelectItem>
             </SelectContent>
           </Select>
-          
-          <Input 
-            placeholder="Search tasks..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-8 w-48 text-sm"
-          />
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="rounded-full h-10 w-10 shadow-sm border-slate-200" title="Refresh Tasks">
-            <RefreshCw className={`w-4 h-4 text-slate-500 ${isFetching ? 'animate-spin' : ''}`} />
-          </Button>
 
+          <Input placeholder="Search tasks…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="h-8 w-48 text-sm" />
+
+          {/* Hint — only visible in list view when nothing is selected */}
+          {viewMode === "list" && selectedIds.size === 0 && (
+            <span className="text-xs text-muted-foreground hidden md:inline select-none">
+              Shift+click rows to select multiple
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="rounded-full h-10 w-10 shadow-sm border-slate-200" title="Refresh">
+            <RefreshCw className={`w-4 h-4 text-slate-500 ${isFetching ? "animate-spin" : ""}`} />
+          </Button>
+          <Button variant="secondary" className="rounded-full px-4 shadow-sm" onClick={async () => {
+            try {
+              const res  = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/admin/migrate-statuses`);
+              const data = await res.json();
+              data.success ? toast.success("Migration successful!") && refetch() : toast.error(`Migration failed: ${JSON.stringify(data)}`);
+            } catch { toast.error("Network error during migration"); }
+          }}>
+            Run Migration Fix
+          </Button>
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button className="rounded-full px-6 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md">
                 <Plus className="w-4 h-4 mr-2" /> New Task
               </Button>
             </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Task</DialogTitle>
-            </DialogHeader>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Create New Task</DialogTitle></DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Task Title</label>
-                  <Input placeholder="E.g., Review artwork for Order #123" value={newTask.title} onChange={(e) => setNewTask({...newTask, title: e.target.value})} />
+                  <Input placeholder="E.g., Review artwork for Order #123" value={newTask.title} onChange={e => setNewTask({ ...newTask, title: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Description</label>
-                  <Textarea placeholder="Task details..." value={newTask.description} onChange={(e) => setNewTask({...newTask, description: e.target.value})} />
+                  <Textarea placeholder="Task details…" value={newTask.description} onChange={e => setNewTask({ ...newTask, description: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Category</label>
-                  <Select value={newTask.category} onValueChange={(v) => setNewTask({...newTask, category: v})}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select Category" />
-                    </SelectTrigger>
+                  <Select value={newTask.category} onValueChange={v => setNewTask({ ...newTask, category: v })}>
+                    <SelectTrigger className="w-full"><SelectValue placeholder="Select Category" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="UNASSIGNED">Unassigned</SelectItem>
-                      <SelectItem value="DIGITAL PRINTING">Digital Printing</SelectItem>
-                      <SelectItem value="DISPLAY ITEM">Display Item</SelectItem>
-                      <SelectItem value="DIGITAL OFFSET">Digital Offset</SelectItem>
-                      <SelectItem value="PREMIUM GIFT">Premium Gift</SelectItem>
-                      <SelectItem value="APPAREL">Apparel</SelectItem>
-                      <SelectItem value="FRAME">Frame</SelectItem>
-                      <SelectItem value="WEDDING PRODUCT">Wedding Product</SelectItem>
-                      <SelectItem value="FOOD PACKAGING">Food Packaging</SelectItem>
+                      {["UNASSIGNED","DIGITAL PRINTING","DISPLAY ITEM","DIGITAL OFFSET","PREMIUM GIFT","APPAREL","FRAME","WEDDING PRODUCT","FOOD PACKAGING"].map(c => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <Button onClick={handleCreateTask} disabled={isCreating} className="w-full">Create Task</Button>
               </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
-      {/* Board View */}
+      {/* ── Board View ──────────────────────────────────────────────────── */}
       {viewMode === "board" && (
-        <div className="relative w-full flex-1" style={{minHeight: 'calc(100vh - 200px)'}}>
+        <div className="relative w-full flex-1" style={{ minHeight: "calc(100vh - 200px)" }}>
           <div className="absolute inset-0 overflow-x-auto pb-4">
             <div className="flex gap-4 items-start w-max">
-            {visibleColumns.map(status => {
-              const columnTasks = sortedTasks.filter((t: any) => t.status === status);
-              const isCollapsed = collapsedColumns.includes(status);
-              return (
-              <div key={status} className="bg-muted/30 rounded-2xl p-3 border border-border/50 flex flex-col gap-3 min-w-[270px] w-[270px] shrink-0">
-                <button
-                  type="button"
-                  onClick={() => toggleColumnCollapse(status)}
-                  className="flex items-center gap-2 self-start rounded-full bg-card border border-border/50 shadow-sm pl-3 pr-2 py-1.5 hover:bg-muted/60 transition-colors"
-                >
-                  <span className="font-semibold text-xs uppercase tracking-wider text-foreground/80">
-                    {status.replace(/_/g, " ")}
-                  </span>
-                  <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold">
-                    {columnTasks.length}
-                  </span>
-                  <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isCollapsed ? "-rotate-90" : ""}`} />
-                </button>
-
-                {!isCollapsed && (
-                <div className="flex flex-col gap-2">
-                  {columnTasks.map((task: any) => (
-                  <Card key={task._id} className={`cursor-pointer hover:shadow-md transition-shadow group border border-border/50 ${task.isDone ? 'opacity-60 bg-muted/20' : ''}`} onClick={() => setSelectedTask(task)}>
-                    <CardContent className="p-3 flex flex-col gap-2">
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="flex items-start gap-2 flex-1">
-                          <div onClick={(e) => handleTaskSelect(e, task._id, columnTasks)} className="cursor-pointer shrink-0 mt-0.5 w-4 h-4 flex items-center justify-center">
-                            <Checkbox 
-                              checked={selectedTaskIds.includes(task._id)}
-                              className="w-full h-full pointer-events-none"
-                            />
-                          </div>
-                          <button type="button" onClick={(e) => toggleTaskDone(task, e)} className="shrink-0 mt-0.5 text-muted-foreground hover:text-emerald-500 transition-colors">
-                            {task.isDone ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Circle className="w-4 h-4" />}
-                          </button>
-                          <span className={`font-semibold text-sm leading-tight ${task.isDone ? 'text-muted-foreground' : ''}`}>{task.title}</span>
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-500 hover:bg-red-50" onClick={(e) => handleDelete(task._id, e)}>
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                      
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        {task.comments?.length > 0 && (
-                          <span className="flex items-center gap-1 bg-muted px-1.5 py-0.5 rounded-md">
-                            <MessageSquare className="w-3 h-3" /> {task.comments.length}
-                          </span>
-                        )}
-                      </div>
-                      
-                      {/* Interactive Assignee, DueDate, and Status for Board View */}
-                      <div className="grid grid-cols-1 gap-1.5" onClick={e => e.stopPropagation()}>
-                        <DueDateDisplay task={task} updateTask={updateTask} className="h-6 text-[9px] bg-muted/50 border-0 focus:ring-0" />
-                        <Select value={task.assignee || "unassigned"} onValueChange={(v) => updateTask({ id: task._id, data: { assignee: v === "unassigned" ? null : v } })}>
-                          <SelectTrigger className="h-6 text-[10px] font-bold bg-muted/50 border-0 focus:ring-0">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="unassigned">Unassigned</SelectItem>
-                            {usersData?.users?.map((user: any) => (
-                              <SelectItem key={user._id} value={user._id} className="font-bold">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getUserColor(user._id) }} />
-                                  {user.name || user.email}
+              {visibleColumns.map(status => {
+                const columnTasks = sortedTasks.filter((t: any) => t.status === status);
+                const isCollapsed = collapsedColumns.includes(status);
+                return (
+                  <div key={status} className="bg-muted/30 rounded-2xl p-3 border border-border/50 flex flex-col gap-3 min-w-[270px] w-[270px] shrink-0">
+                    <button type="button" onClick={() => toggleColumnCollapse(status)} className="flex items-center gap-2 self-start rounded-full bg-card border border-border/50 shadow-sm pl-3 pr-2 py-1.5 hover:bg-muted/60 transition-colors">
+                      <span className="font-semibold text-xs uppercase tracking-wider text-foreground/80">{status.replace(/_/g, " ")}</span>
+                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold">{columnTasks.length}</span>
+                      <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isCollapsed ? "-rotate-90" : ""}`} />
+                    </button>
+                    {!isCollapsed && (
+                      <div className="flex flex-col gap-2">
+                        {columnTasks.map((task: any) => (
+                          <Card key={task._id} className={`cursor-pointer hover:shadow-md transition-shadow group border border-border/50 ${task.isDone ? "opacity-60 bg-muted/20" : ""}`} onClick={() => setSelectedTask(task)}>
+                            <CardContent className="p-3 flex flex-col gap-2">
+                              <div className="flex justify-between items-start gap-2">
+                                <div className="flex items-start gap-2 flex-1">
+                                  <button type="button" onClick={e => toggleTaskDone(task, e)} className="shrink-0 mt-0.5 text-muted-foreground hover:text-emerald-500 transition-colors">
+                                    {task.isDone ? <CheckCircle className="w-4 h-4 text-emerald-500" /> : <Circle className="w-4 h-4" />}
+                                  </button>
+                                  <span className={`font-semibold text-sm leading-tight ${task.isDone ? "text-muted-foreground" : ""}`}>{task.title}</span>
                                 </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                                <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-500 hover:bg-red-50" onClick={e => handleDelete(task._id, e)}>
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                              {task.comments?.length > 0 && (
+                                <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-md w-fit">
+                                  <MessageSquare className="w-3 h-3" /> {task.comments.length}
+                                </span>
+                              )}
+                              <div className="grid grid-cols-1 gap-1.5" onClick={e => e.stopPropagation()}>
+                                <DueDateDisplay task={task} updateTask={updateTask} className="h-6 text-[9px] bg-muted/50 border-0 focus:ring-0" />
+                                <Select value={task.assignee || "unassigned"} onValueChange={v => updateTask({ id: task._id, data: { assignee: v === "unassigned" ? null : v } })}>
+                                  <SelectTrigger className="h-6 text-[10px] font-bold bg-muted/50 border-0 focus:ring-0"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                                    {usersData?.users?.map((u: any) => (
+                                      <SelectItem key={u._id} value={u._id}><div className="flex items-center gap-2"><div className={`w-2 h-2 rounded-full ${getUserColor(u._id)}`} />{u.name || u.email}</div></SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <Select value={optimisticStatuses[task._id] || task.status} onValueChange={v => handleStatusChange(task._id, v)}>
+                                <SelectTrigger className="h-6 text-[10px] bg-muted/50 border-0 focus:ring-0" onClick={e => e.stopPropagation()}><SelectValue /></SelectTrigger>
+                                <SelectContent>{columns.map(s => <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
+                              </Select>
+                            </CardContent>
+                          </Card>
+                        ))}
                       </div>
-                      
-                      {/* Move Status inline for Board View */}
-                      <Select value={optimisticStatuses[task._id] || task.status} onValueChange={(v) => handleStatusChange(task._id, v)}>
-                        <SelectTrigger className="h-6 text-[10px] bg-muted/50 border-0 focus:ring-0" onClick={e => e.stopPropagation()}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {columns.map(s => (
-                            <SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </CardContent>
-                  </Card>
-                  ))}
-                </div>
-                )}
-              </div>
-              );
-            })}
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
       )}
 
-      {/* List View */}
+      {/* ── List View ───────────────────────────────────────────────────── */}
       {viewMode === "list" && (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4" onClick={e => {
+          // Clicking the list container background (not a row) clears selection
+          if ((e.target as HTMLElement).closest("[data-task-row]")) return;
+          clearSelection();
+        }}>
           {tasks.length === 0 && (
-            <div className="bg-card rounded-xl border border-border/50 shadow-sm p-8 text-center text-muted-foreground">
-              No tasks found
-            </div>
+            <div className="bg-card rounded-xl border border-border/50 shadow-sm p-8 text-center text-muted-foreground">No tasks found</div>
           )}
           {columns.map(status => {
             const sectionTasks = sortedTasks.filter((t: any) => t.status === status);
             if (sectionTasks.length === 0) return null;
-            const isCollapsed = !expandedSections.includes(status);
+            const isCollapsed = collapsedSections.includes(status);
             return (
               <Collapsible key={status} open={!isCollapsed} onOpenChange={() => toggleSectionCollapse(status)} className="bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden">
                 <CollapsibleTrigger asChild>
                   <button type="button" className="w-full flex items-center justify-between gap-2 p-4 bg-muted/30 hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-2">
                       {isCollapsed ? <ChevronRight className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-                      <span className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">
-                        {status.replace(/_/g, " ")}
-                      </span>
+                      <span className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">{status.replace(/_/g, " ")}</span>
                     </div>
-                    <Badge variant="secondary" className="rounded-full bg-background border border-border/50">
-                      {sectionTasks.length}
-                    </Badge>
+                    <Badge variant="secondary" className="rounded-full bg-background border border-border/50">{sectionTasks.length}</Badge>
                   </button>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <div className="grid grid-cols-12 gap-4 p-2 border-b border-border/50 bg-muted/10 font-medium text-xs text-muted-foreground">
-                    <div className="col-span-6 px-2 flex items-center gap-2">
-                      <Checkbox 
-                        checked={sectionTasks.length > 0 && sectionTasks.every((t: any) => selectedTaskIds.includes(t._id))}
-                        onCheckedChange={() => toggleAllSelection(sectionTasks)}
-                        className="w-3.5 h-3.5 shrink-0"
-                      />
-                      Task Name
-                    </div>
+                  {/* Header row */}
+                  <div className="grid grid-cols-12 gap-4 px-4 py-2 border-b border-border/50 bg-muted/10 font-medium text-xs text-muted-foreground select-none">
+                    <div className="col-span-6 px-2">Task Name</div>
                     <div className="col-span-2">Assignee</div>
-                    <div className="col-span-2 pr-2">Status</div>
-                    <div className="col-span-2 pr-4">Due Date</div>
+                    <div className="col-span-2">Status</div>
+                    <div className="col-span-2">Due Date</div>
                   </div>
+                  {/* Task rows */}
                   <div className="divide-y divide-border/50">
-                    {sectionTasks.map((task: any) => (
-                      <div key={task._id} className="group grid grid-cols-12 gap-2 items-center py-2 hover:bg-muted/30 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-border/30" onClick={() => setSelectedTask(task)}>
-                        <div className="col-span-6 font-medium text-sm flex items-center gap-2 px-2">
-                           <div onClick={(e) => handleTaskSelect(e, task._id, sectionTasks)} className="cursor-pointer shrink-0 w-4 h-4 flex items-center justify-center">
-                             <Checkbox 
-                               checked={selectedTaskIds.includes(task._id)}
-                               className="w-full h-full pointer-events-none"
-                             />
-                           </div>
-                           <button type="button" onClick={(e) => toggleTaskDone(task, e)} className="shrink-0 text-muted-foreground hover:text-emerald-500 transition-colors">
-                             {task.isDone ? <CheckCircle className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
-                           </button>
-                           <span className={`truncate ${task.isDone ? 'text-muted-foreground' : ''}`}>{task.title}</span>
-                        </div>
-                        <div className="col-span-2 text-sm flex items-center gap-2 text-muted-foreground font-bold" onClick={e => e.stopPropagation()}>
-                           <Select value={task.assignee || "unassigned"} onValueChange={(v) => updateTask({ id: task._id, data: { assignee: v === "unassigned" ? null : v } })}>
-                              <SelectTrigger className="h-8 text-xs bg-transparent border-0 shadow-none focus:ring-0">
-                                <SelectValue />
-                              </SelectTrigger>
+                    {sectionTasks.map((task: any) => {
+                      const isSelected = selectedIds.has(task._id);
+                      return (
+                        <div
+                          key={task._id}
+                          data-task-row="true"
+                          className={`
+                            group grid grid-cols-12 gap-2 items-center py-2 px-2 rounded-lg
+                            transition-colors cursor-pointer select-none
+                            border border-transparent
+                            ${isSelected
+                              ? "bg-primary/8 border-primary/25 hover:bg-primary/12"
+                              : "hover:bg-muted/30 hover:border-border/30"
+                            }
+                          `}
+                          onClick={e => handleRowClick(task, e, listOrderedIds)}
+                        >
+                          {/* Left accent bar when selected */}
+                          <div className={`col-span-6 font-medium text-sm flex items-center gap-2 px-2 relative`}>
+                            {isSelected && (
+                              <span className="absolute -left-2 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full" />
+                            )}
+                            <button
+                              type="button"
+                              onClick={e => toggleTaskDone(task, e)}
+                              className="shrink-0 text-muted-foreground hover:text-emerald-500 transition-colors"
+                            >
+                              {task.isDone
+                                ? <CheckCircle className="w-5 h-5 text-emerald-500" />
+                                : <Circle className={`w-5 h-5 ${isSelected ? "text-primary/60" : ""}`} />
+                              }
+                            </button>
+                            <span className={`truncate ${task.isDone ? "text-muted-foreground line-through" : ""}`}>
+                              {task.title}
+                            </span>
+                          </div>
+
+                          <div className="col-span-2 text-sm" onClick={e => e.stopPropagation()}>
+                            <Select value={task.assignee || "unassigned"} onValueChange={v => updateTask({ id: task._id, data: { assignee: v === "unassigned" ? null : v } })}>
+                              <SelectTrigger className="h-8 text-xs bg-transparent border-0 shadow-none focus:ring-0"><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="unassigned">Unassigned</SelectItem>
                                 {usersData?.users?.map((u: any) => (
-                                  <SelectItem key={u._id} value={u._id} className="flex items-center gap-2">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getUserColor(u._id) }} />
-                                      {u.name}
-                                    </div>
+                                  <SelectItem key={u._id} value={u._id}>
+                                    <div className="flex items-center gap-2"><div className={`w-2 h-2 rounded-full ${getUserColor(u._id)}`} />{u.name}</div>
                                   </SelectItem>
                                 ))}
                               </SelectContent>
-                           </Select>
+                            </Select>
+                          </div>
+
+                          <div className="col-span-2" onClick={e => e.stopPropagation()}>
+                            <Select value={optimisticStatuses[task._id] || task.status} onValueChange={v => handleStatusChange(task._id, v)}>
+                              <SelectTrigger className="h-8 text-xs bg-transparent border-0 shadow-none focus:ring-0"><SelectValue /></SelectTrigger>
+                              <SelectContent>{columns.map(s => <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="col-span-2 flex items-center justify-between gap-1" onClick={e => e.stopPropagation()}>
+                            <DueDateDisplay task={task} updateTask={updateTask} className="w-fit" />
+                            <Button
+                              variant="ghost" size="icon"
+                              className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-500 hover:bg-red-50"
+                              onClick={e => handleDelete(task._id, e)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="col-span-2 pr-2" onClick={e => e.stopPropagation()}>
-                          <Select value={optimisticStatuses[task._id] || task.status} onValueChange={(v) => handleStatusChange(task._id, v)}>
-                            <SelectTrigger className="h-8 text-xs bg-transparent border-0 shadow-none focus:ring-0">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {columns.map(s => (
-                                <SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="col-span-2 pr-4 text-sm text-muted-foreground flex items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
-                           <DueDateDisplay task={task} updateTask={updateTask} className="w-fit" />
-                           <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-500 hover:bg-red-50" onClick={(e) => handleDelete(task._id, e)}>
-                             <Trash2 className="w-3.5 h-3.5" />
-                           </Button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CollapsibleContent>
               </Collapsible>
@@ -614,77 +539,118 @@ export default function TasksManager() {
         </div>
       )}
 
-      {/* Floating Action Bar */}
-      {selectedTaskIds.length > 0 && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] bg-card text-card-foreground shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-border/60 rounded-2xl flex items-center gap-2 p-2 px-4 animate-in slide-in-from-bottom-5 duration-300">
-          <span className="text-sm font-bold bg-primary/10 text-primary px-3 py-1.5 rounded-xl mr-2 whitespace-nowrap">
-            {selectedTaskIds.length} selected
-          </span>
-          
-          <Select onValueChange={(v) => {
-            selectedTaskIds.forEach(id => updateTask({ id, data: { assignee: v === "unassigned" ? null : v } }));
-            toast.success(`Assigned ${selectedTaskIds.length} tasks`);
-          }}>
-            <SelectTrigger className="h-9 bg-transparent border-0 hover:bg-muted/50 focus:ring-0 shadow-none">
-              <User className="w-4 h-4 mr-2 opacity-70 shrink-0" /> Assign
-            </SelectTrigger>
-            <SelectContent className="bg-background/80 backdrop-blur-xl border-border/50">
-              <SelectItem value="unassigned">Unassigned</SelectItem>
-              {usersData?.users?.map((u: any) => <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-
-          <Select onValueChange={(v) => {
-            selectedTaskIds.forEach(id => updateTask({ id, data: { status: v } }));
-            toast.success(`Moved ${selectedTaskIds.length} tasks to ${v.replace(/_/g, " ")}`);
-          }}>
-            <SelectTrigger className="h-9 bg-transparent border-0 hover:bg-muted/50 focus:ring-0 shadow-none">
-              <ArrowDownUp className="w-4 h-4 mr-2 opacity-70 shrink-0" /> Status
-            </SelectTrigger>
-            <SelectContent className="bg-background/80 backdrop-blur-xl border-border/50">
-              {columns.map(s => <SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>)}
-            </SelectContent>
-          </Select>
-
-          <div className="w-px h-6 bg-border/50 mx-1 hidden sm:block" />
-
-          <Button variant="ghost" size="sm" className="hover:bg-emerald-500/10 hover:text-emerald-500" onClick={() => {
-            selectedTaskIds.forEach(id => updateTask({ id, data: { isDone: true } }));
-            toast.success(`Marked ${selectedTaskIds.length} tasks complete`);
-            setSelectedTaskIds([]);
-          }}>
-            <CheckCircle className="w-4 h-4 mr-2 shrink-0" /> Complete
-          </Button>
-
-          <Button variant="ghost" size="sm" className="hover:bg-red-500/10 hover:text-red-500" onClick={() => {
-            if (confirm(`Delete ${selectedTaskIds.length} tasks?`)) {
-              selectedTaskIds.forEach(id => deleteTask(id));
-              setSelectedTaskIds([]);
-            }
-          }}>
-            <Trash2 className="w-4 h-4 mr-2 shrink-0" /> Delete
-          </Button>
-
-          <Button variant="ghost" size="icon" className="hover:bg-muted/80 ml-2 rounded-full shrink-0" onClick={() => setSelectedTaskIds([])}>
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
+      {/* ── Task Detail Modal ────────────────────────────────────────────── */}
+      {selectedTask && (
+        <TaskModal
+          task={tasks.find((t: any) => t._id === selectedTask._id) || selectedTask}
+          isOpen={!!selectedTask}
+          onClose={() => setSelectedTask(null)}
+        />
       )}
 
-      {/* Task Detail Modal */}
-      {selectedTask && (
-        <TaskModal 
-          task={tasks.find((t: any) => t._id === selectedTask._id) || selectedTask} 
-          isOpen={!!selectedTask} 
-          onClose={() => {
-            setSelectedTask(null);
-            if (taskIdParam) {
-              const newUrl = new URL(window.location.href);
-              newUrl.searchParams.delete('taskId');
-              window.history.replaceState(null, '', newUrl.pathname + newUrl.search);
-            }
-          }} 
-        />
+      {/* ── Floating Bulk Action Toolbar ─────────────────────────────────────
+          Slides up from the bottom whenever 1+ tasks are selected.
+          Shift+click to select a range. Single click in selection mode toggles.
+          Escape or clicking the × clears the selection.
+      ─────────────────────────────────────────────────────────────────────── */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-card border border-border shadow-2xl rounded-2xl px-3 py-2 animate-in slide-in-from-bottom-3 duration-150">
+
+          {/* Count */}
+          <span className="text-sm font-semibold text-foreground px-2 mr-1">
+            {selectedIds.size} task{selectedIds.size > 1 ? "s" : ""} selected
+          </span>
+
+          <div className="w-px h-5 bg-border mx-1" />
+
+          {/* ── Assign ── */}
+          <Popover open={bulkAssignOpen} onOpenChange={setBulkAssignOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-1.5 text-xs font-medium h-8 px-3 rounded-lg">
+                <UserCheck className="w-3.5 h-3.5" /> Assign
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-1" align="center" side="top" sideOffset={10}>
+              <div className="flex flex-col">
+                <button
+                  className="flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors text-muted-foreground w-full text-left"
+                  onClick={() => { applyBulkUpdate({ assignee: null }); setBulkAssignOpen(false); }}
+                >
+                  Unassigned
+                </button>
+                {usersData?.users?.map((u: any) => (
+                  <button
+                    key={u._id}
+                    className="flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors w-full text-left"
+                    onClick={() => { applyBulkUpdate({ assignee: u._id }); setBulkAssignOpen(false); }}
+                  >
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${getUserColor(u._id)}`} />
+                    {u.name}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* ── Set Status ── */}
+          <Popover open={bulkStatusOpen} onOpenChange={setBulkStatusOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-1.5 text-xs font-medium h-8 px-3 rounded-lg">
+                <Layers className="w-3.5 h-3.5" /> Set Status
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-52 p-1 max-h-72 overflow-y-auto" align="center" side="top" sideOffset={10}>
+              <div className="flex flex-col">
+                {columns.map(s => (
+                  <button
+                    key={s}
+                    className="flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors w-full text-left"
+                    onClick={() => { applyBulkUpdate({ status: s }); setBulkStatusOpen(false); }}
+                  >
+                    {s.replace(/_/g, " ")}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* ── Due Date ── */}
+          <Popover open={bulkDateOpen} onOpenChange={setBulkDateOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-1.5 text-xs font-medium h-8 px-3 rounded-lg">
+                <CalendarClock className="w-3.5 h-3.5" /> Due Date
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center" side="top" sideOffset={10}>
+              <CalendarUI
+                mode="single"
+                onSelect={date => { if (date) { applyBulkUpdate({ dueDate: date }); setBulkDateOpen(false); } }}
+                initialFocus
+              />
+              <div className="p-2 border-t border-border/50">
+                <Button
+                  variant="ghost" size="sm"
+                  className="w-full text-muted-foreground hover:text-red-500 hover:bg-red-50"
+                  onClick={() => { applyBulkUpdate({ dueDate: null }); setBulkDateOpen(false); }}
+                >
+                  Clear Date
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          <div className="w-px h-5 bg-border mx-1" />
+
+          {/* ── Dismiss ── */}
+          <Button
+            variant="ghost" size="icon"
+            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+            onClick={clearSelection}
+            title="Clear selection (Esc)"
+          >
+            <X className="w-3.5 h-3.5" />
+          </Button>
+        </div>
       )}
     </div>
   );
