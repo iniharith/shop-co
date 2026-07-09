@@ -6,7 +6,8 @@ import asyncHandler from 'express-async-handler';
 import authMiddilware from '../middlewares/auth.middileware';
 import os from 'os';
 import mongoose from 'mongoose';
-import { ListObjectsV2Command } from '@aws-sdk/client-s3';
+import { ListObjectsV2Command, HeadBucketCommand } from '@aws-sdk/client-s3';
+import axios from 'axios';
 import { s3Client, S3_BUCKET_NAME } from '../../infrastructure/config/s3';
 import fs from 'fs/promises';
 import { Task } from '../../domain/entities/Task';
@@ -79,6 +80,53 @@ router.get(
       { $sort: { _id: 1 } }
     ]);
 
+    // External Integrations
+    let vercelStatus: any = { readyState: 'UNKNOWN', url: '', createdAt: null };
+    try {
+      if (process.env.VERCEL_ACCESS_TOKEN && process.env.VERCEL_PROJECT_ID) {
+        const vRes = await axios.get(`https://api.vercel.com/v6/deployments?projectId=${process.env.VERCEL_PROJECT_ID}&limit=1`, {
+          headers: { Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}` }
+        });
+        const latest = vRes.data.deployments?.[0];
+        if (latest) {
+          vercelStatus = { readyState: latest.readyState, url: latest.url, createdAt: latest.createdAt };
+        }
+      }
+    } catch(e: any) { console.error('Vercel API error', e.message); }
+
+    let railwayStatus: any = { status: 'UNKNOWN', environment: process.env.RAILWAY_ENVIRONMENT_NAME || 'Production' };
+    try {
+      if (process.env.RAILWAY_API_TOKEN) {
+        const query = `query { me { name } }`;
+        const rRes = await axios.post('https://backboard.railway.app/graphql/v2', { query }, {
+           headers: { Authorization: `Bearer ${process.env.RAILWAY_API_TOKEN}` }
+        });
+        if (rRes.data && !rRes.data.errors) railwayStatus.status = 'ACTIVE';
+        else railwayStatus.status = 'ERROR';
+      }
+    } catch (e: any) { console.error('Railway API error', e.message); }
+
+    let awsStatus = 'UNKNOWN';
+    try {
+       await s3Client.send(new HeadBucketCommand({ Bucket: S3_BUCKET_NAME }));
+       awsStatus = 'ONLINE';
+    } catch(e: any) {
+       awsStatus = 'OFFLINE';
+       console.error('AWS S3 Health error', e.message);
+    }
+    
+    let mongoDetailed: any = null;
+    if (mongoose.connection.readyState === 1 && mongoose.connection.db) {
+       try {
+         const serverStatus = await mongoose.connection.db.admin().serverStatus();
+         mongoDetailed = {
+           connections: serverStatus.connections,
+           opcounters: serverStatus.opcounters,
+           network: serverStatus.network
+         };
+       } catch(e: any) { console.error('Mongo admin error', e.message); }
+    }
+
     res.json({
       success: true,
       data: {
@@ -93,11 +141,17 @@ router.get(
         },
         database: {
           status: dbStatus,
+          detailed: mongoDetailed
         },
         application: {
           taskTotal,
           artworkTotal,
           storageUsed,
+        },
+        external: {
+          vercel: vercelStatus,
+          railway: railwayStatus,
+          aws: awsStatus
         },
         charts: {
           bandwidth: bandwidthHistory,

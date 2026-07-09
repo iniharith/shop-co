@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Loader2, Activity, Database, Server, Archive } from "lucide-react";
+import { Loader2, Activity, Database, Server, Archive, Globe, Train, Cloud } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useSession } from "next-auth/react";
@@ -221,33 +221,81 @@ export default function ServerHealthPage() {
             </div>
           </div>
 
-          {/* Database & System Uptime Footer */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-card/40 backdrop-blur-md p-6 rounded-[28px] border border-white/10 flex justify-between items-center">
-              <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
-                  <Activity size={20} />
+          {/* External Services & Infrastructure Footer */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Vercel Status */}
+            <div className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between items-start h-[130px] group hover:border-white/20 transition-all">
+              <div className="flex items-center space-x-3 w-full">
+                <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center shrink-0">
+                  <Globe size={18} />
                 </div>
-                <div>
-                  <div className="text-white font-semibold">System Uptime</div>
-                  <div className="text-xs text-gray-500">Continuous operation</div>
+                <div className="overflow-hidden">
+                  <div className="text-white font-semibold truncate">Vercel (Frontend)</div>
+                  <div className="text-xs text-gray-500 truncate">kampungcetak.com</div>
                 </div>
               </div>
-              <div className="text-lg font-bold text-white">{formatUptime(data.server.uptime)}</div>
+              <div className="mt-4 flex items-center justify-between w-full">
+                <div className={`text-xs font-bold px-3 py-1.5 rounded-full flex items-center ${data.external?.vercel?.readyState === 'READY' ? 'bg-green-500/10 text-green-400' : data.external?.vercel?.readyState ? 'bg-yellow-500/10 text-yellow-400' : 'bg-gray-500/10 text-gray-400'}`}>
+                  <div className={`w-1.5 h-1.5 rounded-full mr-2 ${data.external?.vercel?.readyState === 'READY' ? 'bg-green-400' : 'bg-gray-400'}`}></div>
+                  {data.external?.vercel?.readyState || 'UNKNOWN'}
+                </div>
+              </div>
             </div>
             
-            <div className="bg-card/40 backdrop-blur-md p-6 rounded-[28px] border border-white/10 flex justify-between items-center">
-              <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400">
-                  <Database size={20} />
+            {/* Railway Status */}
+            <div className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between items-start h-[130px] group hover:border-white/20 transition-all">
+              <div className="flex items-center space-x-3 w-full">
+                <div className="w-10 h-10 rounded-full bg-[#13111C] border border-white/10 text-white flex items-center justify-center shrink-0">
+                  <Train size={18} />
                 </div>
-                <div>
-                  <div className="text-white font-semibold">Database</div>
-                  <div className="text-xs text-gray-500">MongoDB cluster</div>
+                <div className="overflow-hidden">
+                  <div className="text-white font-semibold truncate">Railway (Backend)</div>
+                  <div className="text-xs text-gray-500 truncate">{data.external?.railway?.environment || 'Production'}</div>
                 </div>
               </div>
-              <div className={`text-sm font-bold px-3 py-1 rounded-full ${data.database?.status === 'Connected' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                {data.database?.status || 'Unknown'}
+              <div className="mt-4 flex items-center justify-between w-full">
+                <div className={`text-xs font-bold px-3 py-1.5 rounded-full flex items-center ${data.external?.railway?.status === 'ACTIVE' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                  <div className={`w-1.5 h-1.5 rounded-full mr-2 ${data.external?.railway?.status === 'ACTIVE' ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                  {data.external?.railway?.status || 'UNKNOWN'}
+                </div>
+              </div>
+            </div>
+
+            {/* AWS Server Status */}
+            <div className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between items-start h-[130px] group hover:border-white/20 transition-all">
+              <div className="flex items-center space-x-3 w-full">
+                <div className="w-10 h-10 rounded-full bg-[#FF9900]/10 text-[#FF9900] flex items-center justify-center shrink-0">
+                  <Cloud size={18} />
+                </div>
+                <div className="overflow-hidden">
+                  <div className="text-white font-semibold truncate">AWS S3 Server</div>
+                  <div className="text-xs text-gray-500 truncate">kampungcetak-storage</div>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-between w-full">
+                <div className={`text-xs font-bold px-3 py-1.5 rounded-full flex items-center ${data.external?.aws === 'ONLINE' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                  <div className={`w-1.5 h-1.5 rounded-full mr-2 ${data.external?.aws === 'ONLINE' ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                  {data.external?.aws || 'UNKNOWN'}
+                </div>
+              </div>
+            </div>
+
+            {/* MongoDB Status */}
+            <div className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between items-start h-[130px] group hover:border-white/20 transition-all">
+              <div className="flex items-center space-x-3 w-full">
+                <div className="w-10 h-10 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center shrink-0">
+                  <Database size={18} />
+                </div>
+                <div className="overflow-hidden">
+                  <div className="text-white font-semibold truncate">MongoDB Atlas</div>
+                  <div className="text-xs text-gray-500 truncate">{data.database?.detailed?.connections?.current || 0} active conn</div>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-between w-full">
+                <div className={`text-xs font-bold px-3 py-1.5 rounded-full flex items-center ${data.database?.status === 'Connected' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                  <div className={`w-1.5 h-1.5 rounded-full mr-2 ${data.database?.status === 'Connected' ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                  {data.database?.status || 'Unknown'}
+                </div>
               </div>
             </div>
           </div>
