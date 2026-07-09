@@ -662,16 +662,56 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                 e.stopPropagation();
                 setIsDragOverComment(false);
                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                  const files = Array.from(e.dataTransfer.files);
+                    const files = Array.from(e.dataTransfer.files);
+                    const token = (session as any)?.user?.token || localStorage.getItem('token') || "";
+                    
+                    const uploadPromises = files.map(async (file) => {
+                      const id = Date.now().toString() + Math.random().toString(36).substring(7);
+                      const abortController = new AbortController();
+                      
+                      addUpload({
+                        id,
+                        name: file.name,
+                        tag: "Task Document",
+                        taskId: task._id,
+                        file,
+                        abortController
+                      });
+
+                      try {
+                        updateStatus(id, 'uploading');
+                        const data = await uploadTaskFile(
+                          token,
+                          task._id,
+                          file,
+                          "Task Document",
+                          (percent) => updateProgress(id, percent),
+                          abortController
+                        );
+                        updateStatus(id, 'success');
+                        return data;
+                      } catch (err: any) {
+                        if (err.name === 'AbortError') {
+                          updateStatus(id, 'error', 'Upload cancelled');
+                        } else {
+                          updateStatus(id, 'error', err.message || 'Upload failed');
+                        }
+                        throw err;
+                      }
+                    });
+
+                    toast.promise(Promise.all(uploadPromises), {
+                      loading: `Uploading ${files.length} file(s)...`,
+                      success: () => {
+                        queryClient.invalidateQueries({ queryKey: ["taskFiles", task._id] });
+                        return `Successfully uploaded ${files.length} file(s)`;
+                      },
+                      error: "Failed to upload some files"
+                    });
                   
                   // Post a single comment for all dropped files
                   const fileNames = files.map(f => f.name).join(', ');
                   addComment({ id: task._id, text: `Attached ${files.length} file(s): ${fileNames}` });
-
-                  files.forEach(file => {
-                    uploadFile({ id: task._id, file, tag: 'attachment' })
-                      .catch(() => {});
-                  });
                 }
               }}
             >

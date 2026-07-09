@@ -475,4 +475,25 @@ router.get(
   })
 );
 
+// Get server logs
+router.get(
+    '/logs',
+    authMiddilware,
+    authorizeRoles('admin', 'sysadmin', 'boss'),
+    asyncHandler(async (req, res) => {
+        const fs = require('fs');
+        const path = require('path');
+        const logPath = path.join(process.cwd(), 'error.log');
+        let logs = "No logs available yet.";
+        if (fs.existsSync(logPath)) {
+            // Read last 500 lines or so (simplistic approach: read all if small, or use a proper log reader)
+            const content = fs.readFileSync(logPath, 'utf8');
+            // Splitting and getting last 1000 lines
+            const lines = content.split('\n');
+            logs = lines.slice(Math.max(lines.length - 1000, 0)).join('\n');
+        }
+        res.json({ success: true, data: logs });
+    })
+);
+
 export default router;

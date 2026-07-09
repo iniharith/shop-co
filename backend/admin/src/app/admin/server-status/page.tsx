@@ -41,6 +41,31 @@ export default function ServerHealthPage() {
     }
   };
 
+  const [logsModalOpen, setLogsModalOpen] = useState(false);
+  const [serverLogs, setServerLogs] = useState<string>("");
+  const [loadingLogs, setLoadingLogs] = useState(false);
+
+  const fetchLogs = async () => {
+    const token = (session?.user as any)?.token || (typeof window !== 'undefined' && localStorage.getItem('token')) || "";
+    if (!token) return;
+    
+    setLogsModalOpen(true);
+    setLoadingLogs(true);
+    try {
+      const res = await fetch(`${BACKEND}/api/sysadmin/logs`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        credentials: "include",
+      });
+      const json = await res.json();
+      if (json.success) setServerLogs(json.data);
+      else throw new Error("Failed");
+    } catch(e) {
+      toast.error("Failed to load server logs");
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
   const fetchHealth = React.useCallback(async () => {
     const token = (session?.user as any)?.token || (typeof window !== 'undefined' && localStorage.getItem('token')) || "";
     if (!token) return;
@@ -249,7 +274,7 @@ export default function ServerHealthPage() {
           </div>
 
           {/* External Services & Infrastructure Footer */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Vercel Status */}
             {/* Vercel Status */}
             <div onClick={fetchDeployments} className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between items-start h-[130px] group hover:border-white/20 transition-all cursor-pointer hover:bg-card/60">
@@ -325,6 +350,25 @@ export default function ServerHealthPage() {
                 <div className={`text-xs font-bold px-3 py-1.5 rounded-full flex items-center ${data.database?.status === 'Connected' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
                   <div className={`w-1.5 h-1.5 rounded-full mr-2 ${data.database?.status === 'Connected' ? 'bg-green-400' : 'bg-red-400'}`}></div>
                   {data.database?.status || 'Unknown'}
+                </div>
+              </div>
+            </div>
+
+            {/* Server Error Logs */}
+            <div onClick={fetchLogs} className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between items-start h-[130px] group hover:border-white/20 transition-all cursor-pointer hover:bg-card/60">
+              <div className="flex items-center space-x-3 w-full">
+                <div className="w-10 h-10 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
+                  <Archive size={18} />
+                </div>
+                <div className="overflow-hidden">
+                  <div className="text-white font-semibold truncate group-hover:text-red-400 transition-colors">Server Error Logs</div>
+                  <div className="text-xs text-gray-500 truncate">error.log</div>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-between w-full">
+                <div className="text-xs font-bold px-3 py-1.5 rounded-full flex items-center bg-red-500/10 text-red-400">
+                  <div className="w-1.5 h-1.5 rounded-full mr-2 bg-red-400"></div>
+                  View Logs
                 </div>
               </div>
             </div>
@@ -470,6 +514,28 @@ export default function ServerHealthPage() {
                   </tbody>
                 </table>
               </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={logsModalOpen} onOpenChange={setLogsModalOpen}>
+        <DialogContent className="max-w-4xl bg-[#111] text-white border-white/10 rounded-2xl h-[80vh] flex flex-col p-0 overflow-hidden">
+          <DialogHeader className="p-6 border-b border-white/10 pb-4 bg-[#111] shrink-0">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Archive className="w-5 h-5 text-red-400" />
+              Server Error Logs
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto p-4 bg-[#0a0a0a]">
+            {loadingLogs ? (
+              <div className="h-full flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-500" />
+              </div>
+            ) : (
+              <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap break-words">
+                {serverLogs || "No logs available."}
+              </pre>
             )}
           </div>
         </DialogContent>

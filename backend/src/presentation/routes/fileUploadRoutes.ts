@@ -123,7 +123,7 @@ router.post(
   '/presigned-url',
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
-    const { filename, contentType } = req.body;
+    const { filename, contentType, folderPath } = req.body;
     if (!filename || !contentType) {
       res.status(400).json({ success: false, message: 'filename and contentType are required' });
       return;
@@ -132,8 +132,9 @@ router.post(
     const { PutObjectCommand } = require('@aws-sdk/client-s3');
     const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
     const userId = (req as any).userId || (req as any).user?.id || 'unknown';
+    const folder = folderPath ? folderPath : userId;
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const key = `kampungcetak/uploads/${userId}/${uniqueSuffix}-${filename.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const key = `kampungcetak/uploads/${folder}/${uniqueSuffix}-${filename.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
 
     const command = new PutObjectCommand({
       Bucket: S3_BUCKET_NAME,
@@ -159,7 +160,12 @@ router.post(
     
     // If admin provides a userId in the body, upload on their behalf
     const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(authReq.role);
-    const userId = (isAdmin && bodyUserId) ? bodyUserId : authReq.userId || authReq.user?.id;
+    let userId = (isAdmin && bodyUserId) ? bodyUserId : undefined;
+    
+    // If no userId is provided, but taskId or orderId is, do not fallback to admin's ID
+    if (!userId && !taskId && !orderId) {
+      userId = authReq.userId || authReq.user?.id;
+    }
 
     if (!userId && !taskId) {
       res.status(401).json({ success: false, message: 'Log masuk atau Task diperlukan' });

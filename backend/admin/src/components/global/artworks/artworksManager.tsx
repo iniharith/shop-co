@@ -17,6 +17,7 @@ import { forceDownload } from "@/lib/utils";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useUploadStore } from "@/store/uploadStore";
 import ImageNext from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -41,6 +42,7 @@ const categories = [
 ];
 
 export default function ArtworksManager() {
+  const { addUpload, updateProgress, updateStatus } = useUploadStore();
   const { data: session } = useSession();
   const { data: response, isPending, refetch, isFetching: isFetchingFiles } = useAllFiles();
   const { data: ordersResponse, isFetching: isFetchingOrders } = useOrders();
@@ -671,21 +673,45 @@ if (isPending) return <div className="flex justify-center p-8"><p>Loading artwor
                     const token = (session as any)?.user?.token || localStorage.getItem('token') || "";
                     
                     const uploadPromises = files.map(async (f) => {
-                      // 1. Direct S3 Upload
-                      const uploadedData = await uploadToS3Directly(token, f);
+                      const id = Date.now().toString() + Math.random().toString(36).substring(7);
+                      const abortController = new AbortController();
                       
-                      // 2. Save Metadata
-                      const metadata = {
-                        userId: activeGroup.userId || undefined,
-                        orderId: activeGroup.orderId || undefined,
-                        taskId: activeGroup.taskId || undefined,
-                        folderId: activeSubFolderId || undefined,
-                        category: activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING",
-                        files: [uploadedData]
-                      };
+                      addUpload({
+                        id,
+                        name: f.name,
+                        tag: "Artwork",
+                        taskId: activeGroup.taskId,
+                        file: f,
+                        abortController
+                      });
 
-                      const res = await AxiosInstance(token).post("/api/files/save-metadata", metadata);
-                      return res.data;
+                      try {
+                        updateStatus(id, 'uploading');
+                        // 1. Direct S3 Upload
+                        const folderPath = activeGroup.userId || activeGroup.taskId || 'general';
+                        const uploadedData = await uploadToS3Directly(token, f, folderPath, (percent) => updateProgress(id, percent), abortController);
+                        
+                        // 2. Save Metadata
+                        const metadata = {
+                          userId: activeGroup.userId || undefined,
+                          orderId: activeGroup.orderId || undefined,
+                          taskId: activeGroup.taskId || undefined,
+                          folderId: activeSubFolderId || undefined,
+                          category: activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING",
+                          files: [uploadedData]
+                        };
+
+                        const res = await AxiosInstance(token).post("/api/files/save-metadata", metadata);
+                        updateStatus(id, 'success');
+                        return res.data;
+                      } catch (err: any) {
+                        if (err.name === 'AbortError') {
+                          updateStatus(id, 'error', 'Upload cancelled');
+                        } else {
+                          updateStatus(id, 'error', err.message || 'Upload failed');
+                        }
+                        throw err;
+                      }
                     });
 
                     toast.promise(Promise.all(uploadPromises), {

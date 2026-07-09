@@ -4,11 +4,12 @@
  */
 import AxiosInstance from "./axios";
 
-export const uploadToS3Directly = async (token: string, file: File, onProgress?: (percent: number) => void, abortController?: AbortController) => {
+export const uploadToS3Directly = async (token: string, file: File, folderPath?: string, onProgress?: (percent: number) => void, abortController?: AbortController) => {
   // 1. Get presigned URL from backend
   const presignRes = await AxiosInstance(token).post("/api/files/presigned-url", {
     filename: file.name,
     contentType: file.type || "application/octet-stream",
+    folderPath
   });
   
   if (!presignRes.data.success) {
