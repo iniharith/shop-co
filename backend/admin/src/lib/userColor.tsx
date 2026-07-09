@@ -24,12 +24,28 @@ export const getUserColor = (id: string): string => `hsl(${getUserHue(id)}, 70%,
 
 /** Colored dot + name. Used for the *closed/collapsed* state of a select
  * trigger (so the tag is visible without opening the dropdown), and can be
- * reused anywhere else a user needs to be shown with their color. */
+ * reused anywhere else a user needs to be shown with their color.
+ *
+ * IMPORTANT: shadcn's <SelectTrigger> ships a `[&>span]:line-clamp-1` rule
+ * that targets any direct <span> child of the trigger (it's meant for the
+ * default single-line <SelectValue>). Because this component's root is also
+ * a <span>, that rule was matching it too and forcing `display: -webkit-box`
+ * with vertical stacking — which silently broke the flex layout that puts
+ * the dot next to the name (the dot wasn't invisible, its layout was just
+ * being overridden). The inline `display: flex` here has higher CSS
+ * specificity than that class-based rule, so it wins regardless of where
+ * this ends up being rendered. */
 export const AssigneeTag = ({ user }: { user: any }) => {
   if (!user) return <span className="text-muted-foreground">Unassigned</span>;
   return (
-    <span className="flex items-center gap-1.5 min-w-0">
-      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getUserColor(user._id) }} />
+    <span
+      className="items-center gap-1.5 min-w-0"
+      style={{ display: "flex", alignItems: "center" }}
+    >
+      <span
+        className="w-2 h-2 rounded-full shrink-0"
+        style={{ backgroundColor: getUserColor(user._id), display: "inline-block" }}
+      />
       <span className="truncate">{user.name || user.email}</span>
     </span>
   );
