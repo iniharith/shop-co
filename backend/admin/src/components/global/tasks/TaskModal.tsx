@@ -12,12 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
-import { uploadTaskFile } from "@/api/tasks";
-import { useUploadStore } from '@/store/uploadStore';
 import { useUsers } from "@/hooks/useUsers";
-import { useSession } from "next-auth/react";
-import { useQueryClient } from "@tanstack/react-query";
-import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw, CheckCircle, Folder } from "lucide-react";
+import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -26,13 +22,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useOrders } from "@/hooks/useOrder";
-import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import { Check, ChevronsUpDown, Download as DownloadIcon } from "lucide-react";
 import { cn, forceDownload } from "@/lib/utils";
 import { useAllFiles } from "@/hooks/useAdminDashboard";
 import { useRouter } from "next/navigation";
+import { AssigneeTag, AssigneeDot } from "@/lib/userColor";
 
-const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview, onDeleteLocal }: any) => {
+const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile }: any) => {
   const isImageFile = file.mimetype?.includes("image") || (file.name || file.url).match(/\.(jpeg|jpg|gif|png|webp|heic)$/i);
   const isPdfFile = file.mimetype?.includes("pdf") || (file.name || file.url).match(/\.pdf$/i);
   const [notes, setNotes] = useState(file.notes || "");
@@ -124,19 +120,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
           
           {/* Bottom: Filename & Actions */}
           <div className="flex justify-between items-center w-full min-w-0 mt-1">
-            <a 
-              href={file.url} 
-              onClick={(e) => {
-                e.preventDefault();
-                const isImageOrPdf = file.mimetype?.includes("image") || file.mimetype?.includes("pdf") || (file.name || file.url).match(/\.(jpeg|jpg|gif|png|webp|heic|pdf)$/i);
-                if (isImageOrPdf && onPreview) {
-                  onPreview(file);
-                } else {
-                  window.open(file.url, "_blank");
-                }
-              }}
-              className="truncate text-white font-medium text-[10px] tracking-wide hover:underline pr-1 cursor-pointer"
-            >
+            <a href={file.url} target="_blank" rel="noopener noreferrer" className="truncate text-white font-medium text-[10px] tracking-wide hover:underline pr-1">
               {file.name}
             </a>
             
@@ -171,9 +155,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
                   e.preventDefault();
                   e.stopPropagation();
                   if (confirm('Are you sure you want to delete this file?')) {
-                    const fid = file._id || file.url.split('/').pop();
-                    if (onDeleteLocal) onDeleteLocal(fid);
-                    deleteFile({ id: task._id, fileId: fid });
+                    deleteFile({ id: task._id, fileId: file._id || file.url.split('/').pop() });
                   }
                 }}
                 disabled={isDeletingFile}
@@ -218,13 +200,11 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { mutate: addComment, isPending: isCommenting } = useAddTaskComment();
   const { mutate: deleteCommentApi, isPending: isDeletingComment } = useDeleteTaskComment();
   const { mutate: pinCommentApi, isPending: isPinningComment } = usePinTaskComment();
-  const { mutateAsync: uploadFile, isPending: isUploading } = useUploadTaskFile();
+  const { mutate: uploadFile, isPending: isUploading } = useUploadTaskFile();
   const { mutate: deleteFile, isPending: isDeletingFile } = useDeleteTaskFile();
   const { data: usersData } = useUsers();
   const { data: ordersData } = useOrders();
   const { data: allFilesData } = useAllFiles();
-  const { data: session } = useSession();
-  const queryClient = useQueryClient();
   const router = useRouter();
 
   const admins = usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(u.role)) || [];
@@ -242,37 +222,17 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [commentText, setCommentText] = useState("");
   const [activeTab, setActiveTab] = useState("comments");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [isDragOverComment, setIsDragOverComment] = useState(false);
-  const [previewFile, setPreviewFile] = useState<any>(null);
-  const { uploads, addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
-  const uploadingFiles = Object.values(uploads).filter(u => 
-    u.taskId === task._id && 
-    (u.status === 'uploading' || u.status === 'error' || 
-      (u.status === 'success' && !task.files?.some((cf: any) => cf.name === u.name)))
-  );
-  const [deletedFileIds, setDeletedFileIds] = useState<string[]>([]);
-
-  const allFiles = (allFilesData as any)?.data || [];
-  const customerUploadOrderIds = Array.from(new Set(allFiles.filter((f: any) => f.orderId).map((f: any) => f.orderId))) as string[];
-  const customOrderIds = customerUploadOrderIds.filter(id => !orders.some((o: any) => o._id === id || o.orderId === id));
-
-  const customerUploadUsernames = Array.from(new Set(allFiles.filter((f: any) => f.userId).map((f: any) => f.userId))) as string[];
-  const customUsernames = customerUploadUsernames.filter(name => !customers.some((c: any) => c.name === name || c.email === name));
 
   const combinedFiles = React.useMemo(() => {
     let files = [...(task?.files || [])];
     
-    // Add customer uploaded files from share link or public upload portal
+    // Add customer uploaded files from share link
     const allFiles = (allFilesData as any)?.data || [];
     const customerFiles = allFiles.filter((f: any) => {
       // Don't duplicate if already in task.files (by some chance)
       if (files.some(tf => tf.url === f.path)) return false;
       
-      // Auto-sync files matching the task's Order ID and Customer Username
-      const matchesOrderAndUser = Boolean(task.orderId && task.customerUsername && f.orderId === task.orderId && f.userId === task.customerUsername);
-      
-      return matchesOrderAndUser ||
-             (f.shareSlug && (f.shareSlug === task.title || f.shareSlug === task.customerUsername || f.shareSlug === task.orderId)) ||
+      return (f.shareSlug && (f.shareSlug === task.title || f.shareSlug === task.customerUsername || f.shareSlug === task.orderId)) ||
              (f.taskId === task._id) ||
              (task.orderId && f.orderId === task.orderId && f.category === 'artwork') ||
              (task.customerUsername && f._shareFolderName === task.customerUsername);
@@ -284,11 +244,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       _id: f._id
     }));
     
-    return [...files, ...customerFiles].filter(f => {
-      const fid = f._id || f.url?.split('/').pop();
-      return !deletedFileIds.includes(fid);
-    });
-  }, [task, allFilesData, deletedFileIds]);
+    return [...files, ...customerFiles];
+  }, [task, allFilesData]);
 
   const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "");
   const [orderId, setOrderId] = useState(task.orderId || "");
@@ -329,58 +286,16 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     if (e.target.files && e.target.files.length > 0) {
       const files = Array.from(e.target.files);
       files.forEach(file => {
-        const id = Math.random().toString(36).substring(7);
-        const tag = uploadTagRef.current;
-        const abortController = new AbortController();
-        
-        addUpload({ id, name: file.name, tag, taskId: task._id, file, abortController });
-        
-        uploadFile({ 
-          id: task._id, 
-          file, 
-          tag, 
-          onProgress: (percent) => updateProgress(id, percent),
-          abortController 
-        })
-        .then(() => {
-          updateStatus(id, 'success');
-          setTimeout(() => removeUpload(id), 5000);
-        })
-        .catch((err) => {
-          if (err.message !== "Upload cancelled") {
-            updateStatus(id, 'error', err.message || "Failed to upload file");
-          }
+        uploadFile({ id: task._id, file, tag: uploadTagRef.current }, {
+          onSuccess: () => {
+            toast.success("File uploaded successfully");
+          },
+          onError: () => toast.error("Failed to upload file")
         });
       });
       // reset input
       e.target.value = '';
     }
-  };
-
-  const handleRetryUpload = (upload: any) => {
-    if (!upload.file) return;
-    updateStatus(upload.id, 'uploading', undefined);
-    updateProgress(upload.id, 0);
-    const abortController = new AbortController();
-    removeUpload(upload.id);
-    addUpload({ id: upload.id, name: upload.name, tag: upload.tag, taskId: upload.taskId, file: upload.file, abortController });
-    
-    uploadFile({ 
-      id: upload.taskId, 
-      file: upload.file, 
-      tag: upload.tag, 
-      onProgress: (percent) => updateProgress(upload.id, percent), 
-      abortController 
-    })
-    .then(() => {
-      updateStatus(upload.id, 'success');
-      setTimeout(() => removeUpload(upload.id), 5000);
-    })
-    .catch((err) => {
-      if (err.message !== "Upload cancelled") {
-        updateStatus(upload.id, 'error', err.message || "Failed to upload file");
-      }
-    });
   };
 
   const handleDeleteComment = (commentId: string) => {
@@ -435,105 +350,30 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               </div>
 
               <div className="space-y-4 pt-4 border-t border-border/50">
-                {(combinedFiles && combinedFiles.length > 0) || uploadingFiles.length > 0 ? (
+                {combinedFiles && combinedFiles.length > 0 && (
                     <div className="mb-6 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                          <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments
-                        </label>
-                        {task.status === "IN_PRODUCTION" ? (
-                          <a href={`/admin/production?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Production Folder">
-                            <Folder className="w-3.5 h-3.5" />
-                            Production Folder
-                          </a>
-                        ) : task.status === "PACKAGING" || task.status === "SHIPPED" || task.status === "DELIVERED" ? (
-                          <a href={`/admin/packaging?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Packaging Folder">
-                            <Folder className="w-3.5 h-3.5" />
-                            Packaging Folder
-                          </a>
-                        ) : (
-                          <a href={`/admin/artworks?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Artwork Folder">
-                            <Folder className="w-3.5 h-3.5" />
-                            Artwork Folder
-                          </a>
-                        )}
-                      </div>
+                      <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments
+                      </label>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
-                        {uploadingFiles.map(f => (
-                          <div key={f.id} className={`relative group w-fit max-w-full mb-6 mt-1 opacity-70 ${f.status === 'uploading' ? 'animate-pulse' : ''}`}>
-                            <div className={`flex items-center gap-1.5 p-1.5 pb-3 pr-1.5 rounded-[12px] w-full min-w-[140px] shadow-sm relative z-10 overflow-visible ${f.status === 'error' ? 'bg-[#ffcfcf]' : 'bg-[#5a5a5a]'}`}>
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${f.status === 'error' ? 'bg-[#ff9999]' : 'bg-[#666666]'}`}>
-                                {f.status === 'uploading' ? (
-                                  <LoaderCircle className="w-4 h-4 text-white animate-spin" />
-                                ) : f.status === 'success' ? (
-                                  <CheckCircle className="w-4 h-4 text-[#4ade80]" />
-                                ) : (
-                                  <AlertCircle className="w-4 h-4 text-white" />
-                                )}
-                              </div>
-                              <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-0.5 gap-0.5 pt-3">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    removeUpload(f.id);
-                                  }}
-                                  className="absolute top-1 left-1 p-0.5 bg-black/50 hover:bg-red-500 rounded-full text-white transition-colors z-20"
-                                  title={f.status === 'error' ? 'Dismiss' : 'Cancel Upload'}
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                                {f.status === 'error' && f.file && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleRetryUpload(f);
-                                    }}
-                                    className="absolute top-1 left-5 ml-1 p-0.5 bg-blue-500 hover:bg-blue-600 rounded-full text-white transition-colors z-20"
-                                    title="Retry Upload"
-                                  >
-                                    <RefreshCw className="w-3 h-3" />
-                                  </button>
-                                )}
-                                {f.tag === 'draft' ? (
-                                  <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Draft</div>
-                                ) : f.tag === 'for_print' ? (
-                                  <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">For Print</div>
-                                ) : (
-                                  <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Attachment</div>
-                                )}
-                                <div className="flex justify-between items-center w-full min-w-0 mt-1">
-                                  <span className={`truncate font-medium text-[10px] tracking-wide pr-1 ${f.status === 'error' ? 'text-red-900' : 'text-white'}`}>
-                                    {f.name}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="absolute -bottom-4 left-[5%] right-[5%] z-0">
-                              <div className={`w-full text-[10px] font-medium p-1 px-3 rounded-b-[12px] shadow-sm text-center ${f.status === 'error' ? 'bg-red-500 text-white' : 'bg-[#fae863] text-black'}`}>
-                                {f.status === 'uploading' ? `Uploading... ${f.progress}%` : f.status === 'success' ? 'Uploaded!' : 'Failed'}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                        {combinedFiles.slice(0, 12).map((file: any) => (
+                        {combinedFiles.slice(0, 10).map((file: any, idx: number) => (
                           <FileAttachmentCard 
-                            key={file.url} 
+                            key={idx} 
                             task={task} 
                             file={file} 
                             deleteFile={deleteFile} 
                             isDeletingFile={isDeletingFile} 
-                            onPreview={setPreviewFile}
-                            onDeleteLocal={(fid: string) => setDeletedFileIds(prev => [...prev, fid])}
                           />
                         ))}
                       </div>
-                      {combinedFiles.length > 12 && (
+                      {combinedFiles.length > 10 && (
                         <div className="mt-4 flex justify-center">
                           <Button 
                             variant="secondary" 
                             className="w-full shadow-sm hover:shadow-md transition-shadow"
                             onClick={() => {
                               onClose();
+                              // Open Artworks Manager and try to pre-select the folder using task title
                               router.push(`/admin/artworks?folder=${encodeURIComponent(task.title)}`);
                             }}
                           >
@@ -541,8 +381,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                           </Button>
                         </div>
                       )}
-                    </div>
-                ) : null}
+                    </div>)}
                 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                   <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-4">
@@ -567,7 +406,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                           <Avatar className="w-8 h-8 border border-border/50 bg-muted shrink-0">
                             <AvatarFallback className="text-xs">{comment.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
-                          <div className={`flex-1 rounded-xl rounded-tl-none p-3 border border-border/50 ${comment.pinned ? 'bg-yellow-100/50 dark:bg-yellow-500/10 dark:border-yellow-500/20 shadow-md' : 'bg-muted/40 dark:bg-muted/20'}`}>
+                          <div className={`flex-1 rounded-xl rounded-tl-none p-3 border border-border/50 ${comment.pinned ? 'bg-yellow-100/50 dark:bg-yellow-900/20 shadow-md' : 'bg-muted/40'}`}>
                             <div className="flex justify-between items-baseline mb-1">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold">{comment.userName}</span>
@@ -635,36 +474,18 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                     </div>
                                   </div>
                                 )}
-                                {activityItems.map((item: any, idx: number) => {
-                                  const isUpload = item.action.includes('uploaded a file');
-                                  const matchingFile = (isUpload && item.details) ? task.files?.find((f: any) => f.name === item.details || f.url === item.details) : null;
-                                  const isImage = matchingFile && (matchingFile.url.match(/\.(jpeg|jpg|gif|png|webp|heic)$/i) || matchingFile.name?.match(/\.(jpeg|jpg|gif|png|webp|heic)$/i));
-                                  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-                                  const proxyUrl = matchingFile ? `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(matchingFile.url.startsWith('http') ? matchingFile.url : `${backendUrl}/${matchingFile.url.replace(/^\/+/, '')}`)}&name=${encodeURIComponent(matchingFile.name)}&stream=true` : "";
-
-                                  return (
-                                    <div key={`a-${idx}`} className={`flex gap-3 items-start text-sm py-1 ${isImage ? 'mt-2 mb-2' : ''}`}>
-                                      <Avatar className="w-6 h-6 border border-border/50 bg-muted shrink-0 text-[10px] mt-0.5">
-                                        <AvatarFallback>{item.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                      </Avatar>
-                                      <div className="flex-1 text-muted-foreground">
-                                        <div>
-                                          <span className="font-semibold text-foreground mr-1">{item.userName}</span>
-                                          {item.action} {item.details && !isImage && <span className="font-medium text-foreground/80 ml-1 break-all">{item.details}</span>}
-                                          <span className="text-[10px] ml-2 text-muted-foreground/70 whitespace-nowrap">• {format(new Date(item.createdAt), "MMM d, h:mm a")}</span>
-                                        </div>
-                                        {isImage && (
-                                          <div className="mt-2">
-                                            <a href={proxyUrl} target="_blank" rel="noopener noreferrer" className="block max-w-[250px] rounded-lg overflow-hidden border border-border/50 shadow-sm hover:opacity-90 transition-opacity bg-black/5">
-                                              <img src={proxyUrl} alt={item.details} className="w-full h-auto object-cover max-h-[150px]" loading="lazy" />
-                                            </a>
-                                            <span className="text-[10px] text-muted-foreground mt-1 block truncate max-w-[250px]">{item.details}</span>
-                                          </div>
-                                        )}
-                                      </div>
+                                {activityItems.map((item: any, idx: number) => (
+                                  <div key={`a-${idx}`} className="flex gap-3 items-center text-sm py-1">
+                                    <Avatar className="w-6 h-6 border border-border/50 bg-muted shrink-0 text-[10px]">
+                                      <AvatarFallback>{item.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 text-muted-foreground">
+                                      <span className="font-semibold text-foreground mr-1">{item.userName}</span>
+                                      {item.action}
+                                      <span className="text-[10px] ml-2 text-muted-foreground/70">• {format(new Date(item.createdAt), "MMM d, h:mm a")}</span>
                                     </div>
-                                  );
-                                })}
+                                  </div>
+                                ))}
                               </>
                             )}
                           </div>
@@ -676,78 +497,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               </div>
             </div>
             
-            <div 
-              className={`p-4 border-y md:border-y-0 md:border-t border-border/50 shrink-0 transition-colors relative ${isDragOverComment ? 'bg-primary/10 border-primary border-dashed' : 'bg-muted/10 dark:bg-transparent'}`}
-              onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(true); }}
-              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(true); }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsDragOverComment(false);
-                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                    const files = Array.from(e.dataTransfer.files);
-                    const token = (session as any)?.user?.token || localStorage.getItem('token') || "";
-                    
-                    const uploadPromises = files.map(async (file) => {
-                      const id = Date.now().toString() + Math.random().toString(36).substring(7);
-                      const abortController = new AbortController();
-                      
-                      addUpload({
-                        id,
-                        name: file.name,
-                        tag: "Task Document",
-                        taskId: task._id,
-                        file,
-                        abortController
-                      });
-
-                      try {
-                        updateStatus(id, 'uploading');
-                        const data = await uploadTaskFile(
-                          token,
-                          task._id,
-                          file,
-                          "Task Document",
-                          (percent) => updateProgress(id, percent),
-                          abortController
-                        );
-                        updateStatus(id, 'success');
-                        return data;
-                      } catch (err: any) {
-                        if (err.name === 'AbortError') {
-                          updateStatus(id, 'error', 'Upload cancelled');
-                        } else {
-                          updateStatus(id, 'error', err.message || 'Upload failed');
-                        }
-                        throw err;
-                      }
-                    });
-
-                    toast.promise(Promise.all(uploadPromises), {
-                      loading: `Uploading ${files.length} file(s)...`,
-                      success: () => {
-                        queryClient.invalidateQueries({ queryKey: ["taskFiles", task._id] });
-                        return `Successfully uploaded ${files.length} file(s)`;
-                      },
-                      error: "Failed to upload some files"
-                    });
-                  
-                  // Post a single comment for all dropped files
-                  const fileNames = files.map(f => f.name).join(', ');
-                  addComment({ id: task._id, text: `Attached ${files.length} file(s): ${fileNames}` });
-                }
-              }}
-            >
-              {isDragOverComment && (
-                <div 
-                  className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50 rounded-b-lg"
-                  onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(false); }}
-                >
-                  <p className="text-sm font-bold text-primary flex items-center gap-2 pointer-events-none">
-                    <DownloadIcon className="w-4 h-4 animate-bounce" /> Drop files to attach
-                  </p>
-                </div>
-              )}
+            <div className="p-4 border-y md:border-y-0 md:border-t border-border/50 bg-muted/10 shrink-0">
               <div className="flex gap-2">
                 <input 
                   type="file" 
@@ -755,15 +505,17 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   className="hidden" 
                   multiple
                   onChange={handleFileUpload}
+                  disabled={isUploading}
                 />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button 
+                      disabled={isUploading} 
                       variant="outline"
                       size="icon" 
                       className="shrink-0 shadow-sm"
                     >
-                      <Paperclip className="w-4 h-4" />
+                      {isUploading ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
@@ -812,12 +564,17 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                 </label>
                 <Select value={assignee} onValueChange={(v) => { setAssignee(v); handleSaveDetails({ assignee: v === "unassigned" ? null : v }); }}>
                   <SelectTrigger className="h-9 bg-background shadow-sm border-border/50">
-                    <SelectValue placeholder="Unassigned" />
+                    <AssigneeTag user={allUsers.find((u: any) => u._id === assignee)} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="unassigned">Unassigned</SelectItem>
                     {allUsers.map((user: any) => (
-                      <SelectItem key={user._id} value={user._id}>{user.name || user.email}</SelectItem>
+                      <SelectItem key={user._id} value={user._id}>
+                        <div className="flex items-center gap-2">
+                          <AssigneeDot userId={user._id} />
+                          {user.name || user.email}
+                        </div>
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -930,21 +687,6 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                               Order #{(o as any).orderId}
                             </CommandItem>
                           ))}
-                          {customOrderIds.map((id: string) => (
-                             <CommandItem
-                               key={`custom-${id}`}
-                               value={id}
-                               onSelect={() => {
-                                 setOrderId(id);
-                                 handleSaveDetails({ orderId: id });
-                                 setOpenOrderBox(false);
-                                 setOrderSearch("");
-                               }}
-                             >
-                               <Check className={cn("mr-2 h-4 w-4", orderId === id ? "opacity-100" : "opacity-0")} />
-                               <span className="text-muted-foreground italic truncate">Order #{id} (From Uploads)</span>
-                             </CommandItem>
-                           ))}
                         </CommandGroup>
                       </CommandList>
                     </Command>
@@ -1004,21 +746,6 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                               {c.name} ({c.email})
                             </CommandItem>
                           ))}
-                          {customUsernames.map((username: string) => (
-                             <CommandItem
-                               key={`custom-${username}`}
-                               value={username}
-                               onSelect={() => {
-                                 setCustomerUsername(username);
-                                 handleSaveDetails({ customerUsername: username });
-                                 setOpenUserBox(false);
-                                 setUserSearch("");
-                               }}
-                             >
-                               <Check className={cn("mr-2 h-4 w-4", customerUsername === username ? "opacity-100" : "opacity-0")} />
-                               <span className="text-muted-foreground italic truncate">{username} (From Uploads)</span>
-                             </CommandItem>
-                           ))}
                         </CommandGroup>
                       </CommandList>
                     </Command>
@@ -1087,7 +814,6 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
           </div>
         </div>
       </DialogContent>
-      <FilePreviewModal isOpen={!!previewFile} onClose={() => setPreviewFile(null)} file={previewFile} />
     </Dialog>
   );
 }

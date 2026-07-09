@@ -22,6 +22,10 @@ import { toast } from "sonner";
 import { format, isToday, isTomorrow } from "date-fns";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import TaskModal from "./TaskModal";
+// Centralized in @/lib/userColor so every place a user shows up (board, list,
+// task detail modal, anywhere else) uses the exact same persistent per-ID
+// color instead of each component deriving its own.
+import { getUserColor, AssigneeTag } from "@/lib/userColor";
 
 // ─── Due Date Display ─────────────────────────────────────────────────────────
 const DueDateDisplay = ({ task, updateTask, className }: { task: any; updateTask: any; className?: string }) => {
@@ -52,33 +56,6 @@ const DueDateDisplay = ({ task, updateTask, className }: { task: any; updateTask
         </div>
       </PopoverContent>
     </Popover>
-  );
-};
-
-// ─── User colour helper ───────────────────────────────────────────────────────
-// Every user gets a persistent, distinct color derived purely from their own
-// _id — not a role, and not an index into a small preset palette (which used
-// to only offer 16 colors, so users collided constantly once you had more
-// than a handful of staff). Hashing the id into a hue across the full 0–359
-// range gives effectively unlimited distinct, stable colors: the same user
-// always gets the same color, and two different users almost never collide.
-const getUserHue = (id: string) => {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
-  return Math.abs(hash) % 360;
-};
-const getUserColor = (id: string) => `hsl(${getUserHue(id)}, 70%, 50%)`;
-
-// Small reusable "tag" — a colored dot + name — used anywhere an assignee
-// needs to be visually distinguishable at a glance (board cards, list rows,
-// dropdowns), not just when a dropdown is opened.
-const AssigneeTag = ({ user }: { user: any }) => {
-  if (!user) return <span className="text-muted-foreground">Unassigned</span>;
-  return (
-    <span className="flex items-center gap-1.5 min-w-0">
-      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getUserColor(user._id) }} />
-      <span className="truncate">{user.name || user.email}</span>
-    </span>
   );
 };
 
