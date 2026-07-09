@@ -385,7 +385,7 @@ export default function ArtworksManager() {
           orderId: uploadData.orderId || undefined,
           taskId: uploadData.taskId || undefined,
           folderId: uploadData.folderId || undefined,
-          category: uploadData.category,
+          category: uploadData.taskId ? 'TASK' : uploadData.category,
           notes: uploadData.notes,
           files: [uploadedData]
         };
@@ -396,6 +396,7 @@ export default function ArtworksManager() {
 
       await Promise.all(uploadPromises);
       toast.success("Artwork uploaded successfully");
+      setUploadFiles(null);
       setUploadModalOpen(false);
       refetch();
     } catch (e: any) {
@@ -543,7 +544,13 @@ if (isPending) return <div className="flex justify-center p-8"><p>Loading artwor
               <List className="w-4 h-4" />
             </button>
           </div>
-          <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
+          <Dialog open={uploadModalOpen} onOpenChange={(open) => {
+            setUploadModalOpen(open);
+            if (!open) {
+              setUploadFiles(null);
+              setUploadData({ category: "DIGITAL PRINTING", notes: "" });
+            }
+          }}>
             <Button onClick={() => {
               setUploadData({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "", folderId: "" });
               setUploadModalOpen(true);
@@ -619,8 +626,12 @@ if (isPending) return <div className="flex justify-center p-8"><p>Loading artwor
                   <Textarea placeholder="Internal notes..." value={uploadData.notes} onChange={e => setUploadData({ ...uploadData, notes: e.target.value })} />
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setUploadModalOpen(false)}>Cancel</Button>
+              <DialogFooter className="border-t border-white/5 pt-4 mt-2 px-6 pb-6">
+                <Button variant="outline" onClick={() => {
+                  setUploadModalOpen(false);
+                  setUploadFiles(null);
+                  setUploadData({ category: "DIGITAL PRINTING", notes: "" });
+                }}>Cancel</Button>
                 <Button onClick={handleUploadSubmit}>Upload</Button>
               </DialogFooter>
             </DialogContent>
@@ -697,7 +708,7 @@ if (isPending) return <div className="flex justify-center p-8"><p>Loading artwor
                           orderId: activeGroup.orderId || undefined,
                           taskId: activeGroup.taskId || undefined,
                           folderId: activeSubFolderId || undefined,
-                          category: activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING",
+                          category: activeGroup.taskId ? 'TASK' : (activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING"),
                           files: [uploadedData]
                         };
 
