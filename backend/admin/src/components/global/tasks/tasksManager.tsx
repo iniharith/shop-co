@@ -364,26 +364,7 @@ export default function TasksManager() {
           <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="rounded-full h-10 w-10 shadow-sm border-slate-200" title="Refresh Tasks">
             <RefreshCw className={`w-4 h-4 text-slate-500 ${isFetching ? 'animate-spin' : ''}`} />
           </Button>
-          <Button 
-            variant="secondary" 
-            className="rounded-full px-4 shadow-sm"
-            onClick={async () => {
-              try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/admin/migrate-statuses`);
-                const data = await res.json();
-                if (data.success) {
-                  toast.success(`Migration successful! Refreshed board.`);
-                  refetch();
-                } else {
-                  toast.error(`Migration failed: ${JSON.stringify(data)}`);
-                }
-              } catch (e) {
-                toast.error("Network error during migration");
-              }
-            }}
-          >
-            Run Migration Fix
-          </Button>
+
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button className="rounded-full px-6 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md">
