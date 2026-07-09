@@ -449,7 +449,6 @@ export default function ProductionManager() {
 
   return (
     <div className="space-y-6 bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">
-      <FilePreviewModal file={previewFile} files={previewList} onNavigate={setPreviewFile} isOpen={!!previewFile} onClose={() => setPreviewFile(null)} />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-2 w-full max-w-md">
           <div className="relative w-full">
