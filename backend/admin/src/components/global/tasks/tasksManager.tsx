@@ -616,8 +616,8 @@ export default function TasksManager() {
 
       {/* Floating Action Bar */}
       {selectedTaskIds.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-background/60 backdrop-blur-xl text-foreground shadow-2xl rounded-2xl flex items-center gap-2 p-2 px-4 border border-border/50 animate-in slide-in-from-bottom-5">
-          <span className="text-sm font-bold bg-muted/80 backdrop-blur-sm px-3 py-1.5 rounded-xl mr-2 whitespace-nowrap">
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] bg-card text-card-foreground shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-border/60 rounded-2xl flex items-center gap-2 p-2 px-4 animate-in slide-in-from-bottom-5 duration-300">
+          <span className="text-sm font-bold bg-primary/10 text-primary px-3 py-1.5 rounded-xl mr-2 whitespace-nowrap">
             {selectedTaskIds.length} selected
           </span>
           

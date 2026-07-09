@@ -12,7 +12,7 @@ import { useUsers } from "@/hooks/useUsers";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, CheckCircle, User, Tag, Calendar, Link } from "lucide-react";
+import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, CheckCircle, User, Tag, Calendar, Link, Share2 } from "lucide-react";
 import { forceDownload } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -634,11 +634,11 @@ export default function ProductionManager() {
                 return null;
               }
               
-              const groupFolders = virtualFolders.filter((f: any) => 
-                f.userId === activeGroup.userId && 
-                f.orderId === activeGroup.orderId &&
-                f.taskId === activeGroup.taskId
-              );
+              const groupFolders = virtualFolders.filter((f: any) => {
+                if (activeGroup.taskId) return f.taskId === activeGroup.taskId;
+                if (activeGroup.orderId) return f.orderId === activeGroup.orderId;
+                return f.userId === activeGroup.userId && !f.taskId && !f.orderId;
+              });
               const visibleFiles = activeGroup.files.filter((f: any) => 
                 activeSubFolderId ? f.folderId === activeSubFolderId : (!f.folderId || f.folderId === 'null')
               );
@@ -700,6 +700,36 @@ export default function ProductionManager() {
                       >
                         <CheckCircle className="w-5 h-5 sm:mr-2" /> 
                         <span className="hidden sm:inline">{activeSubTab === 'IN_PRODUCTION' ? 'Done Printing' : 'Done'}</span>
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            const payload = {
+                              folderName: activeGroup.folderName,
+                              orderId: activeGroup.orderId,
+                              taskId: activeGroup.taskId,
+                              userId: activeGroup.userId,
+                            };
+                            const res = await fetch("/api/files/share-link", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify(payload),
+                            });
+                            if (!res.ok) throw new Error("Failed to create share link");
+                            const data = await res.json();
+                            const link = `${window.location.origin}/share/${data.slug}`;
+                            navigator.clipboard.writeText(link);
+                            toast.success("Share link copied to clipboard!");
+                          } catch (err) {
+                            toast.error("Error creating share link");
+                          }
+                        }} 
+                        className="shadow-sm h-11 sm:h-10 border-primary/20 text-primary hover:bg-primary/10"
+                        title="Copy Share Link"
+                      >
+                        <Share2 className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Share</span>
                       </Button>
                       <Button variant="secondary" onClick={(e) => handleDownloadAll(activeGroup, e)} className="shadow-sm h-11 sm:h-10">
                         <Download className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Download</span>
