@@ -703,11 +703,13 @@ if (isPending) return <div className="flex justify-center p-8"><p>Loading artwor
                         const uploadedData = await uploadToS3Directly(token, f, folderPath, (percent) => updateProgress(id, percent), abortController);
                         
                         // 2. Save Metadata
+                        const shareSlug = activeGroup.files.find((f: any) => f.shareSlug)?.shareSlug;
                         const metadata = {
                           userId: activeGroup.userId || undefined,
                           orderId: activeGroup.orderId || undefined,
                           taskId: activeGroup.taskId || undefined,
                           folderId: activeSubFolderId || undefined,
+                          shareSlug: shareSlug || undefined,
                           category: activeGroup.taskId ? 'TASK' : (activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING"),
                           files: [uploadedData]
                         };
@@ -826,6 +828,16 @@ if (isPending) return <div className="flex justify-center p-8"><p>Loading artwor
                           >
                           <Folder className="w-4 h-4 mr-2" /> {isGeneratingLink ? "Generating..." : "Share Link"}
                         </Button>
+                        {activeGroup.taskId && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="border-primary/50 text-primary hover:bg-primary/10"
+                            onClick={() => window.open(`/admin/tasks?task=${activeGroup.taskId}`, '_blank')}
+                          >
+                            <LayoutGrid className="w-4 h-4 mr-2" /> View Task
+                          </Button>
+                        )}
                         {visibleFiles.length > 0 && (
                           <Button variant="secondary" size="sm" onClick={(e) => handleDownloadAll({ ...activeGroup, files: visibleFiles }, e)}>
                             <Download className="w-4 h-4 mr-2" /> Download All

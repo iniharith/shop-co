@@ -76,13 +76,15 @@ const DueDateDisplay = ({ task, updateTask, className }: { task: any, updateTask
 
 // Simple hash function to generate a consistent color index for a given string
 const getUserColor = (id: string) => {
-  const colors = ["bg-red-500", "bg-orange-500", "bg-amber-500", "bg-green-500", "bg-emerald-500", "bg-teal-500", "bg-cyan-500", "bg-blue-500", "bg-indigo-500", "bg-violet-500", "bg-purple-500", "bg-fuchsia-500", "bg-pink-500", "bg-rose-500", "bg-sky-500", "bg-lime-500"];
+  if (!id) return `hsl(0, 0%, 50%)`;
   let hash = 0;
   const str = id.toString();
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
-  return colors[Math.abs(hash) % colors.length];
+  // Generate a distinct hue from 0 to 360, keeping saturation and lightness constant for vibrant but readable colors
+  const h = Math.abs(hash) % 360;
+  return `hsl(${h}, 70%, 50%)`;
 };
 
 export default function TasksManager() {
@@ -477,7 +479,7 @@ export default function TasksManager() {
                             {usersData?.users?.map((user: any) => (
                               <SelectItem key={user._id} value={user._id} className="font-bold">
                                 <div className="flex items-center gap-2">
-                                  <div className={`w-2 h-2 rounded-full ${getUserColor(user._id)}`} />
+                                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getUserColor(user._id) }} />
                                   {user.name || user.email}
                                 </div>
                               </SelectItem>
@@ -576,7 +578,7 @@ export default function TasksManager() {
                                 {usersData?.users?.map((u: any) => (
                                   <SelectItem key={u._id} value={u._id} className="flex items-center gap-2">
                                     <div className="flex items-center gap-2">
-                                      <div className={`w-2 h-2 rounded-full ${getUserColor(u._id)}`} />
+                                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getUserColor(u._id) }} />
                                       {u.name}
                                     </div>
                                   </SelectItem>

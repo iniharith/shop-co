@@ -155,7 +155,7 @@ router.post(
   '/save-metadata',
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
-    const { orderId, taskId, notes, userId: bodyUserId, category, tag, folderId, files } = req.body;
+    const { orderId, taskId, notes, userId: bodyUserId, category, tag, folderId, shareSlug, files } = req.body;
     const authReq = req as any;
     
     // If admin provides a userId in the body, upload on their behalf
@@ -193,6 +193,7 @@ router.post(
           notes: notes || undefined,
           adminReviewed: false,
           folderId: folderId || undefined,
+          shareSlug: shareSlug || undefined,
         })
       )
     );

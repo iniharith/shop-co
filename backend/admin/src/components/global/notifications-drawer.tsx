@@ -76,8 +76,8 @@ const NotificationsDrawer = ({
             { "--initial-transform": "calc(100% + 8px)" } as React.CSSProperties
           }
         >
-          <div className="bg-[#0a0a0a]/80 backdrop-blur-xl border-l border-white/10 text-white h-full w-full grow px-4 py-3 flex flex-col rounded-[16px] shadow-lg">
-            <Drawer.Title className="font-medium px-0 border-b border-dashed border-white/10 justify-between flex items-center mb-4 pb-2">
+          <div className="bg-background/80 backdrop-blur-xl border-l border-border/50 text-foreground h-full w-full grow px-4 py-3 flex flex-col rounded-[16px] shadow-lg">
+            <Drawer.Title className="font-medium px-0 border-b border-dashed border-border/50 justify-between flex items-center mb-4 pb-2">
               <div className="flex items-center gap-2">
                 <Bell className="h-5 w-5 text-primary" />
                 <h2 className="text-lg font-semibold">Notifications</h2>
@@ -128,10 +128,10 @@ const NotificationsDrawer = ({
                           }
                         }}
                         className={cn(
-                          "p-3 rounded-lg border transition-all duration-200 hover:bg-white/5",
+                          "p-3 rounded-lg border transition-all duration-200 hover:bg-muted",
                           notification.link ? "cursor-pointer" : "",
                           notification.read
-                            ? "border-white/5"
+                            ? "border-border/50"
                             : "border-primary/30 bg-primary/5"
                         )}
                       >
@@ -140,7 +140,7 @@ const NotificationsDrawer = ({
                             className={cn(
                               "h-8 w-8 rounded-full flex items-center justify-center",
                               notification.read
-                                ? "bg-white/5 text-gray-400"
+                                ? "bg-muted text-muted-foreground"
                                 : "bg-primary/10 text-primary"
                             )}
                           >
@@ -156,13 +156,13 @@ const NotificationsDrawer = ({
                               >
                                 {notification.title}
                               </h3>
-                              <span className="text-xs text-gray-400">
+                              <span className="text-xs text-muted-foreground">
                                 {new Date(
                                   notification.createdAt as string
                                 ).toLocaleString()}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-300 mt-1">
+                            <p className="text-sm text-foreground/80 mt-1">
                               {notification.message}
                             </p>
                           </div>
@@ -172,8 +172,8 @@ const NotificationsDrawer = ({
                   ) : (
                     <div className="flex justify-center items-center h-full">
                       <div className="flex flex-col h-full w-full items-center justify-center gap-2">
-                        <BellOff className="w-16 h-16 text-gray-600" />
-                        <p className="text-sm text-gray-400">
+                        <BellOff className="w-16 h-16 text-muted-foreground/30" />
+                        <p className="text-sm text-muted-foreground">
                           {activeTab === "new"
                             ? "No new notifications"
                             : activeTab === "read"

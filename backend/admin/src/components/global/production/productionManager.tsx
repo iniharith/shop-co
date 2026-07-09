@@ -25,6 +25,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "next-auth/react";
 import AxiosInstance from "@/utils/axios";
 import { uploadToS3Directly } from "@/utils/s3Upload";
+import { useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 const categories = [
   "ALL",
@@ -40,11 +42,24 @@ const categories = [
 
 export default function ProductionManager() {
   const { data: session } = useSession();
+  const token = (session as any)?.accessToken;
+  const searchParams = useSearchParams();
   const { data: response, isPending, refetch, isFetching } = useAllFiles();
   const { data: ordersResponse } = useOrders();
   const { data: tasksResponse } = useTasks();
   const { mutate: updateTask } = useUpdateTask();
   const { data: usersResponse } = useUsers();
+  
+  const { data: virtualFoldersResponse } = useQuery({
+    queryKey: ["virtualFolders"],
+    queryFn: async () => {
+      const res = await AxiosInstance(token).get("/api/files/virtual-folders");
+      return res.data;
+    },
+    enabled: !!token,
+  });
+  const virtualFolders = (virtualFoldersResponse as any)?.data || [];
+
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
   const [activeSubTab, setActiveSubTab] = useState("IN_PRODUCTION");
@@ -52,6 +67,7 @@ export default function ProductionManager() {
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [activeSubFolderId, setActiveSubFolderId] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<any>(null);
   const [commentText, setCommentText] = useState("");
 
@@ -136,14 +152,15 @@ export default function ProductionManager() {
         }
       }
 
-      const key = JSON.stringify({ name: groupName, orderId: orderIdStr, taskId: taskIdStr, isTask });
+      let folderIdStr = file.folderId || "";
+      const key = JSON.stringify({ name: groupName, orderId: orderIdStr, taskId: taskIdStr, folderId: folderIdStr, isTask });
       if (!groups[key]) groups[key] = [];
       groups[key].push(file);
     });
 
     productionTasks.forEach((task: any) => {
       if (activeTab !== "ALL" && task.category !== activeTab) return; // respect active tab for empty folders
-      const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id, isTask: true });
+      const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id, folderId: "", isTask: true });
       if (!groups[key]) {
         groups[key] = [];
       }
@@ -163,12 +180,29 @@ export default function ProductionManager() {
         folderName: parsed.name,
         orderId: parsed.orderId,
         taskId: parsed.taskId,
-        isTask: parsed.isTask, userId: files.length > 0 ? files[0].userId : "",
+        folderId: parsed.folderId,
+        isTask: parsed.isTask, 
+        userId: files.length > 0 ? files[0].userId : "",
         orderStatus: orderStatus,
-        files
+        files: files.sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
       };
-    });
+    }).sort((a, b) => a.folderName.localeCompare(b.folderName));
   }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab, activeSubTab]);
+
+  React.useEffect(() => {
+    setActiveSubFolderId(null);
+  }, [selectedFolder]);
+
+  React.useEffect(() => {
+    const folderQuery = searchParams.get("folder");
+    if (folderQuery && groupedFiles.length > 0 && !selectedFolder) {
+      const match = groupedFiles.find(g => g.folderName === folderQuery || g.taskId === folderQuery);
+      if (match) {
+        const id = `${match.folderName}-${match.orderId}-${match.taskId || ""}`;
+        setSelectedFolder(id);
+      }
+    }
+  }, [searchParams, groupedFiles, selectedFolder]);
 
   const handleReview = (fileId: string, currentStatus: boolean, notes?: string) => {
     reviewFileMutate(
@@ -601,6 +635,15 @@ export default function ProductionManager() {
                 return null;
               }
               
+              const groupFolders = virtualFolders.filter((f: any) => 
+                f.userId === activeGroup.userId && 
+                f.orderId === activeGroup.orderId &&
+                f.taskId === activeGroup.taskId
+              );
+              const visibleFiles = activeGroup.files.filter((f: any) => 
+                activeSubFolderId ? f.folderId === activeSubFolderId : (!f.folderId || f.folderId === 'null')
+              );
+              
               const tasks = (tasksResponse as any)?.tasks || [];
               const orders = (ordersResponse as any)?.orders || [];
               const users = (usersResponse as any)?.data || [];
@@ -699,9 +742,14 @@ export default function ProductionManager() {
                                 View Order
                               </a>
                             )}
+                            {activeGroup.taskId && (
+                              <a href={`/admin/tasks?task=${activeGroup.taskId}`} target="_blank" className="flex-1 text-center bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-1.5 px-2 rounded-md transition-colors">
+                                View Task
+                              </a>
+                            )}
                             {(activeGroup.orderId || activeGroup.folderName) && (
                               <a href={`/admin/artworks?folder=${encodeURIComponent(activeGroup.folderName)}`} target="_blank" className="flex-1 text-center bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-1.5 px-2 rounded-md transition-colors">
-                                View Artworks
+                                Artworks
                               </a>
                             )}
                           </div>
@@ -711,9 +759,32 @@ export default function ProductionManager() {
                   </div>
 
                   <div className="p-4 sm:p-6 flex-1 overflow-y-auto bg-muted/5 relative">
-                    <h3 className="font-semibold text-sm mb-4 text-muted-foreground uppercase tracking-wider">{activeGroup.files.length} Attachments</h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
+                        {activeSubFolderId ? "Subfolder Contents" : `${activeGroup.files.length} Attachments`}
+                      </h3>
+                      {activeSubFolderId && (
+                        <Button variant="ghost" size="sm" onClick={() => setActiveSubFolderId(null)}>
+                          <ChevronLeft className="w-4 h-4 mr-1"/> Back
+                        </Button>
+                      )}
+                    </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                      {activeGroup.files.map((file: any) => (
+                      {/* Render Folders */}
+                      {!activeSubFolderId && groupFolders.map((folder: any) => (
+                        <Card key={folder._id} className="overflow-hidden shadow-sm hover:shadow-md cursor-pointer relative bg-card hover:bg-accent/50 border-primary/20 flex flex-col h-full min-h-[250px]" onClick={() => setActiveSubFolderId(folder._id)}>
+                          <div className="flex-1 p-4 flex flex-col items-center justify-center gap-3">
+                            <Folder className="w-16 h-16 text-primary/80" />
+                            <h3 className="font-semibold text-sm text-center line-clamp-2">{folder.name}</h3>
+                          </div>
+                          <div className="bg-muted/50 p-2 text-center text-xs text-muted-foreground border-t">
+                            {activeGroup.files.filter((f: any) => f.folderId === folder._id).length} files
+                          </div>
+                        </Card>
+                      ))}
+
+                      {/* Render Files */}
+                      {visibleFiles.map((file: any) => (
                         <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow relative bg-background border-muted group/card">
                           {getFileThumbnail(file)}
                           {file.tag === 'draft' ? (
