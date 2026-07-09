@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Upload, FileText, Check, Loader2, Image as ImageIcon, X } from "lucide-react";
+import { Upload, FileText, Check, Loader2, Image as ImageIcon, X, CloudUpload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ export default function CustomerUploadPortal() {
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadStats, setUploadStats] = useState({ current: 0, total: 0 });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -50,12 +51,15 @@ export default function CustomerUploadPortal() {
     }
 
     setUploading(true);
-    const toastId = toast.loading("Uploading files directly to cloud...");
+    setUploadStats({ current: 0, total: selectedFiles.length });
+    const toastId = toast.loading(`Uploading files (0/${selectedFiles.length})...`);
 
     try {
       const uploadedFiles = [];
       
       for (let i = 0; i < selectedFiles.length; i++) {
+        toast.loading(`Uploading files (${i + 1}/${selectedFiles.length})...`, { id: toastId });
+        setUploadStats({ current: i + 1, total: selectedFiles.length });
         const file = selectedFiles[i];
         
         // 1. Get presigned URL
@@ -282,6 +286,20 @@ export default function CustomerUploadPortal() {
           Please refer to our Terms & Conditions for more details regarding our data policy.
         </p>
       </div>
+
+      {uploading && uploadStats.total > 0 && (
+        <div className="fixed top-4 right-4 bg-background/95 backdrop-blur-md border border-border/50 p-4 rounded-xl shadow-2xl flex items-center gap-4 z-50">
+          <div className="relative flex items-center justify-center">
+            <CloudUpload className="w-8 h-8 text-blue-500 animate-pulse" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-white">Uploading Files</h3>
+            <p className="text-xs text-muted-foreground font-medium">
+              File {uploadStats.current} of {uploadStats.total}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -8,7 +8,7 @@ import React, { useEffect, useState, use } from "react";
 import AxiosInstance from "@/utils/axios";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Folder, Image as ImageIcon, Download, FileText, Eye, Loader2, Upload } from "lucide-react";
+import { Folder, Image as ImageIcon, Download, FileText, Eye, Loader2, Upload, CloudUpload } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import Image from "next/image";
@@ -18,6 +18,7 @@ export default function PublicFolderView({ params }: { params: Promise<{ folderI
   const [files, setFiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadStats, setUploadStats] = useState({ current: 0, total: 0 });
 
   const [folderName, setFolderName] = useState<string>("");
 
@@ -64,20 +65,27 @@ export default function PublicFolderView({ params }: { params: Promise<{ folderI
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     setUploading(true);
-    const toastId = toast.loading("Uploading files...");
+    setUploadStats({ current: 0, total: e.target.files.length });
+    const toastId = toast.loading(`Uploading files (0/${e.target.files.length})...`);
     try {
-      const formData = new FormData();
-      Array.from(e.target.files).forEach(f => formData.append("files", f));
-      
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-      const res = await fetch(`${backendUrl}/api/files/shared/upload/${unwrappedParams.folderId}`, {
-        method: "POST",
-        body: formData,
-      });
       
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || "Upload failed");
+      for (let i = 0; i < e.target.files.length; i++) {
+        toast.loading(`Uploading files (${i + 1}/${e.target.files.length})...`, { id: toastId });
+        setUploadStats({ current: i + 1, total: e.target.files.length });
+        
+        const formData = new FormData();
+        formData.append("files", e.target.files[i]);
+        
+        const res = await fetch(`${backendUrl}/api/files/shared/upload/${unwrappedParams.folderId}`, {
+          method: "POST",
+          body: formData,
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.message || "Upload failed");
+        }
       }
       
       toast.success("Files uploaded successfully", { id: toastId });
@@ -181,6 +189,20 @@ export default function PublicFolderView({ params }: { params: Promise<{ folderI
           </div>
         )}
       </div>
+
+      {uploading && uploadStats.total > 0 && (
+        <div className="fixed top-4 right-4 bg-background/95 backdrop-blur-md border border-border/50 p-4 rounded-xl shadow-2xl flex items-center gap-4 z-50">
+          <div className="relative flex items-center justify-center">
+            <CloudUpload className="w-8 h-8 text-blue-500 animate-pulse" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Uploading Files</h3>
+            <p className="text-xs text-muted-foreground font-medium">
+              File {uploadStats.current} of {uploadStats.total}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

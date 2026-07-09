@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Folder, FileText, Eye, Loader2, Upload, Download, Trash2, StickyNote, X, Check, Image as ImageIcon
+  Folder, FileText, Eye, Loader2, Upload, Download, Trash2, StickyNote, X, Check, Image as ImageIcon, CloudUpload
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -28,6 +28,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
   const [noteState, setNoteState] = useState<Record<string, { open: boolean; value: string; saving: boolean }>>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [uploadStats, setUploadStats] = useState({ current: 0, total: 0 });
 
   const fetchFiles = async () => {
     try {
@@ -52,9 +53,12 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     setUploading(true);
-    const toastId = toast.loading("Uploading files...");
+    setUploadStats({ current: 0, total: e.target.files.length });
+    const toastId = toast.loading(`Uploading files (0/${e.target.files.length})...`);
     try {
       for (let i = 0; i < e.target.files.length; i++) {
+        toast.loading(`Uploading files (${i + 1}/${e.target.files.length})...`, { id: toastId });
+        setUploadStats({ current: i + 1, total: e.target.files.length });
         const file = e.target.files[i];
         
         // 1. Get presigned URL
@@ -417,6 +421,20 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
           </div>
         )}
       </div>
+      {uploading && uploadStats.total > 0 && (
+        <div className="fixed top-4 right-4 bg-background/95 backdrop-blur-md border border-border/50 p-4 rounded-xl shadow-2xl flex items-center gap-4 z-50">
+          <div className="relative flex items-center justify-center">
+            <CloudUpload className="w-8 h-8 text-blue-500 animate-pulse" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Uploading Files</h3>
+            <p className="text-xs text-muted-foreground font-medium">
+              File {uploadStats.current} of {uploadStats.total}
+            </p>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
