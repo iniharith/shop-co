@@ -56,12 +56,40 @@ const DueDateDisplay = ({ task, updateTask, className }: { task: any; updateTask
 };
 
 // ─── User colour helper ───────────────────────────────────────────────────────
-const getUserColor = (id: string) => {
-  const colors = ["bg-red-500","bg-orange-500","bg-amber-500","bg-green-500","bg-emerald-500","bg-teal-500","bg-cyan-500","bg-blue-500","bg-indigo-500","bg-violet-500","bg-purple-500","bg-fuchsia-500","bg-pink-500","bg-rose-500","bg-sky-500","bg-lime-500"];
+// Every user gets a persistent, distinct color derived purely from their own
+// _id — not a role, and not an index into a small preset palette (which used
+// to only offer 16 colors, so users collided constantly once you had more
+// than a handful of staff). Hashing the id into a hue across the full 0–359
+// range gives effectively unlimited distinct, stable colors: the same user
+// always gets the same color, and two different users almost never collide.
+const getUserHue = (id: string) => {
   let hash = 0;
   for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
-  return colors[Math.abs(hash) % colors.length];
+  return Math.abs(hash) % 360;
 };
+const getUserColor = (id: string) => `hsl(${getUserHue(id)}, 70%, 50%)`;
+
+// Small reusable "tag" — a colored dot + name — used anywhere an assignee
+// needs to be visually distinguishable at a glance (board cards, list rows,
+// dropdowns), not just when a dropdown is opened.
+const AssigneeTag = ({ user }: { user: any }) => {
+  if (!user) return <span className="text-muted-foreground">Unassigned</span>;
+  return (
+    <span className="flex items-center gap-1.5 min-w-0">
+      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getUserColor(user._id) }} />
+      <span className="truncate">{user.name || user.email}</span>
+    </span>
+  );
+};
+
+// ─── Task status columns ───────────────────────────────────────────────────────
+// Hoisted to module scope so it can be used as the initial (default-closed)
+// value for collapsedSections below, before the component's other state exists.
+const TASK_COLUMNS = [
+  'PLACED','IN_PROGRESS','PENDING_ARTWORK','ARTWORK_REVIEWED','ARTWORK_REJECTED',
+  'IN_DESIGN','PEMBETULAN','DONE_DESIGN','IN_PRODUCTION','HOLD_PRINTING',
+  'DONE_PRINTING','PACKAGING','SHIPPED','IN_TRANSIT','DELIVERED','CANCELLED','FAILED',
+];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function TasksManager() {
@@ -73,7 +101,10 @@ export default function TasksManager() {
   const [isCreateOpen, setIsCreateOpen]             = useState(false);
   const [selectedTask, setSelectedTask]             = useState<any>(null);
   const [hiddenColumns, setHiddenColumns]           = useState<string[]>([]);
-  const [collapsedSections, setCollapsedSections]   = useState<string[]>([]);
+  // Sections start closed (all statuses "collapsed") — matches the previous
+  // behaviour where you had to click a section to open it, instead of every
+  // section dropping open the moment the Tasks page loads.
+  const [collapsedSections, setCollapsedSections]   = useState<string[]>(TASK_COLUMNS);
   const [collapsedColumns, setCollapsedColumns]     = useState<string[]>([]);
   const [columnsPopoverOpen, setColumnsPopoverOpen] = useState(false);
   const [sortOption, setSortOption]                 = useState<"dateDesc"|"dateAsc"|"nameAsc"|"nameDesc">("dateDesc");
@@ -203,11 +234,7 @@ export default function TasksManager() {
   };
 
   // ── Columns / visibility ──────────────────────────────────────────────────
-  const columns = [
-    'PLACED','IN_PROGRESS','PENDING_ARTWORK','ARTWORK_REVIEWED','ARTWORK_REJECTED',
-    'IN_DESIGN','PEMBETULAN','DONE_DESIGN','IN_PRODUCTION','HOLD_PRINTING',
-    'DONE_PRINTING','PACKAGING','SHIPPED','IN_TRANSIT','DELIVERED','CANCELLED','FAILED',
-  ];
+  const columns = TASK_COLUMNS;
   const visibleColumns = columns.filter(s => !hiddenColumns.includes(s));
 
   const toggleColumnVisibility = (s: string) => setHiddenColumns(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
@@ -400,11 +427,13 @@ export default function TasksManager() {
                               <div className="grid grid-cols-1 gap-1.5" onClick={e => e.stopPropagation()}>
                                 <DueDateDisplay task={task} updateTask={updateTask} className="h-6 text-[9px] bg-muted/50 border-0 focus:ring-0" />
                                 <Select value={task.assignee || "unassigned"} onValueChange={v => updateTask({ id: task._id, data: { assignee: v === "unassigned" ? null : v } })}>
-                                  <SelectTrigger className="h-6 text-[10px] font-bold bg-muted/50 border-0 focus:ring-0"><SelectValue /></SelectTrigger>
+                                  <SelectTrigger className="h-6 text-[10px] font-bold bg-muted/50 border-0 focus:ring-0">
+                                    <AssigneeTag user={usersData?.users?.find((u: any) => u._id === task.assignee)} />
+                                  </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="unassigned">Unassigned</SelectItem>
                                     {usersData?.users?.map((u: any) => (
-                                      <SelectItem key={u._id} value={u._id}><div className="flex items-center gap-2"><div className={`w-2 h-2 rounded-full ${getUserColor(u._id)}`} />{u.name || u.email}</div></SelectItem>
+                                      <SelectItem key={u._id} value={u._id}><div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getUserColor(u._id) }} />{u.name || u.email}</div></SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
@@ -492,19 +521,21 @@ export default function TasksManager() {
                                 : <Circle className={`w-5 h-5 ${isSelected ? "text-blue-500" : ""}`} />
                               }
                             </button>
-                            <span className={`truncate ${task.isDone ? "text-muted-foreground line-through" : ""} ${isSelected ? "text-blue-700 dark:text-blue-300 font-semibold" : ""}`}>
+                            <span className={`truncate ${task.isDone ? "text-muted-foreground" : ""} ${isSelected ? "text-blue-700 dark:text-blue-300 font-semibold" : ""}`}>
                               {task.title}
                             </span>
                           </div>
 
                           <div className="col-span-2 text-sm" onClick={e => e.stopPropagation()}>
                             <Select value={task.assignee || "unassigned"} onValueChange={v => updateTask({ id: task._id, data: { assignee: v === "unassigned" ? null : v } })}>
-                              <SelectTrigger className="h-8 text-xs bg-transparent border-0 shadow-none focus:ring-0"><SelectValue /></SelectTrigger>
+                              <SelectTrigger className="h-8 text-xs bg-transparent border-0 shadow-none focus:ring-0">
+                                <AssigneeTag user={usersData?.users?.find((u: any) => u._id === task.assignee)} />
+                              </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="unassigned">Unassigned</SelectItem>
                                 {usersData?.users?.map((u: any) => (
                                   <SelectItem key={u._id} value={u._id}>
-                                    <div className="flex items-center gap-2"><div className={`w-2 h-2 rounded-full ${getUserColor(u._id)}`} />{u.name}</div>
+                                    <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getUserColor(u._id) }} />{u.name}</div>
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -583,7 +614,7 @@ export default function TasksManager() {
                     className="flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors w-full text-left"
                     onClick={() => { applyBulkUpdate({ assignee: u._id }); setBulkAssignOpen(false); }}
                   >
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${getUserColor(u._id)}`} />
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getUserColor(u._id) }} />
                     {u.name}
                   </button>
                 ))}
