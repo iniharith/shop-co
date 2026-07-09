@@ -432,9 +432,27 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               <div className="space-y-4 pt-4 border-t border-border/50">
                 {(combinedFiles && combinedFiles.length > 0) || uploadingFiles.length > 0 ? (
                     <div className="mb-6 space-y-3">
-                      <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                          <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments
+                        </label>
+                        {task.status === "IN_PRODUCTION" ? (
+                          <a href={`/admin/production?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Production Folder">
+                            <Folder className="w-3.5 h-3.5" />
+                            Production Folder
+                          </a>
+                        ) : task.status === "PACKAGING" || task.status === "SHIPPED" || task.status === "DELIVERED" ? (
+                          <a href={`/admin/packaging?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Packaging Folder">
+                            <Folder className="w-3.5 h-3.5" />
+                            Packaging Folder
+                          </a>
+                        ) : (
+                          <a href={`/admin/artworks?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Artwork Folder">
+                            <Folder className="w-3.5 h-3.5" />
+                            Artwork Folder
+                          </a>
+                        )}
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
                         {uploadingFiles.map(f => (
                           <div key={f.id} className={`relative group w-fit max-w-full mb-6 mt-1 opacity-70 ${f.status === 'uploading' ? 'animate-pulse' : ''}`}>

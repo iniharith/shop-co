@@ -100,7 +100,7 @@ export const FilePreviewModal = ({
 
           {isImage ? (
             <img 
-              src={fileUrl} 
+              src={proxyUrl} 
               alt={fileName} 
               className="max-w-full max-h-full object-contain rounded-md select-none"
             />

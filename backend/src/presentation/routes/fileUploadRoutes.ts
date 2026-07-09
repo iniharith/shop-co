@@ -560,7 +560,8 @@ router.get(
         const { GetObjectCommand } = require('@aws-sdk/client-s3');
         const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
         const urlObj = new URL(filePath);
-        const key = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+        const rawKey = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+        const key = decodeURIComponent(rawKey);
         return await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: S3_BUCKET_NAME, Key: key }), { expiresIn: 300 });
       } catch (e) {
         console.warn(`Could not sign URL for ${filePath}:`, e);
@@ -950,7 +951,8 @@ router.get(
         const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
         
         const urlObj = new URL(fileUrl);
-        const key = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+        const rawKey = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+        const key = decodeURIComponent(rawKey);
         
         const disposition = req.query.inline === 'true' ? 'inline' : 'attachment';
         const commandParams: any = {
