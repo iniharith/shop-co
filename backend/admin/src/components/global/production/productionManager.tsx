@@ -152,15 +152,14 @@ export default function ProductionManager() {
         }
       }
 
-      let folderIdStr = file.folderId || "";
-      const key = JSON.stringify({ name: groupName, orderId: orderIdStr, taskId: taskIdStr, folderId: folderIdStr, isTask });
+      const key = JSON.stringify({ name: groupName, orderId: orderIdStr, taskId: taskIdStr, isTask });
       if (!groups[key]) groups[key] = [];
       groups[key].push(file);
     });
 
     productionTasks.forEach((task: any) => {
       if (activeTab !== "ALL" && task.category !== activeTab) return; // respect active tab for empty folders
-      const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id, folderId: "", isTask: true });
+      const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id, isTask: true });
       if (!groups[key]) {
         groups[key] = [];
       }

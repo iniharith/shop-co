@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getReceiverSocketId = exports.socketIoSetup = void 0;
+exports.getOnlineUsersCount = exports.getReceiverSocketId = exports.socketIoSetup = void 0;
 const user_repository_1 = require("../db/repositories/user.repository");
 const userSocketMap = new Map();
 const socketIoSetup = (io) => __awaiter(void 0, void 0, void 0, function* () {
@@ -51,3 +51,7 @@ const getReceiverSocketId = (userId) => {
     return getd;
 };
 exports.getReceiverSocketId = getReceiverSocketId;
+const getOnlineUsersCount = () => {
+    return userSocketMap.size;
+};
+exports.getOnlineUsersCount = getOnlineUsersCount;

@@ -115,7 +115,7 @@ router.post('/upload', auth_middileware_1.default, upload.array('files', 100), (
 // Get a presigned URL to upload file directly to S3
 router.post('/presigned-url', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    const { filename, contentType } = req.body;
+    const { filename, contentType, folderPath } = req.body;
     if (!filename || !contentType) {
         res.status(400).json({ success: false, message: 'filename and contentType are required' });
         return;
@@ -123,8 +123,9 @@ router.post('/presigned-url', auth_middileware_1.default, (0, express_async_hand
     const { PutObjectCommand } = require('@aws-sdk/client-s3');
     const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
     const userId = req.userId || ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || 'unknown';
+    const folder = folderPath ? folderPath : userId;
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const key = `kampungcetak/uploads/${userId}/${uniqueSuffix}-${filename.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const key = `kampungcetak/uploads/${folder}/${uniqueSuffix}-${filename.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
     const command = new PutObjectCommand({
         Bucket: s3_1.S3_BUCKET_NAME,
         Key: key,
@@ -138,11 +139,15 @@ router.post('/presigned-url', auth_middileware_1.default, (0, express_async_hand
 // Client calls this after direct S3 upload succeeds
 router.post('/save-metadata', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
-    const { orderId, taskId, notes, userId: bodyUserId, category, tag, folderId, files } = req.body;
+    const { orderId, taskId, notes, userId: bodyUserId, category, tag, folderId, shareSlug, files } = req.body;
     const authReq = req;
     // If admin provides a userId in the body, upload on their behalf
     const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(authReq.role);
-    const userId = (isAdmin && bodyUserId) ? bodyUserId : authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
+    let userId = (isAdmin && bodyUserId) ? bodyUserId : undefined;
+    // If no userId is provided, but taskId or orderId is, do not fallback to admin's ID
+    if (!userId && !taskId && !orderId) {
+        userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
+    }
     if (!userId && !taskId) {
         res.status(401).json({ success: false, message: 'Log masuk atau Task diperlukan' });
         return;
@@ -165,6 +170,7 @@ router.post('/save-metadata', auth_middileware_1.default, (0, express_async_hand
         notes: notes || undefined,
         adminReviewed: false,
         folderId: folderId || undefined,
+        shareSlug: shareSlug || undefined,
     })));
     // Optionally notify customer via WhatsApp
     const customerPhone = (_b = authReq.user) === null || _b === void 0 ? void 0 : _b.phone;
@@ -465,7 +471,8 @@ router.get('/s/:slug/download-all', (0, express_async_handler_1.default)((req, r
             const { GetObjectCommand } = require('@aws-sdk/client-s3');
             const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
             const urlObj = new URL(filePath);
-            const key = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+            const rawKey = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+            const key = decodeURIComponent(rawKey);
             return yield getSignedUrl(s3Client, new GetObjectCommand({ Bucket: S3_BUCKET_NAME, Key: key }), { expiresIn: 300 });
         }
         catch (e) {
@@ -770,7 +777,8 @@ router.get('/proxy-download', (0, express_async_handler_1.default)((req, res) =>
             const { GetObjectCommand } = require('@aws-sdk/client-s3');
             const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
             const urlObj = new URL(fileUrl);
-            const key = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+            const rawKey = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+            const key = decodeURIComponent(rawKey);
             const disposition = req.query.inline === 'true' ? 'inline' : 'attachment';
             const commandParams = {
                 Bucket: S3_BUCKET_NAME,

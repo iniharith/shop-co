@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -17,16 +50,27 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 const express_1 = require("express");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
-const auth_middileware_1 = __importDefault(require("../middlewares/auth.middileware"));
+const auth_middileware_1 = __importStar(require("../middlewares/auth.middileware"));
 const os_1 = __importDefault(require("os"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const client_s3_1 = require("@aws-sdk/client-s3");
+const axios_1 = __importDefault(require("axios"));
 const s3_1 = require("../../infrastructure/config/s3");
 const promises_1 = __importDefault(require("fs/promises"));
 const Task_1 = require("../../domain/entities/Task");
 const FileUpload_1 = require("../../domain/entities/FileUpload");
 const bandwidthTracker_1 = require("../../shared/utils/bandwidthTracker");
+const socketHandler_1 = require("../../infrastructure/socket/socketHandler");
 const router = (0, express_1.Router)();
+router.get('/online-users', (req, res) => {
+    try {
+        const count = (0, socketHandler_1.getOnlineUsersCount)();
+        res.status(200).json({ count });
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Failed to fetch online users count' });
+    }
+});
 // Middleware to restrict to sysadmin, admin, boss role
 const requireSysadmin = (req, res, next) => {
     if (req.user && ['sysadmin', 'admin', 'boss'].includes(req.user.role)) {
@@ -40,7 +84,7 @@ router.use(auth_middileware_1.default);
 router.use(requireSysadmin);
 // ─── GET /api/sysadmin/health ─────────────────────────
 router.get('/health', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     // OS metrics
     const totalMem = os_1.default.totalmem();
     const freeMem = os_1.default.freemem();
@@ -86,6 +130,61 @@ router.get('/health', (0, express_async_handler_1.default)((req, res) => __await
             } },
         { $sort: { _id: 1 } }
     ]);
+    // External Integrations
+    let vercelStatus = { readyState: 'UNKNOWN', url: '', createdAt: null };
+    try {
+        if (process.env.VERCEL_ACCESS_TOKEN && process.env.VERCEL_PROJECT_ID) {
+            const vRes = yield axios_1.default.get(`https://api.vercel.com/v6/deployments?projectId=${process.env.VERCEL_PROJECT_ID}&limit=1`, {
+                headers: { Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}` }
+            });
+            const latest = (_b = vRes.data.deployments) === null || _b === void 0 ? void 0 : _b[0];
+            if (latest) {
+                vercelStatus = { readyState: latest.readyState, url: latest.url, createdAt: latest.createdAt };
+            }
+        }
+    }
+    catch (e) {
+        console.error('Vercel API error', e.message);
+    }
+    let railwayStatus = { status: 'UNKNOWN', environment: process.env.RAILWAY_ENVIRONMENT_NAME || 'Production' };
+    try {
+        if (process.env.RAILWAY_API_TOKEN) {
+            const query = `query { me { name } }`;
+            const rRes = yield axios_1.default.post('https://backboard.railway.app/graphql/v2', { query }, {
+                headers: { Authorization: `Bearer ${process.env.RAILWAY_API_TOKEN}` }
+            });
+            if (rRes.data && !rRes.data.errors)
+                railwayStatus.status = 'ACTIVE';
+            else
+                railwayStatus.status = 'ERROR';
+        }
+    }
+    catch (e) {
+        console.error('Railway API error', e.message);
+    }
+    let awsStatus = 'UNKNOWN';
+    try {
+        yield s3_1.s3Client.send(new client_s3_1.HeadBucketCommand({ Bucket: s3_1.S3_BUCKET_NAME }));
+        awsStatus = 'ONLINE';
+    }
+    catch (e) {
+        awsStatus = 'OFFLINE';
+        console.error('AWS S3 Health error', e.message);
+    }
+    let mongoDetailed = null;
+    if (mongoose_1.default.connection.readyState === 1 && mongoose_1.default.connection.db) {
+        try {
+            const serverStatus = yield mongoose_1.default.connection.db.admin().serverStatus();
+            mongoDetailed = {
+                connections: serverStatus.connections,
+                opcounters: serverStatus.opcounters,
+                network: serverStatus.network
+            };
+        }
+        catch (e) {
+            console.error('Mongo admin error', e.message);
+        }
+    }
     res.json({
         success: true,
         data: {
@@ -100,11 +199,17 @@ router.get('/health', (0, express_async_handler_1.default)((req, res) => __await
             },
             database: {
                 status: dbStatus,
+                detailed: mongoDetailed
             },
             application: {
                 taskTotal,
                 artworkTotal,
                 storageUsed,
+            },
+            external: {
+                vercel: vercelStatus,
+                railway: railwayStatus,
+                aws: awsStatus
             },
             charts: {
                 bandwidth: bandwidthTracker_1.bandwidthHistory,
@@ -112,6 +217,108 @@ router.get('/health', (0, express_async_handler_1.default)((req, res) => __await
             },
             timestamp: new Date()
         }
+    });
+})));
+// ─── GET /api/sysadmin/deployments ─────────────────────────
+router.get('/deployments', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c;
+    let vercelDeployments = [];
+    let railwayDeployments = [];
+    // Fetch Vercel Deployments
+    if (process.env.VERCEL_ACCESS_TOKEN && process.env.VERCEL_PROJECT_ID) {
+        try {
+            const vRes = yield axios_1.default.get(`https://api.vercel.com/v6/deployments?projectId=${process.env.VERCEL_PROJECT_ID}&limit=10`, {
+                headers: { Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}` }
+            });
+            vercelDeployments = (vRes.data.deployments || []).map((d) => {
+                var _a, _b, _c;
+                return ({
+                    id: d.id,
+                    service: 'Vercel (Frontend)',
+                    status: d.readyState,
+                    commitMessage: ((_b = (_a = d.meta) === null || _a === void 0 ? void 0 : _a.githubCommitMessage) === null || _b === void 0 ? void 0 : _b.split('\n')[0]) || 'Manual Deployment',
+                    branch: ((_c = d.meta) === null || _c === void 0 ? void 0 : _c.githubCommitRef) || 'main',
+                    environment: 'Production',
+                    createdAt: d.createdAt,
+                    url: `https://${d.url}`
+                });
+            });
+        }
+        catch (e) {
+            console.error('Vercel deployments error', e.message);
+        }
+    }
+    // Fetch Railway Deployments
+    if (process.env.RAILWAY_API_TOKEN) {
+        try {
+            const query = `
+          query {
+            projects {
+              edges {
+                node {
+                  id
+                  name
+                  environments {
+                    edges {
+                      node {
+                        name
+                        deployments(first: 10) {
+                          edges {
+                            node {
+                              id
+                              status
+                              createdAt
+                              meta
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `;
+            const rRes = yield axios_1.default.post('https://backboard.railway.app/graphql/v2', { query }, {
+                headers: { Authorization: `Bearer ${process.env.RAILWAY_API_TOKEN}` }
+            });
+            // Parse GraphQL response
+            const projects = ((_c = (_b = (_a = rRes.data) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.projects) === null || _c === void 0 ? void 0 : _c.edges) || [];
+            projects.forEach((p) => {
+                var _a, _b;
+                const envs = ((_b = (_a = p.node) === null || _a === void 0 ? void 0 : _a.environments) === null || _b === void 0 ? void 0 : _b.edges) || [];
+                envs.forEach((env) => {
+                    var _a, _b;
+                    const deps = ((_b = (_a = env.node) === null || _a === void 0 ? void 0 : _a.deployments) === null || _b === void 0 ? void 0 : _b.edges) || [];
+                    deps.forEach((d) => {
+                        railwayDeployments.push({
+                            id: d.node.id,
+                            service: 'Railway (Backend)',
+                            status: d.node.status,
+                            commitMessage: 'Backend Deployment',
+                            branch: 'main',
+                            environment: env.node.name,
+                            createdAt: new Date(d.node.createdAt).getTime(),
+                            url: null
+                        });
+                    });
+                });
+            });
+            // Sort by newest
+            railwayDeployments.sort((a, b) => b.createdAt - a.createdAt);
+            railwayDeployments = railwayDeployments.slice(0, 10);
+        }
+        catch (e) {
+            console.error('Railway deployments error', e.message);
+        }
+    }
+    const allDeployments = [...vercelDeployments, ...railwayDeployments]
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .slice(0, 20);
+    res.json({
+        success: true,
+        data: allDeployments
     });
 })));
 // ─── GET /api/sysadmin/aws-media ─────────────────────────
@@ -283,5 +490,20 @@ router.get('/reports', (0, express_async_handler_1.default)((req, res) => __awai
             detailedTasks
         }
     });
+})));
+// Get server logs
+router.get('/logs', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const fs = require('fs');
+    const path = require('path');
+    const logPath = path.join(process.cwd(), 'error.log');
+    let logs = "No logs available yet.";
+    if (fs.existsSync(logPath)) {
+        // Read last 500 lines or so (simplistic approach: read all if small, or use a proper log reader)
+        const content = fs.readFileSync(logPath, 'utf8');
+        // Splitting and getting last 1000 lines
+        const lines = content.split('\n');
+        logs = lines.slice(Math.max(lines.length - 1000, 0)).join('\n');
+    }
+    res.json({ success: true, data: logs });
 })));
 exports.default = router;

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.refreshTokenMidllWare = exports.authMiddilware = void 0;
+exports.authorizeRoles = exports.refreshTokenMidllWare = exports.authMiddilware = void 0;
 const jwt_1 = __importDefault(require("../../shared/utils/jwt"));
 const user_model_1 = __importDefault(require("../../infrastructure/db/models/user.model"));
 const api_constant_1 = require("../../shared/constants/api.constant");
@@ -80,4 +80,14 @@ const refreshTokenMidllWare = (req, res, next) => __awaiter(void 0, void 0, void
     }
 });
 exports.refreshTokenMidllWare = refreshTokenMidllWare;
+const authorizeRoles = (...roles) => {
+    return (req, res, next) => {
+        if (!req.role || !roles.includes(req.role)) {
+            res.status(api_constant_1.statusCodes.UNAUTHORIZED).json({ message: "Access denied: insufficient role" });
+            return;
+        }
+        next();
+    };
+};
+exports.authorizeRoles = authorizeRoles;
 exports.default = exports.authMiddilware;
