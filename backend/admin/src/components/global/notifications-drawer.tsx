@@ -1,215 +1,256 @@
 /**
  * Coded by Harith
  * Kampungcetak ®
+ *
+ * Redesigned to match the reference notification panel UX: a floating
+ * popover anchored to the bell (not a full-height side drawer), pill-style
+ * segmented tabs, and avatar-style rows with a colored category tag and an
+ * unread presence dot. The bell trigger now lives inside this component
+ * (see header.tsx) so the whole "bell + panel" unit is self-contained.
  */
 "use client";
-import type React from "react";
-import { format } from "date-fns";
-import { useRouter } from "next/navigation";
-import { Drawer } from "vaul";
-import { IoCloseCircle } from "react-icons/io5";
-import { Button } from "@heroui/button";
-import { cn } from "@/lib/utils";
-import { Bell, Package, Tag, CircleCheck, Truck, BellOff } from "lucide-react";
-
-import { useMarkAllNotificationsAsRead } from "@/hooks/useNotification";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
+import { formatDistanceToNowStrict } from "date-fns";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import {
+  Bell,
+  Package,
+  Tag,
+  CircleCheck,
+  Truck,
+  BellOff,
+  ChevronRight,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useMarkAllNotificationsAsRead } from "@/hooks/useNotification";
 
-const getNotificationIcon = (type: string) => {
-  switch (type) {
-    case "ORDER":
-      return <Package className="h-4 w-4" />;
-    case "DELIVERY":
-      return <Truck className="h-4 w-4" />;
-    case "PROMOTION":
-      return <Tag className="h-4 w-4" />;
-    case "SYSTEM":
-      return <Bell className="h-4 w-4" />;
-    case "VERIFICATION":
-      return <CircleCheck className="h-4 w-4" />;
-    default:
-      return <Package className="h-4 w-4" />;
+// ─── Per-type presentation ──────────────────────────────────────────────────
+// Every notification type gets its own icon + tinted color, mirroring how
+// the reference design gives each project its own colored tag. Adjust here
+// if a new notification `type` is ever added to the backend model.
+const TYPE_META: Record<
+  string,
+  { icon: typeof Package; label: string; classes: string }
+> = {
+  ORDER: {
+    icon: Package,
+    label: "Order",
+    classes: "bg-blue-500/15 text-blue-500",
+  },
+  DELIVERY: {
+    icon: Truck,
+    label: "Delivery",
+    classes: "bg-emerald-500/15 text-emerald-500",
+  },
+  PROMOTION: {
+    icon: Tag,
+    label: "Promotion",
+    classes: "bg-violet-500/15 text-violet-500",
+  },
+  VERIFICATION: {
+    icon: CircleCheck,
+    label: "Verification",
+    classes: "bg-teal-500/15 text-teal-500",
+  },
+  SYSTEM: {
+    icon: Bell,
+    label: "System",
+    classes: "bg-amber-500/15 text-amber-500",
+  },
+};
+const getTypeMeta = (type: string) => TYPE_META[type] ?? TYPE_META.SYSTEM;
+
+// ─── Tabs ────────────────────────────────────────────────────────────────
+const TABS = [
+  { key: "new", label: "New" },
+  { key: "orders", label: "Orders" },
+  { key: "tasks", label: "Tasks" },
+  { key: "archive", label: "Archive" },
+] as const;
+type TabKey = (typeof TABS)[number]["key"];
+
+const matchesTab = (notification: any, tab: TabKey) => {
+  switch (tab) {
+    case "new":
+      return !notification.read;
+    case "orders":
+      return notification.type === "ORDER" || notification.type === "DELIVERY";
+    case "tasks":
+      return !!notification.taskId;
+    case "archive":
+      return !!notification.read;
   }
 };
 
-interface NotificationsDrawerProps {
-  isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
+interface NotificationsPanelProps {
   notifications: any[];
 }
 
-const NotificationsDrawer = ({
-  isOpen,
-  setIsOpen,
-  notifications,
-}: NotificationsDrawerProps) => {
-  const closeDrawer = () => setIsOpen(false);
-  const { mutate, isPending } = useMarkAllNotificationsAsRead();
+const NotificationsPanel = ({ notifications }: NotificationsPanelProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabKey>("new");
+  const { mutate: markAllRead, isPending: isMarkingRead } =
+    useMarkAllNotificationsAsRead();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("new");
 
-  // Filter notifications based on active tab
-  const filteredNotifications = notifications.filter((notification) => {
-    if (activeTab === "new") return !notification.read;
-    if (activeTab === "read") return notification.read;
-    return true; // "all" tab
-  });
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  const filtered = notifications.filter((n) => matchesTab(n, activeTab));
 
-  // Count unread notifications
-  const unreadCount = notifications.filter(
-    (notification) => !notification.read
-  ).length;
+  const handleSelect = (notification: any) => {
+    if (!notification.link) return;
+    setIsOpen(false);
+    setTimeout(() => router.push(notification.link), 100);
+  };
 
   return (
-    <Drawer.Root
-      shouldScaleBackground
-      open={isOpen}
-      onOpenChange={setIsOpen}
-      direction="right"
-    >
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed z-50 inset-0 bg-black/10 backdrop-blur-sm" />
-        <Drawer.Content
-          className="right-1 top-2 bottom-2 fixed z-50 outline-none w-[350px] flex"
-          style={
-            { "--initial-transform": "calc(100% + 8px)" } as React.CSSProperties
-          }
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="relative mx-2 rounded-full p-1.5 text-gray-600 transition-colors hover:bg-muted dark:text-gray-300"
+          aria-label="Notifications"
         >
-          <div className="bg-background/80 backdrop-blur-xl border-l border-border/50 text-foreground h-full w-full grow px-4 py-3 flex flex-col rounded-[16px] shadow-lg">
-            <Drawer.Title className="font-medium px-0 border-b border-dashed border-border/50 justify-between flex items-center mb-4 pb-2">
-              <div className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold">Notifications</h2>
-              </div>
-              <Button
-                onPress={() => closeDrawer()}
-                size="sm"
-                isIconOnly
-                variant="ghost"
-                className="text-xl active:scale-100 border-0 px-0 text-primary bg-transparent"
-              >
-                <IoCloseCircle />
-              </Button>
-            </Drawer.Title>
+          <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <Badge className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 p-0 text-[10px] text-white">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </Badge>
+          )}
+        </button>
+      </PopoverTrigger>
 
-            <Tabs
-              defaultValue="all"
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="w-full h-full relative overflow-y-auto "
+      <PopoverContent
+        align="end"
+        sideOffset={12}
+        className="w-[380px] rounded-2xl border border-border/50 bg-popover/95 p-0 shadow-xl backdrop-blur-xl"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-3">
+          <h2 className="text-base font-semibold text-foreground">
+            Notifications
+          </h2>
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              disabled={isMarkingRead}
+              onClick={() => markAllRead({})}
+              className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
             >
-              <TabsList className="grid grid-cols-3 mb-4">
-                <TabsTrigger value="new" className="relative">
-                  New
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                      {unreadCount}
-                    </span>
-                  )}
-                </TabsTrigger>
+              Mark all as read
+            </button>
+          )}
+        </div>
 
-                <TabsTrigger value="read">Read</TabsTrigger>
-                <TabsTrigger value="all">All</TabsTrigger>
-              </TabsList>
+        {/* Pill tabs */}
+        <div className="px-4 pb-3">
+          <div className="flex items-center gap-1 rounded-full bg-muted p-1">
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={cn(
+                  "flex-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
+                  activeTab === tab.key
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {tab.label}
+                {tab.key === "new" && unreadCount > 0 && (
+                  <span className="ml-1">({unreadCount})</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
 
-              <div className="flex-1 h-full relative overflow-y-auto">
-                <div className="flex flex-col gap-3">
-                  {filteredNotifications.length > 0 ? (
-                    filteredNotifications.map((notification) => (
+        {/* List */}
+        <div className="max-h-[420px] overflow-y-auto px-2 pb-2">
+          {filtered.length > 0 ? (
+            <div className="flex flex-col gap-1">
+              {filtered.map((notification) => {
+                const meta = getTypeMeta(notification.type);
+                const Icon = meta.icon;
+                return (
+                  <button
+                    key={notification._id}
+                    type="button"
+                    onClick={() => handleSelect(notification)}
+                    className={cn(
+                      "flex w-full items-start gap-3 rounded-xl p-2.5 text-left transition-colors",
+                      notification.link
+                        ? "cursor-pointer hover:bg-muted"
+                        : "cursor-default",
+                      !notification.read && "bg-primary/5"
+                    )}
+                  >
+                    <div className="relative shrink-0">
                       <div
-                        key={notification._id}
-                        onClick={() => {
-                          if (notification.link) {
-                            setIsOpen(false);
-                            setTimeout(() => {
-                              router.push(notification.link);
-                            }, 100);
-                          }
-                        }}
                         className={cn(
-                          "p-3 rounded-lg border transition-all duration-200 hover:bg-muted",
-                          notification.link ? "cursor-pointer" : "",
-                          notification.read
-                            ? "border-border/50"
-                            : "border-primary/30 bg-primary/5"
+                          "flex h-9 w-9 items-center justify-center rounded-full",
+                          meta.classes
                         )}
                       >
-                        <div className="flex gap-3">
-                          <div
-                            className={cn(
-                              "h-8 w-8 rounded-full flex items-center justify-center",
-                              notification.read
-                                ? "bg-muted text-muted-foreground"
-                                : "bg-primary/10 text-primary"
-                            )}
-                          >
-                            {getNotificationIcon(notification.type)}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start">
-                              <h3
-                                className={cn(
-                                  "text-sm font-medium",
-                                  !notification.read && "text-primary"
-                                )}
-                              >
-                                {notification.title}
-                              </h3>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(
-                                  notification.createdAt as string
-                                ).toLocaleString()}
-                              </span>
-                            </div>
-                            <p className="text-sm text-foreground/80 mt-1">
-                              {notification.message}
-                            </p>
-                          </div>
-                        </div>
+                        <Icon className="h-4 w-4" />
                       </div>
-                    ))
-                  ) : (
-                    <div className="flex justify-center items-center h-full">
-                      <div className="flex flex-col h-full w-full items-center justify-center gap-2">
-                        <BellOff className="w-16 h-16 text-muted-foreground/30" />
-                        <p className="text-sm text-muted-foreground">
-                          {activeTab === "new"
-                            ? "No new notifications"
-                            : activeTab === "read"
-                            ? "No read notifications"
-                            : "No notifications"}
-                        </p>
+                      {!notification.read && (
+                        <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-popover" />
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-foreground">
+                        {notification.title}
+                      </p>
+                      <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                        {notification.message}
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        <span>
+                          {formatDistanceToNowStrict(
+                            new Date(notification.createdAt as string),
+                            { addSuffix: true }
+                          )}
+                        </span>
+                        <span>•</span>
+                        <span className={cn("font-medium", meta.classes.split(" ")[1])}>
+                          {meta.label}
+                        </span>
                       </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            </Tabs>
 
-            {filteredNotifications.length > 0 && (
-              <div className="mt-4 pt-2 border-t border-white/10">
-                <Button
-                  className="w-full justify-center rounded-md bg-primary text-white hover:bg-primary/90"
-                  size="sm"
-                  isLoading={isPending}
-                  onPress={() => {
-                    mutate({});
-                    // After marking all as read, if we're on the "new" tab, we might want to switch tabs
-                    if (activeTab === "new") {
-                      setActiveTab("all");
-                    }
-                  }}
-                >
-                  Mark all as read
-                </Button>
-              </div>
-            )}
-          </div>
-        </Drawer.Content>
-      </Drawer.Portal>
-    </Drawer.Root>
+                    {notification.link && (
+                      <ChevronRight className="mt-2 h-4 w-4 shrink-0 text-muted-foreground/50" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-2 py-14">
+              <BellOff className="h-10 w-10 text-muted-foreground/30" />
+              <p className="text-sm text-muted-foreground">
+                {activeTab === "new"
+                  ? "No new notifications"
+                  : activeTab === "orders"
+                  ? "No order notifications"
+                  : activeTab === "tasks"
+                  ? "No task notifications"
+                  : "Nothing archived yet"}
+              </p>
+            </div>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };
 
-export default NotificationsDrawer;
+export default NotificationsPanel;
