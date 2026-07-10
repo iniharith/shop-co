@@ -128,7 +128,7 @@ const NotificationsPanel = ({ notifications }: NotificationsPanelProps) => {
       <PopoverContent
         align="end"
         sideOffset={12}
-        className="w-[380px] rounded-2xl border border-border/50 bg-popover/95 p-0 shadow-xl backdrop-blur-xl"
+        className="w-[380px] rounded-2xl border border-white/10 bg-background/80 p-0 shadow-2xl backdrop-blur-xl"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 pt-4 pb-3">
