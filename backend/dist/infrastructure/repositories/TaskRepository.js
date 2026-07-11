@@ -26,6 +26,8 @@ class TaskRepository {
             const query = {};
             if (filters === null || filters === void 0 ? void 0 : filters.status)
                 query.status = filters.status;
+            if ((filters === null || filters === void 0 ? void 0 : filters.statuses) && filters.statuses.length > 0)
+                query.status = { $in: filters.statuses };
             if (filters === null || filters === void 0 ? void 0 : filters.assignee)
                 query.assignee = filters.assignee;
             if (filters === null || filters === void 0 ? void 0 : filters.orderId)
@@ -38,11 +40,11 @@ class TaskRepository {
             else {
                 query.isDeleted = { $ne: true };
             }
-            // Speed optimization: Only load tasks from the last 30 days by default to prevent massive payloads.
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            query.createdAt = { $gte: thirtyDaysAgo };
-            return Task_1.Task.find(query).sort({ createdAt: -1 }).lean();
+            const days = (filters === null || filters === void 0 ? void 0 : filters.days) || 30;
+            const daysAgo = new Date();
+            daysAgo.setDate(daysAgo.getDate() - days);
+            query.createdAt = { $gte: daysAgo };
+            return Task_1.Task.find(query).select('-comments -activities').sort({ createdAt: -1 }).lean();
         });
     }
     findById(id) {

@@ -16,7 +16,7 @@ class BaseRepository {
     }
     findAll() {
         return __awaiter(this, void 0, void 0, function* () {
-            return this.model.find();
+            return this.model.find().lean();
         });
     }
     findById(id) {

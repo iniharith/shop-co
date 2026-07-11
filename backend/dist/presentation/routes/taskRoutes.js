@@ -84,8 +84,10 @@ router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)
     const role = authReq.role;
     const filters = {
         status: req.query.status,
+        statuses: req.query.statuses ? req.query.statuses.split(',') : undefined,
         assignee: req.query.assignee,
         orderId: req.query.orderId,
+        days: req.query.days ? parseInt(req.query.days) : 30,
     };
     if (req.query.deleted === 'true') {
         filters.isDeleted = true;
@@ -95,7 +97,16 @@ router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)
         filters.customerUsername = ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.name) || ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.email); // or however user is identified
     }
     const tasks = yield TaskRepository_1.taskRepository.findAll(filters);
-    res.json({ success: true, tasks });
+    res.status(200).json({ success: true, tasks });
+})));
+// GET /api/tasks/:id
+router.get('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const task = yield TaskRepository_1.taskRepository.findById(req.params.id);
+    if (!task) {
+        res.status(404).json({ success: false, message: 'Task not found' });
+        return;
+    }
+    res.json({ success: true, task });
 })));
 // POST /api/tasks
 router.post('/', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {

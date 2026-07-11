@@ -9,19 +9,18 @@ import { BaseRepository } from "./base.repository";
 export class NotificationRepository extends BaseRepository<NotificationDocument> {
     constructor() {
         super(NotificationModel);
-    }
 
-    async createNotification(notification: INotification) {
+    async createNotification(notification: any) {
         return await this.model.create(notification);
     }
 
     async getNotificationsByUserId(userId: string) {
-        return await this.model.find({ userId }).sort({ createdAt: -1 });
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        return await this.model.find({ userId, createdAt: { $gte: thirtyDaysAgo } }).sort({ createdAt: -1 }).limit(100).lean();
     }
 
     async markAllNotificationsAsRead(userId: string) {
         return await this.model.updateMany({ userId }, { $set: { read: true } });
     }
-
-
 }

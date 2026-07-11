@@ -21,4 +21,6 @@ const VirtualFolderSchema = new Schema<IVirtualFolder>(
   { timestamps: true }
 );
 
-export const VirtualFolder = mongoose.model<IVirtualFolder>('VirtualFolder', VirtualFolderSchema);
+VirtualFolderSchema.index({ createdAt: -1 });
+
+export const VirtualFolder = mongoose.models.VirtualFolder || mongoose.model<IVirtualFolder>('VirtualFolder', VirtualFolderSchema);
