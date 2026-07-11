@@ -27,7 +27,7 @@ import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, Command
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useOrders } from "@/hooks/useOrder";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
-import { Check, ChevronsUpDown, Download as DownloadIcon } from "lucide-react";
+import { Check, ChevronsUpDown, Download as DownloadIcon, Copy } from "lucide-react";
 import { cn, forceDownload } from "@/lib/utils";
 import { useAllFiles } from "@/hooks/useAdminDashboard";
 import { useRouter } from "next/navigation";
@@ -929,9 +929,22 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               </div>
 
               <div className="space-y-1.5 pt-4 border-t border-border/50">
-                <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-                  <Link className="w-3.5 h-3.5" /> Link Order ID
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                    <Link className="w-3.5 h-3.5" /> Link Order ID
+                  </label>
+                  {orderId && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-5 w-5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-sm" 
+                      onClick={() => { navigator.clipboard.writeText(orderId); toast.success("Order ID copied"); }} 
+                      title="Copy Order ID"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
                 <Popover open={openOrderBox} onOpenChange={setOpenOrderBox}>
                   <PopoverTrigger asChild>
                     <Button
@@ -1002,9 +1015,22 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-                  <Link className="w-3.5 h-3.5" /> Link Username
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                    <Link className="w-3.5 h-3.5" /> Link Username
+                  </label>
+                  {customerUsername && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-5 w-5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-sm" 
+                      onClick={() => { navigator.clipboard.writeText(customerUsername); toast.success("Username copied"); }} 
+                      title="Copy Username"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
                 <Popover open={openUserBox} onOpenChange={setOpenUserBox}>
                   <PopoverTrigger asChild>
                     <Button
