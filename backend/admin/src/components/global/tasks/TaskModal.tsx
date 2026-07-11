@@ -842,6 +842,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   <Send className="w-4 h-4" />
                 </Button>
               </div>
+              </div>
             </div>
           </div>
           
