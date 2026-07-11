@@ -218,7 +218,6 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { data: fullTaskResponse, isPending: isLoadingFullTask } = useTask(isOpen ? task?._id : undefined);
   const fullTask = fullTaskResponse?.task || task;
   
-  const { data: session } = useSession();
   const { mutate: updateTask } = useUpdateTask();
   const { mutate: addComment, isPending: isCommenting } = useAddTaskComment();
   const { mutate: deleteCommentApi, isPending: isDeletingComment } = useDeleteTaskComment();
