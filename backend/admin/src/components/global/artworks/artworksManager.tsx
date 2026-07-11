@@ -45,7 +45,9 @@ export default function ArtworksManager() {
   const { addUpload, updateProgress, updateStatus } = useUploadStore();
   const { data: session } = useSession();
   const { data: response, isPending, refetch, isFetching: isFetchingFiles } = useAllFiles();
-  const { data: ordersResponse, isFetching: isFetchingOrders } = useOrders();
+  const ordersQuery = useOrders();
+  const ordersResponse = ordersQuery.data;
+  const isFetchingOrders = ordersQuery.isFetching;
   const { data: usersResponse, isPending: usersPending } = useUsers();
   const { data: tasksResponse, isPending: tasksPending } = useTasks();
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
@@ -201,7 +203,7 @@ export default function ArtworksManager() {
         userId: files.length > 0 ? files[0].userId : "",
         files
       };
-    });
+    }).sort((a, b) => String(a.folderName || "").localeCompare(String(b.folderName || "")));
   }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab]);
 
   React.useEffect(() => {

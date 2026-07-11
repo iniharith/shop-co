@@ -48,7 +48,8 @@ export default function PackagingManager() {
   const token = (session as any)?.accessToken;
   const searchParams = useSearchParams();
   const { data: response, isPending, refetch, isFetching } = useAllFiles();
-  const { data: ordersResponse } = useOrders();
+  const ordersQuery = useOrders();
+  const ordersResponse = ordersQuery.data;
   const { data: tasksResponse } = useTasks();
   const { mutate: updateTask } = useUpdateTask();
   const { data: usersResponse } = useUsers();
@@ -189,7 +190,7 @@ export default function PackagingManager() {
         orderStatus: orderStatus,
         files: files.sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
       };
-    }).sort((a, b) => a.folderName.localeCompare(b.folderName));
+    }).sort((a, b) => String(a.folderName || "").localeCompare(String(b.folderName || "")));
   }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab, activeSubTab]);
 
   React.useEffect(() => {
@@ -634,7 +635,7 @@ export default function PackagingManager() {
               const activeOrder = (!activeGroup.isTask && activeGroup.orderId) ? orders.find((o: any) => o._id === activeGroup.orderId || o.orderId === activeGroup.orderId) : null;
               const activeUser = activeTask?.assignee ? users.find((u: any) => u._id === activeTask.assignee) : null;
               
-              const descriptionText = activeTask?.description ? activeTask.description : (activeOrder?.items ? activeOrder.items.map((item: any) => `${item.name} (${item.quantity}x)`).join('\n') : "No description provided.");
+              const descriptionText = activeTask?.description ? activeTask.description : (activeOrder?.items && Array.isArray(activeOrder.items) ? activeOrder.items.map((item: any) => `${item.name} (${item.quantity}x)`).join('\n') : "No description provided.");
               const assigneeName = activeUser ? (activeUser.name || activeUser.email) : "Unassigned";
               const categoryName = activeTask?.category ? activeTask.category.replace(/_/g, ' ') : "N/A";
               const dueDate = activeTask?.dueDate ? format(new Date(activeTask.dueDate), 'dd MMM yyyy') : "N/A";
