@@ -603,7 +603,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                               {comment.text}
                             </p>
                             {(() => {
-                              const match = comment.text.match(/Note updated for artwork \((.+)\):/);
+                              const match = comment.text?.match(/Note updated for artwork \((.+)\):/);
                               if (match && match[1]) {
                                 const filename = match[1];
                                 const fileObj = task.files?.find((f: any) => f.name === filename || f.originalName === filename || f.url?.includes(filename));

@@ -18,7 +18,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { format, isToday, isTomorrow } from "date-fns";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
@@ -489,23 +488,6 @@ export default function TasksManager() {
                             {isSelected && (
                               <span className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-5 bg-blue-500 rounded-full" />
                             )}
-                            <div 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedIds(prev => {
-                                  const next = new Set(prev);
-                                  next.has(task._id) ? next.delete(task._id) : next.add(task._id);
-                                  return next;
-                                });
-                                lastClickedIdRef.current = task._id;
-                              }} 
-                              className="cursor-pointer shrink-0 w-4 h-4 flex items-center justify-center"
-                            >
-                              <Checkbox 
-                                checked={isSelected}
-                                className="w-full h-full pointer-events-none"
-                              />
-                            </div>
                             <button
                               type="button"
                               onClick={e => toggleTaskDone(task, e)}
