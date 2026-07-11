@@ -12,6 +12,8 @@ const nextConfig = {
         ignoreBuildErrors: true,
     },
     images: {
+        // Images are already optimized via AWS S3 — skip Vercel's transformation pipeline
+        unoptimized: true,
         remotePatterns: [
             {
                 protocol: "https",

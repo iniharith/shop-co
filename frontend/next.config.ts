@@ -6,6 +6,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    // Images are already optimized via AWS S3 — skip Vercel's transformation pipeline
+    unoptimized: true,
     remotePatterns: [
       {
         hostname: "placehold.co",
