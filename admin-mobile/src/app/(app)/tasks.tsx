@@ -31,6 +31,8 @@ export default function TasksScreen() {
   const [refreshing, setRefresh] = useState(false);
   const [filter, setFilter]     = useState('ALL');
 
+  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+
   const fetchTasks = async () => {
     try {
       const res = await api.get('/tasks');
@@ -45,6 +47,14 @@ export default function TasksScreen() {
   const filtered = filter === 'ALL'
     ? tasks
     : tasks.filter(t => getStatusMeta(t.status)?.key === filter);
+
+  const toggleSelection = (id: string) => {
+    if (selectedTasks.includes(id)) {
+      setSelectedTasks(selectedTasks.filter(tId => tId !== id));
+    } else {
+      setSelectedTasks([...selectedTasks, id]);
+    }
+  };
 
   if (loading) return (
     <LinearGradient colors={['#0a0a14', '#100a1e', '#0a0a14']} style={s.center}>
@@ -95,24 +105,58 @@ export default function TasksScreen() {
         }
         renderItem={({ item }) => {
           const meta = getStatusMeta(item.status);
+          const isSelected = selectedTasks.includes(item._id);
+          
           return (
-            <BlurView intensity={15} tint="dark" style={[s.glassCard, { borderLeftWidth: 3, borderLeftColor: meta?.color || '#94a3b8' }]}>
-              <View style={s.taskHeader}>
-                <Text style={s.taskTitle} numberOfLines={2}>{item.title || `Task #${item._id?.slice(-6)}`}</Text>
-                <View style={[s.badge, { backgroundColor: (meta?.color || '#94a3b8') + '22' }]}>
-                  <Text style={[s.badgeText, { color: meta?.color || '#94a3b8' }]}>{meta?.label || item.status}</Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onLongPress={() => {
+                if (!isSelected) setSelectedTasks([...selectedTasks, item._id]);
+              }}
+              onPress={() => {
+                if (selectedTasks.length > 0) {
+                  toggleSelection(item._id);
+                } else {
+                  // Normal press action (e.g. view details) can go here
+                }
+              }}
+            >
+              <BlurView intensity={15} tint="dark" style={[s.glassCard, isSelected && { borderColor: THEME.primary, borderWidth: 2, backgroundColor: THEME.primary + '11' }, { borderLeftWidth: 3, borderLeftColor: meta?.color || '#94a3b8' }]}>
+                <View style={s.taskHeader}>
+                  <Text style={s.taskTitle} numberOfLines={2}>{item.title || `Task #${item._id?.slice(-6)}`}</Text>
+                  <View style={[s.badge, { backgroundColor: (meta?.color || '#94a3b8') + '22' }]}>
+                    <Text style={[s.badgeText, { color: meta?.color || '#94a3b8' }]}>{meta?.label || item.status}</Text>
+                  </View>
                 </View>
-              </View>
-              {item.description ? <Text style={s.taskDesc} numberOfLines={3}>{item.description}</Text> : null}
-              <View style={s.taskFooter}>
-                {item.category ? <Text style={s.taskMeta}>📁 {item.category}</Text> : null}
-                {item.orderId  ? <Text style={s.taskMeta}>🛒 Order #{typeof item.orderId === 'object' ? item.orderId?._id?.slice(-6) : String(item.orderId).slice(-6)}</Text> : null}
-                <Text style={[s.taskMeta, { marginLeft: 'auto' }]}>{new Date(item.createdAt).toLocaleDateString('en-MY')}</Text>
-              </View>
-            </BlurView>
+                {item.description ? <Text style={s.taskDesc} numberOfLines={3}>{item.description}</Text> : null}
+                <View style={s.taskFooter}>
+                  {item.assignee ? (
+                    <Text style={[s.taskMeta, { color: THEME.primary, fontWeight: '600' }]}>👤 {item.assignee.username || item.assignee.name || 'Assigned'}</Text>
+                  ) : null}
+                  {item.category ? <Text style={s.taskMeta}>📁 {item.category}</Text> : null}
+                  {item.orderId  ? <Text style={s.taskMeta}>🛒 Order #{typeof item.orderId === 'object' ? item.orderId?._id?.slice(-6) : String(item.orderId).slice(-6)}</Text> : null}
+                  <Text style={[s.taskMeta, { marginLeft: 'auto' }]}>{new Date(item.createdAt).toLocaleDateString('en-MY')}</Text>
+                </View>
+              </BlurView>
+            </TouchableOpacity>
           );
         }}
       />
+
+      {/* Floating Bulk Action Bar */}
+      {selectedTasks.length > 0 && (
+        <BlurView intensity={30} tint="dark" style={s.floatingBar}>
+          <Text style={s.floatingText}>{selectedTasks.length} task{selectedTasks.length > 1 ? 's' : ''} selected</Text>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+             <TouchableOpacity style={[s.floatingBtn, { backgroundColor: THEME.destructive }]} onPress={() => setSelectedTasks([])}>
+               <Text style={s.floatingBtnText}>Cancel</Text>
+             </TouchableOpacity>
+             <TouchableOpacity style={[s.floatingBtn, { backgroundColor: THEME.primary }]} onPress={() => { /* Implement bulk action */ }}>
+               <Text style={[s.floatingBtnText, { color: '#000' }]}>Action</Text>
+             </TouchableOpacity>
+          </View>
+        </BlurView>
+      )}
     </LinearGradient>
   );
 }
@@ -133,4 +177,8 @@ const s = StyleSheet.create({
   taskDesc: { color: THEME.mutedForeground, fontSize: 12, marginTop: 8, lineHeight: 18 },
   taskFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 10, flexWrap: 'wrap' },
   taskMeta: { color: THEME.mutedForeground, fontSize: 11 },
+  floatingBar: { position: 'absolute', bottom: 30, left: 20, right: 20, borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  floatingText: { color: THEME.foreground, fontWeight: '700', fontSize: 14 },
+  floatingBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
+  floatingBtnText: { color: THEME.foreground, fontWeight: '700', fontSize: 13 },
 });
