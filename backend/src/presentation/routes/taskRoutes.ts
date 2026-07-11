@@ -75,6 +75,7 @@ router.get(
       res.status(404).json({ success: false, message: 'Task not found' });
       return;
     }
+    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );
@@ -85,6 +86,7 @@ router.post(
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
     const task = await taskRepository.create(req.body);
+    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );
@@ -189,6 +191,7 @@ router.put(
         }
     }
     
+    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );
@@ -262,6 +265,7 @@ router.post(
       }
     }
 
+    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );
@@ -276,6 +280,7 @@ router.delete(
       res.status(404).json({ success: false, message: 'Task not found' });
       return;
     }
+    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );
@@ -291,6 +296,7 @@ router.put(
       res.status(404).json({ success: false, message: 'Task or comment not found' });
       return;
     }
+    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );
@@ -348,6 +354,7 @@ router.put(
       `updated note for attached file (${fileName}): ${notes || '(cleared)'}`
     );
 
+    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );
@@ -394,6 +401,7 @@ router.post(
       console.error('Failed to sync task file to FileUpload:', e);
     }
 
+    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );
@@ -437,6 +445,7 @@ router.post(
       console.error('Failed to sync task file to FileUpload:', e);
     }
 
+    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );

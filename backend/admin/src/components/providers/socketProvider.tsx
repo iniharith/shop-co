@@ -68,6 +68,11 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       await client.invalidateQueries({ queryKey: ["orders"] });
     });
 
+    socket.on("task_updated", async (data) => {
+      console.log("🟢 task_updated", data);
+      await client.invalidateQueries({ queryKey: ["tasks"] });
+    });
+
     socket.on("new_message", async (data) => {
       console.log("🟢 new chat message received", data);
       await client.invalidateQueries({ queryKey: ["conversations"] });
