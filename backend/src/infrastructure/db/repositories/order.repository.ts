@@ -18,11 +18,11 @@ export class OrderRepository {
         // Speed optimization: Only load orders from the last 60 days to prevent massive payloads.
         const sixtyDaysAgo = new Date();
         sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-        return await this.orderModel.find({ createdAt: { $gte: sixtyDaysAgo } }).sort({ createdAt: -1 }).populate("products.product").populate("userId");
+        return await this.orderModel.find({ createdAt: { $gte: sixtyDaysAgo } }).sort({ createdAt: -1 }).populate("products.product").populate("userId").lean() as unknown as Promise<IOrderDocument[]>;
     }
 
     async getOrdersByUserId(userId: string): Promise<IOrderDocument[]> {
-        return await this.orderModel.find({ userId }).populate("products.product").populate("userId");
+        return await this.orderModel.find({ userId }).populate("products.product").populate("userId").lean() as unknown as Promise<IOrderDocument[]>;
     }
 
     async getOrderById(orderId: string): Promise<IOrderDocument | null> {

@@ -48,6 +48,7 @@ router.get(
       statuses: req.query.statuses ? (req.query.statuses as string).split(',') : undefined,
       assignee: req.query.assignee as string,
       orderId: req.query.orderId as string,
+      days: req.query.days ? parseInt(req.query.days as string) : 30,
     };
     
     if (req.query.deleted === 'true') {
@@ -60,7 +61,7 @@ router.get(
     }
     
     const tasks = await taskRepository.findAll(filters);
-    res.json({ success: true, tasks });
+    res.status(200).json({ success: true, tasks });
   })
 );
 
