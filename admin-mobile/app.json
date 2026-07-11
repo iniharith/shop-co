@@ -12,6 +12,7 @@
     },
     "android": {
       "package": "com.kampungcetak.admin",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#000000",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

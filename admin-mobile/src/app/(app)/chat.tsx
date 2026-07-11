@@ -82,7 +82,7 @@ export default function ChatScreen() {
 
   if (activeId) {
     return (
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 bg-background">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0} className="flex-1 bg-background">
         <View className="flex-row items-center gap-3 pt-14 px-5 mb-4">
           <TouchableOpacity onPress={() => setActiveId(null)} className="p-1">
             <ChevronLeft size={24} color="#fafafa" />
