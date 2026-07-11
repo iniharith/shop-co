@@ -44,6 +44,11 @@ export default function RootLayout() {
     } else if (token && inAuthGroup) {
       router.replace('/(app)');
     }
+    
+    // Hide splash screen after navigation logic is determined and we are ready
+    setTimeout(() => {
+      SplashScreen.hideAsync().catch(console.warn);
+    }, 100);
   }, [token, segments, isReady]);
 
   if (!isReady) {
