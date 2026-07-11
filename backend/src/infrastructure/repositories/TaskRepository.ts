@@ -27,7 +27,7 @@ export class TaskRepository {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     query.createdAt = { $gte: thirtyDaysAgo };
     
-    return Task.find(query).sort({ createdAt: -1 }).lean() as unknown as Promise<ITask[]>;
+    return Task.find(query).select('-comments -activities').sort({ createdAt: -1 }).lean() as unknown as Promise<ITask[]>;
   }
 
   async findById(id: string): Promise<ITask | null> {

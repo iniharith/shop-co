@@ -6,11 +6,16 @@ import { useSession } from "next-auth/react";
 import { useQueryData } from "./useQueryData";
 import { useMutationData } from "./useMutation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { getTasks, createTask, updateTask, deleteTask, addTaskComment, deleteTaskComment } from "@/api/tasks";
+import { getTasks, getTask, createTask, updateTask, deleteTask, addTaskComment, deleteTaskComment } from "@/api/tasks";
 
 export const useTasks = (filters?: any) => {
     const { data: session } = useSession();
     return useQueryData(['tasks', filters], () => getTasks(session?.user?.token, filters));
+}
+
+export const useTask = (id: string | undefined) => {
+    const { data: session } = useSession();
+    return useQueryData(['task', id], () => getTask(session?.user?.token, id!), { enabled: !!id });
 }
 
 export const useCreateTask = () => {

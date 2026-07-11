@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
+import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, useTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
 import { uploadTaskFile } from "@/api/tasks";
 import { useUploadStore } from '@/store/uploadStore';
 import { useUsers } from "@/hooks/useUsers";
@@ -215,7 +215,11 @@ interface TaskModalProps {
 }
 
 export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
-  const { mutate: updateTask, isPending: isUpdating } = useUpdateTask();
+  const { data: fullTaskResponse, isPending: isLoadingFullTask } = useTask(isOpen ? task?._id : undefined);
+  const fullTask = fullTaskResponse?.task || task;
+  
+  const { data: session } = useSession();
+  const { mutate: updateTask } = useUpdateTask();
   const { mutate: addComment, isPending: isCommenting } = useAddTaskComment();
   const { mutate: deleteCommentApi, isPending: isDeletingComment } = useDeleteTaskComment();
   const { mutate: pinCommentApi, isPending: isPinningComment } = usePinTaskComment();
@@ -559,7 +563,9 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
                   <TabsContent value="comments" className="mt-0">
                     <div className="space-y-4">
-                      {[...(task.comments || [])].sort((a: any, b: any) => {
+                      {isLoadingFullTask ? (
+                        <div className="text-sm text-muted-foreground text-center py-4">Loading comments...</div>
+                      ) : [...(fullTask?.comments || [])].sort((a: any, b: any) => {
                         if (a.pinned && !b.pinned) return -1;
                         if (!a.pinned && b.pinned) return 1;
                         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
@@ -621,8 +627,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                         </div>
                       ))}
                       
-                      {(!task.comments || task.comments.length === 0) && (
-                        <div className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-xl border border-dashed border-border/50">No comments yet.</div>
+                      {(!isLoadingFullTask && (!fullTask?.comments || fullTask.comments.length === 0)) && (
+                        <div className="text-sm text-muted-foreground text-center py-4 bg-transparent rounded-xl border border-dashed border-border/50">No comments yet.</div>
                       )}
                     </div>
                   </TabsContent>
@@ -630,18 +636,20 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   <TabsContent value="activity" className="mt-0">
                     <div className="space-y-4">
                       {/* Show activities, sort by createdAt */}
-                      {(() => {
+                      {isLoadingFullTask ? (
+                        <div className="text-sm text-muted-foreground text-center py-4">Loading activity...</div>
+                      ) : (() => {
                         const activityItems = [
-                          ...(task.activities || []).filter((a: any) => !a.action.startsWith("changed the description") && !a.action.startsWith("added a comment")).map((a: any) => ({ ...a, type: 'activity' }))
+                          ...(fullTask?.activities || []).filter((a: any) => !a.action.startsWith("changed the description") && !a.action.startsWith("added a comment")).map((a: any) => ({ ...a, type: 'activity' }))
                         ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                         
                         return (
                           <div className="space-y-3">
-                            {activityItems.length === 0 && !task.createdAt ? (
-                              <div className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-xl border border-dashed border-border/50">No activity yet.</div>
+                            {activityItems.length === 0 && !fullTask?.createdAt ? (
+                              <div className="text-sm text-muted-foreground text-center py-4 bg-transparent rounded-xl border border-dashed border-border/50">No activity yet.</div>
                             ) : (
                               <>
-                                {task.createdAt && (
+                                {fullTask?.createdAt && (
                                   <div className="flex gap-3 items-center text-sm py-1">
                                     <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/30 shrink-0 flex items-center justify-center">
                                       <span className="text-[9px] font-bold text-primary">✦</span>
@@ -649,7 +657,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                     <div className="flex-1 text-muted-foreground">
                                       <span className="font-semibold text-foreground mr-1">Task</span>
                                       created
-                                      <span className="text-[10px] ml-2 text-muted-foreground/70">• {format(new Date(task.createdAt), "MMM d, h:mm a")}</span>
+                                      <span className="text-[10px] ml-2 text-muted-foreground/70">• {format(new Date(fullTask.createdAt), "MMM d, h:mm a")}</span>
                                     </div>
                                   </div>
                                 )}
@@ -695,7 +703,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
             </div>
             
             <div 
-              className={`p-4 border-y md:border-y-0 md:border-t border-border/50 shrink-0 transition-colors relative ${isDragOverComment ? 'bg-primary/10 border-primary border-dashed' : 'bg-muted/10 dark:bg-transparent'}`}
+              className={`p-4 border-y md:border-y-0 md:border-t border-border/50 shrink-0 transition-colors relative ${isDragOverComment ? 'bg-primary/10 border-primary border-dashed' : 'bg-transparent'}`}
               onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(true); }}
               onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(true); }}
               onDrop={(e) => {
