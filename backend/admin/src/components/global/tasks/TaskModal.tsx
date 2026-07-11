@@ -568,7 +568,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                           <Avatar className="w-8 h-8 border border-border/50 bg-muted shrink-0">
                             <AvatarFallback className="text-xs">{comment.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
-                          <div className={`flex-1 rounded-xl rounded-tl-none p-3 border border-border/50 ${comment.pinned ? 'bg-yellow-100/50 dark:bg-yellow-500/10 dark:border-yellow-500/20 shadow-md' : 'bg-muted/40 dark:bg-muted/20'}`}>
+                          <div className={`flex-1 p-3 border-b border-border/10 ${comment.pinned ? 'bg-yellow-100/50 dark:bg-yellow-500/10 dark:border-yellow-500/20 shadow-md rounded-xl rounded-tl-none' : 'bg-transparent'}`}>
                             <div className="flex justify-between items-baseline mb-1">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold">{comment.userName}</span>
@@ -599,7 +599,24 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                 </div>
                               </div>
                             </div>
-                            <p className={`text-sm leading-relaxed ${comment.pinned ? 'font-bold text-foreground' : 'text-foreground'}`}>{comment.text}</p>
+                            <p className={`text-sm leading-relaxed ${comment.pinned ? 'font-bold text-foreground' : 'text-foreground'}`}>
+                              {comment.text}
+                            </p>
+                            {(() => {
+                              const match = comment.text.match(/Note updated for artwork \((.+)\):/);
+                              if (match && match[1]) {
+                                const filename = match[1];
+                                const fileObj = task.files?.find((f: any) => f.name === filename || f.originalName === filename || f.url?.includes(filename));
+                                if (fileObj && fileObj.url && fileObj.url.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
+                                  return (
+                                    <div className="mt-2 rounded-lg overflow-hidden border border-border/50 inline-block">
+                                      <img src={fileObj.url} alt={filename} className="max-w-[200px] max-h-[200px] object-cover" />
+                                    </div>
+                                  );
+                                }
+                              }
+                              return null;
+                            })()}
                           </div>
                         </div>
                       ))}
