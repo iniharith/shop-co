@@ -24,6 +24,73 @@ export default function CustomerUploadPortal() {
     }
   };
 
+  const parsePastedText = (text: string) => {
+    let newOrderId = orderId;
+    let newPhone = phoneNumber;
+    let newItem = item;
+    let newUsername = username;
+    
+    // Example WhatsApp message format:
+    // ORDER 9 JULAI 2026
+    // Phone Number: 0194728328
+    // Item: FRAME GAMBAR CUSTOM
+    // USERNAME
+    // cheryllee8328
+
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    
+    // Check if it's a multi-line pasted message
+    if (lines.length >= 2) {
+      // 1. First line usually has "ORDER "
+      if (lines[0].toUpperCase().startsWith("ORDER ") || lines[0].toUpperCase().startsWith("ORDER ID:") || lines[0].toUpperCase().startsWith("ORDER NUMBER:")) {
+        newOrderId = lines[0].replace(/ORDER ID:/i, '').replace(/ORDER NUMBER:/i, '').replace(/ORDER/i, '').replace(/#/g, '').trim();
+      } else {
+        newOrderId = lines[0].replace(/#/g, '').trim();
+      }
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const lowerLine = line.toLowerCase();
+        
+        if (lowerLine.startsWith("phone number:") || lowerLine.startsWith("no telefon:")) {
+          newPhone = line.split(':')[1].trim();
+        } else if (lowerLine.startsWith("item:") || lowerLine.startsWith("produk:")) {
+          newItem = line.split(':')[1].trim();
+        } else if (lowerLine === "username" || lowerLine === "nama pengguna") {
+          if (i + 1 < lines.length) {
+            newUsername = lines[i + 1].trim();
+          }
+        }
+      }
+      
+      setOrderId(newOrderId);
+      setPhoneNumber(newPhone);
+      setItem(newItem);
+      setUsername(newUsername);
+      return true; // Successfully parsed
+    }
+    return false; // Not a multi-line message
+  };
+
+  const handleOrderIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setOrderId(val);
+  };
+
+  const handleOrderIdPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData.getData('text');
+    if (parsePastedText(pasted)) {
+      e.preventDefault();
+    } else {
+      // If not multi-line, maybe just strip 'ORDER' and '#' if they pasted just the order ID
+      const cleaned = pasted.replace(/ORDER ID:/i, '').replace(/ORDER NUMBER:/i, '').replace(/ORDER/i, '').replace(/#/g, '').trim();
+      if (cleaned !== pasted) {
+        e.preventDefault();
+        setOrderId(cleaned);
+      }
+    }
+  };
+
   const removeFile = (index: number) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
@@ -174,9 +241,10 @@ export default function CustomerUploadPortal() {
             <div className="space-y-2">
               <label className="text-sm font-medium text-white/80">Order ID <span className="text-red-500">*</span></label>
               <Input 
-                placeholder="e.g. #12345" 
+                placeholder="e.g. #12345 or paste details here" 
                 value={orderId}
-                onChange={(e) => setOrderId(e.target.value)}
+                onChange={handleOrderIdChange}
+                onPaste={handleOrderIdPaste}
                 className="bg-black/50 border-white/10 focus-visible:ring-yellow-500"
                 disabled={uploading}
               />
