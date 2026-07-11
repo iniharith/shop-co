@@ -14,24 +14,28 @@ export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
     const initAuth = async () => {
-      // Safety timeout: if checkAuth hangs for more than 5s, proceed anyway
+      // Safety timeout: if checkAuth hangs for more than 3s, proceed anyway
       const timeout = setTimeout(() => {
+        if (!mounted) return;
         setIsReady(true);
-        SplashScreen.hideAsync();
-      }, 5000);
+        SplashScreen.hideAsync().catch(() => {});
+      }, 3000);
 
       try {
         await checkAuth();
       } catch (e) {
         console.error('Auth check error:', e);
       } finally {
+        if (!mounted) return;
         clearTimeout(timeout);
         setIsReady(true);
-        SplashScreen.hideAsync();
+        SplashScreen.hideAsync().catch(() => {});
       }
     };
     initAuth();
+    return () => { mounted = false; };
   }, []);
 
   useEffect(() => {
@@ -47,9 +51,10 @@ export default function RootLayout() {
   }, [token, segments, isReady]);
 
   if (!isReady) {
+    // Match background to splash screen color to prevent white flash
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' }}>
-        <ActivityIndicator size="large" color="#0f172a" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000000' }}>
+        <ActivityIndicator size="large" color="#ffffff" />
       </View>
     );
   }
