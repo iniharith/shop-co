@@ -15,6 +15,7 @@ export default function CustomerUploadPortal() {
   const [item, setItem] = useState("");
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadStats, setUploadStats] = useState({ current: 0, total: 0 });
 
@@ -183,6 +184,10 @@ export default function CustomerUploadPortal() {
       
       if (!metaRes.ok) throw new Error("Failed to save file metadata");
 
+      const data = await metaRes.json();
+      const adminDeepLink = `https://admin.kampungcetak.com/admin/artworks?folder=${encodeURIComponent(username.trim() + "-" + orderId.trim() + "-" + data.task._id)}`;
+      setGeneratedLink(adminDeepLink);
+
       toast.success("Files uploaded successfully!", { id: toastId });
       setSuccess(true);
       setSelectedFiles([]);
@@ -210,14 +215,27 @@ export default function CustomerUploadPortal() {
           <p className="text-white/60 mb-8">
             Thank you, {username}. Your artwork for Order #{orderId} has been successfully submitted to our team.
           </p>
+
           <Button 
-            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold"
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold h-12 text-lg mb-4"
+            onClick={() => {
+              navigator.clipboard.writeText(generatedLink);
+              toast.success("Link copied to clipboard!");
+            }}
+          >
+            Copy Link and Give to Admin
+          </Button>
+
+          <Button 
+            variant="outline"
+            className="w-full border-white/20 text-white hover:bg-white/10"
             onClick={() => {
               setSuccess(false);
               setOrderId("");
               setUsername("");
               setPhoneNumber("");
               setItem("");
+              setGeneratedLink("");
             }}
           >
             Upload More Files
