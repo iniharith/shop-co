@@ -11,17 +11,17 @@ export class NotificationRepository extends BaseRepository<NotificationDocument>
         super(NotificationModel);
     }
 
-    async createNotification(notification: any) {
+    async createNotification(notification: INotification) {
         return await this.model.create(notification);
     }
 
     async getNotificationsByUserId(userId: string) {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        return await this.model.find({ userId, createdAt: { $gte: thirtyDaysAgo } }).sort({ createdAt: -1 }).limit(100).lean();
+        return await this.model.find({ userId }).sort({ createdAt: -1 });
     }
 
     async markAllNotificationsAsRead(userId: string) {
         return await this.model.updateMany({ userId }, { $set: { read: true } });
     }
+
+
 }

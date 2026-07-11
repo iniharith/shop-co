@@ -132,6 +132,5 @@ const OrderSchema = new mongoose_1.Schema({
         default: '',
     },
 }, { timestamps: true });
-OrderSchema.index({ createdAt: -1 });
 const OrderModel = mongoose_1.default.model('Order', OrderSchema);
 exports.default = OrderModel;

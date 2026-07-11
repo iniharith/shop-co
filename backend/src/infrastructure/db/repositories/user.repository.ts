@@ -19,11 +19,11 @@ export class UserRepository extends BaseRepository<IUserDocument> {
     }
 
     async getStaff(): Promise<IUserDocument[]> {
-        return await this.model.find({ role: { $in: ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'] } }).select("-password").lean() as unknown as Promise<IUserDocument[]>;
+        return await this.model.find({ role: { $in: ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'] } }).select("-password");
     }
 
     async getUsersByRole(role: Roles): Promise<IUserDocument[]> {
-        return await this.model.find({ role }).select("-password").lean() as unknown as Promise<IUserDocument[]>;
+        return await this.model.find({ role }).select("-password");
     }
 }
 

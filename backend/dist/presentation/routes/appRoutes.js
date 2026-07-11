@@ -20,7 +20,7 @@ const router = (0, express_1.Router)();
 router.get('/version', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.json({
         success: true,
-        version: '1.8.0',
+        version: '1.7.7',
         apkUrl: 'https://admin.kampungcetak.com/downloads/app-release.apk',
         forceUpdate: false,
         message: 'New update available!',

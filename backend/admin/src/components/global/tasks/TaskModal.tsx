@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, useTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
+import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
 import { uploadTaskFile } from "@/api/tasks";
 import { useUploadStore } from '@/store/uploadStore';
 import { useUsers } from "@/hooks/useUsers";
@@ -215,10 +215,7 @@ interface TaskModalProps {
 }
 
 export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
-  const { data: fullTaskResponse, isPending: isLoadingFullTask } = useTask(isOpen ? task?._id : undefined);
-  const fullTask = fullTaskResponse?.task || task;
-  
-  const { mutate: updateTask } = useUpdateTask();
+  const { mutate: updateTask, isPending: isUpdating } = useUpdateTask();
   const { mutate: addComment, isPending: isCommenting } = useAddTaskComment();
   const { mutate: deleteCommentApi, isPending: isDeletingComment } = useDeleteTaskComment();
   const { mutate: pinCommentApi, isPending: isPinningComment } = usePinTaskComment();
@@ -562,9 +559,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
                   <TabsContent value="comments" className="mt-0">
                     <div className="space-y-4">
-                      {isLoadingFullTask ? (
-                        <div className="text-sm text-muted-foreground text-center py-4">Loading comments...</div>
-                      ) : [...(fullTask?.comments || [])].sort((a: any, b: any) => {
+                      {[...(task.comments || [])].sort((a: any, b: any) => {
                         if (a.pinned && !b.pinned) return -1;
                         if (!a.pinned && b.pinned) return 1;
                         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
@@ -573,7 +568,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                           <Avatar className="w-8 h-8 border border-border/50 bg-muted shrink-0">
                             <AvatarFallback className="text-xs">{comment.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
-                          <div className={`flex-1 p-3 border-b border-border/10 ${comment.pinned ? 'bg-yellow-100/50 dark:bg-yellow-500/10 dark:border-yellow-500/20 shadow-md rounded-xl rounded-tl-none' : 'bg-transparent'}`}>
+                          <div className={`flex-1 rounded-xl rounded-tl-none p-3 border border-border/50 ${comment.pinned ? 'bg-yellow-100/50 dark:bg-yellow-500/10 dark:border-yellow-500/20 shadow-md' : 'bg-muted/40 dark:bg-muted/20'}`}>
                             <div className="flex justify-between items-baseline mb-1">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold">{comment.userName}</span>
@@ -604,30 +599,13 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                 </div>
                               </div>
                             </div>
-                            <p className={`text-sm leading-relaxed ${comment.pinned ? 'font-bold text-foreground' : 'text-foreground'}`}>
-                              {comment.text}
-                            </p>
-                            {(() => {
-                              const match = comment.text?.match(/Note updated for artwork \((.+)\):/);
-                              if (match && match[1]) {
-                                const filename = match[1];
-                                const fileObj = task.files?.find((f: any) => f.name === filename || f.originalName === filename || f.url?.includes(filename));
-                                if (fileObj && fileObj.url && fileObj.url.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
-                                  return (
-                                    <div className="mt-2 rounded-lg overflow-hidden border border-border/50 inline-block">
-                                      <img src={fileObj.url} alt={filename} className="max-w-[200px] max-h-[200px] object-cover" />
-                                    </div>
-                                  );
-                                }
-                              }
-                              return null;
-                            })()}
+                            <p className={`text-sm leading-relaxed ${comment.pinned ? 'font-bold text-foreground' : 'text-foreground'}`}>{comment.text}</p>
                           </div>
                         </div>
                       ))}
                       
-                      {(!isLoadingFullTask && (!fullTask?.comments || fullTask.comments.length === 0)) && (
-                        <div className="text-sm text-muted-foreground text-center py-4 bg-transparent rounded-xl border border-dashed border-border/50">No comments yet.</div>
+                      {(!task.comments || task.comments.length === 0) && (
+                        <div className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-xl border border-dashed border-border/50">No comments yet.</div>
                       )}
                     </div>
                   </TabsContent>
@@ -635,20 +613,18 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   <TabsContent value="activity" className="mt-0">
                     <div className="space-y-4">
                       {/* Show activities, sort by createdAt */}
-                      {isLoadingFullTask ? (
-                        <div className="text-sm text-muted-foreground text-center py-4">Loading activity...</div>
-                      ) : (() => {
+                      {(() => {
                         const activityItems = [
-                          ...(fullTask?.activities || []).filter((a: any) => !a.action.startsWith("changed the description") && !a.action.startsWith("added a comment")).map((a: any) => ({ ...a, type: 'activity' }))
+                          ...(task.activities || []).filter((a: any) => !a.action.startsWith("changed the description") && !a.action.startsWith("added a comment")).map((a: any) => ({ ...a, type: 'activity' }))
                         ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                         
                         return (
                           <div className="space-y-3">
-                            {activityItems.length === 0 && !fullTask?.createdAt ? (
-                              <div className="text-sm text-muted-foreground text-center py-4 bg-transparent rounded-xl border border-dashed border-border/50">No activity yet.</div>
+                            {activityItems.length === 0 && !task.createdAt ? (
+                              <div className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-xl border border-dashed border-border/50">No activity yet.</div>
                             ) : (
                               <>
-                                {fullTask?.createdAt && (
+                                {task.createdAt && (
                                   <div className="flex gap-3 items-center text-sm py-1">
                                     <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/30 shrink-0 flex items-center justify-center">
                                       <span className="text-[9px] font-bold text-primary">✦</span>
@@ -656,7 +632,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                     <div className="flex-1 text-muted-foreground">
                                       <span className="font-semibold text-foreground mr-1">Task</span>
                                       created
-                                      <span className="text-[10px] ml-2 text-muted-foreground/70">• {format(new Date(fullTask.createdAt), "MMM d, h:mm a")}</span>
+                                      <span className="text-[10px] ml-2 text-muted-foreground/70">• {format(new Date(task.createdAt), "MMM d, h:mm a")}</span>
                                     </div>
                                   </div>
                                 )}
@@ -702,7 +678,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
             </div>
             
             <div 
-              className={`p-4 border-y md:border-y-0 md:border-t border-border/50 shrink-0 transition-colors relative ${isDragOverComment ? 'bg-primary/10 border-primary border-dashed' : 'bg-transparent'}`}
+              className={`p-4 border-y md:border-y-0 md:border-t border-border/50 shrink-0 transition-colors relative ${isDragOverComment ? 'bg-primary/10 border-primary border-dashed' : 'bg-muted/10 dark:bg-transparent'}`}
               onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(true); }}
               onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(true); }}
               onDrop={(e) => {
@@ -750,27 +726,16 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
                     toast.promise(Promise.all(uploadPromises), {
                       loading: `Uploading ${files.length} file(s)...`,
-                      success: (uploadedData) => {
+                      success: () => {
                         queryClient.invalidateQueries({ queryKey: ["taskFiles", task._id] });
-                        
-                        // Post a single comment with images/links
-                        let commentBody = `Attached ${files.length} file(s):\n`;
-                        uploadedData.forEach(d => {
-                          if (d && d.url) {
-                            const isImage = d.url.match(/\.(jpeg|jpg|gif|png|webp)$/i);
-                            if (isImage) {
-                              commentBody += `![](${d.url})\n`;
-                            } else {
-                              commentBody += `[${d.originalName}](${d.url})\n`;
-                            }
-                          }
-                        });
-                        addComment({ id: task._id, text: commentBody });
-
                         return `Successfully uploaded ${files.length} file(s)`;
                       },
                       error: "Failed to upload some files"
                     });
+                  
+                  // Post a single comment for all dropped files
+                  const fileNames = files.map(f => f.name).join(', ');
+                  addComment({ id: task._id, text: `Attached ${files.length} file(s): ${fileNames}` });
                 }
               }}
             >
@@ -779,20 +744,12 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50 rounded-b-lg"
                   onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(false); }}
                 >
-                  <div className="flex flex-col items-center gap-4 text-primary pointer-events-none p-6 rounded-2xl bg-background shadow-2xl border-2 border-primary/20">
-                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center animate-bounce">
-                      <UploadCloud className="w-8 h-8" />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-lg font-bold">Drop files to attach to this task</p>
-                      <p className="text-sm text-muted-foreground mt-1">Files will be uploaded and added as a comment</p>
-                    </div>
-                  </div>
+                  <p className="text-sm font-bold text-primary flex items-center gap-2 pointer-events-none">
+                    <DownloadIcon className="w-4 h-4 animate-bounce" /> Drop files to attach
+                  </p>
                 </div>
               )}
-              
-              <div className="relative pt-6 border-t border-border/30 mt-6 bg-transparent p-4 rounded-xl">
-                <div className="flex gap-2">
+              <div className="flex gap-2">
                 <input 
                   type="file" 
                   id="task-file-upload" 
@@ -841,7 +798,6 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                 <Button onClick={handleAddComment} disabled={isCommenting} size="icon" className="shrink-0 bg-primary shadow-sm hover:bg-primary/90">
                   <Send className="w-4 h-4" />
                 </Button>
-              </div>
               </div>
             </div>
           </div>

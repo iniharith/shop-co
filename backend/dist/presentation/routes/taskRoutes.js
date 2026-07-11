@@ -84,10 +84,8 @@ router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)
     const role = authReq.role;
     const filters = {
         status: req.query.status,
-        statuses: req.query.statuses ? req.query.statuses.split(',') : undefined,
         assignee: req.query.assignee,
         orderId: req.query.orderId,
-        days: req.query.days ? parseInt(req.query.days) : 30,
     };
     if (req.query.deleted === 'true') {
         filters.isDeleted = true;
@@ -97,22 +95,11 @@ router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)
         filters.customerUsername = ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.name) || ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.email); // or however user is identified
     }
     const tasks = yield TaskRepository_1.taskRepository.findAll(filters);
-    res.status(200).json({ success: true, tasks });
-})));
-// GET /api/tasks/:id
-router.get('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const task = yield TaskRepository_1.taskRepository.findById(req.params.id);
-    if (!task) {
-        res.status(404).json({ success: false, message: 'Task not found' });
-        return;
-    }
-    yield redisService.publish(redis_constant_1.REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
-    res.json({ success: true, task });
+    res.json({ success: true, tasks });
 })));
 // POST /api/tasks
 router.post('/', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const task = yield TaskRepository_1.taskRepository.create(req.body);
-    yield redisService.publish(redis_constant_1.REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
 })));
 // Helper function to delete all files for a task
@@ -204,7 +191,6 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
             }
         }
     }
-    yield redisService.publish(redis_constant_1.REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
 })));
 // DELETE /api/tasks/:id
@@ -266,7 +252,6 @@ router.post('/:id/comments', auth_middileware_1.default, (0, express_async_handl
             console.error("Failed to send comment notification:", err);
         }
     }
-    yield redisService.publish(redis_constant_1.REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
 })));
 // DELETE /api/tasks/:id/comments/:commentId
@@ -276,7 +261,6 @@ router.delete('/:id/comments/:commentId', auth_middileware_1.default, (0, expres
         res.status(404).json({ success: false, message: 'Task not found' });
         return;
     }
-    yield redisService.publish(redis_constant_1.REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
 })));
 // PUT /api/tasks/:id/comments/:commentId/pin
@@ -287,7 +271,6 @@ router.put('/:id/comments/:commentId/pin', auth_middileware_1.default, (0, expre
         res.status(404).json({ success: false, message: 'Task or comment not found' });
         return;
     }
-    yield redisService.publish(redis_constant_1.REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
 })));
 // PUT /api/tasks/:id/files/notes
@@ -327,7 +310,6 @@ router.put('/:id/files/notes', auth_middileware_1.default, (0, express_async_han
     }
     // Add an activity to the task to notify stakeholders
     yield TaskRepository_1.taskRepository.addActivity(id, userId, userName, `updated note for attached file (${fileName}): ${notes || '(cleared)'}`);
-    yield redisService.publish(redis_constant_1.REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
 })));
 // POST /api/tasks/:id/files
@@ -366,7 +348,6 @@ router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'),
     catch (e) {
         console.error('Failed to sync task file to FileUpload:', e);
     }
-    yield redisService.publish(redis_constant_1.REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
 })));
 // POST /api/tasks/:id/files/save-metadata
@@ -402,7 +383,6 @@ router.post('/:id/files/save-metadata', auth_middileware_1.default, (0, express_
     catch (e) {
         console.error('Failed to sync task file to FileUpload:', e);
     }
-    yield redisService.publish(redis_constant_1.REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
 })));
 // DELETE /api/tasks/:id/files/:fileId

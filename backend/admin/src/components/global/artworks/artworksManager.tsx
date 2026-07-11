@@ -41,8 +41,6 @@ const categories = [
   "FOOD PACKAGING"
 ];
 
-const ALL_STATUSES = ["PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN"];
-
 export default function ArtworksManager() {
   const { addUpload, updateProgress, updateStatus } = useUploadStore();
   const { data: session } = useSession();

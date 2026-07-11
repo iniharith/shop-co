@@ -45,10 +45,8 @@ router.get(
     const role = authReq.role;
     const filters: any = {
       status: req.query.status as string,
-      statuses: req.query.statuses ? (req.query.statuses as string).split(',') : undefined,
       assignee: req.query.assignee as string,
       orderId: req.query.orderId as string,
-      days: req.query.days ? parseInt(req.query.days as string) : 30,
     };
     
     if (req.query.deleted === 'true') {
@@ -61,22 +59,7 @@ router.get(
     }
     
     const tasks = await taskRepository.findAll(filters);
-    res.status(200).json({ success: true, tasks });
-  })
-);
-
-// GET /api/tasks/:id
-router.get(
-  '/:id',
-  authMiddilware,
-  asyncHandler(async (req: Request, res: Response) => {
-    const task = await taskRepository.findById(req.params.id);
-    if (!task) {
-      res.status(404).json({ success: false, message: 'Task not found' });
-      return;
-    }
-    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
-    res.json({ success: true, task });
+    res.json({ success: true, tasks });
   })
 );
 
@@ -86,7 +69,6 @@ router.post(
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
     const task = await taskRepository.create(req.body);
-    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );
@@ -191,7 +173,6 @@ router.put(
         }
     }
     
-    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );
@@ -265,7 +246,6 @@ router.post(
       }
     }
 
-    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );
@@ -280,7 +260,6 @@ router.delete(
       res.status(404).json({ success: false, message: 'Task not found' });
       return;
     }
-    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );
@@ -296,7 +275,6 @@ router.put(
       res.status(404).json({ success: false, message: 'Task or comment not found' });
       return;
     }
-    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );
@@ -354,7 +332,6 @@ router.put(
       `updated note for attached file (${fileName}): ${notes || '(cleared)'}`
     );
 
-    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );
@@ -401,7 +378,6 @@ router.post(
       console.error('Failed to sync task file to FileUpload:', e);
     }
 
-    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );
@@ -445,7 +421,6 @@ router.post(
       console.error('Failed to sync task file to FileUpload:', e);
     }
 
-    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify(task));
     res.json({ success: true, task });
   })
 );

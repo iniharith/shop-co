@@ -13,7 +13,7 @@ export class BaseRepository<T> {
     }
 
     async findAll(): Promise<T[]> {
-        return this.model.find().lean() as unknown as Promise<T[]>;
+        return this.model.find();
     }
 
     async findById(id: string): Promise<T | null> {

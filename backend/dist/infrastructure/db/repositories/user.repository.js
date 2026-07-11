@@ -30,12 +30,12 @@ class UserRepository extends base_repository_1.BaseRepository {
     }
     getStaff() {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.model.find({ role: { $in: ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'] } }).select("-password").lean();
+            return yield this.model.find({ role: { $in: ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'] } }).select("-password");
         });
     }
     getUsersByRole(role) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.model.find({ role }).select("-password").lean();
+            return yield this.model.find({ role }).select("-password");
         });
     }
 }

@@ -20,15 +20,12 @@ class OrderRepository {
     }
     getOrders() {
         return __awaiter(this, void 0, void 0, function* () {
-            // Speed optimization: Only load orders from the last 60 days to prevent massive payloads.
-            const sixtyDaysAgo = new Date();
-            sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-            return yield this.orderModel.find({ createdAt: { $gte: sixtyDaysAgo } }).sort({ createdAt: -1 }).populate("products.product").populate("userId").lean();
+            return yield this.orderModel.find().populate("products.product").populate("userId");
         });
     }
     getOrdersByUserId(userId) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.orderModel.find({ userId }).populate("products.product").populate("userId").lean();
+            return yield this.orderModel.find({ userId }).populate("products.product").populate("userId");
         });
     }
     getOrderById(orderId) {

@@ -9,10 +9,9 @@ export class TaskRepository {
     return Task.create(data);
   }
 
-  async findAll(filters?: { status?: string; statuses?: string[]; assignee?: string; orderId?: string; customerUsername?: string; isDeleted?: boolean; days?: number; }): Promise<ITask[]> {
+  async findAll(filters?: { status?: string; assignee?: string; orderId?: string; customerUsername?: string; isDeleted?: boolean }): Promise<ITask[]> {
     const query: any = {};
     if (filters?.status) query.status = filters.status;
-    if (filters?.statuses && filters.statuses.length > 0) query.status = { $in: filters.statuses };
     if (filters?.assignee) query.assignee = filters.assignee;
     if (filters?.orderId) query.orderId = filters.orderId;
     if (filters?.customerUsername) query.customerUsername = filters.customerUsername;
@@ -22,13 +21,13 @@ export class TaskRepository {
     } else {
       query.isDeleted = { $ne: true };
     }
-
-    const days = filters?.days || 30;
-    const daysAgo = new Date();
-    daysAgo.setDate(daysAgo.getDate() - days);
-    query.createdAt = { $gte: daysAgo };
-
-    return Task.find(query).select('-comments -activities').sort({ createdAt: -1 }).lean() as unknown as Promise<ITask[]>;
+    
+    // Speed optimization: Only load tasks from the last 30 days by default to prevent massive payloads.
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    query.createdAt = { $gte: thirtyDaysAgo };
+    
+    return Task.find(query).sort({ createdAt: -1 }).lean() as unknown as Promise<ITask[]>;
   }
 
   async findById(id: string): Promise<ITask | null> {
