@@ -11,7 +11,9 @@ class VirtualFolderRepository {
   }
 
   async findAll(): Promise<IVirtualFolder[]> {
-    return await VirtualFolder.find().sort({ createdAt: -1 });
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    return await VirtualFolder.find({ createdAt: { $gte: sixtyDaysAgo } }).sort({ createdAt: -1 }).lean() as unknown as Promise<IVirtualFolder[]>;
   }
 
   async findById(id: string): Promise<IVirtualFolder | null> {

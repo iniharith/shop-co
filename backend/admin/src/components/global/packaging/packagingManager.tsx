@@ -617,7 +617,7 @@ export default function PackagingManager() {
           </div>
 
           {/* RIGHT PANEL (DETAIL) */}
-          <div className="w-full lg:w-2/3 xl:w-3/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
+          <div className="min-w-0 w-full lg:w-2/3 xl:w-3/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
             {selectedFolder ? (() => {
               const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId || ""}` === selectedFolder);
               if (!activeGroup) {
@@ -647,7 +647,7 @@ export default function PackagingManager() {
               const dueDate = activeTask?.dueDate ? format(new Date(activeTask.dueDate), 'dd MMM yyyy') : "N/A";
 
               return (
-                <div className="flex flex-col h-full">
+                <div className="flex flex-col h-full min-w-0">
                   <div className="p-4 sm:p-6 border-b bg-muted/10 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center shrink-0">
                     <div className="flex-1 min-w-0">
                       <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2 truncate">
@@ -729,8 +729,8 @@ export default function PackagingManager() {
                   </div>
 
                   {/* Task / Order Details Card */}
-                  <div className="px-4 sm:px-6 py-4 border-b bg-card">
-                    <div className="flex flex-col xl:flex-row gap-6">
+                  <div className="px-4 sm:px-6 py-4 border-b bg-card min-w-0">
+                    <div className="flex flex-col xl:flex-row gap-6 min-w-0">
                       {/* Description */}
                       <div className="flex-1 min-w-0">
                         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Description</h3>

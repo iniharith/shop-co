@@ -20,7 +20,9 @@ class OrderRepository {
     }
     getOrders() {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.orderModel.find().populate("products.product").populate("userId");
+            const sixtyDaysAgo = new Date();
+            sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+            return yield this.orderModel.find({ createdAt: { $gte: sixtyDaysAgo } }).populate("products.product").populate("userId").sort({ createdAt: -1 }).lean();
         });
     }
     getOrdersByUserId(userId) {

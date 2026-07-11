@@ -15,7 +15,9 @@ export class OrderRepository {
 
 
     async getOrders(): Promise<IOrderDocument[]> {
-        return await this.orderModel.find().populate("products.product").populate("userId");
+        const sixtyDaysAgo = new Date();
+        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+        return await this.orderModel.find({ createdAt: { $gte: sixtyDaysAgo } }).populate("products.product").populate("userId").sort({ createdAt: -1 }).lean() as unknown as Promise<IOrderDocument[]>;
     }
 
     async getOrdersByUserId(userId: string): Promise<IOrderDocument[]> {
