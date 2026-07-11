@@ -98,49 +98,53 @@ export class FileStoreController {
       // Automatically create artwork folder in sync with task
       try {
         if (fileStore.orderId) {
-          const tasks = await Task.find({ orderId: fileStore.orderId.toString(), isDeleted: { $ne: true } });
-          if (tasks && tasks.length > 0) {
-            const task = tasks[0];
-            const customerName = fileStore.customerName || 'Customer';
-            
-            // Check if folder exists for this task
-            let folder = await VirtualFolder.findOne({ taskId: task._id.toString() });
-            if (!folder) {
-              folder = await virtualFolderRepository.create({
-                name: `${customerName} - Artwork`,
-                taskId: task._id.toString()
-              });
-            }
+          const customerName = fileStore.customerName || 'Customer';
+          
+          // Automatically create a new task for this upload
+          const task = await Task.create({
+            title: `Artwork Upload - ${customerName}`,
+            description: `Files uploaded by ${customerName} via upload portal`,
+            orderId: fileStore.orderId.toString(),
+            customerUsername: customerName,
+            status: 'PLACED',
+            category: 'UNASSIGNED',
+            files: []
+          });
 
-            // Sync uploaded files with FileUpload to show in Artwork Manager
-            const fileUploadPromises = newEntries.map(file => {
-              return fileUploadRepository.create({
-                userId: `CUSTOMER_${fileStore.uploadToken}`,
-                orderId: fileStore.orderId.toString(),
-                taskId: task._id.toString(),
-                folderId: folder!._id.toString(),
-                filename: file.filename,
-                originalName: file.originalName,
-                mimetype: file.mimeType,
-                size: file.size,
-                path: file.url,
-                category: 'ARTWORK',
-                tag: 'attachment',
-                adminReviewed: false
-              });
-            });
-            await Promise.all(fileUploadPromises);
+          // Create a new folder for this task
+          const folder = await virtualFolderRepository.create({
+            name: `${customerName} - Artwork`,
+            taskId: task._id.toString()
+          });
 
-            // Sync with Task directly
-            newEntries.forEach(file => {
-              task.files.push({
-                url: file.url,
-                name: file.originalName,
-                tag: 'attachment'
-              });
+          // Sync uploaded files with FileUpload to show in Artwork Manager
+          const fileUploadPromises = newEntries.map(file => {
+            return fileUploadRepository.create({
+              userId: `CUSTOMER_${fileStore.uploadToken}`,
+              orderId: fileStore.orderId.toString(),
+              taskId: task._id.toString(),
+              folderId: folder._id.toString(),
+              filename: file.filename,
+              originalName: file.originalName,
+              mimetype: file.mimeType,
+              size: file.size,
+              path: file.url,
+              category: 'TASK',
+              tag: 'attachment',
+              adminReviewed: false
             });
-            await task.save();
-          }
+          });
+          await Promise.all(fileUploadPromises);
+
+          // Sync with Task directly
+          newEntries.forEach(file => {
+            task.files.push({
+              url: file.url,
+              name: file.originalName,
+              tag: 'attachment'
+            });
+          });
+          await task.save();
         }
       } catch (syncError) {
         console.error('[FileStoreController] Error syncing uploaded files to task/folder:', syncError);
