@@ -44,12 +44,20 @@ const categories = [
 export default function ArtworksManager() {
   const { addUpload, updateProgress, updateStatus } = useUploadStore();
   const { data: session } = useSession();
-  const { data: response, isPending, refetch, isFetching: isFetchingFiles } = useAllFiles();
+  const allFilesQuery = useAllFiles();
+  const response = allFilesQuery.data;
+  const isPending = allFilesQuery.isPending;
+  const refetch = allFilesQuery.refetch;
+  const isFetchingFiles = allFilesQuery.isFetching;
   const ordersQuery = useOrders();
   const ordersResponse = ordersQuery.data;
   const isFetchingOrders = ordersQuery.isFetching;
-  const { data: usersResponse, isPending: usersPending } = useUsers();
-  const { data: tasksResponse, isPending: tasksPending } = useTasks();
+  const usersQuery = useUsers();
+  const usersResponse = usersQuery.data;
+  const usersPending = usersQuery.isPending;
+  const tasksQuery = useTasks();
+  const tasksResponse = tasksQuery.data;
+  const tasksPending = tasksQuery.isPending;
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
   const searchParams = useSearchParams();
 

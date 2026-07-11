@@ -47,12 +47,18 @@ export default function PackagingManager() {
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
   const searchParams = useSearchParams();
-  const { data: response, isPending, refetch, isFetching } = useAllFiles();
+  const allFilesQuery = useAllFiles();
+  const response = allFilesQuery.data;
+  const isPending = allFilesQuery.isPending;
+  const refetch = allFilesQuery.refetch;
+  const isFetching = allFilesQuery.isFetching;
   const ordersQuery = useOrders();
   const ordersResponse = ordersQuery.data;
-  const { data: tasksResponse } = useTasks();
+  const tasksQuery = useTasks();
+  const tasksResponse = tasksQuery.data;
   const { mutate: updateTask } = useUpdateTask();
-  const { data: usersResponse } = useUsers();
+  const usersQuery = useUsers();
+  const usersResponse = usersQuery.data;
 
   const { data: virtualFoldersResponse } = useQuery({
     queryKey: ["virtualFolders"],
