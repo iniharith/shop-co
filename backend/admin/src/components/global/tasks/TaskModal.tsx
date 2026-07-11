@@ -750,16 +750,27 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
                     toast.promise(Promise.all(uploadPromises), {
                       loading: `Uploading ${files.length} file(s)...`,
-                      success: () => {
+                      success: (uploadedData) => {
                         queryClient.invalidateQueries({ queryKey: ["taskFiles", task._id] });
+                        
+                        // Post a single comment with images/links
+                        let commentBody = `Attached ${files.length} file(s):\n`;
+                        uploadedData.forEach(d => {
+                          if (d && d.url) {
+                            const isImage = d.url.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+                            if (isImage) {
+                              commentBody += `![](${d.url})\n`;
+                            } else {
+                              commentBody += `[${d.originalName}](${d.url})\n`;
+                            }
+                          }
+                        });
+                        addComment({ id: task._id, text: commentBody });
+
                         return `Successfully uploaded ${files.length} file(s)`;
                       },
                       error: "Failed to upload some files"
                     });
-                  
-                  // Post a single comment for all dropped files
-                  const fileNames = files.map(f => f.name).join(', ');
-                  addComment({ id: task._id, text: `Attached ${files.length} file(s): ${fileNames}` });
                 }
               }}
             >
@@ -768,12 +779,20 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50 rounded-b-lg"
                   onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(false); }}
                 >
-                  <p className="text-sm font-bold text-primary flex items-center gap-2 pointer-events-none">
-                    <DownloadIcon className="w-4 h-4 animate-bounce" /> Drop files to attach
-                  </p>
+                  <div className="flex flex-col items-center gap-4 text-primary pointer-events-none p-6 rounded-2xl bg-background shadow-2xl border-2 border-primary/20">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center animate-bounce">
+                      <UploadCloud className="w-8 h-8" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold">Drop files to attach to this task</p>
+                      <p className="text-sm text-muted-foreground mt-1">Files will be uploaded and added as a comment</p>
+                    </div>
+                  </div>
                 </div>
               )}
-              <div className="flex gap-2">
+              
+              <div className="relative pt-6 border-t border-border/30 mt-6 bg-transparent p-4 rounded-xl">
+                <div className="flex gap-2">
                 <input 
                   type="file" 
                   id="task-file-upload" 

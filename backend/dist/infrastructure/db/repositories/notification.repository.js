@@ -23,7 +23,9 @@ class NotificationRepository extends base_repository_1.BaseRepository {
     }
     getNotificationsByUserId(userId) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.model.find({ userId }).sort({ createdAt: -1 });
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            return yield this.model.find({ userId, createdAt: { $gte: thirtyDaysAgo } }).sort({ createdAt: -1 }).limit(100).lean();
         });
     }
     markAllNotificationsAsRead(userId) {

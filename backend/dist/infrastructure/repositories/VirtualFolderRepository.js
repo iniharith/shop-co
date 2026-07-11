@@ -24,7 +24,9 @@ class VirtualFolderRepository {
     }
     findAll() {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield VirtualFolder_1.VirtualFolder.find().sort({ createdAt: -1 });
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            return yield VirtualFolder_1.VirtualFolder.find({ createdAt: { $gte: thirtyDaysAgo } }).sort({ createdAt: -1 }).lean();
         });
     }
     findById(id) {

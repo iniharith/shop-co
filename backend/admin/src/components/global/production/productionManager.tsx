@@ -47,7 +47,7 @@ export default function ProductionManager() {
   const token = (session as any)?.accessToken;
   const searchParams = useSearchParams();
   const { data: response, isPending, refetch, isFetching } = useAllFiles();
-  const { data: tasksResponse } = useTasks({ statuses: ALL_STATUSES.join(',') });
+  const { data: tasksResponse } = useTasks();
   const { mutate: updateTask } = useUpdateTask();
   const { data: usersResponse } = useUsers();
   

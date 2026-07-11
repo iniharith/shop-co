@@ -9,6 +9,7 @@ import { BaseRepository } from "./base.repository";
 export class NotificationRepository extends BaseRepository<NotificationDocument> {
     constructor() {
         super(NotificationModel);
+    }
 
     async createNotification(notification: any) {
         return await this.model.create(notification);

@@ -49,7 +49,7 @@ export default function ArtworksManager() {
   const { data: response, isPending, refetch, isFetching: isFetchingFiles } = useAllFiles();
   const { data: ordersResponse, isFetching: isFetchingOrders } = useOrders();
   const { data: usersResponse, isPending: usersPending } = useUsers();
-  const { data: tasksResponse, isPending: tasksPending } = useTasks({ statuses: ALL_STATUSES.join(',') });
+  const { data: tasksResponse, isPending: tasksPending } = useTasks();
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
   const searchParams = useSearchParams();
 

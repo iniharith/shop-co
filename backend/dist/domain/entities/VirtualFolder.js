@@ -44,4 +44,5 @@ const VirtualFolderSchema = new mongoose_1.Schema({
     userId: { type: String, index: true },
     taskId: { type: String, index: true },
 }, { timestamps: true });
-exports.VirtualFolder = mongoose_1.default.model('VirtualFolder', VirtualFolderSchema);
+VirtualFolderSchema.index({ createdAt: -1 });
+exports.VirtualFolder = mongoose_1.default.models.VirtualFolder || mongoose_1.default.model('VirtualFolder', VirtualFolderSchema);

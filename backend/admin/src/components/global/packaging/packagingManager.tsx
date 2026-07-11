@@ -49,7 +49,7 @@ export default function PackagingManager() {
   const searchParams = useSearchParams();
   const { data: response, isPending, refetch, isFetching } = useAllFiles();
   const { data: ordersResponse } = useOrders();
-  const { data: tasksResponse } = useTasks({ statuses: ["PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED"].join(',') });
+  const { data: tasksResponse } = useTasks();
   const { mutate: updateTask } = useUpdateTask();
   const { data: usersResponse } = useUsers();
 
