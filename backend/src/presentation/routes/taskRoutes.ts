@@ -45,6 +45,7 @@ router.get(
     const role = authReq.role;
     const filters: any = {
       status: req.query.status as string,
+      statuses: req.query.statuses ? (req.query.statuses as string).split(',') : undefined,
       assignee: req.query.assignee as string,
       orderId: req.query.orderId as string,
     };

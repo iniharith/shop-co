@@ -40,13 +40,14 @@ const categories = [
   "FOOD PACKAGING"
 ];
 
+const ALL_STATUSES = ["IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING"];
+
 export default function ProductionManager() {
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
   const searchParams = useSearchParams();
   const { data: response, isPending, refetch, isFetching } = useAllFiles();
-  const { data: ordersResponse } = useOrders();
-  const { data: tasksResponse } = useTasks();
+  const { data: tasksResponse } = useTasks({ statuses: ALL_STATUSES.join(',') });
   const { mutate: updateTask } = useUpdateTask();
   const { data: usersResponse } = useUsers();
   

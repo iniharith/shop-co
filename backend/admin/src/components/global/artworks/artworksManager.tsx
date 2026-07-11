@@ -41,13 +41,15 @@ const categories = [
   "FOOD PACKAGING"
 ];
 
+const ALL_STATUSES = ["PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN"];
+
 export default function ArtworksManager() {
   const { addUpload, updateProgress, updateStatus } = useUploadStore();
   const { data: session } = useSession();
   const { data: response, isPending, refetch, isFetching: isFetchingFiles } = useAllFiles();
   const { data: ordersResponse, isFetching: isFetchingOrders } = useOrders();
   const { data: usersResponse, isPending: usersPending } = useUsers();
-  const { data: tasksResponse, isPending: tasksPending } = useTasks();
+  const { data: tasksResponse, isPending: tasksPending } = useTasks({ statuses: ALL_STATUSES.join(',') });
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
   const searchParams = useSearchParams();
 
