@@ -1,26 +1,30 @@
-# Exclude entire sibling project folders
-../backend
-../frontend
-../admin-desktop
-../node_modules
-../scratch
+# Exclude node_modules - EAS installs fresh anyway
+node_modules/
 
-# Root-level scripts and files
-../*.js
-../*.py
-../*.csv
-../*.json
-../*.xlsx
-../*.html
-../*.log
-../*.txt
-../*.md
-
-# Mobile: exclude dev-only and generated folders
+# Exclude build outputs
 android/
 ios/
-node_modules/
-.expo/
 dist/
-web-build/
-*.orig.*
+build/
+
+# Exclude test files
+__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+
+# Exclude git artifacts
+.git/
+.github/
+
+# Exclude IDE/editor config
+.vscode/
+.idea/
+
+# Exclude logs
+*.log
+npm-debug.log*
+
+# Exclude env files
+.env.local
+.env.development

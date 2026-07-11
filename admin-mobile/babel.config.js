@@ -2,15 +2,7 @@ module.exports = function (api) {
   api.cache(true);
   return {
     presets: [
-      [
-        "babel-preset-expo",
-        {
-          jsxImportSource: "nativewind",
-          // Disable auto-loading of removed packages
-          worklets: false,
-          reanimated: false,
-        },
-      ],
+      ["babel-preset-expo", { jsxImportSource: "nativewind" }],
       "nativewind/babel",
     ],
   };

@@ -2,7 +2,7 @@
   "expo": {
     "name": "KampungCetak Admin",
     "slug": "admin-mobile",
-    "version": "1.9.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "adminmobile",
@@ -55,7 +55,7 @@
       }
     },
     "runtimeVersion": {
-      "policy": "sdkVersion"
+      "policy": "appVersion"
     },
     "updates": {
       "url": "https://u.expo.dev/4da5e40c-155f-4161-a0a9-c380a4635f62"

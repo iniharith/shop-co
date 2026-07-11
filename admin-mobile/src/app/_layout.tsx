@@ -14,28 +14,24 @@ export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
     const initAuth = async () => {
-      // Safety timeout: if checkAuth hangs for more than 3s, proceed anyway
+      // Safety timeout: if checkAuth hangs for more than 5s, proceed anyway
       const timeout = setTimeout(() => {
-        if (!mounted) return;
         setIsReady(true);
-        SplashScreen.hideAsync().catch(() => {});
-      }, 3000);
+        SplashScreen.hideAsync();
+      }, 5000);
 
       try {
         await checkAuth();
       } catch (e) {
         console.error('Auth check error:', e);
       } finally {
-        if (!mounted) return;
         clearTimeout(timeout);
         setIsReady(true);
-        SplashScreen.hideAsync().catch(() => {});
+        SplashScreen.hideAsync();
       }
     };
     initAuth();
-    return () => { mounted = false; };
   }, []);
 
   useEffect(() => {
@@ -48,18 +44,12 @@ export default function RootLayout() {
     } else if (token && inAuthGroup) {
       router.replace('/(app)');
     }
-    
-    // Hide splash screen after navigation logic is determined and we are ready
-    setTimeout(() => {
-      SplashScreen.hideAsync().catch(console.warn);
-    }, 100);
   }, [token, segments, isReady]);
 
   if (!isReady) {
-    // Match background to splash screen color to prevent white flash
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000000' }}>
-        <ActivityIndicator size="large" color="#ffffff" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' }}>
+        <ActivityIndicator size="large" color="#0f172a" />
       </View>
     );
   }
