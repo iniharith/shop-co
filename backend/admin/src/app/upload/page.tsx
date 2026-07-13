@@ -8,6 +8,56 @@ import { Input } from "@/components/ui/input";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
+type FileStatus = "pending" | "uploading" | "done" | "error";
+interface FileState {
+  file: File;
+  status: FileStatus;
+  progress: number;
+  error?: string;
+  uploaded?: { key: string; originalName: string; mimetype: string; size: number; path: string };
+}
+
+const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB — generous for print files, but stops accidental huge uploads
+const UPLOAD_CONCURRENCY = 3;
+
+// fetch with a hard timeout — a plain fetch() with no timeout can hang
+// forever on a flaky connection, which is what made this page look "stuck".
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err: any) {
+    if (err.name === "AbortError") {
+      throw new Error("Request timed out. Please check your internet connection and try again.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// XHR (not fetch) so we get real upload progress for the S3 PUT, and a
+// hard timeout so a stalled upload fails visibly instead of hanging.
+function uploadToS3WithProgress(url: string, file: File, onProgress: (pct: number) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.timeout = 180000; // 3 minutes — large print files over mobile data need headroom
+    xhr.open("PUT", url);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`Upload failed (status ${xhr.status}). Please try again.`));
+    };
+    xhr.onerror = () => reject(new Error("Network error during upload. Please check your connection and try again."));
+    xhr.ontimeout = () => reject(new Error("Upload timed out. Please check your connection and try again."));
+    xhr.send(file);
+  });
+}
+
 export default function CustomerUploadPortal() {
   const [orderId, setOrderId] = useState("");
   const [username, setUsername] = useState("");
@@ -15,14 +65,19 @@ export default function CustomerUploadPortal() {
   const [item, setItem] = useState("");
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [generatedLink, setGeneratedLink] = useState("");
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [uploadStats, setUploadStats] = useState({ current: 0, total: 0 });
+  const [fileStates, setFileStates] = useState<FileState[]>([]);
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setSelectedFiles(Array.from(e.target.files));
+    if (!e.target.files) return;
+    const incoming = Array.from(e.target.files);
+    const tooBig = incoming.filter(f => f.size > MAX_FILE_SIZE);
+    const ok = incoming.filter(f => f.size <= MAX_FILE_SIZE);
+    if (tooBig.length > 0) {
+      toast.error(`${tooBig.map(f => f.name).join(", ")} ${tooBig.length > 1 ? "are" : "is"} over the 200MB limit and won't be uploaded.`);
     }
+    setFileStates(prev => [...prev, ...ok.map(file => ({ file, status: "pending" as FileStatus, progress: 0 }))]);
+    e.target.value = ""; // allow re-selecting the same file after removal
   };
 
   const parsePastedText = (text: string) => {
@@ -93,110 +148,129 @@ export default function CustomerUploadPortal() {
   };
 
   const removeFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setFileStates(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadOneFile = async (index: number) => {
+    const { file } = fileStates[index];
+    setFileStates(prev => prev.map((f, i) => i === index ? { ...f, status: "uploading", progress: 0, error: undefined } : f));
+
+    try {
+      // 1. Get presigned URL (10s — this is just a tiny JSON call)
+      const urlRes = await fetchWithTimeout(`${BACKEND}/api/files/customer/upload-url`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: file.name,
+          contentType: file.type,
+          orderId: orderId.trim(),
+          username: username.trim(),
+          phoneNumber: phoneNumber.trim(),
+          item: item.trim()
+        })
+      }, 10000);
+
+      if (!urlRes.ok) {
+        const err = await urlRes.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to get upload link");
+      }
+      const { url, key, publicUrl } = await urlRes.json();
+
+      // 2. Upload directly to S3 with real progress + its own timeout
+      await uploadToS3WithProgress(url, file, (pct) => {
+        setFileStates(prev => prev.map((f, i) => i === index ? { ...f, progress: pct } : f));
+      });
+
+      const uploaded = {
+        key,
+        originalName: file.name,
+        mimetype: file.type,
+        size: file.size,
+        path: publicUrl
+      };
+      setFileStates(prev => prev.map((f, i) => i === index ? { ...f, status: "done", progress: 100, uploaded } : f));
+      return true;
+    } catch (err: any) {
+      setFileStates(prev => prev.map((f, i) => i === index ? { ...f, status: "error", error: err.message || "Upload failed" } : f));
+      return false;
+    }
   };
 
   const handleUpload = async () => {
-    if (!orderId.trim()) {
-      toast.error("Please enter your Order ID");
-      return;
-    }
-    if (!username.trim()) {
-      toast.error("Please enter your Username");
-      return;
-    }
-    if (!phoneNumber.trim()) {
-      toast.error("Please enter your Phone Number");
-      return;
-    }
-    if (!item.trim()) {
-      toast.error("Please enter the Item name");
-      return;
-    }
-    if (selectedFiles.length === 0) {
-      toast.error("Please select at least one file to upload");
-      return;
-    }
+    if (!orderId.trim()) return toast.error("Please enter your Order ID");
+    if (!username.trim()) return toast.error("Please enter your Username");
+    if (!phoneNumber.trim()) return toast.error("Please enter your Phone Number");
+    if (!item.trim()) return toast.error("Please enter the Item name");
+    if (fileStates.length === 0) return toast.error("Please select at least one file to upload");
 
     setUploading(true);
-    setUploadStats({ current: 0, total: selectedFiles.length });
-    const toastId = toast.loading(`Uploading files (0/${selectedFiles.length})...`);
+    const toastId = toast.loading("Uploading files...");
 
-    try {
-      const uploadedFiles = [];
-      
-      for (let i = 0; i < selectedFiles.length; i++) {
-        toast.loading(`Uploading files (${i + 1}/${selectedFiles.length})...`, { id: toastId });
-        setUploadStats({ current: i + 1, total: selectedFiles.length });
-        const file = selectedFiles[i];
-        
-        // 1. Get presigned URL
-        const urlRes = await fetch(`${BACKEND}/api/files/customer/upload-url`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            filename: file.name, 
-            contentType: file.type,
-            orderId: orderId.trim(),
-            username: username.trim(),
-            phoneNumber: phoneNumber.trim(),
-            item: item.trim()
-          })
-        });
-        
-        if (!urlRes.ok) {
-          const err = await urlRes.json().catch(() => ({}));
-          throw new Error(err.message || "Failed to get upload link");
-        }
-        
-        const { url, key, publicUrl } = await urlRes.json();
-        
-        // 2. Upload directly to S3
-        const s3Res = await fetch(url, {
-          method: "PUT",
-          headers: { "Content-Type": file.type || "application/octet-stream" },
-          body: file
-        });
-        
-        if (!s3Res.ok) throw new Error(`Failed to upload ${file.name}`);
-        
-        uploadedFiles.push({
-          key,
-          originalName: file.name,
-          mimetype: file.type,
-          size: file.size,
-          path: publicUrl
-        });
+    // Only upload files that aren't already "done" — a retry after a partial
+    // failure won't re-upload files that already succeeded.
+    const pendingIndexes = fileStates
+      .map((f, i) => ({ f, i }))
+      .filter(({ f }) => f.status !== "done")
+      .map(({ i }) => i);
+
+    // Run uploads with limited concurrency instead of one-at-a-time — this is
+    // the main fix for the page feeling slow with multiple files.
+    let cursor = 0;
+    let completedCount = 0;
+    async function worker() {
+      while (cursor < pendingIndexes.length) {
+        const myIndex = pendingIndexes[cursor++];
+        await uploadOneFile(myIndex);
+        completedCount++;
+        toast.loading(`Uploading files (${completedCount}/${pendingIndexes.length})...`, { id: toastId });
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(UPLOAD_CONCURRENCY, pendingIndexes.length) }, worker));
+
+    // Re-read latest state after all workers finish
+    setFileStates(current => {
+      const allDone = current.every(f => f.status === "done");
+      const anyFailed = current.some(f => f.status === "error");
+
+      if (!allDone) {
+        toast.error(
+          anyFailed
+            ? "Some files failed to upload. Fix your connection and press Submit again — completed files won't be re-uploaded."
+            : "Upload incomplete. Please try again.",
+          { id: toastId }
+        );
+        setUploading(false);
+        return current;
       }
 
-      // 3. Save metadata
-      const metaRes = await fetch(`${BACKEND}/api/files/customer/save-metadata`, {
+      // 3. All files uploaded to S3 — now save metadata (10s timeout)
+      const uploadedFiles = current.map(f => f.uploaded).filter(Boolean);
+      fetchWithTimeout(`${BACKEND}/api/files/customer/save-metadata`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           files: uploadedFiles,
           orderId: orderId.trim(),
           username: username.trim(),
           phoneNumber: phoneNumber.trim(),
           item: item.trim()
         })
-      });
-      
-      if (!metaRes.ok) throw new Error("Failed to save file metadata");
+      }, 15000)
+        .then(async (metaRes) => {
+          if (!metaRes.ok) throw new Error("Failed to save file metadata. Please try submitting again.");
+          toast.success("Files uploaded successfully!", { id: toastId });
+          setSuccess(true);
+          setFileStates([]);
+        })
+        .catch((err: any) => {
+          // Files are already safely in S3 at this point — pressing Submit
+          // again will retry only the metadata save, not re-upload files.
+          toast.error(err.message || "Couldn't finalize your submission. Please press Submit again.", { id: toastId });
+        })
+        .finally(() => setUploading(false));
 
-      const data = await metaRes.json();
-      const customerShareLink = `https://admin.kampungcetak.com/share/${data.shareLinkSlug}`;
-      setGeneratedLink(customerShareLink);
-
-      toast.success("Files uploaded successfully!", { id: toastId });
-      setSuccess(true);
-      setSelectedFiles([]);
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || "Upload failed. Please try again.", { id: toastId });
-    } finally {
-      setUploading(false);
-    }
+      return current;
+    });
   };
 
   if (success) {
@@ -215,27 +289,14 @@ export default function CustomerUploadPortal() {
           <p className="text-white/60 mb-8">
             Thank you, {username}. Your artwork for Order #{orderId} has been successfully submitted to our team.
           </p>
-
           <Button 
-            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold h-12 text-lg mb-4"
-            onClick={() => {
-              navigator.clipboard.writeText(generatedLink);
-              toast.success("Link copied to clipboard!");
-            }}
-          >
-            Copy Link to Your Artwork
-          </Button>
-
-          <Button 
-            variant="outline"
-            className="w-full border-white/20 text-white hover:bg-white/10"
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold"
             onClick={() => {
               setSuccess(false);
               setOrderId("");
               setUsername("");
               setPhoneNumber("");
               setItem("");
-              setGeneratedLink("");
             }}
           >
             Upload More Files
@@ -257,7 +318,7 @@ export default function CustomerUploadPortal() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">Order Number / Order ID <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-white/80">Order ID <span className="text-red-500">*</span></label>
               <Input 
                 placeholder="e.g. #12345 or paste details here" 
                 value={orderId}
@@ -316,29 +377,45 @@ export default function CustomerUploadPortal() {
             </Button>
           </div>
 
-          {selectedFiles.length > 0 && (
+          {fileStates.length > 0 && (
             <div className="bg-black/40 rounded-lg p-4 border border-white/5 space-y-3 max-h-60 overflow-y-auto">
-              <h4 className="text-sm font-medium text-white/60 mb-2">{selectedFiles.length} File(s) Selected</h4>
-              {selectedFiles.map((file, i) => (
-                <div key={i} className="flex items-center justify-between bg-[#1a1a1a] p-2.5 rounded border border-white/5">
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    {file.type.includes('image') ? (
-                      <ImageIcon className="w-5 h-5 text-blue-400 shrink-0" />
-                    ) : (
-                      <FileText className="w-5 h-5 text-gray-400 shrink-0" />
-                    )}
-                    <div className="truncate">
-                      <p className="text-sm font-medium truncate">{file.name}</p>
-                      <p className="text-xs text-white/40">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+              <h4 className="text-sm font-medium text-white/60 mb-2">{fileStates.length} File(s) Selected</h4>
+              {fileStates.map(({ file, status, progress, error }, i) => (
+                <div key={i} className="bg-[#1a1a1a] p-2.5 rounded border border-white/5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      {file.type.includes('image') ? (
+                        <ImageIcon className="w-5 h-5 text-blue-400 shrink-0" />
+                      ) : (
+                        <FileText className="w-5 h-5 text-gray-400 shrink-0" />
+                      )}
+                      <div className="truncate">
+                        <p className="text-sm font-medium truncate">{file.name}</p>
+                        <p className="text-xs text-white/40">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                          {status === "uploading" && ` · Uploading ${progress}%`}
+                          {status === "done" && " · Uploaded"}
+                          {status === "error" && ` · ${error || "Failed"}`}
+                        </p>
+                      </div>
                     </div>
+                    {status === "done" ? (
+                      <Check className="w-4 h-4 text-green-400 shrink-0" />
+                    ) : (
+                      <button
+                        onClick={() => removeFile(i)}
+                        disabled={uploading}
+                        className="p-1.5 hover:bg-white/10 rounded text-white/60 hover:text-white transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
-                  <button 
-                    onClick={() => removeFile(i)}
-                    disabled={uploading}
-                    className="p-1.5 hover:bg-white/10 rounded text-white/60 hover:text-white transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  {status === "uploading" && (
+                    <div className="w-full h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
+                      <div className="h-full bg-yellow-500 transition-all" style={{ width: `${progress}%` }} />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -347,7 +424,7 @@ export default function CustomerUploadPortal() {
           <Button 
             className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold h-12 text-lg"
             onClick={handleUpload}
-            disabled={uploading || selectedFiles.length === 0}
+            disabled={uploading || fileStates.length === 0}
           >
             {uploading ? (
               <>
@@ -373,7 +450,7 @@ export default function CustomerUploadPortal() {
         </p>
       </div>
 
-      {uploading && uploadStats.total > 0 && (
+      {uploading && fileStates.length > 0 && (
         <div className="fixed top-4 right-4 bg-background/95 backdrop-blur-md border border-border/50 p-4 rounded-xl shadow-2xl flex items-center gap-4 z-50">
           <div className="relative flex items-center justify-center">
             <CloudUpload className="w-8 h-8 text-blue-500 animate-pulse" />
@@ -381,7 +458,7 @@ export default function CustomerUploadPortal() {
           <div>
             <h3 className="text-sm font-semibold text-white">Uploading Files</h3>
             <p className="text-xs text-muted-foreground font-medium">
-              File {uploadStats.current} of {uploadStats.total}
+              {fileStates.filter(f => f.status === "done").length} of {fileStates.length} complete
             </p>
           </div>
         </div>
