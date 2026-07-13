@@ -724,7 +724,7 @@ router.post(
     );
 
     // ── Real-time: broadcast the new task + files to all admin tabs ────────
-    await emitTaskUpdated('task_created', { task: savedTask });
+    emitTaskUpdated('task_created', { task: savedTask }).catch(console.error);
 
     res.json({ success: true, data: savedFiles, task: savedTask });
   })
