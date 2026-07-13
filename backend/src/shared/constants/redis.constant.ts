@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Coded by Harith
  * Kampungcetak ®
  */
@@ -18,4 +18,5 @@ export enum REDIS_CHANNELS {
     ORDER_PLACED = "order_placed",
     CHAT_MESSAGE = "chat_message",
     FILES_UPDATED = "files_updated",
+    TASK_UPDATED = "task_updated",
 }
