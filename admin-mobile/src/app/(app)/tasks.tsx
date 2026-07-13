@@ -23,7 +23,7 @@ export default function TasksScreen() {
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsedColumns, setCollapsedColumns] = useState<string[]>([]);
-  const [collapsedListSections, setCollapsedListSections] = useState<string[]>(COLUMNS);
+  const [collapsedListSections, setCollapsedListSections] = useState<string[]>([]);
 
   // Multi-select state
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);

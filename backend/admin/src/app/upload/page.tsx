@@ -185,8 +185,8 @@ export default function CustomerUploadPortal() {
       if (!metaRes.ok) throw new Error("Failed to save file metadata");
 
       const data = await metaRes.json();
-      const adminDeepLink = `https://admin.kampungcetak.com/admin/artworks?folder=${encodeURIComponent(username.trim() + "-" + orderId.trim() + "-" + data.task._id)}`;
-      setGeneratedLink(adminDeepLink);
+      const customerShareLink = `https://admin.kampungcetak.com/share/${data.shareLinkSlug}`;
+      setGeneratedLink(customerShareLink);
 
       toast.success("Files uploaded successfully!", { id: toastId });
       setSuccess(true);
@@ -223,7 +223,7 @@ export default function CustomerUploadPortal() {
               toast.success("Link copied to clipboard!");
             }}
           >
-            Copy Link and Give to Admin
+            Copy Link to Your Artwork
           </Button>
 
           <Button 
