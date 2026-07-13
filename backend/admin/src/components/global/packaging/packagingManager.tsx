@@ -574,10 +574,10 @@ export default function PackagingManager() {
           No files in packaging right now.
         </div>
       ) : (
-        <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-220px)] min-h-[600px]">
+        <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-220px)] min-h-[600px] min-w-0 w-full">
           
           {/* LEFT PANEL (MASTER) */}
-          <div className="w-full lg:w-1/3 xl:w-1/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
+          <div className="w-full lg:w-[320px] xl:w-[380px] shrink-0 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
             <div className="p-4 border-b bg-muted/30 font-semibold text-sm flex justify-between items-center shrink-0">
               <span>Task Folders</span>
               <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">{groupedFiles.length}</span>
@@ -617,7 +617,7 @@ export default function PackagingManager() {
           </div>
 
           {/* RIGHT PANEL (DETAIL) */}
-          <div className="min-w-0 w-full lg:w-2/3 xl:w-3/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
+          <div className="flex-1 min-w-0 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
             {selectedFolder ? (() => {
               const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId || ""}` === selectedFolder);
               if (!activeGroup) {
@@ -778,7 +778,7 @@ export default function PackagingManager() {
                     </div>
                   </div>
                   
-                  <div className="p-4 sm:p-6 flex-1 overflow-y-auto min-h-0 bg-background/50 relative">
+                  <div className="p-4 sm:p-6 flex-1 overflow-y-auto min-h-0 bg-background/50 relative min-w-0">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
                         {activeSubFolderId ? "Subfolder Contents" : `${activeGroup.files.length} Attachments`}
