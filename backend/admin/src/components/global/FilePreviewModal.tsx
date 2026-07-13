@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
-import { Dialog, DialogContent, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { X, ExternalLink, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -66,6 +66,7 @@ export const FilePreviewModal = ({
           <DialogTitle className="text-sm font-medium truncate pr-4 max-w-[70%]">
             {fileName} {files.length > 1 && currentIndex >= 0 && <span className="text-gray-400 ml-2">({currentIndex + 1} of {files.length})</span>}
           </DialogTitle>
+                <DialogDescription className="sr-only">Dialog Content</DialogDescription>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 h-8 w-8" onClick={() => window.open(fileUrl, "_blank")} title="Open in new tab">
               <ExternalLink className="w-4 h-4" />

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import React, { useState } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -400,6 +400,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
             <div className="p-4 md:p-6 border-b border-border/50 shrink-0">
               <DialogHeader>
                 <DialogTitle className="sr-only">Task Details</DialogTitle>
+                <DialogDescription className="sr-only">Dialog Content</DialogDescription>
                   <Input 
                     value={title} 
                     onChange={(e) => setTitle(e.target.value)} 

@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import ImageNext from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -553,6 +553,7 @@ export default function ArtworksManager() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Upload Artwork for User</DialogTitle>
+                <DialogDescription className="sr-only">Dialog Content</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 {!(uploadData.userId || uploadData.taskId || uploadData.orderId) && (
@@ -1114,6 +1115,7 @@ export default function ArtworksManager() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Admin Note</DialogTitle>
+                <DialogDescription className="sr-only">Dialog Content</DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Textarea
@@ -1134,6 +1136,7 @@ export default function ArtworksManager() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create Sub-Folder</DialogTitle>
+                <DialogDescription className="sr-only">Dialog Content</DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Label>Folder Name</Label>
@@ -1174,6 +1177,7 @@ export default function ArtworksManager() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Move {selectedFiles.length} item(s)</DialogTitle>
+                <DialogDescription className="sr-only">Dialog Content</DialogDescription>
           </DialogHeader>
           <div className="py-4 flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-2">
             {(() => {

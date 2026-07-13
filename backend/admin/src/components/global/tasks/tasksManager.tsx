@@ -12,7 +12,7 @@ import {
   ChevronDown, ChevronRight, Settings2, Check, RefreshCw,
   CheckCircle, Circle, ArrowDownUp, X, UserCheck, CalendarClock, Layers,
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -338,7 +338,8 @@ export default function TasksManager() {
               </Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Create New Task</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>Create New Task</DialogTitle>
+                <DialogDescription className="sr-only">Dialog Content</DialogDescription></DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Task Title</label>

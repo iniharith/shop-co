@@ -20,7 +20,7 @@ import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import ImageNext from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VirtuosoGrid } from "react-virtuoso";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "next-auth/react";
@@ -536,6 +536,7 @@ export default function PackagingManager() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Upload File for Packaging</DialogTitle>
+                <DialogDescription className="sr-only">Dialog Content</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
@@ -878,6 +879,7 @@ export default function PackagingManager() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Admin Note</DialogTitle>
+                <DialogDescription className="sr-only">Dialog Content</DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Textarea

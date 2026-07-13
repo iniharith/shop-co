@@ -5,7 +5,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -169,6 +169,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{isEditing ? "Pencil User" : "Add New User"}</DialogTitle>
+                <DialogDescription className="sr-only">Dialog Content</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="flex flex-col items-center gap-4 mb-4">
