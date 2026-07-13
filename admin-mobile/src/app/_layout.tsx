@@ -15,11 +15,11 @@ export default function RootLayout() {
 
   useEffect(() => {
     const initAuth = async () => {
-      // Safety timeout: if checkAuth hangs for more than 5s, proceed anyway
+      // Safety timeout: if checkAuth hangs for more than 3s, proceed anyway
       const timeout = setTimeout(() => {
         setIsReady(true);
         SplashScreen.hideAsync();
-      }, 5000);
+      }, 3000);
 
       try {
         await checkAuth();
@@ -48,8 +48,8 @@ export default function RootLayout() {
 
   if (!isReady) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' }}>
-        <ActivityIndicator size="large" color="#0f172a" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000000' }}>
+        <ActivityIndicator size="large" color="#ffffff" />
       </View>
     );
   }

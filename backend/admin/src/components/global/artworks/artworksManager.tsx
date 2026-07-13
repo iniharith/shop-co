@@ -424,6 +424,11 @@ export default function ArtworksManager() {
     return `${backendUrl}/${path}`;
   };
 
+  const getThumbnailUrl = (path: string) => {
+    const rawUrl = getFileUrl(path);
+    return `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&w=200&h=200&fit=cover`;
+  };
+
   const handleCopyLink = (e: React.MouseEvent, file: any) => {
     e.preventDefault();
     e.stopPropagation();
@@ -440,9 +445,11 @@ export default function ArtworksManager() {
       return (
         <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center relative group/thumb">
           <img 
-            src={getFileUrl(file.path)} 
+            src={getThumbnailUrl(file.path)} 
             alt={file.originalName} 
             className="object-cover w-full h-full absolute inset-0 z-0 transition-transform group-hover/thumb:scale-105" 
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
               const nextEl = e.currentTarget.nextElementSibling as HTMLElement;
