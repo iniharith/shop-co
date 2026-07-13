@@ -826,18 +826,9 @@ export default function ProductionManager() {
                       {visibleFiles.length > 0 && (
                         <VirtuosoGrid
                           useWindowScroll
-                          className="w-full"
                           totalCount={visibleFiles.length}
-                          components={{
-                            List: React.forwardRef(({ style, children, ...props }: any, ref) => (
-                              <div ref={ref} {...props} style={{ ...style, display: 'grid' }} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 w-full">
-                                {children}
-                              </div>
-                            )),
-                            Item: ({ children, ...props }: any) => (
-                              <div {...props} className="h-full flex flex-col">{children}</div>
-                            )
-                          }}
+                          listClassName="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 w-full pt-4"
+                          itemClassName="h-full flex flex-col"
                           itemContent={(index) => {
                             const file = visibleFiles[index];
                             return (
