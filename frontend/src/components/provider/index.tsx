@@ -10,7 +10,6 @@ import { Toaster } from "sonner";
 import NextTopLoader from "nextjs-toploader";
 import ReactQueryProvider from "./react-query";
 import { SessionProvider, SessionProviderProps } from "next-auth/react";
-import SocketProvider from "./socketProvider";
 import LiveSessionMonitor from "./liveSessionMonitor";
 
 const Provider = ({
@@ -23,7 +22,6 @@ const Provider = ({
   return (
       <SessionProvider session={session}>
         <ReactQueryProvider>
-          <SocketProvider>
             <NextTopLoader
               height={2}
               shadow="0 0 10px white"
@@ -41,7 +39,6 @@ const Provider = ({
                 <LiveSessionMonitor>{children}</LiveSessionMonitor>
               </HeroUIProvider>
             </ThemeProvider>
-          </SocketProvider>
         </ReactQueryProvider>
       </SessionProvider>
   );
