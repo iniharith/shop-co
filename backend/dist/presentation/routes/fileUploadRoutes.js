@@ -237,15 +237,13 @@ router.get('/', (0, express_async_handler_1.default)((req, res) => __awaiter(voi
         }
         return file;
     });
-    const stats = yield FileUploadRepository_1.fileUploadRepository.getStorageStats();
-    res.json({ success: true, data: enrichedFiles, stats, count: enrichedFiles.length });
+    res.json({ success: true, data: enrichedFiles, count: enrichedFiles.length });
 })));
 // ─── GET /api/files/grouped ───────────────────────────────
 // Admin: files grouped by customer (Nextcloud folder view)
 router.get('/grouped', (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const grouped = yield FileUploadRepository_1.fileUploadRepository.getFilesGroupedByUser();
-    const stats = yield FileUploadRepository_1.fileUploadRepository.getStorageStats();
-    res.json({ success: true, data: grouped, stats });
+    res.json({ success: true, data: grouped });
 })));
 // ─── PUT /api/files/:id/reassign ───────────────────────────
 // Admin: fix a file that landed in the wrong folder (e.g. uploaded via a

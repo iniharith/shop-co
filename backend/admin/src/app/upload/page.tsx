@@ -257,7 +257,7 @@ export default function CustomerUploadPortal() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">Order ID <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-white/80">Order Number / Order ID <span className="text-red-500">*</span></label>
               <Input 
                 placeholder="e.g. #12345 or paste details here" 
                 value={orderId}

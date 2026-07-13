@@ -3,10 +3,17 @@
  * Kampungcetak ®
  */
 import { FileUpload, IFileUpload } from '../../domain/entities/FileUpload';
+import { RedisService } from '../redis/redis';
+import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
+
+const redisService = new RedisService();
+const notifyClients = () => redisService.publish(REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' })).catch(console.error);
 
 export class FileUploadRepository {
   async create(data: Partial<IFileUpload>): Promise<IFileUpload> {
-    return FileUpload.create(data);
+    const result = await FileUpload.create(data);
+    notifyClients();
+    return result;
   }
 
   async findByUserId(userId: string): Promise<IFileUpload[]> {
@@ -41,11 +48,13 @@ export class FileUploadRepository {
   }
 
   async updateFilename(id: string, originalName: string): Promise<IFileUpload | null> {
-    return FileUpload.findByIdAndUpdate(
+    const result = await FileUpload.findByIdAndUpdate(
       id,
       { $set: { originalName } },
       { new: true }
     );
+    notifyClients();
+    return result;
   }
 
   // Re-points a file at the correct customer/order/task — used to fix files
@@ -59,7 +68,9 @@ export class FileUploadRepository {
     if (data.orderId) update.orderId = data.orderId;
     if (data.taskId) update.taskId = data.taskId;
     if (data.category) update.category = data.category;
-    return FileUpload.findByIdAndUpdate(id, { $set: update }, { new: true });
+    const result = await FileUpload.findByIdAndUpdate(id, { $set: update }, { new: true });
+    notifyClients();
+    return result;
   }
 
   async updateAdminReview(
@@ -67,15 +78,18 @@ export class FileUploadRepository {
     reviewed: boolean,
     notes?: string
   ): Promise<IFileUpload | null> {
-    return FileUpload.findByIdAndUpdate(
+    const result = await FileUpload.findByIdAndUpdate(
       id,
       { $set: { adminReviewed: reviewed, adminNotes: notes } },
       { new: true }
     );
+    notifyClients();
+    return result;
   }
 
   async delete(id: string): Promise<void> {
     await FileUpload.findByIdAndDelete(id);
+    notifyClients();
   }
 
   async getStorageStats(): Promise<{

@@ -15,10 +15,16 @@ exports.fileUploadRepository = exports.FileUploadRepository = void 0;
  * Kampungcetak ®
  */
 const FileUpload_1 = require("../../domain/entities/FileUpload");
+const redis_1 = require("../redis/redis");
+const redis_constant_1 = require("../../shared/constants/redis.constant");
+const redisService = new redis_1.RedisService();
+const notifyClients = () => redisService.publish(redis_constant_1.REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' })).catch(console.error);
 class FileUploadRepository {
     create(data) {
         return __awaiter(this, void 0, void 0, function* () {
-            return FileUpload_1.FileUpload.create(data);
+            const result = yield FileUpload_1.FileUpload.create(data);
+            notifyClients();
+            return result;
         });
     }
     findByUserId(userId) {
@@ -57,7 +63,9 @@ class FileUploadRepository {
     }
     updateFilename(id, originalName) {
         return __awaiter(this, void 0, void 0, function* () {
-            return FileUpload_1.FileUpload.findByIdAndUpdate(id, { $set: { originalName } }, { new: true });
+            const result = yield FileUpload_1.FileUpload.findByIdAndUpdate(id, { $set: { originalName } }, { new: true });
+            notifyClients();
+            return result;
         });
     }
     // Re-points a file at the correct customer/order/task — used to fix files
@@ -73,17 +81,22 @@ class FileUploadRepository {
                 update.taskId = data.taskId;
             if (data.category)
                 update.category = data.category;
-            return FileUpload_1.FileUpload.findByIdAndUpdate(id, { $set: update }, { new: true });
+            const result = yield FileUpload_1.FileUpload.findByIdAndUpdate(id, { $set: update }, { new: true });
+            notifyClients();
+            return result;
         });
     }
     updateAdminReview(id, reviewed, notes) {
         return __awaiter(this, void 0, void 0, function* () {
-            return FileUpload_1.FileUpload.findByIdAndUpdate(id, { $set: { adminReviewed: reviewed, adminNotes: notes } }, { new: true });
+            const result = yield FileUpload_1.FileUpload.findByIdAndUpdate(id, { $set: { adminReviewed: reviewed, adminNotes: notes } }, { new: true });
+            notifyClients();
+            return result;
         });
     }
     delete(id) {
         return __awaiter(this, void 0, void 0, function* () {
             yield FileUpload_1.FileUpload.findByIdAndDelete(id);
+            notifyClients();
         });
     }
     getStorageStats() {

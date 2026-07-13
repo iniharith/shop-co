@@ -3,11 +3,18 @@
  * Kampungcetak ®
  */
 import { VirtualFolder, IVirtualFolder } from '../../domain/entities/VirtualFolder';
+import { RedisService } from '../redis/redis';
+import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
+
+const redisService = new RedisService();
+const notifyClients = () => redisService.publish(REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' })).catch(console.error);
 
 class VirtualFolderRepository {
   async create(data: Partial<IVirtualFolder>): Promise<IVirtualFolder> {
     const folder = new VirtualFolder(data);
-    return await folder.save();
+    const result = await folder.save();
+    notifyClients();
+    return result;
   }
 
   async findAll(): Promise<IVirtualFolder[]> {
@@ -21,7 +28,9 @@ class VirtualFolderRepository {
   }
 
   async delete(id: string): Promise<IVirtualFolder | null> {
-    return await VirtualFolder.findByIdAndDelete(id);
+    const result = await VirtualFolder.findByIdAndDelete(id);
+    notifyClients();
+    return result;
   }
 }
 

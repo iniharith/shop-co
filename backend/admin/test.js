@@ -20,8 +20,8 @@ const puppeteer = require('puppeteer');
   });
 
   try {
-    console.log('Navigating to http://localhost:3001/admin/tasks ...');
-    await page.goto('http://localhost:3001/admin/tasks', { waitUntil: 'networkidle0' });
+    console.log('Navigating to http://127.0.0.1:3001/auth/login ...');
+    await page.goto('http://127.0.0.1:3001/auth/login', { waitUntil: 'load' });
     console.log('Loaded tasks page.');
   } catch (err) {
     console.error('Navigation failed:', err);

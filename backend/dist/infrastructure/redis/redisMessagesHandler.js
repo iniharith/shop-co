@@ -66,6 +66,10 @@ function handleRedisAndSocketMessageAdmin(redisService, io) {
                 console.log("🟢 new chat message", message);
                 io.emit("new_message", JSON.parse(message));
                 break;
+            case redis_constant_1.REDIS_CHANNELS.FILES_UPDATED:
+                console.log("🟢 files updated broadcast", message);
+                io.emit("files_updated", JSON.parse(message));
+                break;
         }
     }));
 }

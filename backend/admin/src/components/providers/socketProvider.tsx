@@ -82,6 +82,13 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       await client.invalidateQueries({ queryKey: ["notifications"] });
     });
 
+    socket.on("files_updated", async (data) => {
+      console.log("🟢 files updated across clients", data);
+      await client.invalidateQueries({ queryKey: ["groupedFiles"] });
+      await client.invalidateQueries({ queryKey: ["virtualFolders"] });
+      await client.invalidateQueries({ queryKey: ["allFiles"] });
+    });
+
     socket.on("disconnect", () => {
       console.log("🔴 disconnected from socket");
     });

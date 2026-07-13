@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSyncParcel, useSendWhatsApp, useUpdateParcel } from "@/hooks/useAdminDashboard";
 import { RefreshCw, MessageSquare, Download, CircleAlert, Package, Truck, CircleCheckBig, CircleX, Clock, MapPin, Calendar } from "lucide-react";
