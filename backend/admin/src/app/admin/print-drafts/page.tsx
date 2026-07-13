@@ -4,7 +4,7 @@
  */
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useAllFiles } from "@/hooks/useAdminDashboard";
 import { useOrders } from "@/hooks/useOrder";
 import { useUsers } from "@/hooks/useUsers";
@@ -15,25 +15,30 @@ import { Button } from "@/components/ui/button";
 import { BouncySkeleton } from "@/components/global/skeleton/BouncySkeleton";
 
 export default function PrintDraftsPage() {
-  const { data: filesData, isLoading: filesLoading } = useAllFiles();
-  const { data: tasksResponse, isLoading: tasksLoading } = useTasks();
-  const { data: ordersResponse, isLoading: ordersLoading } = useOrders();
-  const { data: usersResponse, isLoading: usersLoading } = useUsers();
+  const { data: filesData, isPending: filesLoading } = useAllFiles();
+  const { data: tasksResponse, isPending: tasksLoading } = useTasks();
+  const { data: ordersResponse, isPending: ordersLoading } = useOrders();
+  const { data: usersResponse, isPending: usersLoading } = useUsers();
   
-  const [drafts, setDrafts] = useState<any[]>([]);
   const [itemsPerPage, setItemsPerPage] = useState<number>(4);
 
-  const tasks = tasksResponse?.tasks || [];
-  const orders = ordersResponse?.data || [];
-  const users = usersResponse?.data || [];
+  const tasks = (tasksResponse as any)?.tasks || (tasksResponse as any) || [];
+  const orders = (ordersResponse as any)?.orders || (ordersResponse as any)?.data || [];
+  const users = (usersResponse as any)?.users || (usersResponse as any)?.data || [];
 
   const isLoading = filesLoading || tasksLoading || ordersLoading || usersLoading;
 
-  useEffect(() => {
-    if (filesData?.data) {
-      const allDrafts = filesData.data.filter((f: any) => f.tag === 'draft');
-      setDrafts(allDrafts);
+  const drafts = useMemo(() => {
+    if (!filesData) return [];
+    
+    let allFiles: any[] = [];
+    if (Array.isArray(filesData)) {
+      allFiles = filesData;
+    } else if ((filesData as any).data && Array.isArray((filesData as any).data)) {
+      allFiles = (filesData as any).data;
     }
+    
+    return allFiles.filter((f: any) => f.tag === 'draft');
   }, [filesData]);
 
   const getFolderName = (draft: any) => {

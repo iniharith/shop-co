@@ -642,6 +642,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                   const isImage = matchingFile && (matchingFile.url.match(/\.(jpeg|jpg|gif|png|webp|heic)$/i) || matchingFile.name?.match(/\.(jpeg|jpg|gif|png|webp|heic)$/i));
                                   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
                                   const proxyUrl = matchingFile ? `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(matchingFile.url.startsWith('http') ? matchingFile.url : `${backendUrl}/${matchingFile.url.replace(/^\/+/, '')}`)}&name=${encodeURIComponent(matchingFile.name)}&stream=true` : "";
+                                  const thumbUrl = matchingFile ? `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(matchingFile.url.startsWith('http') ? matchingFile.url.replace('/media/', '/media/thumbnails/').replace(/\.[^/.]+$/, '.jpg') : `${backendUrl}/${matchingFile.url.replace(/^\/+/, '')}`.replace('/media/', '/media/thumbnails/').replace(/\.[^/.]+$/, '.jpg'))}` : "";
 
                                   return (
                                     <div key={`a-${idx}`} className={`flex gap-3 items-start text-sm py-1 ${isImage ? 'mt-2 mb-2' : ''}`}>

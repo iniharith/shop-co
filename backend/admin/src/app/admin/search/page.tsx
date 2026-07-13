@@ -19,15 +19,15 @@ export default function SearchResultsPage() {
   const q = searchParams.get("q") || "";
   const queryLower = q.toLowerCase();
 
-  const { data: tasksData, isLoading: isLoadingTasks } = useTasks();
-  const { data: filesData, isLoading: isLoadingFiles } = useAllFiles();
+  const { data: tasksData, isPending: isLoadingTasks } = useTasks();
+  const { data: filesData, isPending: isLoadingFiles } = useAllFiles();
   const { data: usersData } = useUsers();
   const { data: ordersData } = useOrders();
 
-  const tasks = tasksData?.tasks || [];
-  const files = (filesData as any)?.data || [];
-  const users = usersData?.users || [];
-  const orders = ordersData?.orders || [];
+  const tasks = (tasksData as any)?.tasks || (tasksData as any) || [];
+  const files = (filesData as any)?.data || (filesData as any) || [];
+  const users = (usersData as any)?.users || (usersData as any)?.data || [];
+  const orders = (ordersData as any)?.orders || (ordersData as any)?.data || [];
 
   // Filter Tasks
   const matchingTasks = useMemo(() => {
@@ -90,7 +90,7 @@ export default function SearchResultsPage() {
         } else {
           const user = users.find((u: any) => u._id?.toString() === firstFile.userId?.toString());
           folderName = user?.name || firstFile.userId;
-          customerStr = user?.email || user?.username || "";
+          customerStr = user?.email || "";
         }
         orderIdStr = firstFile.orderId || "";
       }

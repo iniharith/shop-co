@@ -71,7 +71,7 @@ export default function ArtworksManager() {
   const [moveToFolderModalOpen, setMoveToFolderModalOpen] = useState(false);
 
   const { data: virtualFoldersResponse, isPending: foldersPending } = useFolders();
-  const virtualFolders = virtualFoldersResponse?.data || [];
+  const virtualFolders = (virtualFoldersResponse as any)?.data || [];
   const { mutate: createFolderMutate, isPending: isCreatingFolder } = useCreateFolder();
   const { mutate: deleteFolderMutate, isPending: isDeletingFolder } = useDeleteFolder();
   const { mutate: moveFileMutate, isPending: isMovingFile } = useMoveFile();

@@ -172,7 +172,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
                 <SelectItem value="FAILED">Failed</SelectItem>
               </SelectContent>
             </Select>
-            {!(order as any).easyparcelAwb && (order.orderStatus === "PACKAGING" || order.orderStatus === "SHIPPED") && (
+            {!(order as any).easyparcelAwb && ((order.orderStatus as string) === "PACKAGING" || order.orderStatus === "SHIPPED") && (
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
