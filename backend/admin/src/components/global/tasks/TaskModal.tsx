@@ -657,7 +657,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                         {isImage && (
                                           <div className="mt-2">
                                             <a href={proxyUrl} target="_blank" rel="noopener noreferrer" className="block max-w-[250px] rounded-lg overflow-hidden border border-border/50 shadow-sm hover:opacity-90 transition-opacity bg-black/5">
-                                              <img src={`https://wsrv.nl/?url=${encodeURIComponent(matchingFile.url.startsWith('http') ? matchingFile.url : `${backendUrl}/${matchingFile.url.replace(/^\\/+/, '')}`)}&w=250&fit=cover`} alt={item.details} className="w-full h-auto object-cover max-h-[150px]" loading="lazy" />
+                                              <img src={thumbUrl} alt={item.details} className="w-full h-auto object-cover max-h-[150px]" loading="lazy" />
                                             </a>
                                             <span className="text-[10px] text-muted-foreground mt-1 block truncate max-w-[250px]">{item.details}</span>
                                           </div>
