@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -20,8 +20,8 @@ export default function PackagingScreen() {
     socketService.on('task_updated' as any, () => { fetchData(); });
     const fetchData = async () => {
       try {
-        const res = await api.get('/packaging');
-        setData(res.data?.data || res.data || []);
+        const res = await api.get('/tasks?status=PACKAGING');
+        setData(res.data?.tasks || res.data?.data || res.data || []);
       } catch (e) {
         console.error(e);
       } finally {

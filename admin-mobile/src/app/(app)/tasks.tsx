@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, SectionList, TouchableOpacity, ActivityIndicator, StyleSheet, StatusBar, ScrollView, TextInput, Modal, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -162,11 +162,14 @@ export default function TasksScreen() {
     setUserPickerVisible(false);
   };
 
-  const sortedTasks = tasks.filter(t => 
-    t.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    t.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.customerUsername?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const query = searchQuery.toLowerCase();
+  const sortedTasks = tasks.filter(t => {
+    const titleMatch = t.title?.toLowerCase().includes(query);
+    const orderIdStr = typeof t.orderId === 'string' ? t.orderId : (t.orderId?._id || String(t.orderId || ''));
+    const orderMatch = orderIdStr.toLowerCase().includes(query);
+    const customerMatch = t.customerUsername?.toLowerCase().includes(query);
+    return titleMatch || orderMatch || customerMatch;
+  });
 
   if (loading) return (
     <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.center}>
@@ -239,7 +242,7 @@ export default function TasksScreen() {
       <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { borderBottomColor: colors.glassBorder }]}>
         <View style={s.headerTop}>
           <View>
-            <Text style={[s.pageTitle, { color: colors.foreground }]}>Task Management ðŸ“‹</Text>
+            <Text style={[s.pageTitle, { color: colors.foreground }]}>Task Management 📋</Text>
             <Text style={[s.pageSub, { color: colors.mutedForeground }]}>Manage and assign tasks for your team</Text>
           </View>
           <TouchableOpacity onPress={() => {}} style={s.newBtn}>

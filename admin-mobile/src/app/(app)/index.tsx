@@ -70,7 +70,7 @@ export default function DashboardScreen() {
     return `${d}d ${h}h`;
   };
 
-  const showServerHealth = user?.role === 'sysadmin' || user?.role === 'boss';
+  const showServerHealth = ['sysadmin', 'admin', 'boss'].includes(user?.role || '');
 
   return (
     <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.screen}>

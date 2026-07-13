@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, ActivityIndicator, RefreshControl, TouchableOpacity, StyleSheet, StatusBar, TextInput, Linking, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -23,9 +23,9 @@ export default function ArtworksScreen() {
   const fetchGroups = async () => {
     try {
       const [res, tasksRes, usersRes] = await Promise.all([
-        api.get('/files/grouped'),
+        api.get('/files/grouped').catch(() => ({ data: { data: [] } })),
         api.get('/tasks').catch(() => ({ data: [] })),
-        api.get('/users').catch(() => ({ data: [] }))
+        api.get('/admin/users').catch(() => ({ data: [] }))
       ]);
       
       const allFiles = (res.data?.data || []).flatMap((g: any) => g.files || []);

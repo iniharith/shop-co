@@ -3,8 +3,8 @@ export const THEMES = {
   dark: {
     // Backgrounds
     background:      '#000000',
-    gradientStart:   '#0a0a14',
-    gradientEnd:     '#100a1e',
+    gradientStart:   '#000000',
+    gradientEnd:     '#000000',
   
     // Glass cards  (rgba over gradient = frosted glass effect)
     glass:           'rgba(255,255,255,0.06)',
