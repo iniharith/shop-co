@@ -181,6 +181,7 @@ export default function TrackingCard({ parcel }: TrackingCardProps) {
       <SheetContent className="sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Tracking Details</SheetTitle>
+          <SheetDescription className="sr-only">Tracking details for parcel</SheetDescription>
         </SheetHeader>
         <div className="mt-6 flex flex-col gap-6">
           <div className="flex flex-col gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
