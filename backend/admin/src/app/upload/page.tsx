@@ -180,7 +180,7 @@ export default function CustomerUploadPortal() {
           phoneNumber: phoneNumber.trim(),
           item: item.trim()
         })
-      }, 10000);
+      }, 30000);
 
       if (!urlRes.ok) {
         const err = await urlRes.json().catch(() => ({}));
@@ -267,7 +267,7 @@ export default function CustomerUploadPortal() {
           phoneNumber: phoneNumber.trim(),
           item: item.trim()
         })
-      }, 15000)
+      }, 60000)
         .then(async (metaRes) => {
           if (!metaRes.ok) throw new Error("Failed to save file metadata. Please try submitting again.");
           toast.success("Files uploaded successfully!", { id: toastId });
