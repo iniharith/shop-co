@@ -14,6 +14,11 @@ export const getTasks = async (token: string, filters?: any) => {
     return response.data;
 }
 
+export const getTask = async (token: string, id: string) => {
+    const response = await AxiosInstance(token).get(`/api/tasks/${id}`);
+    return response.data;
+}
+
 export const createTask = async (token: string, data: any) => {
     const response = await AxiosInstance(token).post(`/api/tasks`, data);
     return response.data;

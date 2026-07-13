@@ -63,6 +63,20 @@ router.get(
   })
 );
 
+// GET /api/tasks/:id
+router.get(
+  '/:id',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const task = await taskRepository.findById(req.params.id);
+    if (!task) {
+      res.status(404).json({ success: false, message: 'Task not found' });
+      return;
+    }
+    res.json({ success: true, task });
+  })
+);
+
 // POST /api/tasks
 router.post(
   '/',
