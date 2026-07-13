@@ -14,6 +14,7 @@ import {
 import ReactQueryProvider from "../providers/react-query";
 import { HeroUIProvider } from "@heroui/react";
 import LiveSessionMonitor from "./liveSessionMonitor";
+import SocketProvider from "../providers/socketProvider";
 export default function Providers({
   session,
   children,
@@ -29,7 +30,7 @@ export default function Providers({
             <ReactQueryProvider>
               <HeroUIProvider>
                 <LiveSessionMonitor>
-                  {children}
+                  <SocketProvider>{children}</SocketProvider>
                 </LiveSessionMonitor>
               </HeroUIProvider>
             </ReactQueryProvider>
