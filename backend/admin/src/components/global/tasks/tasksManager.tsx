@@ -26,6 +26,7 @@ import TaskModal from "./TaskModal";
 // task detail modal, anywhere else) uses the exact same persistent per-ID
 // color instead of each component deriving its own.
 import { getUserColor, AssigneeTag } from "@/lib/userColor";
+import { BouncySkeleton } from "@/components/global/skeleton/BouncySkeleton";
 
 // ─── Due Date Display ─────────────────────────────────────────────────────────
 const DueDateDisplay = ({ task, updateTask, className }: { task: any; updateTask: any; className?: string }) => {
@@ -241,7 +242,7 @@ export default function TasksManager() {
     sortedTasks.filter((t: any) => t.status === status).forEach((t: any) => listOrderedIds.push(t._id));
   });
 
-  if (isPending) return <div className="p-8 text-center text-muted-foreground">Loading tasks…</div>;
+  if (isPending) return <BouncySkeleton text="Loading tasks" />;
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-full min-w-0 overflow-hidden px-1">

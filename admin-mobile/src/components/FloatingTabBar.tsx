@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { LayoutDashboard, CheckSquare, ShoppingBag, ImageIcon } from 'lucide-react-native';
+import { LayoutDashboard, CheckSquare, ShoppingBag, ImageIcon, LayoutGrid } from 'lucide-react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { useTheme } from '../context/ThemeContext';
 import { THEME } from '../constants/theme';
 
 const TABS: Record<string, { label: string; icon: (color: string, focused: boolean) => React.ReactNode }> = {
@@ -10,16 +11,19 @@ const TABS: Record<string, { label: string; icon: (color: string, focused: boole
   tasks:    { label: 'Tasks',     icon: (c, f) => <CheckSquare     size={22} color={c} strokeWidth={f ? 2.5 : 1.8} /> },
   orders:   { label: 'Orders',    icon: (c, f) => <ShoppingBag     size={22} color={c} strokeWidth={f ? 2.5 : 1.8} /> },
   artworks: { label: 'Artworks',  icon: (c, f) => <ImageIcon       size={22} color={c} strokeWidth={f ? 2.5 : 1.8} /> },
+  more:     { label: 'More',      icon: (c, f) => <LayoutGrid      size={22} color={c} strokeWidth={f ? 2.5 : 1.8} /> },
 };
 
 export default function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
+  const { theme, colors } = useTheme();
+  
   return (
     <View style={s.wrapper} pointerEvents="box-none">
-      <BlurView intensity={Platform.OS === 'ios' ? 80 : 0} tint="dark" style={s.blur}>
+      <BlurView intensity={Platform.OS === 'ios' ? 80 : 0} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.blur, { borderColor: colors.glassBorder, backgroundColor: Platform.OS === 'android' ? (theme === 'dark' ? 'rgba(8, 8, 18, 0.94)' : 'rgba(255, 255, 255, 0.94)') : 'transparent' }]}>
         <View style={s.inner}>
           {state.routes.map((route, index) => {
             const focused = state.index === index;
-            const color   = focused ? THEME.primary : '#6b7280';
+            const color   = focused ? colors.primary : colors.mutedForeground;
             const tab     = TABS[route.name];
             if (!tab) return null;
 
@@ -33,8 +37,7 @@ export default function FloatingTabBar({ state, navigation }: BottomTabBarProps)
                 style={s.tab}
                 activeOpacity={0.7}
               >
-                {/* Gold active pill indicator */}
-                <View style={[s.pill, { opacity: focused ? 1 : 0 }]} />
+                {/* Pill removed per request */}
                 {tab.icon(color, focused)}
                 <Text style={[s.label, { color, fontWeight: focused ? '700' : '400' }]}>{tab.label}</Text>
               </TouchableOpacity>

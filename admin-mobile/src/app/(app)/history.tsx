@@ -1,63 +1,91 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { ChevronLeft, Archive } from 'lucide-react-native';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import api from '../../services/api';
+import { useTheme } from '../../context/ThemeContext';
+import { THEME } from '../../constants/theme';
+import { History, ArrowLeft, Clock } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 
 export default function HistoryScreen() {
+  const { theme, colors } = useTheme();
   const router = useRouter();
-  const [orders, setOrders] = useState<any[]>([]);
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchHistory = async () => {
-    try {
-      const res = await api.get('/orders');
-      const list = res.data?.data || res.data || [];
-      setOrders((Array.isArray(list) ? list : []).filter((o: any) => o.isArchived || o.orderStatus === 'DELIVERED' || o.orderStatus === 'CANCELLED'));
-    } catch (e) {
-      console.error('Failed to fetch history:', e);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await api.get('/history');
+        setData(res.data?.data || res.data || []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-  useEffect(() => { fetchHistory(); }, []);
-  const onRefresh = () => { setRefreshing(true); fetchHistory(); };
+  if (loading) return (
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.center}>
+      <ActivityIndicator size="large" color={colors.primary} />
+    </LinearGradient>
+  );
 
   return (
-    <View className="flex-1 bg-background pt-14 px-5">
-      <View className="flex-row items-center gap-3 mb-6">
-        <TouchableOpacity onPress={() => router.back()} className="p-1">
-          <ChevronLeft size={24} color="#fafafa" />
-        </TouchableOpacity>
-        <Text className="text-2xl font-bold text-foreground">History</Text>
-      </View>
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.screen}>
+      <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
-      {loading ? (
-        <ActivityIndicator size="large" color="hsl(45, 93%, 47%)" style={{ marginTop: 40 }} />
-      ) : (
-        <FlatList
-          data={orders}
-          keyExtractor={(item) => item._id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="hsl(45, 93%, 47%)" />}
-          contentContainerStyle={{ paddingBottom: 100 }}
-          ListEmptyComponent={<Text className="text-muted-foreground text-center mt-10">No completed or archived orders yet.</Text>}
-          renderItem={({ item }) => (
-            <View className="bg-card p-4 rounded-xl mb-3 border border-border flex-row items-center">
-              <View className="h-10 w-10 rounded-full bg-secondary items-center justify-center mr-3">
-                <Archive size={18} color="#888" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-foreground font-semibold">{item._id?.slice(-8).toUpperCase()}</Text>
-                <Text className="text-muted-foreground text-xs">{new Date(item.createdAt).toLocaleDateString()}</Text>
-              </View>
-              <Text className="text-foreground font-bold">RM {item.totalAmount?.toFixed(2)}</Text>
-            </View>
-          )}
-        />
-      )}
-    </View>
+      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
+        <View style={s.headerTop}>
+          <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+            <ArrowLeft size={20} color={colors.foreground} />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={s.pageTitle}>System History</Text>
+            <Text style={s.pageSub}>Task and order logs</Text>
+          </View>
+          <View style={s.iconCircle}>
+            <History size={20} color={colors.primary} />
+          </View>
+        </View>
+      </BlurView>
+
+      <FlatList
+        data={data}
+        keyExtractor={(item, idx) => item._id || idx.toString()}
+        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        ListEmptyComponent={
+          <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.emptyCard}>
+            <Clock size={32} color={colors.mutedForeground} style={{ marginBottom: 12 }} />
+            <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: '600' }}>No history records</Text>
+            <Text style={{ color: colors.mutedForeground, marginTop: 4 }}>System logs will appear here.</Text>
+          </BlurView>
+        }
+        renderItem={({ item }) => (
+          <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.card}>
+            <Text style={s.cardTitle}>{item.title || 'Log Entry'}</Text>
+            <Text style={s.cardDesc}>{item.description || 'Details unavailable'}</Text>
+          </BlurView>
+        )}
+      />
+    </LinearGradient>
   );
 }
+
+const s = StyleSheet.create({
+  screen: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  header: { paddingTop: 54, paddingBottom: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: THEME.glassBorder, marginBottom: 4 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  backBtn: { padding: 8, marginLeft: -8 },
+  pageTitle: { fontSize: 20, fontWeight: '800', color: THEME.foreground, letterSpacing: -0.5 },
+  pageSub: { color: THEME.mutedForeground, fontSize: 13, marginTop: 2 },
+  iconCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255, 215, 0, 0.1)', alignItems: 'center', justifyContent: 'center' },
+  card: { borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 16 },
+  cardTitle: { color: THEME.foreground, fontWeight: '700', fontSize: 15 },
+  cardDesc: { color: THEME.mutedForeground, fontSize: 13, marginTop: 4 },
+  emptyCard: { borderRadius: 16, borderWidth: 1, borderColor: THEME.glassBorder, padding: 32, alignItems: 'center', marginTop: 40 },
+});

@@ -1,162 +1,426 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, StyleSheet, StatusBar } from 'react-native';
+﻿import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, SectionList, TouchableOpacity, ActivityIndicator, StyleSheet, StatusBar, ScrollView, TextInput, Modal, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import api from '../../services/api';
-import { THEME } from '../../constants/theme';
+import socketService from '../../services/socket';
+import { useTheme } from '../../context/ThemeContext';
+import { LayoutGrid, List, Plus, Search, ChevronDown, MessageSquare, Calendar, Trash2, CheckCircle, Circle, RefreshCw, UserCircle2, User, ArrowDownUp, X, Check } from 'lucide-react-native';
 
-const STATUSES = [
-  { key: 'TODO',          label: 'To Do',       color: '#94a3b8' },
-  { key: 'IN_PROGRESS',   label: 'In Progress', color: '#f59e0b' },
-  { key: 'IN_PRODUCTION', label: 'Production',  color: '#a78bfa' },
-  { key: 'DONE',          label: 'Done',        color: '#22c55e' },
-  { key: 'CANCELLED',     label: 'Cancelled',   color: '#ef4444' },
+const COLUMNS = [
+  'PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 
+  'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 
+  'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 
+  'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'
 ];
 
-function getStatusMeta(status: string) {
-  const s = status?.toUpperCase();
-  return (
-    STATUSES.find(x => x.key === s) ||
-    (s?.includes('PROGRESS') ? STATUSES[1] : null) ||
-    (s?.includes('PROD')     ? STATUSES[2] : null) ||
-    (s?.includes('DONE') || s?.includes('COMPLET') ? STATUSES[3] : null) ||
-    (s?.includes('CANCEL')   ? STATUSES[4] : null) ||
-    STATUSES[0]
-  );
-}
-
 export default function TasksScreen() {
-  const [tasks, setTasks]       = useState<any[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const { theme, colors } = useTheme();
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefresh] = useState(false);
-  const [filter, setFilter]     = useState('ALL');
+  const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [collapsedColumns, setCollapsedColumns] = useState<string[]>([]);
+  const [collapsedListSections, setCollapsedListSections] = useState<string[]>(COLUMNS);
 
-  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+  // Multi-select state
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+  
+  // Pickers state
+  const [statusPickerVisible, setStatusPickerVisible] = useState(false);
+  const [userPickerVisible, setUserPickerVisible] = useState(false);
+  const [activeTaskForPicker, setActiveTaskForPicker] = useState<string | null>(null);
 
-  const fetchTasks = async () => {
+  const fetchData = async () => {
     try {
-      const res = await api.get('/tasks');
-      const all = res.data?.data || res.data?.tasks || res.data || [];
-      setTasks(Array.isArray(all) ? all : []);
+      const [tasksRes, usersRes] = await Promise.all([
+        api.get('/tasks').catch(e => ({ data: [] })),
+        api.get('/users').catch(e => ({ data: [] }))
+      ]);
+      const allTasks = tasksRes.data?.data || tasksRes.data?.tasks || tasksRes.data || [];
+      const allUsers = usersRes.data?.data || usersRes.data?.users || usersRes.data || [];
+      setTasks(Array.isArray(allTasks) ? allTasks : []);
+      setUsers(Array.isArray(allUsers) ? allUsers : []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); setRefresh(false); }
   };
 
-  useEffect(() => { fetchTasks(); }, []);
+    useEffect(() => { 
+    fetchData(); 
+    socketService.connect();
+    
+    const handleTaskUpdated = (data: any) => {
+      setTasks(prev => {
+         const exists = prev.find(t => t._id === data._id);
+         if (exists) return prev.map(t => t._id === data._id ? { ...t, ...data } : t);
+         return [...prev, data];
+      });
+    };
+    const handleTaskDeleted = (data: any) => {
+      setTasks(prev => prev.filter(t => t._id !== data._id));
+    };
 
-  const filtered = filter === 'ALL'
-    ? tasks
-    : tasks.filter(t => getStatusMeta(t.status)?.key === filter);
+    const offTaskUpd = socketService.on('task_updated' as any, handleTaskUpdated);
+    const offTaskCre = socketService.on('task_created' as any, handleTaskUpdated);
+    const offTaskDel = socketService.on('task_deleted' as any, handleTaskDeleted);
 
-  const toggleSelection = (id: string) => {
-    if (selectedTasks.includes(id)) {
-      setSelectedTasks(selectedTasks.filter(tId => tId !== id));
-    } else {
-      setSelectedTasks([...selectedTasks, id]);
+    return () => { offTaskUpd(); offTaskCre(); offTaskDel(); };
+  }, []);
+
+  const toggleColumnCollapse = (status: string) => {
+    setCollapsedColumns(prev => prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]);
+  };
+
+  const toggleTaskSelection = (id: string) => {
+    setSelectedTaskIds(prev => prev.includes(id) ? prev.filter(tid => tid !== id) : [...prev, id]);
+  };
+
+  const updateTask = async (id: string, data: any) => {
+    // Optimistic update
+    setTasks(prev => prev.map(t => t._id === id ? { ...t, ...data } : t));
+    try {
+      await api.put(`/tasks/${id}`, data);
+    } catch (e) {
+      console.error(e);
+      fetchData(); // Revert on failure
     }
   };
 
+  const deleteTask = async (id: string) => {
+    setTasks(prev => prev.filter(t => t._id !== id));
+    try {
+      await api.delete(`/tasks/${id}`);
+    } catch (e) {
+      console.error(e);
+      fetchData();
+    }
+  };
+
+  const handleBulkUpdate = async (data: any) => {
+    if (selectedTaskIds.length === 0) return;
+    
+    // Optimistic bulk update
+    setTasks(prev => prev.map(t => selectedTaskIds.includes(t._id) ? { ...t, ...data } : t));
+    const idsToUpdate = [...selectedTaskIds];
+    
+    // Deselect all immediately for better UX
+    setSelectedTaskIds([]);
+    
+    try {
+      await Promise.all(idsToUpdate.map(id => api.put(`/tasks/${id}`, data)));
+    } catch (e) {
+      console.error(e);
+      fetchData(); // Revert on failure
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedTaskIds.length === 0) return;
+    Alert.alert("Delete Tasks", `Are you sure you want to delete ${selectedTaskIds.length} tasks?`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: async () => {
+          const idsToDelete = [...selectedTaskIds];
+          setTasks(prev => prev.filter(t => !idsToDelete.includes(t._id)));
+          setSelectedTaskIds([]);
+          try {
+            await Promise.all(idsToDelete.map(id => api.delete(`/tasks/${id}`)));
+          } catch (e) {
+            console.error(e);
+            fetchData();
+          }
+      }}
+    ]);
+  };
+
+  const openStatusPicker = (taskId: string | null = null) => {
+    setActiveTaskForPicker(taskId);
+    setStatusPickerVisible(true);
+  };
+
+  const openUserPicker = (taskId: string | null = null) => {
+    setActiveTaskForPicker(taskId);
+    setUserPickerVisible(true);
+  };
+
+  const selectStatus = (status: string) => {
+    if (activeTaskForPicker) {
+      updateTask(activeTaskForPicker, { status });
+    } else {
+      handleBulkUpdate({ status });
+    }
+    setStatusPickerVisible(false);
+  };
+
+  const selectUser = (userId: string | null) => {
+    if (activeTaskForPicker) {
+      updateTask(activeTaskForPicker, { assignee: userId });
+    } else {
+      handleBulkUpdate({ assignee: userId });
+    }
+    setUserPickerVisible(false);
+  };
+
+  const sortedTasks = tasks.filter(t => 
+    t.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    t.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.customerUsername?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (loading) return (
-    <LinearGradient colors={['#0a0a14', '#100a1e', '#0a0a14']} style={s.center}>
-      <ActivityIndicator size="large" color={THEME.primary} />
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.center}>
+      <ActivityIndicator size="large" color={colors.primary} />
     </LinearGradient>
   );
 
+  const renderTaskCard = (task: any) => {
+    const isSelected = selectedTaskIds.includes(task._id);
+    return (
+      <BlurView experimentalBlurMethod="dimezisBlurView" intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.taskCard, { borderColor: isSelected ? colors.primary : colors.glassBorder }, task.isDone && { opacity: 0.6 }]} key={task._id}>
+        
+        {/* 1. Header: Checkbox (Multi-select), Done Circle, Title, Trash */}
+        <View style={s.taskHeader}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', flex: 1, gap: 8 }}>
+            <TouchableOpacity onPress={() => toggleTaskSelection(task._id)} style={[s.checkbox, { borderColor: isSelected ? colors.primary : colors.mutedForeground, backgroundColor: isSelected ? colors.primary : 'transparent' }]}>
+              {isSelected && <Check size={10} color="#000" />}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => updateTask(task._id, { isDone: !task.isDone })}>
+              {task.isDone ? <CheckCircle color="#22c55e" size={16} /> : <Circle color={colors.mutedForeground} size={16} />}
+            </TouchableOpacity>
+            <Text style={[s.taskTitle, { color: colors.foreground }, task.isDone && { textDecorationLine: 'line-through', color: colors.mutedForeground }]} numberOfLines={2}>
+              {task.title || `Task #${task._id?.slice(-6)}`}
+            </Text>
+          </View>
+          <TouchableOpacity style={{ padding: 4 }} onPress={() => deleteTask(task._id)}>
+            <Trash2 color={colors.destructive} size={14} />
+          </TouchableOpacity>
+        </View>
+        
+        {/* 2. Comments Badge */}
+        {task.comments?.length > 0 && (
+          <View style={{ flexDirection: 'row', marginTop: 8 }}>
+            <View style={[s.commentBadge, { backgroundColor: colors.secondary }]}>
+              <MessageSquare size={10} color={colors.foreground} />
+              <Text style={[s.taskMeta, { color: colors.foreground }]}>{task.comments.length}</Text>
+            </View>
+          </View>
+        )}
+        
+        {/* 3. Due Date & Assignee */}
+        <View style={s.taskFooter}>
+          <View style={[s.footerPill, { backgroundColor: colors.secondary }]}>
+            <Calendar size={10} color={colors.foreground} />
+            <Text style={[s.taskMeta, { color: colors.foreground }]}>{new Date(task.createdAt).toLocaleDateString('en-MY')}</Text>
+          </View>
+          
+          <TouchableOpacity style={[s.footerPill, { backgroundColor: colors.secondary }]} onPress={() => openUserPicker(task._id)}>
+            <UserCircle2 size={12} color={colors.foreground} />
+            <Text style={[s.taskMeta, { color: colors.foreground }]}>{task.assignee?.name || 'Unassigned'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 4. Status Dropdown Replica */}
+        <TouchableOpacity style={[s.statusBadge, { backgroundColor: colors.secondary, borderColor: colors.glassBorder }]} onPress={() => openStatusPicker(task._id)}>
+          <Text style={[s.statusText, { color: colors.foreground }]}>
+            {task.status?.replace(/_/g, ' ') || 'UNKNOWN'}
+          </Text>
+          <ChevronDown size={12} color={colors.foreground} />
+        </TouchableOpacity>
+      </BlurView>
+    );
+  };
+
   return (
-    <LinearGradient colors={['#0a0a14', '#100a1e', '#0a0a14']} style={s.screen}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.screen}>
+      <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
       {/* Header */}
-      <BlurView intensity={20} tint="dark" style={s.header}>
-        <Text style={s.pageTitle}>Tasks</Text>
-        <Text style={s.pageSub}>Manage your operational workflow</Text>
+      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { borderBottomColor: colors.glassBorder }]}>
+        <View style={s.headerTop}>
+          <View>
+            <Text style={[s.pageTitle, { color: colors.foreground }]}>Task Management ðŸ“‹</Text>
+            <Text style={[s.pageSub, { color: colors.mutedForeground }]}>Manage and assign tasks for your team</Text>
+          </View>
+          <TouchableOpacity onPress={() => {}} style={s.newBtn}>
+            <Plus size={16} color="#000" />
+            <Text style={s.newBtnText}>New Task</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Toolbar */}
+        <View style={s.toolbar}>
+          <View style={[s.viewToggle, { backgroundColor: colors.secondary, borderColor: colors.glassBorder }]}>
+            <TouchableOpacity 
+              style={[s.toggleBtn, viewMode === 'list' && { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]} 
+              onPress={() => setViewMode('list')}
+            >
+              <List size={14} color={viewMode === 'list' ? colors.foreground : colors.mutedForeground} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[s.toggleBtn, viewMode === 'board' && { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]} 
+              onPress={() => setViewMode('board')}
+            >
+              <LayoutGrid size={14} color={viewMode === 'board' ? colors.foreground : colors.mutedForeground} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={[s.searchBox, { backgroundColor: colors.secondary, borderColor: colors.glassBorder }]}>
+            <Search size={14} color={colors.mutedForeground} />
+            <TextInput 
+              placeholder="Search tasks..." 
+              placeholderTextColor={colors.mutedForeground}
+              style={[s.searchInput, { color: colors.foreground }]}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+
+          <TouchableOpacity onPress={() => { setRefresh(true); fetchData(); }} style={[s.refreshBtn, { backgroundColor: colors.secondary, borderColor: colors.glassBorder }]}>
+            <RefreshCw size={14} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        </View>
       </BlurView>
 
-      {/* Status Filter Tabs */}
-      <FlatList
-        horizontal showsHorizontalScrollIndicator={false}
-        data={[{ key: 'ALL', label: 'All', color: THEME.primary }, ...STATUSES]}
-        keyExtractor={i => i.key}
-        style={{ maxHeight: 44, paddingHorizontal: 16 }}
-        contentContainerStyle={{ gap: 8, alignItems: 'center' }}
-        renderItem={({ item }) => {
-          const active = filter === item.key;
-          return (
-            <TouchableOpacity
-              onPress={() => setFilter(item.key)}
-              style={[s.chip, active && { backgroundColor: item.color + '33', borderColor: item.color }]}
-            >
-              <Text style={[s.chipText, active && { color: item.color, fontWeight: '700' }]}>{item.label}</Text>
-            </TouchableOpacity>
-          );
-        }}
-      />
-
-      <FlatList
-        data={filtered}
-        keyExtractor={item => item._id}
-        contentContainerStyle={{ padding: 16, paddingBottom: 130, gap: 10 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefresh(true); fetchTasks(); }} tintColor={THEME.primary} />}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <BlurView intensity={15} tint="dark" style={[s.glassCard, { alignItems: 'center', paddingVertical: 40 }]}>
-            <Text style={{ color: THEME.mutedForeground }}>No tasks in this category</Text>
-          </BlurView>
-        }
-        renderItem={({ item }) => {
-          const meta = getStatusMeta(item.status);
-          const isSelected = selectedTasks.includes(item._id);
-          
-          return (
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onLongPress={() => {
-                if (!isSelected) setSelectedTasks([...selectedTasks, item._id]);
-              }}
-              onPress={() => {
-                if (selectedTasks.length > 0) {
-                  toggleSelection(item._id);
-                } else {
-                  // Normal press action (e.g. view details) can go here
-                }
-              }}
-            >
-              <BlurView intensity={15} tint="dark" style={[s.glassCard, isSelected && { borderColor: THEME.primary, borderWidth: 2, backgroundColor: THEME.primary + '11' }, { borderLeftWidth: 3, borderLeftColor: meta?.color || '#94a3b8' }]}>
-                <View style={s.taskHeader}>
-                  <Text style={s.taskTitle} numberOfLines={2}>{item.title || `Task #${item._id?.slice(-6)}`}</Text>
-                  <View style={[s.badge, { backgroundColor: (meta?.color || '#94a3b8') + '22' }]}>
-                    <Text style={[s.badgeText, { color: meta?.color || '#94a3b8' }]}>{meta?.label || item.status}</Text>
+      {/* Board View */}
+      {viewMode === 'board' && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.boardScroll}>
+          {COLUMNS.map(status => {
+            const columnTasks = sortedTasks.filter(t => t.status === status);
+            const isCollapsed = collapsedColumns.includes(status);
+            
+            return (
+              <View key={status} style={[s.column, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', borderColor: colors.glassBorder }, isCollapsed && s.columnCollapsed]}>
+                <TouchableOpacity style={[s.columnHeader, { backgroundColor: colors.secondary, borderColor: colors.glassBorder }]} onPress={() => toggleColumnCollapse(status)}>
+                  <Text style={[s.columnTitle, { color: colors.foreground }]}>{status.replace(/_/g, ' ')}</Text>
+                  <View style={s.columnCountBadge}>
+                    <Text style={[s.columnCount, { color: colors.primary }]}>{columnTasks.length}</Text>
                   </View>
-                </View>
-                {item.description ? <Text style={s.taskDesc} numberOfLines={3}>{item.description}</Text> : null}
-                <View style={s.taskFooter}>
-                  {item.assignee ? (
-                    <Text style={[s.taskMeta, { color: THEME.primary, fontWeight: '600' }]}>👤 {item.assignee.username || item.assignee.name || 'Assigned'}</Text>
-                  ) : null}
-                  {item.category ? <Text style={s.taskMeta}>📁 {item.category}</Text> : null}
-                  {item.orderId  ? <Text style={s.taskMeta}>🛒 Order #{typeof item.orderId === 'object' ? item.orderId?._id?.slice(-6) : String(item.orderId).slice(-6)}</Text> : null}
-                  <Text style={[s.taskMeta, { marginLeft: 'auto' }]}>{new Date(item.createdAt).toLocaleDateString('en-MY')}</Text>
-                </View>
-              </BlurView>
-            </TouchableOpacity>
-          );
-        }}
-      />
-
-      {/* Floating Bulk Action Bar */}
-      {selectedTasks.length > 0 && (
-        <BlurView intensity={30} tint="dark" style={s.floatingBar}>
-          <Text style={s.floatingText}>{selectedTasks.length} task{selectedTasks.length > 1 ? 's' : ''} selected</Text>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-             <TouchableOpacity style={[s.floatingBtn, { backgroundColor: THEME.destructive }]} onPress={() => setSelectedTasks([])}>
-               <Text style={s.floatingBtnText}>Cancel</Text>
-             </TouchableOpacity>
-             <TouchableOpacity style={[s.floatingBtn, { backgroundColor: THEME.primary }]} onPress={() => { /* Implement bulk action */ }}>
-               <Text style={[s.floatingBtnText, { color: '#000' }]}>Action</Text>
-             </TouchableOpacity>
-          </View>
-        </BlurView>
+                  <ChevronDown size={14} color={colors.mutedForeground} style={{ transform: [{ rotate: isCollapsed ? '-90deg' : '0deg' }] }} />
+                </TouchableOpacity>
+                
+                {!isCollapsed && (
+                  <FlatList
+                    data={columnTasks}
+                    keyExtractor={t => t._id}
+                    renderItem={({ item }) => renderTaskCard(item)}
+                    contentContainerStyle={{ gap: 10, paddingBottom: 160 }}
+                    showsVerticalScrollIndicator={false}
+                  />
+                )}
+              </View>
+            );
+          })}
+        </ScrollView>
       )}
+
+      {/* List View */}
+      {viewMode === 'list' && (
+        <SectionList
+          sections={COLUMNS.filter(status => sortedTasks.some(t => t.status === status)).map(status => ({
+            title: status.replace(/_/g, ' '),
+            statusId: status,
+            data: collapsedListSections.includes(status) ? [] : sortedTasks.filter(t => t.status === status),
+            count: sortedTasks.filter(t => t.status === status).length
+          }))}
+          keyExtractor={t => t._id}
+          renderItem={({ item }) => renderTaskCard(item)}
+          renderSectionHeader={({ section }) => (
+            <TouchableOpacity 
+              activeOpacity={0.7}
+              onPress={() => setCollapsedListSections(prev => 
+                prev.includes(section.statusId) ? prev.filter(s => s !== section.statusId) : [...prev, section.statusId]
+              )}
+              style={{ marginBottom: 10, marginTop: 10, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ width: 4, height: 16, backgroundColor: colors.primary, borderRadius: 2 }} />
+                <Text style={{ fontSize: 16, fontWeight: '800', color: colors.foreground, letterSpacing: 0.5 }}>{section.title}</Text>
+                <View style={{ backgroundColor: colors.glassBorder, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: colors.foreground }}>{section.count}</Text>
+                </View>
+              </View>
+              <ChevronDown size={18} color={colors.mutedForeground} style={{ transform: [{ rotate: collapsedListSections.includes(section.statusId) ? '180deg' : '0deg' }] }} />
+            </TouchableOpacity>
+          )}
+          contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
+          showsVerticalScrollIndicator={false}
+          stickySectionHeadersEnabled={false}
+        />
+      )}
+
+      {/* Floating Action Bar for Bulk Operations */}
+      {selectedTaskIds.length > 0 && (
+        <View style={s.fabWrapper}>
+          <BlurView intensity={theme === 'dark' ? 40 : 80} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.fab, { borderColor: colors.glassBorder }]}>
+            <View style={[s.fabCount, { backgroundColor: colors.primary }]}>
+              <Text style={s.fabCountText}>{selectedTaskIds.length}</Text>
+            </View>
+            
+            <TouchableOpacity style={s.fabBtn} onPress={() => openUserPicker(null)}>
+              <User size={16} color={colors.foreground} />
+            </TouchableOpacity>
+            <TouchableOpacity style={s.fabBtn} onPress={() => openStatusPicker(null)}>
+              <ArrowDownUp size={16} color={colors.foreground} />
+            </TouchableOpacity>
+            
+            <View style={[s.fabDivider, { backgroundColor: colors.glassBorder }]} />
+            
+            <TouchableOpacity style={s.fabBtn} onPress={() => handleBulkUpdate({ isDone: true })}>
+              <CheckCircle size={16} color="#22c55e" />
+            </TouchableOpacity>
+            <TouchableOpacity style={s.fabBtn} onPress={handleBulkDelete}>
+              <Trash2 size={16} color={colors.destructive} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={[s.fabBtn, { marginLeft: 'auto' }]} onPress={() => setSelectedTaskIds([])}>
+              <X size={18} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          </BlurView>
+        </View>
+      )}
+
+      {/* Status Picker Modal */}
+      <Modal visible={statusPickerVisible} transparent animationType="slide" onRequestClose={() => setStatusPickerVisible(false)}>
+        <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={() => setStatusPickerVisible(false)}>
+          <BlurView intensity={theme === 'dark' ? 40 : 80} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.modalContent, { backgroundColor: theme === 'dark' ? 'rgba(10,10,14,0.9)' : 'rgba(255,255,255,0.9)' }]}>
+            <View style={s.modalHeader}>
+              <Text style={[s.modalTitle, { color: colors.foreground }]}>Select Status</Text>
+              <TouchableOpacity onPress={() => setStatusPickerVisible(false)}><X color={colors.foreground} size={20}/></TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+              {COLUMNS.map(sItem => (
+                <TouchableOpacity key={sItem} style={[s.modalOption, { borderBottomColor: colors.glassBorder }]} onPress={() => selectStatus(sItem)}>
+                  <Text style={[s.modalOptionText, { color: colors.foreground }]}>{sItem.replace(/_/g, ' ')}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </BlurView>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* User Picker Modal */}
+      <Modal visible={userPickerVisible} transparent animationType="slide" onRequestClose={() => setUserPickerVisible(false)}>
+        <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={() => setUserPickerVisible(false)}>
+          <BlurView intensity={theme === 'dark' ? 40 : 80} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.modalContent, { backgroundColor: theme === 'dark' ? 'rgba(10,10,14,0.9)' : 'rgba(255,255,255,0.9)' }]}>
+            <View style={s.modalHeader}>
+              <Text style={[s.modalTitle, { color: colors.foreground }]}>Assign User</Text>
+              <TouchableOpacity onPress={() => setUserPickerVisible(false)}><X color={colors.foreground} size={20}/></TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+              <TouchableOpacity style={[s.modalOption, { borderBottomColor: colors.glassBorder }]} onPress={() => selectUser(null)}>
+                <Text style={[s.modalOptionText, { color: colors.mutedForeground, fontStyle: 'italic' }]}>Unassigned</Text>
+              </TouchableOpacity>
+              {users.map(u => (
+                <TouchableOpacity key={u._id} style={[s.modalOption, { borderBottomColor: colors.glassBorder }]} onPress={() => selectUser(u._id)}>
+                  <Text style={[s.modalOptionText, { color: colors.foreground }]}>{u.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </BlurView>
+        </TouchableOpacity>
+      </Modal>
+
     </LinearGradient>
   );
 }
@@ -164,21 +428,51 @@ export default function TasksScreen() {
 const s = StyleSheet.create({
   screen: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: { paddingTop: 54, paddingBottom: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: THEME.glassBorder, marginBottom: 12 },
-  pageTitle: { fontSize: 24, fontWeight: '800', color: THEME.foreground, letterSpacing: -0.5 },
-  pageSub: { color: THEME.mutedForeground, fontSize: 13, marginTop: 2 },
-  chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: THEME.glassBorder, backgroundColor: THEME.glass },
-  chipText: { color: THEME.mutedForeground, fontSize: 12 },
-  glassCard: { borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 14 },
-  taskHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
-  taskTitle: { color: THEME.foreground, fontWeight: '700', fontSize: 14, flex: 1 },
-  badge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
-  taskDesc: { color: THEME.mutedForeground, fontSize: 12, marginTop: 8, lineHeight: 18 },
-  taskFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 10, gap: 10, flexWrap: 'wrap' },
-  taskMeta: { color: THEME.mutedForeground, fontSize: 11 },
-  floatingBar: { position: 'absolute', bottom: 30, left: 20, right: 20, borderRadius: 20, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  floatingText: { color: THEME.foreground, fontWeight: '700', fontSize: 14 },
-  floatingBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
-  floatingBtnText: { color: THEME.foreground, fontWeight: '700', fontSize: 13 },
+  header: { paddingTop: 54, paddingBottom: 14, paddingHorizontal: 16, borderBottomWidth: 1, marginBottom: 12 },
+  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+  pageTitle: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
+  pageSub: { fontSize: 13, marginTop: 2 },
+  newBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0a500', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, gap: 4 },
+  newBtnText: { color: '#000', fontWeight: '700', fontSize: 12 },
+  
+  toolbar: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  viewToggle: { flexDirection: 'row', borderRadius: 8, padding: 2, borderWidth: 1 },
+  toggleBtn: { padding: 8, borderRadius: 6 },
+  searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: 8, paddingHorizontal: 10, borderWidth: 1, height: 36, gap: 6 },
+  searchInput: { flex: 1, fontSize: 13 },
+  refreshBtn: { width: 36, height: 36, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+
+  boardScroll: { paddingHorizontal: 16, gap: 16 },
+  column: { width: 280, borderRadius: 16, padding: 12, borderWidth: 1 },
+  columnCollapsed: { width: 140 },
+  columnHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 20, marginBottom: 12, borderWidth: 1 },
+  columnTitle: { flex: 1, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  columnCountBadge: { backgroundColor: 'rgba(255,215,0,0.1)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10 },
+  columnCount: { fontSize: 10, fontWeight: '800' },
+
+  taskCard: { borderRadius: 12, overflow: 'hidden', borderWidth: 1, padding: 12, paddingBottom: 10, marginBottom: 10 },
+  taskHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  checkbox: { width: 16, height: 16, borderWidth: 1, borderRadius: 4, marginTop: 1, alignItems: 'center', justifyContent: 'center' },
+  taskTitle: { fontWeight: '600', fontSize: 13, lineHeight: 18 },
+  commentBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 },
+  taskFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 8 },
+  taskMeta: { fontSize: 10, fontWeight: '500' },
+  footerPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 },
+  statusBadge: { marginTop: 8, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6, borderWidth: 1, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6 },
+  statusText: { fontSize: 10, fontWeight: '700' },
+
+  fabWrapper: { position: 'absolute', bottom: 90, left: 0, right: 0, alignItems: 'center', zIndex: 100 },
+  fab: { flexDirection: 'row', alignItems: 'center', padding: 8, borderRadius: 30, borderWidth: 1, gap: 4, width: '85%', maxWidth: 400, overflow: 'hidden' },
+  fabCount: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 4 },
+  fabCountText: { color: '#000', fontWeight: '800', fontSize: 14 },
+  fabBtn: { padding: 10, borderRadius: 20 },
+  fabDivider: { width: 1, height: 24, marginHorizontal: 2 },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '60%', overflow: 'hidden' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 18, fontWeight: '700' },
+  modalOption: { paddingVertical: 14, borderBottomWidth: 1 },
+  modalOptionText: { fontSize: 15, fontWeight: '500' },
 });
+

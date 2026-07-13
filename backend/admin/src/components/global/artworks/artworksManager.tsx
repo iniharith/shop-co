@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2 } from "lucide-react";
 import { forceDownload } from "@/lib/utils";
+import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import ImageNext from "next/image";
@@ -24,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import { BouncySkeleton } from "@/components/global/skeleton/BouncySkeleton";
 
 const categories = [
   "ALL",
@@ -55,6 +57,7 @@ export default function ArtworksManager() {
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
+  const [previewFile, setPreviewFile] = useState<any>(null);
 
   // Upload Modal State
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
@@ -457,7 +460,7 @@ export default function ArtworksManager() {
             }} 
           />
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center z-20">
-            <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(getFileUrl(file.path), "_blank"); }} className="gap-1 shadow-sm">
+            <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewFile(file); }} className="gap-1 shadow-sm">
               <Eye className="w-4 h-4" /> View
             </Button>
           </div>
@@ -499,7 +502,7 @@ export default function ArtworksManager() {
     );
   };
 
-  if (isPending) return <div className="flex justify-center p-8"><p>Loading artworks...</p></div>;
+  if (isPending) return <BouncySkeleton text="Loading artworks" />;
 
   return (
     <div className="space-y-6">
@@ -951,7 +954,7 @@ export default function ArtworksManager() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 ml-4 shrink-0">
-                          <Button variant="ghost" size="icon" onClick={() => window.open(getFileUrl(file.path), "_blank")} title="View">
+                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setPreviewFile(file); }}>
                             <Eye className="w-4 h-4 text-muted-foreground" />
                           </Button>
                           <Button variant="ghost" size="icon" className="hover:bg-blue-50" onClick={(e) => {
@@ -1191,6 +1194,8 @@ export default function ArtworksManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Render the File Preview Modal at the root level */}
+      <FilePreviewModal isOpen={!!previewFile} onClose={() => setPreviewFile(null)} file={previewFile} />
     </div>
   );
 }

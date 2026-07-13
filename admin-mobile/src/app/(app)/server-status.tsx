@@ -1,73 +1,91 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, TouchableOpacity, RefreshControl, ScrollView } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import api from '../../services/api';
+import { useTheme } from '../../context/ThemeContext';
+import { THEME } from '../../constants/theme';
+import { Server, ArrowLeft, Activity } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Server, CheckCircle2, XCircle } from 'lucide-react-native';
-import api, { API_URL } from '../../services/api';
 
 export default function ServerStatusScreen() {
+  const { theme, colors } = useTheme();
   const router = useRouter();
-  const [status, setStatus] = useState<'checking' | 'up' | 'down'>('checking');
-  const [latencyMs, setLatencyMs] = useState<number | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const checkHealth = async () => {
-    const start = Date.now();
-    try {
-      await api.get('/health').catch(() => api.get('/'));
-      setLatencyMs(Date.now() - start);
-      setStatus('up');
-    } catch (e) {
-      setStatus('down');
-    } finally {
-      setRefreshing(false);
-    }
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await api.get('/server-status');
+        setData(res.data?.data || res.data || []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-  useEffect(() => { checkHealth(); }, []);
-  const onRefresh = () => { setRefreshing(true); setStatus('checking'); checkHealth(); };
+  if (loading) return (
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.center}>
+      <ActivityIndicator size="large" color={colors.primary} />
+    </LinearGradient>
+  );
 
   return (
-    <ScrollView
-      className="flex-1 bg-background pt-14 px-5"
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="hsl(45, 93%, 47%)" />}
-    >
-      <View className="flex-row items-center gap-3 mb-6">
-        <TouchableOpacity onPress={() => router.back()} className="p-1">
-          <ChevronLeft size={24} color="#fafafa" />
-        </TouchableOpacity>
-        <Text className="text-2xl font-bold text-foreground">Server Status</Text>
-      </View>
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.screen}>
+      <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
-      <View className="bg-card border border-border rounded-xl p-5 items-center mb-4">
-        <View className="h-14 w-14 rounded-full bg-secondary items-center justify-center mb-3">
-          <Server size={26} color="#888" />
+      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
+        <View style={s.headerTop}>
+          <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+            <ArrowLeft size={20} color={colors.foreground} />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={s.pageTitle}>Server Status</Text>
+            <Text style={s.pageSub}>System diagnostics</Text>
+          </View>
+          <View style={s.iconCircle}>
+            <Server size={20} color={colors.primary} />
+          </View>
         </View>
-        {status === 'checking' ? (
-          <ActivityIndicator color="hsl(45, 93%, 47%)" />
-        ) : status === 'up' ? (
-          <View className="items-center">
-            <View className="flex-row items-center gap-1.5 mb-1">
-              <CheckCircle2 size={16} color="#22c55e" />
-              <Text className="text-emerald-500 font-bold">API Online</Text>
-            </View>
-            <Text className="text-muted-foreground text-xs">{latencyMs}ms response time</Text>
-          </View>
-        ) : (
-          <View className="flex-row items-center gap-1.5">
-            <XCircle size={16} color="#ef4444" />
-            <Text className="text-red-500 font-bold">API Unreachable</Text>
-          </View>
+      </BlurView>
+
+      <FlatList
+        data={data}
+        keyExtractor={(item, idx) => item._id || idx.toString()}
+        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        ListEmptyComponent={
+          <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.emptyCard}>
+            <Activity size={32} color={colors.mutedForeground} style={{ marginBottom: 12 }} />
+            <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: '600' }}>No server alerts</Text>
+            <Text style={{ color: colors.mutedForeground, marginTop: 4 }}>All systems operational.</Text>
+          </BlurView>
+        }
+        renderItem={({ item }) => (
+          <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.card}>
+            <Text style={s.cardTitle}>{item.title || 'System Metric'}</Text>
+            <Text style={s.cardDesc}>{item.status || 'OK'}</Text>
+          </BlurView>
         )}
-      </View>
-
-      <View className="bg-card border border-border rounded-xl p-4 mb-4">
-        <Text className="text-muted-foreground text-xs mb-1">Backend URL</Text>
-        <Text className="text-foreground text-sm">{API_URL}</Text>
-      </View>
-
-      <Text className="text-muted-foreground text-xs text-center">
-        Pull to refresh · AWS media health lives on the web dashboard's Server Status page.
-      </Text>
-    </ScrollView>
+      />
+    </LinearGradient>
   );
 }
+
+const s = StyleSheet.create({
+  screen: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  header: { paddingTop: 54, paddingBottom: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: THEME.glassBorder, marginBottom: 4 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  backBtn: { padding: 8, marginLeft: -8 },
+  pageTitle: { fontSize: 20, fontWeight: '800', color: THEME.foreground, letterSpacing: -0.5 },
+  pageSub: { color: THEME.mutedForeground, fontSize: 13, marginTop: 2 },
+  iconCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255, 215, 0, 0.1)', alignItems: 'center', justifyContent: 'center' },
+  card: { borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 16 },
+  cardTitle: { color: THEME.foreground, fontWeight: '700', fontSize: 15 },
+  cardDesc: { color: THEME.mutedForeground, fontSize: 13, marginTop: 4 },
+  emptyCard: { borderRadius: 16, borderWidth: 1, borderColor: THEME.glassBorder, padding: 32, alignItems: 'center', marginTop: 40 },
+});

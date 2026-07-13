@@ -1,110 +1,94 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, RefreshControl, TouchableOpacity, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { ChevronLeft, Truck, RefreshCw, MessageCircle } from 'lucide-react-native';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import api from '../../services/api';
+import { useTheme } from '../../context/ThemeContext';
+import { THEME } from '../../constants/theme';
+import { Truck, ArrowLeft, Search } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 
 export default function TrackingScreen() {
+  const { theme, colors } = useTheme();
   const router = useRouter();
-  const [parcels, setParcels] = useState<any[]>([]);
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [syncingId, setSyncingId] = useState<string | null>(null);
 
-  const fetchParcels = async () => {
-    try {
-      const res = await api.get('/parcels');
-      const list = res.data?.data || res.data?.parcels || res.data || [];
-      setParcels(Array.isArray(list) ? list : []);
-    } catch (e) {
-      console.error('Failed to fetch parcels:', e);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await api.get('/tracking');
+        setData(res.data?.data || res.data || []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-  useEffect(() => { fetchParcels(); }, []);
-  const onRefresh = () => { setRefreshing(true); fetchParcels(); };
-
-  const syncTracking = async (id: string) => {
-    setSyncingId(id);
-    try {
-      await api.put(`/parcels/${id}/track`);
-      await fetchParcels();
-    } catch (e) {
-      Alert.alert('Error', 'Could not sync tracking status.');
-    } finally {
-      setSyncingId(null);
-    }
-  };
-
-  const sendWhatsApp = async (id: string) => {
-    try {
-      await api.post(`/parcels/${id}/whatsapp`);
-      Alert.alert('Sent', 'WhatsApp notification sent to the customer.');
-    } catch (e) {
-      Alert.alert('Error', 'Could not send WhatsApp notification.');
-    }
-  };
-
-  const statusColor: Record<string, string> = {
-    delivered: '#22c55e', in_transit: '#3b82f6', pending: '#eab308', failed: '#ef4444',
-  };
+  if (loading) return (
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.center}>
+      <ActivityIndicator size="large" color={colors.primary} />
+    </LinearGradient>
+  );
 
   return (
-    <View className="flex-1 bg-background pt-14 px-5">
-      <View className="flex-row items-center gap-3 mb-6">
-        <TouchableOpacity onPress={() => router.back()} className="p-1">
-          <ChevronLeft size={24} color="#fafafa" />
-        </TouchableOpacity>
-        <Text className="text-2xl font-bold text-foreground">Tracking</Text>
-      </View>
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.screen}>
+      <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
-      {loading ? (
-        <ActivityIndicator size="large" color="hsl(45, 93%, 47%)" style={{ marginTop: 40 }} />
-      ) : (
-        <FlatList
-          data={parcels}
-          keyExtractor={(item) => item._id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="hsl(45, 93%, 47%)" />}
-          contentContainerStyle={{ paddingBottom: 100 }}
-          ListEmptyComponent={<Text className="text-muted-foreground text-center mt-10">No parcels found.</Text>}
-          renderItem={({ item }) => (
-            <View className="bg-card p-4 rounded-xl mb-3 border border-border">
-              <View className="flex-row items-center justify-between mb-2">
-                <View className="flex-row items-center gap-2">
-                  <Truck size={16} color={statusColor[item.status] || '#94a3b8'} />
-                  <Text className="text-foreground font-semibold">{item.trackingNumber || item._id?.slice(-8).toUpperCase()}</Text>
-                </View>
-                <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: `${statusColor[item.status] || '#94a3b8'}22` }}>
-                  <Text className="text-[10px] font-bold" style={{ color: statusColor[item.status] || '#94a3b8' }}>
-                    {String(item.status || 'unknown').toUpperCase()}
-                  </Text>
-                </View>
-              </View>
-              <Text className="text-muted-foreground text-xs mb-3">{item.recipientName || item.customerName || 'Unknown recipient'}</Text>
-              <View className="flex-row gap-2">
-                <TouchableOpacity
-                  onPress={() => syncTracking(item._id)}
-                  disabled={syncingId === item._id}
-                  className="flex-1 flex-row items-center justify-center gap-1.5 bg-secondary py-2 rounded-lg"
-                >
-                  <RefreshCw size={14} color="#fafafa" />
-                  <Text className="text-foreground text-xs font-semibold">{syncingId === item._id ? 'Syncing…' : 'Sync'}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => sendWhatsApp(item._id)}
-                  className="flex-1 flex-row items-center justify-center gap-1.5 bg-primary/10 py-2 rounded-lg"
-                >
-                  <MessageCircle size={14} color="hsl(45, 93%, 47%)" />
-                  <Text className="text-primary text-xs font-semibold">WhatsApp</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-        />
-      )}
-    </View>
+      {/* Header */}
+      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
+        <View style={s.headerTop}>
+          <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+            <ArrowLeft size={20} color={colors.foreground} />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={s.pageTitle}>Real-time Order Tracker</Text>
+            <Text style={s.pageSub}>Monitor EasyParcel shipments</Text>
+          </View>
+          <View style={s.iconCircle}>
+            <Truck size={20} color={colors.primary} />
+          </View>
+        </View>
+      </BlurView>
+
+      <FlatList
+        data={data}
+        keyExtractor={(item, idx) => item._id || idx.toString()}
+        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        ListEmptyComponent={
+          <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.emptyCard}>
+            <Search size={32} color={colors.mutedForeground} style={{ marginBottom: 12 }} />
+            <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: '600' }}>No shipments found</Text>
+            <Text style={{ color: colors.mutedForeground, marginTop: 4 }}>Active tracking data will appear here.</Text>
+          </BlurView>
+        }
+        renderItem={({ item }) => (
+          <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.card}>
+            <Text style={s.cardTitle}>{item.orderId || 'Unknown Order'}</Text>
+            <Text style={s.cardDesc}>Tracking Number: {item.trackingNo || 'N/A'}</Text>
+          </BlurView>
+        )}
+      />
+    </LinearGradient>
   );
 }
+
+const s = StyleSheet.create({
+  screen: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  header: { paddingTop: 54, paddingBottom: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: THEME.glassBorder, marginBottom: 4 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  backBtn: { padding: 8, marginLeft: -8 },
+  pageTitle: { fontSize: 20, fontWeight: '800', color: THEME.foreground, letterSpacing: -0.5 },
+  pageSub: { color: THEME.mutedForeground, fontSize: 13, marginTop: 2 },
+  iconCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255, 215, 0, 0.1)', alignItems: 'center', justifyContent: 'center' },
+  
+  card: { borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 16 },
+  cardTitle: { color: THEME.foreground, fontWeight: '700', fontSize: 15 },
+  cardDesc: { color: THEME.mutedForeground, fontSize: 13, marginTop: 4 },
+  
+  emptyCard: { borderRadius: 16, borderWidth: 1, borderColor: THEME.glassBorder, padding: 32, alignItems: 'center', marginTop: 40 },
+});

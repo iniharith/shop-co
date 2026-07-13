@@ -1,83 +1,95 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, RefreshControl, TouchableOpacity, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { ChevronLeft, Printer } from 'lucide-react-native';
+﻿import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import api from '../../services/api';
 import socketService from '../../services/socket';
+import { useTheme } from '../../context/ThemeContext';
+import { THEME } from '../../constants/theme';
+import { PenTool, ArrowLeft, Settings2 } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 
-// Production queue: orders that have been PLACED and are awaiting/undergoing printing.
 export default function ProductionScreen() {
+  const { theme, colors } = useTheme();
   const router = useRouter();
-  const [orders, setOrders] = useState<any[]>([]);
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const fetchOrders = async () => {
-    try {
-      const res = await api.get('/orders');
-      const list = res.data?.data || res.data || [];
-      setOrders((Array.isArray(list) ? list : []).filter((o: any) => o.orderStatus === 'PLACED' || o.orderStatus === 'PROCESSING'));
-    } catch (e) {
-      console.error('Failed to fetch production queue:', e);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
 
   useEffect(() => {
-    fetchOrders();
     socketService.connect();
-    const off = socketService.on('order_placed', () => fetchOrders());
-    return () => { off(); socketService.disconnect(); };
+    socketService.on('task_updated' as any, () => { fetchData(); });
+    const fetchData = async () => {
+      try {
+        const res = await api.get('/production');
+        setData(res.data?.data || res.data || []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
-  const onRefresh = () => { setRefreshing(true); fetchOrders(); };
 
-  const markProcessing = async (id: string) => {
-    try {
-      await api.put(`/orders/${id}`, { status: 'PROCESSING' });
-      fetchOrders();
-    } catch (e) {
-      Alert.alert('Error', 'Could not update order.');
-    }
-  };
+  if (loading) return (
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.center}>
+      <ActivityIndicator size="large" color={colors.primary} />
+    </LinearGradient>
+  );
 
   return (
-    <View className="flex-1 bg-background pt-14 px-5">
-      <View className="flex-row items-center gap-3 mb-6">
-        <TouchableOpacity onPress={() => router.back()} className="p-1">
-          <ChevronLeft size={24} color="#fafafa" />
-        </TouchableOpacity>
-        <Text className="text-2xl font-bold text-foreground">Production</Text>
-      </View>
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.screen}>
+      <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
-      {loading ? (
-        <ActivityIndicator size="large" color="hsl(45, 93%, 47%)" style={{ marginTop: 40 }} />
-      ) : (
-        <FlatList
-          data={orders}
-          keyExtractor={(item) => item._id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="hsl(45, 93%, 47%)" />}
-          contentContainerStyle={{ paddingBottom: 100 }}
-          ListEmptyComponent={<Text className="text-muted-foreground text-center mt-10">Production queue is empty.</Text>}
-          renderItem={({ item }) => (
-            <View className="bg-card p-4 rounded-xl mb-3 border border-border flex-row items-center">
-              <View className="h-10 w-10 rounded-full bg-secondary items-center justify-center mr-3">
-                <Printer size={18} color="#3b82f6" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-foreground font-semibold">{item._id?.slice(-8).toUpperCase()}</Text>
-                <Text className="text-muted-foreground text-xs">{item.orderStatus}</Text>
-              </View>
-              {item.orderStatus === 'PLACED' && (
-                <TouchableOpacity onPress={() => markProcessing(item._id)} className="bg-primary/10 px-3 py-1.5 rounded-lg">
-                  <Text className="text-primary text-xs font-semibold">Start</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-        />
-      )}
-    </View>
+      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
+        <View style={s.headerTop}>
+          <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+            <ArrowLeft size={20} color={colors.foreground} />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={s.pageTitle}>Production</Text>
+            <Text style={s.pageSub}>Production pipeline overview</Text>
+          </View>
+          <View style={s.iconCircle}>
+            <PenTool size={20} color={colors.primary} />
+          </View>
+        </View>
+      </BlurView>
+
+      <FlatList
+        data={data}
+        keyExtractor={(item, idx) => item._id || idx.toString()}
+        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        ListEmptyComponent={
+          <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.emptyCard}>
+            <Settings2 size={32} color={colors.mutedForeground} style={{ marginBottom: 12 }} />
+            <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: '600' }}>No production tasks</Text>
+            <Text style={{ color: colors.mutedForeground, marginTop: 4 }}>Your production pipeline is clear.</Text>
+          </BlurView>
+        }
+        renderItem={({ item }) => (
+          <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.card}>
+            <Text style={s.cardTitle}>{item.title || 'Production Item'}</Text>
+            <Text style={s.cardDesc}>{item.status || 'Pending'}</Text>
+          </BlurView>
+        )}
+      />
+    </LinearGradient>
   );
 }
+
+const s = StyleSheet.create({
+  screen: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  header: { paddingTop: 54, paddingBottom: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: THEME.glassBorder, marginBottom: 4 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  backBtn: { padding: 8, marginLeft: -8 },
+  pageTitle: { fontSize: 20, fontWeight: '800', color: THEME.foreground, letterSpacing: -0.5 },
+  pageSub: { color: THEME.mutedForeground, fontSize: 13, marginTop: 2 },
+  iconCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255, 215, 0, 0.1)', alignItems: 'center', justifyContent: 'center' },
+  card: { borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 16 },
+  cardTitle: { color: THEME.foreground, fontWeight: '700', fontSize: 15 },
+  cardDesc: { color: THEME.mutedForeground, fontSize: 13, marginTop: 4 },
+  emptyCard: { borderRadius: 16, borderWidth: 1, borderColor: THEME.glassBorder, padding: 32, alignItems: 'center', marginTop: 40 },
+});
+

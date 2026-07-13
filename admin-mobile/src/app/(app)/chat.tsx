@@ -1,156 +1,91 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
-import { ChevronLeft, MessageSquare, Send } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import api from '../../services/api';
-import socketService from '../../services/socket';
+import { useTheme } from '../../context/ThemeContext';
+import { THEME } from '../../constants/theme';
+import { MessageSquare, ArrowLeft, Users } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 
 export default function ChatScreen() {
+  const { theme, colors } = useTheme();
   const router = useRouter();
-  const [conversations, setConversations] = useState<any[]>([]);
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [draft, setDraft] = useState('');
-  const [sending, setSending] = useState(false);
-
-  const fetchConversations = async () => {
-    try {
-      const res = await api.get('/chat/conversations');
-      const list = res.data?.data || res.data || [];
-      setConversations(Array.isArray(list) ? list : []);
-    } catch (e) {
-      console.error('Failed to fetch conversations:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchMessages = useCallback(async (id: string) => {
-    try {
-      const res = await api.get(`/chat/conversations/${id}/messages`);
-      setMessages(res.data?.messages || res.data?.data || []);
-    } catch (e) {
-      console.error('Failed to fetch messages:', e);
-    }
-  }, []);
-
-  // Keep a ref in sync so the socket handler below (registered once on mount)
-  // always knows which thread is currently open without re-subscribing.
-  const activeIdRef = React.useRef<string | null>(null);
-  useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
 
   useEffect(() => {
-    fetchConversations();
-    socketService.connect();
-
-    const off = socketService.on('new_message', (msg: any) => {
-      // Bump the conversation list so unread/last-message previews stay fresh.
-      fetchConversations();
-      // If we're looking at the thread this message belongs to, append it live
-      // instead of waiting for the next poll.
-      const belongsToOpenThread = msg?.conversationId && msg.conversationId === activeIdRef.current;
-      if (belongsToOpenThread) {
-        setMessages((prev) => [...prev, msg]);
+    const fetchData = async () => {
+      try {
+        const res = await api.get('/chat');
+        setData(res.data?.data || res.data || []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
       }
-    });
-
-    return () => {
-      off();
-      socketService.disconnect();
     };
+    fetchData();
   }, []);
 
-  const openThread = (id: string) => {
-    setActiveId(id);
-    fetchMessages(id);
-  };
-
-  const sendMessage = async () => {
-    if (!draft.trim() || !activeId) return;
-    setSending(true);
-    try {
-      await api.post(`/chat/conversations/${activeId}/messages`, { text: draft.trim() });
-      setDraft('');
-      fetchMessages(activeId);
-    } catch (e) {
-      console.error('Failed to send message:', e);
-    } finally {
-      setSending(false);
-    }
-  };
-
-  if (activeId) {
-    return (
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0} className="flex-1 bg-background">
-        <View className="flex-row items-center gap-3 pt-14 px-5 mb-4">
-          <TouchableOpacity onPress={() => setActiveId(null)} className="p-1">
-            <ChevronLeft size={24} color="#fafafa" />
-          </TouchableOpacity>
-          <Text className="text-xl font-bold text-foreground">Conversation</Text>
-        </View>
-
-        <FlatList
-          data={messages}
-          keyExtractor={(item, idx) => item._id || String(idx)}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, gap: 8 }}
-          renderItem={({ item }) => (
-            <View className={`max-w-[80%] p-3 rounded-xl ${item.isAdmin || item.fromAdmin ? 'self-end bg-primary/10' : 'self-start bg-card border border-border'}`}>
-              <Text className="text-foreground text-sm">{item.text}</Text>
-            </View>
-          )}
-          ListEmptyComponent={<Text className="text-muted-foreground text-center mt-10">No messages yet.</Text>}
-        />
-
-        <View className="flex-row items-center gap-2 px-5 py-3 border-t border-border">
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            placeholder="Type a message…"
-            placeholderTextColor="#666"
-            className="flex-1 bg-card border border-border rounded-full px-4 py-2.5 text-foreground"
-          />
-          <TouchableOpacity onPress={sendMessage} disabled={sending} className="h-10 w-10 rounded-full bg-primary items-center justify-center">
-            <Send size={16} color="#171717" />
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    );
-  }
+  if (loading) return (
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.center}>
+      <ActivityIndicator size="large" color={colors.primary} />
+    </LinearGradient>
+  );
 
   return (
-    <View className="flex-1 bg-background pt-14 px-5">
-      <View className="flex-row items-center gap-3 mb-6">
-        <TouchableOpacity onPress={() => router.back()} className="p-1">
-          <ChevronLeft size={24} color="#fafafa" />
-        </TouchableOpacity>
-        <Text className="text-2xl font-bold text-foreground">Chat</Text>
-      </View>
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.screen}>
+      <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
-      {loading ? (
-        <ActivityIndicator size="large" color="hsl(45, 93%, 47%)" style={{ marginTop: 40 }} />
-      ) : (
-        <FlatList
-          data={conversations}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={{ paddingBottom: 100 }}
-          ListEmptyComponent={<Text className="text-muted-foreground text-center mt-10">No conversations yet.</Text>}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => openThread(item._id)}
-              className="bg-card p-4 rounded-xl mb-3 border border-border flex-row items-center"
-            >
-              <View className="h-10 w-10 rounded-full bg-secondary items-center justify-center mr-3">
-                <MessageSquare size={18} color="#888" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-foreground font-semibold">{item.customerName || item.title || 'Customer'}</Text>
-                <Text numberOfLines={1} className="text-muted-foreground text-xs">{item.lastMessage || 'Tap to open'}</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-        />
-      )}
-    </View>
+      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
+        <View style={s.headerTop}>
+          <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+            <ArrowLeft size={20} color={colors.foreground} />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={s.pageTitle}>Team Chat</Text>
+            <Text style={s.pageSub}>Internal communication</Text>
+          </View>
+          <View style={s.iconCircle}>
+            <MessageSquare size={20} color={colors.primary} />
+          </View>
+        </View>
+      </BlurView>
+
+      <FlatList
+        data={data}
+        keyExtractor={(item, idx) => item._id || idx.toString()}
+        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        ListEmptyComponent={
+          <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.emptyCard}>
+            <Users size={32} color={colors.mutedForeground} style={{ marginBottom: 12 }} />
+            <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: '600' }}>No active chats</Text>
+            <Text style={{ color: colors.mutedForeground, marginTop: 4 }}>Start a conversation with your team.</Text>
+          </BlurView>
+        }
+        renderItem={({ item }) => (
+          <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.card}>
+            <Text style={s.cardTitle}>{item.title || 'Chat Room'}</Text>
+            <Text style={s.cardDesc}>{item.status || 'Active'}</Text>
+          </BlurView>
+        )}
+      />
+    </LinearGradient>
   );
 }
+
+const s = StyleSheet.create({
+  screen: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  header: { paddingTop: 54, paddingBottom: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: THEME.glassBorder, marginBottom: 4 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  backBtn: { padding: 8, marginLeft: -8 },
+  pageTitle: { fontSize: 20, fontWeight: '800', color: THEME.foreground, letterSpacing: -0.5 },
+  pageSub: { color: THEME.mutedForeground, fontSize: 13, marginTop: 2 },
+  iconCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255, 215, 0, 0.1)', alignItems: 'center', justifyContent: 'center' },
+  card: { borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 16 },
+  cardTitle: { color: THEME.foreground, fontWeight: '700', fontSize: 15 },
+  cardDesc: { color: THEME.mutedForeground, fontSize: 13, marginTop: 4 },
+  emptyCard: { borderRadius: 16, borderWidth: 1, borderColor: THEME.glassBorder, padding: 32, alignItems: 'center', marginTop: 40 },
+});

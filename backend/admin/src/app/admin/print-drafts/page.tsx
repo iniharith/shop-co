@@ -12,6 +12,7 @@ import { useTasks } from "@/hooks/useTasks";
 import { Loader2, Printer, LayoutGrid } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { BouncySkeleton } from "@/components/global/skeleton/BouncySkeleton";
 
 export default function PrintDraftsPage() {
   const { data: filesData, isLoading: filesLoading } = useAllFiles();
@@ -52,11 +53,7 @@ export default function PrintDraftsPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex h-full flex-1 items-center justify-center bg-transparent">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <BouncySkeleton text="Loading print drafts" />;
   }
 
   if (drafts.length === 0) {

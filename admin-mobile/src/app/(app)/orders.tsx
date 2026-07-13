@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, ActivityIndicator, RefreshControl, TouchableOpacity, StyleSheet, StatusBar, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import api from '../../services/api';
+import socketService from '../../services/socket';
 import { ShoppingBag, Package, Truck, CheckCircle2, XCircle, Search, ChevronDown, Trash2, Archive } from 'lucide-react-native';
+import { useTheme } from '../../context/ThemeContext';
 import { THEME } from '../../constants/theme';
 
 const STATUS_CYCLE: Record<string, string> = { PLACED: 'SHIPPED', SHIPPED: 'DELIVERED', DELIVERED: 'DELIVERED', CANCELLED: 'CANCELLED' };
@@ -16,6 +18,7 @@ const STATUS_META: Record<string, { color: string; bg: string; label: string }> 
 const FILTERS = ['ALL', 'PLACED', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
 
 export default function OrdersScreen() {
+  const { theme, colors } = useTheme();
   const [orders, setOrders]       = useState<any[]>([]);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefresh]  = useState(false);
@@ -31,7 +34,22 @@ export default function OrdersScreen() {
     finally { setLoading(false); setRefresh(false); }
   };
 
-  useEffect(() => { fetchOrders(); }, []);
+    useEffect(() => { 
+    fetchOrders(); 
+    socketService.connect();
+    
+    const handleOrderPlaced = (data: any) => {
+      setOrders(prev => [data, ...prev]);
+    };
+    const handleOrderStatus = (data: any) => {
+      setOrders(prev => prev.map(o => o._id === data.orderId ? { ...o, orderStatus: data.status } : o));
+    };
+
+    const offPlaced = socketService.on('order_placed' as any, handleOrderPlaced);
+    const offStatus = socketService.on('order_status_updated' as any, handleOrderStatus);
+
+    return () => { offPlaced(); offStatus(); };
+  }, []);
 
   const updateStatus = async (id: string, currentStatus: string) => {
     const next = STATUS_CYCLE[currentStatus];
@@ -64,16 +82,16 @@ export default function OrdersScreen() {
   });
 
   if (loading) return (
-    <LinearGradient colors={['#0a0a14', '#100a1e', '#0a0a14']} style={s.center}>
-      <ActivityIndicator size="large" color={THEME.primary} />
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.center}>
+      <ActivityIndicator size="large" color={colors.primary} />
     </LinearGradient>
   );
 
   return (
-    <LinearGradient colors={['#0a0a14', '#100a1e', '#0a0a14']} style={s.screen}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.screen}>
+      <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
-      <BlurView intensity={20} tint="dark" style={s.header}>
+      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View>
             <Text style={s.pageTitle}>Orders</Text>
@@ -82,8 +100,8 @@ export default function OrdersScreen() {
         </View>
         {/* Search */}
         <View style={s.searchBox}>
-          <Search size={14} color={THEME.mutedForeground} />
-          <TextInput placeholder="Search by name, ID, amount..." placeholderTextColor={THEME.mutedForeground} value={search} onChangeText={setSearch} style={s.searchInput} />
+          <Search size={14} color={colors.mutedForeground} />
+          <TextInput placeholder="Search by name, ID, amount..." placeholderTextColor={colors.mutedForeground} value={search} onChangeText={setSearch} style={s.searchInput} />
         </View>
       </BlurView>
 
@@ -97,8 +115,8 @@ export default function OrdersScreen() {
           const active = filter === item;
           const meta = STATUS_META[item];
           return (
-            <TouchableOpacity onPress={() => setFilter(item)} style={[s.chip, active && { backgroundColor: (meta?.color || THEME.primary) + '22', borderColor: meta?.color || THEME.primary }]}>
-              <Text style={[s.chipText, active && { color: meta?.color || THEME.primary, fontWeight: '700' }]}>{meta?.label || item}</Text>
+            <TouchableOpacity onPress={() => setFilter(item)} style={[s.chip, active && { backgroundColor: (meta?.color || colors.primary) + '22', borderColor: meta?.color || colors.primary }]}>
+              <Text style={[s.chipText, active && { color: meta?.color || colors.primary, fontWeight: '700' }]}>{meta?.label || item}</Text>
             </TouchableOpacity>
           );
         }}
@@ -108,11 +126,11 @@ export default function OrdersScreen() {
         data={filtered}
         keyExtractor={item => item._id}
         contentContainerStyle={{ padding: 16, paddingBottom: 130, gap: 10 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefresh(true); fetchOrders(); }} tintColor={THEME.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefresh(true); fetchOrders(); }} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <BlurView intensity={15} tint="dark" style={[s.glassCard, { alignItems: 'center', paddingVertical: 40 }]}>
-            <Text style={{ color: THEME.mutedForeground }}>No orders found.</Text>
+          <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.glassCard, { alignItems: 'center', paddingVertical: 40 }]}>
+            <Text style={{ color: colors.mutedForeground }}>No orders found.</Text>
           </BlurView>
         }
         renderItem={({ item }) => {
@@ -120,27 +138,27 @@ export default function OrdersScreen() {
           const isUpdating = updating === item._id;
           const canAdvance = STATUS_CYCLE[item.orderStatus] && STATUS_CYCLE[item.orderStatus] !== item.orderStatus;
           return (
-            <BlurView intensity={15} tint="dark" style={s.glassCard}>
+            <BlurView experimentalBlurMethod="dimezisBlurView" intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.glassCard}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <View style={{ flex: 1 }}>
                   <Text style={s.orderId}>#{item._id?.slice(-8).toUpperCase()}</Text>
                   {item.customerName ? <Text style={s.customerName}>{item.customerName}</Text> : null}
                 </View>
-                <Text style={[s.amount, { color: THEME.primary }]}>RM {Number(item.totalAmount || 0).toFixed(2)}</Text>
+                <Text style={[s.amount, { color: colors.primary }]}>RM {Number(item.totalAmount || 0).toFixed(2)}</Text>
               </View>
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
                 <View style={[s.badge, { backgroundColor: meta.bg }]}>
                   <Text style={[s.badgeText, { color: meta.color }]}>{meta.label}</Text>
                 </View>
-                <Text style={{ color: THEME.mutedForeground, fontSize: 11 }}>{new Date(item.createdAt).toLocaleDateString('en-MY')}</Text>
+                <Text style={{ color: colors.mutedForeground, fontSize: 11 }}>{new Date(item.createdAt).toLocaleDateString('en-MY')}</Text>
               </View>
 
               {/* Payment Info */}
               <View style={[s.divider, { marginVertical: 10 }]} />
               <View style={{ flexDirection: 'row', gap: 12 }}>
-                <Text style={s.infoText}>💳 {item.paymentMethod || 'N/A'}</Text>
-                <Text style={[s.infoText, { color: item.paymentStatus === 'PAID' ? '#4ade80' : THEME.warning }]}>{item.paymentStatus || 'PENDING'}</Text>
+                <Text style={s.infoText}>ðŸ’³ {item.paymentMethod || 'N/A'}</Text>
+                <Text style={[s.infoText, { color: item.paymentStatus === 'PAID' ? '#4ade80' : colors.warning }]}>{item.paymentStatus || 'PENDING'}</Text>
               </View>
 
               {/* Actions */}
@@ -150,7 +168,7 @@ export default function OrdersScreen() {
                     style={[s.actionBtn, { flex: 1, backgroundColor: meta.color + '22', borderColor: meta.color }]}>
                     {isUpdating ? <ActivityIndicator size="small" color={meta.color} /> : (
                       <Text style={{ color: meta.color, fontSize: 12, fontWeight: '700' }}>
-                        → {STATUS_META[STATUS_CYCLE[item.orderStatus]]?.label || 'Advance'}
+                        â†’ {STATUS_META[STATUS_CYCLE[item.orderStatus]]?.label || 'Advance'}
                       </Text>
                     )}
                   </TouchableOpacity>
@@ -187,3 +205,4 @@ const s = StyleSheet.create({
   infoText: { color: THEME.mutedForeground, fontSize: 12 },
   actionBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 4 },
 });
+

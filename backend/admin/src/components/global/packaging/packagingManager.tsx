@@ -26,6 +26,7 @@ import { useSession } from "next-auth/react";
 import AxiosInstance from "@/utils/axios";
 import { uploadToS3Directly } from "@/utils/s3Upload";
 import { useSearchParams } from "next/navigation";
+import { BouncySkeleton } from "@/components/global/skeleton/BouncySkeleton";
 import { useQuery } from "@tanstack/react-query";
 
 const categories = [
@@ -485,7 +486,7 @@ export default function PackagingManager() {
     );
   };
 
-  if (isPending) return <div className="flex justify-center p-8"><p>Loading artworks...</p></div>;
+  if (isPending) return <BouncySkeleton text="Loading packaging" />;
 
   return (
     <div className="space-y-6 bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">
