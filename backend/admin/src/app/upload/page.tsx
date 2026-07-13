@@ -59,6 +59,18 @@ function uploadToS3WithProgress(url: string, file: File, onProgress: (pct: numbe
 }
 
 export default function CustomerUploadPortal() {
+  // The root layout sets `overflow-hidden` on <body> for the admin dashboard's
+  // internal-panel-scroll layout. This public page isn't part of that layout —
+  // it's a simple centered card that needs normal page scroll. Without this,
+  // selecting many files pushes the Submit button below the viewport with no
+  // way to reach it. Scoped to this page only; restored on unmount.
+  React.useEffect(() => {
+    const body = document.body;
+    const prevOverflow = body.style.overflow;
+    body.style.overflow = "auto";
+    return () => { body.style.overflow = prevOverflow; };
+  }, []);
+
   const [orderId, setOrderId] = useState("");
   const [username, setUsername] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -372,7 +384,7 @@ export default function CustomerUploadPortal() {
             <Upload className="w-10 h-10 mx-auto mb-3 text-white/40" />
             <h3 className="text-lg font-medium mb-1">Upload your artwork</h3>
             <p className="text-sm text-white/40 mb-4">Drag and drop or click to browse files</p>
-            <Button variant="outline" className="border-white/20 hover:bg-white/10 pointer-events-none relative z-0">
+            <Button variant="outline" className="bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white pointer-events-none relative z-0">
               Select Files
             </Button>
           </div>

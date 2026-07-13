@@ -9,9 +9,10 @@ export class TaskRepository {
     return Task.create(data);
   }
 
-  async findAll(filters?: { status?: string; assignee?: string; orderId?: string; customerUsername?: string; isDeleted?: boolean }): Promise<ITask[]> {
+  async findAll(filters?: { status?: string; statuses?: string[]; assignee?: string; orderId?: string; customerUsername?: string; isDeleted?: boolean; days?: number; }): Promise<ITask[]> {
     const query: any = {};
     if (filters?.status) query.status = filters.status;
+    if (filters?.statuses && filters.statuses.length > 0) query.status = { $in: filters.statuses };
     if (filters?.assignee) query.assignee = filters.assignee;
     if (filters?.orderId) query.orderId = filters.orderId;
     if (filters?.customerUsername) query.customerUsername = filters.customerUsername;
@@ -21,13 +22,13 @@ export class TaskRepository {
     } else {
       query.isDeleted = { $ne: true };
     }
-    
-    // Speed optimization: Only load tasks from the last 60 days by default to prevent massive payloads.
-    const sixtyDaysAgo = new Date();
-    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-    query.createdAt = { $gte: sixtyDaysAgo };
-    
-    return Task.find(query).sort({ createdAt: -1 }).lean() as unknown as Promise<ITask[]>;
+
+    const days = filters?.days || 30;
+    const daysAgo = new Date();
+    daysAgo.setDate(daysAgo.getDate() - days);
+    query.createdAt = { $gte: daysAgo };
+
+    return Task.find(query).select('-comments -activities').sort({ createdAt: -1 }).lean() as unknown as Promise<ITask[]>;
   }
 
   async findById(id: string): Promise<ITask | null> {
@@ -86,6 +87,23 @@ export class TaskRepository {
     return Task.findByIdAndUpdate(
       taskId,
       { $push: { files: { url, name, notes: '', tag: tag || 'attachment' } } },
+      { new: true }
+    );
+  }
+
+  async deleteFile(taskId: string, fileId: string): Promise<ITask | null> {
+    const task = await Task.findById(taskId);
+    if (!task) return null;
+
+    const file = (task as any).files?.find((f: any) =>
+      f._id?.toString() === fileId || f.url?.includes(fileId)
+    );
+
+    if (!file) return task;
+
+    return Task.findByIdAndUpdate(
+      taskId,
+      { $pull: { files: { _id: file._id } } as any },
       { new: true }
     );
   }

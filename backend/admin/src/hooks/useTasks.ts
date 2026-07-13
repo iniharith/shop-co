@@ -6,11 +6,22 @@ import { useSession } from "next-auth/react";
 import { useQueryData } from "./useQueryData";
 import { useMutationData } from "./useMutation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { getTasks, createTask, updateTask, deleteTask, addTaskComment, deleteTaskComment } from "@/api/tasks";
+import { getTasks, getTask, createTask, updateTask, deleteTask, addTaskComment, deleteTaskComment } from "@/api/tasks";
 
 export const useTasks = (filters?: any) => {
     const { data: session } = useSession();
     return useQueryData(['tasks', filters], () => getTasks(session?.user?.token, filters));
+}
+
+export const useTask = (id: string | undefined) => {
+    const { data: session } = useSession();
+    // staleTime: 30s so reopening the same task feels instant (uses cache).
+    // Socket events via socketProvider will invalidate and refresh when a
+    // teammate makes a change, keeping the modal up-to-date in real-time.
+    return useQueryData(['task', id], () => getTask(session?.user?.token, id!), {
+        enabled: !!id,
+        staleTime: 30000,
+    });
 }
 
 export const useCreateTask = () => {
@@ -83,7 +94,7 @@ export const useUploadTaskFile = () => {
         ['uploadTaskFile'],
         (data: { id: string, file: File, tag?: string, onProgress?: (percent: number) => void, abortController?: AbortController }) => 
             import("@/api/tasks").then(m => m.uploadTaskFile(session?.user.token, data.id, data.file, data.tag, data.onProgress, data.abortController)),
-        ["tasks", "allFiles", "groupedFiles"]
+        ["tasks", "allFiles", "groupedFiles", "task"]
     )
     return { mutate, mutateAsync, isPending }
 }
@@ -93,7 +104,7 @@ export const useDeleteTaskFile = () => {
     const { mutate, isPending } = useMutationData(
         ['deleteTaskFile'],
         (data: { id: string, fileId: string }) => import("@/api/tasks").then(m => m.deleteTaskFile(session?.user.token, data.id, data.fileId)),
-        ["tasks", "allFiles", "groupedFiles"]
+        ["tasks", "allFiles", "groupedFiles", "task"]
     )
     return { mutate, isPending }
 }

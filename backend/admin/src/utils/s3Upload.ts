@@ -21,7 +21,14 @@ export const uploadToS3Directly = async (token: string, file: File, folderPath?:
   // 2. Upload file directly to S3 using XHR to track progress
   return new Promise<{ fileUrl: string, key: string, name: string, type: string, size: number }>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    
+
+    // Without a timeout, a stalled connection (dropped packet, S3 hiccup,
+    // backgrounded tab) leaves the promise pending forever — the UI shows
+    // "Uploading... 100%" indefinitely with no way to know it failed.
+    // 2 minutes is generous for large artwork files while still giving up
+    // eventually instead of hanging silently.
+    xhr.timeout = 120000;
+
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && onProgress) {
         const percentComplete = (event.loaded / event.total) * 100;
@@ -43,7 +50,8 @@ export const uploadToS3Directly = async (token: string, file: File, folderPath?:
       }
     };
     
-    xhr.onerror = () => reject(new Error("XHR network error during S3 upload"));
+    xhr.onerror = () => reject(new Error("Network error during upload. Please check your connection and try again."));
+    xhr.ontimeout = () => reject(new Error("Upload timed out. Please check your connection and try again."));
     
     if (abortController) {
       abortController.signal.addEventListener('abort', () => {

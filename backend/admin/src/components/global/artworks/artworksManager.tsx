@@ -12,11 +12,12 @@ import { useTasks } from "@/hooks/useTasks";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2 } from "lucide-react";
+import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2, Upload, Loader2 } from "lucide-react";
 import { forceDownload } from "@/lib/utils";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useUploadStore } from "@/store/uploadStore";
 import ImageNext from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -25,7 +26,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { BouncySkeleton } from "@/components/global/skeleton/BouncySkeleton";
+import AxiosInstance from "@/utils/axios";
+import { uploadToS3Directly } from "@/utils/s3Upload";
 
 const categories = [
   "ALL",
@@ -39,12 +41,15 @@ const categories = [
   "FOOD PACKAGING"
 ];
 
+const ALL_STATUSES = ["PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN"];
+
 export default function ArtworksManager() {
+  const { addUpload, updateProgress, updateStatus } = useUploadStore();
   const { data: session } = useSession();
   const { data: response, isPending, refetch, isFetching: isFetchingFiles } = useAllFiles();
   const { data: ordersResponse, isFetching: isFetchingOrders } = useOrders();
   const { data: usersResponse, isPending: usersPending } = useUsers();
-  const { data: tasksResponse, isPending: tasksPending } = useTasks();
+  const { data: tasksResponse, isPending: tasksPending } = useTasks({ statuses: ALL_STATUSES.join(','), days: 36500 });
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
   const searchParams = useSearchParams();
 
@@ -57,7 +62,6 @@ export default function ArtworksManager() {
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
-  const [previewFile, setPreviewFile] = useState<any>(null);
 
   // Upload Modal State
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
@@ -69,9 +73,11 @@ export default function ArtworksManager() {
   const [createFolderModalOpen, setCreateFolderModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [moveToFolderModalOpen, setMoveToFolderModalOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState<any>(null);
+  const [previewList, setPreviewList] = useState<any[]>([]);
 
   const { data: virtualFoldersResponse, isPending: foldersPending } = useFolders();
-  const virtualFolders = (virtualFoldersResponse as any)?.data || [];
+  const virtualFolders = virtualFoldersResponse?.data || [];
   const { mutate: createFolderMutate, isPending: isCreatingFolder } = useCreateFolder();
   const { mutate: deleteFolderMutate, isPending: isDeletingFolder } = useDeleteFolder();
   const { mutate: moveFileMutate, isPending: isMovingFile } = useMoveFile();
@@ -190,35 +196,44 @@ export default function ArtworksManager() {
 
     return Object.entries(groups).map(([keyStr, files]) => {
       const parsed = JSON.parse(keyStr);
-
-      let lastUpdated = 0;
-      if (files.length > 0) {
-        lastUpdated = Math.max(...files.map((f: any) => new Date(f.uploadedAt || f.createdAt || 0).getTime()));
-      } else if (parsed.taskId) {
-        const task = tasks.find((t: any) => t._id === parsed.taskId);
-        if (task && task.createdAt) {
-          lastUpdated = new Date(task.createdAt).getTime();
-        }
-      }
-
       return {
         folderName: parsed.name,
         orderId: parsed.orderId,
         taskId: parsed.taskId,
         userId: files.length > 0 ? files[0].userId : "",
-        files,
-        lastUpdated
+        files
       };
-    }).sort((a, b) => b.lastUpdated - a.lastUpdated);
+    });
   }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab]);
+
+  // Track which folder we auto-opened via a ?folder= link, so we can keep
+  // re-syncing it while it's still empty (files may still be loading) without
+  // ever overriding a folder the user manually clicked into afterwards.
+  const autoOpenedFolderRef = React.useRef<string | null>(null);
+
+  // Arriving via a ?folder= link (e.g. from a "new artwork uploaded"
+  // notification) — force a fresh fetch instead of trusting whatever's
+  // cached, so we don't show a stale/empty snapshot from before the upload.
+  React.useEffect(() => {
+    if (searchParams.get("folder")) {
+      refetch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   React.useEffect(() => {
     const folderQuery = searchParams.get("folder");
-    if (folderQuery && groupedFiles.length > 0 && !selectedFolder) {
-      const match = groupedFiles.find(g => g.folderName === folderQuery);
-      if (match) {
-        setSelectedFolder(`${match.folderName}-${match.orderId}-${match.taskId}`);
-      }
+    if (!folderQuery || groupedFiles.length === 0) return;
+    const match = groupedFiles.find(g => g.folderName === folderQuery);
+    if (!match) return;
+    const matchKey = `${match.folderName}-${match.orderId}-${match.taskId}`;
+
+    const nothingSelectedYet = !selectedFolder;
+    const stillWatchingOurOwnEmptyAutoOpen = selectedFolder === autoOpenedFolderRef.current && match.files.length > 0;
+
+    if (nothingSelectedYet || stillWatchingOurOwnEmptyAutoOpen) {
+      autoOpenedFolderRef.current = matchKey;
+      setSelectedFolder(matchKey);
     }
   }, [searchParams, groupedFiles, selectedFolder]);
 
@@ -288,53 +303,55 @@ export default function ArtworksManager() {
 
   const handleDownloadAll = async (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    toast.loading(`Preparing ZIP with ${group.files.length} files...`);
+    const toastId = toast.loading(`Preparing ZIP... (0/${group.files.length})`);
     try {
       const zip = new JSZip();
       const usedNames = new Set<string>();
       const failed: string[] = [];
+      let completedCount = 0;
 
-      const filePromises = group.files.map(async (file: any) => {
-        let baseName = file.originalName || "file";
-        let fileName = baseName;
-        let counter = 1;
-        while (usedNames.has(fileName)) {
-          const nameParts = baseName.split('.');
-          if (nameParts.length > 1) {
-            const ext = nameParts.pop();
-            fileName = `${nameParts.join('.')}(${counter}).${ext}`;
-          } else {
-            fileName = `${baseName}(${counter})`;
+      for (let i = 0; i < group.files.length; i += 3) {
+        const chunk = group.files.slice(i, i + 3);
+        await Promise.all(chunk.map(async (file: any) => {
+          let baseName = file.originalName || "file";
+          let fileName = baseName;
+          let counter = 1;
+          while (usedNames.has(fileName)) {
+            const nameParts = baseName.split('.');
+            if (nameParts.length > 1) {
+              const ext = nameParts.pop();
+              fileName = `${nameParts.join('.')}(${counter}).${ext}`;
+            } else {
+              fileName = `${baseName}(${counter})`;
+            }
+            counter++;
           }
-          counter++;
-        }
-        usedNames.add(fileName);
+          usedNames.add(fileName);
 
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-        const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName || "file")}&stream=true`;
-        try {
-          const response = await fetch(proxyUrl);
-          // Without this check, a failed fetch (403/404/502) still resolves
-          // and its error body gets added to the zip as if it were the real
-          // file — producing an archive that looks fine but only contains
-          // broken/unopenable "files". Skip it instead so the ZIP only ever
-          // contains real file content.
-          if (!response.ok) {
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+          const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName || "file")}`;
+          try {
+            const response = await fetch(proxyUrl);
+            if (!response.ok) {
+              failed.push(baseName);
+              return;
+            }
+            const blob = await response.blob();
+            if (blob.size === 0) {
+              failed.push(baseName);
+              return;
+            }
+            zip.file(fileName, blob);
+          } catch {
             failed.push(baseName);
-            return;
+          } finally {
+            completedCount++;
+            toast.loading(`Preparing ZIP... (${completedCount}/${group.files.length})`, { id: toastId });
           }
-          const blob = await response.blob();
-          if (blob.size === 0) {
-            failed.push(baseName);
-            return;
-          }
-          zip.file(fileName, blob);
-        } catch {
-          failed.push(baseName);
-        }
-      });
-      await Promise.all(filePromises);
+        }));
+      }
 
+      toast.loading("Zipping files...", { id: toastId });
       if (Object.keys(zip.files).length === 0) {
         throw new Error("Could not download any files");
       }
@@ -382,31 +399,27 @@ export default function ArtworksManager() {
       const token = session?.user?.token || localStorage.getItem('token') || ""; 
       
       const uploadPromises = Array.from(uploadFiles).map(async (f) => {
-        const formData = new FormData();
-        if (uploadData.userId) formData.append("userId", uploadData.userId);
-        if (uploadData.orderId) formData.append("orderId", uploadData.orderId);
-        formData.append("category", uploadData.category);
-        formData.append("notes", uploadData.notes);
-        if (uploadData.taskId) formData.append("taskId", uploadData.taskId);
-        if (uploadData.folderId) formData.append("folderId", uploadData.folderId);
-        formData.append("files", f);
+        // 1. Direct S3 Upload
+        const uploadedData = await uploadToS3Directly(token, f);
+        
+        // 2. Save Metadata
+        const metadata = {
+          userId: uploadData.userId || undefined,
+          orderId: uploadData.orderId || undefined,
+          taskId: uploadData.taskId || undefined,
+          folderId: uploadData.folderId || undefined,
+          category: uploadData.taskId ? 'TASK' : uploadData.category,
+          notes: uploadData.notes,
+          files: [uploadedData]
+        };
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/files/upload`, {
-          method: "POST",
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: formData,
-        });
-
-        if (!res.ok) {
-          const errText = await res.text();
-          console.error("Upload error response:", errText);
-          throw new Error(errText || "Upload failed");
-        }
-        return res.json();
+        const res = await AxiosInstance(token).post("/api/files/save-metadata", metadata);
+        return res.data;
       });
 
       await Promise.all(uploadPromises);
       toast.success("Artwork uploaded successfully");
+      setUploadFiles(null);
       setUploadModalOpen(false);
       refetch();
     } catch (e: any) {
@@ -429,6 +442,7 @@ export default function ArtworksManager() {
 
   const getThumbnailUrl = (path: string) => {
     const rawUrl = getFileUrl(path);
+    // Free global CDN proxy to automatically downscale 50MB S3 images to 200px thumbnails
     return `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&w=200&h=200&fit=cover`;
   };
 
@@ -440,7 +454,7 @@ export default function ArtworksManager() {
     toast.success("Share link copied to clipboard");
   };
 
-  const getFileThumbnail = (file: any) => {
+  const getFileThumbnail = (file: any, contextFiles: any[] = []) => {
     const isImage = file.mimetype?.includes("image") || (file.originalName && file.originalName.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i));
     const isPdf = file.mimetype?.includes("pdf") || (file.originalName && file.originalName.toLowerCase().endsWith(".pdf"));
 
@@ -449,7 +463,7 @@ export default function ArtworksManager() {
         <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center relative group/thumb">
           <img 
             src={getThumbnailUrl(file.path)} 
-            alt={file.originalName} 
+            alt={file.originalName || "thumbnail"} 
             className="object-cover w-full h-full absolute inset-0 z-0 transition-transform group-hover/thumb:scale-105" 
             loading="lazy"
             decoding="async"
@@ -460,7 +474,7 @@ export default function ArtworksManager() {
             }} 
           />
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center z-20">
-            <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewFile(file); }} className="gap-1 shadow-sm">
+            <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewFile(file); setPreviewList(contextFiles); }} className="gap-1 shadow-sm">
               <Eye className="w-4 h-4" /> View
             </Button>
           </div>
@@ -475,19 +489,29 @@ export default function ArtworksManager() {
       return (
         <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center relative group">
           <iframe 
-            src={`${getFileUrl(file.path)}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} 
+            src={`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName || "file")}&inline=true#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} 
             className="absolute top-0 left-0 border-none overflow-hidden"
             style={{ width: '400%', height: '400%', transform: 'scale(0.25)', transformOrigin: 'top left', pointerEvents: 'none' }}
             tabIndex={-1}
           />
           <div className="absolute inset-0 z-10 bg-transparent"></div>
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center z-20">
+            <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewFile(file); setPreviewList(contextFiles); }} className="gap-1 shadow-sm">
+              <Eye className="w-4 h-4" /> View
+            </Button>
+          </div>
         </div>
       );
     }
 
     return (
-      <div className="w-full h-24 bg-muted/50 rounded-t-lg flex items-center justify-center">
+      <div className="w-full h-24 bg-muted/50 rounded-t-lg flex items-center justify-center relative group/thumb">
         {getFileIcon(file.mimetype)}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center z-20">
+          <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewFile(file); setPreviewList(contextFiles); }} className="gap-1 shadow-sm">
+            <Eye className="w-4 h-4" /> View
+          </Button>
+        </div>
       </div>
     );
   };
@@ -501,11 +525,10 @@ export default function ArtworksManager() {
       </div>
     );
   };
-
-  if (isPending) return <BouncySkeleton text="Loading artworks" />;
+if (isPending) return <div className="flex justify-center p-8"><p>Loading artworks...</p></div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-2 w-full max-w-md">
           <div className="relative w-full">
@@ -544,7 +567,13 @@ export default function ArtworksManager() {
               <List className="w-4 h-4" />
             </button>
           </div>
-          <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
+          <Dialog open={uploadModalOpen} onOpenChange={(open) => {
+            setUploadModalOpen(open);
+            if (!open) {
+              setUploadFiles(null);
+              setUploadData({ category: "DIGITAL PRINTING", notes: "" });
+            }
+          }}>
             <Button onClick={() => {
               setUploadData({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "", folderId: "" });
               setUploadModalOpen(true);
@@ -565,15 +594,67 @@ export default function ArtworksManager() {
                 )}
                 <div className="space-y-2">
                   <Label>Files *</Label>
-                  <Input type="file" multiple onChange={e => setUploadFiles(e.target.files)} />
+                  <div className="border-2 border-dashed border-border/50 rounded-xl p-6 text-center bg-muted/10 relative hover:bg-muted/20 transition-colors group">
+                    <input 
+                      type="file" 
+                      multiple 
+                      onChange={e => setUploadFiles(e.target.files)}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      title="Click to select files"
+                    />
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <h3 className="text-base font-medium mb-1">Upload your artwork</h3>
+                    <p className="text-xs text-muted-foreground mb-4">Drag and drop or click to browse files</p>
+                    <Button variant="outline" size="sm" className="border-border/50 pointer-events-none relative z-0">
+                      Select Files
+                    </Button>
+                  </div>
+
+                  {uploadFiles && uploadFiles.length > 0 && (
+                    <div className="bg-muted/10 rounded-lg p-3 border border-border/50 space-y-2 max-h-40 overflow-y-auto mt-2 custom-scrollbar">
+                      <h4 className="text-xs font-medium text-muted-foreground mb-2">{uploadFiles.length} File(s) Selected</h4>
+                      {Array.from(uploadFiles).map((file, i) => (
+                        <div key={i} className="flex items-center justify-between bg-background p-2 rounded border border-border/50">
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            {file.type.includes('image') ? (
+                              <ImageIcon className="w-4 h-4 text-blue-400 shrink-0" />
+                            ) : (
+                              <FileText className="w-4 h-4 text-gray-400 shrink-0" />
+                            )}
+                            <div className="truncate">
+                              <p className="text-xs font-medium truncate">{file.name}</p>
+                              <p className="text-[10px] text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                            </div>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const dt = new DataTransfer();
+                              Array.from(uploadFiles).filter((_, index) => index !== i).forEach(f => dt.items.add(f));
+                              setUploadFiles(dt.files.length > 0 ? dt.files : null);
+                            }}
+                            className="p-1 hover:bg-muted/50 rounded text-muted-foreground hover:text-foreground transition-colors z-20 relative"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Admin Notes</Label>
                   <Textarea placeholder="Internal notes..." value={uploadData.notes} onChange={e => setUploadData({ ...uploadData, notes: e.target.value })} />
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setUploadModalOpen(false)}>Cancel</Button>
+              <DialogFooter className="border-t border-white/5 pt-4 mt-2 px-6 pb-6">
+                <Button variant="outline" onClick={() => {
+                  setUploadModalOpen(false);
+                  setUploadFiles(null);
+                  setUploadData({ category: "DIGITAL PRINTING", notes: "" });
+                }}>Cancel</Button>
                 <Button onClick={handleUploadSubmit}>Upload</Button>
               </DialogFooter>
             </DialogContent>
@@ -626,25 +707,47 @@ export default function ArtworksManager() {
                     const token = (session as any)?.user?.token || localStorage.getItem('token') || "";
                     
                     const uploadPromises = files.map(async (f) => {
-                      const formData = new FormData();
-                      if (activeGroup.userId) formData.append("userId", activeGroup.userId);
-                      if (activeGroup.orderId) formData.append("orderId", activeGroup.orderId);
-                      if (activeGroup.taskId) formData.append("taskId", activeGroup.taskId);
-                      if (activeSubFolderId) formData.append("folderId", activeSubFolderId);
-                      formData.append("category", activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING");
-                      formData.append("files", f);
-
-                      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"}/api/files/upload`, {
-                        method: 'POST',
-                        headers: { Authorization: `Bearer ${token}` },
-                        body: formData
+                      const id = Date.now().toString() + Math.random().toString(36).substring(7);
+                      const abortController = new AbortController();
+                      
+                      addUpload({
+                        id,
+                        name: f.name,
+                        tag: "Artwork",
+                        taskId: activeGroup.taskId,
+                        file: f,
+                        abortController
                       });
-                      if (!res.ok) {
-                        const errText = await res.text();
-                        console.error("Upload error details:", errText);
-                        throw new Error(errText || "Upload failed");
+
+                      try {
+                        updateStatus(id, 'uploading');
+                        // 1. Direct S3 Upload
+                        const folderPath = activeGroup.userId || activeGroup.taskId || 'general';
+                        const uploadedData = await uploadToS3Directly(token, f, folderPath, (percent) => updateProgress(id, percent), abortController);
+                        
+                        // 2. Save Metadata
+                        const shareSlug = activeGroup.files.find((f: any) => f.shareSlug)?.shareSlug;
+                        const metadata = {
+                          userId: activeGroup.userId || undefined,
+                          orderId: activeGroup.orderId || undefined,
+                          taskId: activeGroup.taskId || undefined,
+                          folderId: activeSubFolderId || undefined,
+                          shareSlug: shareSlug || undefined,
+                          category: activeGroup.taskId ? 'TASK' : (activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING"),
+                          files: [uploadedData]
+                        };
+
+                        const res = await AxiosInstance(token).post("/api/files/save-metadata", metadata);
+                        updateStatus(id, 'success');
+                        return res.data;
+                      } catch (err: any) {
+                        if (err.name === 'AbortError') {
+                          updateStatus(id, 'error', 'Upload cancelled');
+                        } else {
+                          updateStatus(id, 'error', err.message || 'Upload failed');
+                        }
+                        throw err;
                       }
-                      return res.json();
                     });
 
                     toast.promise(Promise.all(uploadPromises), {
@@ -748,6 +851,16 @@ export default function ArtworksManager() {
                           >
                           <Folder className="w-4 h-4 mr-2" /> {isGeneratingLink ? "Generating..." : "Share Link"}
                         </Button>
+                        {activeGroup.taskId && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="border-primary/50 text-primary hover:bg-primary/10"
+                            onClick={() => window.open(`/admin/tasks?task=${activeGroup.taskId}`, '_blank')}
+                          >
+                            <LayoutGrid className="w-4 h-4 mr-2" /> View Task
+                          </Button>
+                        )}
                         {visibleFiles.length > 0 && (
                           <Button variant="secondary" size="sm" onClick={(e) => handleDownloadAll({ ...activeGroup, files: visibleFiles }, e)}>
                             <Download className="w-4 h-4 mr-2" /> Download All
@@ -785,6 +898,15 @@ export default function ArtworksManager() {
                           </div>
                         )}
                         {visibleFiles.length === 0 && visibleFolders.length === 0 ? (
+                          isFetching ? (
+                            <div className="flex flex-col items-center justify-center p-12 border border-dashed rounded-xl bg-muted/20">
+                              <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
+                              <h3 className="text-lg font-semibold text-foreground mb-2">Loading artwork...</h3>
+                              <p className="text-sm text-muted-foreground text-center max-w-sm">
+                                Still fetching the latest files for this folder.
+                              </p>
+                            </div>
+                          ) : (
                           <div className="flex flex-col items-center justify-center p-12 border border-dashed rounded-xl bg-muted/20">
                             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                               <Folder className="w-8 h-8 text-primary" />
@@ -803,6 +925,7 @@ export default function ArtworksManager() {
                               <Plus className="w-4 h-4 mr-2" /> Add Artwork
                             </Button>
                           </div>
+                          )
                         ) : (
                           <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3" : "flex flex-col gap-3"}>
                             {visibleFolders.map((folder: any) => (
@@ -840,7 +963,7 @@ export default function ArtworksManager() {
                             className="bg-white/80 data-[state=checked]:bg-primary"
                           />
                         </div>
-                        {getFileThumbnail(file)}
+                        {getFileThumbnail(file, visibleFiles)}
                         {file.tag === 'draft' ? (
                           <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Draft</div>
                         ) : file.tag === 'for_print' ? (
@@ -954,7 +1077,7 @@ export default function ArtworksManager() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 ml-4 shrink-0">
-                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setPreviewFile(file); }}>
+                          <Button variant="ghost" size="icon" onClick={() => { setPreviewFile(file); setPreviewList(visibleFiles); }} title="View">
                             <Eye className="w-4 h-4 text-muted-foreground" />
                           </Button>
                           <Button variant="ghost" size="icon" className="hover:bg-blue-50" onClick={(e) => {
@@ -1194,8 +1317,8 @@ export default function ArtworksManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Render the File Preview Modal at the root level */}
-      <FilePreviewModal isOpen={!!previewFile} onClose={() => setPreviewFile(null)} file={previewFile} />
+      
+      <FilePreviewModal isOpen={!!previewFile} onClose={() => setPreviewFile(null)} file={previewFile} files={previewList} onNavigate={setPreviewFile} />
     </div>
   );
 }

@@ -12,6 +12,7 @@ const AxiosInstance = (token: string="") => {
     return axios.create({
         baseURL: baseURL,
         withCredentials: true,
+        timeout: 60000,
         headers: {
             Authorization: `Bearer ${token}`,
         },

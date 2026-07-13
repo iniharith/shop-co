@@ -17,6 +17,19 @@ import UserRepository from '../../infrastructure/db/repositories/user.repository
 import { shareLinkRepository } from '../../infrastructure/repositories/ShareLinkRepository';
 import { ShareLink } from '../../domain/entities/ShareLink';
 import OrderRepository from '../../infrastructure/db/repositories/order.repository';
+import { RedisService } from '../../infrastructure/redis/redis';
+import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
+
+const redisService = new RedisService();
+
+// ── Helper: broadcast a task change to every admin tab in real-time ──────────
+const emitTaskUpdated = async (event: 'task_updated' | 'task_created' | 'task_deleted', payload: any) => {
+  try {
+    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify({ event, ...payload }));
+  } catch (e) {
+    console.error('Failed to emit task socket event:', e);
+  }
+};
 
 const router = Router();
 
@@ -275,7 +288,8 @@ router.get(
       return file;
     });
 
-    res.json({ success: true, data: enrichedFiles, count: enrichedFiles.length });
+    const stats = { totalFiles: enrichedFiles.length, totalSize: 0, pendingReview: 0, totalSizeMB: "0" };
+    res.json({ success: true, data: enrichedFiles, stats, count: enrichedFiles.length });
   })
 );
 
@@ -285,7 +299,8 @@ router.get(
   '/grouped',
   asyncHandler(async (_req: Request, res: Response) => {
     const grouped = await fileUploadRepository.getFilesGroupedByUser();
-    res.json({ success: true, data: grouped });
+    const stats = await fileUploadRepository.getStorageStats();
+    res.json({ success: true, data: grouped, stats });
   })
 );
 
@@ -720,15 +735,10 @@ router.post(
       )
     );
 
-    // 3. Create a ShareLink for the customer to view their uploaded files
-    const shareLink = await shareLinkRepository.findOrCreate({
-      folderName: `Artwork Upload: #${orderId}`,
-      taskId: savedTask._id.toString(),
-      orderId: orderId,
-      userId: username,
-    });
+    // ── Real-time: broadcast the new task + files to all admin tabs ────────
+    await emitTaskUpdated('task_created', { task: savedTask });
 
-    res.json({ success: true, data: savedFiles, task: savedTask, shareLinkSlug: shareLink.slug });
+    res.json({ success: true, data: savedFiles, task: savedTask });
   })
 );
 
