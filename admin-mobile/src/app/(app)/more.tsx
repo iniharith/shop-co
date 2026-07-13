@@ -5,9 +5,10 @@ import { BlurView } from 'expo-blur';
 import { THEME } from '../../constants/theme';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
-import { Truck, PenTool, Package, MessageSquare, History, Printer, Users, Server, Moon, Sun } from 'lucide-react-native';
+import { Truck, PenTool, Package, MessageSquare, History, Printer, Users, Server, Moon, Sun, UserCircle } from 'lucide-react-native';
 
 const MENU_ITEMS = [
+  { id: 'profile', title: 'My Profile', icon: UserCircle, desc: 'Manage account details', route: '/profile' },
   { id: 'tracking', title: 'Tracking', icon: Truck, desc: 'Order & shipping tracking', route: '/tracking' },
   { id: 'production', title: 'Production', icon: PenTool, desc: 'Production pipeline', route: '/production' },
   { id: 'packaging', title: 'Packaging', icon: Package, desc: 'Packaging status', route: '/packaging' },
@@ -33,7 +34,9 @@ export default function MoreScreen() {
           <Text style={[s.pageSub, { color: colors.mutedForeground }]}>Explore additional management tools</Text>
         </View>
         <TouchableOpacity onPress={toggleTheme} style={s.themeToggle}>
-          {theme === 'dark' ? <Sun color={colors.foreground} size={22} /> : <Moon color={colors.foreground} size={22} />}
+          {theme === 'light' ? <Moon color={colors.foreground} size={22} /> : 
+           theme === 'navy' ? <Sun color={colors.foreground} size={22} /> : 
+           <Moon fill={colors.foreground} color={colors.foreground} size={22} />}
         </TouchableOpacity>
       </BlurView>
 

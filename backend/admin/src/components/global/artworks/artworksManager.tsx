@@ -1,6 +1,65 @@
 /**
  * Coded by Harith
  * Kampungcetak ®
+                            {visibleFiles.length > 0 && viewMode === "grid" ? (
+                              <VirtuosoGrid
+                                useWindowScroll
+                                totalCount={visibleFiles.length}
+                                components={{
+                                  List: React.forwardRef(({ style, children, ...props }: any, ref) => (
+                                    <div ref={ref} {...props} style={{ ...style, marginTop: '1rem' }} className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                                      {children}
+                                    </div>
+                                  )),
+                                  Item: ({ children, ...props }: any) => (
+                                    <div {...props} className="h-full flex flex-col">{children}</div>
+                                  )
+                                }}
+                                itemContent={(index) => {
+                                  const file = visibleFiles[index];
+                                  return (
+                                    <Card key={file._id} className={`overflow-hidden shadow-sm hover:shadow-md transition-shadow relative ${selectedFiles.includes(file._id) ? 'ring-2 ring-primary ring-offset-1' : ''}`}>
+                        <div className="absolute top-2 left-2 z-30">
+                          <Checkbox 
+                            checked={selectedFiles.includes(file._id)} 
+                            onCheckedChange={() => handleSelectFile(file._id)} 
+                            className="bg-white/80 data-[state=checked]:bg-primary"
+                          />
+                        </div>
+                        {getFileThumbnail(file)}
+                        {file.tag === 'draft' ? (
+                          <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Draft</div>
+                        ) : file.tag === 'for_print' ? (
+                          <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">For Print</div>
+                        ) : file.tag === 'attachment' ? (
+                          <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Attachment</div>
+                        ) : null}
+                        <div className={`absolute right-2 z-30 ${file.tag ? 'top-6' : 'top-2'}`}>
+                          <Button variant="secondary" size="icon" className="w-7 h-7 rounded-full bg-white/90 hover:bg-white text-slate-700 shadow-sm transition-all hover:scale-105" onClick={(e) => handleCopyLink(e, file)} title="Copy Share Link">
+                            <Share2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                        <CardHeader className="p-4 pb-2 flex flex-col items-start justify-between bg-muted/5 border-b">
+                          <div className="overflow-hidden w-full">
+                            {editingFileId === file._id ? (
+                                <Input autoFocus value={editingName} onChange={(e) => setEditingName(e.target.value)} onBlur={() => {
+                                  if (editingName !== file.originalName) { renameFileMutate({ id: file._id, originalName: editingName }); }
+                                  setEditingFileId(null);
+                                }} onKeyDown={(e) => { if(e.key === 'Enter') e.currentTarget.blur(); }} className="h-7 text-sm" />
+                                  );
+                                }}
+                              />
+                            ) : visibleFiles.length > 0 && viewMode === "list" ? (
+                              <Virtuoso
+                                useWindowScroll
+                                totalCount={visibleFiles.length}
+                                style={{ marginTop: '1rem' }}
+                                itemContent={(index) => {
+                                  const file = visibleFiles[index];
+                                  return (
+                                    /**
+ * Coded by Harith
+ * Kampungcetak ®
  */
 "use client";
 import React, { useState, useMemo } from "react";
@@ -25,6 +84,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import { Virtuoso, VirtuosoGrid } from "react-virtuoso";
 import { BouncySkeleton } from "@/components/global/skeleton/BouncySkeleton";
 
 const categories = [
@@ -831,6 +891,41 @@ export default function ArtworksManager() {
                               )
                             ))}
                             {visibleFiles.map((file: any) => (
+                    viewMode === "grid" ? (
+                      <Card key={file._id} className={`overflow-hidden shadow-sm hover:shadow-md transition-shadow relative ${selectedFiles.includes(file._id) ? 'ring-2 ring-primary ring-offset-1' : ''}`}>
+                        <div className="absolute top-2 left-2 z-30">
+                          <Checkbox 
+                            checked={selectedFiles.includes(file._id)} 
+                            onCheckedChange={() => handleSelectFile(file._id)} 
+                            className="bg-white/80 data-[state=checked]:bg-primary"
+                          />
+                        </div>
+                        {getFileThumbnail(file)}
+                        {file.tag === 'draft' ? (
+                          <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Draft</div>
+                        ) : file.tag === 'for_print' ? (
+                          <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">For Print</div>
+                        ) : file.tag === 'attachment' ? (
+                          <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Attachment</div>
+                        ) : null}
+                        <div className={`absolute right-2 z-30 ${file.tag ? 'top-6' : 'top-2'}`}>
+                          <Button variant="secondary" size="icon" className="w-7 h-7 rounded-full bg-white/90 hover:bg-white text-slate-700 shadow-sm transition-all hover:scale-105" onClick={(e) => handleCopyLink(e, file)} title="Copy Share Link">
+                            <Share2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                        <CardHeader className="p-4 pb-2 flex flex-col items-start justify-between bg-muted/5 border-b">
+                          <div className="overflow-hidden w-full">
+                            {editingFileId === file._id ? (
+                                <Input autoFocus value={editingName} onChange={(e) => setEditingName(e.target.value)} onBlur={() => {
+                                  if (editingName !== file.originalName) { renameFileMutate({ id: file._id, originalName: editingName }); }
+                                  setEditingFileId(null);
+                                }} onKeyDown={(e) => { if(e.key === 'Enter') e.currentTarget.blur(); }} className="h-7 text-sm" />
+                              ) : (
+                                  );
+                                }}
+                              />
+                            ) : null}
+{visibleFiles.map((file: any) => (
                     viewMode === "grid" ? (
                       <Card key={file._id} className={`overflow-hidden shadow-sm hover:shadow-md transition-shadow relative ${selectedFiles.includes(file._id) ? 'ring-2 ring-primary ring-offset-1' : ''}`}>
                         <div className="absolute top-2 left-2 z-30">

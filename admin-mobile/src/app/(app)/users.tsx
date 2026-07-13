@@ -17,7 +17,7 @@ export default function UsersScreen() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await api.get('/users');
+        const res = await api.get('/admin/users');
         setData(res.data?.data || res.data || []);
       } catch (e) {
         console.error(e);
