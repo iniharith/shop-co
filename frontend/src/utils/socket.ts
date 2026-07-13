@@ -11,6 +11,7 @@ export const getSocket = (session: Session) => {
   if (!socket) {
     socket = io(process.env.NEXT_PUBLIC_BACKEND_URL +"/client", {
       withCredentials: true,
+      transports: ["websocket"], // Enforce WebSocket only to prevent long-polling connection exhaustion on Vercel
       query: {
         userId: session?.user?.id,
       },
