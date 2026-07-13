@@ -275,8 +275,7 @@ router.get(
       return file;
     });
 
-    const stats = await fileUploadRepository.getStorageStats();
-    res.json({ success: true, data: enrichedFiles, stats, count: enrichedFiles.length });
+    res.json({ success: true, data: enrichedFiles, count: enrichedFiles.length });
   })
 );
 
@@ -286,8 +285,7 @@ router.get(
   '/grouped',
   asyncHandler(async (_req: Request, res: Response) => {
     const grouped = await fileUploadRepository.getFilesGroupedByUser();
-    const stats = await fileUploadRepository.getStorageStats();
-    res.json({ success: true, data: grouped, stats });
+    res.json({ success: true, data: grouped });
   })
 );
 
