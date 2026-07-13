@@ -92,15 +92,6 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   },
-  "overrides": {
-    "react-day-picker": {
-      "react": "$react"
-    },
-    "kbar": {
-      "react": "$react",
-      "react-dom": "$react-dom"
-    }
-  },
   "browserslist": [
     "last 2 versions",
     "ios >= 15",
