@@ -17,19 +17,7 @@ import UserRepository from '../../infrastructure/db/repositories/user.repository
 import { shareLinkRepository } from '../../infrastructure/repositories/ShareLinkRepository';
 import { ShareLink } from '../../domain/entities/ShareLink';
 import OrderRepository from '../../infrastructure/db/repositories/order.repository';
-import { RedisService } from '../../infrastructure/redis/redis';
-import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
-
-const redisService = new RedisService();
-
-// ── Helper: broadcast a task change to every admin tab in real-time ──────────
-const emitTaskUpdated = async (event: 'task_updated' | 'task_created' | 'task_deleted', payload: any) => {
-  try {
-    await redisService.publish(REDIS_CHANNELS.TASK_UPDATED, JSON.stringify({ event, ...payload }));
-  } catch (e) {
-    console.error('Failed to emit task socket event:', e);
-  }
-};
+import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
 
 const router = Router();
 

@@ -16,6 +16,7 @@ import { FileUpload } from '../../domain/entities/FileUpload';
 import { RedisService } from '../../infrastructure/redis/redis';
 import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
 import { sendPushNotification } from '../../services/pushNotification.service';
+import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
 
 const redisService = new RedisService();
 
@@ -83,6 +84,7 @@ router.post(
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
     const task = await taskRepository.create(req.body);
+    await emitTaskUpdated('task_created', { task });
     res.json({ success: true, task });
   })
 );
@@ -188,6 +190,7 @@ router.put(
     }
     
     res.json({ success: true, task });
+    emitTaskUpdated('task_updated', { task });
   })
 );
 
@@ -206,6 +209,7 @@ router.delete(
       }
     }
     res.json({ success: true, message: req.query.permanent === 'true' ? 'Task permanently deleted' : 'Task deleted' });
+    emitTaskUpdated('task_deleted', { taskId: req.params.id });
   })
 );
 
@@ -261,6 +265,7 @@ router.post(
     }
 
     res.json({ success: true, task });
+    emitTaskUpdated('task_updated', { task });
   })
 );
 
@@ -275,6 +280,7 @@ router.delete(
       return;
     }
     res.json({ success: true, task });
+    emitTaskUpdated('task_updated', { task });
   })
 );
 
@@ -290,6 +296,7 @@ router.put(
       return;
     }
     res.json({ success: true, task });
+    emitTaskUpdated('task_updated', { task });
   })
 );
 
@@ -393,6 +400,7 @@ router.post(
     }
 
     res.json({ success: true, task });
+    emitTaskUpdated('task_updated', { task });
   })
 );
 
@@ -436,6 +444,7 @@ router.post(
     }
 
     res.json({ success: true, task });
+    emitTaskUpdated('task_updated', { task });
   })
 );
 
@@ -462,6 +471,7 @@ router.delete(
           if (fileDoc.path) await deleteFromS3(fileDoc.path).catch(console.error);
           await FileUpload.findByIdAndDelete(fileId);
           res.json({ success: true, message: 'File deleted from task', task });
+          emitTaskUpdated('task_updated', { task });
           return;
         }
       } catch(e) {}
@@ -494,6 +504,7 @@ router.delete(
     }
 
     res.json({ success: true, message: 'File deleted from task', task });
+    emitTaskUpdated('task_updated', { task });
   })
 );
 
