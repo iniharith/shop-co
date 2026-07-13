@@ -19,13 +19,12 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import ImageNext from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { Virtuoso, VirtuosoGrid } from "react-virtuoso";
 import { BouncySkeleton } from "@/components/global/skeleton/BouncySkeleton";
 
 const categories = [
@@ -553,7 +552,6 @@ export default function ArtworksManager() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Upload Artwork for User</DialogTitle>
-                <DialogDescription className="sr-only">Dialog Content</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 {!(uploadData.userId || uploadData.taskId || uploadData.orderId) && (
@@ -832,16 +830,8 @@ export default function ArtworksManager() {
                                 </div>
                               )
                             ))}
-
-                            {visibleFiles.length > 0 && viewMode === "grid" ? (
-                              <VirtuosoGrid
-                                useWindowScroll
-                                totalCount={visibleFiles.length}
-                                listClassName="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 w-full pt-4"
-                                itemClassName="h-full flex flex-col"
-                                itemContent={(index) => {
-                                  const file = visibleFiles[index];
-                                  return (
+                            {visibleFiles.map((file: any) => (
+                    viewMode === "grid" ? (
                       <Card key={file._id} className={`overflow-hidden shadow-sm hover:shadow-md transition-shadow relative ${selectedFiles.includes(file._id) ? 'ring-2 ring-primary ring-offset-1' : ''}`}>
                         <div className="absolute top-2 left-2 z-30">
                           <Checkbox 
@@ -925,17 +915,7 @@ export default function ArtworksManager() {
                           </div>
                         </CardContent>
                       </Card>
-                                  );
-                                }}
-                              />
-                            ) : visibleFiles.length > 0 && viewMode === "list" ? (
-                              <Virtuoso
-                                useWindowScroll
-                                totalCount={visibleFiles.length}
-                                style={{ marginTop: '1rem' }}
-                                itemContent={(index) => {
-                                  const file = visibleFiles[index];
-                                  return (
+                    ) : (
                       <div key={file._id} className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${selectedFiles.includes(file._id) ? 'bg-primary/5 border-primary/40' : 'hover:bg-muted/30'}`}>
                         <div className="flex items-center gap-4 min-w-0 flex-1">
                           <Checkbox 
@@ -999,10 +979,8 @@ export default function ArtworksManager() {
                           </Button>
                         </div>
                       </div>
-                                  );
-                                }}
-                              />
-                            ) : null}
+                    )
+                  ))}
                 </div>
                 )}
               </>
@@ -1106,7 +1084,6 @@ export default function ArtworksManager() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Admin Note</DialogTitle>
-                <DialogDescription className="sr-only">Dialog Content</DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Textarea
@@ -1127,7 +1104,6 @@ export default function ArtworksManager() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create Sub-Folder</DialogTitle>
-                <DialogDescription className="sr-only">Dialog Content</DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Label>Folder Name</Label>
@@ -1168,7 +1144,6 @@ export default function ArtworksManager() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Move {selectedFiles.length} item(s)</DialogTitle>
-                <DialogDescription className="sr-only">Dialog Content</DialogDescription>
           </DialogHeader>
           <div className="py-4 flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-2">
             {(() => {

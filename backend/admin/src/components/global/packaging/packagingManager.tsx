@@ -19,8 +19,7 @@ import { format } from "date-fns";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import ImageNext from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { VirtuosoGrid } from "react-virtuoso";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "next-auth/react";
@@ -536,7 +535,6 @@ export default function PackagingManager() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Upload File for Packaging</DialogTitle>
-                <DialogDescription className="sr-only">Dialog Content</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
@@ -807,16 +805,8 @@ export default function PackagingManager() {
                       ))}
 
                       {/* Render Files */}
-                      {visibleFiles.length > 0 && (
-                        <VirtuosoGrid
-                          useWindowScroll
-                          totalCount={visibleFiles.length}
-                          listClassName="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 w-full pt-4"
-                          itemClassName="h-full flex flex-col"
-                          itemContent={(index) => {
-                            const file = visibleFiles[index];
-                            return (
-                        <Card key={file._id} className="h-full overflow-hidden shadow-sm hover:shadow-md transition-shadow relative bg-background border-muted group/card">
+                      {visibleFiles.map((file: any) => (
+                        <Card key={file._id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow relative bg-background border-muted group/card">
                           {getFileThumbnail(file)}
                           {file.tag === 'draft' ? (
                             <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Draft</div>
@@ -840,10 +830,7 @@ export default function PackagingManager() {
                             </Button>
                           </CardContent>
                         </Card>
-                            );
-                          }}
-                        />
-                      )}
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -870,7 +857,6 @@ export default function PackagingManager() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Admin Note</DialogTitle>
-                <DialogDescription className="sr-only">Dialog Content</DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Textarea
