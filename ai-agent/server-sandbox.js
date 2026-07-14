@@ -82,13 +82,22 @@ async function handleFunctionCall(call) {
 }
 
 // --- INITIALIZE WHATSAPP CLIENT ---
+const os = require('os');
+const puppeteerConfig = {
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+};
+
+if (os.platform() === 'win32') {
+    puppeteerConfig.executablePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+} else {
+    // For Linux (AWS EC2), it will use the bundled Chromium automatically 
+    // or you can specify: puppeteerConfig.executablePath = '/usr/bin/google-chrome-stable';
+}
+
 const client = new Client({
     authStrategy: new LocalAuth({ dataPath: './.wwebjs_auth' }),
-    puppeteer: {
-        headless: true,
-        executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    }
+    puppeteer: puppeteerConfig
 });
 
 client.on('qr', (qr) => {
