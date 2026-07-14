@@ -726,7 +726,15 @@ router.post(
     // ── Real-time: broadcast the new task + files to all admin tabs ────────
     emitTaskUpdated('task_created', { task: savedTask }).catch(console.error);
 
-    res.json({ success: true, data: savedFiles, task: savedTask });
+    // 3. Create a ShareLink for the customer to view their uploaded files
+    const shareLink = await shareLinkRepository.findOrCreate({
+      folderName: `Artwork Upload: #${orderId}`,
+      taskId: savedTask._id.toString(),
+      orderId: orderId,
+      userId: username,
+    });
+
+    res.json({ success: true, data: savedFiles, task: savedTask, shareLinkSlug: shareLink.slug });
   })
 );
 
