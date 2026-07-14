@@ -135,7 +135,7 @@ export default function ArtworksManager() {
 
       let taskIdStr = "";
 
-      if (file.category === 'TASK' && file.taskId) {
+      if ((file.category === 'TASK' || file.category === 'CUSTOMER_UPLOAD') && file.taskId) {
         const task = tasks.find((t: any) => t._id === file.taskId);
         groupName = task ? task.title : "Deleted Task";
         orderIdStr = task?.orderId || "";
@@ -162,7 +162,7 @@ export default function ArtworksManager() {
         }
       }
       
-      const isTaskFile = file.category === 'TASK' && file.taskId;
+      const isTaskFile = (file.category === 'TASK' || file.category === 'CUSTOMER_UPLOAD') && file.taskId;
 
       // Only apply order-status exclusion for non-TASK files
       // Task files are already handled by task status above — don't double-exclude them
