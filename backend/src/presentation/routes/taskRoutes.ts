@@ -127,7 +127,8 @@ router.put(
     // the status if the caller didn't already explicitly request a different one.
     const isNewAssignment = req.body.assignee && oldTask?.assignee?.toString() !== req.body.assignee;
     const currentStatus = oldTask?.status || 'PLACED';
-    if (isNewAssignment && currentStatus === 'IN_PROGRESS' && !req.body.status) {
+    const preDesignStatuses = ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED'];
+    if (isNewAssignment && preDesignStatuses.includes(currentStatus) && !req.body.status) {
       req.body.status = 'IN_DESIGN';
     }
 
