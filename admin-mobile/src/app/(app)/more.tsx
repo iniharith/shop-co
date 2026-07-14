@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import AppBackground from '../../components/AppBackground';
 import { BlurView } from 'expo-blur';
 import { THEME } from '../../constants/theme';
 import { useRouter } from 'expo-router';
@@ -24,7 +25,7 @@ export default function MoreScreen() {
   const { theme, toggleTheme, colors } = useTheme();
 
   return (
-    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.screen}>
+    <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
       {/* Header */}
@@ -35,8 +36,7 @@ export default function MoreScreen() {
         </View>
         <TouchableOpacity onPress={toggleTheme} style={s.themeToggle}>
           {theme === 'light' ? <Moon color={colors.foreground} size={22} /> : 
-           theme === 'navy' ? <Sun color={colors.foreground} size={22} /> : 
-           <Moon fill={colors.foreground} color={colors.foreground} size={22} />}
+           <Sun color={colors.foreground} size={22} />}
         </TouchableOpacity>
       </BlurView>
 
@@ -63,7 +63,7 @@ export default function MoreScreen() {
           })}
         </View>
       </ScrollView>
-    </LinearGradient>
+    </AppBackground>
   );
 }
 

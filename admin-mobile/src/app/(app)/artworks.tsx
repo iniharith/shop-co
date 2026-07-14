@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, ActivityIndicator, RefreshControl, TouchableOpacity, StyleSheet, StatusBar, TextInput, Linking, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import AppBackground from '../../components/AppBackground';
 import { BlurView } from 'expo-blur';
 import api from '../../services/api';
 import socketService from '../../services/socket';
@@ -103,14 +104,14 @@ export default function ArtworksScreen() {
   };
 
   if (loading) return (
-    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.center}>
+    <AppBackground style={s.center}>
       <ActivityIndicator size="large" color={colors.primary} />
-    </LinearGradient>
+    </AppBackground>
   );
 
   // â”€â”€ Inside a folder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (selected) return (
-    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.screen}>
+    <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
       <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
         <TouchableOpacity onPress={() => setSelected(null)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
@@ -171,12 +172,12 @@ export default function ArtworksScreen() {
           );
         }}
       />
-    </LinearGradient>
+    </AppBackground>
   );
 
   // â”€â”€ Folder list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
-    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.screen}>
+    <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
       <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
@@ -235,7 +236,7 @@ export default function ArtworksScreen() {
           </TouchableOpacity>
         )}
       />
-    </LinearGradient>
+    </AppBackground>
   );
 }
 

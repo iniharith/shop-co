@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import AppBackground from '../../components/AppBackground';
 import { BlurView } from 'expo-blur';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
@@ -11,14 +12,14 @@ import { useRouter } from 'expo-router';
 export default function ServerStatusScreen() {
   const { theme, colors } = useTheme();
   const router = useRouter();
-  const [data, setData] = useState<any[]>([]);
+  const [healthData, setHealthData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await api.get('/server-status');
-        setData(res.data?.data || res.data || []);
+        const res = await api.get('/sysadmin/health');
+        setHealthData(res.data?.data || res.data || null);
       } catch (e) {
         console.error(e);
       } finally {
@@ -29,13 +30,13 @@ export default function ServerStatusScreen() {
   }, []);
 
   if (loading) return (
-    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.center}>
+    <AppBackground style={s.center}>
       <ActivityIndicator size="large" color={colors.primary} />
-    </LinearGradient>
+    </AppBackground>
   );
 
   return (
-    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.screen}>
+    <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
       <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
@@ -54,24 +55,43 @@ export default function ServerStatusScreen() {
       </BlurView>
 
       <FlatList
-        data={data}
-        keyExtractor={(item, idx) => item._id || idx.toString()}
+        data={healthData?.server ? Object.entries(healthData.server) : []}
+        keyExtractor={([key]) => key}
         contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        ListHeaderComponent={
+          healthData ? (
+            <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.card, { marginBottom: 12 }]}>
+              <Text style={s.cardTitle}>Application Stats</Text>
+              <Text style={s.cardDesc}>Users: {healthData.application?.userCount}</Text>
+              <Text style={s.cardDesc}>Tasks: {healthData.application?.taskTotal}</Text>
+              <Text style={s.cardDesc}>Artworks: {healthData.application?.artworkTotal}</Text>
+              <Text style={s.cardDesc}>Storage Used: {Math.round(healthData.application?.storageUsed / (1024*1024))} MB</Text>
+            </BlurView>
+          ) : null
+        }
         ListEmptyComponent={
           <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.emptyCard}>
             <Activity size={32} color={colors.mutedForeground} style={{ marginBottom: 12 }} />
-            <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: '600' }}>No server alerts</Text>
-            <Text style={{ color: colors.mutedForeground, marginTop: 4 }}>All systems operational.</Text>
+            <Text style={{ color: colors.foreground, fontSize: 16, fontWeight: '600' }}>No server data</Text>
+            <Text style={{ color: colors.mutedForeground, marginTop: 4 }}>Unable to connect to sysadmin health API.</Text>
           </BlurView>
         }
-        renderItem={({ item }) => (
-          <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.card}>
-            <Text style={s.cardTitle}>{item.title || 'System Metric'}</Text>
-            <Text style={s.cardDesc}>{item.status || 'OK'}</Text>
-          </BlurView>
-        )}
+        renderItem={({ item }) => {
+          const [key, value] = item;
+          // Format based on type (memory -> MB, uptime -> hours)
+          let displayValue = String(value);
+          if (key.toLowerCase().includes('mem') || key.toLowerCase().includes('ram')) displayValue = `${Math.round(Number(value) / (1024*1024))} MB`;
+          if (key === 'uptime' && !isNaN(Number(value))) displayValue = `${Math.floor(Number(value) / 3600)}h ${Math.floor((Number(value) % 3600) / 60)}m`;
+          
+          return (
+            <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.card}>
+              <Text style={s.cardTitle}>{key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ')}</Text>
+              <Text style={[s.cardDesc, { color: colors.primary, fontSize: 16, marginTop: 8 }]}>{displayValue}</Text>
+            </BlurView>
+          );
+        }}
       />
-    </LinearGradient>
+    </AppBackground>
   );
 }
 

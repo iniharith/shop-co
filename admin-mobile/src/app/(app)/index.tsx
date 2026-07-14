@@ -4,10 +4,11 @@ import {
   ActivityIndicator, RefreshControl, StyleSheet, StatusBar
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import AppBackground from '../../components/AppBackground';
 import { BlurView } from 'expo-blur';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useRouter } from 'expo-router';
-import { Box, Truck, FileText, CircleCheckBig, CircleAlert, Wifi, WifiOff, Server, HardDrive, Cpu, Clock } from 'lucide-react-native';
+import { Box, Truck, FileText, CircleCheckBig, CircleAlert, Wifi, WifiOff, Server, HardDrive, Cpu, Clock, Package } from 'lucide-react-native';
 import api from '../../services/api';
 import socketService from '../../services/socket';
 import { useTheme } from '../../context/ThemeContext';
@@ -73,7 +74,7 @@ export default function DashboardScreen() {
   const showServerHealth = ['sysadmin', 'admin', 'boss'].includes(user?.role || '');
 
   return (
-    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.screen}>
+    <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
       {/* Header */}
@@ -105,14 +106,22 @@ export default function DashboardScreen() {
           </View>
         ) : (
           <>
-            {/* Business Stats Grid */}
+            {/* Delivery Status Overview */}
+            <Text style={[s.sectionTitle, { color: colors.foreground, marginTop: 10 }]}>Delivery Status Overview</Text>
             <View style={s.row}>
-              <GlassCard title="Total Tasks"      value={healthData?.application?.taskTotal || 0}    sub="lifetime tasks"                                   icon={<Box size={16} color={colors.primary} />} />
-              <GlassCard title="Active Deliveries" value={parcelStats.in_transit + parcelStats.pending} sub={`${parcelStats.in_transit} transit · ${parcelStats.pending} pending`} icon={<Truck size={16} color="#60a5fa" />} />
+              <GlassCard title="Delivered" value={parcelStats.delivered || 0} sub="completed" icon={<CircleCheckBig size={16} color={colors.success} />} />
+              <GlassCard title="In Transit" value={parcelStats.in_transit || 0} sub="on the way" icon={<Truck size={16} color={colors.info} />} />
             </View>
             <View style={[s.row, { marginTop: 10 }]}>
-              <GlassCard title="Total Artworks"   value={healthData?.application?.artworkTotal || 0} sub="lifetime files"                                   icon={<FileText size={16} color="#a78bfa" />} />
-              <GlassCard title="Storage Used"     value={formatBytes(healthData?.application?.storageUsed || 0)}  sub="AWS S3 bucket"                   icon={<HardDrive size={16} color={colors.warning} />} isString />
+              <GlassCard title="Pending" value={parcelStats.pending || 0} sub="processing" icon={<Package size={16} color={colors.warning} />} />
+              <GlassCard title="Failed" value={parcelStats.failed || 0} sub="issues" icon={<CircleAlert size={16} color={colors.destructive} />} />
+            </View>
+
+            {/* Artwork Analytics */}
+            <Text style={[s.sectionTitle, { color: colors.foreground, marginTop: 20 }]}>Artwork Analytics</Text>
+            <View style={s.row}>
+              <GlassCard title="Total Files" value={healthData?.application?.artworkTotal || 0} sub="managed" icon={<FileText size={16} color="#a78bfa" />} />
+              <GlassCard title="Storage Used" value={formatBytes(healthData?.application?.storageUsed || 0)} sub="aws s3" icon={<HardDrive size={16} color="#34d399" />} isString />
             </View>
 
             {/* Progression Chart (Pure React Native View approach) */}
@@ -202,7 +211,7 @@ export default function DashboardScreen() {
           </>
         )}
       </ScrollView>
-    </LinearGradient>
+    </AppBackground>
   );
 }
 
@@ -233,10 +242,10 @@ const s = StyleSheet.create({
   statValue: { color: THEME.foreground, fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
   statSub: { color: THEME.mutedForeground, fontSize: 10, marginTop: 2, lineHeight: 14 },
   cardTitle: { color: THEME.foreground, fontSize: 15, fontWeight: '700' },
-  cardSub: { color: THEME.mutedForeground, fontSize: 12, marginTop: 2 },
-  divider: { height: 1, backgroundColor: THEME.glassBorder, marginVertical: 12 },
+  cardSub: { color: THEME.mutedForeground, fontSize: 12, marginTop: 4 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
+  divider: { height: 1, backgroundColor: THEME.glassBorder, marginVertical: 14 },
   deliveryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: THEME.glassBorder },
   healthLabel: { color: THEME.foreground, fontSize: 13, fontWeight: '500' },
   healthValue: { color: THEME.foreground, fontSize: 13, fontWeight: '700' },
 });
-

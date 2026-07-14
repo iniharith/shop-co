@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, SectionList, TouchableOpacity, ActivityIndicator, StyleSheet, StatusBar, ScrollView, TextInput, Modal, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import AppBackground from '../../components/AppBackground';
 import { BlurView } from 'expo-blur';
 import api from '../../services/api';
 import socketService from '../../services/socket';
@@ -172,9 +173,9 @@ export default function TasksScreen() {
   });
 
   if (loading) return (
-    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.center}>
+    <AppBackground style={s.center}>
       <ActivityIndicator size="large" color={colors.primary} />
-    </LinearGradient>
+    </AppBackground>
   );
 
   const renderTaskCard = (task: any) => {
@@ -235,7 +236,7 @@ export default function TasksScreen() {
   };
 
   return (
-    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.screen}>
+    <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
       {/* Header */}
@@ -424,7 +425,7 @@ export default function TasksScreen() {
         </TouchableOpacity>
       </Modal>
 
-    </LinearGradient>
+    </AppBackground>
   );
 }
 

@@ -77,7 +77,7 @@ export default function ArtworksManager() {
   const [previewList, setPreviewList] = useState<any[]>([]);
 
   const { data: virtualFoldersResponse, isPending: foldersPending } = useFolders();
-  const virtualFolders = virtualFoldersResponse?.data || [];
+  const virtualFolders = (virtualFoldersResponse as any)?.data || [];
   const { mutate: createFolderMutate, isPending: isCreatingFolder } = useCreateFolder();
   const { mutate: deleteFolderMutate, isPending: isDeletingFolder } = useDeleteFolder();
   const { mutate: moveFileMutate, isPending: isMovingFile } = useMoveFile();
@@ -571,7 +571,7 @@ if (isPending) return <div className="flex justify-center p-8"><p>Loading artwor
             setUploadModalOpen(open);
             if (!open) {
               setUploadFiles(null);
-              setUploadData({ category: "DIGITAL PRINTING", notes: "" });
+              setUploadData({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "", folderId: "" });
             }
           }}>
             <Button onClick={() => {
@@ -653,7 +653,7 @@ if (isPending) return <div className="flex justify-center p-8"><p>Loading artwor
                 <Button variant="outline" onClick={() => {
                   setUploadModalOpen(false);
                   setUploadFiles(null);
-                  setUploadData({ category: "DIGITAL PRINTING", notes: "" });
+                  setUploadData({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "", folderId: "" });
                 }}>Cancel</Button>
                 <Button onClick={handleUploadSubmit}>Upload</Button>
               </DialogFooter>

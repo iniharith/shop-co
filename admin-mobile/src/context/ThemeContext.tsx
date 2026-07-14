@@ -3,34 +3,39 @@ import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { THEMES } from '../constants/theme';
 
-type ThemeType = 'dark' | 'light' | 'navy';
+type ThemeType = 'dark' | 'light';
 
 interface ThemeContextData {
   theme: ThemeType;
-  colors: typeof THEMES.dark | typeof THEMES.light | typeof THEMES.navy;
+  colors: typeof THEMES.dark | typeof THEMES.light;
+  customBackground: string | null;
   toggleTheme: () => void;
   setTheme: (t: ThemeType) => void;
+  setCustomBackground: (bg: string | null) => void;
 }
 
 const ThemeContext = createContext<ThemeContextData>({} as ThemeContextData);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeType>('dark'); // Default to dark (pure black)
+  const [theme, setThemeState] = useState<ThemeType>('dark');
+  const [customBackground, setCustomBgState] = useState<string | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem('app_theme').then(savedTheme => {
-      if (savedTheme && (savedTheme === 'dark' || savedTheme === 'light' || savedTheme === 'navy')) {
+      if (savedTheme === 'dark' || savedTheme === 'light') {
         setThemeState(savedTheme as ThemeType);
       }
+    });
+    AsyncStorage.getItem('app_background').then(savedBg => {
+      if (savedBg) setCustomBgState(savedBg);
     });
   }, []);
 
   const colors = THEMES[theme] || THEMES.dark;
 
   const toggleTheme = () => {
-    // Cycle through: dark (black) -> navy -> light -> dark
     setThemeState(prev => {
-      const nextTheme = prev === 'dark' ? 'navy' : prev === 'navy' ? 'light' : 'dark';
+      const nextTheme = prev === 'dark' ? 'light' : 'dark';
       AsyncStorage.setItem('app_theme', nextTheme);
       return nextTheme;
     });
@@ -41,8 +46,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem('app_theme', t);
   }
 
+  const setCustomBackground = (bg: string | null) => {
+    setCustomBgState(bg);
+    if (bg) {
+      AsyncStorage.setItem('app_background', bg);
+    } else {
+      AsyncStorage.removeItem('app_background');
+    }
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, colors, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, colors, customBackground, toggleTheme, setTheme, setCustomBackground }}>
       {children}
     </ThemeContext.Provider>
   );

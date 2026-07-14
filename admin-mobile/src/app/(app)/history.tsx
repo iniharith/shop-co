@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, StatusBar, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import AppBackground from '../../components/AppBackground';
 import { BlurView } from 'expo-blur';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
@@ -29,13 +30,13 @@ export default function HistoryScreen() {
   }, []);
 
   if (loading) return (
-    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.center}>
+    <AppBackground style={s.center}>
       <ActivityIndicator size="large" color={colors.primary} />
-    </LinearGradient>
+    </AppBackground>
   );
 
   return (
-    <LinearGradient colors={[colors.gradientStart, colors.gradientEnd, colors.gradientStart]} style={s.screen}>
+    <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
       <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
@@ -71,7 +72,7 @@ export default function HistoryScreen() {
           </BlurView>
         )}
       />
-    </LinearGradient>
+    </AppBackground>
   );
 }
 

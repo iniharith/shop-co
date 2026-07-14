@@ -8,6 +8,81 @@ import { Input } from "@/components/ui/input";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
+
+const t = {
+  en: {
+    uploadComplete: "Upload Complete!",
+    thankYou: (name: string, id: string) => `Thank you, ${name}. Your artwork for Order #${id} has been successfully submitted to our team.`,
+    copyLink: "Copy Link to Your Artwork AND GIVE TO ADMIN",
+    uploadMore: "Upload More Files",
+    fileUploadTitle: "File Upload",
+    orderIdLabel: "Order Number / Order ID",
+    orderIdPlaceholder: "e.g. #12345 or paste details here",
+    nameLabel: "Username / Name",
+    namePlaceholder: "Your name",
+    phoneLabel: "Phone Number",
+    phonePlaceholder: "e.g. +60123456789",
+    itemLabel: "Item",
+    itemPlaceholder: "e.g. Business Card, Banner",
+    uploadArtworkTitle: "Upload your artwork",
+    dragDrop: "Drag and drop or click to browse files",
+    selectFiles: "Select Files",
+    filesSelected: "File(s) Selected",
+    submitArtwork: "Submit Artwork",
+    uploadingCloud: "Uploading directly to cloud...",
+    terms1: "By uploading, you agree that this artwork is final and ready for production.",
+    terms2: "For your privacy and security, all uploaded files are automatically permanently deleted after 30 days.",
+    terms3: "Please refer to our Terms & Conditions for more details regarding our data policy.",
+    uploadingFiles: "Uploading Files",
+    fileOf: (curr: number, tot: number) => `File ${curr} of ${tot}`,
+    errOrderId: "Please enter your Order ID",
+    errUsername: "Please enter your Username",
+    errPhone: "Please enter your Phone Number",
+    errItem: "Please enter the Item name",
+    errNoFiles: "Please select at least one file to upload",
+    uploadingStatus: (curr: number, tot: number) => `Uploading files (${curr}/${tot})...`,
+    successStatus: "Files uploaded successfully!",
+    errUploadFailed: "Upload failed. Please try again.",
+    linkCopied: "Link copied to clipboard!"
+  },
+  ms: {
+    uploadComplete: "Muat Naik Selesai!",
+    thankYou: (name: string, id: string) => `Terima kasih, ${name}. Karya seni anda untuk Pesanan #${id} telah berjaya dihantar kepada pasukan kami.`,
+    copyLink: "Salin Pautan ke Karya Seni Anda DAN BERIKAN KEPADA ADMIN",
+    uploadMore: "Muat Naik Lebih Banyak Fail",
+    fileUploadTitle: "Muat Naik Fail",
+    orderIdLabel: "Nombor Pesanan / ID Pesanan",
+    orderIdPlaceholder: "cth. #12345 atau tampal butiran di sini",
+    nameLabel: "Nama Pengguna / Nama",
+    namePlaceholder: "Nama anda",
+    phoneLabel: "Nombor Telefon",
+    phonePlaceholder: "cth. +60123456789",
+    itemLabel: "Item",
+    itemPlaceholder: "cth. Kad Perniagaan, Banner",
+    uploadArtworkTitle: "Muat naik karya seni anda",
+    dragDrop: "Seret dan lepas atau klik untuk menyemak imbas fail",
+    selectFiles: "Pilih Fail",
+    filesSelected: "Fail Dipilih",
+    submitArtwork: "Hantar Karya Seni",
+    uploadingCloud: "Memuat naik terus ke awan...",
+    terms1: "Dengan memuat naik, anda bersetuju bahawa karya seni ini adalah muktamad dan sedia untuk pengeluaran.",
+    terms2: "Untuk privasi dan keselamatan anda, semua fail yang dimuat naik akan dipadam secara kekal secara automatik selepas 30 hari.",
+    terms3: "Sila rujuk Terma & Syarat kami untuk butiran lanjut mengenai dasar data kami.",
+    uploadingFiles: "Memuat Naik Fail",
+    fileOf: (curr: number, tot: number) => `Fail ${curr} daripada ${tot}`,
+    errOrderId: "Sila masukkan ID Pesanan anda",
+    errUsername: "Sila masukkan Nama Pengguna anda",
+    errPhone: "Sila masukkan Nombor Telefon anda",
+    errItem: "Sila masukkan nama Item",
+    errNoFiles: "Sila pilih sekurang-kurangnya satu fail untuk dimuat naik",
+    uploadingStatus: (curr: number, tot: number) => `Memuat naik fail (${curr}/${tot})...`,
+    successStatus: "Fail berjaya dimuat naik!",
+    errUploadFailed: "Muat naik gagal. Sila cuba lagi.",
+    linkCopied: "Pautan disalin ke papan keratan!"
+  }
+};
+
+
 type FileStatus = "pending" | "uploading" | "done" | "error";
 interface FileState {
   file: File;
@@ -59,6 +134,8 @@ function uploadToS3WithProgress(url: string, file: File, onProgress: (pct: numbe
 }
 
 export default function CustomerUploadPortal() {
+  const [lang, setLang] = useState<'en' | 'ms'>('en');
+  const langDict = t[lang];
   // The root layout sets `overflow-hidden` on <body> for the admin dashboard's
   // internal-panel-scroll layout. This public page isn't part of that layout —
   // it's a simple centered card that needs normal page scroll. Without this,
@@ -77,6 +154,7 @@ export default function CustomerUploadPortal() {
   const [item, setItem] = useState("");
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState("");
   const [fileStates, setFileStates] = useState<FileState[]>([]);
 
 
@@ -209,11 +287,11 @@ export default function CustomerUploadPortal() {
   };
 
   const handleUpload = async () => {
-    if (!orderId.trim()) return toast.error("Please enter your Order ID");
-    if (!username.trim()) return toast.error("Please enter your Username");
-    if (!phoneNumber.trim()) return toast.error("Please enter your Phone Number");
-    if (!item.trim()) return toast.error("Please enter the Item name");
-    if (fileStates.length === 0) return toast.error("Please select at least one file to upload");
+    if (!orderId.trim()) return toast.error(langDict.errOrderId);
+    if (!username.trim()) return toast.error(langDict.errUsername);
+    if (!phoneNumber.trim()) return toast.error(langDict.errPhone);
+    if (!item.trim()) return toast.error(langDict.errItem);
+    if (fileStates.length === 0) return toast.error(langDict.errNoFiles);
 
     setUploading(true);
     const toastId = toast.loading("Uploading files...");
@@ -270,7 +348,9 @@ export default function CustomerUploadPortal() {
       }, 60000)
         .then(async (metaRes) => {
           if (!metaRes.ok) throw new Error("Failed to save file metadata. Please try submitting again.");
-          toast.success("Files uploaded successfully!", { id: toastId });
+          const data = await metaRes.json();
+          setGeneratedLink(`https://admin.kampungcetak.com/share/${data.shareLinkSlug}`);
+          toast.success(langDict.successStatus, { id: toastId });
           setSuccess(true);
           setFileStates([]);
         })
@@ -288,6 +368,38 @@ export default function CustomerUploadPortal() {
   if (success) {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4">
+        
+      <div className="absolute top-4 right-4 flex bg-white/5 rounded-full p-1 border border-white/10 z-50">
+        <button 
+          onClick={() => setLang('en')}
+          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${lang === 'en' ? 'bg-yellow-500 text-black' : 'text-white/60 hover:text-white'}`}
+        >
+          EN
+        </button>
+        <button 
+          onClick={() => setLang('ms')}
+          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${lang === 'ms' ? 'bg-yellow-500 text-black' : 'text-white/60 hover:text-white'}`}
+        >
+          MS
+        </button>
+      </div>
+
+        
+      <div className="absolute top-4 right-4 flex bg-white/5 rounded-full p-1 border border-white/10 z-50">
+        <button 
+          onClick={() => setLang('en')}
+          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${lang === 'en' ? 'bg-yellow-500 text-black' : 'text-white/60 hover:text-white'}`}
+        >
+          EN
+        </button>
+        <button 
+          onClick={() => setLang('ms')}
+          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${lang === 'ms' ? 'bg-yellow-500 text-black' : 'text-white/60 hover:text-white'}`}
+        >
+          MS
+        </button>
+      </div>
+
         <div className="mb-8 flex items-center justify-center gap-2">
           <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded" onError={(e) => e.currentTarget.style.display = 'none'} />
           <h1 className="text-xl font-bold tracking-tight">Kampung Cetak</h1>
@@ -297,21 +409,32 @@ export default function CustomerUploadPortal() {
           <div className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
             <Check className="w-8 h-8" />
           </div>
-          <h2 className="text-2xl font-semibold mb-2">Upload Complete!</h2>
+          <h2 className="text-2xl font-semibold mb-2">{langDict.uploadComplete}</h2>
           <p className="text-white/60 mb-8">
-            Thank you, {username}. Your artwork for Order #{orderId} has been successfully submitted to our team.
+            {langDict.thankYou(username, orderId)}
           </p>
           <Button 
-            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold"
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold h-12 text-lg mb-4"
+            onClick={() => {
+              navigator.clipboard.writeText(generatedLink);
+              toast.success(langDict.linkCopied);
+            }}
+          >
+            {langDict.copyLink}
+          </Button>
+          <Button 
+            variant="outline"
+            className="w-full border-white/20 text-white hover:bg-white/10"
             onClick={() => {
               setSuccess(false);
               setOrderId("");
               setUsername("");
               setPhoneNumber("");
               setItem("");
+              setGeneratedLink("");
             }}
           >
-            Upload More Files
+            {langDict.uploadMore}
           </Button>
         </div>
       </div>
@@ -322,7 +445,7 @@ export default function CustomerUploadPortal() {
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4">
       <div className="mb-8 flex items-center justify-center gap-2">
         <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded" onError={(e) => e.currentTarget.style.display = 'none'} />
-        <h1 className="text-xl font-bold tracking-tight">Kampung Cetak <span className="text-white/40 font-normal">· File Upload</span></h1>
+        <h1 className="text-xl font-bold tracking-tight">Kampung Cetak <span className="text-white/40 font-normal">· {langDict.fileUploadTitle}</span></h1>
       </div>
 
       <div className="max-w-xl w-full bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl overflow-hidden relative">
@@ -332,7 +455,7 @@ export default function CustomerUploadPortal() {
             <div className="space-y-2">
               <label className="text-sm font-medium text-white/80">Order ID <span className="text-red-500">*</span></label>
               <Input 
-                placeholder="e.g. #12345 or paste details here" 
+                placeholder={langDict.orderIdPlaceholder} 
                 value={orderId}
                 onChange={handleOrderIdChange}
                 onPaste={handleOrderIdPaste}
@@ -341,9 +464,9 @@ export default function CustomerUploadPortal() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">Username / Name <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-white/80">{langDict.nameLabel} <span className="text-red-500">*</span></label>
               <Input 
-                placeholder="Your name" 
+                placeholder={langDict.namePlaceholder} 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="bg-black/50 border-white/10 focus-visible:ring-yellow-500"
@@ -351,9 +474,9 @@ export default function CustomerUploadPortal() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">Phone Number <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-white/80">{langDict.phoneLabel} <span className="text-red-500">*</span></label>
               <Input 
-                placeholder="e.g. +60123456789" 
+                placeholder={langDict.phonePlaceholder} 
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 className="bg-black/50 border-white/10 focus-visible:ring-yellow-500"
@@ -361,9 +484,9 @@ export default function CustomerUploadPortal() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">Item <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-white/80">{langDict.itemLabel} <span className="text-red-500">*</span></label>
               <Input 
-                placeholder="e.g. Business Card, Banner" 
+                placeholder={langDict.itemPlaceholder} 
                 value={item}
                 onChange={(e) => setItem(e.target.value)}
                 className="bg-black/50 border-white/10 focus-visible:ring-yellow-500"
@@ -382,8 +505,8 @@ export default function CustomerUploadPortal() {
               title="Click to select files"
             />
             <Upload className="w-10 h-10 mx-auto mb-3 text-white/40" />
-            <h3 className="text-lg font-medium mb-1">Upload your artwork</h3>
-            <p className="text-sm text-white/40 mb-4">Drag and drop or click to browse files</p>
+            <h3 className="text-lg font-medium mb-1">{langDict.uploadArtworkTitle}</h3>
+            <p className="text-sm text-white/40 mb-4">{langDict.dragDrop}</p>
             <Button variant="outline" className="bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white pointer-events-none relative z-0">
               Select Files
             </Button>
@@ -391,7 +514,7 @@ export default function CustomerUploadPortal() {
 
           {fileStates.length > 0 && (
             <div className="bg-black/40 rounded-lg p-4 border border-white/5 space-y-3 max-h-60 overflow-y-auto">
-              <h4 className="text-sm font-medium text-white/60 mb-2">{fileStates.length} File(s) Selected</h4>
+              <h4 className="text-sm font-medium text-white/60 mb-2">{fileStates.length} {langDict.filesSelected}</h4>
               {fileStates.map(({ file, status, progress, error }, i) => (
                 <div key={i} className="bg-[#1a1a1a] p-2.5 rounded border border-white/5">
                   <div className="flex items-center justify-between">
@@ -444,7 +567,7 @@ export default function CustomerUploadPortal() {
                 Uploading directly to cloud...
               </>
             ) : (
-              "Submit Artwork"
+              langDict.submitArtwork
             )}
           </Button>
 
@@ -453,12 +576,12 @@ export default function CustomerUploadPortal() {
       
       <div className="text-center mt-8 space-y-2">
         <p className="text-xs text-white/40 font-medium">
-          By uploading, you agree that this artwork is final and ready for production.
+          {langDict.terms1}
         </p>
         <p className="text-[11px] text-white/30">
-          For your privacy and security, all uploaded files are automatically permanently deleted after 30 days.
+          {langDict.terms2}
           <br />
-          Please refer to our Terms & Conditions for more details regarding our data policy.
+          {langDict.terms3}
         </p>
       </div>
 
