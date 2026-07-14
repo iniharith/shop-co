@@ -41,7 +41,7 @@ const categories = [
   "FOOD PACKAGING"
 ];
 
-const ALL_STATUSES = ["IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING"];
+const ALL_STATUSES = ["IN_PRODUCTION", "HOLD_PRINTING"];
 
 export default function ProductionManager() {
   const { data: session } = useSession();
@@ -325,9 +325,8 @@ export default function ProductionManager() {
   const handleAdvanceFlow = (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
     let nextStatus = "";
-    if (activeSubTab === "IN_PRODUCTION") nextStatus = "DONE_PRINTING";
-    else if (activeSubTab === "DONE_PRINTING") nextStatus = "PACKAGING";
-    else return; // Hold state or other state doesn't have a single "tick" next step
+    if (activeSubTab === "IN_PRODUCTION") nextStatus = "PACKAGING";
+    else return; // Hold state doesn't have a single "tick" next step
 
     handleStatusChange(group, nextStatus);
   };
@@ -573,9 +572,6 @@ export default function ProductionManager() {
           <TabsTrigger value="HOLD_PRINTING" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">
             Hold
           </TabsTrigger>
-          <TabsTrigger value="DONE_PRINTING" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">
-            Done Printing
-          </TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -607,8 +603,8 @@ export default function ProductionManager() {
                     onClick={() => setSelectedFolder(folderId)}
                   >
                     <div className="w-10 h-10 rounded-md shrink-0 relative overflow-hidden bg-primary/5 flex items-center justify-center">
-                      {(activeSubTab === "IN_PRODUCTION" || activeSubTab === "DONE_PRINTING") && (
-                        <button type="button" onClick={(e) => handleAdvanceFlow(group, e)} className="absolute -top-1 -left-1 z-10 text-muted-foreground hover:text-emerald-500 transition-colors" title={`Mark as ${activeSubTab === 'IN_PRODUCTION' ? 'Done Printing' : 'Packaging'}`}>
+                      {activeSubTab === "IN_PRODUCTION" && (
+                        <button type="button" onClick={(e) => handleAdvanceFlow(group, e)} className="absolute -top-1 -left-1 z-10 text-muted-foreground hover:text-emerald-500 transition-colors" title="Mark as Packaging">
                           <CheckCircle className="w-4 h-4 bg-background rounded-full" />
                         </button>
                       )}
@@ -699,10 +695,10 @@ export default function ProductionManager() {
                         variant="outline" 
                         onClick={(e) => handleAdvanceFlow(activeGroup, e)} 
                         className="shadow-sm h-11 sm:h-10 border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                        title={`Mark as ${activeSubTab === 'IN_PRODUCTION' ? 'Done Printing' : 'Packaging'}`}
+                        title="Mark as Packaging"
                       >
                         <CheckCircle className="w-5 h-5 sm:mr-2" /> 
-                        <span className="hidden sm:inline">{activeSubTab === 'IN_PRODUCTION' ? 'Done Printing' : 'Done'}</span>
+                        <span className="hidden sm:inline">Packaging</span>
                       </Button>
                       <Button 
                         variant="outline" 

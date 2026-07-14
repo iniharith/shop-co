@@ -25,12 +25,13 @@ router.get("/migrate-statuses", asyncHandler(async (req, res) => {
     const t2 = await Task.collection.updateMany({ status: "DONE DESIGN" }, { $set: { status: "DONE_DESIGN" } });
     const t3 = await Task.collection.updateMany({ status: "TODO" }, { $set: { status: "PLACED" } });
     const t4 = await Task.collection.updateMany({ status: "ARTWORK_REJECT" }, { $set: { status: "ARTWORK_REJECTED" } });
+    const t5 = await Task.collection.updateMany({ status: "DONE_PRINTING" }, { $set: { status: "PACKAGING" } });
     
     res.json({
       success: true,
       message: "Database statuses migrated successfully",
       ordersUpdated: o1.modifiedCount + o2.modifiedCount,
-      tasksUpdated: t1.modifiedCount + t2.modifiedCount + t3.modifiedCount + t4.modifiedCount
+      tasksUpdated: t1.modifiedCount + t2.modifiedCount + t3.modifiedCount + t4.modifiedCount + t5.modifiedCount
     });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
