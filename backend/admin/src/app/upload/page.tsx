@@ -13,7 +13,7 @@ const t = {
   en: {
     uploadComplete: "Upload Complete!",
     thankYou: (name: string, id: string) => `Thank you, ${name}. Your artwork for Order #${id} has been successfully submitted to our team.`,
-    copyLink: "Copy Link to Your Artwork AND GIVE TO ADMIN",
+    copyLink: "Copy Link and Give to Admin",
     uploadMore: "Upload More Files",
     fileUploadTitle: "File Upload",
     orderIdLabel: "Order Number / Order ID",
@@ -48,7 +48,7 @@ const t = {
   ms: {
     uploadComplete: "Muat Naik Selesai!",
     thankYou: (name: string, id: string) => `Terima kasih, ${name}. Karya seni anda untuk Pesanan #${id} telah berjaya dihantar kepada pasukan kami.`,
-    copyLink: "Salin Pautan ke Karya Seni Anda DAN BERIKAN KEPADA ADMIN",
+    copyLink: "Salin Pautan dan Beri ke Admin",
     uploadMore: "Muat Naik Lebih Banyak Fail",
     fileUploadTitle: "Muat Naik Fail",
     orderIdLabel: "Nombor Pesanan / ID Pesanan",
