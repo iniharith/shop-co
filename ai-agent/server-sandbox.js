@@ -149,8 +149,8 @@ const puppeteerConfig = {
 if (os.platform() === 'win32') {
     puppeteerConfig.executablePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 } else {
-    // For Linux (AWS EC2), it will use the bundled Chromium automatically 
-    // or you can specify: puppeteerConfig.executablePath = '/usr/bin/google-chrome-stable';
+    // For Linux (AWS EC2), use the installed Google Chrome
+    puppeteerConfig.executablePath = '/usr/bin/google-chrome-stable';
 }
 
 const client = new Client({
