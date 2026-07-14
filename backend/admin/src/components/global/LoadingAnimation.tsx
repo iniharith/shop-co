@@ -64,7 +64,7 @@ export default function LoadingAnimation({
         {label && <p className="la-label">{label}</p>}
       </div>
 
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{__html: `
         .la-wrap {
           display: flex;
           align-items: center;
@@ -256,7 +256,7 @@ export default function LoadingAnimation({
             animation: none !important;
           }
         }
-      `}</style>
+      `}} />
     </div>
   );
 }
