@@ -197,7 +197,7 @@ export default function CustomerUploadPortal() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4">
+      <div className="min-h-[100dvh] bg-black text-white flex flex-col items-center justify-center p-4 pb-24">
         <div className="mb-8 flex items-center justify-center gap-2">
           <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded" onError={(e) => e.currentTarget.style.display = 'none'} />
           <h1 className="text-xl font-bold tracking-tight">Kampung Cetak</h1>
@@ -229,7 +229,7 @@ export default function CustomerUploadPortal() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4">
+    <div className="min-h-[100dvh] bg-black text-white flex flex-col items-center justify-center p-4 md:p-8 py-12 pb-24">
       <div className="mb-8 flex items-center justify-center gap-2">
         <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded" onError={(e) => e.currentTarget.style.display = 'none'} />
         <h1 className="text-xl font-bold tracking-tight">Kampung Cetak <span className="text-white/40 font-normal">· File Upload</span></h1>
@@ -294,7 +294,7 @@ export default function CustomerUploadPortal() {
             <Upload className="w-10 h-10 mx-auto mb-3 text-white/40" />
             <h3 className="text-lg font-medium mb-1">Upload your artwork</h3>
             <p className="text-sm text-white/40 mb-4">Drag and drop or click to browse files</p>
-            <Button variant="outline" className="border-white/20 hover:bg-white/10 pointer-events-none relative z-0">
+            <Button variant="outline" className="bg-transparent text-white border-white/20 hover:bg-white/10 hover:text-white pointer-events-none relative z-0">
               Select Files
             </Button>
           </div>
