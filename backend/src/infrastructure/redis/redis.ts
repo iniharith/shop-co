@@ -67,12 +67,15 @@ export class RedisService {
         }
     }
 
-    async subscribe(channel: string, callback: (message: string) => void) {
+    async subscribe(channel: string) {
         if (!this.redisSubscriber) return;
         try {
-            await this.redisSubscriber.subscribe(channel);
-            this.redisSubscriber.on("message", (ch, msg) => {
-                if (ch === channel) callback(msg);
+            await this.redisSubscriber.subscribe(channel, (err, count) => {
+                if (err) {
+                    console.error('Failed to subscribe:', err);
+                    return;
+                }
+                console.log(`Subscribed to ${channel}. Now listening for messages...`);
             });
         } catch (e) {
             console.error("Redis subscribe error:", e);
