@@ -84,6 +84,32 @@ router.post(
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
     const task = await taskRepository.create(req.body);
+
+    // Log the initial state as activity — otherwise a task created with an
+    // assignee/status already filled in shows an empty feed, since those
+    // values were never "changed" via a later update.
+    const authReq = req as any;
+    const userId = authReq.userId || authReq.user?.id || 'system';
+    let userName = authReq.user?.name || authReq.user?.email;
+    if (!userName && userId && userId !== 'system') {
+      try {
+        const user = await UserRepository.findById(userId);
+        userName = user?.name || user?.email;
+      } catch (error) {}
+    }
+    userName = userName || 'System';
+
+    if (task.assignee) {
+      try {
+        const assignedUser = await UserRepository.findById(task.assignee as any);
+        const assigneeName = assignedUser ? (assignedUser.name || assignedUser.email) : 'Unknown User';
+        await taskRepository.addActivity(task._id.toString(), userId, userName, `assigned to ${assigneeName}`);
+      } catch (e) {}
+    }
+    if (task.status && task.status !== 'PLACED') {
+      await taskRepository.addActivity(task._id.toString(), userId, userName, `set status to ${task.status.replace(/_/g, ' ')}`);
+    }
+
     await emitTaskUpdated('task_created', { task });
     res.json({ success: true, task });
   })
