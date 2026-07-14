@@ -449,7 +449,7 @@ export default function ArtworksManager() {
   const handleCopyLink = (e: React.MouseEvent, file: any) => {
     e.preventDefault();
     e.stopPropagation();
-    const shareLink = `${window.location.origin}/share/file/${file._id}`;
+    const shareLink = `${window.location.origin}/share/file/${file._id || file.id}`;
     navigator.clipboard.writeText(shareLink);
     toast.success("Share link copied to clipboard");
   };
