@@ -24,6 +24,7 @@ const t = {
     phonePlaceholder: "e.g. +60123456789",
     itemLabel: "Item",
     itemPlaceholder: "Frame Size, Card, etc",
+    qualityWarning: "⚠️ PLEASE SEND HIGH RESOLUTION IMAGE. DO NOT SEND SCREENSHOT IMAGES BECAUSE ITS NOT HIGH QUALITY",
     uploadArtworkTitle: "Upload your artwork",
     dragDrop: "Drag and drop or click to browse files",
     selectFiles: "Select Files",
@@ -59,6 +60,7 @@ const t = {
     phonePlaceholder: "cth. +60123456789",
     itemLabel: "Item",
     itemPlaceholder: "Saiz Bingkai, Kad, dll",
+    qualityWarning: "⚠️ SILA HANTAR GAMBAR BERESOLUSI TINGGI. JANGAN HANTAR GAMBAR TANGKAPAN SKRIN (SCREENSHOT) KERANA KUALITINYA TIDAK BAGUS",
     uploadArtworkTitle: "Muat naik karya seni anda",
     dragDrop: "Seret dan lepas atau klik untuk menyemak imbas fail",
     selectFiles: "Pilih Fail",
@@ -496,6 +498,10 @@ export default function CustomerUploadPortal() {
                 disabled={uploading}
               />
             </div>
+          </div>
+
+          <div className="bg-yellow-500/10 border border-yellow-500/50 text-yellow-200 text-xs md:text-sm p-3 rounded-lg text-center font-medium mb-4">
+            {langDict.qualityWarning}
           </div>
 
           <div className="border-2 border-dashed border-white/10 rounded-xl p-8 text-center bg-black/20 relative">
