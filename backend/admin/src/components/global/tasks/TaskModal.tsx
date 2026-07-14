@@ -1,6 +1,6 @@
-/**
+﻿/**
  * Coded by Harith
- * Kampungcetak ®
+ * Kampungcetak ┬«
  */
 "use client";
 import { Badge } from "@/components/ui/badge";
@@ -34,8 +34,6 @@ import { useRouter } from "next/navigation";
 import { AssigneeTag, AssigneeDot } from "@/lib/userColor";
 
 const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview, onDeleteLocal }: any) => {
-  const { data: allFilesData } = useAllFiles();
-  const allFiles = (allFilesData as any)?.data || [];
   const isImageFile = file.mimetype?.includes("image") || (file.name || file.url).match(/\.(jpeg|jpg|gif|png|webp|heic)$/i);
   const isPdfFile = file.mimetype?.includes("pdf") || (file.name || file.url).match(/\.pdf$/i);
   const [notes, setNotes] = useState(file.notes || "");
@@ -64,18 +62,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
   const handleCopyLink = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    // Attempt to find the real FileUpload document ID from the allFiles context
-    // because task.files only stores the URL and name, not the FileUpload _id.
-    const realFile = allFiles.find((f: any) => f.path === file.url || (file.url && file.url.includes(f.filename)));
-    const realFileId = realFile?._id || realFile?.id || file._id || file.id;
-
-    if (!realFileId) {
-       toast.error("Cannot generate share link: File ID not found in database.");
-       return;
-    }
-
-    const cleanShareLink = `${window.location.origin}/share/file/${realFileId}`;
+    const cleanShareLink = `${window.location.origin}/share/file/${file._id || file.id}`;
     navigator.clipboard.writeText(cleanShareLink);
     toast.success("Share link copied to clipboard");
   };
@@ -94,10 +81,12 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
         >
           {isImageFile ? (
             <>
-              <img 
-                src={`https://wsrv.nl/?url=${encodeURIComponent(fileUrlStr)}&w=200&h=200&fit=cover`}
+              <Image 
+                src={encodedFileUrl} 
                 alt="thumbnail" 
-                loading="lazy"
+                width={60}
+                height={60}
+                quality={40}
                 className="w-full h-full object-cover absolute inset-0 z-0" 
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
@@ -449,6 +438,19 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
               <div className="space-y-4 pt-4 border-t border-border/50">
                 {(combinedFiles && combinedFiles.length > 0) || uploadingFiles.length > 0 ? (
+                    <div className="mb-6 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                          <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments
+                        </label>
+                        {task.status === "IN_PRODUCTION" ? (
+                          <a href={`/admin/production?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Production Folder">
+                            <Folder className="w-3.5 h-3.5" />
+                            Production Folder
+                          </a>
+                        ) : task.status === "PACKAGING" || task.status === "SHIPPED" || task.status === "DELIVERED" ? (
+                          <a href={`/admin/packaging?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Packaging Folder">
+                            <Folder className="w-3.5 h-3.5" />
                             Packaging Folder
                           </a>
                         ) : (
@@ -626,12 +628,12 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                 {task.createdAt && (
                                   <div className="flex gap-3 items-center text-sm py-1">
                                     <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/30 shrink-0 flex items-center justify-center">
-                                      <span className="text-[9px] font-bold text-primary">✦</span>
+                                      <span className="text-[9px] font-bold text-primary">Ô£ª</span>
                                     </div>
                                     <div className="flex-1 text-muted-foreground">
                                       <span className="font-semibold text-foreground mr-1">Task</span>
                                       created
-                                      <span className="text-[10px] ml-2 text-muted-foreground/70">• {format(new Date(task.createdAt), "MMM d, h:mm a")}</span>
+                                      <span className="text-[10px] ml-2 text-muted-foreground/70">ÔÇó {format(new Date(task.createdAt), "MMM d, h:mm a")}</span>
                                     </div>
                                   </div>
                                 )}
@@ -652,7 +654,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                         <div>
                                           <span className="font-semibold text-foreground mr-1">{item.userName}</span>
                                           {item.action} {item.details && !isImage && <span className="font-medium text-foreground/80 ml-1 break-all">{item.details}</span>}
-                                          <span className="text-[10px] ml-2 text-muted-foreground/70 whitespace-nowrap">• {format(new Date(item.createdAt), "MMM d, h:mm a")}</span>
+                                          <span className="text-[10px] ml-2 text-muted-foreground/70 whitespace-nowrap">ÔÇó {format(new Date(item.createdAt), "MMM d, h:mm a")}</span>
                                         </div>
                                         {isImage && (
                                           <div className="mt-2">

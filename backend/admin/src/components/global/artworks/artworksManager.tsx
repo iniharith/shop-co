@@ -146,7 +146,7 @@ export default function ArtworksManager() {
 
       let taskIdStr = "";
 
-      if ((file.category === 'TASK' || file.category === 'CUSTOMER_UPLOAD') && file.taskId) {
+      if (file.category === 'TASK' && file.taskId) {
         const task = taskMap.get(file.taskId);
         groupName = task ? task.title : "Deleted Task";
         orderIdStr = task?.orderId || "";
@@ -195,6 +195,9 @@ export default function ArtworksManager() {
 
     // explicitly add empty folders for any Tasks that don't have files yet
     tasks.forEach((task: any) => {
+      // Customer Upload tasks have their files grouped by User Name, so skip creating empty task folders for them
+      if (task.title && task.title.startsWith('Artwork Upload:')) return;
+      
       if (task.status !== 'IN_PRODUCTION' && task.status !== 'CANCELLED' && task.status !== 'FAILED') {
         if (activeTab !== "ALL" && task.category !== activeTab) return; // respect active tab for empty folders
         const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id });
