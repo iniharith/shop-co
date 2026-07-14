@@ -4,18 +4,24 @@
  *
  * Full-screen (or inline) loading animation — translucent glass sphere
  * with an iridescent Fresnel rim and a slowly swirling internal wave,
- * matching the reference: black background, perfect circle (not a
- * morphing blob), blue/purple/teal/pink sheen, soft specular highlight.
+ * matching the reference: perfect circle (not a morphing blob),
+ * blue/purple/teal/pink sheen, soft specular highlight.
  *
  * This is the ONE loading animation used across the entire admin app —
  * both the full-screen route-transition loader (app/loading.tsx) and
  * every inline "data is loading" state on every page.
  *
+ * The full-screen variant keeps a solid black backdrop (boot/splash feel).
+ * The inline variant (fullScreen={false}) uses your frosted glass card
+ * style — bg-background/40, backdrop-blur, subtle border — so it blends
+ * into the page instead of punching a black hole in it.
+ *
  * Usage:
- *   <LoadingAnimation />                              // full-screen overlay
- *   <LoadingAnimation fullScreen={false} />            // inline, sized to parent
+ *   <LoadingAnimation />                              // full-screen overlay, solid black
+ *   <LoadingAnimation fullScreen={false} />            // inline, frosted glass card
  *   <LoadingAnimation label="Uploading artwork" />     // custom text
  *   <LoadingAnimation fullScreen={false} scale={0.5} /> // shrink for tight spaces (e.g. sidebars)
+ *   <LoadingAnimation fullScreen={false} glass={false} /> // inline, transparent (no card bg at all)
  */
 "use client";
 
@@ -24,15 +30,24 @@ interface LoadingAnimationProps {
   label?: string;
   /** Shrinks the whole animation proportionally. 1 = default 200px stage. */
   scale?: number;
+  /** Only applies when fullScreen is false. Default true — frosted glass card. */
+  glass?: boolean;
 }
 
 export default function LoadingAnimation({
   fullScreen = true,
   label = "Loading",
   scale = 1,
+  glass = true,
 }: LoadingAnimationProps) {
+  const wrapClass = fullScreen
+    ? "la-wrap la-wrap--full"
+    : glass
+    ? "la-wrap la-wrap--glass bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl"
+    : "la-wrap";
+
   return (
-    <div className={fullScreen ? "la-wrap la-wrap--full" : "la-wrap"}>
+    <div className={wrapClass}>
       <div className="la-scaler" style={{ transform: `scale(${scale})` }}>
         <div className="la-stage">
           <div className="la-ambient" />
@@ -54,7 +69,6 @@ export default function LoadingAnimation({
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #000000;
           padding: 48px;
           overflow: hidden;
         }
@@ -62,6 +76,10 @@ export default function LoadingAnimation({
           position: fixed;
           inset: 0;
           z-index: 9999;
+          background: #000000;
+        }
+        .la-wrap--glass {
+          padding: 40px;
         }
         .la-scaler {
           display: flex;
