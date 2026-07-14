@@ -26,49 +26,57 @@ export class RedisService {
 
 
     async set(key: string, value: string, ttl?: number) {
-        if (!this.redis) {
-            return;
-        }
-        if (ttl) {
-            await this.redis.set(key, value, "EX", ttl);
-        } else {
-            await this.redis.set(key, value);
+        if (!this.redis) return;
+        try {
+            if (ttl) {
+                await this.redis.set(key, value, "EX", ttl);
+            } else {
+                await this.redis.set(key, value);
+            }
+        } catch (e) {
+            console.error("Redis set error:", e);
         }
     }
 
     async get(key: string) {
-        if (!this.redis) {
-            return;
+        if (!this.redis) return null;
+        try {
+            return await this.redis.get(key);
+        } catch (e) {
+            console.error("Redis get error:", e);
+            return null;
         }
-        return await this.redis.get(key);
     }
 
     async del(key: string) {
-        if (!this.redis) {
-            return;
+        if (!this.redis) return;
+        try {
+            await this.redis.del(key);
+        } catch (e) {
+            console.error("Redis del error:", e);
         }
-        await this.redis.del(key);
     }
 
     async publish(channel: string, message: string) {
-        if (!this.redis) {
-            return;
+        if (!this.redis) return;
+        try {
+            console.log("🔴 publish", channel, message);
+            await this.redis.publish(channel, message);
+        } catch (e) {
+            console.error("Redis publish error:", e);
         }
-        console.log("🔴 publish", channel, message);
-        await this.redis?.publish(channel, message);
     }
 
-    async subscribe(channel: REDIS_CHANNELS) {
-        if (!this.redisSubscriber) {
-            return;
+    async subscribe(channel: string, callback: (message: string) => void) {
+        if (!this.redisSubscriber) return;
+        try {
+            await this.redisSubscriber.subscribe(channel);
+            this.redisSubscriber.on("message", (ch, msg) => {
+                if (ch === channel) callback(msg);
+            });
+        } catch (e) {
+            console.error("Redis subscribe error:", e);
         }
-        await this.redisSubscriber.subscribe(channel, (err, count) => {
-            if (err) {
-                console.error('Failed to subscribe:', err);
-                return;
-            }
-            console.log(`Subscribed to ${channel}. Now listening for messages...`);
-        });
     }
 
     on(event: string, callback: (channel: string, message: string) => void) {

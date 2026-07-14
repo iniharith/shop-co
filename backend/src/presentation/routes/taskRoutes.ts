@@ -128,7 +128,7 @@ router.put(
     const isNewAssignment = req.body.assignee && oldTask?.assignee?.toString() !== req.body.assignee;
     const currentStatus = oldTask?.status || 'PLACED';
     const preDesignStatuses = ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED'];
-    if (isNewAssignment && preDesignStatuses.includes(currentStatus) && !req.body.status) {
+    if (isNewAssignment && preDesignStatuses.includes(currentStatus) && (!req.body.status || req.body.status === currentStatus)) {
       req.body.status = 'IN_DESIGN';
     }
 

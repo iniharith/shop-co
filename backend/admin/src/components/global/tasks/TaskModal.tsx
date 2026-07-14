@@ -1,6 +1,6 @@
 ﻿/**
  * Coded by Harith
- * Kampungcetak ┬«
+ * Kampungcetak ®
  */
 "use client";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +33,7 @@ import { useAllFiles } from "@/hooks/useAdminDashboard";
 import { useRouter } from "next/navigation";
 import { AssigneeTag, AssigneeDot } from "@/lib/userColor";
 
-const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview, onDeleteLocal }: any) => {
+const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview, onDeleteLocal, allFiles }: any) => {
   const isImageFile = file.mimetype?.includes("image") || (file.name || file.url).match(/\.(jpeg|jpg|gif|png|webp|heic)$/i);
   const isPdfFile = file.mimetype?.includes("pdf") || (file.name || file.url).match(/\.pdf$/i);
   const [notes, setNotes] = useState(file.notes || "");
@@ -62,7 +62,13 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
   const handleCopyLink = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const cleanShareLink = `${window.location.origin}/share/file/${file._id || file.id}`;
+    const realFile = allFiles?.find((f: any) => f.path === file.url || (file.url && file.url.includes(f.filename)));
+    const realFileId = realFile?._id || realFile?.id || file._id || file.id;
+    if (!realFileId) {
+       toast.error("Cannot generate share link: File ID not found in database.");
+       return;
+    }
+    const cleanShareLink = `${window.location.origin}/share/file/${realFileId}`;
     navigator.clipboard.writeText(cleanShareLink);
     toast.success("Share link copied to clipboard");
   };
@@ -81,17 +87,15 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
         >
           {isImageFile ? (
             <>
-              <Image 
-                src={encodedFileUrl} 
+              <img 
+                src={`https://wsrv.nl/?url=${encodeURIComponent(fileUrlStr)}&w=200&h=200&fit=cover`}
                 alt="thumbnail" 
-                width={60}
-                height={60}
-                quality={40}
+                loading="lazy"
                 className="w-full h-full object-cover absolute inset-0 z-0" 
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
-                  const nextEl = e.currentTarget.nextElementSibling as HTMLElement;
-                  if (nextEl) nextEl.style.display = 'flex';
+                  const nextEl = e.currentTarget.nextElementSibling;
+                  if (nextEl) (nextEl as HTMLElement).style.display = 'flex';
                 }}
               />
               <File className="w-4 h-4 text-primary/80 relative z-10" style={{ display: 'none' }} />
@@ -518,8 +522,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                           </div>
                         ))}
                         {combinedFiles.slice(0, 12).map((file: any) => (
-                          <FileAttachmentCard 
-                            key={file.url} 
+                          <FileAttachmentCard allFiles={allFiles} key={file.url} 
                             task={task} 
                             file={file} 
                             deleteFile={deleteFile} 
@@ -628,12 +631,12 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                 {task.createdAt && (
                                   <div className="flex gap-3 items-center text-sm py-1">
                                     <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/30 shrink-0 flex items-center justify-center">
-                                      <span className="text-[9px] font-bold text-primary">Ô£ª</span>
+                                      <span className="text-[9px] font-bold text-primary">✦</span>
                                     </div>
                                     <div className="flex-1 text-muted-foreground">
                                       <span className="font-semibold text-foreground mr-1">Task</span>
                                       created
-                                      <span className="text-[10px] ml-2 text-muted-foreground/70">ÔÇó {format(new Date(task.createdAt), "MMM d, h:mm a")}</span>
+                                      <span className="text-[10px] ml-2 text-muted-foreground/70">• {format(new Date(task.createdAt), "MMM d, h:mm a")}</span>
                                     </div>
                                   </div>
                                 )}
@@ -643,7 +646,11 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                   const isImage = matchingFile && (matchingFile.url.match(/\.(jpeg|jpg|gif|png|webp|heic)$/i) || matchingFile.name?.match(/\.(jpeg|jpg|gif|png|webp|heic)$/i));
                                   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
                                   const proxyUrl = matchingFile ? `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(matchingFile.url.startsWith('http') ? matchingFile.url : `${backendUrl}/${matchingFile.url.replace(/^\/+/, '')}`)}&name=${encodeURIComponent(matchingFile.name)}&stream=true` : "";
-                                  const thumbUrl = matchingFile ? `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(matchingFile.url.startsWith('http') ? matchingFile.url.replace('/media/', '/media/thumbnails/').replace(/\.[^/.]+$/, '.jpg') : `${backendUrl}/${matchingFile.url.replace(/^\/+/, '')}`.replace('/media/', '/media/thumbnails/').replace(/\.[^/.]+$/, '.jpg'))}` : "";
+                                  let rawUrl = "";
+                                  if (matchingFile) {
+                                    rawUrl = matchingFile.url.startsWith('http') ? matchingFile.url : `${backendUrl}/${matchingFile.url.replace(/^\/+/, '')}`;
+                                  }
+                                  const thumbUrl = rawUrl ? `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&w=200&h=200&fit=cover` : "";
 
                                   return (
                                     <div key={`a-${idx}`} className={`flex gap-3 items-start text-sm py-1 ${isImage ? 'mt-2 mb-2' : ''}`}>
@@ -654,7 +661,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                         <div>
                                           <span className="font-semibold text-foreground mr-1">{item.userName}</span>
                                           {item.action} {item.details && !isImage && <span className="font-medium text-foreground/80 ml-1 break-all">{item.details}</span>}
-                                          <span className="text-[10px] ml-2 text-muted-foreground/70 whitespace-nowrap">ÔÇó {format(new Date(item.createdAt), "MMM d, h:mm a")}</span>
+                                          <span className="text-[10px] ml-2 text-muted-foreground/70 whitespace-nowrap">• {format(new Date(item.createdAt), "MMM d, h:mm a")}</span>
                                         </div>
                                         {isImage && (
                                           <div className="mt-2">

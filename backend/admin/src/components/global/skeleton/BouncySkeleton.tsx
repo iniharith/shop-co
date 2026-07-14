@@ -1,78 +1,82 @@
 import React from "react";
-import { motion } from "framer-motion";
 
 interface BouncySkeletonProps {
   text?: string;
 }
 
-export function BouncySkeleton({ text = "SYSTEM LOADING" }: BouncySkeletonProps) {
+export function BouncySkeleton({ text = "Loading..." }: BouncySkeletonProps) {
   return (
-    <div className="absolute inset-0 z-[50] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm overflow-hidden min-h-[400px]">
-      <div className="relative flex items-center justify-center w-64 h-64 scale-75 md:scale-100">
-        {/* Outer glowing radar ring */}
-        <div className="absolute inset-0 rounded-full border border-primary/20 bg-primary/5 shadow-[0_0_50px_rgba(var(--primary),0.1)]"></div>
-        
-        {/* Rotating outer dashed ring */}
-        <svg className="absolute w-full h-full animate-[spin_10s_linear_infinite] opacity-50" viewBox="0 0 100 100">
-          <circle 
-            cx="50" cy="50" r="48" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="0.5" 
-            strokeDasharray="4 8" 
-            className="text-primary"
-          />
-        </svg>
-
-        {/* Counter-rotating middle segmented ring */}
-        <svg className="absolute w-4/5 h-4/5 animate-[spin_6s_linear_infinite_reverse] opacity-70" viewBox="0 0 100 100">
-          <circle 
-            cx="50" cy="50" r="46" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="1.5" 
-            strokeDasharray="20 10 5 10 40 20" 
-            className="text-primary"
-          />
-        </svg>
-
-        {/* Inner pulsing core border */}
-        <div className="absolute w-1/2 h-1/2 rounded-full border-2 border-primary/40 animate-ping opacity-30"></div>
-
-        {/* Central glowing core */}
-        <div className="relative w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center shadow-[0_0_30px_var(--primary)] backdrop-blur-sm border border-primary/50 overflow-hidden group">
-          {/* Scanning line inside core */}
-          <div className="absolute top-0 left-0 w-full h-[2px] bg-primary shadow-[0_0_10px_var(--primary)] animate-[scan_2s_ease-in-out_infinite]"></div>
+    <div className="flex flex-col items-center justify-center w-full h-full min-h-[400px] p-8 relative overflow-hidden">
+      <div className="relative flex flex-col items-center justify-center">
+        {/* Container for the 3D glowing blob */}
+        <div className="relative w-32 h-32 md:w-40 md:h-40 flex items-center justify-center mb-8">
+          {/* Ambient background glow */}
+          <div className="absolute w-full h-full bg-purple-600/20 blur-[50px] rounded-full animate-pulse"></div>
           
-          <div className="w-6 h-6 rounded-full bg-primary shadow-[0_0_15px_var(--primary)] animate-pulse"></div>
+          {/* Main morphing blob */}
+          <div 
+            className="absolute w-full h-full bg-[#0a0514] border border-[#a855f7]/40 shadow-[inset_-10px_-10px_40px_rgba(168,85,247,0.3),inset_10px_10px_40px_rgba(79,70,229,0.3),0_0_30px_rgba(168,85,247,0.5)]"
+            style={{
+              animation: 'blobMorph 5s ease-in-out infinite alternate',
+            }}
+          >
+            {/* Inner specular highlight to give it 3D glass/fluid look */}
+            <div className="absolute top-[5%] left-[10%] w-[80%] h-[40%] bg-gradient-to-b from-white/10 to-transparent rounded-full blur-[2px] opacity-70 transform -rotate-12"></div>
+            
+            {/* Color accent (blue/purple inner glow) */}
+            <div 
+              className="absolute inset-0 bg-gradient-to-tr from-indigo-600/30 via-transparent to-purple-600/30 mix-blend-screen"
+              style={{
+                animation: 'blobMorph 7s ease-in-out infinite alternate-reverse',
+              }}
+            ></div>
+          </div>
+          
+          {/* Secondary rotating color rim to add dynamic light */}
+          <div 
+            className="absolute w-[105%] h-[105%] border-[2px] border-transparent border-t-purple-500/50 border-r-indigo-500/50 rounded-full mix-blend-screen blur-[2px]"
+            style={{
+              animation: 'blobSpin 4s linear infinite',
+              animationDirection: 'alternate'
+            }}
+          ></div>
         </div>
-        
-        {/* Floating nodes/data points */}
-        <div className="absolute top-[10%] left-[20%] w-1.5 h-1.5 rounded-full bg-primary animate-ping" style={{ animationDelay: '0.2s' }}></div>
-        <div className="absolute bottom-[20%] right-[15%] w-2 h-2 rounded-full bg-primary animate-ping" style={{ animationDelay: '0.7s' }}></div>
-        <div className="absolute top-[30%] right-[10%] w-1 h-1 rounded-full bg-primary animate-ping" style={{ animationDelay: '1.2s' }}></div>
-        <div className="absolute bottom-[10%] left-[30%] w-1.5 h-1.5 rounded-full bg-primary animate-ping" style={{ animationDelay: '1.8s' }}></div>
-      </div>
 
-      <div className="mt-8 flex flex-col items-center">
-        <h2 className="text-lg font-bold tracking-[0.3em] text-foreground uppercase animate-pulse">
+        {/* Text */}
+        <h3 className="text-xl font-bold tracking-wider text-purple-200/80 drop-shadow-[0_0_10px_rgba(168,85,247,0.8)]">
           {text}
-        </h2>
-        <div className="mt-3 flex items-center gap-1 opacity-70">
-          <span className="text-[10px] font-mono text-primary tracking-widest">INITIALIZING</span>
-          <span className="flex gap-1 ml-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }}></span>
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }}></span>
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }}></span>
-          </span>
-        </div>
+        </h3>
       </div>
 
       <style dangerouslySetInnerHTML={{__html: `
-        @keyframes scan {
-          0%, 100% { transform: translateY(-100%); opacity: 0; }
-          10%, 90% { opacity: 1; }
-          50% { transform: translateY(64px); opacity: 1; }
+        @keyframes blobMorph {
+          0% {
+            border-radius: 40% 60% 70% 30% / 40% 40% 60% 50%;
+            transform: scale(1) rotate(0deg);
+          }
+          34% {
+            border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%;
+            transform: scale(1.02) rotate(15deg);
+          }
+          67% {
+            border-radius: 100% 60% 60% 100% / 100% 100% 60% 60%;
+            transform: scale(0.98) rotate(-15deg);
+          }
+          100% {
+            border-radius: 40% 60% 70% 30% / 40% 40% 60% 50%;
+            transform: scale(1) rotate(0deg);
+          }
+        }
+
+        @keyframes blobSpin {
+          from {
+            transform: rotate(0deg);
+            border-radius: 50% 50% 50% 50%;
+          }
+          to {
+            transform: rotate(360deg);
+            border-radius: 60% 40% 50% 50%;
+          }
         }
       `}} />
     </div>

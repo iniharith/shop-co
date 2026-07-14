@@ -19,9 +19,11 @@ export const createRedisClient = (clientType: 'subscriber' | 'publisher' | 'stan
             if (times > 10) return null;
             return Math.min(times * 100, 3000);
         },
-        maxRetriesPerRequest: null,
+        maxRetriesPerRequest: 1,
         enableReadyCheck: false,
-        lazyConnect: false
+        lazyConnect: false,
+        enableOfflineQueue: false,
+        commandTimeout: 2000
     });
 
     client.on("error", (err) => {
