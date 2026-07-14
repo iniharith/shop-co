@@ -103,7 +103,7 @@ export default function ArtworksManager() {
 
     if (activeTab !== "ALL") {
       result = result.filter((f: any) => {
-        if (f.category === 'TASK' && f.taskId) {
+        if ((f.category === 'TASK' || f.category === 'CUSTOMER_UPLOAD') && f.taskId) {
           const task = taskMap.get(f.taskId);
           return task?.category === activeTab;
         }
