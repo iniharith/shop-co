@@ -5,7 +5,7 @@ import { Upload, FileText, Check, Loader2, Image as ImageIcon, X, CloudUpload } 
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import LoadingAnimation from "@/components/global/LoadingAnimation";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -334,7 +334,7 @@ export default function CustomerUploadPortal() {
           >
             {uploading ? (
               <>
-                <LoadingSpinner size={20} className="mr-2" />
+                <LoadingAnimation fullScreen={false} label="" scale={0.2} />
                 Uploading directly to cloud...
               </>
             ) : (

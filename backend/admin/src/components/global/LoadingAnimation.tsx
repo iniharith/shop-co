@@ -2,45 +2,58 @@
  * Coded by Harith
  * Kampungcetak ®
  *
- * Full-screen (or inline) loading animation — organic morphing blob
- * with a glowing neon rim that continuously cycles through the color
- * spectrum, matching the reference: black background, soft ambient
- * glow, faint light-flare streaks, "Loading..." label below.
+ * Full-screen (or inline) loading animation — translucent glass sphere
+ * with an iridescent Fresnel rim and a slowly swirling internal wave,
+ * matching the reference: black background, perfect circle (not a
+ * morphing blob), blue/purple/teal/pink sheen, soft specular highlight.
+ *
+ * This is the ONE loading animation used across the entire admin app —
+ * both the full-screen route-transition loader (app/loading.tsx) and
+ * every inline "data is loading" state on every page.
  *
  * Usage:
- *   <LoadingAnimation />                          // full-screen overlay
- *   <LoadingAnimation fullScreen={false} />        // inline, sized to parent
- *   <LoadingAnimation label="Uploading artwork" /> // custom text
+ *   <LoadingAnimation />                              // full-screen overlay
+ *   <LoadingAnimation fullScreen={false} />            // inline, sized to parent
+ *   <LoadingAnimation label="Uploading artwork" />     // custom text
+ *   <LoadingAnimation fullScreen={false} scale={0.5} /> // shrink for tight spaces (e.g. sidebars)
  */
 "use client";
 
 interface LoadingAnimationProps {
   fullScreen?: boolean;
   label?: string;
+  /** Shrinks the whole animation proportionally. 1 = default 200px stage. */
+  scale?: number;
 }
 
 export default function LoadingAnimation({
   fullScreen = true,
   label = "Loading",
+  scale = 1,
 }: LoadingAnimationProps) {
   return (
     <div className={fullScreen ? "la-wrap la-wrap--full" : "la-wrap"}>
-      <div className="la-stage">
-        <div className="la-flare la-flare--a" />
-        <div className="la-flare la-flare--b" />
-        <div className="la-glow" />
-        <div className="la-blob" />
-      </div>
+      <div className="la-scaler" style={{ transform: `scale(${scale})` }}>
+        <div className="la-stage">
+          <div className="la-ambient" />
+          <div className="la-sphere">
+            <div className="la-base" />
+            <div className="la-swirl la-swirl--a" />
+            <div className="la-swirl la-swirl--b" />
+            <div className="la-shading" />
+            <div className="la-rim" />
+            <div className="la-specular" />
+          </div>
+        </div>
 
-      <p className="la-label">{label}</p>
+        {label && <p className="la-label">{label}</p>}
+      </div>
 
       <style jsx>{`
         .la-wrap {
           display: flex;
-          flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 28px;
           background: #000000;
           padding: 48px;
           overflow: hidden;
@@ -50,59 +63,144 @@ export default function LoadingAnimation({
           inset: 0;
           z-index: 9999;
         }
+        .la-scaler {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 32px;
+        }
         .la-stage {
           position: relative;
-          width: 220px;
-          height: 220px;
+          width: 200px;
+          height: 200px;
           display: flex;
           align-items: center;
           justify-content: center;
         }
 
-        .la-glow {
+        .la-ambient {
           position: absolute;
-          width: 180px;
-          height: 180px;
+          width: 190px;
+          height: 190px;
           border-radius: 50%;
-          background: radial-gradient(circle, #33bfe0 0%, rgba(51, 191, 224, 0) 70%);
-          filter: blur(30px);
-          opacity: 0.55;
-          animation: la-hue 9s linear infinite, la-pulse 4.5s ease-in-out infinite;
+          background: radial-gradient(circle, #2f4fd6 0%, rgba(47, 79, 214, 0) 70%);
+          filter: blur(28px);
+          opacity: 0.5;
+          animation: la-ambient-pulse 5s ease-in-out infinite;
         }
 
-        .la-blob {
+        .la-sphere {
           position: relative;
-          width: 130px;
-          height: 130px;
-          background: radial-gradient(
-            circle at 32% 28%,
-            rgba(255, 255, 255, 0.22),
-            rgba(10, 12, 16, 0.95) 62%
-          );
-          border: 1.5px solid #33bfe0;
+          width: 150px;
+          height: 150px;
+          border-radius: 50%;
+          overflow: hidden;
+          isolation: isolate;
           box-shadow:
-            0 0 22px 3px #33bfe0,
-            0 0 46px 10px rgba(51, 191, 224, 0.35),
-            inset 0 0 24px rgba(51, 191, 224, 0.3);
-          animation: la-morph 7s ease-in-out infinite, la-hue 9s linear infinite,
-            la-rotate 14s linear infinite;
+            0 0 30px 4px rgba(60, 100, 230, 0.45),
+            0 0 60px 14px rgba(80, 60, 200, 0.25);
         }
 
-        .la-flare {
+        .la-base {
           position: absolute;
-          background: linear-gradient(90deg, transparent, #33bfe0, transparent);
-          opacity: 0.35;
-          animation: la-hue 9s linear infinite, la-flare-fade 4.5s ease-in-out infinite;
+          inset: 0;
+          background: radial-gradient(
+            circle at 42% 38%,
+            #0c1230 0%,
+            #060814 55%,
+            #020308 100%
+          );
         }
-        .la-flare--a {
-          width: 260px;
-          height: 1px;
-          transform: rotate(45deg);
+
+        /* the two swirling ribbon streaks that slowly rotate/drift */
+        .la-swirl {
+          position: absolute;
+          width: 180%;
+          height: 26%;
+          left: -40%;
+          mix-blend-mode: screen;
+          filter: blur(10px);
+          opacity: 0.5;
         }
-        .la-flare--b {
-          width: 260px;
-          height: 1px;
-          transform: rotate(-45deg);
+        .la-swirl--a {
+          top: 30%;
+          background: linear-gradient(
+            100deg,
+            transparent 0%,
+            #3b6bff 22%,
+            #7a5cff 38%,
+            #33e0c0 52%,
+            #ff6ec7 66%,
+            transparent 100%
+          );
+          border-radius: 50%;
+          transform: rotate(-18deg);
+          animation: la-swirl-a 10s ease-in-out infinite;
+        }
+        .la-swirl--b {
+          top: 54%;
+          height: 20%;
+          background: linear-gradient(
+            100deg,
+            transparent 0%,
+            #6a4bff 25%,
+            #33e0c0 50%,
+            #4f7bff 75%,
+            transparent 100%
+          );
+          border-radius: 50%;
+          opacity: 0.7;
+          transform: rotate(14deg);
+          animation: la-swirl-b 12s ease-in-out infinite;
+        }
+
+        /* spherical falloff — this is what actually sells the 3D ball shape */
+        .la-shading {
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          background: radial-gradient(
+            circle at 42% 38%,
+            rgba(0, 0, 0, 0) 0%,
+            rgba(0, 0, 0, 0) 35%,
+            rgba(0, 4, 20, 0.55) 72%,
+            rgba(0, 2, 10, 0.9) 100%
+          );
+          mix-blend-mode: multiply;
+        }
+
+        /* Fresnel-style iridescent rim: conic gradient masked to a ring */
+        .la-rim {
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          background: conic-gradient(
+            from 0deg,
+            #4f7bff,
+            #8a5cff,
+            #33e0c0,
+            #ff6ec7,
+            #4f7bff
+          );
+          mix-blend-mode: screen;
+          opacity: 0.7;
+          -webkit-mask: radial-gradient(circle, transparent 66%, #000 72%, #000 90%, transparent 100%);
+          mask: radial-gradient(circle, transparent 66%, #000 72%, #000 90%, transparent 100%);
+          animation: la-rim-spin 8s linear infinite;
+        }
+
+        /* soft glassy specular highlight, upper-left */
+        .la-specular {
+          position: absolute;
+          top: 8%;
+          left: 12%;
+          width: 30%;
+          height: 18%;
+          background: radial-gradient(ellipse, rgba(255, 255, 255, 0.75), transparent 70%);
+          border-radius: 50%;
+          filter: blur(1px);
+          animation: la-specular-drift 6s ease-in-out infinite;
         }
 
         .la-label {
@@ -112,68 +210,32 @@ export default function LoadingAnimation({
           color: #6b6f76;
         }
 
-        @keyframes la-hue {
-          from {
-            filter: hue-rotate(0deg);
-          }
-          to {
-            filter: hue-rotate(360deg);
-          }
+        @keyframes la-ambient-pulse {
+          0%, 100% { transform: scale(1); opacity: 0.4; }
+          50% { transform: scale(1.1); opacity: 0.6; }
         }
-        @keyframes la-morph {
-          0% {
-            border-radius: 42% 58% 65% 35% / 45% 45% 55% 55%;
-          }
-          25% {
-            border-radius: 62% 38% 30% 70% / 55% 65% 35% 45%;
-          }
-          50% {
-            border-radius: 50% 50% 72% 28% / 38% 62% 38% 62%;
-          }
-          75% {
-            border-radius: 35% 65% 55% 45% / 65% 35% 65% 35%;
-          }
-          100% {
-            border-radius: 42% 58% 65% 35% / 45% 45% 55% 55%;
-          }
+        @keyframes la-swirl-a {
+          0% { transform: translate(-8%, -6%) rotate(-8deg); }
+          50% { transform: translate(6%, 8%) rotate(6deg); }
+          100% { transform: translate(-8%, -6%) rotate(-8deg); }
         }
-        @keyframes la-rotate {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
+        @keyframes la-swirl-b {
+          0% { transform: translate(6%, 4%) rotate(5deg); }
+          50% { transform: translate(-8%, -6%) rotate(-6deg); }
+          100% { transform: translate(6%, 4%) rotate(5deg); }
         }
-        @keyframes la-pulse {
-          0%,
-          100% {
-            transform: scale(1);
-            opacity: 0.5;
-          }
-          50% {
-            transform: scale(1.08);
-            opacity: 0.65;
-          }
+        @keyframes la-rim-spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
-        @keyframes la-flare-fade {
-          0%,
-          100% {
-            opacity: 0.15;
-          }
-          50% {
-            opacity: 0.45;
-          }
+        @keyframes la-specular-drift {
+          0%, 100% { transform: translate(0, 0); opacity: 0.8; }
+          50% { transform: translate(3%, 4%); opacity: 0.5; }
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .la-glow,
-          .la-blob,
-          .la-flare {
+          .la-ambient, .la-swirl, .la-rim, .la-specular {
             animation: none !important;
-          }
-          .la-blob {
-            border-radius: 50%;
           }
         }
       `}</style>

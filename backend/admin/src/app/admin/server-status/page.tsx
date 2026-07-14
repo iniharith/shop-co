@@ -7,7 +7,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { useSession } from "next-auth/react";
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import LoadingAnimation from "@/components/global/LoadingAnimation";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -118,7 +118,7 @@ export default function ServerHealthPage() {
   };
 
   if (loading && !data) {
-    return <div className="min-h-screen bg-transparent flex items-center justify-center"><LoadingSpinner size={40} /></div>;
+    return <LoadingAnimation fullScreen={false} label="Loading server status" />;
   }
 
   if (!data) return null;
@@ -449,7 +449,7 @@ export default function ServerHealthPage() {
           <div className="flex-1 overflow-y-auto p-0 bg-[#0a0a0a]">
             {loadingDeployments ? (
               <div className="h-full flex items-center justify-center">
-                <LoadingSpinner size={40} />
+                <LoadingAnimation fullScreen={false} label="" scale={0.5} />
               </div>
             ) : (
               <div className="w-full">
@@ -531,7 +531,7 @@ export default function ServerHealthPage() {
           <div className="flex-1 overflow-y-auto p-4 bg-[#0a0a0a]">
             {loadingLogs ? (
               <div className="h-full flex items-center justify-center">
-                <LoadingSpinner size={40} />
+                <LoadingAnimation fullScreen={false} label="" scale={0.5} />
               </div>
             ) : (
               <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap break-words">

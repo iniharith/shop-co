@@ -8,7 +8,7 @@ import { Heading } from "@/components/ui/heading";
 import { Separator } from "@/components/ui/separator";
 import TasksManager from "@/components/global/tasks/tasksManager";
 import { Suspense } from "react";
-import { BouncySkeleton } from "@/components/global/skeleton/BouncySkeleton";
+import LoadingAnimation from "@/components/global/LoadingAnimation";
 export default function Page() {
   return (
     <PageContainer scrollable={true}>
@@ -20,7 +20,7 @@ export default function Page() {
           />
         </div>
         <Separator />
-        <Suspense fallback={<BouncySkeleton text="Loading tasks..." />}>
+        <Suspense fallback={<LoadingAnimation fullScreen={false} label="Loading tasks" />}>
           <TasksManager />
         </Suspense>
       </div>

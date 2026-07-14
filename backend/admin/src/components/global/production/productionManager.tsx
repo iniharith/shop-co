@@ -27,7 +27,7 @@ import AxiosInstance from "@/utils/axios";
 import { uploadToS3Directly } from "@/utils/s3Upload";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { PageLoader } from "@/components/ui/loading-spinner";
+import LoadingAnimation from "@/components/global/LoadingAnimation";
 
 const categories = [
   "ALL",
@@ -480,7 +480,7 @@ export default function ProductionManager() {
     );
   };
 
-  if (isPending) return <PageLoader label="Loading files…" />;
+  if (isPending) return <LoadingAnimation fullScreen={false} label="Loading files" />;
 
   return (
     <div className="space-y-6 bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">

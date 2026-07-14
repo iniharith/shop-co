@@ -12,7 +12,7 @@ import { useTasks } from "@/hooks/useTasks";
 import { Loader2, Printer, LayoutGrid } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import LoadingAnimation from "@/components/global/LoadingAnimation";
 
 export default function PrintDraftsPage() {
   const { data: filesData, isLoading: filesLoading } = useAllFiles();
@@ -54,9 +54,7 @@ export default function PrintDraftsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full flex-1 items-center justify-center bg-transparent">
-        <LoadingSpinner size={40} />
-      </div>
+      <LoadingAnimation fullScreen={false} label="Loading print drafts" />
     );
   }
 

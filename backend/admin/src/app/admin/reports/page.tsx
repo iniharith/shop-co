@@ -9,7 +9,7 @@ import { useUsers } from "@/hooks/useUsers";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import LoadingAnimation from "@/components/global/LoadingAnimation";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -58,7 +58,7 @@ export default function ReportsPage() {
   }, [selectedUserId, fetchReport]);
 
   if (usersLoading) {
-    return <div className="min-h-screen bg-transparent flex items-center justify-center"><LoadingSpinner size={40} /></div>;
+    return <LoadingAnimation fullScreen={false} label="Loading" />;
   }
 
   return (
@@ -117,9 +117,7 @@ export default function ReportsPage() {
       )}
 
       {loading && selectedUserId && (
-        <div className="flex items-center justify-center h-64">
-          <LoadingSpinner size={40} />
-        </div>
+        <LoadingAnimation fullScreen={false} label="Loading report" />
       )}
 
       {!loading && reportData && (

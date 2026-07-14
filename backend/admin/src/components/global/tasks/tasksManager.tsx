@@ -26,7 +26,7 @@ import TaskModal from "./TaskModal";
 // task detail modal, anywhere else) uses the exact same persistent per-ID
 // color instead of each component deriving its own.
 import { getUserColor, AssigneeTag } from "@/lib/userColor";
-import { PageLoader } from "@/components/ui/loading-spinner";
+import LoadingAnimation from "@/components/global/LoadingAnimation";
 
 // ─── Due Date Display ─────────────────────────────────────────────────────────
 const DueDateDisplay = ({ task, updateTask, className }: { task: any; updateTask: any; className?: string }) => {
@@ -242,7 +242,7 @@ export default function TasksManager() {
     sortedTasks.filter((t: any) => t.status === status).forEach((t: any) => listOrderedIds.push(t._id));
   });
 
-  if (isPending) return <PageLoader label="Loading tasks…" />;
+  if (isPending) return <LoadingAnimation fullScreen={false} label="Loading tasks" />;
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-full min-w-0 overflow-hidden px-1">
