@@ -28,6 +28,7 @@ import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import AxiosInstance from "@/utils/axios";
 import { uploadToS3Directly } from "@/utils/s3Upload";
+import { BouncySkeleton } from "@/components/global/skeleton/BouncySkeleton";
 
 const categories = [
   "ALL",
@@ -538,7 +539,7 @@ export default function ArtworksManager() {
       </div>
     );
   };
-if (isPending) return <div className="flex justify-center p-8"><p>Loading artworks...</p></div>;
+  if (isPending) return <BouncySkeleton text="Loading artworks..." />;
 
   return (
     <div className="space-y-6 bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">

@@ -1,16 +1,12 @@
+"use client";
 import React from "react";
-import { motion } from "framer-motion";
 
-interface BouncySkeletonProps {
-  text?: string;
-}
-
-export function BouncySkeleton({ text = "SYSTEM LOADING" }: BouncySkeletonProps) {
+export function AILoader({ text = "SYSTEM LOADING" }: { text?: string }) {
   return (
     <div className="absolute inset-0 z-[50] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm overflow-hidden min-h-[400px]">
       <div className="relative flex items-center justify-center w-64 h-64 scale-75 md:scale-100">
         {/* Outer glowing radar ring */}
-        <div className="absolute inset-0 rounded-full border border-primary/20 bg-primary/5 shadow-[0_0_50px_rgba(var(--primary),0.1)]"></div>
+        <div className="absolute inset-0 rounded-full border border-primary/20 bg-primary/5 shadow-[0_0_50px_rgba(16,185,129,0.1)]"></div>
         
         {/* Rotating outer dashed ring */}
         <svg className="absolute w-full h-full animate-[spin_10s_linear_infinite] opacity-50" viewBox="0 0 100 100">
@@ -40,11 +36,11 @@ export function BouncySkeleton({ text = "SYSTEM LOADING" }: BouncySkeletonProps)
         <div className="absolute w-1/2 h-1/2 rounded-full border-2 border-primary/40 animate-ping opacity-30"></div>
 
         {/* Central glowing core */}
-        <div className="relative w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center shadow-[0_0_30px_var(--primary)] backdrop-blur-sm border border-primary/50 overflow-hidden group">
+        <div className="relative w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center shadow-[0_0_30px_var(--theme-primary)] backdrop-blur-sm border border-primary/50 overflow-hidden group">
           {/* Scanning line inside core */}
-          <div className="absolute top-0 left-0 w-full h-[2px] bg-primary shadow-[0_0_10px_var(--primary)] animate-[scan_2s_ease-in-out_infinite]"></div>
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-primary shadow-[0_0_10px_var(--theme-primary)] animate-[scan_2s_ease-in-out_infinite]"></div>
           
-          <div className="w-6 h-6 rounded-full bg-primary shadow-[0_0_15px_var(--primary)] animate-pulse"></div>
+          <div className="w-6 h-6 rounded-full bg-primary shadow-[0_0_15px_var(--theme-primary)] animate-pulse"></div>
         </div>
         
         {/* Floating nodes/data points */}
