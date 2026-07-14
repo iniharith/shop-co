@@ -23,7 +23,7 @@ const t = {
     phoneLabel: "Phone Number",
     phonePlaceholder: "e.g. +60123456789",
     itemLabel: "Item",
-    itemPlaceholder: "e.g. Business Card, Banner",
+    itemPlaceholder: "Frame Size, Card, etc",
     uploadArtworkTitle: "Upload your artwork",
     dragDrop: "Drag and drop or click to browse files",
     selectFiles: "Select Files",
@@ -58,7 +58,7 @@ const t = {
     phoneLabel: "Nombor Telefon",
     phonePlaceholder: "cth. +60123456789",
     itemLabel: "Item",
-    itemPlaceholder: "cth. Kad Perniagaan, Banner",
+    itemPlaceholder: "Saiz Bingkai, Kad, dll",
     uploadArtworkTitle: "Muat naik karya seni anda",
     dragDrop: "Seret dan lepas atau klik untuk menyemak imbas fail",
     selectFiles: "Pilih Fail",
@@ -384,21 +384,7 @@ export default function CustomerUploadPortal() {
         </button>
       </div>
 
-        
-      <div className="absolute top-4 right-4 flex bg-white/5 rounded-full p-1 border border-white/10 z-50">
-        <button 
-          onClick={() => setLang('en')}
-          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${lang === 'en' ? 'bg-yellow-500 text-black' : 'text-white/60 hover:text-white'}`}
-        >
-          EN
-        </button>
-        <button 
-          onClick={() => setLang('ms')}
-          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${lang === 'ms' ? 'bg-yellow-500 text-black' : 'text-white/60 hover:text-white'}`}
-        >
-          MS
-        </button>
-      </div>
+
 
         <div className="mb-8 flex items-center justify-center gap-2">
           <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded" onError={(e) => e.currentTarget.style.display = 'none'} />
@@ -443,6 +429,20 @@ export default function CustomerUploadPortal() {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4">
+      <div className="absolute top-4 right-4 flex bg-white/5 rounded-full p-1 border border-white/10 z-50">
+        <button 
+          onClick={() => setLang('en')}
+          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${lang === 'en' ? 'bg-yellow-500 text-black' : 'text-white/60 hover:text-white'}`}
+        >
+          EN
+        </button>
+        <button 
+          onClick={() => setLang('ms')}
+          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${lang === 'ms' ? 'bg-yellow-500 text-black' : 'text-white/60 hover:text-white'}`}
+        >
+          MS
+        </button>
+      </div>
       <div className="mb-8 flex items-center justify-center gap-2">
         <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded" onError={(e) => e.currentTarget.style.display = 'none'} />
         <h1 className="text-xl font-bold tracking-tight">Kampung Cetak <span className="text-white/40 font-normal">· {langDict.fileUploadTitle}</span></h1>
@@ -453,7 +453,7 @@ export default function CustomerUploadPortal() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">Order ID <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-white/80">{langDict.orderIdLabel} <span className="text-red-500">*</span></label>
               <Input 
                 placeholder={langDict.orderIdPlaceholder} 
                 value={orderId}
