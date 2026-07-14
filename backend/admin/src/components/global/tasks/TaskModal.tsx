@@ -572,7 +572,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                           <Avatar className="w-8 h-8 border border-border/50 bg-muted shrink-0">
                             <AvatarFallback className="text-xs">{comment.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
-                          <div className={`flex-1 rounded-xl rounded-tl-none p-3 border border-border/50 ${comment.pinned ? 'bg-yellow-100/50 dark:bg-yellow-500/10 dark:border-yellow-500/20 shadow-md' : 'bg-muted/40 dark:bg-muted/20'}`}>
+                          <div className={`flex-1 rounded-xl rounded-tl-none p-3 ${comment.pinned ? 'border border-yellow-500/30 dark:border-yellow-500/20' : ''}`}>
                             <div className="flex justify-between items-baseline mb-1">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold">{comment.userName}</span>
