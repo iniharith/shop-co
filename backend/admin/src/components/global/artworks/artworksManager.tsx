@@ -97,10 +97,14 @@ export default function ArtworksManager() {
   const filteredFiles = useMemo(() => {
     let result = allFiles;
     const tasks = (tasksResponse as any)?.tasks || [];
+    
+    // Create a task map for O(1) lookup
+    const taskMap = new Map(tasks.map((t: any) => [t._id, t]));
+
     if (activeTab !== "ALL") {
       result = result.filter((f: any) => {
         if (f.category === 'TASK' && f.taskId) {
-          const task = tasks.find((t: any) => t._id === f.taskId);
+          const task = taskMap.get(f.taskId);
           return task?.category === activeTab;
         }
         return f.category === activeTab;
@@ -126,6 +130,13 @@ export default function ArtworksManager() {
     const orders = ordersResponse?.orders || [];
     const users = usersResponse?.users || [];
     const tasks = (tasksResponse as any)?.tasks || [];
+    
+    // Create Maps for O(1) lookups to prevent massive UI freezes
+    const taskMap = new Map(tasks.map((t: any) => [t._id, t]));
+    const orderMap = new Map(orders.map((o: any) => [o._id, o]));
+    const userMap = new Map(users.map((u: any) => [u._id?.toString(), u]));
+    const orderUserIdMap = new Map(orders.map((o: any) => [o.userId?.toString(), o._id]));
+
     const groups: Record<string, any[]> = {};
     filteredFiles.forEach((file: any) => {
       let groupName = "Unassigned";
@@ -136,7 +147,7 @@ export default function ArtworksManager() {
       let taskIdStr = "";
 
       if ((file.category === 'TASK' || file.category === 'CUSTOMER_UPLOAD') && file.taskId) {
-        const task = tasks.find((t: any) => t._id === file.taskId);
+        const task = taskMap.get(file.taskId);
         groupName = task ? task.title : "Deleted Task";
         orderIdStr = task?.orderId || "";
         taskIdStr = file.taskId;
@@ -149,7 +160,7 @@ export default function ArtworksManager() {
         if (file._shareFolderName) {
           groupName = file._shareFolderName;
         } else {
-          const user = users.find((u: any) => u._id?.toString() === file.userId?.toString());
+          const user = userMap.get(file.userId?.toString());
           groupName = user?.name || file.userId;
         }
 
@@ -157,8 +168,8 @@ export default function ArtworksManager() {
           orderIdStr = file.orderId;
         } else {
           // fallback to see if we can find an order matching this file's userId
-          const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString());
-          if (order) orderIdStr = order._id;
+          const mappedOrderId = orderUserIdMap.get(file.userId?.toString());
+          if (mappedOrderId) orderIdStr = mappedOrderId;
         }
       }
       
@@ -166,9 +177,8 @@ export default function ArtworksManager() {
 
       // Only apply order-status exclusion for non-TASK files
       // Task files are already handled by task status above — don't double-exclude them
-      // just because the linked order moved to IN_PRODUCTION/SHIPPED etc.
       if (!isTaskFile && orderIdStr) {
-          const order = orders.find((o: any) => o._id === orderIdStr);
+          const order = orderMap.get(orderIdStr);
           if (order && ((order as any).orderStatus === 'IN_PRODUCTION' || (order as any).orderStatus === 'SHIPPED' || (order as any).orderStatus === 'DELIVERED' || (order as any).orderStatus === 'CANCELLED' || (order as any).orderStatus === 'FAILED')) {
               shouldExclude = true;
           }
