@@ -8,6 +8,64 @@ const axios = require('axios');
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
 let authToken = null;
 
+// --- LOG INTERCEPTION & API SERVER ---
+const express = require('express');
+const app = express();
+const LOG_PORT = 5002;
+
+// Store the last 1000 logs in memory
+const MAX_LOGS = 1000;
+const capturedLogs = [];
+
+function storeLog(level, ...args) {
+    const timestamp = new Date().toISOString();
+    const message = args.map(a => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' ');
+    capturedLogs.push({ timestamp, level, message });
+    if (capturedLogs.length > MAX_LOGS) {
+        capturedLogs.shift();
+    }
+}
+
+// Override console methods
+const originalLog = console.log;
+const originalError = console.error;
+const originalWarn = console.warn;
+const originalInfo = console.info;
+
+console.log = function(...args) {
+    storeLog('log', ...args);
+    originalLog.apply(console, args);
+};
+console.error = function(...args) {
+    storeLog('error', ...args);
+    originalError.apply(console, args);
+};
+console.warn = function(...args) {
+    storeLog('warn', ...args);
+    originalWarn.apply(console, args);
+};
+console.info = function(...args) {
+    storeLog('info', ...args);
+    originalInfo.apply(console, args);
+};
+
+// Enable CORS so the admin dashboard can fetch logs
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    next();
+});
+
+// API endpoint to fetch logs
+app.get('/api/logs', (req, res) => {
+    res.json({ logs: capturedLogs });
+});
+
+app.listen(LOG_PORT, () => {
+    originalLog(`[SYSTEM] Log API Server running on port ${LOG_PORT}`);
+});
+// ------------------------------------
+
 // --- AUTHENTICATE BOT ---
 async function loginToBackend() {
     try {

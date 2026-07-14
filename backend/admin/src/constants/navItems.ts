@@ -106,6 +106,14 @@ export const AdminNavItems: NavItem[] = [
                 url: '/admin/aws-media',
             }
         ]
+    },
+    {
+        title: 'WhatsApp AI Logs',
+        url: '/admin/whatsapp-logs',
+        icon: 'server',
+        shortcut: ['w', 'w'],
+        isActive: false,
+        items: []
     }
 ];
 
@@ -121,6 +129,11 @@ export const roleByNavItems = (role: string) => {
     } else if (role !== "sysadmin" && role !== "admin" && role !== "boss") {
         // Only sysadmin, admin, boss can see Server Status and Reports
         allowedTitles = allowedTitles.filter(title => title !== 'Server Status' && title !== 'Reports');
+    }
+
+    // Only SYSADMIN can see WhatsApp AI Logs
+    if (role !== "sysadmin") {
+        allowedTitles = allowedTitles.filter(title => title !== 'WhatsApp AI Logs');
     }
 
     return AdminNavItems.filter(item => allowedTitles.includes(item.title));
