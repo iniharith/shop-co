@@ -63,7 +63,7 @@ const t = {
     dragDrop: "Seret dan lepas atau klik untuk menyemak imbas fail",
     selectFiles: "Pilih Fail",
     filesSelected: "Fail Dipilih",
-    submitArtwork: "Hantar Karya Seni",
+    submitArtwork: "Hantar Fail Anda",
     uploadingCloud: "Memuat naik terus ke awan...",
     terms1: "Dengan memuat naik, anda bersetuju bahawa karya seni ini adalah muktamad dan sedia untuk pengeluaran.",
     terms2: "Untuk privasi dan keselamatan anda, semua fail yang dimuat naik akan dipadam secara kekal secara automatik selepas 30 hari.",
@@ -369,27 +369,27 @@ export default function CustomerUploadPortal() {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4">
         
-      <div className="absolute top-4 right-4 flex bg-white/5 rounded-full p-1 border border-white/10 z-50">
-        <button 
-          onClick={() => setLang('en')}
-          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${lang === 'en' ? 'bg-yellow-500 text-black' : 'text-white/60 hover:text-white'}`}
-        >
-          EN
-        </button>
-        <button 
-          onClick={() => setLang('ms')}
-          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${lang === 'ms' ? 'bg-yellow-500 text-black' : 'text-white/60 hover:text-white'}`}
-        >
-          MS
-        </button>
-      </div>
-
-
-
-        <div className="mb-8 flex items-center justify-center gap-2">
+      <div className="mb-8 flex flex-col items-center justify-center gap-4">
+        <div className="flex items-center justify-center gap-2">
           <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded" onError={(e) => e.currentTarget.style.display = 'none'} />
           <h1 className="text-xl font-bold tracking-tight">Kampung Cetak</h1>
         </div>
+        
+        <div className="flex bg-white/5 rounded-full p-1 border border-white/10 z-50">
+          <button 
+            onClick={() => setLang('en')}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${lang === 'en' ? 'bg-yellow-500 text-black' : 'text-white/60 hover:text-white'}`}
+          >
+            EN
+          </button>
+          <button 
+            onClick={() => setLang('ms')}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${lang === 'ms' ? 'bg-yellow-500 text-black' : 'text-white/60 hover:text-white'}`}
+          >
+            MS
+          </button>
+        </div>
+      </div>
         
         <div className="max-w-md w-full bg-[#111] border border-white/10 rounded-2xl p-8 text-center shadow-2xl">
           <div className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -429,23 +429,26 @@ export default function CustomerUploadPortal() {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4">
-      <div className="absolute top-4 right-4 flex bg-white/5 rounded-full p-1 border border-white/10 z-50">
-        <button 
-          onClick={() => setLang('en')}
-          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${lang === 'en' ? 'bg-yellow-500 text-black' : 'text-white/60 hover:text-white'}`}
-        >
-          EN
-        </button>
-        <button 
-          onClick={() => setLang('ms')}
-          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${lang === 'ms' ? 'bg-yellow-500 text-black' : 'text-white/60 hover:text-white'}`}
-        >
-          MS
-        </button>
-      </div>
-      <div className="mb-8 flex items-center justify-center gap-2">
-        <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded" onError={(e) => e.currentTarget.style.display = 'none'} />
-        <h1 className="text-xl font-bold tracking-tight">Kampung Cetak <span className="text-white/40 font-normal">· {langDict.fileUploadTitle}</span></h1>
+      <div className="mb-8 flex flex-col items-center justify-center gap-4">
+        <div className="flex items-center justify-center gap-2">
+          <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded" onError={(e) => e.currentTarget.style.display = 'none'} />
+          <h1 className="text-xl font-bold tracking-tight">Kampung Cetak <span className="text-white/40 font-normal">· {langDict.fileUploadTitle}</span></h1>
+        </div>
+        
+        <div className="flex bg-white/5 rounded-full p-1 border border-white/10 z-50">
+          <button 
+            onClick={() => setLang('en')}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${lang === 'en' ? 'bg-yellow-500 text-black' : 'text-white/60 hover:text-white'}`}
+          >
+            EN
+          </button>
+          <button 
+            onClick={() => setLang('ms')}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${lang === 'ms' ? 'bg-yellow-500 text-black' : 'text-white/60 hover:text-white'}`}
+          >
+            MS
+          </button>
+        </div>
       </div>
 
       <div className="max-w-xl w-full bg-[#111] border border-white/10 rounded-2xl p-6 shadow-2xl overflow-hidden relative">
