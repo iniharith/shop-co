@@ -18,7 +18,7 @@ export default function WhatsAppLogsPage() {
 
   const fetchLogs = async () => {
     try {
-      const res = await fetch("http://localhost:5002/api/logs");
+      const res = await fetch("http://56.68.8.52:5002/api/logs");
       if (!res.ok) throw new Error("Failed to fetch logs");
       const json = await res.json();
       setLogs(json.logs || []);
