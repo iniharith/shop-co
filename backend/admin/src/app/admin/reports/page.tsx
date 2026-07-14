@@ -9,6 +9,7 @@ import { useUsers } from "@/hooks/useUsers";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -57,7 +58,7 @@ export default function ReportsPage() {
   }, [selectedUserId, fetchReport]);
 
   if (usersLoading) {
-    return <div className="min-h-screen bg-transparent flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>;
+    return <div className="min-h-screen bg-transparent flex items-center justify-center"><LoadingSpinner size={40} /></div>;
   }
 
   return (
@@ -117,7 +118,7 @@ export default function ReportsPage() {
 
       {loading && selectedUserId && (
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <LoadingSpinner size={40} />
         </div>
       )}
 

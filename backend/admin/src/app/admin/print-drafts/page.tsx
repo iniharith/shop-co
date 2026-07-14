@@ -4,7 +4,7 @@
  */
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { useAllFiles } from "@/hooks/useAdminDashboard";
 import { useOrders } from "@/hooks/useOrder";
 import { useUsers } from "@/hooks/useUsers";
@@ -12,33 +12,28 @@ import { useTasks } from "@/hooks/useTasks";
 import { Loader2, Printer, LayoutGrid } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { BouncySkeleton } from "@/components/global/skeleton/BouncySkeleton";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function PrintDraftsPage() {
-  const { data: filesData, isPending: filesLoading } = useAllFiles();
-  const { data: tasksResponse, isPending: tasksLoading } = useTasks();
-  const { data: ordersResponse, isPending: ordersLoading } = useOrders();
-  const { data: usersResponse, isPending: usersLoading } = useUsers();
+  const { data: filesData, isLoading: filesLoading } = useAllFiles();
+  const { data: tasksResponse, isLoading: tasksLoading } = useTasks();
+  const { data: ordersResponse, isLoading: ordersLoading } = useOrders();
+  const { data: usersResponse, isLoading: usersLoading } = useUsers();
   
+  const [drafts, setDrafts] = useState<any[]>([]);
   const [itemsPerPage, setItemsPerPage] = useState<number>(4);
 
-  const tasks = (tasksResponse as any)?.tasks || (tasksResponse as any) || [];
-  const orders = (ordersResponse as any)?.orders || (ordersResponse as any)?.data || [];
-  const users = (usersResponse as any)?.users || (usersResponse as any)?.data || [];
+  const tasks = tasksResponse?.tasks || [];
+  const orders = ordersResponse?.data || [];
+  const users = usersResponse?.data || [];
 
   const isLoading = filesLoading || tasksLoading || ordersLoading || usersLoading;
 
-  const drafts = useMemo(() => {
-    if (!filesData) return [];
-    
-    let allFiles: any[] = [];
-    if (Array.isArray(filesData)) {
-      allFiles = filesData;
-    } else if ((filesData as any).data && Array.isArray((filesData as any).data)) {
-      allFiles = (filesData as any).data;
+  useEffect(() => {
+    if (filesData?.data) {
+      const allDrafts = filesData.data.filter((f: any) => f.tag === 'draft');
+      setDrafts(allDrafts);
     }
-    
-    return allFiles.filter((f: any) => f.tag === 'draft');
   }, [filesData]);
 
   const getFolderName = (draft: any) => {
@@ -58,7 +53,11 @@ export default function PrintDraftsPage() {
   };
 
   if (isLoading) {
-    return <BouncySkeleton text="Loading print drafts" />;
+    return (
+      <div className="flex h-full flex-1 items-center justify-center bg-transparent">
+        <LoadingSpinner size={40} />
+      </div>
+    );
   }
 
   if (drafts.length === 0) {

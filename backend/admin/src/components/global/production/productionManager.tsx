@@ -26,8 +26,8 @@ import { useSession } from "next-auth/react";
 import AxiosInstance from "@/utils/axios";
 import { uploadToS3Directly } from "@/utils/s3Upload";
 import { useSearchParams } from "next/navigation";
-import { BouncySkeleton } from "@/components/global/skeleton/BouncySkeleton";
 import { useQuery } from "@tanstack/react-query";
+import { PageLoader } from "@/components/ui/loading-spinner";
 
 const categories = [
   "ALL",
@@ -41,22 +41,16 @@ const categories = [
   "FOOD PACKAGING"
 ];
 
+const ALL_STATUSES = ["IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING"];
+
 export default function ProductionManager() {
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
   const searchParams = useSearchParams();
-  const allFilesQuery = useAllFiles();
-  const response = allFilesQuery.data;
-  const isPending = allFilesQuery.isPending;
-  const refetch = allFilesQuery.refetch;
-  const isFetching = allFilesQuery.isFetching;
-  const ordersQuery = useOrders();
-  const ordersResponse = ordersQuery.data;
-  const tasksQuery = useTasks();
-  const tasksResponse = tasksQuery.data;
+  const { data: response, isPending, refetch, isFetching } = useAllFiles();
+  const { data: tasksResponse } = useTasks({ statuses: ALL_STATUSES.join(',') });
   const { mutate: updateTask } = useUpdateTask();
-  const usersQuery = useUsers();
-  const usersResponse = usersQuery.data;
+  const { data: usersResponse } = useUsers();
   
   const { data: virtualFoldersResponse } = useQuery({
     queryKey: ["virtualFolders"],
@@ -193,7 +187,7 @@ export default function ProductionManager() {
         orderStatus: orderStatus,
         files: files.sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
       };
-    }).sort((a, b) => String(a.folderName || "").localeCompare(String(b.folderName || "")));
+    }).sort((a, b) => a.folderName.localeCompare(b.folderName));
   }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab, activeSubTab]);
 
   React.useEffect(() => {
@@ -486,7 +480,7 @@ export default function ProductionManager() {
     );
   };
 
-  if (isPending) return <BouncySkeleton text="Loading files" />;
+  if (isPending) return <PageLoader label="Loading files…" />;
 
   return (
     <div className="space-y-6 bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">
@@ -589,10 +583,10 @@ export default function ProductionManager() {
           No files in production right now.
         </div>
       ) : (
-        <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-220px)] min-h-[600px] min-w-0 w-full">
+        <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-220px)] min-h-[600px]">
           
           {/* LEFT PANEL (MASTER) */}
-          <div className="w-full lg:w-[320px] xl:w-[380px] shrink-0 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
+          <div className="w-full lg:w-1/3 xl:w-1/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
             <div className="p-4 border-b bg-muted/30 font-semibold text-sm flex justify-between items-center shrink-0">
               <span>Task Folders</span>
               <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">{groupedFiles.length}</span>
@@ -634,7 +628,7 @@ export default function ProductionManager() {
           </div>
 
           {/* RIGHT PANEL (DETAIL) */}
-          <div className="flex-1 min-w-0 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
+          <div className="w-full lg:w-2/3 xl:w-3/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
             {selectedFolder ? (() => {
               const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId || ""}` === selectedFolder);
               if (!activeGroup) {
@@ -658,13 +652,13 @@ export default function ProductionManager() {
               const activeOrder = (!activeGroup.isTask && activeGroup.orderId) ? orders.find((o: any) => o._id === activeGroup.orderId || o.orderId === activeGroup.orderId) : null;
               const activeUser = activeTask?.assignee ? users.find((u: any) => u._id === activeTask.assignee) : null;
               
-              const descriptionText = activeTask?.description ? activeTask.description : (activeOrder?.items && Array.isArray(activeOrder.items) ? activeOrder.items.map((item: any) => `${item.name} (${item.quantity}x)`).join('\n') : "No description provided.");
+              const descriptionText = activeTask?.description ? activeTask.description : (activeOrder?.items ? activeOrder.items.map((item: any) => `${item.name} (${item.quantity}x)`).join('\n') : "No description provided.");
               const assigneeName = activeUser ? (activeUser.name || activeUser.email) : "Unassigned";
               const categoryName = activeTask?.category ? activeTask.category.replace(/_/g, ' ') : "N/A";
               const dueDate = activeTask?.dueDate ? format(new Date(activeTask.dueDate), 'dd MMM yyyy') : "N/A";
 
               return (
-                <div className="flex flex-col h-full min-w-0">
+                <div className="flex flex-col h-full">
                   <div className="p-4 sm:p-6 border-b bg-muted/10 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center shrink-0">
                     <div className="flex-1 min-w-0">
                       <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2 truncate">
@@ -746,8 +740,8 @@ export default function ProductionManager() {
                   </div>
 
                   {/* Task / Order Details Card */}
-                  <div className="px-4 sm:px-6 py-4 border-b bg-card min-w-0">
-                    <div className="flex flex-col xl:flex-row gap-6 min-w-0">
+                  <div className="px-4 sm:px-6 py-4 border-b bg-card">
+                    <div className="flex flex-col xl:flex-row gap-6">
                       {/* Description */}
                       <div className="flex-1 min-w-0">
                         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Description</h3>
@@ -795,7 +789,7 @@ export default function ProductionManager() {
                     </div>
                   </div>
 
-                  <div className="p-4 sm:p-6 flex-1 overflow-y-auto bg-muted/5 relative min-w-0">
+                  <div className="p-4 sm:p-6 flex-1 overflow-y-auto bg-muted/5 relative">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
                         {activeSubFolderId ? "Subfolder Contents" : `${activeGroup.files.length} Attachments`}

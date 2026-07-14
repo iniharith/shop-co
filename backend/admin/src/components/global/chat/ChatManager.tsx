@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Check, ChevronsUpDown, Plus, Send, User as User, MessageCircle, Trash2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function ChatManager() {
   const { data: session } = useSession();
@@ -157,7 +158,7 @@ export default function ChatManager() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {convLoading && <div className="p-4 text-sm text-muted-foreground text-center">Loading...</div>}
+          {convLoading && <div className="p-4 flex justify-center"><LoadingSpinner size={24} /></div>}
           {!convLoading && filteredConversations.length === 0 && (
             <div className="p-8 text-center text-muted-foreground text-sm">No conversations found</div>
           )}

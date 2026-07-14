@@ -22,6 +22,7 @@ interface S3Object {
 }
 
 import { useSession } from "next-auth/react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function AwsMediaPage() {
   const { data: session, status } = useSession();
@@ -100,7 +101,7 @@ export default function AwsMediaPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+            <div className="flex justify-center p-12"><LoadingSpinner size={40} /></div>
           ) : (
             <div className="rounded-md border">
               <table className="w-full text-sm">

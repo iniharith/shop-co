@@ -8,6 +8,7 @@ import { useParcelStats, useFileStats, useOnlineUsers, useFolders } from "@/hook
 import { useOrders } from "@/hooks/useOrder";
 import { useTasks } from "@/hooks/useTasks";
 import { Box, Truck, FileText, CircleCheckBig, CircleAlert, RefreshCw, Loader2, Package, Archive, Layers, Users, FolderOpen, ClipboardList } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function DashboardOverview() {
   const { data: orderData, isPending: ordersPending, refetch: refetchOrders, isFetching: isFetchingOrders } = useOrders();
@@ -30,7 +31,7 @@ export default function DashboardOverview() {
   if (ordersPending || parcelsPending || filesPending || tasksPending || foldersPending) {
     return (
       <div className="flex justify-center items-center h-[50vh]">
-        <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
+        <LoadingSpinner size={44} />
       </div>
     );
   }

@@ -12,7 +12,7 @@ import { useTasks } from "@/hooks/useTasks";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2, Upload, Loader2 } from "lucide-react";
+import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2, Upload } from "lucide-react";
 import { forceDownload } from "@/lib/utils";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import { toast } from "sonner";
@@ -28,7 +28,7 @@ import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import AxiosInstance from "@/utils/axios";
 import { uploadToS3Directly } from "@/utils/s3Upload";
-import { BouncySkeleton } from "@/components/global/skeleton/BouncySkeleton";
+import { PageLoader } from "@/components/ui/loading-spinner";
 
 const categories = [
   "ALL",
@@ -50,7 +50,7 @@ export default function ArtworksManager() {
   const { data: response, isPending, refetch, isFetching: isFetchingFiles } = useAllFiles();
   const { data: ordersResponse, isFetching: isFetchingOrders } = useOrders();
   const { data: usersResponse, isPending: usersPending } = useUsers();
-  const { data: tasksResponse, isPending: tasksPending } = useTasks({ statuses: ALL_STATUSES.join(','), days: 36500 });
+  const { data: tasksResponse, isPending: tasksPending } = useTasks({ statuses: ALL_STATUSES.join(',') });
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
   const searchParams = useSearchParams();
 
@@ -78,7 +78,7 @@ export default function ArtworksManager() {
   const [previewList, setPreviewList] = useState<any[]>([]);
 
   const { data: virtualFoldersResponse, isPending: foldersPending } = useFolders();
-  const virtualFolders = (virtualFoldersResponse as any)?.data || [];
+  const virtualFolders = virtualFoldersResponse?.data || [];
   const { mutate: createFolderMutate, isPending: isCreatingFolder } = useCreateFolder();
   const { mutate: deleteFolderMutate, isPending: isDeletingFolder } = useDeleteFolder();
   const { mutate: moveFileMutate, isPending: isMovingFile } = useMoveFile();
@@ -98,14 +98,10 @@ export default function ArtworksManager() {
   const filteredFiles = useMemo(() => {
     let result = allFiles;
     const tasks = (tasksResponse as any)?.tasks || [];
-    
-    // Create a task map for O(1) lookup
-    const taskMap = new Map(tasks.map((t: any) => [t._id, t]));
-
     if (activeTab !== "ALL") {
       result = result.filter((f: any) => {
-        if ((f.category === 'TASK' || f.category === 'CUSTOMER_UPLOAD') && f.taskId) {
-          const task = taskMap.get(f.taskId);
+        if (f.category === 'TASK' && f.taskId) {
+          const task = tasks.find((t: any) => t._id === f.taskId);
           return task?.category === activeTab;
         }
         return f.category === activeTab;
@@ -131,13 +127,6 @@ export default function ArtworksManager() {
     const orders = ordersResponse?.orders || [];
     const users = usersResponse?.users || [];
     const tasks = (tasksResponse as any)?.tasks || [];
-    
-    // Create Maps for O(1) lookups to prevent massive UI freezes
-    const taskMap = new Map(tasks.map((t: any) => [t._id, t]));
-    const orderMap = new Map(orders.map((o: any) => [o._id, o]));
-    const userMap = new Map(users.map((u: any) => [u._id?.toString(), u]));
-    const orderUserIdMap = new Map(orders.map((o: any) => [o.userId?.toString(), o._id]));
-
     const groups: Record<string, any[]> = {};
     filteredFiles.forEach((file: any) => {
       let groupName = "Unassigned";
@@ -148,7 +137,7 @@ export default function ArtworksManager() {
       let taskIdStr = "";
 
       if (file.category === 'TASK' && file.taskId) {
-        const task = taskMap.get(file.taskId);
+        const task = tasks.find((t: any) => t._id === file.taskId);
         groupName = task ? task.title : "Deleted Task";
         orderIdStr = task?.orderId || "";
         taskIdStr = file.taskId;
@@ -161,7 +150,7 @@ export default function ArtworksManager() {
         if (file._shareFolderName) {
           groupName = file._shareFolderName;
         } else {
-          const user = userMap.get(file.userId?.toString());
+          const user = users.find((u: any) => u._id?.toString() === file.userId?.toString());
           groupName = user?.name || file.userId;
         }
 
@@ -169,17 +158,18 @@ export default function ArtworksManager() {
           orderIdStr = file.orderId;
         } else {
           // fallback to see if we can find an order matching this file's userId
-          const mappedOrderId = orderUserIdMap.get(file.userId?.toString());
-          if (mappedOrderId) orderIdStr = mappedOrderId;
+          const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString());
+          if (order) orderIdStr = order._id;
         }
       }
       
-      const isTaskFile = (file.category === 'TASK' || file.category === 'CUSTOMER_UPLOAD') && file.taskId;
+      const isTaskFile = file.category === 'TASK' && file.taskId;
 
       // Only apply order-status exclusion for non-TASK files
       // Task files are already handled by task status above — don't double-exclude them
+      // just because the linked order moved to IN_PRODUCTION/SHIPPED etc.
       if (!isTaskFile && orderIdStr) {
-          const order = orderMap.get(orderIdStr);
+          const order = orders.find((o: any) => o._id === orderIdStr);
           if (order && ((order as any).orderStatus === 'IN_PRODUCTION' || (order as any).orderStatus === 'SHIPPED' || (order as any).orderStatus === 'DELIVERED' || (order as any).orderStatus === 'CANCELLED' || (order as any).orderStatus === 'FAILED')) {
               shouldExclude = true;
           }
@@ -196,9 +186,6 @@ export default function ArtworksManager() {
 
     // explicitly add empty folders for any Tasks that don't have files yet
     tasks.forEach((task: any) => {
-      // Customer Upload tasks have their files grouped by User Name, so skip creating empty task folders for them
-      if (task.title && task.title.startsWith('Artwork Upload:')) return;
-      
       if (task.status !== 'IN_PRODUCTION' && task.status !== 'CANCELLED' && task.status !== 'FAILED') {
         if (activeTab !== "ALL" && task.category !== activeTab) return; // respect active tab for empty folders
         const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id });
@@ -220,34 +207,13 @@ export default function ArtworksManager() {
     });
   }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab]);
 
-  // Track which folder we auto-opened via a ?folder= link, so we can keep
-  // re-syncing it while it's still empty (files may still be loading) without
-  // ever overriding a folder the user manually clicked into afterwards.
-  const autoOpenedFolderRef = React.useRef<string | null>(null);
-
-  // Arriving via a ?folder= link (e.g. from a "new artwork uploaded"
-  // notification) — force a fresh fetch instead of trusting whatever's
-  // cached, so we don't show a stale/empty snapshot from before the upload.
-  React.useEffect(() => {
-    if (searchParams.get("folder")) {
-      refetch();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   React.useEffect(() => {
     const folderQuery = searchParams.get("folder");
-    if (!folderQuery || groupedFiles.length === 0) return;
-    const match = groupedFiles.find(g => g.folderName === folderQuery);
-    if (!match) return;
-    const matchKey = `${match.folderName}-${match.orderId}-${match.taskId}`;
-
-    const nothingSelectedYet = !selectedFolder;
-    const stillWatchingOurOwnEmptyAutoOpen = selectedFolder === autoOpenedFolderRef.current && match.files.length > 0;
-
-    if (nothingSelectedYet || stillWatchingOurOwnEmptyAutoOpen) {
-      autoOpenedFolderRef.current = matchKey;
-      setSelectedFolder(matchKey);
+    if (folderQuery && groupedFiles.length > 0 && !selectedFolder) {
+      const match = groupedFiles.find(g => g.folderName === folderQuery);
+      if (match) {
+        setSelectedFolder(`${match.folderName}-${match.orderId}-${match.taskId}`);
+      }
     }
   }, [searchParams, groupedFiles, selectedFolder]);
 
@@ -463,7 +429,7 @@ export default function ArtworksManager() {
   const handleCopyLink = (e: React.MouseEvent, file: any) => {
     e.preventDefault();
     e.stopPropagation();
-    const shareLink = `${window.location.origin}/share/file/${file._id || file.id}`;
+    const shareLink = `${window.location.origin}/share/file/${file._id}`;
     navigator.clipboard.writeText(shareLink);
     toast.success("Share link copied to clipboard");
   };
@@ -539,7 +505,7 @@ export default function ArtworksManager() {
       </div>
     );
   };
-  if (isPending) return <BouncySkeleton text="Loading artworks..." />;
+if (isPending) return <PageLoader label="Loading artworks…" />;
 
   return (
     <div className="space-y-6 bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">
@@ -585,7 +551,7 @@ export default function ArtworksManager() {
             setUploadModalOpen(open);
             if (!open) {
               setUploadFiles(null);
-              setUploadData({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "", folderId: "" });
+              setUploadData({ category: "DIGITAL PRINTING", notes: "" });
             }
           }}>
             <Button onClick={() => {
@@ -667,7 +633,7 @@ export default function ArtworksManager() {
                 <Button variant="outline" onClick={() => {
                   setUploadModalOpen(false);
                   setUploadFiles(null);
-                  setUploadData({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "", folderId: "" });
+                  setUploadData({ category: "DIGITAL PRINTING", notes: "" });
                 }}>Cancel</Button>
                 <Button onClick={handleUploadSubmit}>Upload</Button>
               </DialogFooter>
@@ -912,15 +878,6 @@ export default function ArtworksManager() {
                           </div>
                         )}
                         {visibleFiles.length === 0 && visibleFolders.length === 0 ? (
-                          isFetching ? (
-                            <div className="flex flex-col items-center justify-center p-12 border border-dashed rounded-xl bg-muted/20">
-                              <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
-                              <h3 className="text-lg font-semibold text-foreground mb-2">Loading artwork...</h3>
-                              <p className="text-sm text-muted-foreground text-center max-w-sm">
-                                Still fetching the latest files for this folder.
-                              </p>
-                            </div>
-                          ) : (
                           <div className="flex flex-col items-center justify-center p-12 border border-dashed rounded-xl bg-muted/20">
                             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                               <Folder className="w-8 h-8 text-primary" />
@@ -939,7 +896,6 @@ export default function ArtworksManager() {
                               <Plus className="w-4 h-4 mr-2" /> Add Artwork
                             </Button>
                           </div>
-                          )
                         ) : (
                           <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3" : "flex flex-col gap-3"}>
                             {visibleFolders.map((folder: any) => (

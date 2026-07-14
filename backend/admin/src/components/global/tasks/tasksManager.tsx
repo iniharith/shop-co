@@ -12,7 +12,7 @@ import {
   ChevronDown, ChevronRight, Settings2, Check, RefreshCw,
   CheckCircle, Circle, ArrowDownUp, X, UserCheck, CalendarClock, Layers,
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -26,7 +26,7 @@ import TaskModal from "./TaskModal";
 // task detail modal, anywhere else) uses the exact same persistent per-ID
 // color instead of each component deriving its own.
 import { getUserColor, AssigneeTag } from "@/lib/userColor";
-import { BouncySkeleton } from "@/components/global/skeleton/BouncySkeleton";
+import { PageLoader } from "@/components/ui/loading-spinner";
 
 // ─── Due Date Display ─────────────────────────────────────────────────────────
 const DueDateDisplay = ({ task, updateTask, className }: { task: any; updateTask: any; className?: string }) => {
@@ -242,7 +242,7 @@ export default function TasksManager() {
     sortedTasks.filter((t: any) => t.status === status).forEach((t: any) => listOrderedIds.push(t._id));
   });
 
-  if (isPending) return <BouncySkeleton text="Loading tasks" />;
+  if (isPending) return <PageLoader label="Loading tasks…" />;
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-full min-w-0 overflow-hidden px-1">
@@ -338,8 +338,7 @@ export default function TasksManager() {
               </Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Create New Task</DialogTitle>
-                <DialogDescription className="sr-only">Dialog Content</DialogDescription></DialogHeader>
+              <DialogHeader><DialogTitle>Create New Task</DialogTitle></DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Task Title</label>
