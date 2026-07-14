@@ -20,6 +20,7 @@ export interface IFileUpload extends Document {
   notes?: string;
   adminReviewed: boolean;
   adminNotes?: string;
+  botNotified: boolean;
   shareSlug?: string;
   folderId?: string;
   createdAt: Date;
@@ -42,6 +43,7 @@ const FileUploadSchema = new Schema<IFileUpload>(
     notes: { type: String },
     adminReviewed: { type: Boolean, default: false },
     adminNotes: { type: String },
+    botNotified: { type: Boolean, default: false },
     // Tag to classify files uploaded from task board
     tag: { type: String, enum: ['attachment', 'draft', 'for_print'] },
     // The exact share-link slug this file was uploaded through, if any.

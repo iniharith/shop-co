@@ -1317,4 +1317,56 @@ router.put(
   })
 );
 
+
+// ─── AI AGENT ENDPOINTS ──────────────────────────────────────────────────
+router.get('/drafts/pending', async (req: Request, res: Response) => {
+  try {
+    const drafts = await fileUploadRepository.findAll({ search: '' });
+    // Filter out locally because findAll doesn't support tag natively without modifying repo
+    const pending = (drafts as any[]).filter(d => d.tag === 'draft' && d.botNotified !== true);
+    
+    // We need to find the phone number for each draft.
+    // Usually it's in the Task description or userId (if it starts with user_)
+    const results = [];
+    for (const draft of pending) {
+      let phone = null;
+      if (draft.userId && draft.userId.startsWith('user_')) {
+        phone = draft.userId.replace('user_', '');
+      } else if (draft.taskId) {
+        const task = await Task.findById(draft.taskId);
+        if (task && task.description && task.description.includes('Phone Number:')) {
+          const match = task.description.match(/Phone Number:\s*(\d+)/);
+          if (match) phone = match[1];
+        }
+      }
+      
+      if (phone) {
+        results.push({
+          _id: draft._id,
+          url: draft.path, // S3 url
+          phone,
+          orderId: draft.orderId
+        });
+      }
+    }
+    
+    res.json({ success: true, pending: results });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/drafts/:id/mark-notified', async (req: Request, res: Response) => {
+  try {
+    const file = await require('../../domain/entities/FileUpload').FileUpload.findByIdAndUpdate(
+      req.params.id,
+      { $set: { botNotified: true } },
+      { new: true }
+    );
+    res.json({ success: true, file });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 export default router;
