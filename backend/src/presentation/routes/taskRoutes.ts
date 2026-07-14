@@ -175,7 +175,7 @@ router.put(
       }
     }
     if (req.body.description !== undefined && req.body.description !== oldTask?.description) {
-      // Do not log description changes as activity
+      await taskRepository.addActivity(req.params.id, userId, userName, `updated the description`);
     }
     
     // Sync status to Order if it changed
@@ -378,6 +378,19 @@ router.post(
       return;
     }
 
+    {
+      const authReq = req as any;
+      const userId = authReq.userId || authReq.user?.id || 'admin';
+      let userName = authReq.user?.name || authReq.user?.email;
+      if (!userName && userId) {
+        try {
+          const user = await UserRepository.findById(userId);
+          userName = user?.name || user?.email;
+        } catch (error) {}
+      }
+      await taskRepository.addActivity(req.params.id, userId, userName || 'Admin', `uploaded file "${fileName}"`);
+    }
+
     // Also sync the file to the general FileUpload collection
     try {
       const { FileUpload } = await import('../../domain/entities/FileUpload');
@@ -423,6 +436,19 @@ router.post(
       return;
     }
 
+    {
+      const authReq = req as any;
+      const userId = authReq.userId || authReq.user?.id || 'admin';
+      let userName = authReq.user?.name || authReq.user?.email;
+      if (!userName && userId) {
+        try {
+          const user = await UserRepository.findById(userId);
+          userName = user?.name || user?.email;
+        } catch (error) {}
+      }
+      await taskRepository.addActivity(req.params.id, userId, userName || 'Admin', `uploaded file "${fileName}"`);
+    }
+
     try {
       const { FileUpload } = await import('../../domain/entities/FileUpload');
       const authReq = req as any;
@@ -461,6 +487,17 @@ router.delete(
       return;
     }
 
+    const authReq = req as any;
+    const actorId = authReq.userId || authReq.user?.id || 'admin';
+    let actorName = authReq.user?.name || authReq.user?.email;
+    if (!actorName && actorId) {
+      try {
+        const user = await UserRepository.findById(actorId);
+        actorName = user?.name || user?.email;
+      } catch (error) {}
+    }
+    actorName = actorName || 'Admin';
+
     // Find the file in the task's array
     const fileIndex = task.files.findIndex((f: any) => f._id?.toString() === fileId || f.url.includes(fileId));
     if (fileIndex === -1) {
@@ -471,6 +508,7 @@ router.delete(
         if (fileDoc) {
           if (fileDoc.path) await deleteFromS3(fileDoc.path).catch(console.error);
           await FileUpload.findByIdAndDelete(fileId);
+          await taskRepository.addActivity(id, actorId, actorName, `deleted file "${fileDoc.originalName || fileDoc.filename || 'attachment'}"`);
           res.json({ success: true, message: 'File deleted from task', task });
           emitTaskUpdated('task_updated', { task });
           return;
@@ -482,6 +520,7 @@ router.delete(
     }
 
     const fileUrl = task.files[fileIndex].url;
+    const fileName = task.files[fileIndex].name || fileUrl.split('/').pop() || 'attachment';
 
     // Delete from S3
     try {
@@ -503,6 +542,8 @@ router.delete(
     } catch (e) {
       console.error('Failed to delete task file from FileUpload:', e);
     }
+
+    await taskRepository.addActivity(id, actorId, actorName, `deleted file "${fileName}"`);
 
     res.json({ success: true, message: 'File deleted from task', task });
     emitTaskUpdated('task_updated', { task });
