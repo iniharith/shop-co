@@ -550,10 +550,7 @@ router.get(
     // Resolve a fetchable URL for each file. Files stored on S3 are almost
     // always in a private bucket (downloads elsewhere in this app go through
     // a signed URL), so fetching file.path directly returns 403 for every
-    // file. That failure was being swallowed by `if (!fileRes.ok) continue`,
-    // so the loop finished having appended zero entries and the ZIP was
-    // still finalized and sent — a "successful" download with nothing
-    // inside. Signing S3 URLs here fixes that.
+    // file. Signing S3 URLs here fixes that.
     const resolveDownloadUrl = async (filePath: string): Promise<string> => {
       if (!filePath.includes('amazonaws.com')) return filePath;
       try {
@@ -570,31 +567,30 @@ router.get(
       }
     };
 
-    let addedCount = 0;
+    // ── Pre-check phase: confirm each file is actually reachable using a
+    // cheap HEAD request (headers only, no body). This lets us return a
+    // clean 502 JSON error if the whole share is broken, WITHOUT holding
+    // any file bodies in memory yet. ──────────────────────────────────────
+    const candidates: { name: string; url: string }[] = [];
     const skipped: string[] = [];
 
-    // Sign/fetch every file BEFORE opening the response, so that if every
-    // single file fails we can return a clear JSON error instead of sending
-    // a 200 OK with an empty zip body.
-    const preparedFiles: { name: string; stream: any }[] = [];
     for (const file of files) {
       try {
         const downloadUrl = await resolveDownloadUrl(file.path);
-        const fileRes = await fetch(downloadUrl);
-        if (!fileRes.ok || !fileRes.body) {
+        const headRes = await fetch(downloadUrl, { method: 'HEAD' });
+        if (!headRes.ok) {
           skipped.push(file.originalName);
-          console.warn(`[download-all] Skipping ${file.originalName}: HTTP ${fileRes.status}`);
+          console.warn(`[download-all] Skipping ${file.originalName}: HTTP ${headRes.status}`);
           continue;
         }
-        preparedFiles.push({ name: file.originalName, stream: fileRes.body });
-        addedCount++;
+        candidates.push({ name: file.originalName, url: downloadUrl });
       } catch (e) {
         skipped.push(file.originalName);
         console.warn(`[download-all] Skipping ${file.originalName}:`, e);
       }
     }
 
-    if (addedCount === 0) {
+    if (candidates.length === 0) {
       res.status(502).json({
         success: false,
         message: 'Could not fetch any files for this folder from storage. Please try again or contact support.',
@@ -612,8 +608,37 @@ router.get(
     archive.on('error', (err: any) => { console.error('Archive error:', err); res.end(); });
     archive.pipe(res);
 
-    for (const { name, stream } of preparedFiles) {
-      archive.append(Readable.fromWeb(stream), { name });
+    // ── Streaming phase: fetch + append ONE file at a time. Each file's
+    // GET is only issued once the previous file has finished being written
+    // into the archive, so at most one response body is ever held in
+    // memory — this is what actually fixes the OOM/array-buffer crash that
+    // happened when every file's body was fetched and held open at once. ──
+    const appendAndWait = (name: string, stream: any) =>
+      new Promise<void>((resolve, reject) => {
+        const onEntry = (entry: any) => {
+          if (entry.name === name) {
+            archive.removeListener('entry', onEntry);
+            archive.removeListener('error', onError);
+            resolve();
+          }
+        };
+        const onError = (err: any) => {
+          archive.removeListener('entry', onEntry);
+          reject(err);
+        };
+        archive.once('error', onError);
+        archive.on('entry', onEntry);
+        archive.append(stream, { name });
+      });
+
+    for (const { name, url } of candidates) {
+      try {
+        const fileRes = await fetch(url);
+        if (!fileRes.ok || !fileRes.body) continue;
+        await appendAndWait(name, Readable.fromWeb(fileRes.body as any));
+      } catch (e) {
+        console.warn(`[download-all] Failed streaming ${name} into archive:`, e);
+      }
     }
 
     await archive.finalize();
