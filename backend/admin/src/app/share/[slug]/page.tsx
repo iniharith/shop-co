@@ -160,63 +160,21 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
   const handleDownloadAll = async () => {
     if (downloading) return;
     setDownloading(true);
-    const toastId = toast.loading(`Packing files... (0/${files.length})`);
+    const toastId = toast.loading("Preparing your download...");
     try {
-      const JSZip = (await import("jszip")).default;
-      const zip = new JSZip();
-      const usedNames = new Set<string>();
-      const failed: string[] = [];
-      let completedCount = 0;
-
-      for (let i = 0; i < files.length; i += 3) {
-        const chunk = files.slice(i, i + 3);
-        await Promise.all(
-          chunk.map(async (file: any) => {
-            try {
-              // stream=true is required here: without it the backend just
-              // The backend redirects to the S3 URL. Since you fixed the AWS CORS rules, 
-              // the browser can now securely download directly from S3 at full speed
-              // without bottlenecking your Node.js backend server!
-              const proxyUrl = `${BACKEND}/api/files/proxy-download?url=${encodeURIComponent(file.path)}&name=${encodeURIComponent(file.originalName || "file")}`;
-              const res = await fetch(proxyUrl);
-              if (!res.ok) {
-                failed.push(file.originalName || "file");
-                return;
-              }
-              const blob = await res.blob();
-              if (blob.size === 0) {
-                failed.push(file.originalName || "file");
-                return;
-              }
-
-              // Avoid silently overwriting same-named files inside the zip
-              let name = file.originalName || "file";
-              let counter = 1;
-              while (usedNames.has(name)) {
-                const parts = (file.originalName || "file").split(".");
-                const ext = parts.length > 1 ? `.${parts.pop()}` : "";
-                name = `${parts.join(".")}(${counter})${ext}`;
-                counter++;
-              }
-              usedNames.add(name);
-              zip.file(name, blob);
-            } catch (err) {
-              failed.push(file.originalName || "file");
-            } finally {
-              completedCount++;
-              toast.loading(`Packing files... (${completedCount}/${files.length})`, { id: toastId });
-            }
-          })
-        );
+      // Stream the ZIP directly from the backend instead of building it in
+      // the browser with JSZip — client-side zipping pulled every file's
+      // full bytes into browser memory before assembling the archive,
+      // which crashed with "array buffer allocation failed" on folders
+      // with many or large files. The backend already streams safely.
+      const downloadUrl = `${BACKEND}/api/files/s/${slug}/download-all`;
+      const res = await fetch(downloadUrl);
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.message || "Could not download files. Please try again.");
       }
-
-      toast.loading("Zipping files...", { id: toastId });
-      if (Object.keys(zip.files).length === 0) {
-        throw new Error("Could not download any files. Please try again.");
-      }
-
-      const zipBlob = await zip.generateAsync({ type: "blob" });
-      const url = URL.createObjectURL(zipBlob);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `${folderName || "files"}.zip`;
@@ -225,8 +183,9 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      if (failed.length) {
-        toast.warning(`Downloaded with ${failed.length} file(s) skipped (failed to fetch).`, { id: toastId });
+      const skippedHeader = res.headers.get("X-Skipped-Files");
+      if (skippedHeader && Number(skippedHeader) > 0) {
+        toast.warning(`Downloaded with ${skippedHeader} file(s) skipped (failed to fetch).`, { id: toastId });
       } else {
         toast.success("Download ready!", { id: toastId });
       }

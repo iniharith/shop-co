@@ -18,6 +18,7 @@ import { shareLinkRepository } from '../../infrastructure/repositories/ShareLink
 import { ShareLink } from '../../domain/entities/ShareLink';
 import OrderRepository from '../../infrastructure/db/repositories/order.repository';
 import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
+import { streamFilesAsZip } from '../../shared/utils/streamFilesAsZip';
 
 const router = Router();
 
@@ -543,105 +544,56 @@ router.get(
       return;
     }
 
-    const archiver = require('archiver');
-    const { Readable } = require('stream');
-    const folderName = (link.folderName || 'files').replace(/[^a-zA-Z0-9 _-]/g, '_');
+    const folderName = link.folderName || 'files';
+    const result = await streamFilesAsZip(
+      res,
+      files.map((f: any) => ({ originalName: f.originalName, path: f.path })),
+      folderName
+    );
 
-    // Resolve a fetchable URL for each file. Files stored on S3 are almost
-    // always in a private bucket (downloads elsewhere in this app go through
-    // a signed URL), so fetching file.path directly returns 403 for every
-    // file. Signing S3 URLs here fixes that.
-    const resolveDownloadUrl = async (filePath: string): Promise<string> => {
-      if (!filePath.includes('amazonaws.com')) return filePath;
-      try {
-        const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-        const { GetObjectCommand } = require('@aws-sdk/client-s3');
-        const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
-        const urlObj = new URL(filePath);
-        const rawKey = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
-        const key = decodeURIComponent(rawKey);
-        return await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: S3_BUCKET_NAME, Key: key }), { expiresIn: 300 });
-      } catch (e) {
-        console.warn(`Could not sign URL for ${filePath}:`, e);
-        return filePath;
-      }
-    };
-
-    // ── Pre-check phase: confirm each file is actually reachable using a
-    // cheap HEAD request (headers only, no body). This lets us return a
-    // clean 502 JSON error if the whole share is broken, WITHOUT holding
-    // any file bodies in memory yet. ──────────────────────────────────────
-    const candidates: { name: string; url: string }[] = [];
-    const skipped: string[] = [];
-
-    for (const file of files) {
-      try {
-        const downloadUrl = await resolveDownloadUrl(file.path);
-        const headRes = await fetch(downloadUrl, { method: 'HEAD' });
-        if (!headRes.ok) {
-          skipped.push(file.originalName);
-          console.warn(`[download-all] Skipping ${file.originalName}: HTTP ${headRes.status}`);
-          continue;
-        }
-        candidates.push({ name: file.originalName, url: downloadUrl });
-      } catch (e) {
-        skipped.push(file.originalName);
-        console.warn(`[download-all] Skipping ${file.originalName}:`, e);
-      }
-    }
-
-    if (candidates.length === 0) {
+    if (!result.success) {
       res.status(502).json({
         success: false,
         message: 'Could not fetch any files for this folder from storage. Please try again or contact support.',
       });
+    }
+  })
+);
+
+// 🔒 Admin: Download a specific set of files (by id) as a single ZIP.
+// Used by Artworks/Production/Packaging "Download folder" buttons instead
+// of building the ZIP client-side with JSZip — client-side zipping was
+// pulling every file's full bytes into browser memory before assembling
+// the archive, which is what caused "array buffer allocation failed" on
+// folders with many or large files. This streams server-side instead.
+router.post(
+  '/download-batch',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { fileIds, zipName } = req.body as { fileIds?: string[]; zipName?: string };
+    if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
+      res.status(400).json({ success: false, message: 'fileIds array is required' });
       return;
     }
 
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="${folderName}.zip"`);
-    if (skipped.length) {
-      res.setHeader('X-Skipped-Files', String(skipped.length));
+    const files = await FileUpload.find({ _id: { $in: fileIds } });
+    if (!files.length) {
+      res.status(404).json({ success: false, message: 'No files found' });
+      return;
     }
 
-    const archive = archiver('zip', { zlib: { level: 6 } });
-    archive.on('error', (err: any) => { console.error('Archive error:', err); res.end(); });
-    archive.pipe(res);
+    const result = await streamFilesAsZip(
+      res,
+      files.map((f: any) => ({ originalName: f.originalName, path: f.path })),
+      zipName || 'files'
+    );
 
-    // ── Streaming phase: fetch + append ONE file at a time. Each file's
-    // GET is only issued once the previous file has finished being written
-    // into the archive, so at most one response body is ever held in
-    // memory — this is what actually fixes the OOM/array-buffer crash that
-    // happened when every file's body was fetched and held open at once. ──
-    const appendAndWait = (name: string, stream: any) =>
-      new Promise<void>((resolve, reject) => {
-        const onEntry = (entry: any) => {
-          if (entry.name === name) {
-            archive.removeListener('entry', onEntry);
-            archive.removeListener('error', onError);
-            resolve();
-          }
-        };
-        const onError = (err: any) => {
-          archive.removeListener('entry', onEntry);
-          reject(err);
-        };
-        archive.once('error', onError);
-        archive.on('entry', onEntry);
-        archive.append(stream, { name });
+    if (!result.success) {
+      res.status(502).json({
+        success: false,
+        message: 'Could not fetch any files from storage. Please try again or contact support.',
       });
-
-    for (const { name, url } of candidates) {
-      try {
-        const fileRes = await fetch(url);
-        if (!fileRes.ok || !fileRes.body) continue;
-        await appendAndWait(name, Readable.fromWeb(fileRes.body as any));
-      } catch (e) {
-        console.warn(`[download-all] Failed streaming ${name} into archive:`, e);
-      }
     }
-
-    await archive.finalize();
   })
 );
 

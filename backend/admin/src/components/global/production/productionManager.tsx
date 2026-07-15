@@ -5,7 +5,6 @@
 "use client";
 import React, { useState, useMemo } from "react";
 import { useAllFiles, useReviewFile, useDeleteFile, useBulkDeleteFiles } from "@/hooks/useAdminDashboard";
-import JSZip from "jszip";
 import { useOrders, useUpdateOrderStatus } from "@/hooks/useOrder";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
@@ -248,61 +247,32 @@ export default function ProductionManager() {
 
   const handleDownloadAll = async (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    const toastId = toast.loading(`Preparing ZIP... (0/${group.files.length})`);
+    const toastId = toast.loading("Preparing ZIP...");
     try {
-      const zip = new JSZip();
-      const usedNames = new Set<string>();
-      const failed: string[] = [];
-      let completedCount = 0;
+      // Stream the ZIP from the backend instead of building it client-side
+      // with JSZip — pulling every file's full bytes into browser memory
+      // before assembling the archive is what caused "array buffer
+      // allocation failed" on folders with many or large files.
+      const token = session?.user?.token || localStorage.getItem('token') || "";
+      const fileIds = group.files.map((f: any) => f._id);
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
-      for (let i = 0; i < group.files.length; i += 3) {
-        const chunk = group.files.slice(i, i + 3);
-        await Promise.all(chunk.map(async (file: any) => {
-          let baseName = file.originalName || "file";
-          let fileName = baseName;
-          let counter = 1;
-          while (usedNames.has(fileName)) {
-            const nameParts = baseName.split('.');
-            if (nameParts.length > 1) {
-              const ext = nameParts.pop();
-              fileName = `${nameParts.join('.')}(${counter}).${ext}`;
-            } else {
-              fileName = `${baseName}(${counter})`;
-            }
-            counter++;
-          }
-          usedNames.add(fileName);
+      const response = await fetch(`${backendUrl}/api/files/download-batch`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ fileIds, zipName: group.folderName || "production" }),
+      });
 
-          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-          const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName || "file")}`;
-          try {
-            const response = await fetch(proxyUrl);
-            if (!response.ok) {
-              failed.push(baseName);
-              return;
-            }
-            const blob = await response.blob();
-            if (blob.size === 0) {
-              failed.push(baseName);
-              return;
-            }
-            zip.file(fileName, blob);
-          } catch {
-            failed.push(baseName);
-          } finally {
-            completedCount++;
-            toast.loading(`Preparing ZIP... (${completedCount}/${group.files.length})`, { id: toastId });
-          }
-        }));
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.message || "Could not download any files");
       }
 
-      toast.loading("Zipping files...", { id: toastId });
-      if (Object.keys(zip.files).length === 0) {
-        throw new Error("Could not download any files");
-      }
-
-      const content = await zip.generateAsync({ type: "blob" });
-      const url = URL.createObjectURL(content);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = `${group.folderName || "production"}.zip`;
@@ -310,9 +280,11 @@ export default function ProductionManager() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+
+      const skippedHeader = response.headers.get("X-Skipped-Files");
       toast.dismiss();
-      if (failed.length) {
-        toast.warning(`Downloaded with ${failed.length} file(s) skipped (failed to fetch)`);
+      if (skippedHeader && Number(skippedHeader) > 0) {
+        toast.warning(`Downloaded with ${skippedHeader} file(s) skipped (failed to fetch)`);
       } else {
         toast.success("Download started!");
       }
