@@ -92,7 +92,7 @@ export default function ProductionManager() {
     const tasks = (tasksResponse as any)?.tasks || [];
     if (activeTab !== "ALL") {
       result = result.filter((f: any) => {
-        if (f.category === 'TASK' && f.taskId) {
+        if (f.taskId) {
           const task = tasks.find((t: any) => t._id === f.taskId);
           return task?.category === activeTab;
         }
@@ -132,7 +132,7 @@ export default function ProductionManager() {
       let taskIdStr = "";
       let isTask = false;
       
-      const isTaskFile = file.category === 'TASK' && !!file.taskId;
+      const isTaskFile = !!file.taskId;
       const isProductionTask = isTaskFile && productionTaskIds.includes(file.taskId?.toString());
       const isProductionOrder = !isTaskFile && (productionOrderIdsFiltered.includes(file.orderId?.toString()) || productionUserIds.includes(file.userId?.toString()));
       

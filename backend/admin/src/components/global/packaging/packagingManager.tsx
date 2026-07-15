@@ -94,7 +94,7 @@ export default function PackagingManager() {
     const tasks = (tasksResponse as any)?.tasks || [];
     if (activeTab !== "ALL") {
       result = result.filter((f: any) => {
-        if (f.category === 'TASK' && f.taskId) {
+        if (f.taskId) {
           const task = tasks.find((t: any) => t._id === f.taskId);
           return task?.category === activeTab;
         }
@@ -134,7 +134,7 @@ export default function PackagingManager() {
       let taskIdStr = "";
       let isTask = false;
       
-      const isTaskFile = file.category === 'TASK' && !!file.taskId;
+      const isTaskFile = !!file.taskId;
       const isPackagingTask = isTaskFile && packagingTaskIds.includes(file.taskId?.toString());
       const isPackagingOrder = !isTaskFile && (packagingOrderIdsFiltered.includes(file.orderId?.toString()) || packagingUserIds.includes(file.userId?.toString()));
       
