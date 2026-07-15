@@ -46,15 +46,20 @@ export async function streamFilesAsZip(
   const { Readable } = require('stream');
   const safeZipName = zipName.replace(/[^a-zA-Z0-9 _-]/g, '_');
 
-  // ── Pre-check phase: confirm each file is reachable via a cheap HEAD
-  // request (headers only, no body) before committing to a response. ──────
+  // ── Pre-check phase: confirm each file is reachable via a cheap ranged
+  // GET (first byte only) before committing to a response. ──────────────
   const candidates: { name: string; url: string }[] = [];
   const skipped: string[] = [];
 
   for (const file of files) {
     try {
       const downloadUrl = await resolveDownloadUrl(file.path);
-      const headRes = await fetch(downloadUrl, { method: 'HEAD' });
+      // NOTE: presigned S3 URLs are cryptographically bound to the HTTP
+      // method they were signed for (GetObjectCommand => GET). Issuing a
+      // HEAD request against a GET-signed URL fails signature validation
+      // and returns 403 for every file, every time. Use a ranged GET
+      // (first byte only) instead — same signed method, minimal transfer.
+      const headRes = await fetch(downloadUrl, { headers: { Range: 'bytes=0-0' } });
       if (!headRes.ok) {
         skipped.push(file.originalName);
         console.warn(`[streamFilesAsZip] Skipping ${file.originalName}: HTTP ${headRes.status}`);
