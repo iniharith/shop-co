@@ -42,7 +42,10 @@ export async function streamFilesAsZip(
   files: StreamableFile[],
   zipName: string
 ): Promise<{ success: boolean }> {
-  const archiver = require('archiver');
+  // archiver v8 removed the old callable factory pattern (archiver('zip', opts))
+  // and now exports classes directly — ZipArchive replaces it. append/pipe/
+  // finalize and all events (including 'entry', used below) work identically.
+  const { ZipArchive } = require('archiver');
   const { Readable } = require('stream');
   const safeZipName = zipName.replace(/[^a-zA-Z0-9 _-]/g, '_');
 
@@ -82,7 +85,7 @@ export async function streamFilesAsZip(
     res.setHeader('X-Skipped-Files', String(skipped.length));
   }
 
-  const archive = archiver('zip', { zlib: { level: 6 } });
+  const archive = new ZipArchive({ zlib: { level: 6 } });
   archive.on('error', (err: any) => { console.error('Archive error:', err); res.end(); });
   archive.pipe(res);
 
