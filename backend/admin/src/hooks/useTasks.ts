@@ -68,8 +68,11 @@ export const useUpdateTask = () => {
             }
             import("sonner").then(m => m.toast.error("Failed to update task", { description: err.message }));
         },
-        onSettled: () => {
+        onSettled: (data, error, variables) => {
             client.invalidateQueries({ queryKey: ['tasks'] });
+            if (variables?.id) {
+                client.invalidateQueries({ queryKey: ['task', variables.id] });
+            }
         },
     });
     

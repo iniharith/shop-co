@@ -233,8 +233,10 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
             }
         }
     }
-    res.json({ success: true, task });
-    (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task });
+    // Refetch to include newly added activities in the response and broadcast
+    const freshTask = yield TaskRepository_1.taskRepository.findById(req.params.id);
+    res.json({ success: true, task: freshTask });
+    (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: freshTask });
 })));
 // DELETE /api/tasks/:id
 router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {

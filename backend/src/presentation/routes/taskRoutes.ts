@@ -220,8 +220,10 @@ router.put(
         }
     }
     
-    res.json({ success: true, task });
-    emitTaskUpdated('task_updated', { task });
+    // Refetch to include newly added activities in the response and broadcast
+    const freshTask = await taskRepository.findById(req.params.id);
+    res.json({ success: true, task: freshTask });
+    emitTaskUpdated('task_updated', { task: freshTask });
   })
 );
 
