@@ -64,8 +64,12 @@ export const useGroupedFiles = () => {
 }
 
 export const useAllFiles = () => {
-    const { data: session } = useSession();
-    return useQueryData(['allFiles'], () => getAllFiles(session?.user?.token));
+    const { data: session, status } = useSession();
+    return useQueryData(
+        ['allFiles'],
+        () => getAllFiles(session?.user?.token),
+        { enabled: status !== "loading" }
+    );
 }
 
 export const useReviewFile = () => {
@@ -108,8 +112,12 @@ export const useCreateShareLink = () => {
 }
 
 export const useFolders = () => {
-    const { data: session } = useSession();
-    return useQueryData(['virtualFolders'], () => getFolders(session?.user?.token));
+    const { data: session, status } = useSession();
+    return useQueryData(
+        ['virtualFolders'],
+        () => getFolders(session?.user?.token),
+        { enabled: status !== "loading" }
+    );
 }
 
 export const useCreateFolder = () => {

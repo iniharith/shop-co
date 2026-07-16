@@ -81,7 +81,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
     if (!avatarFile || !session?.user?.token) return;
     try {
       setIsUploadingAvatar(true);
-      await uploadUserAvatar(session.user.token, userId, avatarFile);
+      await uploadUserAvatar(session?.user?.token, userId, avatarFile);
       toast.success("Avatar uploaded successfully");
     } catch (error) {
       toast.error("Failed to upload avatar");

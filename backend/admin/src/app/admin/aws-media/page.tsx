@@ -36,7 +36,7 @@ export default function AwsMediaPage() {
     try {
       const res = await fetch(`${BACKEND}/api/sysadmin/aws-media`, {
         headers: {
-          Authorization: `Bearer ${session.user.token}`
+          Authorization: `Bearer ${session?.user?.token}`
         }
       });
       const json = await res.json();

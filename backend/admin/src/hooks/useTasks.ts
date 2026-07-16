@@ -9,8 +9,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getTasks, getTask, createTask, updateTask, deleteTask, addTaskComment, deleteTaskComment } from "@/api/tasks";
 
 export const useTasks = (filters?: any) => {
-    const { data: session } = useSession();
-    return useQueryData(['tasks', filters], () => getTasks(session?.user?.token, filters));
+    const { data: session, status } = useSession();
+    return useQueryData(
+        ['tasks', filters],
+        () => getTasks(session?.user?.token, filters),
+        { enabled: status !== "loading" }
+    );
 }
 
 export const useTask = (id: string | undefined) => {
@@ -81,13 +85,13 @@ export const useUpdateTask = () => {
 
 export const useDeleteTask = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['deleteTask'], (id: string) => deleteTask(session?.user.token, id), ["tasks", "allFiles", "groupedFiles"]);
+    const { mutate, isPending } = useMutationData(['deleteTask'], (id: string) => deleteTask(session?.user?.token, id), ["tasks", "allFiles", "groupedFiles"]);
     return { mutate, isPending };
 }
 
 export const usePermanentDeleteTask = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['permanentDeleteTask'], (id: string) => import("@/api/tasks").then(m => m.permanentDeleteTask(session?.user.token, id)), ["tasks", "allFiles", "groupedFiles"]);
+    const { mutate, isPending } = useMutationData(['permanentDeleteTask'], (id: string) => import("@/api/tasks").then(m => m.permanentDeleteTask(session?.user?.token, id)), ["tasks", "allFiles", "groupedFiles"]);
     return { mutate, isPending };
 }
 
@@ -96,7 +100,7 @@ export const useUploadTaskFile = () => {
     const { mutate, mutateAsync, isPending } = useMutationData(
         ['uploadTaskFile'],
         (data: { id: string, file: File, tag?: string, onProgress?: (percent: number) => void, abortController?: AbortController }) => 
-            import("@/api/tasks").then(m => m.uploadTaskFile(session?.user.token, data.id, data.file, data.tag, data.onProgress, data.abortController)),
+            import("@/api/tasks").then(m => m.uploadTaskFile(session?.user?.token, data.id, data.file, data.tag, data.onProgress, data.abortController)),
         ["tasks", "allFiles", "groupedFiles", "task"]
     )
     return { mutate, mutateAsync, isPending }
@@ -106,7 +110,7 @@ export const useDeleteTaskFile = () => {
     const { data: session } = useSession();
     const { mutate, isPending } = useMutationData(
         ['deleteTaskFile'],
-        (data: { id: string, fileId: string }) => import("@/api/tasks").then(m => m.deleteTaskFile(session?.user.token, data.id, data.fileId)),
+        (data: { id: string, fileId: string }) => import("@/api/tasks").then(m => m.deleteTaskFile(session?.user?.token, data.id, data.fileId)),
         ["tasks", "allFiles", "groupedFiles", "task"]
     )
     return { mutate, isPending }
@@ -171,7 +175,7 @@ export const useUpdateTaskFileNotes = () => {
     const { data: session } = useSession();
     const { mutate, isPending } = useMutationData(
         ['updateTaskFileNotes'],
-        (data: { id: string, fileUrl: string, notes: string }) => import("@/api/tasks").then(m => m.updateTaskFileNotes(session?.user.token, data.id, data.fileUrl, data.notes)),
+        (data: { id: string, fileUrl: string, notes: string }) => import("@/api/tasks").then(m => m.updateTaskFileNotes(session?.user?.token, data.id, data.fileUrl, data.notes)),
         ["tasks", "allFiles", "groupedFiles"]
     );
     return { mutate, isPending };

@@ -25,7 +25,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
     try {
       setLoading(true);
       if (session?.user?.token) {
-        await deleteUser(session.user.token, data._id);
+        await deleteUser(session?.user?.token, data._id);
         toast.success("User deleted successfully");
         window.location.reload();
       }

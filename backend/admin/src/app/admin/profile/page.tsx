@@ -73,7 +73,7 @@ export default function ProfilePage() {
       const formData = new FormData();
       formData.append("avatar", avatarFile);
       
-      const res = await AxiosInstance(session.user.token).post(`/api/user/profile/avatar`, formData, {
+      const res = await AxiosInstance(session?.user?.token).post(`/api/user/profile/avatar`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -115,7 +115,7 @@ export default function ProfilePage() {
         formData.append("files", file); // use the generic file upload endpoint
         formData.append("category", "UI_BACKGROUND"); // Hide from Artworks
         
-        const res = await AxiosInstance(session.user.token).post(`/api/files/upload`, formData, {
+        const res = await AxiosInstance(session?.user?.token).post(`/api/files/upload`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
         
@@ -141,7 +141,7 @@ export default function ProfilePage() {
     const fileId = session?.user?.id ? localStorage.getItem(`theme-bg-id-${session.user.id}`) : null;
     if (fileId && session?.user?.token) {
       try {
-        await AxiosInstance(session.user.token).delete(`/api/files/${fileId}`);
+        await AxiosInstance(session?.user?.token).delete(`/api/files/${fileId}`);
       } catch (e) {
         console.error("Failed to delete background file", e);
       }
@@ -162,7 +162,7 @@ export default function ProfilePage() {
       if (avatarPreview && avatarPreview.startsWith("https://api.dicebear.com") && !avatarFile) {
         updatePayload.avatar = avatarPreview;
       }
-      const res = await AxiosInstance(session.user.token).put(`/api/user/profile`, updatePayload);
+      const res = await AxiosInstance(session?.user?.token).put(`/api/user/profile`, updatePayload);
       toast.success("Profile updated successfully");
       await update({ name: formData.name, email: formData.email, ...(updatePayload.avatar ? { avatar: updatePayload.avatar } : {}) });
       

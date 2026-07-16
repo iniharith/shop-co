@@ -20,7 +20,7 @@ export default function SeedDataButton() {
     if (!session?.user?.token) return;
     setIsLoading(true);
     try {
-      await seedTestData(session.user.token);
+      await seedTestData(session?.user?.token);
       toast.success("Test Drive data injected successfully! Refreshing...");
       setTimeout(() => {
         window.location.reload();
@@ -39,7 +39,7 @@ export default function SeedDataButton() {
     if (!confirm("Are you sure you want to clear all dummy test drive orders?")) return;
     setIsClearing(true);
     try {
-      await clearTestData(session.user.token);
+      await clearTestData(session?.user?.token);
       toast.success("Test Drive data cleared successfully! Refreshing...");
       setTimeout(() => {
         window.location.reload();
