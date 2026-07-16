@@ -137,11 +137,12 @@ export default function ArtworksManager() {
 
       if (file.taskId) {
         const task = tasks.find((t: any) => t._id === file.taskId);
-        groupName = task ? task.title : "Deleted Task";
-        orderIdStr = task?.orderId || "";
+        if (!task) return; // Skip files whose task was deleted/missing — shown in History > Deleted Tasks
+        groupName = task.title;
+        orderIdStr = task.orderId || "";
         taskIdStr = file.taskId;
         
-        if (task && (task.status === 'IN_PRODUCTION' || task.status === 'CANCELLED' || task.status === 'FAILED')) {
+        if (task.status === 'IN_PRODUCTION' || task.status === 'CANCELLED' || task.status === 'FAILED') {
             shouldExclude = true;
         }
       } else {

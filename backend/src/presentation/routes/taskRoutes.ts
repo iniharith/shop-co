@@ -129,26 +129,25 @@ router.post(
 
 // Helper function to delete all files for a task
 const deleteAllTaskFiles = async (task: any) => {
-  if (task.files && task.files.length > 0) {
-    try {
-      const { FileUpload } = await import('../../domain/entities/FileUpload');
-      
+  try {
+    const { FileUpload } = await import('../../domain/entities/FileUpload');
+    const taskId = task._id.toString();
+
+    // Delete all FileUpload records referencing this task (share link uploads + direct uploads)
+    await FileUpload.deleteMany({ taskId });
+
+    // Delete files from S3 and clear task.files array
+    if (task.files && task.files.length > 0) {
       for (const file of task.files) {
-        // Delete from S3
         if (file.url) {
           await deleteFromS3(file.url);
         }
-        
-        // Delete from FileUpload collection
-        await FileUpload.findOneAndDelete({ path: file.url, taskId: task._id });
       }
-      
-      // Clear files array in task document
       task.files = [];
       await task.save();
-    } catch (e) {
-      console.error('Failed to delete task files:', e);
     }
+  } catch (e) {
+    console.error('Failed to delete task files:', e);
   }
 };
 

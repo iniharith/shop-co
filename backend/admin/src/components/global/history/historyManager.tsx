@@ -9,16 +9,20 @@ import { useOrders } from "@/hooks/useOrder";
 import { useBulkDeleteOrders } from "@/hooks/useOrder";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import OrderCard from "../../table/orders/OrderCard";
-import { Search, PackageX, RefreshCw, Archive, Trash2, Calendar, FileText } from "lucide-react";
+import { Search, PackageX, RefreshCw, Archive, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useTasks, usePermanentDeleteTask } from "@/hooks/useTasks";
+import { useFileIndex } from "@/hooks/useAdminDashboard";
 import TaskModal from "../tasks/TaskModal";
+import { Folder } from "lucide-react";
 
 const HistoryManager = () => {
   const { data, isPending, refetch, isFetching } = useOrders();
   const { data: deletedTasksData, isPending: isTasksPending, refetch: refetchTasks, isFetching: isFetchingTasks } = useTasks({ deleted: 'true' });
   const deletedTasks = (deletedTasksData as any);
+  const { data: fileIndexResponse } = useFileIndex();
+  const allFiles = (fileIndexResponse as any)?.data || [];
   const { mutate: permanentDeleteTaskMutate, isPending: isPermanentDeleting } = usePermanentDeleteTask();
   const { mutate: bulkDeleteMutate, isPending: isDeleting } = useBulkDeleteOrders();
   const [activeTab, setActiveTab] = useState("DONE");
@@ -132,11 +136,13 @@ const HistoryManager = () => {
             </div>
           ) : (
             <div className="flex flex-col gap-4 pb-10">
-              {filteredTasks.map((task: any) => (
+              {filteredTasks.map((task: any) => {
+                const taskFiles = allFiles.filter((f: any) => f.taskId === task._id);
+                return (
                 <div key={task._id} className="flex items-center justify-between p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl">
                   <div className="flex items-center gap-4 cursor-pointer flex-1" onClick={() => setSelectedTask(task)}>
                     <div className="bg-slate-200 p-3 rounded-xl">
-                      <FileText className="w-6 h-6 text-slate-600" />
+                      <Folder className="w-6 h-6 text-slate-600" />
                     </div>
                     <div>
                       <h4 className="font-semibold text-lg hover:underline">{task.title}</h4>
@@ -144,6 +150,7 @@ const HistoryManager = () => {
                         {task.orderId && <span>Order: {task.orderId}</span>}
                         {task.customerUsername && <span>Customer: {task.customerUsername}</span>}
                         {task.category && <span>Category: {task.category}</span>}
+                        <span>{taskFiles.length} file(s)</span>
                         <span>Deleted on: {new Date(task.updatedAt).toLocaleDateString()}</span>
                       </div>
                     </div>
@@ -163,7 +170,8 @@ const HistoryManager = () => {
                     <Trash2 className="w-4 h-4 mr-2" /> Permanently Delete
                   </Button>
                 </div>
-              ))}
+              );
+              })}
             </div>
           )
         ) : (
