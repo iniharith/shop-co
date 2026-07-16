@@ -619,7 +619,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                       {/* Show activities, sort by createdAt */}
                       {(() => {
                         const activityItems = [
-                          ...(task.activities || []).filter((a: any) => !a.action.startsWith("changed the description") && !a.action.startsWith("added a comment")).map((a: any) => ({ ...a, type: 'activity' }))
+                          ...(task.activities || []).filter((a: any) => !a.action.startsWith("added a comment")).map((a: any) => ({ ...a, type: 'activity' }))
                         ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                         
                         return (

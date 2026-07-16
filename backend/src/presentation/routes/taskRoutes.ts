@@ -201,7 +201,11 @@ router.put(
       }
     }
     if (req.body.description !== undefined && req.body.description !== oldTask?.description) {
-      await taskRepository.addActivity(req.params.id, userId, userName, `updated the description`);
+      const trunc = (s: string | undefined | null, max: number) => { const t = s || ''; return t.length > max ? t.substring(0, max) + '...' : (t || '(empty)'); };
+      await taskRepository.addActivity(req.params.id, userId, userName, `changed description`, `from "${trunc(oldTask?.description, 80)}" to "${trunc(req.body.description, 80)}"`);
+    }
+    if (req.body.title !== undefined && req.body.title !== oldTask?.title) {
+      await taskRepository.addActivity(req.params.id, userId, userName, `changed title`, `from "${oldTask?.title || '(empty)'}" to "${req.body.title}"`);
     }
     
     // Sync status to Order if it changed

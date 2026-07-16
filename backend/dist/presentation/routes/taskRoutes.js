@@ -62,6 +62,7 @@ const notification_repository_1 = require("../../infrastructure/db/repositories/
 const FileUpload_1 = require("../../domain/entities/FileUpload");
 const redis_1 = require("../../infrastructure/redis/redis");
 const redis_constant_1 = require("../../shared/constants/redis.constant");
+const taskBroadcast_1 = require("../../shared/utils/taskBroadcast");
 const redisService = new redis_1.RedisService();
 const taskStorage = (0, multer_s3_1.default)({
     s3: s3_1.s3Client,
@@ -97,9 +98,45 @@ router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)
     const tasks = yield TaskRepository_1.taskRepository.findAll(filters);
     res.json({ success: true, tasks });
 })));
+// GET /api/tasks/:id
+router.get('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const task = yield TaskRepository_1.taskRepository.findById(req.params.id);
+    if (!task) {
+        res.status(404).json({ success: false, message: 'Task not found' });
+        return;
+    }
+    res.json({ success: true, task });
+})));
 // POST /api/tasks
 router.post('/', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c;
     const task = yield TaskRepository_1.taskRepository.create(req.body);
+    // Log the initial state as activity — otherwise a task created with an
+    // assignee/status already filled in shows an empty feed, since those
+    // values were never "changed" via a later update.
+    const authReq = req;
+    const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id) || 'system';
+    let userName = ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.name) || ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.email);
+    if (!userName && userId && userId !== 'system') {
+        try {
+            const user = yield user_repository_1.default.findById(userId);
+            userName = (user === null || user === void 0 ? void 0 : user.name) || (user === null || user === void 0 ? void 0 : user.email);
+        }
+        catch (error) { }
+    }
+    userName = userName || 'System';
+    if (task.assignee) {
+        try {
+            const assignedUser = yield user_repository_1.default.findById(task.assignee);
+            const assigneeName = assignedUser ? (assignedUser.name || assignedUser.email) : 'Unknown User';
+            yield TaskRepository_1.taskRepository.addActivity(task._id.toString(), userId, userName, `assigned to ${assigneeName}`);
+        }
+        catch (e) { }
+    }
+    if (task.status && task.status !== 'PLACED') {
+        yield TaskRepository_1.taskRepository.addActivity(task._id.toString(), userId, userName, `set status to ${task.status.replace(/_/g, ' ')}`);
+    }
+    yield (0, taskBroadcast_1.emitTaskUpdated)('task_created', { task });
     res.json({ success: true, task });
 })));
 // Helper function to delete all files for a task
@@ -134,7 +171,8 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
     // the status if the caller didn't already explicitly request a different one.
     const isNewAssignment = req.body.assignee && ((_a = oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) === null || _a === void 0 ? void 0 : _a.toString()) !== req.body.assignee;
     const currentStatus = (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status) || 'PLACED';
-    if (isNewAssignment && currentStatus === 'IN_PROGRESS' && !req.body.status) {
+    const preDesignStatuses = ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED'];
+    if (isNewAssignment && preDesignStatuses.includes(currentStatus) && (!req.body.status || req.body.status === currentStatus)) {
         req.body.status = 'IN_DESIGN';
     }
     if (req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status)) {
@@ -177,7 +215,11 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
         }
     }
     if (req.body.description !== undefined && req.body.description !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.description)) {
-        // Do not log description changes as activity
+        const trunc = (s, max) => { const t = s || ''; return t.length > max ? t.substring(0, max) + '...' : (t || '(empty)'); };
+        yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `changed description`, `from "${trunc(oldTask === null || oldTask === void 0 ? void 0 : oldTask.description, 80)}" to "${trunc(req.body.description, 80)}"`);
+    }
+    if (req.body.title !== undefined && req.body.title !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.title)) {
+        yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `changed title`, `from "${(oldTask === null || oldTask === void 0 ? void 0 : oldTask.title) || '(empty)'}" to "${req.body.title}"`);
     }
     // Sync status to Order if it changed
     if (req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status)) {
@@ -192,6 +234,7 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
         }
     }
     res.json({ success: true, task });
+    (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task });
 })));
 // DELETE /api/tasks/:id
 router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -206,6 +249,7 @@ router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.de
         }
     }
     res.json({ success: true, message: req.query.permanent === 'true' ? 'Task permanently deleted' : 'Task deleted' });
+    (0, taskBroadcast_1.emitTaskUpdated)('task_deleted', { taskId: req.params.id });
 })));
 // POST /api/tasks/:id/comments
 router.post('/:id/comments', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -253,6 +297,7 @@ router.post('/:id/comments', auth_middileware_1.default, (0, express_async_handl
         }
     }
     res.json({ success: true, task });
+    (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task });
 })));
 // DELETE /api/tasks/:id/comments/:commentId
 router.delete('/:id/comments/:commentId', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -262,6 +307,7 @@ router.delete('/:id/comments/:commentId', auth_middileware_1.default, (0, expres
         return;
     }
     res.json({ success: true, task });
+    (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task });
 })));
 // PUT /api/tasks/:id/comments/:commentId/pin
 router.put('/:id/comments/:commentId/pin', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -272,6 +318,7 @@ router.put('/:id/comments/:commentId/pin', auth_middileware_1.default, (0, expre
         return;
     }
     res.json({ success: true, task });
+    (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task });
 })));
 // PUT /api/tasks/:id/files/notes
 router.put('/:id/files/notes', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -314,7 +361,7 @@ router.put('/:id/files/notes', auth_middileware_1.default, (0, express_async_han
 })));
 // POST /api/tasks/:id/files
 router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b, _c, _d;
     if (!req.file) {
         res.status(400).json({ success: false, message: 'No file uploaded' });
         return;
@@ -327,11 +374,24 @@ router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'),
         res.status(404).json({ success: false, message: 'Task not found' });
         return;
     }
+    {
+        const authReq = req;
+        const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id) || 'admin';
+        let userName = ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.name) || ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.email);
+        if (!userName && userId) {
+            try {
+                const user = yield user_repository_1.default.findById(userId);
+                userName = (user === null || user === void 0 ? void 0 : user.name) || (user === null || user === void 0 ? void 0 : user.email);
+            }
+            catch (error) { }
+        }
+        yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName || 'Admin', `uploaded file "${fileName}"`);
+    }
     // Also sync the file to the general FileUpload collection
     try {
         const { FileUpload } = yield Promise.resolve().then(() => __importStar(require('../../domain/entities/FileUpload')));
         const authReq = req;
-        const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id) || 'admin';
+        const userId = authReq.userId || ((_d = authReq.user) === null || _d === void 0 ? void 0 : _d.id) || 'admin';
         yield FileUpload.create({
             userId: userId,
             taskId: task._id,
@@ -349,10 +409,11 @@ router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'),
         console.error('Failed to sync task file to FileUpload:', e);
     }
     res.json({ success: true, task });
+    (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task });
 })));
 // POST /api/tasks/:id/files/save-metadata
 router.post('/:id/files/save-metadata', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b, _c, _d;
     const { fileUrl, fileName, tag, fileKey, mimetype, size } = req.body;
     if (!fileUrl || !fileName) {
         res.status(400).json({ success: false, message: 'fileUrl and fileName are required' });
@@ -363,10 +424,23 @@ router.post('/:id/files/save-metadata', auth_middileware_1.default, (0, express_
         res.status(404).json({ success: false, message: 'Task not found' });
         return;
     }
+    {
+        const authReq = req;
+        const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id) || 'admin';
+        let userName = ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.name) || ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.email);
+        if (!userName && userId) {
+            try {
+                const user = yield user_repository_1.default.findById(userId);
+                userName = (user === null || user === void 0 ? void 0 : user.name) || (user === null || user === void 0 ? void 0 : user.email);
+            }
+            catch (error) { }
+        }
+        yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName || 'Admin', `uploaded file "${fileName}"`);
+    }
     try {
         const { FileUpload } = yield Promise.resolve().then(() => __importStar(require('../../domain/entities/FileUpload')));
         const authReq = req;
-        const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id) || 'admin';
+        const userId = authReq.userId || ((_d = authReq.user) === null || _d === void 0 ? void 0 : _d.id) || 'admin';
         yield FileUpload.create({
             userId: userId,
             taskId: task._id,
@@ -384,15 +458,28 @@ router.post('/:id/files/save-metadata', auth_middileware_1.default, (0, express_
         console.error('Failed to sync task file to FileUpload:', e);
     }
     res.json({ success: true, task });
+    (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task });
 })));
 // DELETE /api/tasks/:id/files/:fileId
 router.delete('/:id/files/:fileId', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c;
     const { id, fileId } = req.params;
     const task = yield TaskRepository_1.taskRepository.findById(id);
     if (!task) {
         res.status(404).json({ success: false, message: 'Task not found' });
         return;
     }
+    const authReq = req;
+    const actorId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id) || 'admin';
+    let actorName = ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.name) || ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.email);
+    if (!actorName && actorId) {
+        try {
+            const user = yield user_repository_1.default.findById(actorId);
+            actorName = (user === null || user === void 0 ? void 0 : user.name) || (user === null || user === void 0 ? void 0 : user.email);
+        }
+        catch (error) { }
+    }
+    actorName = actorName || 'Admin';
     // Find the file in the task's array
     const fileIndex = task.files.findIndex((f) => { var _a; return ((_a = f._id) === null || _a === void 0 ? void 0 : _a.toString()) === fileId || f.url.includes(fileId); });
     if (fileIndex === -1) {
@@ -404,7 +491,9 @@ router.delete('/:id/files/:fileId', auth_middileware_1.default, (0, express_asyn
                 if (fileDoc.path)
                     yield (0, s3_1.deleteFromS3)(fileDoc.path).catch(console.error);
                 yield FileUpload.findByIdAndDelete(fileId);
+                yield TaskRepository_1.taskRepository.addActivity(id, actorId, actorName, `deleted file "${fileDoc.originalName || fileDoc.filename || 'attachment'}"`);
                 res.json({ success: true, message: 'File deleted from task', task });
+                (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task });
                 return;
             }
         }
@@ -413,6 +502,7 @@ router.delete('/:id/files/:fileId', auth_middileware_1.default, (0, express_asyn
         return;
     }
     const fileUrl = task.files[fileIndex].url;
+    const fileName = task.files[fileIndex].name || fileUrl.split('/').pop() || 'attachment';
     // Delete from S3
     try {
         if (fileUrl) {
@@ -433,6 +523,8 @@ router.delete('/:id/files/:fileId', auth_middileware_1.default, (0, express_asyn
     catch (e) {
         console.error('Failed to delete task file from FileUpload:', e);
     }
+    yield TaskRepository_1.taskRepository.addActivity(id, actorId, actorName, `deleted file "${fileName}"`);
     res.json({ success: true, message: 'File deleted from task', task });
+    (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task });
 })));
 exports.default = router;
