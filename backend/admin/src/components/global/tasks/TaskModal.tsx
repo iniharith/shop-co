@@ -401,7 +401,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[90vh] flex flex-col">
+      <DialogContent className="task-modal-content max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[90vh] flex flex-col">
         <div className="flex flex-col md:flex-row h-full overflow-y-auto md:overflow-hidden">
           
           {/* Main Content (Left, 70% width) */}
@@ -566,8 +566,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                     </TabsList>
                   </div>
 
-                  <TabsContent value="comments" className="mt-0">
-                    <div className="space-y-4">
+                  <TabsContent value="comments" className="mt-0 bg-transparent" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" translate="no">
+                    <div className="space-y-4 bg-transparent">
                       {[...(fullTask.comments || [])].sort((a: any, b: any) => {
                         if (a.pinned && !b.pinned) return -1;
                         if (!a.pinned && b.pinned) return 1;
@@ -614,13 +614,13 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                       ))}
                       
                       {(!fullTask.comments || fullTask.comments.length === 0) && (
-                        <div className="text-sm text-muted-foreground text-center py-4">No comments yet.</div>
+                        <div className="text-sm text-muted-foreground text-center py-4 bg-transparent">No comments yet.</div>
                       )}
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="activity" className="mt-0">
-                    <div className="space-y-4">
+                  <TabsContent value="activity" className="mt-0 bg-transparent" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" translate="no">
+                    <div className="space-y-4 bg-transparent">
                       {/* Show activities, sort by createdAt */}
                       {(() => {
                         const activityItems = [
@@ -628,9 +628,9 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                         ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                         
                         return (
-                          <div className="space-y-3">
+                          <div className="space-y-3 bg-transparent">
                             {activityItems.length === 0 && !fullTask.createdAt ? (
-                              <div className="text-sm text-muted-foreground text-center py-4">No activity yet.</div>
+                              <div className="text-sm text-muted-foreground text-center py-4 bg-transparent">No activity yet.</div>
                             ) : (
                               <>
                                 {fullTask.createdAt && (

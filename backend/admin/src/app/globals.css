@@ -225,3 +225,15 @@ body.has-custom-bg tr:hover,
 body.has-custom-bg .hover\:bg-muted:hover {
   background-color: hsl(var(--muted) / 0.4) !important;
 }
+
+/* Defensive reset: some browser extensions (Grammarly, translation tools)
+   inject their own highlight/underline boxes behind plain text in read-only
+   areas like the task activity feed and comments. This neutralizes any
+   injected mark/highlight styling within the task modal specifically. */
+.task-modal-content mark,
+.task-modal-content [data-gr-ext-installed],
+.task-modal-content grammarly-extension {
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
