@@ -14,6 +14,11 @@ import { Task } from '../../domain/entities/Task';
 import { FileUpload } from '../../domain/entities/FileUpload';
 import { bandwidthHistory } from '../../shared/utils/bandwidthTracker';
 import path from 'path';
+import OrderModel from '../../infrastructure/db/models/order.model';
+import { parcelRepository } from '../../infrastructure/repositories/ParcelRepository';
+import { fileUploadRepository } from '../../infrastructure/repositories/FileUploadRepository';
+import { virtualFolderRepository } from '../../infrastructure/repositories/VirtualFolderRepository';
+import { taskRepository } from '../../infrastructure/repositories/TaskRepository';
 
 import { getOnlineUsersCount } from '../../infrastructure/socket/socketHandler';
 
@@ -173,6 +178,43 @@ router.get(
     });
   })
 );
+// ─── GET /api/sysadmin/dashboard-summary ─────────────────────────
+// Collapses the parcel/file/folder/task/order/online-user stats the admin
+// dashboard needs — previously 5 separate client round trips fired on every
+// page open — into a single request. The underlying queries still run in
+// parallel (via Promise.all), just on the server instead of over the wire,
+// each reusing the same already-windowed (30/60-day) repository calls the
+// individual endpoints use, so the numbers stay identical to before.
+router.get(
+  '/dashboard-summary',
+  asyncHandler(async (req: Request, res: Response) => {
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+    const [parcelStats, fileStats, folders, tasks, totalOrders] = await Promise.all([
+      parcelRepository.getStats(),
+      fileUploadRepository.getStorageStats(),
+      virtualFolderRepository.findAll(),
+      taskRepository.findAll(),
+      // Count-only query instead of the fully-populated getOrders() list,
+      // since the dashboard only ever needed the total.
+      OrderModel.countDocuments({ createdAt: { $gte: sixtyDaysAgo } }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        orders: { total: totalOrders },
+        parcels: parcelStats,
+        files: fileStats,
+        tasks: { total: tasks.length },
+        folders: { total: folders.length },
+        onlineUsers: { count: getOnlineUsersCount() },
+      },
+    });
+  })
+);
+
 // ─── GET /api/sysadmin/deployments ─────────────────────────
 router.get(
   '/deployments',

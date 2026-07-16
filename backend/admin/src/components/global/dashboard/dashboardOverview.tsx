@@ -4,31 +4,18 @@
  */
 "use client";
 import React from "react";
-import { useParcelStats, useFileStats, useOnlineUsers, useFolders } from "@/hooks/useAdminDashboard";
-import { useOrders } from "@/hooks/useOrder";
-import { useTasks } from "@/hooks/useTasks";
+import { useDashboardSummary } from "@/hooks/useAdminDashboard";
 import { Box, Truck, FileText, CircleCheckBig, CircleAlert, RefreshCw, Loader2, Package, Archive, Layers, Users, FolderOpen, ClipboardList } from "lucide-react";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 
 export default function DashboardOverview() {
-  const { data: orderData, isPending: ordersPending, refetch: refetchOrders, isFetching: isFetchingOrders } = useOrders();
-  const { data: parcelStats, isPending: parcelsPending, refetch: refetchParcels, isFetching: isFetchingParcels } = useParcelStats();
-  const { data: fileStats, isPending: filesPending, refetch: refetchFiles, isFetching: isFetchingFiles } = useFileStats();
-  const { data: onlineData, refetch: refetchOnlineUsers } = useOnlineUsers();
-  const { data: taskData, refetch: refetchTasks, isPending: tasksPending } = useTasks();
-  const { data: folderData, refetch: refetchFolders, isPending: foldersPending } = useFolders();
+  const { data: summary, isPending, refetch, isFetching } = useDashboardSummary();
 
-  const isFetching = isFetchingOrders || isFetchingParcels || isFetchingFiles;
   const handleRefresh = () => {
-    refetchOrders();
-    refetchParcels();
-    refetchFiles();
-    refetchOnlineUsers();
-    refetchTasks();
-    refetchFolders();
+    refetch();
   };
 
-  if (ordersPending || parcelsPending || filesPending || tasksPending || foldersPending) {
+  if (isPending) {
     return (
       <div className="flex justify-center items-center h-[50vh]">
         <LoadingAnimation fullScreen={false} label="Loading dashboard" />
@@ -36,15 +23,16 @@ export default function DashboardOverview() {
     );
   }
 
-  const orders = orderData?.orders || [];
-  const totalOrders = orders.length;
+  const data = (summary as any)?.data || {};
 
-  const parcelData = (parcelStats as any)?.data || { total: 0, pending: 0, in_transit: 0, delivered: 0, failed: 0 };
-  const fileData = (fileStats as any)?.data || { totalFiles: 0, totalSize: 0, pendingReview: 0 };
-  
-  const totalTasks = (taskData as any)?.tasks?.length || 0;
-  const totalFolders = (folderData as any)?.data?.length || 0;
-  const onlineUsers = (onlineData as any)?.count || 0;
+  const totalOrders = data.orders?.total || 0;
+
+  const parcelData = data.parcels || { total: 0, pending: 0, in_transit: 0, delivered: 0, failed: 0 };
+  const fileData = data.files || { totalFiles: 0, totalSize: 0, pendingReview: 0 };
+
+  const totalTasks = data.tasks?.total || 0;
+  const totalFolders = data.folders?.total || 0;
+  const onlineUsers = data.onlineUsers?.count || 0;
   const activeDeliveries = (parcelData.in_transit || 0) + (parcelData.pending || 0);
 
   const formatBytes = (bytes: number) => {

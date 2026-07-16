@@ -84,3 +84,12 @@ export const moveFile = async (token: string, fileId: string, folderId: string |
     const response = await AxiosInstance(token).put(`/api/files/${fileId}/move`, { folderId });
     return response.data;
 }
+
+// Single combined call for the dashboard overview screen — replaces the
+// 5 separate parallel requests (orders/parcels/files/tasks/folders, plus
+// online-users) that used to fire on every page open.
+export const getDashboardSummary = async (token: string) => {
+    const response = await AxiosInstance(token).get(`/api/sysadmin/dashboard-summary`);
+    return response.data;
+}
+

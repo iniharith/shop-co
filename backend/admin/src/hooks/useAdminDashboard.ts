@@ -22,7 +22,8 @@ import {
     getFolders,
     createFolder,
     deleteFolder,
-    moveFile
+    moveFile,
+    getDashboardSummary
 } from "@/api/admin-dashboard";
 
 export const useParcelStats = () => {
@@ -166,5 +167,18 @@ export const useOnlineUsers = () => {
             return res.json();
         },
         { refetchInterval: 10000 }
+    );
+}
+
+// Powers the dashboard overview screen with one request instead of the
+// previous 5 (orders/parcels/files/tasks/folders) fired in parallel on
+// every page open. Kept on the same 10s poll as online-users had, since
+// that was the only field on the dashboard that needed live refreshing.
+export const useDashboardSummary = () => {
+    const { data: session, status } = useSession();
+    return useQueryData(
+        ['dashboardSummary'],
+        () => getDashboardSummary(session?.user?.token),
+        { enabled: status !== "loading", refetchInterval: 10000 }
     );
 }
