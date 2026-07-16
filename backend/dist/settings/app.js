@@ -26,6 +26,7 @@ const parcelRoutes_1 = __importDefault(require("../presentation/routes/parcelRou
 const fileUploadRoutes_1 = __importDefault(require("../presentation/routes/fileUploadRoutes"));
 const virtualFolderRoutes_1 = __importDefault(require("../presentation/routes/virtualFolderRoutes"));
 const taskRoutes_1 = __importDefault(require("../presentation/routes/taskRoutes"));
+const toolsRoutes_1 = __importDefault(require("../presentation/routes/toolsRoutes"));
 const WhatsAppWebhookService_1 = __importDefault(require("../infrastructure/services/WhatsAppWebhookService"));
 const user_route_1 = __importDefault(require("../presentation/routes/user.route"));
 const sysadminRoutes_1 = __importDefault(require("../presentation/routes/sysadminRoutes"));
@@ -72,6 +73,7 @@ app.use('/api/folders', virtualFolderRoutes_1.default);
 app.use('/api/parcels', parcelRoutes_1.default);
 app.use('/api/files', fileUploadRoutes_1.default);
 app.use('/api/tasks', taskRoutes_1.default);
+app.use('/api/tools', toolsRoutes_1.default);
 app.use('/api/chat', chatRoutes_1.default);
 app.use('/api/sysadmin', sysadminRoutes_1.default);
 // ─── WhatsApp Webhook (Meta callback verification) ───────

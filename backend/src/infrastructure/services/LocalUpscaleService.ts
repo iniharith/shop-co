@@ -12,15 +12,23 @@
  * First upscale call will be slower as it downloads model weights (~a few
  * MB) into node_modules; every call after that is fast to start.
  */
-import * as tf from '@tensorflow/tfjs-node';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const Upscaler = require('upscaler/node');
+let tf: any = null;
+let Upscaler: any = null;
+
+const loadDeps = () => {
+  if (!tf) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    tf = require('@tensorflow/tfjs-node');
+  }
+  if (!Upscaler) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    Upscaler = require('upscaler/node');
+  }
+};
 
 let upscalerInstance: any = null;
 const getUpscaler = () => {
   if (!upscalerInstance) {
-    // Uses UpscalerJS's bundled default model — no extra model package to
-    // install, no config. It upscales ~2x per pass.
     upscalerInstance = new Upscaler();
   }
   return upscalerInstance;
@@ -40,13 +48,14 @@ export const upscaleImageLocally = async ({
   inputBuffer,
   passes = 1,
 }: LocalUpscaleOptions): Promise<Buffer> => {
+  loadDeps();
   const upscaler = getUpscaler();
 
-  let tensor = tf.node.decodeImage(inputBuffer, 3) as tf.Tensor3D;
+  let tensor = tf.node.decodeImage(inputBuffer, 3) as any;
 
   try {
     for (let i = 0; i < passes; i++) {
-      const upscaledTensor = (await upscaler.upscale(tensor, { output: 'tensor' })) as tf.Tensor3D;
+      const upscaledTensor = (await upscaler.upscale(tensor, { output: 'tensor' })) as any;
       tensor.dispose();
       tensor = upscaledTensor;
     }
