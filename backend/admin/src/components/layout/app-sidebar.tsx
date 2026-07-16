@@ -46,6 +46,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
+import { markSigningOut } from "./liveSessionMonitor";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";

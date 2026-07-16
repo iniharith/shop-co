@@ -25,6 +25,13 @@ export const signUp = async (data: any) => {
     return response.data
 }
 
+export const refreshAuth = async (refreshToken: string) => {
+    const response = await AxiosInstance().post(`${AUTH_URL}/refresh`, {
+        refreshToken,
+    });
+    return response.data
+}
+
   
 
 

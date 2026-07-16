@@ -86,6 +86,37 @@ export class AuthController {
             next(error);
         }
     }
+
+    /**
+     * @description Refresh access token using a valid refresh token
+     * @Method POST
+     * @Route /api/auth/refresh
+     * @Body refreshToken: string
+     * @ResponseJson {success: boolean, accessToken: string, refreshToken: string}
+     */
+    async refresh(req: Request, res: Response, next: NextFunction) {
+        try {
+            const refreshToken = (req as any).cookies?.__refreshToken || req.body?.refreshToken;
+            if (!refreshToken) {
+                return res.status(statusCodes.BAD_REQUEST).json({
+                    success: false,
+                    message: "Refresh token required"
+                });
+            }
+            const { accessToken, refreshToken: newRefreshToken } = await this.authUsecase.refreshTokens(refreshToken);
+            return res.status(statusCodes.OK).json({
+                success: true,
+                message: "Token refreshed",
+                accessToken,
+                refreshToken: newRefreshToken
+            });
+        } catch (error) {
+            return res.status(statusCodes.UNAUTHORIZED).json({
+                success: false,
+                message: (error as Error).message || "Invalid refresh token"
+            });
+        }
+    }
 }
 
 export default new AuthController();

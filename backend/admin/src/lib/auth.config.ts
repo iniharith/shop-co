@@ -10,39 +10,41 @@ export const authConfig: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
-      credentials: {
-        email: { label: "Email", type: "email", placeholder: "your@email.com" },
-        name: { label: "Password", type: "password" },
-        id: { label: "Id", type: "id" },
-        role: { label: "Role", type: "role" },
-        token: { label: "Token", type: "token" },
-        verified: { label: "Verified", type: "boolean" },
-        avatar: { label: "Avatar", type: "text" },
-      },
-      async authorize(credentials) {
-        console.log("authorize", credentials)
-        if (!credentials?.email || !credentials?.name || !credentials.id) {
-          console.log("Email and name and id are required.");
-          return null;
-        }
+        credentials: {
+          email: { label: "Email", type: "email", placeholder: "your@email.com" },
+          name: { label: "Password", type: "password" },
+          id: { label: "Id", type: "id" },
+          role: { label: "Role", type: "role" },
+          token: { label: "Token", type: "token" },
+          refreshToken: { label: "RefreshToken", type: "refreshToken" },
+          verified: { label: "Verified", type: "boolean" },
+          avatar: { label: "Avatar", type: "text" },
+        },
+        async authorize(credentials) {
+          console.log("authorize", credentials)
+          if (!credentials?.email || !credentials?.name || !credentials.id) {
+            console.log("Email and name and id are required.");
+            return null;
+          }
 
-        // Mock user for now, replace with actual DB call
-        const user = {
-          token: credentials?.token as string,
-          id: credentials?.id,
-          name: credentials.name,
-          email: credentials.email as string,
-          role: credentials.role as string,
-          verified: credentials.verified as any,
-          avatar: credentials.avatar as string
-        };
+          // Mock user for now, replace with actual DB call
+          const user = {
+            token: credentials?.token as string,
+            refreshToken: credentials?.refreshToken as string,
+            id: credentials?.id,
+            name: credentials.name,
+            email: credentials.email as string,
+            role: credentials.role as string,
+            verified: credentials.verified as any,
+            avatar: credentials.avatar as string
+          };
 
-        if (user) {
-          return user;
-        } else {
-          return null;
+          if (user) {
+            return user;
+          } else {
+            return null;
+          }
         }
-      }
     }),
   ],
   pages: {
@@ -84,6 +86,7 @@ export const authConfig: AuthOptions = {
       if (user) {
         token.id = user.id;
         token.token = user.token;
+        token.refreshToken = (user as any).refreshToken;
         token.name = user.name;
         token.email = user.email;
         token.role = user.role;
@@ -93,6 +96,8 @@ export const authConfig: AuthOptions = {
       if (trigger === "update" && session) {
         if (session.name !== undefined) token.name = session.name;
         if (session.avatar !== undefined) token.avatar = session.avatar;
+        if ((session as any).token !== undefined) token.token = (session as any).token;
+        if ((session as any).refreshToken !== undefined) token.refreshToken = (session as any).refreshToken;
       }
       return token;
     },
@@ -102,6 +107,7 @@ export const authConfig: AuthOptions = {
     },
     session({ session, token }) {
       session.user.token = token.token as string;
+      (session.user as any).refreshToken = token.refreshToken as string;
       session.user.id = token.id as string;
       session.user.name = token.name as string;
       session.user.email = token.email as string;
@@ -119,6 +125,7 @@ declare module "next-auth" {
   interface Session {
     user: {
       token: string;
+      refreshToken?: string;
       id: string;
       name: string;
       email: string;
@@ -131,6 +138,7 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     token: string;
+    refreshToken?: string;
     id: string;
     name: string;
     email: string;
@@ -143,6 +151,7 @@ declare module "next-auth/jwt" {
 declare module "next-auth" {
   interface User {
     token: string;
+    refreshToken?: string;
     id: string;
     name: string;
     email: string;

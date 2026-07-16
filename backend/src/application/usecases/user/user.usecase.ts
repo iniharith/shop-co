@@ -78,6 +78,27 @@ export class UserUsecase {
 
         return await user.save();
     }
+
+    async refreshTokens(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+        const jwt = new JwtService();
+        let userId: string;
+        try {
+            const decoded = jwt.verifyRefreshToken(refreshToken) as { userId: string };
+            userId = decoded.userId;
+        } catch (error) {
+            throw new Error("Invalid refresh token");
+        }
+
+        const user = await this.userRepository.findById(userId);
+        if (!user) {
+            throw new Error("User not found or blocked");
+        }
+
+        const accessToken = this.jwtService.generateAccessToken({ userId: user._id });
+        const newRefreshToken = this.jwtService.generateRefreshToken({ userId: user._id });
+
+        return { accessToken, refreshToken: newRefreshToken };
+    }
 }
 
 export default new UserUsecase();
