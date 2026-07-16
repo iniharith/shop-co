@@ -16,6 +16,7 @@ import { REDIS_CHANNELS } from '../shared/constants/redis.constant';
 import { handleRedisAndSocketMessageAdmin, handleRedisAndSocketMessageClient } from '../infrastructure/redis/redisMessagesHandler';
 import { socketIoSetup } from '../infrastructure/socket/socketHandler';
 import { startTrackingCronJob } from '../infrastructure/jobs/TrackingCronJob';
+import { startTaskAutoTransitionJob } from '../infrastructure/jobs/TaskStatusAutoTransition';
 import { Parcel } from '../domain/entities/Parcel';
 
 process.on("uncaughtException", (err) => {
@@ -56,6 +57,7 @@ async function main() {
     server.listen(PORT, () => {
         console.log(`🎉 Server running on port ${PORT}`);
         startTrackingCronJob(); // Auto-sync parcels every 15 min
+        startTaskAutoTransitionJob(); // Auto-move PACKAGING → DELIVERED after 14 days
     });
 }
 

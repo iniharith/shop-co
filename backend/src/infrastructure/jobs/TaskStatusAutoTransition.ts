@@ -1,0 +1,102 @@
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
+import cron from 'node-cron';
+import { Task } from '../../domain/entities/Task';
+
+const PACKAGING_TO_DELIVERED_DAYS = 14;
+
+/**
+ * Cron job that automatically transitions tasks stuck in PACKAGING status
+ * to DELIVERED after 14 days. Syncs the status change to the linked Order.
+ * These orders then appear in the History > Done / Completed tab.
+ */
+export function startTaskAutoTransitionJob(): void {
+  console.log(`[Cron] 🕐 Task auto-transition job registered (runs daily at 2 AM)`);
+  console.log(`[Cron]    Tasks in PACKAGING for >${PACKAGING_TO_DELIVERED_DAYS} days → DELIVERED`);
+
+  // Run immediately on startup
+  transitionPackagingToDelivered();
+
+  // Then every day at 2 AM
+  cron.schedule('0 2 * * *', () => {
+    transitionPackagingToDelivered();
+  });
+}
+
+async function transitionPackagingToDelivered(): Promise<void> {
+  const startTime = Date.now();
+  console.log(`[Cron] 🔄 Task auto-transition started at ${new Date().toISOString()}`);
+
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - PACKAGING_TO_DELIVERED_DAYS);
+
+    const stuckTasks = await Task.find({
+      status: 'PACKAGING',
+      isDeleted: { $ne: true },
+      statusUpdatedAt: { $lte: cutoffDate },
+    }).lean();
+
+    if (stuckTasks.length === 0) {
+      console.log('[Cron] ✅ No tasks to transition');
+      return;
+    }
+
+    console.log(`[Cron] Found ${stuckTasks.length} task(s) in PACKAGING for >${PACKAGING_TO_DELIVERED_DAYS} days`);
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const task of stuckTasks) {
+      try {
+        const taskId = (task as any)._id.toString();
+        const orderId = (task as any).orderId;
+
+        // Update task status
+        await Task.findByIdAndUpdate(taskId, {
+          $set: {
+            status: 'DELIVERED',
+            statusUpdatedAt: new Date(),
+          },
+        });
+
+        // Sync to linked order
+        if (orderId) {
+          const { OrderUsecase } = await import('../../application/usecases/orders/order.usecase');
+          const orderUsecase = new OrderUsecase();
+          await orderUsecase.updateOrderStatus(orderId, 'DELIVERED');
+        }
+
+        // Log activity
+        const { Task: TaskModel } = await import('../../domain/entities/Task');
+        await TaskModel.findByIdAndUpdate(taskId, {
+          $push: {
+            activities: {
+              userId: 'system',
+              userName: 'System',
+              action: `auto-transitioned from PACKAGING to DELIVERED (after ${PACKAGING_TO_DELIVERED_DAYS} days)`,
+              details: '',
+              createdAt: new Date(),
+            },
+          },
+        });
+
+        successCount++;
+        console.log(`[Cron] ✅ Task "${task.title}" → DELIVERED`);
+      } catch (err: any) {
+        errorCount++;
+        console.error(`[Cron] ❌ Error transitioning task "${task.title}":`, err?.message);
+      }
+    }
+
+    const elapsed = Date.now() - startTime;
+    console.log(
+      `[Cron] ✅ Auto-transition complete in ${elapsed}ms — ` +
+        `Transitioned: ${successCount}, Errors: ${errorCount}`
+    );
+  } catch (err: any) {
+    console.error('[Cron] ❌ Fatal error in task auto-transition:', err?.message);
+  }
+}
