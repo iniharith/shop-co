@@ -84,11 +84,21 @@ export const AdminNavItems: NavItem[] = [
         isActive: false,
     },
     {
-        title: 'Reports',
+        title: 'Tools',
         url: '/admin/reports',
-        icon: 'kanban',
-        shortcut: ['r', 'r'],
+        icon: 'wrench',
+        shortcut: ['t', 'o'],
         isActive: false,
+        items: [
+            {
+                title: 'Reports',
+                url: '/admin/reports',
+            },
+            {
+                title: 'Image Upscale',
+                url: '/admin/tools/upscale',
+            }
+        ]
     },
     {
         title: 'Server Status',
@@ -127,8 +137,8 @@ export const roleByNavItems = (role: string) => {
     } else if (role === "designer") {
         allowedTitles = ['Artworks', 'Print Drafts', 'Tasks', 'Chat'];
     } else if (role !== "sysadmin" && role !== "admin" && role !== "boss") {
-        // Only sysadmin, admin, boss can see Server Status and Reports
-        allowedTitles = allowedTitles.filter(title => title !== 'Server Status' && title !== 'Reports');
+        // Only sysadmin, admin, boss can see Server Status and Tools (Reports + Image Upscale)
+        allowedTitles = allowedTitles.filter(title => title !== 'Server Status' && title !== 'Tools');
     }
 
     // Only SYSADMIN can see WhatsApp AI Logs

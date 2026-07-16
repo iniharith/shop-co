@@ -44,7 +44,9 @@ import {
   Store,
   Truck,
   Server,
-  Cloud
+  Cloud,
+  Wrench,
+  Sparkles
 } from "lucide-react";
 
 import { FaCartShopping } from "react-icons/fa6";
@@ -81,6 +83,8 @@ export const Icons = {
   user2: CircleUserRound,
   media: Image,
   settings: Settings,
+  wrench: Wrench,
+  sparkles: Sparkles,
   billing: CreditCard,
   ellipsis: EllipsisVertical,
   add: Plus,

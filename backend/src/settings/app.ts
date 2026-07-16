@@ -22,6 +22,7 @@ import parcelRoutes from '../presentation/routes/parcelRoutes';
 import fileUploadRoutes from '../presentation/routes/fileUploadRoutes';
 import virtualFolderRoutes from '../presentation/routes/virtualFolderRoutes';
 import taskRoutes from '../presentation/routes/taskRoutes';
+import toolsRoutes from '../presentation/routes/toolsRoutes';
 import whatsappWebhook from '../infrastructure/services/WhatsAppWebhookService';
 import userRoutes from '../presentation/routes/user.route';
 import sysadminRoutes from '../presentation/routes/sysadminRoutes';
@@ -78,6 +79,7 @@ app.use('/api/folders', virtualFolderRoutes);
 app.use('/api/parcels', parcelRoutes);
 app.use('/api/files', fileUploadRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/tools', toolsRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/sysadmin', sysadminRoutes);
 
