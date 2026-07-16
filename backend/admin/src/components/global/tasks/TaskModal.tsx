@@ -574,10 +574,10 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
                       }).map((comment: any, idx: number) => (
                         <div key={idx} className="flex gap-3">
-                          <Avatar className="w-8 h-8 border border-border/50 shrink-0">
-                            <AvatarFallback className="text-xs bg-transparent">{comment.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                          <Avatar className="w-8 h-8 border border-border/50 shrink-0 bg-transparent">
+                            <AvatarFallback className="text-xs !bg-transparent">{comment.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
-                          <div className="flex-1">
+                          <div className="flex-1 bg-transparent">
                             <div className="flex justify-between items-baseline mb-1">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold">{comment.userName}</span>
@@ -634,7 +634,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                             ) : (
                               <>
                                 {fullTask.createdAt && (
-                                  <div className="flex gap-3 items-center text-sm py-1">
+                                  <div className="flex gap-3 items-center text-sm py-1 bg-transparent">
                                     <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/30 shrink-0 flex items-center justify-center">
                                       <span className="text-[9px] font-bold text-primary">✦</span>
                                     </div>
@@ -657,12 +657,12 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                   }
                                   const thumbUrl = rawUrl ? `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&w=200&h=200&fit=cover` : "";
 
-                                  return (
-                                    <div key={`a-${idx}`} className={`flex gap-3 items-start text-sm py-1 ${isImage ? 'mt-2 mb-2' : ''}`}>
-                                      <Avatar className="w-6 h-6 border border-border/50 shrink-0 text-[10px] mt-0.5">
-                                        <AvatarFallback className="bg-transparent">{item.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+return (
+                                      <div key={`a-${idx}`} className={`flex gap-3 items-start text-sm py-1 bg-transparent ${isImage ? 'mt-2 mb-2' : ''}`}>
+                                      <Avatar className="w-6 h-6 border border-border/50 shrink-0 text-[10px] mt-0.5 bg-transparent">
+                                        <AvatarFallback className="!bg-transparent">{item.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                                       </Avatar>
-                                      <div className="flex-1 text-muted-foreground">
+<div className="flex-1 text-muted-foreground bg-transparent">
                                         <div>
                                           <span className="font-semibold text-foreground mr-1">{item.userName}</span>
                                           {item.action} {item.details && !isImage && <span className="font-medium text-foreground/80 ml-1 break-all">{item.details}</span>}
