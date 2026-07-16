@@ -574,10 +574,10 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
                       }).map((comment: any, idx: number) => (
                         <div key={idx} className="flex gap-3">
-                          <Avatar className="w-8 h-8 border border-border/50 bg-muted shrink-0">
-                            <AvatarFallback className="text-xs">{comment.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                          <Avatar className="w-8 h-8 border border-border/50 shrink-0">
+                            <AvatarFallback className="text-xs bg-transparent">{comment.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
-                          <div className={`flex-1 rounded-xl rounded-tl-none p-3 ${comment.pinned ? 'border border-yellow-500/30 dark:border-yellow-500/20' : ''}`}>
+                          <div className="flex-1">
                             <div className="flex justify-between items-baseline mb-1">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold">{comment.userName}</span>
@@ -614,7 +614,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                       ))}
                       
                       {(!fullTask.comments || fullTask.comments.length === 0) && (
-                        <div className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-xl border border-dashed border-border/50">No comments yet.</div>
+                        <div className="text-sm text-muted-foreground text-center py-4">No comments yet.</div>
                       )}
                     </div>
                   </TabsContent>
@@ -630,7 +630,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                         return (
                           <div className="space-y-3">
                             {activityItems.length === 0 && !fullTask.createdAt ? (
-                              <div className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-xl border border-dashed border-border/50">No activity yet.</div>
+                              <div className="text-sm text-muted-foreground text-center py-4">No activity yet.</div>
                             ) : (
                               <>
                                 {fullTask.createdAt && (
@@ -659,8 +659,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
                                   return (
                                     <div key={`a-${idx}`} className={`flex gap-3 items-start text-sm py-1 ${isImage ? 'mt-2 mb-2' : ''}`}>
-                                      <Avatar className="w-6 h-6 border border-border/50 bg-muted shrink-0 text-[10px] mt-0.5">
-                                        <AvatarFallback>{item.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                      <Avatar className="w-6 h-6 border border-border/50 shrink-0 text-[10px] mt-0.5">
+                                        <AvatarFallback className="bg-transparent">{item.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                                       </Avatar>
                                       <div className="flex-1 text-muted-foreground">
                                         <div>
