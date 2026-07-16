@@ -21,7 +21,7 @@ const client_s3_1 = require("@aws-sdk/client-s3");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 exports.s3Client = new client_s3_1.S3Client({
-    region: process.env.AWS_REGION || 'ap-southeast-5',
+    region: 'ap-southeast-5',
     credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || ''

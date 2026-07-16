@@ -26,6 +26,8 @@ class TaskRepository {
             const query = {};
             if (filters === null || filters === void 0 ? void 0 : filters.status)
                 query.status = filters.status;
+            if ((filters === null || filters === void 0 ? void 0 : filters.statuses) && filters.statuses.length > 0)
+                query.status = { $in: filters.statuses };
             if (filters === null || filters === void 0 ? void 0 : filters.assignee)
                 query.assignee = filters.assignee;
             if (filters === null || filters === void 0 ? void 0 : filters.orderId)
@@ -38,11 +40,11 @@ class TaskRepository {
             else {
                 query.isDeleted = { $ne: true };
             }
-            // Speed optimization: Only load tasks from the last 60 days by default to prevent massive payloads.
-            const sixtyDaysAgo = new Date();
-            sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-            query.createdAt = { $gte: sixtyDaysAgo };
-            return Task_1.Task.find(query).sort({ createdAt: -1 }).lean();
+            const days = (filters === null || filters === void 0 ? void 0 : filters.days) || 30;
+            const daysAgo = new Date();
+            daysAgo.setDate(daysAgo.getDate() - days);
+            query.createdAt = { $gte: daysAgo };
+            return Task_1.Task.find(query).select('-comments -activities').sort({ createdAt: -1 }).lean();
         });
     }
     findById(id) {
@@ -93,6 +95,18 @@ class TaskRepository {
     addFile(taskId, url, name, tag) {
         return __awaiter(this, void 0, void 0, function* () {
             return Task_1.Task.findByIdAndUpdate(taskId, { $push: { files: { url, name, notes: '', tag: tag || 'attachment' } } }, { new: true });
+        });
+    }
+    deleteFile(taskId, fileId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const task = yield Task_1.Task.findById(taskId);
+            if (!task)
+                return null;
+            const file = (_a = task.files) === null || _a === void 0 ? void 0 : _a.find((f) => { var _a, _b; return ((_a = f._id) === null || _a === void 0 ? void 0 : _a.toString()) === fileId || ((_b = f.url) === null || _b === void 0 ? void 0 : _b.includes(fileId)); });
+            if (!file)
+                return task;
+            return Task_1.Task.findByIdAndUpdate(taskId, { $pull: { files: { _id: file._id } } }, { new: true });
         });
     }
     updateFileNotes(taskId, fileUrl, notes) {

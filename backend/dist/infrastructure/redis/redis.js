@@ -29,55 +29,75 @@ class RedisService {
     }
     set(key, value, ttl) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.redis) {
+            if (!this.redis)
                 return;
+            try {
+                if (ttl) {
+                    yield this.redis.set(key, value, "EX", ttl);
+                }
+                else {
+                    yield this.redis.set(key, value);
+                }
             }
-            if (ttl) {
-                yield this.redis.set(key, value, "EX", ttl);
-            }
-            else {
-                yield this.redis.set(key, value);
+            catch (e) {
+                console.error("Redis set error:", e);
             }
         });
     }
     get(key) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.redis) {
-                return;
+            if (!this.redis)
+                return null;
+            try {
+                return yield this.redis.get(key);
             }
-            return yield this.redis.get(key);
+            catch (e) {
+                console.error("Redis get error:", e);
+                return null;
+            }
         });
     }
     del(key) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.redis) {
+            if (!this.redis)
                 return;
+            try {
+                yield this.redis.del(key);
             }
-            yield this.redis.del(key);
+            catch (e) {
+                console.error("Redis del error:", e);
+            }
         });
     }
     publish(channel, message) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            if (!this.redis) {
+            if (!this.redis)
                 return;
+            try {
+                console.log("🔴 publish", channel, message);
+                yield this.redis.publish(channel, message);
             }
-            console.log("🔴 publish", channel, message);
-            yield ((_a = this.redis) === null || _a === void 0 ? void 0 : _a.publish(channel, message));
+            catch (e) {
+                console.error("Redis publish error:", e);
+            }
         });
     }
     subscribe(channel) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.redisSubscriber) {
+            if (!this.redisSubscriber)
                 return;
+            try {
+                yield this.redisSubscriber.subscribe(channel, (err, count) => {
+                    if (err) {
+                        console.error('Failed to subscribe:', err);
+                        return;
+                    }
+                    console.log(`Subscribed to ${channel}. Now listening for messages...`);
+                });
             }
-            yield this.redisSubscriber.subscribe(channel, (err, count) => {
-                if (err) {
-                    console.error('Failed to subscribe:', err);
-                    return;
-                }
-                console.log(`Subscribed to ${channel}. Now listening for messages...`);
-            });
+            catch (e) {
+                console.error("Redis subscribe error:", e);
+            }
         });
     }
     on(event, callback) {

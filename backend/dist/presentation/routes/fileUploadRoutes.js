@@ -31,6 +31,8 @@ const user_repository_1 = __importDefault(require("../../infrastructure/db/repos
 const ShareLinkRepository_1 = require("../../infrastructure/repositories/ShareLinkRepository");
 const ShareLink_1 = require("../../domain/entities/ShareLink");
 const order_repository_1 = __importDefault(require("../../infrastructure/db/repositories/order.repository"));
+const taskBroadcast_1 = require("../../shared/utils/taskBroadcast");
+const streamFilesAsZip_1 = require("../../shared/utils/streamFilesAsZip");
 const router = (0, express_1.Router)();
 const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB || '500', 10);
 // ─── Multer + S3 Storage ─────────────────────────
@@ -222,28 +224,31 @@ router.get('/', (0, express_async_handler_1.default)((req, res) => __awaiter(voi
         links.forEach((l) => { slugMap[l.slug] = l; });
     }
     const enrichedFiles = files.map((file) => {
-        if (file.shareSlug && slugMap[file.shareSlug]) {
-            const link = slugMap[file.shareSlug];
-            const f = file.toObject ? file.toObject() : Object.assign({}, file);
-            // Backfill taskId/orderId/category from the share link so grouping works
-            if (!f.taskId && link.taskId) {
+        const f = file.toObject ? file.toObject() : Object.assign({}, file);
+        if (f.shareSlug && slugMap[f.shareSlug]) {
+            const link = slugMap[f.shareSlug];
+            // Backfill taskId/orderId from the share link so grouping works
+            if (!f.taskId && link.taskId)
                 f.taskId = link.taskId;
-                f.category = 'TASK'; // also fix category so grouping treats it as a task file
-            }
             if (!f.orderId && link.orderId)
                 f.orderId = link.orderId;
             f._shareFolderName = link.folderName; // pass folder name to frontend
-            return f;
         }
-        return file;
+        // Any file linked to a task is a task file for grouping purposes,
+        // regardless of what category happened to get set at upload time.
+        if (f.taskId)
+            f.category = 'TASK';
+        return f;
     });
-    res.json({ success: true, data: enrichedFiles, count: enrichedFiles.length });
+    const stats = { totalFiles: enrichedFiles.length, totalSize: 0, pendingReview: 0, totalSizeMB: "0" };
+    res.json({ success: true, data: enrichedFiles, stats, count: enrichedFiles.length });
 })));
 // ─── GET /api/files/grouped ───────────────────────────────
 // Admin: files grouped by customer (Nextcloud folder view)
 router.get('/grouped', (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const grouped = yield FileUploadRepository_1.fileUploadRepository.getFilesGroupedByUser();
-    res.json({ success: true, data: grouped });
+    const stats = yield FileUploadRepository_1.fileUploadRepository.getStorageStats();
+    res.json({ success: true, data: grouped, stats });
 })));
 // ─── PUT /api/files/:id/reassign ───────────────────────────
 // Admin: fix a file that landed in the wrong folder (e.g. uploaded via a
@@ -451,75 +456,39 @@ router.get('/s/:slug/download-all', (0, express_async_handler_1.default)((req, r
         res.status(404).json({ success: false, message: 'No files found' });
         return;
     }
-    const archiver = require('archiver');
-    const { Readable } = require('stream');
-    const folderName = (link.folderName || 'files').replace(/[^a-zA-Z0-9 _-]/g, '_');
-    // Resolve a fetchable URL for each file. Files stored on S3 are almost
-    // always in a private bucket (downloads elsewhere in this app go through
-    // a signed URL), so fetching file.path directly returns 403 for every
-    // file. That failure was being swallowed by `if (!fileRes.ok) continue`,
-    // so the loop finished having appended zero entries and the ZIP was
-    // still finalized and sent — a "successful" download with nothing
-    // inside. Signing S3 URLs here fixes that.
-    const resolveDownloadUrl = (filePath) => __awaiter(void 0, void 0, void 0, function* () {
-        if (!filePath.includes('amazonaws.com'))
-            return filePath;
-        try {
-            const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-            const { GetObjectCommand } = require('@aws-sdk/client-s3');
-            const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
-            const urlObj = new URL(filePath);
-            const rawKey = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
-            const key = decodeURIComponent(rawKey);
-            return yield getSignedUrl(s3Client, new GetObjectCommand({ Bucket: S3_BUCKET_NAME, Key: key }), { expiresIn: 300 });
-        }
-        catch (e) {
-            console.warn(`Could not sign URL for ${filePath}:`, e);
-            return filePath;
-        }
-    });
-    let addedCount = 0;
-    const skipped = [];
-    // Sign/fetch every file BEFORE opening the response, so that if every
-    // single file fails we can return a clear JSON error instead of sending
-    // a 200 OK with an empty zip body.
-    const preparedFiles = [];
-    for (const file of files) {
-        try {
-            const downloadUrl = yield resolveDownloadUrl(file.path);
-            const fileRes = yield fetch(downloadUrl);
-            if (!fileRes.ok || !fileRes.body) {
-                skipped.push(file.originalName);
-                console.warn(`[download-all] Skipping ${file.originalName}: HTTP ${fileRes.status}`);
-                continue;
-            }
-            preparedFiles.push({ name: file.originalName, stream: fileRes.body });
-            addedCount++;
-        }
-        catch (e) {
-            skipped.push(file.originalName);
-            console.warn(`[download-all] Skipping ${file.originalName}:`, e);
-        }
-    }
-    if (addedCount === 0) {
+    const folderName = link.folderName || 'files';
+    const result = yield (0, streamFilesAsZip_1.streamFilesAsZip)(res, files.map((f) => ({ originalName: f.originalName, path: f.path })), folderName);
+    if (!result.success) {
         res.status(502).json({
             success: false,
             message: 'Could not fetch any files for this folder from storage. Please try again or contact support.',
         });
+    }
+})));
+// 🔒 Admin: Download a specific set of files (by id) as a single ZIP.
+// Used by Artworks/Production/Packaging "Download folder" buttons instead
+// of building the ZIP client-side with JSZip — client-side zipping was
+// pulling every file's full bytes into browser memory before assembling
+// the archive, which is what caused "array buffer allocation failed" on
+// folders with many or large files. This streams server-side instead.
+router.post('/download-batch', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { fileIds, zipName } = req.body;
+    if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
+        res.status(400).json({ success: false, message: 'fileIds array is required' });
         return;
     }
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="${folderName}.zip"`);
-    if (skipped.length) {
-        res.setHeader('X-Skipped-Files', String(skipped.length));
+    const files = yield FileUpload_1.FileUpload.find({ _id: { $in: fileIds } });
+    if (!files.length) {
+        res.status(404).json({ success: false, message: 'No files found' });
+        return;
     }
-    const archive = archiver('zip', { zlib: { level: 6 } });
-    archive.on('error', (err) => { console.error('Archive error:', err); res.end(); });
-    archive.pipe(res);
-    for (const { name, stream } of preparedFiles) {
-        archive.append(Readable.fromWeb(stream), { name });
+    const result = yield (0, streamFilesAsZip_1.streamFilesAsZip)(res, files.map((f) => ({ originalName: f.originalName, path: f.path })), zipName || 'files');
+    if (!result.success) {
+        res.status(502).json({
+            success: false,
+            message: 'Could not fetch any files from storage. Please try again or contact support.',
+        });
     }
-    yield archive.finalize();
 })));
 // 🌐 Public: Upload files to a folder using a short slug
 const decodeSharedSlug = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
@@ -603,7 +572,16 @@ router.post('/customer/save-metadata', (0, express_async_handler_1.default)((req
         taskId: savedTask._id.toString(),
         adminReviewed: false,
     })));
-    res.json({ success: true, data: savedFiles, task: savedTask });
+    // ── Real-time: broadcast the new task + files to all admin tabs ────────
+    (0, taskBroadcast_1.emitTaskUpdated)('task_created', { task: savedTask }).catch(console.error);
+    // 3. Create a ShareLink for the customer to view their uploaded files
+    const shareLink = yield ShareLinkRepository_1.shareLinkRepository.findOrCreate({
+        folderName: `Artwork Upload: #${orderId}`,
+        taskId: savedTask._id.toString(),
+        orderId: orderId,
+        userId: username,
+    });
+    res.json({ success: true, data: savedFiles, task: savedTask, shareLinkSlug: shareLink.slug });
 })));
 // 🌐 Public: Get presigned URL for direct S3 upload via shared link
 router.post('/s/:slug/upload-url', (0, express_async_handler_1.default)(decodeSharedSlug), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -1052,4 +1030,50 @@ router.put('/:id/move', auth_middileware_1.default, (0, express_async_handler_1.
     }
     res.json({ success: true, data: updatedFile, message: 'File moved successfully' });
 })));
+// ─── AI AGENT ENDPOINTS ──────────────────────────────────────────────────
+router.get('/drafts/pending', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const drafts = yield FileUploadRepository_1.fileUploadRepository.findAll({ search: '' });
+        // Filter out locally because findAll doesn't support tag natively without modifying repo
+        const pending = drafts.filter(d => d.tag === 'draft' && d.botNotified !== true);
+        // We need to find the phone number for each draft.
+        // Usually it's in the Task description or userId (if it starts with user_)
+        const results = [];
+        for (const draft of pending) {
+            let phone = null;
+            if (draft.userId && draft.userId.startsWith('user_')) {
+                phone = draft.userId.replace('user_', '');
+            }
+            else if (draft.taskId) {
+                const task = yield Task_1.Task.findById(draft.taskId);
+                if (task && task.description && task.description.includes('Phone Number:')) {
+                    const match = task.description.match(/Phone Number:\s*(\d+)/);
+                    if (match)
+                        phone = match[1];
+                }
+            }
+            if (phone) {
+                results.push({
+                    _id: draft._id,
+                    url: draft.path, // S3 url
+                    phone,
+                    orderId: draft.orderId
+                });
+            }
+        }
+        res.json({ success: true, pending: results });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}));
+router.post('/drafts/:id/mark-notified', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const file = yield require('../../domain/entities/FileUpload').FileUpload.findByIdAndUpdate(req.params.id, { $set: { botNotified: true } }, { new: true });
+        res.json({ success: true, file });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}));
 exports.default = router;

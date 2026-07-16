@@ -42,8 +42,24 @@ class ShareLinkRepository {
             else if (userId)
                 existing = yield ShareLink_1.ShareLink.findOne({ userId });
             if (existing) {
+                let isModified = false;
                 if (existing.folderName !== folderName) {
                     existing.folderName = folderName;
+                    isModified = true;
+                }
+                // Patch legacy links that don't have a slug yet
+                if (!existing.slug) {
+                    const base = slugify(existing.folderName || folderName);
+                    let slug = base;
+                    let counter = 2;
+                    while (yield ShareLink_1.ShareLink.exists({ slug })) {
+                        slug = `${base}-${counter}`;
+                        counter++;
+                    }
+                    existing.slug = slug;
+                    isModified = true;
+                }
+                if (isModified) {
                     yield existing.save();
                 }
                 return existing;
