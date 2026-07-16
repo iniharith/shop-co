@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
+import { useTask, useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
 import { uploadTaskFile } from "@/api/tasks";
 import { useUploadStore } from '@/store/uploadStore';
 import { useUsers } from "@/hooks/useUsers";
@@ -229,8 +229,13 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { data: ordersData } = useOrders();
   const { data: allFilesData } = useAllFiles();
   const { data: session } = useSession();
+  const { data: fullTaskData } = useTask(task._id);
   const queryClient = useQueryClient();
   const router = useRouter();
+
+  // Full task from single-task API (includes activities and comments),
+  // falls back to the prop task from the list (which excludes activities).
+  const fullTask = (fullTaskData as any)?.task || task;
 
   const admins = usersData?.users?.filter((u: any) => ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(u.role)) || [];
   const customers = usersData?.users?.filter((u: any) => u.role === 'client') || [];
@@ -563,7 +568,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
                   <TabsContent value="comments" className="mt-0">
                     <div className="space-y-4">
-                      {[...(task.comments || [])].sort((a: any, b: any) => {
+                      {[...(fullTask.comments || [])].sort((a: any, b: any) => {
                         if (a.pinned && !b.pinned) return -1;
                         if (!a.pinned && b.pinned) return 1;
                         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
@@ -608,7 +613,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                         </div>
                       ))}
                       
-                      {(!task.comments || task.comments.length === 0) && (
+                      {(!fullTask.comments || fullTask.comments.length === 0) && (
                         <div className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-xl border border-dashed border-border/50">No comments yet.</div>
                       )}
                     </div>
@@ -619,16 +624,16 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                       {/* Show activities, sort by createdAt */}
                       {(() => {
                         const activityItems = [
-                          ...(task.activities || []).filter((a: any) => !a.action.startsWith("added a comment")).map((a: any) => ({ ...a, type: 'activity' }))
+                          ...(fullTask.activities || []).filter((a: any) => !a.action.startsWith("added a comment")).map((a: any) => ({ ...a, type: 'activity' }))
                         ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                         
                         return (
                           <div className="space-y-3">
-                            {activityItems.length === 0 && !task.createdAt ? (
+                            {activityItems.length === 0 && !fullTask.createdAt ? (
                               <div className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-xl border border-dashed border-border/50">No activity yet.</div>
                             ) : (
                               <>
-                                {task.createdAt && (
+                                {fullTask.createdAt && (
                                   <div className="flex gap-3 items-center text-sm py-1">
                                     <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/30 shrink-0 flex items-center justify-center">
                                       <span className="text-[9px] font-bold text-primary">✦</span>
@@ -636,7 +641,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                     <div className="flex-1 text-muted-foreground">
                                       <span className="font-semibold text-foreground mr-1">Task</span>
                                       created
-                                      <span className="text-[10px] ml-2 text-muted-foreground/70">• {format(new Date(task.createdAt), "MMM d, h:mm a")}</span>
+                                      <span className="text-[10px] ml-2 text-muted-foreground/70">• {format(new Date(fullTask.createdAt), "MMM d, h:mm a")}</span>
                                     </div>
                                   </div>
                                 )}
