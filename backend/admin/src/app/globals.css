@@ -179,15 +179,27 @@ body.has-custom-bg .bg-muted {
   background-color: rgba(20, 20, 20, 0.85) !important;
 }
 
-/* Active Tabs and Highlighted States */
-body.has-custom-bg [data-state="active"] {
+/* Active Tabs and Highlighted States
+   NOTE: scoped with :not([role="tabpanel"]) because Radix's TabsContent
+   also carries data-state="active" (same as TabsTrigger). Without this
+   exclusion, this rule painted a solid card-colored box behind the entire
+   tab panel content (e.g. the Comments / All Activity empty states in the
+   task modal), not just the intended tab trigger button highlight. */
+body.has-custom-bg [data-state="active"]:not([role="tabpanel"]) {
   background-color: hsl(var(--card) / 0.9) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   border-color: rgba(255, 255, 255, 0.2) !important;
 }
-.dark body.has-custom-bg [data-state="active"] {
+.dark body.has-custom-bg [data-state="active"]:not([role="tabpanel"]) {
   background-color: rgba(40, 40, 40, 0.9) !important;
+}
+/* Defensive: explicitly strip any background that might still land on
+   tabpanel content itself, so nested elements' own bg-transparent always wins. */
+body.has-custom-bg [role="tabpanel"] {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* Glassmorphic Buttons */

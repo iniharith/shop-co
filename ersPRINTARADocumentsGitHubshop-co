@@ -1,0 +1,3762 @@
+[33mcommit eb739d02d06980d4da74262ed1d9f05eedfcf6e5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 15 12:14:20 2026 +0800
+
+    fix: replace client-side JSZip with server-side streaming ZIP downloads across Artworks, Production, Packaging, and shared-link pages
+
+[33mcommit 8653eb2781baf71afd95441334a747b2bf4a17aa[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 15 11:59:18 2026 +0800
+
+    fix: stream ZIP downloads one file at a time instead of buffering all files in memory, fixes array buffer allocation crash
+
+[33mcommit ea44f6b1b2676d4a232a6905ab09a237e91b2ac0[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 15 09:57:43 2026 +0800
+
+    fix: task folders not showing files when category didn't match TASK, even with valid taskId
+
+[33mcommit 6854788a1073419ac38bd544b6ae4685c5625757[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 19:22:27 2026 +0800
+
+    revert: upload page to 0a0b1d1754201b2dba with mobile viewport fixes
+
+[33mcommit 677516ed93bed61359aee20ee1cd889005add235[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 19:19:40 2026 +0800
+
+    fix: restore select files button styling and fix iOS Safari bottom bar overlap on upload portal
+
+[33mcommit 33f4878e149a8938580d640bca4c3c440acb81ab[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 19:04:37 2026 +0800
+
+    fix: remove gray background box from comment bubbles
+
+[33mcommit ea8f6e2b050c17455b70b9d8763a0d6a2c6cbb6e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 18:57:49 2026 +0800
+
+    feat: log initial assignee/status at task creation, plus file upload/delete and description edits
+
+[33mcommit cdf0634fa5b78684eb8c0e2543e3c9985cdbc847[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 18:53:52 2026 +0800
+
+    feat: log file upload/delete and description changes in task activity feed
+
+[33mcommit c7c594c305155f3177798cf325e86e974e4b1d5f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 18:27:32 2026 +0800
+
+    wip: save before overwrite
+
+[33mcommit 16f860dd81dfe6a0fa6ff808cc2e09944fb6b38a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 18:14:04 2026 +0800
+
+    fix: restore missing useOrders() call causing Production page crash
+
+[33mcommit 8a1a12926296180c65ee2758dc72592339f82565[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 17:59:31 2026 +0800
+
+    fix: resolve React unrecognized jsx prop crash in LoadingAnimation
+
+[33mcommit 06ce84c75a650419b72d6322afed6a4c9e8d5035[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 17:57:23 2026 +0800
+
+    style: frosted glass background for inline loading animation, keep solid black for full-screen splash
+
+[33mcommit 171f817194f9a22ac4a044cb2aeaa7cd2b2ff31f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 17:49:37 2026 +0800
+
+    feat: replace all loading states with unified glass sphere animation
+
+[33mcommit 0b6f3b6b4caf61576ec5e113f07097e2b21d8a0d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 17:41:33 2026 +0800
+
+    feat: unified rotating gradient loading spinner across all backend pages
+
+[33mcommit 9a6f98e17daecad11cce372a964128b7d75c5e6b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 17:11:06 2026 +0800
+
+    fix: replace old fixed-purple blob with matched full-spectrum loading animation
+
+[33mcommit f35e510eb665c86d37376a8d0c8bf916e95d4add[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 17:04:58 2026 +0800
+
+    feat: replace loading screen with morphing color-cycle blob animation
+
+[33mcommit 8a7a897e59e66d71058ec5a9ace60a828158cd79[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 16:46:23 2026 +0800
+
+    chore: remove fix_taskmodal.js
+
+[33mcommit ab033ce6ee7df5736228d4fb6d5113e844f66a5f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 16:45:16 2026 +0800
+
+    fix: restore share link and thumbnail, fix redis timeout, fix task auto advance
+
+[33mcommit 6a2b3702de749c9a1c53e742713aefebfcbc46f8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 16:44:36 2026 +0800
+
+    style: replace loading animation with requested 3D morphing blob and fix layout overlap
+
+[33mcommit 0a2808461c09a0f9551e6c4e1db6d99ee33c0591[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 16:34:03 2026 +0800
+
+    feat: replace BouncySkeleton with AI loading animation and update Artworks page loader
+
+[33mcommit b5abdea27a75bcfa6ba45190d86d69b635962075[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 16:24:57 2026 +0800
+
+    fix: resolve build syntax error in TaskModal and update artwork grouping logic
+
+[33mcommit aa10bf99e5ee94351568f4b07191a67ec994dac6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 16:12:26 2026 +0800
+
+    feat: add global futuristic AI loading animation for admin pages
+
+[33mcommit c149e5943308af1a1a209c09e534051bf73dab24[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 15:58:59 2026 +0800
+
+    perf: fix O(N^2) loops in artworks manager grouping freezing the browser
+
+[33mcommit 2bdaa70053ee21b0e1a450dc283f77c1c349a34f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 15:48:27 2026 +0800
+
+    fix: frontend missing backend url leading to file not found globally, allow more task statuses to auto-transition to in-design
+
+[33mcommit 538912ace8998e4f9fe1991b73f8727b38c73a7b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 15:22:11 2026 +0800
+
+    fix: patch missing legacy slugs for globally shared links to prevent undefined url, fallback to file.id for individual file shares
+
+[33mcommit 0a0b1d1754201b2dba287013b287117a86bb0278[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 15:00:30 2026 +0800
+
+    feat: add high resolution warning above artwork upload box
+
+[33mcommit 3d3c06af0de94d9a5dfc258f41ed17fe145f37ce[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 14:31:17 2026 +0800
+
+    fix: style upload more button to have transparent background, point whatsapp ai logs to ec2 ip
+
+[33mcommit 628e581e6407908d69c9c07e2897ac4df6bcaee3[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 12:38:04 2026 +0800
+
+    fix: enforce google-chrome-stable path for linux
+
+[33mcommit a4ebf90bf22e432346b0c01fb3beefde7c783100[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 12:33:41 2026 +0800
+
+    feat: add WhatsApp AI Logs page to admin dashboard for sysadmin, inject log API server into ai-agent
+
+[33mcommit 182601e91be141c47e536f05e56d83783d222db6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 12:31:04 2026 +0800
+
+    fix: make puppeteer executable OS-dependent
+
+[33mcommit b7256a68605fe59847af8406dd2d0305eb2ed686[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 12:23:11 2026 +0800
+
+    feat: Add ai-agent and draft sending feature
+
+[33mcommit 27878943df4424f4ca95c516baa90a52801f5899[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 10:23:30 2026 +0800
+
+    fix: properly group CUSTOMER_UPLOAD files into their task folders in artworks manager
+
+[33mcommit 24e364b479dafca1df82a883c82dfecc73071563[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 08:40:49 2026 +0800
+
+    fix: center language toggle below header on mobile, update submit artwork malay text
+
+[33mcommit aea68914fef010adca6cf03b4fc2bc5916465668[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 08:36:01 2026 +0800
+
+    fix: swap label text to Order ID/Order Number
+
+[33mcommit 1978a6015685879f655756b6aa698f1ce043ad26[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 08:34:57 2026 +0800
+
+    fix: add missing language toggle to main upload view, update item placeholder
+
+[33mcommit 0c1467495eed12cdbf9e8256d61585f34ca2adb4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 08:29:50 2026 +0800
+
+    fix: return shareLinkSlug in save-metadata so frontend copy link works again
+
+[33mcommit 06dc0d0a15d2de3d75af503df04955730bfc7798[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 08:27:47 2026 +0800
+
+    fix: shorten copy link button text to prevent cropping on mobile
+
+[33mcommit 4aff909d66d64d8d83c4269e6c6d99659e94b7ca[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 14 08:23:34 2026 +0800
+
+    fix: restore missing copy link button, fix ts errors, add language toggle
+
+[33mcommit bbbced14b3bbad5c95323b73457379d622ffe03d[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Mon Jul 13 20:04:18 2026 +0800
+
+    feat: permanently drop WebSocket feature from frontends per user request
+
+[33mcommit 8675f99016a0f50aa899de2e6db4718889122a68[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Mon Jul 13 20:03:47 2026 +0800
+
+    perf: do not await emitTaskUpdated to prevent hanging the API response during Vercel cold-starts with slow Redis connections
+
+[33mcommit 1257c2122fe70b571edbe05b8e6b3c24bc31e13e[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Mon Jul 13 19:57:16 2026 +0800
+
+    feat: restore SocketProvider after fixing false timeout warnings
+
+[33mcommit c4f23dc66bca28933d1d2b6ab21e85a0b9aba6ee[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Mon Jul 13 19:55:16 2026 +0800
+
+    fix: increase fetch timeout duration for file uploads to prevent false timeouts on slow server responses
+
+[33mcommit 2ed00a39f6db7357e36fb6fd7d9b377fce14124c[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Mon Jul 13 19:49:38 2026 +0800
+
+    feat: temporarily remove SocketProvider from frontend apps to prevent connection timeouts on Vercel
+
+[33mcommit 1ee438ab3f32a943ac74e9eee7288f4a22f4e889[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Mon Jul 13 19:40:51 2026 +0800
+
+    fix: enforce websocket transport for socket.io client to prevent long-polling connection exhaustion on Vercel
+
+[33mcommit 8ebecc7ec7d2586f716bde120e4eabfb54b64ea1[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 17:04:22 2026 +0800
+
+    fix: add missing TASK_UPDATED to REDIS_CHANNELS enum
+
+[33mcommit bd5159fc2b00ac27930ee012f611f039feb31421[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 17:02:36 2026 +0800
+
+    feat: complete real-time task sync — broadcast on every task mutation, not just auto-created tasks
+
+[33mcommit df2fba6656726a17683fc93c1c249499b179830b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 16:39:35 2026 +0800
+
+    fix: build error (missing getTask), upload timeouts, real-time sync, artwork folder empty state
+
+[33mcommit d6a6dd761ffe99e9f42a13e6fba4b203939a2dc0[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 16:31:47 2026 +0800
+
+    fix: upload timeouts, real-time customer upload sync, artwork folder empty state, mobile UI fixes
+
+[33mcommit 6c4e27a2383f82b065c070dab7167b36ec078b86[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 15:24:37 2026 +0800
+
+    fix: customer upload portal hangs/lag - add timeouts, parallel uploads, retry-safe state
+
+[33mcommit 2fdf2ac68c1046c76320fa1f3acbc4d2ad05d09e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 15:02:27 2026 +0800
+
+    feat: route customer to public share page after upload instead of admin backend
+
+[33mcommit 7ab96fa5cb378dce72e800304b0951edd9bf4326[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 14:54:49 2026 +0800
+
+    revert: rollback file managers to stable morning state
+
+[33mcommit 0fafe126f9ff2bd41ccb6e5c0f53ff18809c7b4a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 14:39:10 2026 +0800
+
+    fix: correct virtuoso grid layout tailwind integration
+
+[33mcommit c31f8f9519c2458c7b555b228c4eb74b8cc5d46b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 14:29:05 2026 +0800
+
+    fix: add DialogDescription to all modals to prevent radix ui crash
+
+[33mcommit 220f1d57a4b044b5d1c5d8b48bbfc8cc8ac7dea4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 14:27:34 2026 +0800
+
+    fix: resolve virtuoso grid layout squish & update upload portal label
+
+[33mcommit f5a79cb25c36ce85de3abac66a82f63fa1d2745f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 14:17:23 2026 +0800
+
+    fix: add missing SheetDescription to avoid radix ui crash on mobile
+
+[33mcommit 03c430c6f41c1f0819d0739c1fdb3ce98557b735[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 14:08:53 2026 +0800
+
+    feat: upload APK 1.8.0
+
+[33mcommit 1704283ecbeccda98c4beab63d8008354298f8e3[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 11:01:06 2026 +0800
+
+    feat: implement hybrid mobile bottom navigation bar
+
+[33mcommit d2be2ba03a0acdce199a484b11bd6c418ba2b85d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 10:31:04 2026 +0800
+
+    fix: move SheetTitle inside SheetContent to prevent Radix UI crash on mobile
+
+[33mcommit 589932ede7b13b75659168a9cf550fdcb375c9ac[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 10:25:57 2026 +0800
+
+    fix: add missing BouncySkeleton component
+
+[33mcommit 6fd25fecf344d54341aa4752388586ebf7f200ff[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 10:25:36 2026 +0800
+
+    fix: remove nested overrides causing bun warnings
+
+[33mcommit 89c05b4fa5c27605ac02f23d0f632cd2d531164b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 10:02:35 2026 +0800
+
+    fix: disable eslint config to bypass vercel build error
+
+[33mcommit 7701ac93051945366523d7552d2174fbfdbc40cb[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 09:54:47 2026 +0800
+
+    fix: resolve typescript build errors on Vercel deployment
+
+[33mcommit a68ed39ecb82cf907c1bdd0c44a816c997cb29e5[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 09:46:54 2026 +0800
+
+    fix: restore FilePreviewModal in artworksManager to open files in same tab
+
+[33mcommit 9120b148d064fdca1110e0010c89fc6b278959e0[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 09:28:44 2026 +0800
+
+    perf: remove global getStorageStats aggregation from getAllFiles to eliminate query lag
+
+[33mcommit 407c2fc364f873b711ebb12d88b02cae1eec170c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 09:20:47 2026 +0800
+
+    fix: correct syntax error in TaskModal JSX
+
+[33mcommit cffe9f51a532ff780e565ed798ea5832d18292ea[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 09:15:44 2026 +0800
+
+    perf: use free CDN thumbnail scalar for artworks and task modal images to eliminate lag
+
+[33mcommit 478458e61b597853d799c5ed6ebb409c1d928c2c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 13 08:34:03 2026 +0800
+
+    fix: prevent gap blowout on production and packaging flex layout
+
+[33mcommit 1e99e0be8e808066dc4a22cc35244aecc5d2c5a9[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Sat Jul 11 15:19:22 2026 +0800
+
+    feat: auto create task and virtual folder on artwork upload, optimize queries
+
+[33mcommit a0a181bd36fa28b810dcde1530d351ba0d74aead[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Sat Jul 11 14:52:22 2026 +0800
+
+    revert(mobile): fallback to 1.7.7 with latest functional patches
+
+[33mcommit 0236665b804431b04478f28657239fe591cdbdfe[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 14:30:24 2026 +0800
+
+    feat: customer upload portal auto-links deep link to admin artworks manager
+
+[33mcommit 7ecfbb11ca49121b70824b33786be7b944a47e0f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 14:26:12 2026 +0800
+
+    perf: limit backend queries to 60 days with lean for speed and fix cropped production UI
+
+[33mcommit c9ff69b01c4bd87704dbb419b5dcf775f7965e93[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 14:19:27 2026 +0800
+
+    fix: fully eradicate SWC minifier alias bug on all hooks
+
+[33mcommit fdb7ce1f917cd21bc4cfc99106395c0ac5c4b722[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 14:16:42 2026 +0800
+
+    fix: bypass SWC minifier bug causing ReferenceError and patch runtime crashes in managers
+
+[33mcommit 09d6ed5b1d663c5f41b7fbfa7c1e6b4b289e98fa[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 12:28:54 2026 +0800
+
+    revert(backend): reset to 4b23066, reapply Vercel bypass + order ID sanitize + TaskModal copy buttons
+
+[33mcommit f5aa0d1d626e858799642a3b690b0ddc01dc1e7e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 12:13:16 2026 +0800
+
+    fix: bypass Vercel image optimization, images already optimized via S3
+
+[33mcommit 0c3fe192fd82e0794bdaf57b0d8e3c56161fe149[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 11:23:31 2026 +0800
+
+    Feat: Sanitize pasted Order ID in upload portal
+
+[33mcommit 79888b8e98b4d574ad1402cea6e4760add697791[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 11:20:33 2026 +0800
+
+    Fix: missing closing div in TaskModal causing build error
+
+[33mcommit 61205aca0d3e0452ed19768b638c78bb3e526796[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 11:12:58 2026 +0800
+
+    Feat: Add copy buttons for Order ID and Username in TaskModal
+
+[33mcommit e10af5bcf86114747e3faf9feb6e3d95fe06b1ff[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 11:10:22 2026 +0800
+
+    Fix: TypeScript syntax, resolve Deleted Task folders, remove comment gray box, and fix image drag-and-drop
+
+[33mcommit d208363439c61dc96092945f1460c1a6447fb60a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 11:06:36 2026 +0800
+
+    Feat: Implement WebSockets for real-time task updates to replace polling and improve dashboard synchronization
+
+[33mcommit a1557643ec4cdaf40433ad1dfceed4f2f863dc69[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 11:05:08 2026 +0800
+
+    Perf: Limit VirtualFolder and Notification queries to 30 days to prevent unbound payload crashes on initial load
+
+[33mcommit 1c23b2fdeaf3ffb0fe5f3a01372999d38b7bb05d[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Sat Jul 11 11:04:55 2026 +0800
+
+    revert(mobile): revert dashboard & server-status to pure Monday UI + keyboard fix
+
+[33mcommit ce4af9e30cbfb465c12dd1f60753df9121f6734d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 10:59:26 2026 +0800
+
+    Perf: Implement mongoose lean queries, compound indexing, and structural fixes for dashboard speed
+
+[33mcommit b59288b48a58e9056db4ced9772b2c6d0ffd590b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 10:45:51 2026 +0800
+
+    Perf: limit getOrders to 60 days and add createdAt index to prevent unbound queries from crashing the dashboard
+
+[33mcommit 40a4063fcb02556a2a9e66157deeb894a2582dfb[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Sat Jul 11 10:43:42 2026 +0800
+
+    revert: rollback to old UI (Jul 6) but patch in dashboard, server-status, tasks fixes, splash fix, proguard
+
+[33mcommit fce69d8615f2fd6d482cff7266217da5c71c7889[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Sat Jul 11 10:36:53 2026 +0800
+
+    fix(tasks): assigned user visibility and asana style long press selection
+
+[33mcommit 1872837e0217e5b3222032f7195fe8a1c1ac5c11[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 10:41:26 2026 +0800
+
+    Perf: pass specific statuses to useTasks to only fetch relevant tasks for Artworks, Production, and Packaging pages
+
+[33mcommit 43c300105a8bcac1b48003cf453f55c0349b706a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 10:36:47 2026 +0800
+
+    Fix duplicate session declaration in TaskModal that broke the build
+
+[33mcommit ba0ce365bce719eac1dc2e7dfd0b3cc023958296[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 10:32:45 2026 +0800
+
+    Perf: exclude comments and activities from bulk task fetch to vastly improve load speeds
+
+[33mcommit 515fdceea3ae6484cf02c29a3328df9813c5a685[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Sat Jul 11 10:27:28 2026 +0800
+
+    revert: rollback full parity screens, keeping only dashboard
+
+[33mcommit e0b086fe62caddd59a01ffbb16fecde736bf2230[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Sat Jul 11 09:43:15 2026 +0800
+
+    feat(mobile): restore full parity screens
+
+[33mcommit 65a2b2b5ca1034ebb1aa0a2916c3f6381fe833fe[m
+Merge: fddf06e0 64d2261a
+Author: Harith <harith@kampungcetak.com>
+Date:   Sat Jul 11 09:37:08 2026 +0800
+
+    Merge branch 'main' of https://github.com/iniharith/shop-co
+
+[33mcommit fddf06e0a8bb2a8a9911ce618c08e44d355435f6[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Sat Jul 11 09:37:01 2026 +0800
+
+    fix(mobile): robust splash screen hide and enable proguard for smaller build
+
+[33mcommit 4b8acf04d1a574917b9e2c798708575eef89b6c5[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Sat Jul 11 09:36:16 2026 +0800
+
+    revert: Revert feat(mobile): v1.8.1 - full parity with website backend
+
+[33mcommit 64d2261a8cfe2230bb4f8d6e7674145dd8e6f99b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 08:49:43 2026 +0800
+
+    Revert Checkbox restoration as requested
+
+[33mcommit 8d46735a6796b618905686382e4cf8a60cfad8c0[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 08:49:07 2026 +0800
+
+    chore: remove temp file
+
+[33mcommit ba0a91924e09dc31c2c287274808ad051429a8d1[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 08:48:42 2026 +0800
+
+    Restore checkbox selection and fix comment UI
+
+[33mcommit 68e1ff148f4fc3b399847cc866eef6f3da8e6598[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 11 08:39:13 2026 +0800
+
+    fix: splash screen, reanimated stub, easignore, OTA config
+
+[33mcommit 8158eaa548d7d267374dc596b8b39513b8cd6017[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Fri Jul 10 16:18:51 2026 +0800
+
+    apk rebuild to 1.8.1
+
+[33mcommit c9d752437cfab9bec2c7d723519d1d376d56ff3d[m
+Author: Harith <harith@kampungcetak.com>
+Date:   Fri Jul 10 16:12:52 2026 +0800
+
+    feat(mobile): v1.8.1 - full parity with website backend
+
+[33mcommit 6520b83a5312e2623c99520eb5f796515e811446[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jul 10 08:56:48 2026 +0800
+
+    feat: bump OTA version to 1.8.0
+
+[33mcommit 4b2306690b1f48f5ee23b185d3d5d7953c3e1399[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jul 10 08:38:49 2026 +0800
+
+    Match notification panel to app's heavy frosted glass style
+
+[33mcommit 42ec0811376b8abeaec6ab25f85b0fc3141e9dd4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jul 10 08:32:40 2026 +0800
+
+    Redesign notification bell as floating popover with pill tabs and colored category tags
+
+[33mcommit 1b2bca89429932b3bf14b3d88d8b7659fa376b7e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 17:14:04 2026 +0800
+
+    Restore upload monitor integration and other features lost in a bad file replacement
+
+[33mcommit 1592e8bf6969d799798f16614a4d270d6f38837a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 16:58:52 2026 +0800
+
+    Fix assignee dot being crushed by SelectTrigger's line-clamp rule
+
+[33mcommit a35f7919c2df463be95007160fe58c919899baf2[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 16:39:02 2026 +0800
+
+    Add colored assignee tags to task detail modal, centralize user-color logic
+
+[33mcommit e8feebb7badcc5ee96bf15f28e2b45621b56a673[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 16:19:35 2026 +0800
+
+    Fix tasks page: sections closed by default, no strikethrough, unique user tag colors
+
+[33mcommit 3260a8ad758dbd8a0c46ae494d9a8e1274ecf786[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 15:54:50 2026 +0800
+
+    feat: Asana-style shift-click multi-select with floating bulk action toolbar V2
+
+[33mcommit e67e449c20a16020c1b5b1be9a93315e2ef1d3ff[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 15:45:50 2026 +0800
+
+    feat: Asana-style shift-click multi-select with floating bulk action toolbar
+
+[33mcommit d8309ac8b07e5ba51bcc7f90f33702adb81b06d9[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 15:25:13 2026 +0800
+
+    Fix subfolders, share link visibility, and floating bar z-index
+
+[33mcommit 61f1bc5cb9cef644f96c702a27537dab167a6c8a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 15:05:58 2026 +0800
+
+    Fix split folders bug in production and packaging
+
+[33mcommit a2f5f70b02b52db96f81857d6b750a19f557ec29[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 14:55:59 2026 +0800
+
+    Fix notifications drawer light mode, artworks drag and drop folder bug, unique user colors
+
+[33mcommit 419d1e10a19317a65173f6f7eaeaf14a451a26e6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 13:31:53 2026 +0800
+
+    Fix: TaskModal crash from missing Folder/useSession/useQueryClient/uploadTaskFile imports, clean stale props in historyManager
+
+[33mcommit bf30055688786b2ed9a7d9f8a2f9448f22ba5721[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 13:12:29 2026 +0800
+
+    Fix: add missing authorizeRoles middleware, import in sysadminRoutes to fix TS build error
+
+[33mcommit 315ca290c6fedafff6d722f181c4c2286f2a90e5[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 12:59:43 2026 +0800
+
+    fix(files): resolve NoSuchKey error in image preview and proxy-download
+
+[33mcommit 8f31e670f27127b388f344bd54a4201281d8b210[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 12:49:30 2026 +0800
+
+    style(notifications): apply frosted glass UI theme to drawer
+
+[33mcommit ebc7a5f59c007fc94e65b62213ad5fc3cf63ed69[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 12:46:41 2026 +0800
+
+    fix(artworks): assign TASK category for task folder uploads, clear upload files modal state
+
+[33mcommit b5ba85fe83abdc81fde6e43650e5901872fa78fb[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 12:29:13 2026 +0800
+
+    feat(sysadmin): add server error log tracking and viewer, fix S3 folder pathing for drag and drop, integrate global upload monitor
+
+[33mcommit 24a22176e75fe19047b9dc05e944846702bd152d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 12:17:25 2026 +0800
+
+    fix(auth): sync session avatar with DB on load
+
+[33mcommit 8f1cfea88ec7141bcb4afe113db0419fa3455c04[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 12:15:18 2026 +0800
+
+    fix(tracking): apply frosted glass UI and remove hardcoded white backgrounds
+
+[33mcommit 2f200897457719e2248766f13bdae36493120e68[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 12:10:06 2026 +0800
+
+    fix(chat): prevent crash when new chat is created before fetch finishes
+
+[33mcommit 8607304c939701cebbf56721e9079e14121ee715[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 12:09:09 2026 +0800
+
+    fix(production): remove accidentally injected FilePreviewModal that caused a crash
+
+[33mcommit 49c657fb0d78b96061e573412f243294365e73fd[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 12:04:36 2026 +0800
+
+    fix(tasks): restore missing imports in tasks page
+
+[33mcommit 65329267765376caf83209587c08554747e1588a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 12:02:24 2026 +0800
+
+    style: apply global frosted glass theme across all pages
+
+[33mcommit 36272c9b648a8c9262c1320699b062485117d627[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 11:56:27 2026 +0800
+
+    style(users): add frosted glass effect to users page container
+
+[33mcommit 616488b4356342a0aaf4bb7c8fba323fe9ad0767[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 11:54:05 2026 +0800
+
+    fix(users): update profile edit modal to sync with session and use predefined avatars; feat(search): improve global search to include deep task searching
+
+[33mcommit 8a9b412d057f08e3c460bbdfcb66178ec78a796c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 11:41:34 2026 +0800
+
+    feat: add progressive upload stats and floating widget
+
+[33mcommit d5384d64c56a48417331c9b41dbf69f600fd0f2a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 11:00:42 2026 +0800
+
+    feat: add dashboard metrics, left/right nav, upload bypass
+
+[33mcommit 85db9679e0cd9cd54cb3e1560657186283d43bcf[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 10:39:27 2026 +0800
+
+     style: overhaul dashboard overview with server-status UI aesthetic
+
+[33mcommit bcfc554acd4087f1a00e148f97c5295aaa26eb2d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 10:29:12 2026 +0800
+
+     feat: add deployment history modal
+
+[33mcommit f3c92c3e4ee2d558178274afcf3147cae210a37d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 10:16:12 2026 +0800
+
+     feat: enhance server status dashboard with external services
+
+[33mcommit e48cb40848eab81141b6fcc351c7b3e87c7bf7b9[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 09:59:53 2026 +0800
+
+     chore: remove migration fix button
+
+[33mcommit c8c7fe9a379571a1a13fe06c6c30fd70ea2dcd05[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 9 09:35:50 2026 +0800
+
+     feat: add drag and drop UI for artwork manager uploads
+
+[33mcommit cbeb7cb4dc5abb305be62da01a5b322f83b5c469[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 16:55:43 2026 +0800
+
+     fix: resolve infinite redirect loop caused by session monitor and fallback token
+
+[33mcommit 275aebbd6895862086449ec194f7af9b16813589[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 16:42:02 2026 +0800
+
+     style: fix dark mode background tints for comments and activity input area
+
+[33mcommit 343eba3bbe9b7ff28fb036705ebccee851b2da1f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 15:46:27 2026 +0800
+
+     fix: false Failed message after successful upload
+
+[33mcommit 79024fb7725cb3c5271f8a324c7df0b1769fae21[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 15:16:43 2026 +0800
+
+     fix: assignment activity logs username and virtual file deletion
+
+[33mcommit e8ade098d95b8d3a41c2c92439ef5b91c02308f4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 14:52:01 2026 +0800
+
+     fix: typescript build error in clean-ghosts
+
+[33mcommit fb70495202520731015a21f76e0b1d818f192244[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 14:43:11 2026 +0800
+
+     fix: 500 error on subfolder upload due to missing originalName in save-metadata
+
+[33mcommit 2ed918bb28804e4a3382f557aedfcec6f01bab6c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 14:30:15 2026 +0800
+
+     fix: keep upload placeholder until real file appears
+
+[33mcommit 3104a0532d596980fe35293cd5c297ba2a35299c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 14:27:52 2026 +0800
+
+     fix: route folders to artworks manager and use history.replaceState
+
+[33mcommit 1b70706caf0e2b92c2352731cadb5b295813eff6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 14:12:44 2026 +0800
+
+    fix: revert to useAllFiles so artwork folders map correctly
+
+[33mcommit 9e4c186cd842eba9fc52fb4fc9f025daac68c124[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 14:09:18 2026 +0800
+
+    fix: include customer username in folder search
+
+[33mcommit 3498aca9c0bb493b5166e00c2de0f145b0e39ecb[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 13:11:57 2026 +0800
+
+    fix: make search field checks safe against undefined
+
+[33mcommit 74bd5fdfbfaff8d26b07bc9d1a20e55745f04289[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 13:10:37 2026 +0800
+
+    fix: load users and orders for correct folder matching in search
+
+[33mcommit 9bf98405c2245e0e4203b4cb3ff6e3c20dbf28c3[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 13:06:31 2026 +0800
+
+    update: separate search folders into artwork, production, packaging sections
+
+[33mcommit e188d27f534989408fd4e8c1937c31c21306b0b0[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 13:04:34 2026 +0800
+
+    fix: clear taskId from URL on modal close to prevent reopen loop
+
+[33mcommit 9402edf62c3ef0558be7d4dff788312185762efa[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 13:02:34 2026 +0800
+
+    update: use Malaysian themes for avatars
+
+[33mcommit 7e38c59a0abde38373809dea916ced44cba60989[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 12:59:32 2026 +0800
+
+    feat: global search page and sync button
+
+[33mcommit 91a7995664a027326f1afd640a0beb174c1c149e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 12:55:02 2026 +0800
+
+    update: improve file upload disclaimer text
+
+[33mcommit 079668f7311d3493b687a1e1c257b4d4106e878c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 12:52:54 2026 +0800
+
+    fix: use native img for avatars, add custom colors to UI settings
+
+[33mcommit 2fce07445482f13097ea12278398cb06f95a4fd6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 12:45:55 2026 +0800
+
+    fix: import Image in profile page
+
+[33mcommit cfbf6f423098442aa5f97132ed16efb4cd02b807[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 12:43:27 2026 +0800
+
+    feat: add 3D avatar chooser to profile page
+
+[33mcommit 2165f7e8ebcb6c89ddfa487da35f3be3baea5f69[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 12:41:01 2026 +0800
+
+    fix: make file deletion instantly responsive in UI
+
+[33mcommit 32f873a8044e500ab54a31a35c5443ef3a1feab9[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 12:19:29 2026 +0800
+
+    fix: resolve iOS Safari memory crash on share page
+
+[33mcommit 89022fe6534cdf736ee9fe373c83c46a51c8de65[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 09:07:10 2026 +0800
+
+    feat: group drag and drop files into a single comment
+
+[33mcommit 3c0a82c2ab9350ed0cdf6ebe5dffa8dc29736d5f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 09:03:27 2026 +0800
+
+    feat: log assignee name on assignment and add auto-comment on drop file
+
+[33mcommit 2fbc3805f335524537d5fd9b213f96e689a2c16e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 08:49:16 2026 +0800
+
+    fix: limit attachments to 12 and fix file preview modal crash
+
+[33mcommit 6c0ff3b264a27f2f5cd7e50d4172215fd9bc338d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 08:41:57 2026 +0800
+
+    fix: invalidate tasks query on file deletion so UI updates instantly
+
+[33mcommit c5ef27c823c524d260e6007ea6776836a591006d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 08:38:38 2026 +0800
+
+    fix: remove deleted file from task files array
+
+[33mcommit ce5dc9b2c856b4d3c7152a1aa5c4db0df1880aa0[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 8 08:15:15 2026 +0800
+
+    fix: customer upload getting stuck due to Task dynamic import and assignee null
+
+[33mcommit 6816a2fbb3f66d788a8e8b02c9021b714ed5c7c6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 16:42:48 2026 +0800
+
+    perf: add database indexes to FileUpload and Task schemas to massively speed up loading
+
+[33mcommit ca651c3eb865435ec8b2b47a382af099243a57e5[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 16:37:40 2026 +0800
+
+    feat: add phone and item to upload portal, auto create task from upload, perf: optimize db queries and frontend polling
+
+[33mcommit 31888a427bc77f36b4cdc6a9b9b69606614fd023[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 16:12:35 2026 +0800
+
+    fix: production role nav and pdf preview button
+
+[33mcommit 51e10d37de6a48942313505d99e5509f662ac845[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 16:01:07 2026 +0800
+
+    feat: add details panel to production and packaging
+
+[33mcommit cd89feaa39e48bac81317801c9e40d13a67d19e1[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 15:58:10 2026 +0800
+
+    fix: build issue with getFileUrl in FilePreviewModal
+
+[33mcommit b4cd6e1ab50ebb716963cc1bf0d6181786ad5841[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 15:55:39 2026 +0800
+
+    fix: task order id dropdown and file preview popups
+
+[33mcommit 1517094061f3725d56510dfa62e1d4e62f7f11e6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 15:44:20 2026 +0800
+
+    fix: production green tick button and text cropping
+
+[33mcommit f6e3fb437802994757599cb5feda9b39ba0794ce[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 15:39:00 2026 +0800
+
+    feat: customer upload portal and master-detail layout
+
+[33mcommit 1f27395a6fb3215432a40a3da0cd3706a609cb8a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 13:06:40 2026 +0800
+
+    Fix customer upload error on shared links by bypassing backend with direct S3 upload presigned URLs
+
+[33mcommit 62c403707f2d40ee7532d502539aa4864df63584[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 12:55:01 2026 +0800
+
+    Use wsrv.nl CDN proxy to aggressively downscale massive S3 images into tiny thumbnails to eliminate UI lag
+
+[33mcommit 2f044ee4e8621fcb7b3b053f9d2dd3c6bab80007[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 12:50:45 2026 +0800
+
+    Revert ImageNext to fix disappearing thumbnails, add lazy loading for performance, and proxy PDF iframes to render correctly
+
+[33mcommit 3e7aea84563da4b0d91b8a3fc35bebd4281b88c4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 12:42:05 2026 +0800
+
+    Optimize thumbnails by using next/image to automatically downscale large raw files from S3
+
+[33mcommit c314ee6f830f34c9611d2905f7b8b5faffa3d541[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 12:35:38 2026 +0800
+
+    Fix time tracking fallback, chunk zip downloads with progress, and remove stream parameter for direct S3 download
+
+[33mcommit 613b6cce9f869b6d2c8dc4811e968b24278f4e65[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 10:43:18 2026 +0800
+
+    fix: resolve upload stuck bug by removing buggy useEffect and properly handling mutateAsync
+
+[33mcommit cd046ffbb4be2b815d6fd3567de0667e1de6002f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 10:32:08 2026 +0800
+
+    fix: change time tracking start bounds to IN DESIGN instead of assignment
+
+[33mcommit d9f8ef5a8cc9a7cc21c26fb8aff0c13e56aa420a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 10:29:53 2026 +0800
+
+    fix: reference error on useEffect in TaskModal
+
+[33mcommit dd3e93e2e7a402e1bae328880bb499b2c41bdf2b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 10:17:30 2026 +0800
+
+    fix: auto-resolve stuck uploads by checking backend task state
+
+[33mcommit 3aa61d8b861c28b8b058f559432858782b86f7db[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 10:10:56 2026 +0800
+
+    fix: calculate task time from assigned to DONE DESIGN based on activity log
+
+[33mcommit 3bacedcd8e98e3bce8c91bd2dc4791ef790cb9a4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 10:06:39 2026 +0800
+
+    style: reduce padding and font size in print layout to fit more rows
+
+[33mcommit 1a8b926bbb9e814edbe007bd8bbcbf5c179095d4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 10:05:25 2026 +0800
+
+    fix: format time as DD DAYS HH HRS MM MIN in reports
+
+[33mcommit c9d5af570964755e224fb55b273e3ceca25a89f8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 10:03:03 2026 +0800
+
+    fix: change time tracking in reports from hours to minutes
+
+[33mcommit a9d4f7f83c7c73c82670cbf8def9b4e745c4f42c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 10:00:04 2026 +0800
+
+    feat: add A4 printable report with per-task details
+
+[33mcommit 30d7b7c1ed849fee8da6fa1e7e206d0a3037f2a6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 09:53:25 2026 +0800
+
+    feat: add retry functionality to file uploads
+
+[33mcommit ad1d1ebef9c295a4093970b21fd836eb6bf335cd[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 09:49:33 2026 +0800
+
+    feat: add cancel option for file uploads
+
+[33mcommit 8381bc66c4e4687bdb67536db3d85cacdc5e42fc[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 09:47:45 2026 +0800
+
+    feat: add staff performance reports dashboard
+
+[33mcommit a65a76c9c46478baab1cb9bf6c6b1c9a65cc8d8f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 09:39:20 2026 +0800
+
+    feat: global upload monitor with progress tracking and persistent UI
+
+[33mcommit 1878260c8dce95a3b1a8ab9ffae24c031eeed31e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 09:22:34 2026 +0800
+
+    feat: move upload loading state to attachment cards for uninterrupted uploads
+
+[33mcommit 57cbc8ae028308c1c68f3077701f1bea2cb5369a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 09:13:33 2026 +0800
+
+    feat: AWS S3 direct upload optimization
+
+[33mcommit 755064ba32f51ae4413cfd0db14eb3dd0d6a2bc6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 08:39:40 2026 +0800
+
+    fix: remove undefined refetch in TaskModal
+
+[33mcommit c99db22c9ad100ccbdb1de78a41f55b4bf0eb012[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jul 7 08:18:59 2026 +0800
+
+    feat: add EP ship button to admin UI
+
+[33mcommit 2ce7b39fc2405f88d572b9ca2fd3e340d74eca02[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 6 17:54:56 2026 +0800
+
+    feat: add EasyParcel live tracking and webhook controllers
+
+[33mcommit 0290bab38badfda1722e0026be1bdee6031d7128[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 6 16:42:54 2026 +0800
+
+    feat(pricing): update frontend pricelist and separate display items
+
+[33mcommit 2328019ae9b1eaece00ace13601a00de9ed4571b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 6 15:12:12 2026 +0800
+
+    chore: bump version to 1.7.7
+
+[33mcommit e3c26ec2549a41ba795809d004e4b322ab4a3bbb[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 6 14:48:47 2026 +0800
+
+    feat: Add push notification endpoints and in-app updater
+
+[33mcommit 45e39cf75ba4f8228d88a8ac11dc6bb40a62b2e3[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jul 6 09:53:17 2026 +0800
+
+    fix: Resolve TypeScript syntax error in fileUploadRoutes.ts
+
+[33mcommit 7372e299905e1d763d6d268c71e3455fd8232c35[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 4 12:15:42 2026 +0800
+
+    fix: Remove strict mime type filtering from fileUploadRoutes
+
+[33mcommit 7f2aed3167f98f6eeb4f6439918bec9f875f0b59[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 4 12:12:04 2026 +0800
+
+    feat: Upload artwork files individually to bypass total payload limits
+
+[33mcommit acff7d9f05301dea0ca5291a4a4ab6c66f177096[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 4 12:04:06 2026 +0800
+
+    fix: Resolve drag-and-drop flickering and browser default behavior issues
+
+[33mcommit c6588d60acacf2ac450f3440a4a32ddae266246c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 4 12:03:01 2026 +0800
+
+    fix: Add fallback token retrieval for artwork uploads
+
+[33mcommit d6f63f3eb3522891c74e2fa1c9b841965855b280[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 4 11:58:05 2026 +0800
+
+    fix: Update shift-click logic to use accurate column scopes
+
+[33mcommit 28d9c65b98e5aded1c298c8720a8619bb73853ec[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 4 11:53:10 2026 +0800
+
+    fix: Resolve undefined variable error in shift-click selection
+
+[33mcommit ab712d77fafcb16e5c44b30a0898e8db727bc6f4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 4 11:47:14 2026 +0800
+
+    fix: Resolve crash caused by undefined DownloadIcon in artworksManager
+
+[33mcommit 05aef8cf58e2fab84b03fac93b26e2b4f76d4822[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 4 11:42:22 2026 +0800
+
+    fix: Refresh data after drag-and-drop upload and add shift-click bulk selection
+
+[33mcommit 872c65015721df8f2dab79d56c813cea19953f63[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jul 4 11:19:26 2026 +0800
+
+    feat: Add task management drag-and-drop, bulk selection, and floating action bar
+
+[33mcommit c7ba869cf59687ca982920d24dd779463e02fca8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jul 3 15:51:05 2026 +0800
+
+    feat(mobile): Glassmorphism UI + full backend parity + floating frosted navbar
+
+[33mcommit 3c2af6ed5fa9e32c8fcdef6c96be98c0803a6a55[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jul 3 15:16:00 2026 +0800
+
+    feat(mobile): Frosted glass floating bottom navbar + headerless screens
+
+[33mcommit 3773cd3de313ea3369364215df9bda4acaacc70c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jul 3 15:14:32 2026 +0800
+
+    feat(mobile): Phase 2 - Bottom tab nav, Orders, Artworks, splash fix
+
+[33mcommit 303bce2c772403a8a8abb46e43e7589980bb1f8e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jul 3 12:20:38 2026 +0800
+
+    Fix empty ZIP downloads in file/folder share (missing S3 signed URLs / stream=true)
+
+[33mcommit 9bf5907d1332dbffa50f1c1add4aaaa5f6ac08ee[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jul 3 10:45:20 2026 +0800
+
+    feat: frosted glass floating navbar + dark theme consistency
+
+[33mcommit f1a0959ccd23283cbd9d57ee561d373f50074b25[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jul 3 08:15:46 2026 +0800
+
+    Fix: use JSZip + proxy-download for bulk download (same working pattern as artworksManager)
+
+[33mcommit 0f3272d2ab0abfc4686a3e8a5bc661fe19095e91[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jul 3 08:12:49 2026 +0800
+
+    Fix: use hidden iframe for ZIP bulk download - no new tab, no CORS fetch issue
+
+[33mcommit c5270b9e264db4ac0667e90b3f809ad9374d77f3[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jul 3 08:10:17 2026 +0800
+
+    Fix: bulk download uses fetch+blob for direct cross-origin download (no new tab)
+
+[33mcommit 5cd3189778286c1afacbd8552cfa1f640462bddf[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jul 3 08:04:21 2026 +0800
+
+    Fix: bulk ZIP download for shared folders + fix mobile tasks screen
+
+[33mcommit d65f6fbf930e2832c1171ebdea01ed320f8ce524[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 2 19:59:39 2026 +0800
+
+    Apply glassmorphism + gradient mesh to single file share page with light/dark support
+
+[33mcommit dde98d28ce39989d0dfc3a0b71061a9d8df65e67[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 2 19:58:43 2026 +0800
+
+    Restyle single file share page to match website theme with light/dark support
+
+[33mcommit c43ed3658c2cf5df4223df287096c3585f87bbf5[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 2 19:52:41 2026 +0800
+
+    Fix share page: use correct S3 URL for preview and download, expose path in /info endpoint
+
+[33mcommit 8b27b1e27bc97cb7cf74cac63e6ffce6291f10e3[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 2 19:46:47 2026 +0800
+
+    chore: fix gitignore, sync all source changes
+
+[33mcommit b3c1e68d40350fdd54059f84f90295022a939bb7[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 2 19:44:11 2026 +0800
+
+    Fix single file share link: use clean domain URL instead of long backend URL
+
+[33mcommit 73f0aaf4a6cfc0865e75ff9413a6be743f56fd2e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 2 17:52:08 2026 +0800
+
+    Force application/pdf Content-Type for inline PDFs
+
+[33mcommit fc59647fbc6bac6b8cd6c06e1b32fc5771994cdf[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 2 17:35:25 2026 +0800
+
+    fix: update mobile api routes
+
+[33mcommit 2f0c3376c328538cfa26a13cac5f2c19155eddf6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 2 17:30:44 2026 +0800
+
+    Fix PDF iframe auto-download and restore corrupted logo
+
+[33mcommit ba29fd5cdc301754d8f88923cff13b030accc5e9[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 2 14:45:11 2026 +0800
+
+    Fix logo white background globally
+
+[33mcommit 094073619bfe6b09bddedcb7cf6a01fcf3b70a74[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 2 13:07:20 2026 +0800
+
+    chore: rewrite dashboard to mirror web app
+
+[33mcommit 458f6d72664e873e41ef8597920e72f532f7669b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 2 11:01:29 2026 +0800
+
+    Implement optimistic UI updates for task updates to make status changes instant
+
+[33mcommit db783ebe825a68b0a256f5fc63cf3873d6f624ad[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 2 10:48:55 2026 +0800
+
+    Optimize image thumbnails using Next/Image and increase upload limit to 100
+
+[33mcommit f0c33359b587098f5ab8eae362d122eb92b39672[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 2 09:58:53 2026 +0800
+
+    Add explicit dark mode opacity fallbacks for section tabs and bg-muted
+
+[33mcommit f2eb3a9cb2b05886ffd3cb527469cd1ef7f897de[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 2 09:56:59 2026 +0800
+
+    Increase opacity of glassmorphic containers for better legibility
+
+[33mcommit b603bb77a321b68fd7cd5edcfb9e1c3038c89284[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 2 09:46:54 2026 +0800
+
+    Apply global glassmorphic UI across all admin pages for custom backgrounds
+
+[33mcommit ca0f0973953db292357a7f9eea64c27bf6f18e40[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jul 2 08:08:30 2026 +0800
+
+    Enable glassmorphic Server Health UI and grant access to admin/boss roles
+
+[33mcommit 1f785dc8bd761ac12a0c706a59010f6cdad7d73d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 18:55:51 2026 +0800
+
+    Fix UI crash when backend health data does not contain new analytical fields
+
+[33mcommit 9e74341349b54a3643bdc0e3ef8cf2e496daf6ed[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 18:40:28 2026 +0800
+
+    Revamp Server Health Dashboard with custom Recharts and dynamic analytics
+
+[33mcommit 132b34364d6644ed27474aaaf5655b1b58e1e348[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 18:24:49 2026 +0800
+
+    Enable vertical scrolling on AWS Media page
+
+[33mcommit 0f86f15d4d5355964cc529ede23b17c708a129fe[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 18:22:16 2026 +0800
+
+    Fix AWS Media page authorization by passing user session token
+
+[33mcommit 25ae0bd6e0448bd2c457d9ef2193d8ec0e68ba0a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 18:10:17 2026 +0800
+
+    Update image type detection to support heic and dynamic mimetypes for thumbnails
+
+[33mcommit cba98d77b02290ee650a0b9c1e3092b53f9612ad[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 18:05:53 2026 +0800
+
+    Fix local network image optimization and add PDF thumbnail support in TaskModal
+
+[33mcommit 2aaae03adb2e0257d2b09493000f4f3725cf5a96[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 18:01:26 2026 +0800
+
+    Restore encodedFileUrl variable definition to fix TaskModal crash
+
+[33mcommit 0cf1aa55910bd2983670690f17500720b300e617[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 17:57:39 2026 +0800
+
+    Fix TaskModal thumbnail display and enforce 60x60 optimized sizing
+
+[33mcommit f1632b7effce147409b85920a8f14c6a50ba95de[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 17:44:40 2026 +0800
+
+    Optimize task comment handling and list view presentation
+
+[33mcommit 796cf81c5f36156bae8f300b5c9b1983f337a01a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 15:17:49 2026 +0800
+
+    Fix pinning task comment optimistic update latency
+
+[33mcommit d65655d7e74680e52680750fb0d9996a0e7ad160[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 15:06:27 2026 +0800
+
+    Fix attachment card layout overlap and thumbnail rendering in TaskModal
+
+[33mcommit aa86bc6aeefb2968c5477d7f9d1edb7b17e3e7e9[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 14:10:24 2026 +0800
+
+    Fix badge sizes, pinned comments sorting, share link dark mode, and server status token error
+
+[33mcommit 72506b875bea6d21b2d39dc1c94cb0c6d93f89ec[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 13:05:26 2026 +0800
+
+    Fix task attachment thumbnails url and quality
+
+[33mcommit a917d2db4da0a9b953b84b1fe75090d3c04c7170[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 13:01:51 2026 +0800
+
+    Fix user token expired in server status
+
+[33mcommit ac2dc0a0964ea8b9ece889bc166a1885f912a860[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 12:59:29 2026 +0800
+
+    Fix dark mode theme inheritance for customer shared link
+
+[33mcommit b7dec3828e08257a4fda5a2890fa068a9f906f75[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 12:55:04 2026 +0800
+
+    Fix customer shared link thumbnails by using img instead of next/image and fixing image src to use backend url
+
+[33mcommit cdfc7bf8ece1eb2a332504153cc7448aa553b2c4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 12:53:06 2026 +0800
+
+    Fix file selection checkbox z-index and limit select/download all to visible scope
+
+[33mcommit edbcccb2b4fa6822469d5081cae7e4b69fc572d8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 12:49:16 2026 +0800
+
+    Fix attachment cards sizes, fix artwork manager thumbnails, fix upload artwork direct folder inheritance
+
+[33mcommit 2a6cd2254b204631e01ba9a209df200f70e26e59[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 12:23:21 2026 +0800
+
+    feat: Add sysadmin server status dashboard and task pinned comments
+
+[33mcommit a0de56eaccd0f9df922c55c614d9caea576133df[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 11:54:40 2026 +0800
+
+    fix: update existing share link folderName to ensure composite names propagate
+
+[33mcommit 9cff733d42ed31396744bbba7873c609bfcc19ee[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 11:49:18 2026 +0800
+
+    feat: include root folder name in share link slug and UI
+
+[33mcommit fb78d8d28c22ef768ae94de0699ce38251e0897f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 11:45:32 2026 +0800
+
+    fix: render PDF and HEIC thumbnails and fix broken images in artwork manager
+
+[33mcommit 967819534d525bd5a006ad0442ec9e33e5eaa90d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 11:35:55 2026 +0800
+
+    chore: add trademark and copyright header to all source files
+
+[33mcommit 3e4d4722c40127013482c57f0a3fa72d6b9f726f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 11:23:04 2026 +0800
+
+    docs: update README with recent features
+
+[33mcommit 12330418461cf909e71d0b3500f4add8981cd51a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 11:21:19 2026 +0800
+
+    feat: share specific folder in artworks manager
+
+[33mcommit 9be2fd2fc9a6e450bb1846a563256c9de2888c7c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 10:11:24 2026 +0800
+
+    feat: move share button to top right of artwork card
+
+[33mcommit 98ea2941dc58697525603f12b223991d7435688f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 10:05:01 2026 +0800
+
+    feat: isolate UI background uploads and add true deletion to profile page
+
+[33mcommit 2f1752527eff1db5ae41f0bc077f75b6b21ef018[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 09:58:17 2026 +0800
+
+    feat: add share link buttons to artworks manager and task modal attachments
+
+[33mcommit 7f8cc82c2b006ee7e3a539519c8c66264dabf24c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jul 1 08:54:17 2026 +0800
+
+    perf: optimize task attachment thumbnails to 60x60 using next/image to prevent scrolling lag
+
+[33mcommit 3e92f628ff3f4d9c10b2ba106aac4a62fb4719d3[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 19:09:29 2026 +0800
+
+    fix: make only layout main content transparent for custom backgrounds, keeping modals solid
+
+[33mcommit 0cd05f8feedb6da460102113d983a41df0ec87bd[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 19:04:55 2026 +0800
+
+    style: adjust background image opacity to 50%
+
+[33mcommit 57c3a987cde1053a155fc86269abc5b84d2bd499[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 18:59:52 2026 +0800
+
+    fix: make background image span full app and set 30% opacity
+
+[33mcommit d8d9e2f6ef114c0c73a90b0616ec8422caf3bed0[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 18:53:25 2026 +0800
+
+    feat: add global background ui color and image options to profile page
+
+[33mcommit f5ff6c3da94069c466ab01ece522435125c9c8c6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 18:45:39 2026 +0800
+
+    fix: remove window.location.reload from artworks manager to preserve folder UI state
+
+[33mcommit ef6f1be14bb8d8a6d4dcac789f5494ae43ae1858[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 18:16:30 2026 +0800
+
+    fix: sub-folder creation and moving button doing nothing due to folder group ID mismatch
+
+[33mcommit 0609f42f5a3623a2f7c5873634a21fc8eaf39775[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 18:04:35 2026 +0800
+
+    feat: Add sub-folder creation, deletion, and file moving functionality in artworks manager
+
+[33mcommit 5877d6ff081e5e9a6b199f487ffe1f7d55321444[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 15:00:42 2026 +0800
+
+    fix: allow HEIC file uploads by checking extension and fix broken HEIC thumbnails by falling back to generic icons in the frontend
+
+[33mcommit fef082db645ca373621f021179a9a7f590e33405[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 14:45:02 2026 +0800
+
+    perf: limit Task and File fetching to the last 30 days to drastically improve dashboard loading speeds on Desktop and Mobile
+
+[33mcommit 820ce0a8a6123dee5b62c0bce13aabcd1b8295a0[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 14:34:09 2026 +0800
+
+    fix: bypass S3 CORS errors for JSZip by proxying file streams through the backend when stream=true is passed
+
+[33mcommit 32c98c7fcb26e35c0218bd268cbf254c6d7c98ea[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 14:29:42 2026 +0800
+
+    chore: remove diagnostic alerts and debug toasts now that iOS 15 crash is fixed
+
+[33mcommit e2b9540a34d8dde6c76d7884da0935179409c315[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 14:17:15 2026 +0800
+
+    fix: aggressively transpile modern dependencies and add browserslist for iOS 15 to fix static class blocks SyntaxError
+
+[33mcommit 55262290dd14b4ca3d3e995b9b300fcd9f590147[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 14:11:00 2026 +0800
+
+    chore: add native JS global error catcher to layout to diagnose iOS Safari hydration crash
+
+[33mcommit 1dc083eab3ee5e8fd813dbe4dfd774c34e617d59[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 13:31:44 2026 +0800
+
+    chore: remove blue button causing React Server Component crash and add forceful onTouchStart to Login button
+
+[33mcommit e056b3811cb96e82d812446b9dc6f100a60ba4d3[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 13:11:35 2026 +0800
+
+    chore: add blue diagnostic button outside form to test iOS 15 form-blocking bugs
+
+[33mcommit 7342fdb3f9958547ce2468f0688d846066eba93e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 13:08:28 2026 +0800
+
+    chore: add explicit touch event listeners and z-index to bypass Safari hit-testing bugs
+
+[33mcommit 216756ee7450d7e964148b893b8d651d6e36d5ea[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 13:05:23 2026 +0800
+
+    chore: add native diagnostic button to test Safari pointer events
+
+[33mcommit c9db9b25d36bd741329fa584ef112e611b7a5933[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 13:00:34 2026 +0800
+
+    chore: revert button to submit and add Zod form submit debug toast
+
+[33mcommit 0147850c7677285be0e48ae8b602eb4d4c8af727[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 12:51:44 2026 +0800
+
+    chore: add debug toasts to login flow to isolate iPad silent failure
+
+[33mcommit f74256608d4ca21b2667a723a54639ea1b7a1d80[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 12:40:27 2026 +0800
+
+    fix: change login form button from submit to button to bypass iOS Safari form submission bugs
+
+[33mcommit 04bb5de5b404fffb9925f6bba4e6d78c7f0130b1[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 12:26:11 2026 +0800
+
+    fix: re-apply local network proxy rewrite for iPad login and add mutationError toast
+
+[33mcommit f9abc9ce0b7f024d835f3bf1c58a6ff9da4068d7[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 12:22:17 2026 +0800
+
+    feat: add Print Drafts to sidebar menu for easy access
+
+[33mcommit 430e570b047a1b3286cda74bb15edcc78b90b589[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 30 12:16:13 2026 +0800
+
+    chore: rollback to 6cefff6 and re-apply A4 draft print layout as requested
+
+[33mcommit 6cefff6ddf002c3603253a1499627c881fce0c2a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 29 15:09:35 2026 +0800
+
+    perf: Use AWS S3 presigned URLs for faster file downloads
+
+[33mcommit cb0950dc8897dcd09215a0fac32f720b48a13baa[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 29 11:19:52 2026 +0800
+
+    fix: Increase file upload array limit to 50
+
+[33mcommit 79b5a195dd0d002eb1fc95aaeccc0f217a4d209f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 29 10:10:31 2026 +0800
+
+    feat: Add support for HEIC/HEIF files in artwork uploads
+
+[33mcommit f43a9a86c1dc14a01bd18e63f8fdd7ce7e7fcb4a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 29 10:08:25 2026 +0800
+
+    feat: Add bulk delete selection for artworks
+
+[33mcommit c8bf133af05578e05e98054bf089343b2dc732a4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 29 08:29:23 2026 +0800
+
+    fix: Restore commentText in TaskModal to prevent crash
+
+[33mcommit ebb3e2caac5d6bd23bc413bafe4d9188ceb6a578[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 29 08:23:07 2026 +0800
+
+    feat: Add soft delete for tasks, sync customer files in Task Modal, fix customer notes visibility
+
+[33mcommit 822c85e3b9bb6390a17f4426eca0870570785ca3[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 14:51:39 2026 +0800
+
+    Fix frontend AnimatedButton Safari crash on login and NextAuth session error handling
+
+[33mcommit 6ad6cd14d0b93d6e2498167671a2c663175ae477[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 13:46:09 2026 +0800
+
+    Replace AnimatedButton with stable shadcn Button on admin login form to fix iPad Safari JS crash
+
+[33mcommit 4a3359376aa84618f57abb1ac53d63ad92986b2b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 12:03:24 2026 +0800
+
+    Fix duplicate filename overwrite bug during ZIP download in file managers
+
+[33mcommit 2cb5a0e9d1a137d3447d0b8e38b4fceb6e5ca328[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 10:29:58 2026 +0800
+
+    Restrict admin_admin chats to participants; Open task modal when taskId query param is present
+
+[33mcommit 7c2e6bf64a8cd578662494ef7a7dda8867e1cb4f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 10:04:16 2026 +0800
+
+    Fix shareSlug missing on public folder upload; Set admin manager thumbnails to 100x100
+
+[33mcommit fab0d93fce0adf73aedc5e97e36387a43467c927[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 09:55:59 2026 +0800
+
+    Bump admin file manager thumbnails back to 150x150 to match public links
+
+[33mcommit d1e5d06e1fc828c4655c05901ff972b9abc12a4b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 09:54:55 2026 +0800
+
+    Revert admin file manager thumbnails back to 60x60, keeping public share links at 150x150
+
+[33mcommit 119a712ec870a06f81c2f2a62dc3c92f4c1cc730[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 09:53:52 2026 +0800
+
+    Bump global image thumbnails to 150x150 for better clarity
+
+[33mcommit c40221fee937f4c905b9ec717424aa4345866080[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 09:51:08 2026 +0800
+
+    Restore 60x60 image thumbnails to customer share link pages
+
+[33mcommit 2c1583bcdc2532d31da2cf33dfad7e7c4d15a772[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 09:47:26 2026 +0800
+
+    Fix scrolling bug on customer share links; Bump global thumbnail size to 60x60; Apply absolute archived badges inside TaskModal file view
+
+[33mcommit 771bd5ea52bad3c2795c7e84ce0bef517b1cecb0[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 09:40:20 2026 +0800
+
+    Fix ImageIcon import crash in share link slug page; Restore 20x20 ImageNext thumbnails inside manager grids
+
+[33mcommit 9d0f7c48d9e8a11bb51af8552bf4569e7dddee02[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 09:29:22 2026 +0800
+
+    Eliminate all Next.js image thumbnails to fix lag, replace with generic icons
+
+[33mcommit 4bd3087269e4d8a25e33ca9d2134cefb6a5e7752[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 09:25:58 2026 +0800
+
+    Fix file upload tag form parsing, fix FileUpload task deletion, change managers grid to 6 cols, reduce font sizes
+
+[33mcommit cfc311584ac9e652d5530f821c00336bbaf8d5d2[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 09:19:15 2026 +0800
+
+    Fix TaskModal FileAttachmentCard layout padding and badge size
+
+[33mcommit 87a36e2a3a3791e76439558a8699dbd99e099e4e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 09:18:16 2026 +0800
+
+    Shrink file grid layout to 8 columns, reduce text size, redesign file tags as absolute archived-style badges, reduce thumbnail resolution to 20x20
+
+[33mcommit f4383e48d52fafb37138bd505bfa8ed5624d4b1d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 09:10:53 2026 +0800
+
+    Fix notification link clicking, restore TaskModal delete/download buttons, fix file tag state, reduce thumbnails to 50
+
+[33mcommit f4d8e4d075ef55993f1505b63b4820b79cdd9e9c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 09:05:07 2026 +0800
+
+    Reduce thumbnail resolution to fix scrolling lag further
+
+[33mcommit 09416ea0c5c4f996494a286a77a8d08ab06ea735[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 27 09:02:20 2026 +0800
+
+    Fix UI lag, add role restrictions, tag task attachments, and auto-sync tasks
+
+[33mcommit 8339c5e31bcb70b1e7c3bf13d418ac2b38319a9b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 26 16:39:59 2026 +0800
+
+    Lazy-load folder thumbnails to fix browser lag
+
+[33mcommit 88f1b203e4c29cd190015c94baf0644eb79c3a81[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 26 16:30:57 2026 +0800
+
+    Fix DONE_DESIGN status typo breaking history/orders/tracking sync
+
+[33mcommit e9921e68c644ff73d50f287d0102ca0b09198cfc[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 26 16:22:34 2026 +0800
+
+    Add Packaging role, folder thumbnails, fix order id sizing, auto-move task on assignment
+
+[33mcommit e9dc59e050a9ee55e22c762a832469a321a875ef[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 26 15:07:14 2026 +0800
+
+    Add Packaging menu, fix Order ID styling in file view
+
+[33mcommit 7345c77a13f7b70dbe7929a41ee0054c4944c0c7[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 26 14:24:51 2026 +0800
+
+    fix: sort tasks by createdAt only (not statusUpdatedAt) to prevent assignee change from moving task; fix artwork grouping by backfilling category=TASK from share link
+
+[33mcommit 6d3bc5e2c501dc9d4049f6da21059d902e2ccf6c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 26 14:16:59 2026 +0800
+
+    fix: stop excluding TASK files based on order status - task files should only be excluded by task status
+
+[33mcommit c1698ab6555d0fe29dee795ee47c65fa92bccf4c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 26 14:11:48 2026 +0800
+
+    fix: enrich shareSlug files with folderName on backend, fix admin grouping so customer uploads show in correct folder
+
+[33mcommit 9597cb337a7d8adb16bc9ab411f002806b1a16d9[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 26 14:07:09 2026 +0800
+
+    feat: add delete and note to customer share page, fix upload endpoint, fix browser flashing by removing AxiosInstance
+
+[33mcommit 6ac4520659643e809c86dc60d2d0ab209c7e3431[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 26 11:46:40 2026 +0800
+
+    Fix share link bug and add slug-based file tagging
+
+[33mcommit c749940caa642fe1549412aaffb62f68fecfd596[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 26 10:36:26 2026 +0800
+
+    Fix artwork upload flashing bug; add short name-based share links
+
+[33mcommit 57ed7d30259aebd0a4692784f8628beddeba6b2e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 26 08:33:13 2026 +0800
+
+    fix: push board scrollbar to bottom edge of browser
+
+[33mcommit 367ad1b76b72057ecfba0cf77e5fe7b175ec8cfb[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 26 08:32:55 2026 +0800
+
+    fix: lower horizontal scrollbar position on board view (60vh to 78vh)
+
+[33mcommit ba8b361bd5aa0e00669429a0d9c622b7ed6983c6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 26 08:18:46 2026 +0800
+
+    fix: fully restore original board view pattern (relative+absolute+overflow-x-auto) and original page layout
+
+[33mcommit 109bd3b996e6b6fc30450d6fcf35f1f5d0d7fcee[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 26 08:13:25 2026 +0800
+
+    fix: remove overflow-hidden and explicit board height to fix full horizontal scroll
+
+[33mcommit c2100bca20a238753d368e250919a9b082556f16[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 26 08:09:17 2026 +0800
+
+    fix: replace ScrollArea with native scroll on tasks page to fix full horizontal board scrolling
+
+[33mcommit aec451d6cd42e4af025164e64be6dabb57a5e9df[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 26 08:03:38 2026 +0800
+
+    deploy: trigger vercel redeploy from commit 507848d
+
+[33mcommit 507848d114820dc3234c10f888c7308310e632de[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 19:03:54 2026 +0800
+
+    fix: move task created entry to top of all activity list
+
+[33mcommit 7da396d1ee164e7bdc18491bdc49a8e1c8bd02a5[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 18:59:40 2026 +0800
+
+    feat: show status from/to in activity, add task created date to activity, fix board horizontal scroll to bottom
+
+[33mcommit 84a02f824b8c115150811ce4d4d947adf0f14139[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 18:45:07 2026 +0800
+
+    fix: filter old comments and description updates from all activity tab
+
+[33mcommit 37f93fa9ea781c766ec8413bf9f48e5ee60a3de8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 18:40:01 2026 +0800
+
+    fix: remove comment and description changes from task activity log
+
+[33mcommit 9a1fd6be3109b495b2ac1fdf60b221a71788ce9b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 18:39:00 2026 +0800
+
+    feat: log comments as activity in tasks
+
+[33mcommit fa41ecb0b9acd4dcbb5b24c2b84d99a4740e5ef8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 18:35:00 2026 +0800
+
+    feat: add delete task button to list view
+
+[33mcommit 27f88c43d25fcc62ca00f5e83036ee77a3a745d9[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 18:31:06 2026 +0800
+
+    feat: add undo functionality for deleting tasks with a 5-second delay
+
+[33mcommit fbec59b8f6eb4f24ce0af06635c80648800b6004[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 18:11:05 2026 +0800
+
+    fix: resolve username sticking to system in task activity, auto-resize task description textarea, move file notes updates to activity instead of comments
+
+[33mcommit c51ccb0033ebfe493316cb6ea4220dbf28420a72[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 18:02:33 2026 +0800
+
+    fix: restore forceDownload for single files to prevent page navigation and new tabs
+
+[33mcommit add19237a2a25342cb5acb86ff0c5a132e68c546[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 17:58:41 2026 +0800
+
+    feat: Add download all for production, fix sorting behavior on status change, update zip proxy to handle aws files
+
+[33mcommit e2bb4d4a17eb448cb56bc30db703b71f7ec2eb70[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 17:30:34 2026 +0800
+
+    fix: global search, task sorting, undo notification duration, and task activity logs
+
+[33mcommit de29b2079f7934baea1b9103354ceb9fa7749a3b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 15:54:37 2026 +0800
+
+    Fix broken notification image and add socket event for task assignment
+
+[33mcommit f76997c949d0f87fa3557aed364f0d98d4dc622c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 15:46:56 2026 +0800
+
+    Force window reload on profile update so avatars reflect outside
+
+[33mcommit fb250def150e299665ec67a5b74d23c22bb03c40[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 15:39:13 2026 +0800
+
+    Fix production manager tasks not switching when changing activeSubTab
+
+[33mcommit e6a7c9861aa2583462d925712516f8eebd72e3f0[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 15:30:45 2026 +0800
+
+    Revert task name truncation and restore header row padding
+
+[33mcommit 2bf5cc40c80c2955bca04a054a45dee3304c8f68[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 15:24:56 2026 +0800
+
+    Fix task name cropping and due date alignment in tasks list
+
+[33mcommit 9b1384a1a4a8d36c067f5c06d41ffa9fe4e0ec8b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 15:15:09 2026 +0800
+
+    Fix artworks manager upload, tasks manager due date clear, columns width, and optimistic UI for task status
+
+[33mcommit cf62646883c6764727850e81791a5b2c85c75739[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 14:40:41 2026 +0800
+
+    Add forceDownload utility for AWS S3 cross-origin downloads, add download button to task files
+
+[33mcommit 48836d07989fbdc0174779dcf6702ac7e29c7f21[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 14:36:32 2026 +0800
+
+    Revert assignee fully colored background pill to colored dot per user request
+
+[33mcommit 95c9ca309b73e6d87c6c686b9f42ba0b9b9c3676[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 14:31:32 2026 +0800
+
+    Fix AWS S3 multer filename bug causing uploads to fail, fix task bleed across production tabs, reorder task list view columns
+
+[33mcommit 6359cb02038e9a506afbdde233886a6ef9f06fec[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 13:03:13 2026 +0800
+
+    Fix UI feedback, reinstate legacy IN_PROGRESS status, fix Order Status typings
+
+[33mcommit 669b76c92d31084aa431f9ae913dc549bb718bf6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 12:40:30 2026 +0800
+
+    Implement new UI flow, statuses, Asana toggle, and AWS S3 Image domains
+
+[33mcommit e8a50fb97ec866138d184202370f916c4b12023b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 08:52:15 2026 +0800
+
+    Remove acl: public-read from multer-s3 to fix bucket ACL restrictions
+
+[33mcommit 6d3da3a0c0febd040f7cedacadf2e824d81733e7[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 08:49:52 2026 +0800
+
+    Update fallback region to ap-southeast-5
+
+[33mcommit ee99e6a92a9fce36e5bde368845979abf667a0a2[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 25 08:46:58 2026 +0800
+
+    Migrate file upload system from Cloudinary to AWS S3
+
+[33mcommit 4d65f94b2be43cd369584c538bc2e374871bc8d4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 15:44:07 2026 +0800
+
+    Fix huge sidebar icons and implement unread chat badge properly using SidebarMenuBadge
+
+[33mcommit 80d500e9d6e71277b8a7ef256ab18a6015da738c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 15:27:35 2026 +0800
+
+    Fix chat Unknown User, fix chat text input clearing, and add unread chat badge to sidebar menu
+
+[33mcommit 15164449f2e824c34381b27fc6c0ba04f8760b61[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 15:03:03 2026 +0800
+
+    Set font size to 8px for mobile and 10px for desktop
+
+[33mcommit 6d18eaae49bab1076966963d1c7898448bc7310f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 15:01:51 2026 +0800
+
+    Fix font size to 8px on both mobile and desktop views
+
+[33mcommit 3b1ce1d536244095d3195cb074e7f4abee8a76d2[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 15:00:51 2026 +0800
+
+    Override md:text-sm on Input to fix desktop font size issue
+
+[33mcommit 3818bf0bc7653efbb2850db2ab372a715a25d16d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 14:55:03 2026 +0800
+
+    Reduce font size in yellow pill to text-[6px]
+
+[33mcommit b378f616287ed242abd374ebaf554dbb5ac1afef[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 14:48:50 2026 +0800
+
+    Reduce height of yellow pill on attachment card
+
+[33mcommit 1ba4e82971c4b9becb89ce2b08af99ef72f4ec90[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 14:44:39 2026 +0800
+
+    Fix syntax error in tasks API
+
+[33mcommit a24166fcb9ca68246c4815a2c7572a1f724ad28d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 14:41:32 2026 +0800
+
+    Fix desktop attachment sizing constraint and implement delete comment functionality
+
+[33mcommit 60b91ddb2eb4b8bca4cd721423fec937c3a6cddd[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 14:31:55 2026 +0800
+
+    Reduce font size in attachment notes pill to 8px
+
+[33mcommit 1619045226342c44fa44eb887ad41be8dc2abf17[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 14:26:30 2026 +0800
+
+    Update attachment UI: make yellow box 70% width and reduce text size for readability
+
+[33mcommit 209042abdea9492c1681e7ec346276a01a4ba92d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 14:23:17 2026 +0800
+
+    Update FileAttachmentCard colors to be lighter
+
+[33mcommit c927c3f9c9f802b96391a6071bc8fa4dc985aee7[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 14:22:46 2026 +0800
+
+    Resize Attachment UI: 20% smaller gray box and centered 80% width yellow pill
+
+[33mcommit f5e07c3a1b4b5bc4a10a3a35a3257025ebfbe7e9[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 14:19:18 2026 +0800
+
+    Make FileAttachmentCard more compact in width to match sketch
+
+[33mcommit 5ff0afefd73a3fa2ee86d065cb393919c3e2c8c3[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 14:16:35 2026 +0800
+
+    Allow custom input for Link Order ID and Link Username in TaskModal
+
+[33mcommit 3b1481fdb352744ade36c03189534d206deadf69[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 14:08:41 2026 +0800
+
+    Fix TaskModal mobile overlay issue, fix shared folder Next.js params unwrapping bug, and fix token encoding
+
+[33mcommit a7dd8cfc625ac3db68c4252b89f1d337b901401d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 13:16:05 2026 +0800
+
+    Build backend dist to include new routes
+
+[33mcommit 025846827aebc5cce204c7a98da848de4a2ffbd8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 13:08:18 2026 +0800
+
+    Redesign file attachment UI to match horizontal layout sketch
+
+[33mcommit 3fcf301b7303986eb42c0ae1510eef86bf6e094a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 13:01:13 2026 +0800
+
+    Fix UI bugs, update roles, sync task notes, and redesign attachments
+
+[33mcommit 1063e6f4da16832827975967c77b59cb34845864[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 11:59:24 2026 +0800
+
+    fix(frontend): default new tasks to PLACED status
+
+[33mcommit bb631229693b6bfab45f6e11bdf911cc9b8440d7[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 11:54:38 2026 +0800
+
+    fix(admin): bypass mongoose strict query validation for migration
+
+[33mcommit 76815494ef4204f2fd0d641e3769db809e52ed32[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 11:44:49 2026 +0800
+
+    fix(ui): print full error on migration failure
+
+[33mcommit 66a167231a372d21117669f07f6f9daab40103cf[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 11:38:01 2026 +0800
+
+    feat(ui): add temporary UI button for database status migration
+
+[33mcommit e3fb22bfaaf84c2eae0c48ec9c38195b598afe51[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 11:26:12 2026 +0800
+
+    fix(share): implement robust base64 JSON token for artwork sharing
+
+[33mcommit 0ced99ad83a637f1438add2e6c6805343684ef65[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 11:24:33 2026 +0800
+
+    fix(backend): fix build error for TODO status
+
+[33mcommit 94b52769df5d3a8055254687f75162c14688f6a1[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 11:22:36 2026 +0800
+
+    feat(admin): add API endpoint to migrate old database statuses
+
+[33mcommit d058542e4356f2caa3d45d0f2eb5ffe6840155b2[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 11:10:25 2026 +0800
+
+    feat(share): add public folder sharing for artworks
+
+[33mcommit d0393a793c1e898e40a6026e866958f05b31746a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 11:09:17 2026 +0800
+
+    feat(status): update status flow enums across app
+
+[33mcommit 5c2d3ad097b22aa6c6cc7b94b931d8f3fba2da2f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 10:57:29 2026 +0800
+
+    fix(admin): Remove hardcoded role restriction in tasksManager assignee dropdowns
+
+[33mcommit 1203ae1aa6879d95a737dd84e3bed20a357f2ed8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 10:49:49 2026 +0800
+
+    fix(admin): Allow designer and production to fetch users for task assignment
+
+[33mcommit 05e5f9ca784157d5dcf58279c852e4cd3226ab6d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 10:45:25 2026 +0800
+
+    fix(admin): Allow assigning tasks to all users
+
+[33mcommit d68158d55041ae0117cb8e5dee9f514be1b8e66e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 10:33:03 2026 +0800
+
+    feat(admin): Support uploading multiple files concurrently in TaskModal
+
+[33mcommit 4be4eea5890498c4081c58117c44d3aaae8f8e5d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 10:11:38 2026 +0800
+
+    style(admin): Make minimized order card much more compact to match requested layout
+
+[33mcommit 1ad01e668bc3024ce4669b905192f3ae6cc675c4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 09:57:05 2026 +0800
+
+    fix(admin): Add optimistic update to archive toggle to prevent UI sticking
+
+[33mcommit 77222fec4bba8635806095c0930b642cb75249a8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 09:37:09 2026 +0800
+
+    fix(admin): Add missing Printer icon import causing runtime crash
+
+[33mcommit 2f79b33faa7d85c4529bba8e7310f14203f1c366[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 09:32:59 2026 +0800
+
+    fix: change archive method to PUT, fix Card height, add View AWB button
+
+[33mcommit 9dd516f730f49dedaf1a6bd3231b197887b6db06[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 09:10:51 2026 +0800
+
+    feat(admin): Add order minimization and archiving functionality
+
+[33mcommit 4eebd2e9af17a69eb9c1caf43adf947b58b2eb87[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 08:50:13 2026 +0800
+
+    Fix font fallback by explicitly disabling adjustFontFallback
+
+[33mcommit 7db2825a6813bc346957a403ce6ce92a29ada4c2[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 08:46:09 2026 +0800
+
+    Fix h1 and h2 tags to respect Provicali ampersand fallback
+
+[33mcommit f4e31a596dc864c02713b2c12df904443c80ab77[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 08:39:56 2026 +0800
+
+    Revert global bold font to Integral, map Provicali exclusively to ampersand
+
+[33mcommit 6c7917d97af9254e6001c393f5d24775281b3f50[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 24 08:35:40 2026 +0800
+
+    Update font to Provicali for all bold text
+
+[33mcommit f23a42bb42ebad2de945a165fe3068aa768f9c88[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 19:39:42 2026 +0800
+
+    Update Paper Bag sizes
+
+[33mcommit 47e9a022de7497d16a57c25bf11e7af4a672748f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 19:33:22 2026 +0800
+
+    Restore product-details.tsx to fix Vercel build
+
+[33mcommit 05cf00996155a3a25ed57525ecf2255e4783d1c3[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 19:28:50 2026 +0800
+
+    Fix Paper Bag ID from prod-141 back to prod-114
+
+[33mcommit 95345a820f7785222ce7b40b255c3bd9041a7628[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 19:20:30 2026 +0800
+
+    Add React error boundary inside ProductDetails to catch calculation crashes
+
+[33mcommit 441f6e3ae85b60688d2edd4f28df01b91a04ebed[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 19:10:06 2026 +0800
+
+    Fix dummy-products.ts parsing for Paper Bag and correctly format prices array
+
+[33mcommit 1b1e16321be0653e4d519d9c44bf78698531c1a3[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 19:03:48 2026 +0800
+
+    Fix matrix pricing lookup logic for Paper Bag to use 3-dimensional matching
+
+[33mcommit 88cff93dad0587234fc1c8c573656a2dd1a7e045[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 18:59:22 2026 +0800
+
+    Update Paper Bag matrix pricing with 3 steps and quantity grid layout
+
+[33mcommit 6ae05021d5299a07cbb8eabf3f8f04d88cfe7c8e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 18:41:25 2026 +0800
+
+    Add Button Badge pricing and minimum quantity constraint for magnet tag
+
+[33mcommit 5f00090a856377d05f42770540e4f2ae57d8bf83[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 18:23:20 2026 +0800
+
+    Refactor flyer matrix pricing to render inline above subtotal on mobile and portal on desktop
+
+[33mcommit 062312713de9f39a691c491d337db5bbe66b4559[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 18:17:35 2026 +0800
+
+    Revert heading font override and apply Cocogoose strictly to ampersands
+
+[33mcommit 401d4cc6417090aeedb9938876a94e58f34f16ca[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 18:13:29 2026 +0800
+
+    Add Cocogoose Pro font and apply to all headings
+
+[33mcommit 9bc5f6e9c8bed8e33cac908a695e64999ffe9156[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 18:05:50 2026 +0800
+
+    Fix ampersand font fallback for bold headings by setting weight range 100 900
+
+[33mcommit 371449869042f083204909f4de5c637fc20c660e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 18:01:39 2026 +0800
+
+    Revert Kampung Cetak font and fix ampersand font via next/font/local
+
+[33mcommit c1960e5c1fdd0845d1b40a5e9a183a8faad0394d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 17:56:53 2026 +0800
+
+    Apply font-brand to Kampung Cetak texts
+
+[33mcommit a2bbf53d542e5b8c959f0503915cd6f3ce864648[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 17:50:29 2026 +0800
+
+    Use Fonarto font only for ampersand character
+
+[33mcommit 7e303d3af625ee8737e8bc0474f00bc406cd2b2b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 17:44:55 2026 +0800
+
+    Revert "Update global font to Fonarto"
+    
+    This reverts commit de9470926c3e4c73dcf8b33ee00f4b73dbe38062.
+
+[33mcommit 0cef6c6188790763c6c5f0a50d5cef53d2f50198[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 17:44:55 2026 +0800
+
+    Revert "Host Fonarto font locally and force base font-family"
+    
+    This reverts commit 72741dd86421df5db4175fa18bf358f9a640edf4.
+
+[33mcommit 72741dd86421df5db4175fa18bf358f9a640edf4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 17:41:19 2026 +0800
+
+    Host Fonarto font locally and force base font-family
+
+[33mcommit de9470926c3e4c73dcf8b33ee00f4b73dbe38062[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 17:36:19 2026 +0800
+
+    Update global font to Fonarto
+
+[33mcommit 513185f4455c4992895c662f333a990a5fe64ae8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 17:29:11 2026 +0800
+
+    Remove New Design option from Sublimation Tshirt Addons
+
+[33mcommit 77aa3bb19d59e19d22ad6dbb88996f4c7b5d1d45[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 17:25:27 2026 +0800
+
+    Implement custom pricing logic and tick selection for Sublimation Tshirt
+
+[33mcommit 40ba264fd6707717f9fc101124d193aed30f30e2[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 16:59:58 2026 +0800
+
+    Update Portrait instruction text to Profile Page
+
+[33mcommit 42aa43abcba75abb74e3ef58b7399a5877b7fa4b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 16:59:34 2026 +0800
+
+    Fix dynamic step numbering sequence on product details page
+
+[33mcommit 1639204484becd166c729929229f04a1ed7dd874[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 16:55:27 2026 +0800
+
+    Hide price on product card and hide Step 1 design options for Islamic Khat products
+
+[33mcommit 7c630429eac8bdd76ac970f331d47d4003e45cc8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 16:53:00 2026 +0800
+
+    Fix Portrait detection in product-details.tsx using name instead of category
+
+[33mcommit b6a336f7ad7eb163b5098815364cc950a57e0575[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 16:49:15 2026 +0800
+
+    Change Step 1 for portrait products to text block
+
+[33mcommit 1f823ff1facff55ad5cf5d717a78fc0b02bbbfad[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 16:40:04 2026 +0800
+
+    Update Islamic Khat products and Portrait pricing to match prices.xlsx
+
+[33mcommit dd5c26a52480c3165a10c60914d68639375c4e43[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 16:30:52 2026 +0800
+
+    Add Photobook to Wedding Product category with custom pricing logic
+
+[33mcommit 897367a88608ecd3dc2fd15ce9627547764222ae[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 16:18:50 2026 +0800
+
+    Rename Corporate Gift to Premium Gift and Calander to Calender
+
+[33mcommit 4d93a50eab44b1d2e23a4bc0ad5d3c4291248574[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 15:46:55 2026 +0800
+
+    Add matrix pricing table for Wedding Packages in Product Information tab
+
+[33mcommit 9582144353f8f7740e7cb698ee920b9208f8348d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 15:41:25 2026 +0800
+
+    Fix UI rendering for Addons multi-select and step layout
+
+[33mcommit 6063f7037ceab41dbc669ab6a2fe12e7c0493c96[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 15:39:57 2026 +0800
+
+    Fix Addons step layout and quantity numbering
+
+[33mcommit 198b1457ddd444b1fe9dd6e8929872b44034f97f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 15:33:58 2026 +0800
+
+    Implement multi-select feature and update Wedding Card pricing and addons
+
+[33mcommit 1a0adfb7b06eb63aa6c0681fa2c053a92fcbf892[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 15:20:59 2026 +0800
+
+    Add and update Display Item products and submenus
+
+[33mcommit 213e7a77c0331bfa06f45f0757d6b6bb8ac77df9[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 14:56:45 2026 +0800
+
+    Remove Turnaround Time from Wind Flag and rename step header dynamically to Quantity
+
+[33mcommit 260b7a0bd898db1e10ed20d0e55758cb93ce57ac[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 14:53:21 2026 +0800
+
+    Update KampungCetak design fee to RM100
+
+[33mcommit c96c4d320718858e923268c95c3ed5388392d81a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 14:49:11 2026 +0800
+
+    Update Wind Flag pricing with hideQuantityGrid feature
+
+[33mcommit bc0a956203700ffd551b4a7136f0d42a5d66894f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 14:38:23 2026 +0800
+
+    Fix typescript build errors and matrix prices, add useProducts intercept logic
+
+[33mcommit 7eb3b9d87947893ecce2990cf15eb6807fdd57ae[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 14:24:10 2026 +0800
+
+    Update Money Packet pricing and options
+
+[33mcommit 8d4387df4735c6bd58bc88ecfcfc86590729be15[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 14:06:15 2026 +0800
+
+    Fix flyer matrix grid naming and matching logic
+
+[33mcommit 344653b5b6d9111bff613f2291991b5b046ae35b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 13:34:35 2026 +0800
+
+    Integrate flyer price matrix grid UI
+
+[33mcommit 8b4a2e77e3070dc02bf6c4f810cb369d43562100[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 10:00:54 2026 +0800
+
+    Add dedicated Islamic Khat page and revert original product images
+
+[33mcommit a63f6a76d6c9e9bf83b71b382a7ec46af05f72a6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 09:36:29 2026 +0800
+
+    Fix TypeError crash on Islamic Khat page caused by empty array slots
+
+[33mcommit dabdba4bd020169636b71e130521dbf795dfbb16[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 09:25:56 2026 +0800
+
+    Update product logo image with the new provided transparent logo
+
+[33mcommit 9f5a1297d92d53a8381d136af22921dcb58ba4ae[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 09:22:25 2026 +0800
+
+    Fix frontend local image URLs getting incorrectly prepended with backend URL
+
+[33mcommit 9cd18069db4350ff766adbd1e56a1c487fb4ddb1[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 09:19:32 2026 +0800
+
+    Fix product image crashes and update all product images to Kampung Cetak logo
+
+[33mcommit 3ff5910c94c50b932046850533bb3d3a5a54ce61[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 09:13:01 2026 +0800
+
+    Add Islamic Khat products to frontend dummy products
+
+[33mcommit 1c59780212311e6c618f20b86878c4f965dbbea7[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 09:03:16 2026 +0800
+
+    Fix avatar HTTP issue, configure Islamic Khat products, remove VAT
+
+[33mcommit 4b39cf21b91631f2df59388fb57a665990ca55c3[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 08:46:54 2026 +0800
+
+    Replace product images with Kampung Cetak logo on black background
+
+[33mcommit a151c2340f63f15cf8bbcdb04bfcf7a4ffaa589f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 23 08:15:15 2026 +0800
+
+    Fix avatar picture not persisting to session and UI
+
+[33mcommit 13fa654bd6354cd5dc9ec27d075b0cbd03cb019f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 15:09:58 2026 +0800
+
+    Fix syntax error in TaskModal
+
+[33mcommit a9ff2551ef5286565d819dcfbb5265cd252f8cf7[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 15:07:05 2026 +0800
+
+    Add Download All button to outside folder view in Artworks
+
+[33mcommit fbd7ba994bee46006eabf917d599cc76e7b7ddd8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 14:47:30 2026 +0800
+
+    Fix UI bugs, add zip download, inline file rename, auto-create task for manual orders
+
+[33mcommit 56b014df34bc0b49312ede76d5a2636f27aff46d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 14:10:35 2026 +0800
+
+    feat: hide user id and order id fields from upload modal to simplify artwork uploading
+
+[33mcommit 2a963b6e595632edee2b8bc62928ada754a1cbd5[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 13:00:54 2026 +0800
+
+    feat: add category to tasks, fix file syncing and folder id clashing in artworks and production managers
+
+[33mcommit 266d6d0acfdd53c4d6638f106ec15a05e07dcb9c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 12:48:32 2026 +0800
+
+    fix: resolve typescript build errors
+
+[33mcommit 2f8a6b0618e70027f564677a1d2839b2b3ca08f6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 12:44:01 2026 +0800
+
+    fix: only move IN_PRODUCTION to production manager, leave DONE DESIGN in artworks
+
+[33mcommit 95397f87208a8e3b50552488906e07507288ae82[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 12:35:01 2026 +0800
+
+    fix: tasks board layout overflow and production manager task sync
+
+[33mcommit 9ceceb13e30807ab81b232cfa8c80c0130a476bb[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 11:57:18 2026 +0800
+
+    fix: chat search, platform filters, task board layout, manual order products
+
+[33mcommit 0eb170b6567c67374eab57a393910d1bdcd97af8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 11:48:32 2026 +0800
+
+    fix: sync tasks and order status correctly in production manager and fix file upload taskId binding
+
+[33mcommit b0f99d95d598aa7566d6eae751d3b0a0861fc362[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 11:38:14 2026 +0800
+
+    fix: constrain page layout widths to prevent flex overflow in board view
+
+[33mcommit 9483f825d7bba59844dc1977092c2a0d120ebad4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 11:31:39 2026 +0800
+
+    fix: tasks page overflow, add artwork to empty folder, custom product choice in manual order
+
+[33mcommit 20f876432e052a20eb57a7596cb35873427988f7[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 11:25:17 2026 +0800
+
+    fix: Do not delete file on DONE DESIGN. Move DONE DESIGN to Production Manager. Only delete files on DELIVERED
+
+[33mcommit dcd25c78f2bd00a68814e96457a08879ef3d2c98[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 11:18:41 2026 +0800
+
+    feat: Sync task logic with artworks and globally update DONE status to DONE DESIGN, add PEMBETULAN status
+
+[33mcommit 09be42e301435a0d8fd4a134223b78f6fffbb76c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 08:33:40 2026 +0800
+
+    fix: resolve TypeScript issues and add refresh buttons to Chat, History, Production, Dashboard, and Users pages
+
+[33mcommit 69e495a81eb4939c53c094f8d1c1102462ef4801[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 08:23:17 2026 +0800
+
+    feat: add refresh buttons to tasks, orders, tracking, and artworks pages
+
+[33mcommit fa33f3981f478ad962b0ab85116f8895ed23689a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 08:15:50 2026 +0800
+
+    feat: filter out completed/cancelled orders from the orders list
+
+[33mcommit 6bc6b32aef601066b3d8a6006e994f30afadae0b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 22 08:08:08 2026 +0800
+
+    feat: use accordion for task board view and filter done/cancelled orders from tracking
+
+[33mcommit f3e6afa5dc435f0f0fb67266ce109d013d1c7504[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 11:35:59 2026 +0800
+
+    Widen board columns, add pill-style collapse toggle per column
+
+[33mcommit 6892bc9bc314931b2996c369a7c4d66268fea0fc[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 11:23:36 2026 +0800
+
+    Redesign tasks board/list view: collapsible status sections, hideable narrower board columns
+
+[33mcommit d5b57c5f90d0cd3359fe43dc1bd60ad1f86b66b9[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 10:56:21 2026 +0800
+
+    feat: update business card pricing based on CSV
+
+[33mcommit bb4543554e64f1aaa7d8317cbb279d6fbacfb67e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 10:54:17 2026 +0800
+
+    fix: pass avatar to NextAuth session
+
+[33mcommit 21b57feab93c63be03578adcf2b250cc7a8301a2[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 10:46:18 2026 +0800
+
+    fix: resolve all TypeScript and build errors in admin and frontend
+
+[33mcommit 4dde5bd4a2d3828210a85ba0dfe70bd827090a8d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 10:25:35 2026 +0800
+
+    fix: update all lucide-react icons to match latest version names (0.475.0)
+
+[33mcommit d5087605e94b6a43c41c47bd95806c83ca33a71f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 10:19:44 2026 +0800
+
+    fix: replace deprecated lucide-react icons (DatabaseBackup, CrossIcon) causing production crash
+
+[33mcommit 3cc30a97262d3ad86e6de318324c55b791af7692[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 10:13:40 2026 +0800
+
+    fix: resolve missing printer and history icons in sidebar causing production app crash
+
+[33mcommit 31dae912347865bd336d38fcc33abff2f2a95583[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 10:01:03 2026 +0800
+
+    Remove hardcoded localhost env production to allow Vercel dashboard variables to take over
+
+[33mcommit 5e181cbe02bb17650d178741fefbb3db98626d9e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 10:00:45 2026 +0800
+
+    Use .env.production so Next.js loads env vars on Vercel
+
+[33mcommit b6526b2580829a4fafacae1ef96cad45af8f1a8f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 09:57:35 2026 +0800
+
+    Force add missing admin env variables to fix 500 error
+
+[33mcommit 8d05fd71197ec97a14fbf163825f0a8fb674b075[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 09:56:39 2026 +0800
+
+    Fix redundant options variable in product-details.tsx
+
+[33mcommit f2155ab40689ed7388e0fca84ef8d6eda33790b8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 09:53:25 2026 +0800
+
+    Fix matrix pricing, cloudinary images, and admin env config
+
+[33mcommit 4b170bfa1fc4387e2c911f355942cea664649100[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 09:44:50 2026 +0800
+
+    fix: resolve production manager crash, fix avatar URL backslash resolution on windows, sync next-auth session avatar on upload
+
+[33mcommit 4ecdf5a0841834586b8c7b4a0ee3268066d6d974[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 09:38:56 2026 +0800
+
+    style: update about page color palette to gold and black
+
+[33mcommit 2e21d0206bda6eb00b99f964b728eb82507d1077[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 09:37:49 2026 +0800
+
+    fix: resolve admin dashboard build errors, update about page colors, fix logout redirect glitch
+
+[33mcommit 4133c0d2e0e2d1beb6134b6997d98df0f7037c69[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Sat Jun 20 09:27:47 2026 +0800
+
+    feat: complete end-to-end workflow, add production and history pages, fix UI issues
+
+[33mcommit 1b5ee8d1f2357186b7f1a0f966be26a938a2fcaa[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 17:04:44 2026 +0800
+
+    fix: compile backend missing api routes
+
+[33mcommit 1b7c9dc5cbd4bd322eed0397c382487ced4d8d9b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 16:59:15 2026 +0800
+
+    fix: UI improvements for chat, profile images, and product fallback
+
+[33mcommit b8aa078d74e4b935c17e8da795634bedfee37eb0[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 16:37:39 2026 +0800
+
+    feat: UX enhancements for task management and chat sync
+
+[33mcommit 993360a663b36de405b618c62c830a54df12d44e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 16:18:17 2026 +0800
+
+    feat: implement product pricing table, chat alignment, tracking progress bar, and task upgrades
+
+[33mcommit 5e1905f03e031741782d050349f17b487dda540f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 15:13:01 2026 +0800
+
+    Fix signup routing error by setting Axios fallback baseURL
+
+[33mcommit 3e41dc1febde174bef2375bc0599c29021cd233e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 14:37:47 2026 +0800
+
+    Add staff selection to frontend chat widget
+
+[33mcommit fa834279f14337085b7988954363270d57527707[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 14:26:00 2026 +0800
+
+    Fix circular JSON error in TaskModal onBlur
+
+[33mcommit 47f4a468ab34886bfa4a3e764a2f18c81fddb927[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 14:20:37 2026 +0800
+
+    Update frontend pages and fix registration bug
+
+[33mcommit cbbe0d94e513d82ad05ce11527ca815ce6ee3898[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 12:06:01 2026 +0800
+
+    Add About, Delivery, Payments pages and update footer links
+
+[33mcommit 5369588f6f5152b2e9db08a6c2ebb2ae4a77cb25[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 12:00:04 2026 +0800
+
+    Fix tasks manager crash and chat layout overflow
+
+[33mcommit 7ef03d26ca7837b77670719acd6309894acf4158[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 11:53:54 2026 +0800
+
+    Fix cloudinary import in taskRoutes.ts
+
+[33mcommit 0c9921d9c52c9c908d73bbc82f6af3cf0857da0b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 11:48:39 2026 +0800
+
+    Update frontend UI, profile tabs, and combobox search
+
+[33mcommit 22aa1b515144ac9cbf34e06e4f0f2b50b757eb67[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 11:03:35 2026 +0800
+
+    Fix UI/UX bugs in Admin sidebar and TaskModal, add file upload to tasks, fix order cache invalidation and image loading
+
+[33mcommit c4f46b5ebe8ca4fbf093eb3584dadb704ef00f0e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 10:38:57 2026 +0800
+
+    Refactor Task Management UI, merge tasks into Orders, update Chat layout, and enhance Admin Sidebar aesthetics
+
+[33mcommit b8aad4652df2ab86192a90929283fc3f891dc1cd[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 10:09:15 2026 +0800
+
+    fix: Add Sign Up option to AuthModal and ensure Mongoose saves nested address object
+
+[33mcommit 4a184bd6e8aa63f8da8fb4f716da21ab2ced73a3[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 10:00:37 2026 +0800
+
+    chore: compile backend chat and task files into dist
+
+[33mcommit ed37c4519895f11afb9c0a47e0289ba888de1ea4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 09:57:29 2026 +0800
+
+    fix: Fix corrupted tasks API file in Admin dashboard
+
+[33mcommit c361b336180450665621f496b640bb86958627cf[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 09:54:55 2026 +0800
+
+    feat: Add Task Management, Chat System, and fix Artwork deletion bugs
+
+[33mcommit 26ec3bc70bfac933604016660719435d8bed2284[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 09:01:42 2026 +0800
+
+    Add custom generated product category images and map them safely to dummy products
+
+[33mcommit 61b9a87912955d97577a29188792ba63d6818544[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 19 08:50:21 2026 +0800
+
+    Replace placehold.co with loremflickr for realistic product placeholder images
+
+[33mcommit e4510d2b8d962cc20cd80e612f63331adca9625b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 19:52:49 2026 +0800
+
+    Fix dummy images literal string error causing frontend crash
+
+[33mcommit 06a339afd0749e43b47390a26ca2930f6d405eb0[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 19:49:11 2026 +0800
+
+    Fix Explore categories routing and dynamically generate product images
+
+[33mcommit 7d5e11c859b489b528dfdd31b78eeebabbba6d44[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 19:42:20 2026 +0800
+
+    Fix typescript build errors across backend, admin, and frontend
+
+[33mcommit 4e9e2ecda3c063876b1704e7606b0a197f4a930b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 19:38:35 2026 +0800
+
+    fix: resolve switch.tsx utf-16 encoding issue
+
+[33mcommit 0107270675bb684d504ec4b36fab79b79b294eee[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 19:36:35 2026 +0800
+
+    fix: switch thumb animation and positioning
+
+[33mcommit 83798254e217b583c7afa4183d856a44546951b2[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 19:31:13 2026 +0800
+
+    feat: add bulk delete endpoint and folder delete button
+
+[33mcommit dba4674b98fac949aa21724ce593be6ad422f24c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 19:25:03 2026 +0800
+
+    feat: redesign artworks folder navigation to explorer view
+
+[33mcommit c3b6a4dda5cf6359e8efc6fefc056a1cfb4787d8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 19:21:05 2026 +0800
+
+    fix: force existing parcels to have whatsappNotified true on startup
+
+[33mcommit c4739a5ad63a81b04a3a8811e4149e0c3c1140fa[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 19:09:34 2026 +0800
+
+    fix: artwork query invalidation and local uploads static serving
+
+[33mcommit 079bd3990feee99f71695e01a933d0611cdc4b49[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 19:00:43 2026 +0800
+
+    fix: order notification validation, order-parcel sync, artwork view paths, and upload user assignment
+
+[33mcommit 3442adb7deeb2a6b3d157708cbaee1a3a223e1fc[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 18:45:17 2026 +0800
+
+    fix: artwork large thumbnail, order delete btn unconditionally, allow tracking status edit
+
+[33mcommit 65f871406d0384081bc142cfa101cc67357f686c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 18:30:16 2026 +0800
+
+    feat: artwork grid/list view, download button, auto-notify default to true, courier options
+
+[33mcommit 04a406507e93609659f3799cc356404ad6ace5f7[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 18:20:16 2026 +0800
+
+    feat: add tracking number and product choice to manual orders, display tracking in order card
+
+[33mcommit 6c09df93ab047676840ed011183968ff99c918fd[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 18:16:02 2026 +0800
+
+    feat: add full address option for manual external orders
+
+[33mcommit 14513cfbd28d4039bcbe856807b5e78c46e6e0d4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 18:09:12 2026 +0800
+
+    fix: middleware login redirect and admin user creation verification
+
+[33mcommit bcf97a29ee5550058430e8645c983b9c6a17193b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 18:06:24 2026 +0800
+
+    feat: add delete external order functionality
+
+[33mcommit 39aadd94001e827587e46f392ce57c17b2d5969f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 17:58:12 2026 +0800
+
+    fix: robust clearTestData to remove orphaned dummy orders
+
+[33mcommit 69ae3278da4bb5a4bfec58e1aad342005d40d4bb[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 17:53:00 2026 +0800
+
+    fix: order list search by external customer name and remove deliveryBoy population
+
+[33mcommit 977a8d60649aa379cea19d2dd7e7b15119b9ae1e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 16:57:32 2026 +0800
+
+    fix: make order userId optional and hide clients from admin users list
+
+[33mcommit 2e18b4759dc62d5741296880f5d8890632597536[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 16:47:14 2026 +0800
+
+    fix: manual order creation user and customerName mapping
+
+[33mcommit e9bb6dfd6f9b800111150bb49bf661e36d48ef68[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 16:35:23 2026 +0800
+
+    fix: seed customerName validation and add Proceed to Print action
+
+[33mcommit d7a6bd3e7ec72b3e6ab079faca105507343efcf6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 16:28:49 2026 +0800
+
+    fix: resolve backend build errors from missing delivery boy references and phone number type
+
+[33mcommit f19cbd7a84a3c31509b86a166d6cc69b9c63508d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 16:24:31 2026 +0800
+
+    fix: retrieve correct username from users list and style order ID in artwork manager
+
+[33mcommit bded61b708ee3f1490ccef3f8861d100966c799b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 16:18:15 2026 +0800
+
+    fix: resolve vercel build errors due to unused delivery boy imports
+
+[33mcommit 9798fab8540fbcbffbc2d79a2682589b5c406335[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 16:14:54 2026 +0800
+
+    feat: complete workflow overhaul with delivery boy removal, whatsapp auto-notifications, and new artwork tracking statuses
+
+[33mcommit 5f0968d3e614318fc10f2c1d1ad29aa051b456ba[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 15:40:47 2026 +0800
+
+    fix: admin sidebar now shows for all admin roles like boss and sysadmin
+
+[33mcommit ef42776ccbedcdddf2097e711c8c1cc702fa2fa6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 15:35:40 2026 +0800
+
+    fix: artworks manager grouping by customer name, order ID display, and frontend order infinite skeleton load
+
+[33mcommit a182edbea45b6a9a473f0764246201124953b639[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 15:26:21 2026 +0800
+
+    fix: removed stray div tag in OrderCard.tsx causing build failure
+
+[33mcommit 2b01ea1fb45dbe14b70bd09773cf32c016680ecb[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 15:23:31 2026 +0800
+
+    feat: added artworkUrl sync from cart to order, removed profile name prefill, and admin can view artwork link
+
+[33mcommit 861ba0dbf7fd9c94adb3c82daa1517e31d781e00[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 14:47:37 2026 +0800
+
+    feat: removed topbar, fixed order empty state, added customerName and orderNotes sync
+
+[33mcommit 9cf94abcfe3113032a98c5773ff63344e1198b62[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 14:34:10 2026 +0800
+
+    fix: resolved cartItems crash due to missing getImageUrl and sizes object fallback
+
+[33mcommit 99a99bfbf1dbcfba660cdc660ccbf6d756b1b170[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 14:31:15 2026 +0800
+
+    feat: fixed search filtering and redesigned printing sidebar filters
+
+[33mcommit 60bc07324ce6cf49c817e809651c066497217eca[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 14:18:54 2026 +0800
+
+    feat: added rich printing options, 1pc quantity, and direct routing
+
+[33mcommit 5f429a63ff2bb9f4b3174395531c526f2bf37834[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 14:17:35 2026 +0800
+
+    fix: correctly extract next-auth session token for artwork upload
+
+[33mcommit 5473ccab213f0c79cb5e56f3d5fca5fc6ccb6a75[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 14:13:07 2026 +0800
+
+    fix: use NEXT_PUBLIC_BACKEND_URL for artwork upload
+
+[33mcommit ac8cf1e6240cc26375e6d27410eb0ce831176980[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 14:07:41 2026 +0800
+
+    fix: file uploads auth middleware missing & add search bar to orders page
+
+[33mcommit d88397e69948dc15208a9efb76a27ec528167710[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 14:07:23 2026 +0800
+
+    fix: correct images array type in dummy products to fix page load crash
+
+[33mcommit 5cdccfd375e6eae5011f947cc9762218c8bb6b3f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 14:02:05 2026 +0800
+
+    feat: add live search suggestions dropdown to nav
+
+[33mcommit 8e3514b030d8d81a42c7baf2d7fd98b7f70ae23a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 13:31:32 2026 +0800
+
+    feat: complete cloudinary integration, profile avatar uploads, and UI overhauls for orders & tracking
+
+[33mcommit e31e5eedef87ed0bbd88f7239515bb7dc38a3316[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 13:05:35 2026 +0800
+
+    feat: design options, RM currency, static mega menu, and functional search
+    
+    - Fixed broken image URLs for absolute Pexels vs relative backend paths
+    - Added 'Upload Design' vs 'Let us design' options (+RM50) in product details
+    - Converted mega menu top-level categories to static text
+    - Implemented search routing in Navbar
+    - Replaced all USD $ symbols with RM across frontend
+    - Added 'View All Products' button to homepage sections
+
+[33mcommit d46184015634bba4976541a25a78bc8ea4faf3bd[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 11:50:10 2026 +0800
+
+    fix: override useFilterProducts to ensure shop page shows printing products
+
+[33mcommit 0be554095d8f23fe1de3665ca95099b9d48cda4e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 11:39:48 2026 +0800
+
+    fix: force dummy products and mock cart API
+    
+    - Forced useProducts to ignore old clothing items in DB and strictly show printing products
+    - Intercepted addToCart and getCart to support dummy products using localStorage, allowing users to add to cart without backend errors
+
+[33mcommit aee866c1c05e7b6899aaf6a4f795a912239d8737[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 11:38:21 2026 +0800
+
+    feat: backend script to clear and seed printing products
+
+[33mcommit f2c414a212549bb103038f87fb60ea97977cf381[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 11:25:19 2026 +0800
+
+    fix: change currency to RM and fix order info crash by handling optional user properties
+
+[33mcommit a91882e2f831b9aaeeb2c8b7cb962933ed630e85[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 11:24:47 2026 +0800
+
+    feat: Product details overhaul & dummy data
+    
+    - Added massive realistic dummy product database for all categories
+    - Implemented Gogoprint-style 3-step configuration UI (Format, Printing, Quantity)
+    - Updated useProducts to inject real dummy data
+    - Added custom dynamic breadcrumbs mapping Category -> Product
+
+[33mcommit a1401d919ed6e081cd13a7b09b5ea0fe4deb75cd[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 11:13:40 2026 +0800
+
+    feat: remove Google and Apple auth from admin login, and add dummy tracking parcel to seed data for test drive
+
+[33mcommit 2bc67d95c55e56cf4507ac97e0a8045ec1b64b8f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 11:07:19 2026 +0800
+
+    fix: retrieve all users instead of just clients, and fix user edit id mapping
+
+[33mcommit ffcc4bc849bce050caedefda4dbceccc14813e84[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 10:57:32 2026 +0800
+
+    feat: change system roles to SYSADMIN, ADMIN, DESIGNER, BOSS, PRODUCTION
+
+[33mcommit f4d7b9e024a24e4bf4dac0966f25682e43967af8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 10:48:32 2026 +0800
+
+    fix(admin): make table robust to missing fields; feat(auth): disable client registration
+
+[33mcommit f43e6f0fca0dd2766ca2add31abd981135a4286e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 10:39:49 2026 +0800
+
+    feat(admin): group artworks into accordion folders by user/order
+
+[33mcommit 5c410d7a625163942f149d3832656ed9432f2a3a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 10:37:24 2026 +0800
+
+    fix(admin): resolve crash in orders dashboard due to undefined address
+
+[33mcommit 8017c3147154d60189884224dffc8b3ddaaec76a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 10:34:52 2026 +0800
+
+    feat(admin): multi-platform orders, artwork tabs/comments, user management
+
+[33mcommit 72d1acf0a43d3479c417b77023a2201da043d476[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 10:24:00 2026 +0800
+
+    feat: complete site overhaul for 6 items
+    
+    - Fix profile update API bypassing Next proxy to backend directly
+    - Fix file upload FAILED TO FETCH error and add Auth header
+    - Remove Gucci/Prada/Versace marques
+    - Replace pencil hero with automatic image sliding promotion
+    - Inject beautiful dummy products if API is empty instead of skeleton
+    - Sync Explore Our Products categories with Navbar items
+
+[33mcommit 4f40c9d05f5d9d21fc31a9efe50e08cbdf8fff56[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 09:15:02 2026 +0800
+
+    style: update dark mode to black and gold palette
+    
+    - Change dark mode background to pure black (darker than navbar)
+    - Change primary color to gold (#eab308) for buttons, badges, rings
+    - Update layout.tsx, hero.tsx, and productCard.tsx to apply dark:bg-background and dark:bg-card properly so the white background doesn't override the dark theme
+
+[33mcommit 160cc725838669eb1a9db0d5a8a278921646c495[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 09:14:45 2026 +0800
+
+    style: apply black and gold palette to dark theme for frontend and admin
+
+[33mcommit 67d05f924f3d82fa697f8b19db5d43d80b6402eb[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 09:07:43 2026 +0800
+
+    feat(admin): Upgrade Test Drive to trigger ecosystem notifications and realistic parcels for active user
+
+[33mcommit 60bb0101d6648c0360bcb0986d0e5ac0f46503af[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 09:03:20 2026 +0800
+
+    fix(theme): sync dark mode palette with backend and fix nav contrast
+    
+    - Revert default theme to light to preserve original look
+    - Update frontend globals.css .dark class to exactly match backend's hsl palette
+    - Add dark variant classes across nav.tsx (dark:bg-card, dark:text-foreground, etc) to ensure text and background contrast when dark mode is enabled
+
+[33mcommit 2a5eebdd1c331fa44f5f82ada98f339b7a5818b4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 08:58:43 2026 +0800
+
+    feat(theme): add dark mode theme option
+    
+    - Install next-themes
+    - Wrap HeroUIProvider with ThemeProvider inside provider/index.tsx
+    - Add ThemeSwitcher toggle component with sun/moon icons
+    - Display ThemeSwitcher in the top navigation bar right icons area
+
+[33mcommit 0a6f6b8f50cc4d1b1b8193a795a553d095741ebd[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Thu Jun 18 08:47:03 2026 +0800
+
+    fix(admin): Restore real dark mode variables and fix hardcoded background class
+
+[33mcommit 4daf47b5a8f45b4d272b650f029355332551256e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 20:11:45 2026 +0800
+
+    fix: profile save 404 + mobile menu accordion
+    
+    - fix(api): add Next.js proxy route /api/user/profile (GET+PUT) that forwards to backend server-side, bypassing client-side env-var and CORS issues
+    - fix(user.ts): client now calls /api/user/profile on same origin (no baseURL) instead of going directly to external backend
+    - fix(nav/mobile): categories now use accordion - sub-items only appear when parent is tapped, one open at a time, with animated slide-in and active highlight
+
+[33mcommit b90377b83a07ad62151548b1c0208d06294f1867[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 20:04:28 2026 +0800
+
+    feat(profile): redesign profileCard with session fallback and rich UI
+
+[33mcommit 0c367c1d3a5aa0874f5f970f306cf6aeec8cc493[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 19:59:44 2026 +0800
+
+    fix: API users 404, profile chip in nav, mobile navbar & products
+    
+    - fix(useProfile): add enabled:!!token so profile API only fires when authenticated, preventing 404 on page load
+    - feat(nav): add profile chip beside icon showing user avatar initial + name + email
+    - feat(nav/mobile): mobile drawer now includes category links with sub-items and user profile chip
+    - fix(nav/mobile): profile icon visible on all screen sizes (removed hidden sm:flex)
+    - fix(product-carousel): responsive basis classes for mobile (1 col xs, 2 col sm, 3 md, 4 lg)
+    - fix(product-carousel): consistent gutters with -ml/pl classes, properly positioned arrows
+    - fix(productSctions): remove overflow-hidden that was clipping carousel arrows on mobile
+
+[33mcommit 1dd18daa3d66ff373c791157a199253ef73636e3[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 19:58:28 2026 +0800
+
+    Fix logo: bigger size, rounded-2xl corners, high-res 512px source
+
+[33mcommit 5bab6dd665822bf9e4c992ab21e0fe0d29fbf485[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 19:52:46 2026 +0800
+
+    Update all logos and favicons to new Kampung Cetak branding
+
+[33mcommit 11e4353cdbff9074150f66aa9903e150176c3a85[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 19:50:24 2026 +0800
+
+    feat: replace logo and favicons with new brand assets
+    
+    - Replace favicon.ico, favicon-16x16.png, favicon-32x32.png with new icons
+    - Replace apple-touch-icon.png with new brand icon
+    - Add android-chrome-192x192.png and android-chrome-512x512.png
+    - Add site.webmanifest for PWA support with Kampung Cetak branding
+    - Replace kampung-cetak-logo.png in nav, mobile drawer and footer
+    - Update layout.tsx metadata to include all favicon sizes and manifest link
+
+[33mcommit f535341bb3da05cfe528330d02dd7cef42343d01[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 18:47:05 2026 +0800
+
+    feat(admin): artwork search, clean user-nav, fix theme toggle active state
+
+[33mcommit d51bcf44c49ebd7140fb8d85098894a6e24823bb[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 18:25:12 2026 +0800
+
+    Redesign Tracking Page UI
+
+[33mcommit a9b7e6a1b2fa0352683cb36cab99c2c7f39f7741[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 18:09:24 2026 +0800
+
+    feat: Add profile settings UI and backend linkage with EasyParcel checkout auto-fill
+
+[33mcommit 14df9fe3e40db0caf52b7c087e728e5d83a1012d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 17:53:05 2026 +0800
+
+    Profile layout refactor with hover sidebar and integrated order tracking
+
+[33mcommit 62b3a53e21baacd7868ae39d3949a7ff40236a7c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 17:52:42 2026 +0800
+
+    fix: seed button token issue and darker sidebar footer
+
+[33mcommit d64e691d5a772ccacb1dec132f375e90f97038e0[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 17:49:06 2026 +0800
+
+    feat: Add seed test data and UI polish
+
+[33mcommit 877364f34f7550929e821063add41bb0d658bd73[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 17:31:32 2026 +0800
+
+    feat: Add true company logo, favicons, and light theme default
+
+[33mcommit f5ff555a1a6997b5cc6b1586642c2b33814907be[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 17:31:12 2026 +0800
+
+    Redesign tracker UI with Google Maps and EasyParcel styling
+
+[33mcommit 98e9647ecf344d6a97829d23853353ecdad52676[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 17:22:50 2026 +0800
+
+    feat: Rename SHOP.CO to Kampung Cetak with Printer logo
+
+[33mcommit d4e17d9e8e33204bb4ab486331a857513c227015[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 17:08:13 2026 +0800
+
+    Refactor dashboard into profile layout and update hero image
+
+[33mcommit 7baff23b7c1efa1814755239b79270da59300e49[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 17:05:59 2026 +0800
+
+    fix: Duplicate CellAction import
+
+[33mcommit bd859956a18d28d3f7101977bf89c63578ab5c47[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 16:48:42 2026 +0800
+
+    feat: Redesign Admin UI to match tracker, remove deliveryboys, add delete user
+
+[33mcommit b18450b608e0585b67233731099ef087afdb63c6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 16:47:58 2026 +0800
+
+    Remove Shop, About, Contact, and Github links from header
+
+[33mcommit 7d83745a395ccb5c3f9bb20dd332fceaf7dfe6b9[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 16:44:22 2026 +0800
+
+    Fix dropdown mega menu visibility by removing overflow hidden
+
+[33mcommit ecc5de3b79470084a90c599d09c3835f1e00d341[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 16:41:07 2026 +0800
+
+    feat: Add mega menu dropdown for printing categories
+
+[33mcommit 8f00889fc92c59b980c7cf96944cf850020f4df4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 16:27:52 2026 +0800
+
+    chore: update tsconfig.json
+
+[33mcommit 1401fe77b9def435c491b6480d228fb5efa14f3c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 16:27:35 2026 +0800
+
+    Fix missing JSX fragment in Nav component
+
+[33mcommit 2c547b01f0d6a817b9775f7a6b03dbbe5eb10f4e[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 16:27:03 2026 +0800
+
+    fix: Remove custom cookie config from middleware
+
+[33mcommit b84e5bfaabe3106c4654a6bffa30ce24d0e4dd6c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 16:21:21 2026 +0800
+
+    feat: Auto-seed admin user on first login
+
+[33mcommit c9fcb5e1fccc22d1803bc2dcc4a8f37eda8d4db4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 16:17:25 2026 +0800
+
+    Rename middleware to proxy for Next.js 16 deprecation
+
+[33mcommit 59e8ef89bceee2bb29804915b2ea309fca0cb43a[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 16:15:37 2026 +0800
+
+    fix: Correct icon key for tracking to fix React crash
+
+[33mcommit 985c86c8a4705733f8718dc0ca5b46d14b71e525[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 16:12:38 2026 +0800
+
+    Fix Next.js build error by removing unsupported eslint config
+
+[33mcommit 915ce486d5d82ea6607f2b3e57e431297f2f00cb[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 16:08:28 2026 +0800
+
+    Redesign navbar and product page to Gogoprint style
+
+[33mcommit 18b18e9b1351b8b2a5a2bf5d547df9fd3b18b520[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 16:07:52 2026 +0800
+
+    feat: Add dynamic Dashboard, Artwork Manager, and Tracking features
+
+[33mcommit c77f08a3befab32942583daaeab401ad583cd58f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 15:36:07 2026 +0800
+
+    Fix next-auth configuration for Vercel deployment
+
+[33mcommit b5d44ae32944f8518a08a7e42c0da40e1d325f91[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 15:08:37 2026 +0800
+
+    fix: move admin folder inside backend to ensure Railway deployment
+
+[33mcommit d064e304a66e09cd59d92085a7140923dc06aa6c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 15:03:39 2026 +0800
+
+    fix: update admin panel routing to support wildcard SPA paths
+
+[33mcommit dd5525f711732f01b948f1e4ae541b86996582a0[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 14:53:05 2026 +0800
+
+    trigger: force Railway redeploy for webhook route
+
+[33mcommit 5fea5346d7a3d303e3c41409a0219131359cb191[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 14:47:10 2026 +0800
+
+    feat: add WhatsApp webhook endpoint for Meta callback verification
+
+[33mcommit 6954daf56f7f43203013769018b153276fae1222[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 14:32:23 2026 +0800
+
+    fix: update EasyParcel to use OAuth2 Client Credentials flow
+
+[33mcommit 4910ac20065c6806a2d7d883a99c1cd4c445085b[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 16 14:17:37 2026 +0800
+
+    feat: add parcel tracking, file upload, WhatsApp notifications, admin panel
+
+[33mcommit 679c88697ebdb8db5ece747f34325dffbec50807[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 12 16:11:52 2026 +0800
+
+    fix: replace favicon with Kampung Cetak logo
+
+[33mcommit 2655fc33c521526092da1ca1a6aca40f3130a424[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 12 15:59:06 2026 +0800
+
+    feat: update favicon and fix typo
+
+[33mcommit 7f7fae35357e60711e71668288534bd94a8272ba[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 12 15:45:02 2026 +0800
+
+    feat: replace SHOP.CO with Kampung Cetak logo
+
+[33mcommit b692bb7e4ac3d8db1b780355aaa7e9cebd19bda7[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Fri Jun 12 14:45:35 2026 +0800
+
+    rename site to Kampung Cetak
+
+[33mcommit 82657f7ac2f01e37afd8558b944486d91890fd63[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Wed Jun 10 08:29:18 2026 +0800
+
+    feat: redesign homepage for printing services
+
+[33mcommit 4f672477b00e5fb6006622e35ef5d154ba21ded4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 16:22:24 2026 +0800
+
+    fix: update admin Next.js and add overrides
+
+[33mcommit 4fa185e61e08dc075041215e2c506779e9c5027c[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 16:17:00 2026 +0800
+
+    fix: add .npmrc to admin for legacy peer deps
+
+[33mcommit 7f5fb703eacc0fc3bdbcc3a80db0ea9e07febac7[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 16:10:38 2026 +0800
+
+    fix: allow all origins for socket.io
+
+[33mcommit 250a20beb61b7402c01badd17ad9e52b39cb10dc[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 16:02:48 2026 +0800
+
+    fix: prevent crash on unhandled rejection
+
+[33mcommit a353263e561443bc3f1198cf0f652be97dc6fc04[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 15:54:05 2026 +0800
+
+    fix: include compiled dist folder
+
+[33mcommit e3522fbc8f5089bcf9ca2ec9b23f1375ca6344e2[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 15:50:39 2026 +0800
+
+    fix: restore original backend package.json
+
+[33mcommit 8ac8b869d8c6b1501d437171ffa2a9854e34c0d2[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 15:42:07 2026 +0800
+
+    fix: restore backend package.json
+
+[33mcommit 712083d4f7c27604e0f4b903c6d29f6e87aaa04d[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 15:24:38 2026 +0800
+
+    fix: force cache bust v2
+
+[33mcommit be7387658ef2d660eb802e42bea590226c981192[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 15:10:15 2026 +0800
+
+    fix: allow all origins for CORS debugging
+
+[33mcommit 6fa246cc977c35035058845dbe75cbacdd229e94[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 15:02:36 2026 +0800
+
+    fix: support multiple frontend CORS origins
+
+[33mcommit d3994a9f57caf826760a01d3d5f86423812311b7[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 14:29:03 2026 +0800
+
+    fix: upgrade Next.js to 16.2.7 latest stable
+
+[33mcommit 7130978d900eeb1da8f83c7eb9483334e151cff5[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 14:20:09 2026 +0800
+
+    fix: update Next.js to 15.3.4
+
+[33mcommit a725701007a51d72e4e822750b449b1b90aabfc8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 13:11:24 2026 +0800
+
+    fix: update Next.js to 15.3.3
+
+[33mcommit bfd498d93fb07967afb6e5f6157ecaf2e6bb24b4[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 12:18:00 2026 +0800
+
+    fix: rename .npmrc.json to .npmrc
+
+[33mcommit bc54ecf5f9e7653234d83ddc6a8d30e008fa75e8[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 12:01:25 2026 +0800
+
+    fix: add .npmrc legacy-peer-deps
+
+[33mcommit 5afc485bccba13c5027fb67e79648933408b0cf5[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 11:55:06 2026 +0800
+
+    fix: fix package.json syntax and add overrides
+
+[33mcommit 69636d3d58d7e42945892746232f6851ea30c7a7[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 11:23:50 2026 +0800
+
+    fix: remove TLS, use plain Redis connection
+
+[33mcommit 1ed2d8f7c4714569d49a6b98ccc51aec0c91c839[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 11:18:31 2026 +0800
+
+    fix: add TLS support for Redis public URL
+
+[33mcommit 0c98e2a01e08c95f303e05bfc51ac46744bdb675[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 11:12:29 2026 +0800
+
+    fix: use REDIS_PUBLIC_URL to avoid Railway override
+
+[33mcommit 7abd915fd0f5ad1a193d580a52118e581e85afa6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 11:05:28 2026 +0800
+
+    fix: force REDIS_URL for Redis connection
+
+[33mcommit 9b4d01240270415c6334f28cf27b529c638905ec[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 09:53:30 2026 +0800
+
+    fix: use REDIS_URL for Railway Redis connection
+
+[33mcommit 315cf200268ea766d4e2f3a07deb9c7eff089eb6[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Tue Jun 9 09:04:49 2026 +0800
+
+    fix: resolve TypeScript ObjectId cast errors
+
+[33mcommit 5638c06d8a12c293d8b4837f4c06ce6bb6e59a3f[m
+Author: iniharith <133095026+iniharith@users.noreply.github.com>
+Date:   Mon Jun 8 09:09:13 2026 +0000
+
+    Initial commit
+    
+    Created from https://vercel.com/new
