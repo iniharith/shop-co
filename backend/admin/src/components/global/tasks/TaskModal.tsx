@@ -401,11 +401,11 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden shadow-xl max-h-[90vh] flex flex-col">
         <div className="flex flex-col md:flex-row h-full overflow-y-auto md:overflow-hidden">
           
           {/* Main Content (Left, 70% width) */}
-          <div className="flex-none md:w-[70%] flex flex-col md:border-r border-border/50 bg-background min-h-0 shrink-0 md:shrink">
+          <div className="flex-none md:w-[70%] flex flex-col md:border-r border-border/50 bg-card min-h-0 shrink-0 md:shrink">
             <div className="p-4 md:p-6 border-b border-border/50 shrink-0">
               <DialogHeader>
                 <DialogTitle className="sr-only">Task Details</DialogTitle>
