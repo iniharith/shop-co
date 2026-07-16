@@ -4,7 +4,7 @@
  */
 "use client";
 import React, { useState, useMemo } from "react";
-import { useAllFiles, useReviewFile, useDeleteFile, useBulkDeleteFiles } from "@/hooks/useAdminDashboard";
+import { useFileIndex, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles } from "@/hooks/useAdminDashboard";
 import { useOrders, useUpdateOrderStatus } from "@/hooks/useOrder";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
@@ -47,7 +47,7 @@ export default function PackagingManager() {
   const { data: session } = useSession();
   const token = (session as any)?.accessToken;
   const searchParams = useSearchParams();
-  const { data: response, isPending, refetch, isFetching } = useAllFiles();
+  const { data: response, isPending, refetch, isFetching } = useFileIndex();
   const { data: ordersResponse } = useOrders();
   const { data: tasksResponse } = useTasks({ statuses: ["PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED"].join(',') });
   const { mutate: updateTask } = useUpdateTask();
@@ -191,6 +191,21 @@ export default function PackagingManager() {
       };
     }).sort((a, b) => a.folderName.localeCompare(b.folderName));
   }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab, activeSubTab]);
+
+  // Once a folder is opened, fetch its full file details on demand — the
+  // folder LIST only ever needed names/counts, which the slim index above
+  // already provides fast.
+  const activeFolderIdentity = useMemo(() => {
+    if (!selectedFolder) return null;
+    const g = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId || ""}` === selectedFolder);
+    if (!g) return null;
+    return g.taskId
+      ? { taskId: g.taskId }
+      : { orderId: g.orderId || null, userId: g.userId || null };
+  }, [selectedFolder, groupedFiles]);
+
+  const { data: folderFilesResponse, isPending: isFolderFilesPending } = useFilesByFolder(activeFolderIdentity);
+  const activeFolderFiles: any[] = (folderFilesResponse as any)?.data || [];
 
   React.useEffect(() => {
     setActiveSubFolderId(null);
@@ -596,9 +611,17 @@ export default function PackagingManager() {
                 if (activeGroup.orderId) return f.orderId === activeGroup.orderId;
                 return f.userId === activeGroup.userId && !f.taskId && !f.orderId;
               });
-              const visibleFiles = activeGroup.files.filter((f: any) => 
+              const visibleFiles = activeFolderFiles.filter((f: any) => 
                 activeSubFolderId ? f.folderId === activeSubFolderId : (!f.folderId || f.folderId === 'null')
               );
+
+              if (isFolderFilesPending) {
+                return (
+                  <div className="flex justify-center items-center h-[40vh]">
+                    <LoadingAnimation fullScreen={false} label="Loading folder" />
+                  </div>
+                );
+              }
               
               const tasks = (tasksResponse as any)?.tasks || [];
               const orders = (ordersResponse as any)?.orders || [];

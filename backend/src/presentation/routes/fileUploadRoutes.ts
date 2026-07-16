@@ -252,32 +252,70 @@ router.get(
 
     // Enrich files that were uploaded via a share link with the link's metadata
     // so the admin grouping logic can place them in the correct folder
-    const slugsNeeded = [...new Set(
-      (files as any[]).filter((f: any) => f.shareSlug).map((f: any) => f.shareSlug)
-    )];
-    let slugMap: Record<string, any> = {};
-    if (slugsNeeded.length > 0) {
-      const links = await ShareLink.find({ slug: { $in: slugsNeeded } });
-      links.forEach((l: any) => { slugMap[l.slug] = l; });
-    }
-
-    const enrichedFiles = (files as any[]).map((file: any) => {
-      const f = file.toObject ? file.toObject() : { ...file };
-      if (f.shareSlug && slugMap[f.shareSlug]) {
-        const link = slugMap[f.shareSlug];
-        // Backfill taskId/orderId from the share link so grouping works
-        if (!f.taskId && link.taskId) f.taskId = link.taskId;
-        if (!f.orderId && link.orderId) f.orderId = link.orderId;
-        f._shareFolderName = link.folderName; // pass folder name to frontend
-      }
-      // Any file linked to a task is a task file for grouping purposes,
-      // regardless of what category happened to get set at upload time.
-      if (f.taskId) f.category = 'TASK';
-      return f;
-    });
+    const enrichedFiles = await enrichWithShareLinks(files as any[]);
 
     const stats = { totalFiles: enrichedFiles.length, totalSize: 0, pendingReview: 0, totalSizeMB: "0" };
     res.json({ success: true, data: enrichedFiles, stats, count: enrichedFiles.length });
+  })
+);
+
+// Backfills taskId/orderId/folderName onto files uploaded via a share link,
+// and normalizes category for task-linked files. Shared by every endpoint
+// that returns file listings for the admin manager pages.
+async function enrichWithShareLinks(files: any[]): Promise<any[]> {
+  const slugsNeeded = [...new Set(
+    files.filter((f: any) => f.shareSlug).map((f: any) => f.shareSlug)
+  )];
+  let slugMap: Record<string, any> = {};
+  if (slugsNeeded.length > 0) {
+    const links = await ShareLink.find({ slug: { $in: slugsNeeded } });
+    links.forEach((l: any) => { slugMap[l.slug] = l; });
+  }
+
+  return files.map((file: any) => {
+    const f = file.toObject ? file.toObject() : { ...file };
+    if (f.shareSlug && slugMap[f.shareSlug]) {
+      const link = slugMap[f.shareSlug];
+      if (!f.taskId && link.taskId) f.taskId = link.taskId;
+      if (!f.orderId && link.orderId) f.orderId = link.orderId;
+      f._shareFolderName = link.folderName;
+    }
+    if (f.taskId) f.category = 'TASK';
+    return f;
+  });
+}
+
+// ─── GET /api/files/index ───────────────────────────────────
+// Slim, unwindowed file listing used to render the folder list (name + item
+// count) on the Artworks/Production/Packaging manager pages fast. Each
+// record only carries the fields needed to group files into folders — no
+// S3 URLs, sizes, notes, etc. — so it stays cheap to return in full instead
+// of applying the 30-day cutoff that GET / below uses (that cutoff was
+// hiding folders whose artwork was uploaded more than 30 days ago, even
+// though the underlying job was still active).
+router.get(
+  '/index',
+  asyncHandler(async (_req: Request, res: Response) => {
+    const files = await fileUploadRepository.findIndex();
+    const enriched = await enrichWithShareLinks(files);
+    res.json({ success: true, data: enriched });
+  })
+);
+
+// ─── GET /api/files/by-folder ────────────────────────────────
+// Full file details (thumbnails, S3 URLs, etc.) for a single folder, fetched
+// only when that folder is actually opened. Pass taskId, or orderId/userId.
+router.get(
+  '/by-folder',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { taskId, orderId, userId } = req.query as { taskId?: string; orderId?: string; userId?: string };
+    if (!taskId && !orderId && !userId) {
+      res.status(400).json({ success: false, message: 'taskId, orderId, or userId is required' });
+      return;
+    }
+    const files = await fileUploadRepository.findByFolderKey({ taskId, orderId, userId });
+    const enriched = await enrichWithShareLinks(files);
+    res.json({ success: true, data: enriched });
   })
 );
 

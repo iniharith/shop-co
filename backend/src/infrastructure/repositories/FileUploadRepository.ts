@@ -43,6 +43,40 @@ export class FileUploadRepository {
     return FileUpload.find(query).sort({ uploadedAt: -1 }).lean() as unknown as Promise<IFileUpload[]>;
   }
 
+  // Slim, unwindowed listing used to build the folder/task grouping on the
+  // Artworks/Production/Packaging manager pages. Only the handful of fields
+  // needed for grouping + counting are selected, so this stays cheap to
+  // return even across every file ever uploaded (no 30-day cutoff, unlike
+  // findAll() above) — the goal is "folder name + item count", not full
+  // file records. Actual file details are fetched per-folder, on demand,
+  // via findByFolderKey() below once a folder is opened.
+  async findIndex(): Promise<Pick<IFileUpload, 'userId' | 'orderId' | 'taskId' | 'category' | 'tag' | 'shareSlug' | 'folderId' | 'uploadedAt' | 'originalName'>[]> {
+    return FileUpload.find({}, 'userId orderId taskId category tag shareSlug folderId uploadedAt originalName')
+      .sort({ uploadedAt: -1 })
+      .lean() as unknown as Promise<any[]>;
+  }
+
+  // Full file details for a single folder, fetched only when that folder is
+  // opened. Already scoped tightly by taskId (or orderId/userId), so there's
+  // no need for a date window here — the result set is naturally small.
+  async findByFolderKey(params: { taskId?: string; orderId?: string; userId?: string }): Promise<IFileUpload[]> {
+    let query: any = {};
+    if (params.taskId) {
+      query.taskId = params.taskId;
+    } else if (params.orderId && params.userId) {
+      // Files end up grouped together if they match on EITHER field (the
+      // order lookup sometimes falls back from userId to a resolved
+      // orderId, or vice versa) — so match either, not both at once.
+      query.$or = [{ orderId: params.orderId }, { userId: params.userId }];
+    } else if (params.orderId) {
+      query.orderId = params.orderId;
+    } else if (params.userId) {
+      query.userId = params.userId;
+    }
+    if (Object.keys(query).length === 0) return [];
+    return FileUpload.find(query).sort({ uploadedAt: -1 }).lean() as unknown as Promise<IFileUpload[]>;
+  }
+
   async findById(id: string): Promise<IFileUpload | null> {
     return FileUpload.findById(id);
   }

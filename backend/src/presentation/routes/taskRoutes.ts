@@ -49,6 +49,18 @@ router.get(
       assignee: req.query.assignee as string,
       orderId: req.query.orderId as string,
     };
+
+    // 'statuses' (plural, comma-separated) was being silently dropped here —
+    // the admin manager pages (Production/Packaging) rely on it to scope
+    // their queries, and without it they were falling back to the default
+    // 30-day window with no status filter at all.
+    if (req.query.statuses) {
+      filters.statuses = (req.query.statuses as string).split(',').map(s => s.trim()).filter(Boolean);
+      // Jobs can sit in production/packaging well past 30 days; widen the
+      // window whenever a specific status set is requested so those aren't
+      // silently excluded.
+      filters.days = 180;
+    }
     
     if (req.query.deleted === 'true') {
       filters.isDeleted = true;

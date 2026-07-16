@@ -4,7 +4,7 @@
  */
 "use client";
 import React, { useState, useMemo } from "react";
-import { useAllFiles, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile, useCreateShareLink, useFolders, useCreateFolder, useDeleteFolder, useMoveFile } from "@/hooks/useAdminDashboard";
+import { useFileIndex, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile, useCreateShareLink, useFolders, useCreateFolder, useDeleteFolder, useMoveFile } from "@/hooks/useAdminDashboard";
 import { useOrders } from "@/hooks/useOrder";
 import { useUsers } from "@/hooks/useUsers";
 import { useTasks } from "@/hooks/useTasks";
@@ -46,7 +46,7 @@ const ALL_STATUSES = ["PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED",
 export default function ArtworksManager() {
   const { addUpload, updateProgress, updateStatus } = useUploadStore();
   const { data: session } = useSession();
-  const { data: response, isPending, refetch, isFetching: isFetchingFiles } = useAllFiles();
+  const { data: response, isPending, refetch, isFetching: isFetchingFiles } = useFileIndex();
   const { data: ordersResponse, isFetching: isFetchingOrders } = useOrders();
   const { data: usersResponse, isPending: usersPending } = useUsers();
   const { data: tasksResponse, isPending: tasksPending } = useTasks({ statuses: ALL_STATUSES.join(',') });
@@ -205,6 +205,21 @@ export default function ArtworksManager() {
       };
     });
   }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab]);
+
+  // Once a folder is opened, fetch its full file details (thumbnails, S3
+  // URLs, etc.) on demand — the folder LIST above only ever needed names
+  // and counts, which the slim index already provides.
+  const activeFolderIdentity = useMemo(() => {
+    if (!selectedFolder) return null;
+    const g = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
+    if (!g) return null;
+    return g.taskId
+      ? { taskId: g.taskId }
+      : { orderId: g.orderId || null, userId: g.userId || null };
+  }, [selectedFolder, groupedFiles]);
+
+  const { data: folderFilesResponse, isPending: isFolderFilesPending } = useFilesByFolder(activeFolderIdentity);
+  const activeFolderFiles: any[] = (folderFilesResponse as any)?.data || [];
 
   React.useEffect(() => {
     const folderQuery = searchParams.get("folder");
@@ -639,11 +654,19 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
             const groupFolders = virtualFolders.filter((f: any) => 
               activeGroup.taskId ? f.taskId === activeGroup.taskId : f.userId === activeGroup.userId
             );
-            const visibleFiles = activeGroup.files.filter((f: any) => 
+            const visibleFiles = activeFolderFiles.filter((f: any) => 
               activeSubFolderId ? f.folderId === activeSubFolderId : (!f.folderId || f.folderId === 'null')
             );
             const currentFolder = activeSubFolderId ? groupFolders.find(f => f._id === activeSubFolderId) : null;
             const visibleFolders = activeSubFolderId ? [] : groupFolders;
+
+            if (isFolderFilesPending) {
+              return (
+                <div className="flex justify-center items-center h-[40vh]">
+                  <LoadingAnimation fullScreen={false} label="Loading folder" />
+                </div>
+              );
+            }
 
             return (
               <div 

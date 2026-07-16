@@ -45,6 +45,22 @@ export const getAllFiles = async (token: string) => {
     return response.data;
 }
 
+// Slim, unwindowed listing (name/count fields only) used to render the
+// folder list fast on the Artworks/Production/Packaging pages.
+export const getFileIndex = async (token: string) => {
+    const response = await AxiosInstance(token).get(`${FILES_URL}/index`);
+    return response.data;
+}
+
+// Full file details for one folder, fetched only once that folder is opened.
+export const getFilesByFolder = async (token: string, params: { taskId?: string; orderId?: string; userId?: string }) => {
+    const query = new URLSearchParams(
+        Object.fromEntries(Object.entries(params).filter(([, v]) => !!v)) as Record<string, string>
+    ).toString();
+    const response = await AxiosInstance(token).get(`${FILES_URL}/by-folder?${query}`);
+    return response.data;
+}
+
 export const reviewFile = async (token: string, id: string, reviewed: boolean, notes?: string) => {
     const response = await AxiosInstance(token).put(`${FILES_URL}/${id}/review`, { reviewed, notes });
     return response.data;
