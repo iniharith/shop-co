@@ -5,13 +5,13 @@
 "use client";
 import React, { useState, useMemo } from "react";
 import { useFileIndex, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile, useCreateShareLink, useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, useMoveFile } from "@/hooks/useAdminDashboard";
-import { useOrders } from "@/hooks/useOrder";
+import { useOrders, useUpdateOrderStatus } from "@/hooks/useOrder";
 import { useUsers } from "@/hooks/useUsers";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2, Upload, Pencil } from "lucide-react";
+import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2, Upload, Pencil, User, Tag, Calendar, CheckSquare } from "lucide-react";
 import { forceDownload } from "@/lib/utils";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import { toast } from "sonner";
@@ -90,11 +90,17 @@ export default function ArtworksManager() {
   const { mutate: bulkDeleteMutate, isPending: isBulkDeleting } = useBulkDeleteFiles();
   const { mutate: renameFileMutate } = useRenameFile();
   const { mutate: updateTask, isPending: isUpdatingTask } = useUpdateTask();
+  const { mutate: updateOrderStatus, isPending: isBulkMovingStatus } = useUpdateOrderStatus();
 
   const [editingFileId, setEditingFileId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string>("");
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [isDragOverFolder, setIsDragOverFolder] = useState<boolean>(false);
+
+  // Sysadmin bulk folder status move
+  const [bulkSelectMode, setBulkSelectMode] = useState<boolean>(false);
+  const [selectedFolderIds, setSelectedFolderIds] = useState<string[]>([]);
+  const [bulkTargetStatus, setBulkTargetStatus] = useState<string>("IN_PRODUCTION");
 
   const allFiles: any[] = (response as any)?.data || [];
 
@@ -146,7 +152,7 @@ export default function ArtworksManager() {
         orderIdStr = task.orderId || "";
         taskIdStr = file.taskId;
         
-        if (task.status === 'IN_PRODUCTION' || task.status === 'CANCELLED' || task.status === 'FAILED') {
+        if (task.status === 'CANCELLED' || task.status === 'FAILED') {
             shouldExclude = true;
         }
       } else {
@@ -170,11 +176,11 @@ export default function ArtworksManager() {
       const isTaskFile = !!file.taskId;
 
       // Only apply order-status exclusion for non-TASK files
-      // Task files are already handled by task status above — don't double-exclude them
-      // just because the linked order moved to IN_PRODUCTION/SHIPPED etc.
+      // Task files are already handled by task status above — don't double-exclude them.
+      // Orders stay visible through IN_PRODUCTION/PACKAGING; only hide once shipped/delivered/dead.
       if (!isTaskFile && orderIdStr) {
           const order = orders.find((o: any) => o._id === orderIdStr);
-          if (order && ((order as any).orderStatus === 'IN_PRODUCTION' || (order as any).orderStatus === 'SHIPPED' || (order as any).orderStatus === 'DELIVERED' || (order as any).orderStatus === 'CANCELLED' || (order as any).orderStatus === 'FAILED')) {
+          if (order && ((order as any).orderStatus === 'SHIPPED' || (order as any).orderStatus === 'DELIVERED' || (order as any).orderStatus === 'CANCELLED' || (order as any).orderStatus === 'FAILED')) {
               shouldExclude = true;
           }
       }
@@ -190,7 +196,7 @@ export default function ArtworksManager() {
 
     // explicitly add empty folders for any Tasks that don't have files yet
     tasks.forEach((task: any) => {
-      if (task.status !== 'IN_PRODUCTION' && task.status !== 'CANCELLED' && task.status !== 'FAILED') {
+      if (task.status !== 'CANCELLED' && task.status !== 'FAILED') {
         if (activeTab !== "ALL" && task.category !== activeTab) return; // respect active tab for empty folders
         const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id });
         if (!groups[key]) {
@@ -347,6 +353,34 @@ export default function ArtworksManager() {
       toast.dismiss();
       toast.error("Failed to create ZIP");
     }
+  };
+
+  // Sysadmin: move every selected folder (task or order) to a new status in one click
+  const handleBulkStatusMove = () => {
+    if (selectedFolderIds.length === 0) return;
+    if (!confirm(`Move ${selectedFolderIds.length} folder(s) to "${bulkTargetStatus.replace(/_/g, ' ')}"?`)) return;
+
+    const targets = groupedFiles.filter((g: any) => selectedFolderIds.includes(`${g.folderName}-${g.orderId}-${g.taskId}`));
+    let done = 0;
+    const total = targets.length;
+    const finish = () => {
+      done += 1;
+      if (done === total) {
+        toast.success(`Moved ${total} folder(s) to ${bulkTargetStatus.replace(/_/g, ' ')}`);
+        setSelectedFolderIds([]);
+        setBulkSelectMode(false);
+      }
+    };
+
+    targets.forEach((group: any) => {
+      if (group.taskId) {
+        updateTask({ id: group.taskId, data: { status: bulkTargetStatus } }, { onSuccess: finish, onError: finish });
+      } else if (group.orderId) {
+        updateOrderStatus({ id: group.orderId, status: bulkTargetStatus }, { onSuccess: finish, onError: finish });
+      } else {
+        finish();
+      }
+    });
   };
 
   const handleDeleteFolder = (group: any, e: React.MouseEvent) => {
@@ -651,20 +685,66 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
 
           {/* LEFT PANEL (MASTER) */}
           <div className="w-full lg:w-1/3 xl:w-1/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
-            <div className="p-4 border-b bg-muted/30 font-semibold text-sm flex justify-between items-center shrink-0">
+            <div className="p-4 border-b bg-muted/30 font-semibold text-sm flex justify-between items-center shrink-0 gap-2">
               <span>Folders</span>
-              <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">{groupedFiles.length}</span>
+              <div className="flex items-center gap-2">
+                <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">{groupedFiles.length}</span>
+                <Button
+                  variant={bulkSelectMode ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => { setBulkSelectMode(v => !v); setSelectedFolderIds([]); }}
+                  title="Sysadmin: move multiple folders to a status in one click"
+                >
+                  <CheckSquare className="w-3.5 h-3.5 mr-1" /> Bulk Move
+                </Button>
+              </div>
             </div>
+            {bulkSelectMode && (
+              <div className="p-3 border-b bg-muted/20 flex flex-col gap-2 shrink-0">
+                <span className="text-xs text-muted-foreground">{selectedFolderIds.length} folder(s) selected</span>
+                <div className="flex items-center gap-2">
+                  <select
+                    className="flex-1 h-8 text-xs rounded-md border border-input bg-background px-2"
+                    value={bulkTargetStatus}
+                    onChange={(e) => setBulkTargetStatus(e.target.value)}
+                  >
+                    {ALL_STATUSES.map(s => (
+                      <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                  <Button
+                    size="sm"
+                    className="h-8 px-3 text-xs shrink-0"
+                    disabled={selectedFolderIds.length === 0 || isBulkMovingStatus || isUpdatingTask}
+                    onClick={handleBulkStatusMove}
+                  >
+                    Apply
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {groupedFiles.map((group) => {
                 const folderId = `${group.folderName}-${group.orderId}-${group.taskId}`;
                 const isSelected = selectedFolder === folderId;
+                const isBulkChecked = selectedFolderIds.includes(folderId);
                 return (
                   <div
                     key={folderId}
                     className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all group ${isSelected ? 'bg-primary/10 border border-primary/30' : 'hover:bg-muted/50 border border-transparent'}`}
-                    onClick={() => setSelectedFolder(folderId)}
+                    onClick={() => bulkSelectMode
+                      ? setSelectedFolderIds(prev => prev.includes(folderId) ? prev.filter(id => id !== folderId) : [...prev, folderId])
+                      : setSelectedFolder(folderId)
+                    }
                   >
+                    {bulkSelectMode && (
+                      <Checkbox
+                        checked={isBulkChecked}
+                        onCheckedChange={() => setSelectedFolderIds(prev => prev.includes(folderId) ? prev.filter(id => id !== folderId) : [...prev, folderId])}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
                     {getFolderPreview(group, "w-10 h-10 rounded-lg")}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate" title={group.folderName}>{group.folderName}</p>
@@ -922,7 +1002,52 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
                         </Button>
                       </div>
                   </div>
-                  
+
+                  {!activeSubFolderId && (() => {
+                    const tasks = (tasksResponse as any)?.tasks || [];
+                    const orders = (ordersResponse as any)?.orders || [];
+                    const users = (usersResponse as any)?.data || (usersResponse as any)?.users || [];
+                    const activeTask = activeGroup.taskId ? tasks.find((t: any) => t._id === activeGroup.taskId) : null;
+                    const activeOrder = (!activeGroup.taskId && activeGroup.orderId) ? orders.find((o: any) => o._id === activeGroup.orderId || o.orderId === activeGroup.orderId) : null;
+                    const activeUser = activeTask?.assignee ? users.find((u: any) => u._id === activeTask.assignee) : null;
+
+                    const descriptionText = activeTask?.description ? activeTask.description : (activeOrder?.items ? activeOrder.items.map((item: any) => `${item.name} (${item.quantity}x)`).join('\n') : "No description provided.");
+                    const assigneeName = activeUser ? (activeUser.name || activeUser.email) : "Unassigned";
+                    const categoryName = activeTask?.category ? activeTask.category.replace(/_/g, ' ') : "N/A";
+                    const dueDate = activeTask?.dueDate ? format(new Date(activeTask.dueDate), 'dd MMM yyyy') : "N/A";
+
+                    return (
+                      <div className="flex flex-col xl:flex-row gap-6 mb-4 pb-4 border-b">
+                        {/* Description */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Description</h3>
+                          <div className="bg-muted/30 border rounded-lg p-3 sm:p-4 text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed max-h-[150px] overflow-y-auto">
+                            {descriptionText}
+                          </div>
+                        </div>
+
+                        {/* Properties Grid */}
+                        <div className="w-full xl:w-72 shrink-0">
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Properties</h3>
+                          <div className="bg-muted/30 border rounded-lg p-3 sm:p-4 space-y-3">
+                            <div className="flex items-center justify-between gap-2 min-w-0">
+                              <span className="text-xs text-muted-foreground flex items-center gap-1.5 shrink-0"><User className="w-3.5 h-3.5"/> Assignee</span>
+                              <span className="text-xs font-semibold truncate max-w-[140px] text-right">{assigneeName}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2 min-w-0">
+                              <span className="text-xs text-muted-foreground flex items-center gap-1.5 shrink-0"><Tag className="w-3.5 h-3.5"/> Category</span>
+                              <span className="text-xs font-semibold truncate max-w-[140px] text-right">{categoryName}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2 min-w-0">
+                              <span className="text-xs text-muted-foreground flex items-center gap-1.5 shrink-0"><Calendar className="w-3.5 h-3.5"/> Due Date</span>
+                              <span className="text-xs font-semibold truncate max-w-[140px] text-right">{dueDate}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {(() => {
                     return (
                       <>

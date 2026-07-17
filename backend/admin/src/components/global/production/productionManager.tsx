@@ -664,7 +664,7 @@ export default function ProductionManager() {
                       )}
                     </div>
                     
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto shrink-0">
+                    <div className="flex flex-wrap items-stretch sm:items-center gap-3 w-full sm:w-auto min-w-0">
                       <div className="flex items-center gap-2 bg-background border rounded-md p-1 pl-3 shadow-sm">
                         <span className="text-xs font-semibold text-muted-foreground">Status:</span>
                         <select 
