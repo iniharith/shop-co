@@ -8,14 +8,24 @@ import { Session } from "next-auth";
 let socket: Socket | null = null;
 
 export const getSocket = (session: Session) => {
+  const token = (session?.user as any)?.token;
   if (!socket) {
     socket = io(process.env.NEXT_PUBLIC_BACKEND_URL+"/admin", {
       withCredentials: true,
-      transports: ["websocket"], // Enforce WebSocket only to prevent long-polling connection exhaustion on Vercel
-      query: {
-        userId: session?.user?.id,
-      },
+      transports: ["websocket"],
+      autoConnect: false,
+      auth: { token },
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
   }
+  socket.auth = { token };
+  if (!socket.connected) socket.connect();
   return socket;
+};
+
+export const disconnectSocket = () => {
+  socket?.disconnect();
+  socket = null;
 };

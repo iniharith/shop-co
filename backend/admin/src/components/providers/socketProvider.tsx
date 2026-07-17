@@ -3,115 +3,147 @@
  * Kampungcetak ®
  */
 "use client";
-import React, { useEffect, useRef, useState } from "react";
-import { getSocket } from "../../utils/socket";
+import React, { useEffect, useRef } from "react";
+import { disconnectSocket, getSocket } from "../../utils/socket";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { useRouter } from "nextjs-toploader/app";
+import { removeTaskFromCaches, updateTaskCaches } from "@/utils/taskCache";
 
 const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const { data: session } = useSession();
-  const router = useRouter();
   const client = useQueryClient();
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isSoundEnabled, setIsSoundEnabled] = useState(false);
 
   useEffect(() => {
     audioRef.current = new Audio("/notification.mp3");
-  }, []);
-
-  const handleUserInteraction = () => {
-    const audio = audioRef.current;
-    if (audio && !isSoundEnabled) {
+    const handleUserInteraction = () => {
+      const audio = audioRef.current;
+      if (!audio) return;
       audio.play().then(() => {
         audio.pause();
         audio.currentTime = 0;
-        setIsSoundEnabled(true);
       }).catch(() => {});
-    }
-  };
-
-  useEffect(() => {
+    };
     window.addEventListener("click", handleUserInteraction, { once: true });
     return () => window.removeEventListener("click", handleUserInteraction);
-  }, [isSoundEnabled]);
+  }, []);
 
   useEffect(() => {
-    if (!session?.user) return;
+    const token = (session?.user as any)?.token;
+    if (!session?.user || !token) return;
     const socket = getSocket(session);
+    let fallbackInterval: ReturnType<typeof setInterval> | null = null;
 
-    socket.on("connect", () => console.log("🟢 connected to socket"));
+    const refreshActiveTaskData = () => {
+      if (document.visibilityState !== "visible") return;
+      void client.invalidateQueries({ queryKey: ["tasks"], refetchType: "active" });
+      void client.invalidateQueries({ queryKey: ["task"], refetchType: "active" });
+      void client.invalidateQueries({ queryKey: ["orders"], refetchType: "active" });
+    };
 
-    socket.on("order_placed", async (data) => {
+    const refreshActiveFileData = () => {
+      if (document.visibilityState !== "visible") return;
+      ["allFiles", "groupedFiles", "fileIndex", "filesByFolder"].forEach((key) => {
+        void client.invalidateQueries({ queryKey: [key], refetchType: "active" });
+      });
+    };
+
+    const stopFallbackPolling = () => {
+      if (!fallbackInterval) return;
+      clearInterval(fallbackInterval);
+      fallbackInterval = null;
+    };
+
+    const startFallbackPolling = () => {
+      if (fallbackInterval) return;
+      refreshActiveTaskData();
+      refreshActiveFileData();
+      fallbackInterval = setInterval(() => {
+        refreshActiveTaskData();
+        refreshActiveFileData();
+      }, 2000);
+    };
+
+    const handleConnect = () => {
+      refreshActiveTaskData();
+      refreshActiveFileData();
+    };
+
+    const handleDisconnect = () => startFallbackPolling();
+    const handleConnectError = () => startFallbackPolling();
+    const handleRealtimeStatus = (data: any) => {
+      if (data?.ready) stopFallbackPolling();
+      else startFallbackPolling();
+    };
+
+    const handleOrderPlaced = async (data: any) => {
       audioRef.current?.play().catch(() => {});
       toast.info(data);
       await client.invalidateQueries({ queryKey: ["orders"] });
-    });
+    };
 
-    socket.on("new_message", async (data) => {
+    const handleNewMessage = async (data: any) => {
       await client.invalidateQueries({ queryKey: ["conversations"] });
       if (data?.conversationId) {
         await client.invalidateQueries({ queryKey: ["messages", data.conversationId] });
       }
-    });
+    };
 
-    socket.on("notification", async (data) => {
+    const handleNotification = async (data: any) => {
       toast.info(data.message || data.title || "New Notification");
       await client.invalidateQueries({ queryKey: ["notifications"] });
-    });
+    };
 
-    // ── Real-time task sync ──────────────────────────────────────────────────
-    // Fired by the backend on every task create / update / delete / file upload
-    // / comment. Keeps every admin tab in sync without polling.
-    socket.on("task_updated", async (data) => {
-      // Surgically update the task in the list cache so the UI patches
-      // immediately without a loading flash, then schedule a background refetch
-      // to guarantee eventual consistency (in case we missed an event).
+    const handleTaskUpdated = (data: any) => {
       if (data?.task) {
-        client.setQueriesData({ queryKey: ["tasks"] }, (old: any) => {
-          if (!old?.tasks) return old;
-          const exists = old.tasks.some((t: any) => t._id === data.task._id);
-          return {
-            ...old,
-            tasks: exists
-              ? old.tasks.map((t: any) => t._id === data.task._id ? { ...t, ...data.task } : t)
-              : [...old.tasks, data.task],
-          };
-        });
-        // Also update single-task cache (used by TaskModal)
-        client.setQueryData(["task", data.task._id], (old: any) =>
-          old ? { ...old, task: { ...old.task, ...data.task } } : old
-        );
+        updateTaskCaches(client, data.task);
       }
 
       if (data?.event === 'task_deleted' && data?.taskId) {
-        client.setQueriesData({ queryKey: ["tasks"] }, (old: any) => {
-          if (!old?.tasks) return old;
-          return { ...old, tasks: old.tasks.filter((t: any) => t._id !== data.taskId) };
-        });
+        removeTaskFromCaches(client, data.taskId);
       }
 
-      // Background refetch — fires silently without triggering any loading state
-      client.invalidateQueries({ queryKey: ["tasks"], refetchType: "none" });
+      // Refetch active filtered lists so tasks move into or out of status views.
+      void client.invalidateQueries({ queryKey: ["tasks"], refetchType: "active" });
+      void client.invalidateQueries({ queryKey: ["orders"], refetchType: "active" });
+    };
 
-      // New task creations (e.g. customer artwork uploads from /upload) also
-      // bring new FileUpload docs with them — refresh the file-driven views
-      // (Artworks/Production/Packaging managers) so they show up instantly
-      // instead of requiring a manual page refresh.
-      if (data?.event === 'task_created' || data?.event === 'task_updated') {
-        client.invalidateQueries({ queryKey: ["allFiles"], refetchType: "active" });
-        client.invalidateQueries({ queryKey: ["groupedFiles"], refetchType: "active" });
-      }
-    });
+    const handleFilesUpdated = () => refreshActiveFileData();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !socket.connected) refreshActiveTaskData();
+    };
 
-    socket.on("disconnect", () => console.log("🔴 disconnected from socket"));
+    socket.on("connect", handleConnect);
+    socket.on("connect_error", handleConnectError);
+    socket.on("disconnect", handleDisconnect);
+    socket.on("realtime_status", handleRealtimeStatus);
+    socket.on("order_placed", handleOrderPlaced);
+    socket.on("new_message", handleNewMessage);
+    socket.on("notification", handleNotification);
+    socket.on("task_updated", handleTaskUpdated);
+    socket.on("files_updated", handleFilesUpdated);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    if (socket.connected) handleConnect();
+    else startFallbackPolling();
 
     return () => {
-      socket.off("task_updated");
+      stopFallbackPolling();
+      socket.off("connect", handleConnect);
+      socket.off("connect_error", handleConnectError);
+      socket.off("disconnect", handleDisconnect);
+      socket.off("realtime_status", handleRealtimeStatus);
+      socket.off("order_placed", handleOrderPlaced);
+      socket.off("new_message", handleNewMessage);
+      socket.off("notification", handleNotification);
+      socket.off("task_updated", handleTaskUpdated);
+      socket.off("files_updated", handleFilesUpdated);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      disconnectSocket();
     };
-  }, [session?.user]);
+  }, [client, session]);
 
   return <>{children}</>;
 };

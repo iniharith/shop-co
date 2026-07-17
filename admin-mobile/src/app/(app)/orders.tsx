@@ -49,7 +49,7 @@ export default function OrdersScreen() {
     const offPlaced = socketService.on('order_placed' as any, handleOrderPlaced);
     const offStatus = socketService.on('order_status_updated' as any, handleOrderStatus);
 
-    return () => { offPlaced(); offStatus(); };
+    return () => { offPlaced(); offStatus(); socketService.disconnect(); };
   }, []);
 
   const updateStatus = async (id: string, currentStatus: string) => {
@@ -206,4 +206,3 @@ const s = StyleSheet.create({
   infoText: { color: THEME.mutedForeground, fontSize: 12 },
   actionBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 4 },
 });
-

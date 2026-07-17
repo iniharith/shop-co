@@ -17,8 +17,15 @@ import { RedisService } from '../../infrastructure/redis/redis';
 import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
 import { sendPushNotification } from '../../services/pushNotification.service';
 import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
+import { fileUploadRepository, notifyFileClients } from '../../infrastructure/repositories/FileUploadRepository';
 
 const redisService = new RedisService();
+type TaskFileTag = 'attachment' | 'draft' | 'for_print';
+const TASK_FILE_TAGS = new Set<TaskFileTag>(['attachment', 'draft', 'for_print']);
+const normalizeTaskFileTag = (tag: unknown): TaskFileTag => {
+  const value = String(tag) as TaskFileTag;
+  return TASK_FILE_TAGS.has(value) ? value : 'attachment';
+};
 
 const taskStorage = multerS3({
   s3: s3Client,
@@ -122,8 +129,9 @@ router.post(
       await taskRepository.addActivity(task._id.toString(), userId, userName, `set status to ${task.status.replace(/_/g, ' ')}`);
     }
 
-    await emitTaskUpdated('task_created', { task });
-    res.json({ success: true, task });
+    const freshTask = await taskRepository.findById(task._id.toString());
+    res.json({ success: true, task: freshTask });
+    void emitTaskUpdated('task_created', { task: freshTask });
   })
 );
 
@@ -135,6 +143,7 @@ const deleteAllTaskFiles = async (task: any) => {
 
     // Delete all FileUpload records referencing this task (share link uploads + direct uploads)
     await FileUpload.deleteMany({ taskId });
+    void notifyFileClients();
 
     // Delete files from S3 and clear task.files array
     if (task.files && task.files.length > 0) {
@@ -157,6 +166,7 @@ router.put(
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
     const oldTask = await taskRepository.findById(req.params.id);
+    const isDoneChanged = typeof req.body.isDone === 'boolean' && req.body.isDone !== Boolean(oldTask?.isDone);
 
     // If someone is being newly assigned to a task that's still "In Progress",
     // automatically advance it to "In Design" — being assigned implies design work
@@ -218,13 +228,22 @@ router.put(
     if (req.body.title !== undefined && req.body.title !== oldTask?.title) {
       await taskRepository.addActivity(req.params.id, userId, userName, `changed title`, `from "${oldTask?.title || '(empty)'}" to "${req.body.title}"`);
     }
+    if (isDoneChanged) {
+      await taskRepository.addActivity(
+        req.params.id,
+        userId,
+        userName,
+        req.body.isDone ? 'marked task as done' : 'marked task as not done'
+      );
+    }
     
-    // Sync status to Order if it changed
+    // Sync status to the linked order only when status itself changed. Linking
+    // an order must not silently change its status or notify its customer.
     if (req.body.status && req.body.status !== oldTask?.status) {
         if (task.orderId) {
             try {
                 const orderUsecase = new OrderUsecase();
-                await orderUsecase.updateOrderStatus(task.orderId, req.body.status as any);
+                await orderUsecase.updateOrderStatus(task.orderId, task.status as any, false, req.params.id);
             } catch (e) {
                 console.error('Failed to sync status to order:', e);
             }
@@ -234,7 +253,7 @@ router.put(
     // Refetch to include newly added activities in the response and broadcast
     const freshTask = await taskRepository.findById(req.params.id);
     res.json({ success: true, task: freshTask });
-    emitTaskUpdated('task_updated', { task: freshTask });
+    void emitTaskUpdated('task_updated', { task: freshTask });
   })
 );
 
@@ -309,7 +328,7 @@ router.post(
     }
 
     res.json({ success: true, task });
-    emitTaskUpdated('task_updated', { task });
+    void emitTaskUpdated('task_updated', { task });
   })
 );
 
@@ -324,7 +343,7 @@ router.delete(
       return;
     }
     res.json({ success: true, task });
-    emitTaskUpdated('task_updated', { task });
+    void emitTaskUpdated('task_updated', { task });
   })
 );
 
@@ -340,7 +359,7 @@ router.put(
       return;
     }
     res.json({ success: true, task });
-    emitTaskUpdated('task_updated', { task });
+    void emitTaskUpdated('task_updated', { task });
   })
 );
 
@@ -385,6 +404,7 @@ router.put(
         { path: fileUrl, taskId: id },
         { $set: { adminNotes: notes || '' } }
       );
+      void notifyFileClients();
     } catch (err) {
       console.error("Failed to sync file upload notes:", err);
     }
@@ -397,7 +417,9 @@ router.put(
       `updated note for attached file (${fileName}): ${notes || '(cleared)'}`
     );
 
-    res.json({ success: true, task });
+    const freshTask = await taskRepository.findById(id);
+    res.json({ success: true, task: freshTask });
+    void emitTaskUpdated('task_updated', { task: freshTask });
   })
 );
 
@@ -413,7 +435,7 @@ router.post(
     }
     const fileUrl = (req.file as any).location;
     const fileName = req.file.originalname || 'Attached File';
-    const tag = req.body.tag || 'attachment';
+    const tag = normalizeTaskFileTag(req.body.tag);
 
     const task = await taskRepository.addFile(req.params.id, fileUrl, fileName, tag);
     if (!task) {
@@ -436,13 +458,12 @@ router.post(
 
     // Also sync the file to the general FileUpload collection
     try {
-      const { FileUpload } = await import('../../domain/entities/FileUpload');
       const authReq = req as any;
       const userId = authReq.userId || authReq.user?.id || 'admin';
 
-      await FileUpload.create({
+       await fileUploadRepository.create({
         userId: userId,
-        taskId: task._id,
+        taskId: task._id.toString(),
         orderId: task.orderId || undefined,
         category: 'TASK',
         tag: tag,
@@ -456,8 +477,9 @@ router.post(
       console.error('Failed to sync task file to FileUpload:', e);
     }
 
-    res.json({ success: true, task });
-    emitTaskUpdated('task_updated', { task });
+    const freshTask = await taskRepository.findById(req.params.id);
+    res.json({ success: true, task: freshTask });
+    void emitTaskUpdated('task_updated', { task: freshTask });
   })
 );
 
@@ -466,14 +488,15 @@ router.post(
   '/:id/files/save-metadata',
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
-    const { fileUrl, fileName, tag, fileKey, mimetype, size } = req.body;
+    const { fileUrl, fileName, fileKey, mimetype, size } = req.body;
+    const tag = normalizeTaskFileTag(req.body.tag);
     
     if (!fileUrl || !fileName) {
       res.status(400).json({ success: false, message: 'fileUrl and fileName are required' });
       return;
     }
 
-    const task = await taskRepository.addFile(req.params.id, fileUrl, fileName, tag || 'attachment');
+    const task = await taskRepository.addFile(req.params.id, fileUrl, fileName, tag);
     if (!task) {
       res.status(404).json({ success: false, message: 'Task not found' });
       return;
@@ -493,16 +516,15 @@ router.post(
     }
 
     try {
-      const { FileUpload } = await import('../../domain/entities/FileUpload');
       const authReq = req as any;
       const userId = authReq.userId || authReq.user?.id || 'admin';
 
-      await FileUpload.create({
+      await fileUploadRepository.create({
         userId: userId,
-        taskId: task._id,
+        taskId: task._id.toString(),
         orderId: task.orderId || undefined,
         category: 'TASK',
-        tag: tag || 'attachment',
+        tag,
         filename: fileKey || fileName,
         originalName: fileName,
         mimetype: mimetype || 'application/octet-stream',
@@ -513,8 +535,9 @@ router.post(
       console.error('Failed to sync task file to FileUpload:', e);
     }
 
-    res.json({ success: true, task });
-    emitTaskUpdated('task_updated', { task });
+    const freshTask = await taskRepository.findById(req.params.id);
+    res.json({ success: true, task: freshTask });
+    void emitTaskUpdated('task_updated', { task: freshTask });
   })
 );
 
@@ -551,9 +574,11 @@ router.delete(
         if (fileDoc) {
           if (fileDoc.path) await deleteFromS3(fileDoc.path).catch(console.error);
           await FileUpload.findByIdAndDelete(fileId);
+          void notifyFileClients();
           await taskRepository.addActivity(id, actorId, actorName, `deleted file "${fileDoc.originalName || fileDoc.filename || 'attachment'}"`);
-          res.json({ success: true, message: 'File deleted from task', task });
-          emitTaskUpdated('task_updated', { task });
+          const freshTask = await taskRepository.findById(id);
+          res.json({ success: true, message: 'File deleted from task', task: freshTask });
+          void emitTaskUpdated('task_updated', { task: freshTask });
           return;
         }
       } catch(e) {}
@@ -582,14 +607,16 @@ router.delete(
     try {
       const { FileUpload } = await import('../../domain/entities/FileUpload');
       await FileUpload.findOneAndDelete({ path: fileUrl });
+      void notifyFileClients();
     } catch (e) {
       console.error('Failed to delete task file from FileUpload:', e);
     }
 
     await taskRepository.addActivity(id, actorId, actorName, `deleted file "${fileName}"`);
 
-    res.json({ success: true, message: 'File deleted from task', task });
-    emitTaskUpdated('task_updated', { task });
+    const freshTask = await taskRepository.findById(id);
+    res.json({ success: true, message: 'File deleted from task', task: freshTask });
+    void emitTaskUpdated('task_updated', { task: freshTask });
   })
 );
 

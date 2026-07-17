@@ -12,11 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useTask, useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
-import { uploadTaskFile } from "@/api/tasks";
 import { useUploadStore } from '@/store/uploadStore';
 import { useUsers } from "@/hooks/useUsers";
-import { useSession } from "next-auth/react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw, CheckCircle, Folder } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -228,9 +225,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { data: usersData } = useUsers();
   const { data: ordersData } = useOrders();
   const { data: allFilesData } = useAllFiles();
-  const { data: session } = useSession();
   const { data: fullTaskData } = useTask(task._id);
-  const queryClient = useQueryClient();
   const router = useRouter();
 
   // Full task from single-task API (includes activities and comments),
@@ -258,7 +253,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const uploadingFiles = Object.values(uploads).filter(u => 
     u.taskId === task._id && 
     (u.status === 'uploading' || u.status === 'error' || 
-      (u.status === 'success' && !task.files?.some((cf: any) => cf.name === u.name)))
+      (u.status === 'success' && !fullTask.files?.some((cf: any) => cf.name === u.name)))
   );
   const [deletedFileIds, setDeletedFileIds] = useState<string[]>([]);
 
@@ -270,7 +265,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const customUsernames = customerUploadUsernames.filter(name => !customers.some((c: any) => c.name === name || c.email === name));
 
   const combinedFiles = React.useMemo(() => {
-    let files = [...(task?.files || [])];
+    let files = [...(fullTask?.files || [])];
     
     // Add customer uploaded files from share link or public upload portal
     const allFiles = (allFilesData as any)?.data || [];
@@ -298,7 +293,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       const fid = f._id || f.url?.split('/').pop();
       return !deletedFileIds.includes(fid);
     });
-  }, [task, allFilesData, deletedFileIds]);
+  }, [fullTask, allFilesData, deletedFileIds]);
 
   const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "");
   const [orderId, setOrderId] = useState(task.orderId || "");
@@ -308,23 +303,50 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [title, setTitle] = useState(task.title || "");
   const getAssigneeId = (val: any) => typeof val === 'object' && val !== null ? val._id : (val || "unassigned");
   const [assignee, setAssignee] = useState(getAssigneeId(task.assignee));
+  const editingFieldRef = React.useRef<string | null>(null);
+  const titleOnFocusRef = React.useRef(title);
+  const descriptionOnFocusRef = React.useRef(description);
+  const dueDateOnFocusRef = React.useRef(dueDate);
 
-  const handleSaveDetails = (overrides?: any) => {
+  React.useEffect(() => {
+    setStatus(fullTask.status || "PLACED");
+  }, [fullTask.status]);
+
+  React.useEffect(() => {
+    if (editingFieldRef.current !== 'title') setTitle(fullTask.title || "");
+  }, [fullTask.title]);
+
+  React.useEffect(() => {
+    if (editingFieldRef.current !== 'description') setDescription(fullTask.description || "");
+  }, [fullTask.description]);
+
+  React.useEffect(() => {
+    if (editingFieldRef.current !== 'dueDate') {
+      setDueDate(fullTask.dueDate ? new Date(fullTask.dueDate).toISOString().split('T')[0] : "");
+    }
+  }, [fullTask.dueDate]);
+
+  React.useEffect(() => setOrderId(fullTask.orderId || ""), [fullTask.orderId]);
+  React.useEffect(() => setCustomerUsername(fullTask.customerUsername || ""), [fullTask.customerUsername]);
+  React.useEffect(() => setCategory(fullTask.category || "UNASSIGNED"), [fullTask.category]);
+  React.useEffect(() => setAssignee(getAssigneeId(fullTask.assignee)), [fullTask.assignee]);
+
+  const handleSaveDetails = (data: Record<string, any>) => {
     updateTask({
       id: task._id,
-      data: {
-        title,
-        description,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        orderId,
-        customerUsername,
-        category,
-        status,
-        assignee: assignee === "unassigned" ? null : assignee,
-        ...overrides
-      }
+      data,
     }, {
-      onSuccess: () => toast.success("Task details updated!")
+      onSuccess: () => toast.success("Task details updated!"),
+      onError: () => {
+        if ('title' in data) setTitle(fullTask.title || "");
+        if ('description' in data) setDescription(fullTask.description || "");
+        if ('dueDate' in data) setDueDate(fullTask.dueDate ? new Date(fullTask.dueDate).toISOString().split('T')[0] : "");
+        if ('orderId' in data) setOrderId(fullTask.orderId || "");
+        if ('customerUsername' in data) setCustomerUsername(fullTask.customerUsername || "");
+        if ('category' in data) setCategory(fullTask.category || "UNASSIGNED");
+        if ('status' in data) setStatus(fullTask.status || "PLACED");
+        if ('assignee' in data) setAssignee(getAssigneeId(fullTask.assignee));
+      },
     });
   };
 
@@ -354,7 +376,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
         })
         .then(() => {
           updateStatus(id, 'success');
-          setTimeout(() => removeUpload(id), 5000);
+          setTimeout(() => removeUpload(id), 1000);
         })
         .catch((err) => {
           if (err.message !== "Upload cancelled") {
@@ -384,7 +406,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     })
     .then(() => {
       updateStatus(upload.id, 'success');
-      setTimeout(() => removeUpload(upload.id), 5000);
+      setTimeout(() => removeUpload(upload.id), 1000);
     })
     .catch((err) => {
       if (err.message !== "Upload cancelled") {
@@ -413,7 +435,15 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   <Input 
                     value={title} 
                     onChange={(e) => setTitle(e.target.value)} 
-                    onBlur={() => handleSaveDetails()}
+                    onFocus={() => {
+                      editingFieldRef.current = 'title';
+                      titleOnFocusRef.current = title;
+                    }}
+                    onBlur={() => {
+                      editingFieldRef.current = null;
+                      if (title !== titleOnFocusRef.current) handleSaveDetails({ title });
+                      else setTitle(fullTask.title || "");
+                    }}
                     className="text-xl font-semibold leading-tight border-none shadow-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                   />
                 
@@ -429,6 +459,10 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   className="min-h-[120px] bg-muted/30 focus-visible:ring-1 border-border/50 shadow-sm overflow-hidden resize-none" 
                   value={description} 
                   onChange={(e) => setDescription(e.target.value)} 
+                  onFocus={() => {
+                    editingFieldRef.current = 'description';
+                    descriptionOnFocusRef.current = description;
+                  }}
                   onInput={(e) => {
                     const target = e.target as HTMLTextAreaElement;
                     target.style.height = "0px";
@@ -441,7 +475,11 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                     }
                   }}
                   placeholder="Add more details to this task..."
-                  onBlur={() => handleSaveDetails()}
+                  onBlur={() => {
+                    editingFieldRef.current = null;
+                    if (description !== descriptionOnFocusRef.current) handleSaveDetails({ description });
+                    else setDescription(fullTask.description || "");
+                  }}
                 />
               </div>
 
@@ -452,12 +490,12 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                         <label className="text-sm font-semibold text-foreground flex items-center gap-2">
                           <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments
                         </label>
-                        {task.status === "IN_PRODUCTION" ? (
+                        {fullTask.status === "IN_PRODUCTION" ? (
                           <a href={`/admin/production?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Production Folder">
                             <Folder className="w-3.5 h-3.5" />
                             Production Folder
                           </a>
-                        ) : task.status === "PACKAGING" || task.status === "SHIPPED" || task.status === "DELIVERED" ? (
+                        ) : fullTask.status === "PACKAGING" || fullTask.status === "SHIPPED" || fullTask.status === "DELIVERED" ? (
                           <a href={`/admin/packaging?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Packaging Folder">
                             <Folder className="w-3.5 h-3.5" />
                             Packaging Folder
@@ -528,7 +566,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                         ))}
                         {combinedFiles.slice(0, 12).map((file: any) => (
                           <FileAttachmentCard allFiles={allFiles} key={file.url} 
-                            task={task} 
+                            task={fullTask}
                             file={file} 
                             deleteFile={deleteFile} 
                             isDeletingFile={isDeletingFile} 
@@ -647,7 +685,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                 )}
                                 {activityItems.map((item: any, idx: number) => {
                                   const isUpload = item.action.includes('uploaded a file');
-                                  const matchingFile = (isUpload && item.details) ? task.files?.find((f: any) => f.name === item.details || f.url === item.details) : null;
+                                  const isDoneActivity = item.action === 'marked task as done';
+                                  const matchingFile = (isUpload && item.details) ? fullTask.files?.find((f: any) => f.name === item.details || f.url === item.details) : null;
                                   const isImage = matchingFile && (matchingFile.url.match(/\.(jpeg|jpg|gif|png|webp|heic)$/i) || matchingFile.name?.match(/\.(jpeg|jpg|gif|png|webp|heic)$/i));
                                   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
                                   const proxyUrl = matchingFile ? `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(matchingFile.url.startsWith('http') ? matchingFile.url : `${backendUrl}/${matchingFile.url.replace(/^\/+/, '')}`)}&name=${encodeURIComponent(matchingFile.name)}&stream=true` : "";
@@ -665,6 +704,7 @@ return (
 <div className="flex-1 text-muted-foreground">
                                         <div>
                                           <span className="font-semibold text-foreground mr-1">{item.userName}</span>
+                                          {isDoneActivity && <CheckCircle className="inline-block w-4 h-4 mr-1.5 text-emerald-500 align-text-bottom" />}
                                           {item.action} {item.details && !isImage && <span className="font-medium text-foreground/80 ml-1 break-all">{item.details}</span>}
                                           <span className="text-[10px] ml-2 text-muted-foreground/70 whitespace-nowrap">• {format(new Date(item.createdAt), "MMM d, h:mm a")}</span>
                                         </div>
@@ -701,7 +741,6 @@ return (
                 setIsDragOverComment(false);
                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                     const files = Array.from(e.dataTransfer.files);
-                    const token = (session as any)?.user?.token || localStorage.getItem('token') || "";
                     
                     const uploadPromises = files.map(async (file) => {
                       const id = Date.now().toString() + Math.random().toString(36).substring(7);
@@ -710,7 +749,7 @@ return (
                       addUpload({
                         id,
                         name: file.name,
-                        tag: "Task Document",
+                        tag: "attachment",
                         taskId: task._id,
                         file,
                         abortController
@@ -718,15 +757,15 @@ return (
 
                       try {
                         updateStatus(id, 'uploading');
-                        const data = await uploadTaskFile(
-                          token,
-                          task._id,
+                        const data = await uploadFile({
+                          id: task._id,
                           file,
-                          "Task Document",
-                          (percent) => updateProgress(id, percent),
-                          abortController
-                        );
+                          tag: "attachment",
+                          onProgress: (percent) => updateProgress(id, percent),
+                          abortController,
+                        });
                         updateStatus(id, 'success');
+                        setTimeout(() => removeUpload(id), 1000);
                         return data;
                       } catch (err: any) {
                         if (err.name === 'AbortError') {
@@ -741,7 +780,6 @@ return (
                     toast.promise(Promise.all(uploadPromises), {
                       loading: `Uploading ${files.length} file(s)...`,
                       success: () => {
-                        queryClient.invalidateQueries({ queryKey: ["taskFiles", task._id] });
                         return `Successfully uploaded ${files.length} file(s)`;
                       },
                       error: "Failed to upload some files"
@@ -877,8 +915,8 @@ return (
                       {[
                         'PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 
                         'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 
-                        'IN_PRODUCTION', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 
-                        'CANCELLED', 'FAILED'
+                        'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING',
+                        'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'
                       ].map(s => (
                         <SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>
                       ))}
@@ -894,7 +932,16 @@ return (
                   type="date" 
                   value={dueDate} 
                   onChange={e => setDueDate(e.target.value)} 
-                  onBlur={() => handleSaveDetails()}
+                  onFocus={() => {
+                    editingFieldRef.current = 'dueDate';
+                    dueDateOnFocusRef.current = dueDate;
+                  }}
+                  onBlur={() => {
+                    editingFieldRef.current = null;
+                    if (dueDate !== dueDateOnFocusRef.current) {
+                      handleSaveDetails({ dueDate: dueDate ? new Date(dueDate) : null });
+                    } else setDueDate(fullTask.dueDate ? new Date(fullTask.dueDate).toISOString().split('T')[0] : "");
+                  }}
                   className="h-9 bg-background shadow-sm border-border/50"
                 />
               </div>

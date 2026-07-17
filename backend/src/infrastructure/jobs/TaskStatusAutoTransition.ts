@@ -4,6 +4,7 @@
  */
 import cron from 'node-cron';
 import { Task } from '../../domain/entities/Task';
+import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
 
 const PACKAGING_TO_DELIVERED_DAYS = 14;
 
@@ -66,7 +67,7 @@ async function transitionPackagingToDelivered(): Promise<void> {
         if (orderId) {
           const { OrderUsecase } = await import('../../application/usecases/orders/order.usecase');
           const orderUsecase = new OrderUsecase();
-          await orderUsecase.updateOrderStatus(orderId, 'DELIVERED');
+          await orderUsecase.updateOrderStatus(orderId, 'DELIVERED', false, taskId);
         }
 
         // Log activity
@@ -82,6 +83,9 @@ async function transitionPackagingToDelivered(): Promise<void> {
             },
           },
         });
+
+        const updatedTask = await Task.findById(taskId);
+        void emitTaskUpdated('task_updated', { task: updatedTask });
 
         successCount++;
         console.log(`[Cron] ✅ Task "${task.title}" → DELIVERED`);

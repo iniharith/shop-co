@@ -88,7 +88,6 @@ export default function TasksManager() {
   const [sortOption, setSortOption]                 = useState<"dateDesc"|"dateAsc"|"nameAsc"|"nameDesc">("dateDesc");
   const [deletedTaskIds, setDeletedTaskIds]         = useState<string[]>([]);
   const [searchQuery, setSearchQuery]               = useState("");
-  const [optimisticStatuses, setOptimisticStatuses] = useState<Record<string, string>>({});
   const [newTask, setNewTask]                       = useState({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
 
   const { mutate: createTask, isPending: isCreating } = useCreateTask();
@@ -184,12 +183,11 @@ export default function TasksManager() {
 
   const handleStatusChange = (taskId: string, newStatus: string) => {
     const old = tasks.find((t: any) => t._id === taskId)?.status;
-    setOptimisticStatuses(prev => ({ ...prev, [taskId]: newStatus }));
     updateTask({ id: taskId, data: { status: newStatus } }, {
       onSuccess: () => {
         toast.success("Status updated!", {
           duration: 5000,
-          action: { label: "Undo", onClick: () => { setOptimisticStatuses(prev => ({ ...prev, [taskId]: old })); updateTask({ id: taskId, data: { status: old } }); } },
+          action: { label: "Undo", onClick: () => updateTask({ id: taskId, data: { status: old } }) },
         });
       },
     });
@@ -416,7 +414,7 @@ export default function TasksManager() {
                                   </SelectContent>
                                 </Select>
                               </div>
-                              <Select value={optimisticStatuses[task._id] || task.status} onValueChange={v => handleStatusChange(task._id, v)}>
+                              <Select value={task.status} onValueChange={v => handleStatusChange(task._id, v)}>
                                 <SelectTrigger className="h-6 text-[10px] bg-muted/50 border-0 focus:ring-0" onClick={e => e.stopPropagation()}><SelectValue /></SelectTrigger>
                                 <SelectContent>{columns.map(s => <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
                               </Select>
@@ -521,7 +519,7 @@ export default function TasksManager() {
                           </div>
 
                           <div className="col-span-2" onClick={e => e.stopPropagation()}>
-                            <Select value={optimisticStatuses[task._id] || task.status} onValueChange={v => handleStatusChange(task._id, v)}>
+                            <Select value={task.status} onValueChange={v => handleStatusChange(task._id, v)}>
                               <SelectTrigger className="h-8 text-xs bg-transparent border-0 shadow-none focus:ring-0"><SelectValue /></SelectTrigger>
                               <SelectContent>{columns.map(s => <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
                             </Select>

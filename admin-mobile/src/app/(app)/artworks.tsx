@@ -74,7 +74,7 @@ export default function ArtworksScreen() {
 
     const offUploaded = socketService.on('file_uploaded' as any, handleFileUploaded);
 
-    return () => { offUploaded(); };
+    return () => { offUploaded(); socketService.disconnect(); };
   }, []);
 
   const filteredGroups = useMemo(() => {
@@ -255,4 +255,3 @@ const s = StyleSheet.create({
   iconBtn: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   tagBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
 });
-

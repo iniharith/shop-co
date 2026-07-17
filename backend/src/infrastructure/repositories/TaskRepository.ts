@@ -43,6 +43,10 @@ export class TaskRepository {
     await Task.updateMany({ orderId }, { $set: data });
   }
 
+  async findByOrderId(orderId: string): Promise<ITask[]> {
+    return Task.find({ orderId });
+  }
+
   async delete(id: string): Promise<void> {
     await Task.findByIdAndUpdate(id, { $set: { isDeleted: true } });
   }

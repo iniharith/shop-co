@@ -5,12 +5,11 @@ import { Badge } from '../ui/badge';
 import { useUploadStore } from '@/store/uploadStore';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Progress } from '../ui/progress';
-import { uploadTaskFile } from '@/api/tasks';
-import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
+import { useUploadTaskFile } from '@/hooks/useTasks';
 
 export default function UploadMonitor() {
-  const { data: session } = useSession();
+  const { mutateAsync: uploadTaskFile } = useUploadTaskFile();
   const { uploads, removeUpload, clearCompleted, updateStatus, updateProgress, addUpload } = useUploadStore();
   const uploadList = Object.values(uploads).sort((a, b) => b.createdAt - a.createdAt);
   
@@ -20,8 +19,6 @@ export default function UploadMonitor() {
 
   const handleRetry = async (upload: any) => {
     if (!upload.file || !upload.taskId) return;
-    const token = (session?.user as any)?.token;
-    if (!token) return;
 
     // Reset upload status to uploading
     updateStatus(upload.id, 'uploading', undefined);
@@ -43,9 +40,13 @@ export default function UploadMonitor() {
     });
 
     try {
-      await uploadTaskFile(token, upload.taskId, upload.file, upload.tag, (percent) => {
-        updateProgress(upload.id, percent);
-      }, abortController);
+      await uploadTaskFile({
+        id: upload.taskId,
+        file: upload.file,
+        tag: upload.tag,
+        onProgress: (percent) => updateProgress(upload.id, percent),
+        abortController,
+      });
       updateStatus(upload.id, 'success');
       toast.success(`Retry successful: ${upload.name}`);
     } catch (err: any) {

@@ -18,7 +18,6 @@ export default function ProductionScreen() {
 
   useEffect(() => {
     socketService.connect();
-    socketService.on('task_updated' as any, () => { fetchData(); });
     const fetchData = async () => {
       try {
         const res = await api.get('/tasks?status=IN_PRODUCTION');
@@ -29,7 +28,9 @@ export default function ProductionScreen() {
         setLoading(false);
       }
     };
+    const offTaskUpdated = socketService.on('task_updated' as any, () => { fetchData(); });
     fetchData();
+    return () => { offTaskUpdated(); socketService.disconnect(); };
   }, []);
 
   if (loading) return (
@@ -93,4 +94,3 @@ const s = StyleSheet.create({
   cardDesc: { color: THEME.mutedForeground, fontSize: 13, marginTop: 4 },
   emptyCard: { borderRadius: 16, borderWidth: 1, borderColor: THEME.glassBorder, padding: 32, alignItems: 'center', marginTop: 40 },
 });
-

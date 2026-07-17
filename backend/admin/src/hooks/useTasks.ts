@@ -7,6 +7,7 @@ import { useQueryData } from "./useQueryData";
 import { useMutationData } from "./useMutation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getTasks, getTask, createTask, updateTask, deleteTask, addTaskComment, deleteTaskComment } from "@/api/tasks";
+import { updateTaskCaches } from "@/utils/taskCache";
 
 export const useTasks = (filters?: any) => {
     const { data: session, status } = useSession();
@@ -72,8 +73,12 @@ export const useUpdateTask = () => {
             }
             import("sonner").then(m => m.toast.error("Failed to update task", { description: err.message }));
         },
+        onSuccess: (data) => {
+            updateTaskCaches(client, data?.task);
+        },
         onSettled: (data, error, variables) => {
             client.invalidateQueries({ queryKey: ['tasks'] });
+            client.invalidateQueries({ queryKey: ['orders'] });
             if (variables?.id) {
                 client.invalidateQueries({ queryKey: ['task', variables.id] });
             }
@@ -97,13 +102,26 @@ export const usePermanentDeleteTask = () => {
 
 export const useUploadTaskFile = () => {
     const { data: session } = useSession();
-    const { mutate, mutateAsync, isPending } = useMutationData(
-        ['uploadTaskFile'],
-        (data: { id: string, file: File, tag?: string, onProgress?: (percent: number) => void, abortController?: AbortController }) => 
+    const client = useQueryClient();
+    const { mutate, mutateAsync, isPending } = useMutation({
+        mutationKey: ['uploadTaskFile'],
+        mutationFn: (data: { id: string, file: File, tag?: string, onProgress?: (percent: number) => void, abortController?: AbortController }) =>
             import("@/api/tasks").then(m => m.uploadTaskFile(session?.user?.token, data.id, data.file, data.tag, data.onProgress, data.abortController)),
-        ["tasks", "allFiles", "groupedFiles", "task"]
-    )
-    return { mutate, mutateAsync, isPending }
+        onMutate: async ({ id }) => {
+            await client.cancelQueries({ queryKey: ["task", id] });
+        },
+        onSuccess: (data) => {
+            updateTaskCaches(client, data?.task);
+            ["allFiles", "groupedFiles", "fileIndex", "filesByFolder"].forEach((key) => {
+                void client.invalidateQueries({ queryKey: [key], refetchType: "active" });
+            });
+        },
+        onError: (error: Error, { id }) => {
+            void client.invalidateQueries({ queryKey: ["task", id], refetchType: "active" });
+            import("sonner").then(m => m.toast.error("Failed to upload file", { description: error.message }));
+        },
+    });
+    return { mutate, mutateAsync, isPending };
 }
 
 export const useDeleteTaskFile = () => {
@@ -111,7 +129,7 @@ export const useDeleteTaskFile = () => {
     const { mutate, isPending } = useMutationData(
         ['deleteTaskFile'],
         (data: { id: string, fileId: string }) => import("@/api/tasks").then(m => m.deleteTaskFile(session?.user?.token, data.id, data.fileId)),
-        ["tasks", "allFiles", "groupedFiles", "task"]
+        ["tasks", "allFiles", "groupedFiles", "fileIndex", "filesByFolder", "task"]
     )
     return { mutate, isPending }
 }
@@ -176,7 +194,7 @@ export const useUpdateTaskFileNotes = () => {
     const { mutate, isPending } = useMutationData(
         ['updateTaskFileNotes'],
         (data: { id: string, fileUrl: string, notes: string }) => import("@/api/tasks").then(m => m.updateTaskFileNotes(session?.user?.token, data.id, data.fileUrl, data.notes)),
-        ["tasks", "allFiles", "groupedFiles"]
+        ["tasks", "allFiles", "groupedFiles", "fileIndex", "filesByFolder"]
     );
     return { mutate, isPending };
 }

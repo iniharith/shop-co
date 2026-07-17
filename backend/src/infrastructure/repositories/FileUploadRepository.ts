@@ -7,12 +7,12 @@ import { RedisService } from '../redis/redis';
 import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
 
 const redisService = new RedisService();
-const notifyClients = () => redisService.publish(REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' })).catch(console.error);
+export const notifyFileClients = () => redisService.publish(REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' })).catch(console.error);
 
 export class FileUploadRepository {
   async create(data: Partial<IFileUpload>): Promise<IFileUpload> {
     const result = await FileUpload.create(data);
-    notifyClients();
+    notifyFileClients();
     return result;
   }
 
@@ -87,7 +87,7 @@ export class FileUploadRepository {
       { $set: { originalName } },
       { new: true }
     );
-    notifyClients();
+    notifyFileClients();
     return result;
   }
 
@@ -103,7 +103,7 @@ export class FileUploadRepository {
     if (data.taskId) update.taskId = data.taskId;
     if (data.category) update.category = data.category;
     const result = await FileUpload.findByIdAndUpdate(id, { $set: update }, { new: true });
-    notifyClients();
+    notifyFileClients();
     return result;
   }
 
@@ -117,13 +117,13 @@ export class FileUploadRepository {
       { $set: { adminReviewed: reviewed, adminNotes: notes } },
       { new: true }
     );
-    notifyClients();
+    notifyFileClients();
     return result;
   }
 
   async delete(id: string): Promise<void> {
     await FileUpload.findByIdAndDelete(id);
-    notifyClients();
+    notifyFileClients();
   }
 
   async getStorageStats(): Promise<{

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, FlatList, SectionList, TouchableOpacity, ActivityIndicator, StyleSheet, StatusBar, ScrollView, TextInput, Modal, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppBackground from '../../components/AppBackground';
@@ -33,8 +33,10 @@ export default function TasksScreen() {
   const [statusPickerVisible, setStatusPickerVisible] = useState(false);
   const [userPickerVisible, setUserPickerVisible] = useState(false);
   const [activeTaskForPicker, setActiveTaskForPicker] = useState<string | null>(null);
+  const fetchRequestRef = useRef(0);
 
   const fetchData = async () => {
+    const requestId = ++fetchRequestRef.current;
     try {
       const [tasksRes, usersRes] = await Promise.all([
         api.get('/tasks').catch(e => ({ data: [] })),
@@ -42,8 +44,10 @@ export default function TasksScreen() {
       ]);
       const allTasks = tasksRes.data?.data || tasksRes.data?.tasks || tasksRes.data || [];
       const allUsers = usersRes.data?.data || usersRes.data?.users || usersRes.data || [];
-      setTasks(Array.isArray(allTasks) ? allTasks : []);
-      setUsers(Array.isArray(allUsers) ? allUsers : []);
+      if (requestId === fetchRequestRef.current) {
+        setTasks(Array.isArray(allTasks) ? allTasks : []);
+        setUsers(Array.isArray(allUsers) ? allUsers : []);
+      }
     } catch (e) { console.error(e); }
     finally { setLoading(false); setRefresh(false); }
   };
@@ -53,21 +57,25 @@ export default function TasksScreen() {
     socketService.connect();
     
     const handleTaskUpdated = (data: any) => {
+      fetchRequestRef.current += 1;
+      void fetchData();
+      if (data?.event === 'task_deleted' && data?.taskId) {
+        setTasks(prev => prev.filter(t => t._id !== data.taskId));
+        return;
+      }
+
+      const task = data?.task;
+      if (!task?._id) return;
       setTasks(prev => {
-         const exists = prev.find(t => t._id === data._id);
-         if (exists) return prev.map(t => t._id === data._id ? { ...t, ...data } : t);
-         return [...prev, data];
+         const exists = prev.find(t => t._id === task._id);
+         if (exists) return prev.map(t => t._id === task._id ? { ...t, ...task } : t);
+         return [...prev, task];
       });
-    };
-    const handleTaskDeleted = (data: any) => {
-      setTasks(prev => prev.filter(t => t._id !== data._id));
     };
 
     const offTaskUpd = socketService.on('task_updated' as any, handleTaskUpdated);
-    const offTaskCre = socketService.on('task_created' as any, handleTaskUpdated);
-    const offTaskDel = socketService.on('task_deleted' as any, handleTaskDeleted);
 
-    return () => { offTaskUpd(); offTaskCre(); offTaskDel(); };
+    return () => { offTaskUpd(); socketService.disconnect(); };
   }, []);
 
   const toggleColumnCollapse = (status: string) => {
@@ -479,4 +487,3 @@ const s = StyleSheet.create({
   modalOption: { paddingVertical: 14, borderBottomWidth: 1 },
   modalOptionText: { fontSize: 15, fontWeight: '500' },
 });
-

@@ -24,6 +24,10 @@ export class RedisService {
         
     }
 
+    isReady() {
+        return this.redis?.status === 'ready' && this.redisSubscriber?.status === 'ready';
+    }
+
 
     async set(key: string, value: string, ttl?: number) {
         if (!this.redis) return;
@@ -93,5 +97,4 @@ export class RedisService {
 
 
 }
-
 

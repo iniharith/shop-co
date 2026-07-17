@@ -16,6 +16,8 @@ import { IUserDocument } from "../../../domain/interfaces/user.interface";
 import WhatsAppService from "../../../infrastructure/whatsapp/whatsapp.service";
 import { easyparcelService } from "../../../infrastructure/services/easyparcel.service";
 import { calculateOrderTotalWeight } from "../../utils/weightCalculator";
+import { emitTaskUpdated } from "../../../shared/utils/taskBroadcast";
+import { notifyFileClients } from "../../../infrastructure/repositories/FileUploadRepository";
 
 export class OrderUsecase {
     private readonly orderRepository: OrderRepository
@@ -120,13 +122,14 @@ export class OrderUsecase {
         
         // Auto-create Task for this order
         try {
-            await this.taskRepository.create({
+            const task = await this.taskRepository.create({
                 title: `Order: ${order._id.toString().slice(-6).toUpperCase()} - ${customerName}`,
                 description: `Auto-generated task for Order ${order._id.toString()}.\nNotes: ${orderNotes}`,
                 orderId: order._id.toString(),
                 customerUsername: customerName,
                 status: 'PLACED',
             });
+            void emitTaskUpdated('task_created', { task });
         } catch (e) {
             console.error('Failed to auto-create task for order:', e);
         }
@@ -135,7 +138,7 @@ export class OrderUsecase {
         return order;
     }
 
-    async updateOrderStatus(orderId: string, updateStatus: "PLACED" | "IN_PROGRESS" | "PENDING_ARTWORK" | "ARTWORK_REVIEWED" | "ARTWORK_REJECTED" | "IN_DESIGN" | "PEMBETULAN" | "DONE_DESIGN" | "IN_PRODUCTION" | "HOLD_PRINTING" | "DONE_PRINTING" | "PACKAGING" | "SHIPPED" | "IN_TRANSIT" | "DELIVERED" | "CANCELLED" | "FAILED") {
+    async updateOrderStatus(orderId: string, updateStatus: "PLACED" | "IN_PROGRESS" | "PENDING_ARTWORK" | "ARTWORK_REVIEWED" | "ARTWORK_REJECTED" | "IN_DESIGN" | "PEMBETULAN" | "DONE_DESIGN" | "IN_PRODUCTION" | "HOLD_PRINTING" | "DONE_PRINTING" | "PACKAGING" | "SHIPPED" | "IN_TRANSIT" | "DELIVERED" | "CANCELLED" | "FAILED", syncTasks = true, sourceTaskId?: string) {
         const order = await this.orderRepository.updateOrder(orderId, { orderStatus: updateStatus });
         if (!order) throw new Error("Order not found");
         
@@ -169,26 +172,43 @@ export class OrderUsecase {
         
         // Sync Order status back to Task
         try {
-            await this.taskRepository.updateByOrderId(orderId, { status: updateStatus as any });
+            if (syncTasks) {
+                await this.taskRepository.updateByOrderId(orderId, {
+                    status: updateStatus as any,
+                    statusUpdatedAt: new Date(),
+                });
+            }
             
             if (updateStatus === 'DELIVERED') {
                 const { Task } = await import('../../../domain/entities/Task');
                 const { FileUpload } = await import('../../../domain/entities/FileUpload');
                 const { deleteFromS3 } = await import('../../../infrastructure/config/s3');
                 
-                const tasks = await Task.find({ orderId });
+                const tasks = syncTasks
+                    ? await Task.find({ orderId })
+                    : sourceTaskId
+                        ? await Task.find({ _id: sourceTaskId })
+                        : [];
                 for (const task of tasks) {
-                    if (task.files && task.files.length > 0) {
-                        for (const file of task.files) {
-                            if (file.url) {
-                                await deleteFromS3(file.url).catch(() => {});
-                            }
-                            await FileUpload.findOneAndDelete({ path: file.url, taskId: task._id });
-                        }
-                        task.files = [];
-                        await task.save();
+                    const fileUploads = await FileUpload.find({ taskId: task._id.toString() });
+                    const fileUrls = new Set([
+                        ...(task.files || []).map(file => file.url),
+                        ...fileUploads.map(file => file.path),
+                    ].filter(Boolean));
+
+                    for (const fileUrl of fileUrls) {
+                        await deleteFromS3(fileUrl).catch(() => {});
                     }
+                    await FileUpload.deleteMany({ taskId: task._id.toString() });
+                    task.files = [];
+                    await task.save();
                 }
+                void notifyFileClients();
+            }
+
+            if (syncTasks) {
+                const updatedTasks = await this.taskRepository.findByOrderId(orderId);
+                updatedTasks.forEach(task => void emitTaskUpdated('task_updated', { task }));
             }
         } catch (e) {
             console.error('Failed to sync order status to task:', e);
