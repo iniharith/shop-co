@@ -47,6 +47,15 @@ export class TaskRepository {
     return Task.find({ orderId });
   }
 
+  async countRecent(days = 30): Promise<number> {
+    const createdAfter = new Date();
+    createdAfter.setDate(createdAfter.getDate() - days);
+    return Task.countDocuments({
+      isDeleted: { $ne: true },
+      createdAt: { $gte: createdAfter },
+    });
+  }
+
   async delete(id: string): Promise<void> {
     await Task.findByIdAndUpdate(id, { $set: { isDeleted: true } });
   }

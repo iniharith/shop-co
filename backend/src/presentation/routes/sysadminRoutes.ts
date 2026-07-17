@@ -191,11 +191,11 @@ router.get(
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
-    const [parcelStats, fileStats, folders, tasks, totalOrders] = await Promise.all([
+    const [parcelStats, fileStats, folders, totalTasks, totalOrders] = await Promise.all([
       parcelRepository.getStats(),
       fileUploadRepository.getStorageStats(),
       virtualFolderRepository.findAll(),
-      taskRepository.findAll(),
+      taskRepository.countRecent(),
       // Count-only query instead of the fully-populated getOrders() list,
       // since the dashboard only ever needed the total.
       OrderModel.countDocuments({ createdAt: { $gte: sixtyDaysAgo } }),
@@ -207,7 +207,7 @@ router.get(
         orders: { total: totalOrders },
         parcels: parcelStats,
         files: fileStats,
-        tasks: { total: tasks.length },
+        tasks: { total: totalTasks },
         folders: { total: folders.length },
         onlineUsers: { count: getOnlineUsersCount() },
       },
