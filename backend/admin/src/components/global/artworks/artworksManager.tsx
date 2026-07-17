@@ -102,6 +102,10 @@ export default function ArtworksManager() {
   const [selectedFolderIds, setSelectedFolderIds] = useState<string[]>([]);
   const [bulkTargetStatus, setBulkTargetStatus] = useState<string>("IN_PRODUCTION");
 
+  // Folder list decluttering
+  const [showEmptyFolders, setShowEmptyFolders] = useState<boolean>(false);
+  const [folderScope, setFolderScope] = useState<"all" | "tasks">("all");
+
   const allFiles: any[] = (response as any)?.data || [];
 
   const filteredFiles = useMemo(() => {
@@ -216,6 +220,17 @@ export default function ArtworksManager() {
       };
     });
   }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab]);
+
+  // Declutter the master folder list: hide empty task placeholders by
+  // default, and optionally show only real task folders (hiding the
+  // per-order/per-user upload folders that never became a task).
+  const visibleGroupedFiles = useMemo(() => {
+    return groupedFiles.filter((g: any) => {
+      if (!showEmptyFolders && g.files.length === 0) return false;
+      if (folderScope === "tasks" && !g.taskId) return false;
+      return true;
+    });
+  }, [groupedFiles, showEmptyFolders, folderScope]);
 
   // Once a folder is opened, fetch its full file details (thumbnails, S3
   // URLs, etc.) on demand — the folder LIST above only ever needed names
@@ -688,7 +703,7 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
             <div className="p-4 border-b bg-muted/30 font-semibold text-sm flex justify-between items-center shrink-0 gap-2">
               <span>Folders</span>
               <div className="flex items-center gap-2">
-                <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">{groupedFiles.length}</span>
+                <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">{visibleGroupedFiles.length}</span>
                 <Button
                   variant={bulkSelectMode ? "default" : "outline"}
                   size="sm"
@@ -699,6 +714,26 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
                   <CheckSquare className="w-3.5 h-3.5 mr-1" /> Bulk Move
                 </Button>
               </div>
+            </div>
+            <div className="p-3 border-b bg-muted/10 flex items-center justify-between gap-2 shrink-0 flex-wrap">
+              <div className="flex items-center bg-muted p-1 rounded-md text-xs">
+                <button
+                  onClick={() => setFolderScope("all")}
+                  className={`px-2.5 py-1 rounded-sm transition-colors ${folderScope === "all" ? "bg-background shadow-sm text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  All Uploads
+                </button>
+                <button
+                  onClick={() => setFolderScope("tasks")}
+                  className={`px-2.5 py-1 rounded-sm transition-colors ${folderScope === "tasks" ? "bg-background shadow-sm text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Tasks Only
+                </button>
+              </div>
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+                <Checkbox checked={showEmptyFolders} onCheckedChange={() => setShowEmptyFolders(v => !v)} />
+                Show empty
+              </label>
             </div>
             {bulkSelectMode && (
               <div className="p-3 border-b bg-muted/20 flex flex-col gap-2 shrink-0">
@@ -725,7 +760,12 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
               </div>
             )}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {groupedFiles.map((group) => {
+              {visibleGroupedFiles.length === 0 && (
+                <div className="p-6 text-center text-xs text-muted-foreground">
+                  No folders match this filter.
+                </div>
+              )}
+              {visibleGroupedFiles.map((group) => {
                 const folderId = `${group.folderName}-${group.orderId}-${group.taskId}`;
                 const isSelected = selectedFolder === folderId;
                 const isBulkChecked = selectedFolderIds.includes(folderId);
