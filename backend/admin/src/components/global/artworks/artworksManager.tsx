@@ -646,9 +646,64 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
         <div className="p-8 text-center text-muted-foreground border border-dashed rounded-xl">
           No artwork for now to view.
         </div>
-      ) : selectedFolder ? (
-        // --- INSIDE A FOLDER ---
-        <div className="space-y-4">
+      ) : (
+        <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-220px)] min-h-[600px]">
+
+          {/* LEFT PANEL (MASTER) */}
+          <div className="w-full lg:w-1/3 xl:w-1/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
+            <div className="p-4 border-b bg-muted/30 font-semibold text-sm flex justify-between items-center shrink-0">
+              <span>Folders</span>
+              <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">{groupedFiles.length}</span>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {groupedFiles.map((group) => {
+                const folderId = `${group.folderName}-${group.orderId}-${group.taskId}`;
+                const isSelected = selectedFolder === folderId;
+                return (
+                  <div
+                    key={folderId}
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all group ${isSelected ? 'bg-primary/10 border border-primary/30' : 'hover:bg-muted/50 border border-transparent'}`}
+                    onClick={() => setSelectedFolder(folderId)}
+                  >
+                    {getFolderPreview(group, "w-10 h-10 rounded-lg")}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate" title={group.folderName}>{group.folderName}</p>
+                      {group.orderId && <p className="text-[11px] font-bold text-foreground/70 truncate">Order: {group.orderId}</p>}
+                      <p className="text-xs text-muted-foreground">{group.files.length} file(s)</p>
+                    </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 hover:bg-blue-50 hover:text-blue-600"
+                        onClick={(e) => { e.stopPropagation(); if (group.taskId) { setRenameFolderTarget({ id: group.taskId, name: group.folderName, type: "task" }); setRenamedFolderName(group.folderName); } }}
+                        disabled={!group.taskId}
+                        title={group.taskId ? "Rename Task Folder" : "This folder name is managed by its source"}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 hover:bg-red-50 hover:text-red-600"
+                        onClick={(e) => handleDeleteFolder(group, e)}
+                        disabled={isBulkDeleting}
+                        title="Delete Folder and All Files"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                    <ChevronRight className={`w-4 h-4 transition-transform shrink-0 ${isSelected ? 'text-primary translate-x-1' : 'text-muted-foreground'}`} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* RIGHT PANEL (DETAIL) */}
+          <div className="w-full lg:w-2/3 xl:w-3/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
+          {selectedFolder ? (
+          <div className="space-y-4 p-4 sm:p-6 flex-1 overflow-y-auto">
           {(() => {
             const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
             if (!activeGroup) {
@@ -1090,113 +1145,21 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
               </div>
             );
           })()}
-        </div>
-      ) : (
-        // --- OUTSIDE (FOLDERS) ---
-        <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3" : "flex flex-col gap-3"}>
-          {groupedFiles.map((group) => {
-            const folderId = `${group.folderName}-${group.orderId}-${group.taskId}`;
-            if (viewMode === "grid") {
-              return (
-                <Card 
-                  key={folderId} 
-                  className="cursor-pointer overflow-hidden shadow-sm hover:shadow-md hover:border-primary/50 transition-all group relative" 
-                  onClick={() => setSelectedFolder(folderId)}
-                >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-[4.5rem] opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-blue-50 hover:text-blue-600"
-                    onClick={(e) => { e.stopPropagation(); if (group.taskId) { setRenameFolderTarget({ id: group.taskId, name: group.folderName, type: "task" }); setRenamedFolderName(group.folderName); } }}
-                    disabled={!group.taskId}
-                    title={group.taskId ? "Rename Task Folder" : "This folder name is managed by its source"}
-                  >
-                    <Pencil className="w-4 h-4 text-muted-foreground hover:text-blue-600" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-10 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-blue-50 hover:text-blue-600"
-                    onClick={(e) => handleDownloadAll(group, e)}
-                    disabled={group.files.length === 0}
-                    title="Download All Files"
-                  >
-                    <Download className="w-4 h-4 text-muted-foreground hover:text-blue-600" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-red-50 hover:text-red-600"
-                    onClick={(e) => handleDeleteFolder(group, e)}
-                    disabled={isBulkDeleting}
-                    title="Delete Folder and All Files"
-                  >
-                    <Trash2 className="w-4 h-4 text-muted-foreground hover:text-red-600" />
-                  </Button>
-                  <CardContent className="p-6 flex flex-col items-center justify-center gap-4 text-center">
-                    {getFolderPreview(group)}
-                    <div className="w-full">
-                      <h3 className="font-semibold text-base truncate" title={group.folderName}>{group.folderName}</h3>
-                      {group.orderId && (
-                        <p className="text-[12.8px] font-bold text-foreground/80 mt-1">
-                          Order: {group.orderId}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-1 font-medium">{group.files.length} item(s)</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            } else {
-              return (
-                <div 
-                  key={folderId} 
-                  className="flex items-center gap-4 p-4 border bg-card rounded-lg hover:bg-muted/30 cursor-pointer transition-colors" 
-                  onClick={() => setSelectedFolder(folderId)}
-                >
-                  {getFolderPreview(group, "w-11 h-11 rounded-lg")}
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <span className="font-semibold text-base truncate">{group.folderName}</span>
-                    {group.orderId && <span className="text-[12.8px] font-bold text-foreground/80 truncate">Order ID: {group.orderId}</span>}
-                  </div>
-                   <div className="shrink-0 flex items-center gap-2">
-                     <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">{group.files.length} file(s)</span>
-                     <Button
-                       variant="ghost"
-                       size="icon"
-                       className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600"
-                       onClick={(e) => { e.stopPropagation(); if (group.taskId) { setRenameFolderTarget({ id: group.taskId, name: group.folderName, type: "task" }); setRenamedFolderName(group.folderName); } }}
-                       disabled={!group.taskId}
-                       title={group.taskId ? "Rename Task Folder" : "This folder name is managed by its source"}
-                     >
-                       <Pencil className="w-4 h-4 text-muted-foreground hover:text-blue-600" />
-                     </Button>
-                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600 ml-1"
-                      onClick={(e) => handleDownloadAll(group, e)}
-                      disabled={group.files.length === 0}
-                      title="Download All Files"
-                    >
-                      <Download className="w-4 h-4 text-muted-foreground hover:text-blue-600" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 hover:bg-red-50 hover:text-red-600 ml-1"
-                      onClick={(e) => handleDeleteFolder(group, e)}
-                      disabled={isBulkDeleting}
-                      title="Delete Folder and All Files"
-                    >
-                      <Trash2 className="w-4 h-4 text-muted-foreground hover:text-red-600" />
-                    </Button>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                </div>
-              );
-            }
-          })}
+          </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center space-y-5 bg-muted/10">
+              <div className="w-24 h-24 bg-background border rounded-full flex items-center justify-center shadow-sm">
+                <Folder className="w-12 h-12 text-muted-foreground/40" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">Select a Folder</h3>
+                <p className="text-sm max-w-sm mx-auto text-muted-foreground/80 leading-relaxed">
+                  Click on a folder from the list on the left to view artworks, manage sub-folders, and upload files.
+                </p>
+              </div>
+            </div>
+          )}
+          </div>
         </div>
       )}
 
