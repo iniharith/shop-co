@@ -43,6 +43,12 @@ const categories = [
 
 const ALL_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN", "IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING", "PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "FAILED"];
 
+// Artwork Manager only owns the pre-production stages. Once a job hits
+// IN_PRODUCTION/HOLD_PRINTING/DONE_PRINTING it belongs to the Production
+// page; PACKAGING belongs to the Packaging page; everything after that
+// (shipped/delivered/cancelled/failed) belongs to History.
+const ARTWORK_VISIBLE_STATUSES = ["PLACED", "IN_DESIGN", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "PEMBETULAN", "DONE_DESIGN"];
+
 export default function ArtworksManager() {
   const { addUpload, updateProgress, updateStatus } = useUploadStore();
   const { data: session } = useSession();
@@ -156,7 +162,7 @@ export default function ArtworksManager() {
         orderIdStr = task.orderId || "";
         taskIdStr = file.taskId;
         
-        if (task.status === 'CANCELLED' || task.status === 'FAILED') {
+        if (!ARTWORK_VISIBLE_STATUSES.includes(task.status)) {
             shouldExclude = true;
         }
       } else {
@@ -181,10 +187,11 @@ export default function ArtworksManager() {
 
       // Only apply order-status exclusion for non-TASK files
       // Task files are already handled by task status above — don't double-exclude them.
-      // Orders stay visible through IN_PRODUCTION/PACKAGING; only hide once shipped/delivered/dead.
+      // Artwork Manager only owns the pre-production stages; once an order
+      // moves to IN_PRODUCTION/PACKAGING/etc it lives on its own page.
       if (!isTaskFile && orderIdStr) {
           const order = orders.find((o: any) => o._id === orderIdStr);
-          if (order && ((order as any).orderStatus === 'SHIPPED' || (order as any).orderStatus === 'DELIVERED' || (order as any).orderStatus === 'CANCELLED' || (order as any).orderStatus === 'FAILED')) {
+          if (order && !ARTWORK_VISIBLE_STATUSES.includes((order as any).orderStatus)) {
               shouldExclude = true;
           }
       }
@@ -200,7 +207,7 @@ export default function ArtworksManager() {
 
     // explicitly add empty folders for any Tasks that don't have files yet
     tasks.forEach((task: any) => {
-      if (task.status !== 'CANCELLED' && task.status !== 'FAILED') {
+      if (ARTWORK_VISIBLE_STATUSES.includes(task.status)) {
         if (activeTab !== "ALL" && task.category !== activeTab) return; // respect active tab for empty folders
         const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id });
         if (!groups[key]) {
