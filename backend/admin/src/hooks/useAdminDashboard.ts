@@ -23,6 +23,7 @@ import {
     createShareLink,
     getFolders,
     createFolder,
+    renameFolder,
     deleteFolder,
     moveFile,
     getDashboardSummary
@@ -156,6 +157,16 @@ export const useCreateFolder = () => {
     const { mutate, isPending } = useMutationData(
         ['createFolder'],
         (data: { name: string; taskId?: string; userId?: string }) => createFolder(session?.user?.token, data),
+        ['virtualFolders']
+    );
+    return { mutate, isPending };
+}
+
+export const useRenameFolder = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(
+        ['renameFolder'],
+        ({ id, name }: { id: string; name: string }) => renameFolder(session?.user?.token, id, name),
         ['virtualFolders']
     );
     return { mutate, isPending };

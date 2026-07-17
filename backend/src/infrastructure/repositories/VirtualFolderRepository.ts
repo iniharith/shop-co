@@ -32,6 +32,12 @@ class VirtualFolderRepository {
     notifyClients();
     return result;
   }
+
+  async update(id: string, data: Partial<IVirtualFolder>): Promise<IVirtualFolder | null> {
+    const result = await VirtualFolder.findByIdAndUpdate(id, { $set: data }, { new: true });
+    notifyClients();
+    return result;
+  }
 }
 
 export const virtualFolderRepository = new VirtualFolderRepository();

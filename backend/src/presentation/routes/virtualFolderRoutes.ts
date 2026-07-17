@@ -50,6 +50,28 @@ router.post(
   })
 );
 
+// PUT /api/folders/:id
+// Rename a virtual folder
+router.put(
+  '/:id',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const name = req.body.name?.trim();
+    if (!name) {
+      res.status(400).json({ success: false, message: 'Folder name is required' });
+      return;
+    }
+
+    const folder = await virtualFolderRepository.update(req.params.id, { name });
+    if (!folder) {
+      res.status(404).json({ success: false, message: 'Folder not found' });
+      return;
+    }
+
+    res.json({ success: true, data: folder, message: 'Folder renamed successfully' });
+  })
+);
+
 // DELETE /api/folders/:id
 // Delete a folder and ALL files inside it
 router.delete(

@@ -4,14 +4,14 @@
  */
 "use client";
 import React, { useState, useMemo } from "react";
-import { useFileIndex, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile, useCreateShareLink, useFolders, useCreateFolder, useDeleteFolder, useMoveFile } from "@/hooks/useAdminDashboard";
+import { useFileIndex, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile, useCreateShareLink, useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, useMoveFile } from "@/hooks/useAdminDashboard";
 import { useOrders } from "@/hooks/useOrder";
 import { useUsers } from "@/hooks/useUsers";
-import { useTasks } from "@/hooks/useTasks";
+import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2, Upload } from "lucide-react";
+import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2, Upload, Pencil } from "lucide-react";
 import { forceDownload } from "@/lib/utils";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import { toast } from "sonner";
@@ -72,6 +72,8 @@ export default function ArtworksManager() {
   const [activeSubFolderId, setActiveSubFolderId] = useState<string | null>(null);
   const [createFolderModalOpen, setCreateFolderModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
+  const [renameFolderTarget, setRenameFolderTarget] = useState<{ id: string; name: string; type: "task" | "subfolder" } | null>(null);
+  const [renamedFolderName, setRenamedFolderName] = useState("");
   const [moveToFolderModalOpen, setMoveToFolderModalOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<any>(null);
   const [previewList, setPreviewList] = useState<any[]>([]);
@@ -79,6 +81,7 @@ export default function ArtworksManager() {
   const { data: virtualFoldersResponse, isPending: foldersPending } = useFolders();
   const virtualFolders = virtualFoldersResponse?.data || [];
   const { mutate: createFolderMutate, isPending: isCreatingFolder } = useCreateFolder();
+  const { mutate: renameFolderMutate, isPending: isRenamingFolder } = useRenameFolder();
   const { mutate: deleteFolderMutate, isPending: isDeletingFolder } = useDeleteFolder();
   const { mutate: moveFileMutate, isPending: isMovingFile } = useMoveFile();
 
@@ -86,6 +89,7 @@ export default function ArtworksManager() {
   const { mutate: deleteFileMutate, isPending: isDeleting } = useDeleteFile();
   const { mutate: bulkDeleteMutate, isPending: isBulkDeleting } = useBulkDeleteFiles();
   const { mutate: renameFileMutate } = useRenameFile();
+  const { mutate: updateTask, isPending: isUpdatingTask } = useUpdateTask();
 
   const [editingFileId, setEditingFileId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string>("");
@@ -897,6 +901,11 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
                             {visibleFolders.map((folder: any) => (
                               viewMode === "grid" ? (
                                 <Card key={folder._id} className="overflow-hidden shadow-sm hover:shadow-md cursor-pointer relative bg-card hover:bg-accent/50 border-primary/20 flex flex-col h-full min-h-[250px]" onClick={() => setActiveSubFolderId(folder._id)}>
+                                  <div className="absolute top-2 right-10 z-20">
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-blue-50 hover:text-blue-600 bg-white/50" onClick={(e) => { e.stopPropagation(); setRenameFolderTarget({ id: folder._id, name: folder.name, type: "subfolder" }); setRenamedFolderName(folder.name); }} title="Rename Folder">
+                                      <Pencil className="w-3 h-3" />
+                                    </Button>
+                                  </div>
                                   <div className="absolute top-2 right-2 z-20">
                                     <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10 bg-white/50" onClick={(e) => { e.stopPropagation(); if(confirm('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id); }}>
                                       <Trash2 className="w-3 h-3" />
@@ -909,12 +918,15 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
                                 </Card>
                               ) : (
                                 <div key={folder._id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 cursor-pointer" onClick={() => setActiveSubFolderId(folder._id)}>
-                                  <div className="flex items-center gap-4 min-w-0 flex-1">
-                                    <Folder className="w-8 h-8 text-primary/70" fill="currentColor" />
-                                    <span className="text-sm font-medium">{folder.name}</span>
-                                  </div>
-                                  <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); if(confirm('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id); }}>
-                                    <Trash2 className="w-4 h-4" />
+                                   <div className="flex items-center gap-4 min-w-0 flex-1">
+                                     <Folder className="w-8 h-8 text-primary/70" fill="currentColor" />
+                                     <span className="text-sm font-medium">{folder.name}</span>
+                                   </div>
+                                   <Button variant="ghost" size="icon" className="hover:bg-blue-50 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); setRenameFolderTarget({ id: folder._id, name: folder.name, type: "subfolder" }); setRenamedFolderName(folder.name); }} title="Rename Folder">
+                                     <Pencil className="w-4 h-4" />
+                                   </Button>
+                                   <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); if(confirm('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id); }}>
+                                     <Trash2 className="w-4 h-4" />
                                   </Button>
                                 </div>
                               )
@@ -1094,6 +1106,16 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="absolute top-2 right-[4.5rem] opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-blue-50 hover:text-blue-600"
+                    onClick={(e) => { e.stopPropagation(); if (group.taskId) { setRenameFolderTarget({ id: group.taskId, name: group.folderName, type: "task" }); setRenamedFolderName(group.folderName); } }}
+                    disabled={!group.taskId}
+                    title={group.taskId ? "Rename Task Folder" : "This folder name is managed by its source"}
+                  >
+                    <Pencil className="w-4 h-4 text-muted-foreground hover:text-blue-600" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="absolute top-2 right-10 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-blue-50 hover:text-blue-600"
                     onClick={(e) => handleDownloadAll(group, e)}
                     disabled={group.files.length === 0}
@@ -1137,9 +1159,19 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
                     <span className="font-semibold text-base truncate">{group.folderName}</span>
                     {group.orderId && <span className="text-[12.8px] font-bold text-foreground/80 truncate">Order ID: {group.orderId}</span>}
                   </div>
-                  <div className="shrink-0 flex items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">{group.files.length} file(s)</span>
-                    <Button
+                   <div className="shrink-0 flex items-center gap-2">
+                     <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">{group.files.length} file(s)</span>
+                     <Button
+                       variant="ghost"
+                       size="icon"
+                       className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600"
+                       onClick={(e) => { e.stopPropagation(); if (group.taskId) { setRenameFolderTarget({ id: group.taskId, name: group.folderName, type: "task" }); setRenamedFolderName(group.folderName); } }}
+                       disabled={!group.taskId}
+                       title={group.taskId ? "Rename Task Folder" : "This folder name is managed by its source"}
+                     >
+                       <Pencil className="w-4 h-4 text-muted-foreground hover:text-blue-600" />
+                     </Button>
+                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 hover:bg-blue-50 hover:text-blue-600 ml-1"
@@ -1228,6 +1260,45 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
         </DialogContent>
       </Dialog>
 
+      <Dialog open={!!renameFolderTarget} onOpenChange={(open) => { if (!open) setRenameFolderTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Folder</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Label>Folder Name</Label>
+            <Input
+              autoFocus
+              value={renamedFolderName}
+              onChange={(e) => setRenamedFolderName(e.target.value)}
+              placeholder="Folder name"
+              className="mt-2"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenameFolderTarget(null)}>Cancel</Button>
+            <Button
+              disabled={isRenamingFolder || isUpdatingTask || !renamedFolderName.trim() || renamedFolderName.trim() === renameFolderTarget?.name}
+              onClick={() => {
+                if (!renameFolderTarget) return;
+                const name = renamedFolderName.trim();
+                const onSuccess = () => {
+                  setRenameFolderTarget(null);
+                  toast.success("Folder renamed");
+                };
+                if (renameFolderTarget.type === "task") {
+                  updateTask({ id: renameFolderTarget.id, data: { title: name } }, { onSuccess });
+                } else {
+                  renameFolderMutate({ id: renameFolderTarget.id, name }, { onSuccess });
+                }
+              }}
+            >
+              {isRenamingFolder || isUpdatingTask ? "Renaming..." : "Rename"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Move to Folder Modal */}
       <Dialog open={moveToFolderModalOpen} onOpenChange={setMoveToFolderModalOpen}>
         <DialogContent>
@@ -1288,4 +1359,3 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
     </div>
   );
 }
-

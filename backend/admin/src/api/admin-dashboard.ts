@@ -91,6 +91,11 @@ export const createFolder = async (token: string, data: { name: string; taskId?:
     return response.data;
 }
 
+export const renameFolder = async (token: string, id: string, name: string) => {
+    const response = await AxiosInstance(token).put(`/api/folders/${id}`, { name });
+    return response.data;
+}
+
 export const deleteFolder = async (token: string, id: string) => {
     const response = await AxiosInstance(token).delete(`/api/folders/${id}`);
     return response.data;
@@ -108,4 +113,3 @@ export const getDashboardSummary = async (token: string) => {
     const response = await AxiosInstance(token).get(`/api/sysadmin/dashboard-summary`);
     return response.data;
 }
-
