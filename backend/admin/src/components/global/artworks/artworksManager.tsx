@@ -108,8 +108,11 @@ export default function ArtworksManager() {
   const [selectedFolderIds, setSelectedFolderIds] = useState<string[]>([]);
   const [bulkTargetStatus, setBulkTargetStatus] = useState<string>("IN_PRODUCTION");
 
-  // Folder list decluttering
-  const [showEmptyFolders, setShowEmptyFolders] = useState<boolean>(false);
+  // Folder list decluttering — empty folders are shown by default (a task
+  // needs its folder visible from the moment it's created so staff can
+  // upload the very first file into it). The toggle is still here for
+  // staff who want to temporarily hide clutter once a queue gets long.
+  const [showEmptyFolders, setShowEmptyFolders] = useState<boolean>(true);
   const [folderScope, setFolderScope] = useState<"all" | "tasks">("all");
 
   const allFiles: any[] = (response as any)?.data || [];
