@@ -86,6 +86,7 @@ export default function TasksManager() {
   const [collapsedColumns, setCollapsedColumns]     = useState<string[]>([]);
   const [columnsPopoverOpen, setColumnsPopoverOpen] = useState(false);
   const [sortOption, setSortOption]                 = useState<"dateDesc"|"dateAsc"|"nameAsc"|"nameDesc">("dateDesc");
+  const [assigneeFilter, setAssigneeFilter]         = useState<string>("all");
   const [deletedTaskIds, setDeletedTaskIds]         = useState<string[]>([]);
   const [searchQuery, setSearchQuery]               = useState("");
   const [newTask, setNewTask]                       = useState({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
@@ -225,6 +226,11 @@ export default function TasksManager() {
       t.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.customerUsername?.toLowerCase().includes(searchQuery.toLowerCase())
     )
+    .filter((t: any) => {
+      if (assigneeFilter === "all") return true;
+      if (assigneeFilter === "unassigned") return !t.assignee;
+      return t.assignee === assigneeFilter;
+    })
     .sort((a: any, b: any) => {
       if (sortOption === "dateDesc") return new Date(b.statusUpdatedAt || b.createdAt).getTime() - new Date(a.statusUpdatedAt || a.createdAt).getTime();
       if (sortOption === "dateAsc")  return new Date(a.statusUpdatedAt || a.createdAt).getTime() - new Date(b.statusUpdatedAt || b.createdAt).getTime();
@@ -303,6 +309,20 @@ export default function TasksManager() {
               <SelectItem value="dateAsc">Oldest First</SelectItem>
               <SelectItem value="nameAsc">Name (A–Z)</SelectItem>
               <SelectItem value="nameDesc">Name (Z–A)</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Assignee filter — "All Users" shows every task, or narrow to one person */}
+          <Select value={assigneeFilter} onValueChange={(v: any) => setAssigneeFilter(v)}>
+            <SelectTrigger className="h-8 px-3 text-sm rounded-md w-44 gap-2 font-medium">
+              <UserCheck className="w-4 h-4 shrink-0" /><SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Users</SelectItem>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
+              {(usersData as any)?.users?.map((u: any) => (
+                <SelectItem key={u._id} value={u._id}>{u.name || u.email}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
