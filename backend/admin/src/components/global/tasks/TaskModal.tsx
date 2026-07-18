@@ -26,7 +26,7 @@ import { useOrders } from "@/hooks/useOrder";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import { Check, ChevronsUpDown, Download as DownloadIcon, Copy } from "lucide-react";
 import { cn, forceDownload } from "@/lib/utils";
-import { useAllFiles } from "@/hooks/useAdminDashboard";
+import { useAllFiles, useCreateShareLink } from "@/hooks/useAdminDashboard";
 import { useRouter } from "next/navigation";
 import { AssigneeTag, AssigneeDot } from "@/lib/userColor";
 
@@ -226,6 +226,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { data: ordersData } = useOrders();
   const { data: allFilesData } = useAllFiles();
   const { data: fullTaskData } = useTask(task._id);
+  const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
   const router = useRouter();
 
   // Full task from single-task API (includes activities and comments),
@@ -355,6 +356,26 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     addComment({ id: task._id, text: commentText }, {
       onSuccess: () => setCommentText("")
     });
+  };
+
+  const handleShareLink = async () => {
+    try {
+      const res = await createShareLink({
+        folderName: fullTask.title || task.title,
+        taskId: task._id,
+        orderId: fullTask.orderId || task.orderId || undefined,
+      });
+      const slug = res?.data?.slug;
+      if (!slug) {
+        toast.error("Failed to generate share link");
+        return;
+      }
+      const link = `${window.location.origin}/share/${slug}`;
+      navigator.clipboard.writeText(link);
+      toast.success("Share link copied to clipboard");
+    } catch (e) {
+      toast.error("Failed to generate share link");
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -491,20 +512,56 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                           <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments
                         </label>
                         {fullTask.status === "IN_PRODUCTION" ? (
-                          <a href={`/admin/production?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Production Folder">
-                            <Folder className="w-3.5 h-3.5" />
-                            Production Folder
-                          </a>
+                          <div className="flex items-center gap-2">
+                            <a href={`/admin/production?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Production Folder">
+                              <Folder className="w-3.5 h-3.5" />
+                              Production Folder
+                            </a>
+                            <button
+                              type="button"
+                              disabled={isGeneratingLink}
+                              onClick={() => handleShareLink()}
+                              className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
+                              title="Copy customer upload link"
+                            >
+                              <Share2 className="w-3.5 h-3.5" />
+                              {isGeneratingLink ? "Generating..." : "Share Link"}
+                            </button>
+                          </div>
                         ) : fullTask.status === "PACKAGING" || fullTask.status === "SHIPPED" || fullTask.status === "DELIVERED" ? (
-                          <a href={`/admin/packaging?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Packaging Folder">
-                            <Folder className="w-3.5 h-3.5" />
-                            Packaging Folder
-                          </a>
+                          <div className="flex items-center gap-2">
+                            <a href={`/admin/packaging?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Packaging Folder">
+                              <Folder className="w-3.5 h-3.5" />
+                              Packaging Folder
+                            </a>
+                            <button
+                              type="button"
+                              disabled={isGeneratingLink}
+                              onClick={() => handleShareLink()}
+                              className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
+                              title="Copy customer upload link"
+                            >
+                              <Share2 className="w-3.5 h-3.5" />
+                              {isGeneratingLink ? "Generating..." : "Share Link"}
+                            </button>
+                          </div>
                         ) : (
-                          <a href={`/admin/artworks?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Artwork Folder">
-                            <Folder className="w-3.5 h-3.5" />
-                            Artwork Folder
-                          </a>
+                          <div className="flex items-center gap-2">
+                            <a href={`/admin/artworks?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Artwork Folder">
+                              <Folder className="w-3.5 h-3.5" />
+                              Artwork Folder
+                            </a>
+                            <button
+                              type="button"
+                              disabled={isGeneratingLink}
+                              onClick={() => handleShareLink()}
+                              className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
+                              title="Copy customer upload link"
+                            >
+                              <Share2 className="w-3.5 h-3.5" />
+                              {isGeneratingLink ? "Generating..." : "Share Link"}
+                            </button>
+                          </div>
                         )}
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
