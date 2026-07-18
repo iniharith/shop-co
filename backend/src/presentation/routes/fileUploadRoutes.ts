@@ -19,6 +19,7 @@ import { ShareLink } from '../../domain/entities/ShareLink';
 import OrderRepository from '../../infrastructure/db/repositories/order.repository';
 import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
 import { streamFilesAsZip } from '../../shared/utils/streamFilesAsZip';
+import { getDownloadProgress } from '../../shared/utils/downloadProgress';
 
 const router = Router();
 
@@ -559,6 +560,21 @@ router.get(
   })
 );
 
+// 🌐 Public: Poll real-time progress for an in-flight bulk ZIP download.
+// The frontend generates a downloadId, passes it to download-all/download-batch,
+// then polls this endpoint every ~500ms to show "Downloading... (3/12)".
+router.get(
+  '/download-progress/:downloadId',
+  asyncHandler(async (req: Request, res: Response) => {
+    const progress = getDownloadProgress(req.params.downloadId);
+    if (!progress) {
+      res.status(404).json({ success: false, message: 'Unknown or expired downloadId' });
+      return;
+    }
+    res.json({ success: true, ...progress });
+  })
+);
+
 // 🌐 Public: Download all files in a shared folder as a single ZIP
 router.get(
   '/s/:slug/download-all',
@@ -583,10 +599,12 @@ router.get(
     }
 
     const folderName = link.folderName || 'files';
+    const downloadId = typeof req.query.downloadId === 'string' ? req.query.downloadId : undefined;
     const result = await streamFilesAsZip(
       res,
       files.map((f: any) => ({ originalName: f.originalName, path: f.path })),
-      folderName
+      folderName,
+      downloadId
     );
 
     if (!result.success) {
@@ -608,7 +626,7 @@ router.post(
   '/download-batch',
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
-    const { fileIds, zipName } = req.body as { fileIds?: string[]; zipName?: string };
+    const { fileIds, zipName, downloadId } = req.body as { fileIds?: string[]; zipName?: string; downloadId?: string };
     if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
       res.status(400).json({ success: false, message: 'fileIds array is required' });
       return;
@@ -623,7 +641,8 @@ router.post(
     const result = await streamFilesAsZip(
       res,
       files.map((f: any) => ({ originalName: f.originalName, path: f.path })),
-      zipName || 'files'
+      zipName || 'files',
+      downloadId
     );
 
     if (!result.success) {

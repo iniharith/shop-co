@@ -263,6 +263,22 @@ export default function ProductionManager() {
   const handleDownloadAll = async (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
     const toastId = toast.loading("Preparing ZIP...");
+    const downloadId = `dl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const progRes = await fetch(`${backendUrl}/api/files/download-progress/${downloadId}`);
+        if (!progRes.ok) return;
+        const prog = await progRes.json();
+        if (prog?.total > 0) {
+          toast.loading(`Downloading files... (${prog.current}/${prog.total})`, { id: toastId });
+        }
+      } catch {
+        // ignore transient polling errors
+      }
+    }, 500);
+
     try {
       // Stream the ZIP from the backend instead of building it client-side
       // with JSZip — pulling every file's full bytes into browser memory
@@ -270,7 +286,6 @@ export default function ProductionManager() {
       // allocation failed" on folders with many or large files.
       const token = session?.user?.token || localStorage.getItem('token') || "";
       const fileIds = group.files.map((f: any) => f._id);
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
       const response = await fetch(`${backendUrl}/api/files/download-batch`, {
         method: "POST",
@@ -278,7 +293,7 @@ export default function ProductionManager() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ fileIds, zipName: group.folderName || "production" }),
+        body: JSON.stringify({ fileIds, zipName: group.folderName || "production", downloadId }),
       });
 
       if (!response.ok) {
@@ -297,15 +312,17 @@ export default function ProductionManager() {
       URL.revokeObjectURL(url);
 
       const skippedHeader = response.headers.get("X-Skipped-Files");
-      toast.dismiss();
+      toast.dismiss(toastId);
       if (skippedHeader && Number(skippedHeader) > 0) {
         toast.warning(`Downloaded with ${skippedHeader} file(s) skipped (failed to fetch)`);
       } else {
         toast.success("Download started!");
       }
     } catch (error) {
-      toast.dismiss();
+      toast.dismiss(toastId);
       toast.error("Failed to create ZIP");
+    } finally {
+      clearInterval(pollInterval);
     }
   };
 

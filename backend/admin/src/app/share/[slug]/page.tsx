@@ -160,14 +160,31 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
   const handleDownloadAll = async () => {
     if (downloading) return;
     setDownloading(true);
+    const downloadId = `dl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const toastId = toast.loading("Preparing your download...");
+
+    // Poll the backend every 500ms for real-time file-count progress while
+    // the actual ZIP streams in the separate fetch below.
+    const pollInterval = setInterval(async () => {
+      try {
+        const progRes = await fetch(`${BACKEND}/api/files/download-progress/${downloadId}`);
+        if (!progRes.ok) return;
+        const prog = await progRes.json();
+        if (prog?.total > 0) {
+          toast.loading(`Downloading files... (${prog.current}/${prog.total})`, { id: toastId });
+        }
+      } catch {
+        // ignore transient polling errors
+      }
+    }, 500);
+
     try {
       // Stream the ZIP directly from the backend instead of building it in
       // the browser with JSZip — client-side zipping pulled every file's
       // full bytes into browser memory before assembling the archive,
       // which crashed with "array buffer allocation failed" on folders
       // with many or large files. The backend already streams safely.
-      const downloadUrl = `${BACKEND}/api/files/s/${slug}/download-all`;
+      const downloadUrl = `${BACKEND}/api/files/s/${slug}/download-all?downloadId=${downloadId}`;
       const res = await fetch(downloadUrl);
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -192,6 +209,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
     } catch (err: any) {
       toast.error(err.message || "Download failed", { id: toastId });
     } finally {
+      clearInterval(pollInterval);
       setDownloading(false);
     }
   };

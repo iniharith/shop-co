@@ -334,6 +334,24 @@ export default function ArtworksManager() {
   const handleDownloadAll = async (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
     const toastId = toast.loading("Preparing ZIP...");
+    const downloadId = `dl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
+    // Poll for real-time file-count progress while the actual ZIP streams
+    // in the separate fetch below.
+    const pollInterval = setInterval(async () => {
+      try {
+        const progRes = await fetch(`${backendUrl}/api/files/download-progress/${downloadId}`);
+        if (!progRes.ok) return;
+        const prog = await progRes.json();
+        if (prog?.total > 0) {
+          toast.loading(`Downloading files... (${prog.current}/${prog.total})`, { id: toastId });
+        }
+      } catch {
+        // ignore transient polling errors
+      }
+    }, 500);
+
     try {
       // Stream the ZIP from the backend instead of building it client-side
       // with JSZip — pulling every file's full bytes into browser memory
@@ -341,7 +359,6 @@ export default function ArtworksManager() {
       // allocation failed" on folders with many or large files.
       const token = session?.user?.token || localStorage.getItem('token') || "";
       const fileIds = group.files.map((f: any) => f._id);
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
       const response = await fetch(`${backendUrl}/api/files/download-batch`, {
         method: "POST",
@@ -349,7 +366,7 @@ export default function ArtworksManager() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ fileIds, zipName: group.folderName || "artworks" }),
+        body: JSON.stringify({ fileIds, zipName: group.folderName || "artworks", downloadId }),
       });
 
       if (!response.ok) {
@@ -368,15 +385,17 @@ export default function ArtworksManager() {
       URL.revokeObjectURL(url);
 
       const skippedHeader = response.headers.get("X-Skipped-Files");
-      toast.dismiss();
+      toast.dismiss(toastId);
       if (skippedHeader && Number(skippedHeader) > 0) {
         toast.warning(`Downloaded with ${skippedHeader} file(s) skipped (failed to fetch)`);
       } else {
         toast.success("Download started!");
       }
     } catch (error) {
-      toast.dismiss();
+      toast.dismiss(toastId);
       toast.error("Failed to create ZIP");
+    } finally {
+      clearInterval(pollInterval);
     }
   };
 

@@ -10,6 +10,7 @@
  * failed" crash that used to happen on large/many-file downloads.
  */
 import { Response } from 'express';
+import { setDownloadProgress } from './downloadProgress';
 
 interface StreamableFile {
   originalName: string;
@@ -40,7 +41,8 @@ const resolveDownloadUrl = async (filePath: string): Promise<string> => {
 export async function streamFilesAsZip(
   res: Response,
   files: StreamableFile[],
-  zipName: string
+  zipName: string,
+  downloadId?: string
 ): Promise<{ success: boolean }> {
   // archiver v8 removed the old callable factory pattern (archiver('zip', opts))
   // and now exports classes directly — ZipArchive replaces it. append/pipe/
@@ -108,6 +110,9 @@ export async function streamFilesAsZip(
       archive.append(stream, { name });
     });
 
+  const total = candidates.length;
+  let completed = 0;
+  setDownloadProgress(downloadId, 0, total);
   for (const { name, url } of candidates) {
     try {
       const fileRes = await fetch(url);
@@ -115,9 +120,13 @@ export async function streamFilesAsZip(
       await appendAndWait(name, Readable.fromWeb(fileRes.body as any));
     } catch (e) {
       console.warn(`[streamFilesAsZip] Failed streaming ${name} into archive:`, e);
+    } finally {
+      completed++;
+      setDownloadProgress(downloadId, completed, total);
     }
   }
 
   await archive.finalize();
+  setDownloadProgress(downloadId, total, total, true);
   return { success: true };
 }
