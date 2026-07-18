@@ -249,6 +249,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [activeTab, setActiveTab] = useState("comments");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isDragOverComment, setIsDragOverComment] = useState(false);
+  const [pendingDropFiles, setPendingDropFiles] = useState<File[] | null>(null);
   const [previewFile, setPreviewFile] = useState<any>(null);
   const { uploads, addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
   const uploadingFiles = Object.values(uploads).filter(u => 
@@ -386,6 +387,52 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     } catch (e) {
       toast.error("Failed to generate share link");
     }
+  };
+
+  const uploadDroppedFiles = (files: File[], tag: string) => {
+    const uploadPromises = files.map(async (file) => {
+      const id = Date.now().toString() + Math.random().toString(36).substring(7);
+      const abortController = new AbortController();
+
+      addUpload({
+        id,
+        name: file.name,
+        tag,
+        taskId: task._id,
+        file,
+        abortController
+      });
+
+      try {
+        updateStatus(id, 'uploading');
+        const data = await uploadFile({
+          id: task._id,
+          file,
+          tag,
+          onProgress: (percent) => updateProgress(id, percent),
+          abortController,
+        });
+        updateStatus(id, 'success');
+        setTimeout(() => removeUpload(id), 1000);
+        return data;
+      } catch (err: any) {
+        if (err.name === 'AbortError') {
+          updateStatus(id, 'error', 'Upload cancelled');
+        } else {
+          updateStatus(id, 'error', err.message || 'Upload failed');
+        }
+        throw err;
+      }
+    });
+
+    toast.promise(Promise.all(uploadPromises), {
+      loading: `Uploading ${files.length} file(s)...`,
+      success: () => `Successfully uploaded ${files.length} file(s)`,
+      error: "Failed to upload some files"
+    });
+
+    const fileNames = files.map(f => f.name).join(', ');
+    addComment({ id: task._id, text: `Attached ${files.length} file(s): ${fileNames}` });
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -837,54 +884,7 @@ return (
                 e.stopPropagation();
                 setIsDragOverComment(false);
                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                    const files = Array.from(e.dataTransfer.files);
-                    
-                    const uploadPromises = files.map(async (file) => {
-                      const id = Date.now().toString() + Math.random().toString(36).substring(7);
-                      const abortController = new AbortController();
-                      
-                      addUpload({
-                        id,
-                        name: file.name,
-                        tag: "attachment",
-                        taskId: task._id,
-                        file,
-                        abortController
-                      });
-
-                      try {
-                        updateStatus(id, 'uploading');
-                        const data = await uploadFile({
-                          id: task._id,
-                          file,
-                          tag: "attachment",
-                          onProgress: (percent) => updateProgress(id, percent),
-                          abortController,
-                        });
-                        updateStatus(id, 'success');
-                        setTimeout(() => removeUpload(id), 1000);
-                        return data;
-                      } catch (err: any) {
-                        if (err.name === 'AbortError') {
-                          updateStatus(id, 'error', 'Upload cancelled');
-                        } else {
-                          updateStatus(id, 'error', err.message || 'Upload failed');
-                        }
-                        throw err;
-                      }
-                    });
-
-                    toast.promise(Promise.all(uploadPromises), {
-                      loading: `Uploading ${files.length} file(s)...`,
-                      success: () => {
-                        return `Successfully uploaded ${files.length} file(s)`;
-                      },
-                      error: "Failed to upload some files"
-                    });
-                  
-                  // Post a single comment for all dropped files
-                  const fileNames = files.map(f => f.name).join(', ');
-                  addComment({ id: task._id, text: `Attached ${files.length} file(s): ${fileNames}` });
+                  setPendingDropFiles(Array.from(e.dataTransfer.files));
                 }
               }}
             >
@@ -1277,6 +1277,40 @@ return (
           </div>
         </div>
       </DialogContent>
+      {pendingDropFiles && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setPendingDropFiles(null)}>
+          <div className="bg-background border border-border rounded-xl shadow-2xl w-[90vw] max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-base mb-1">Upload {pendingDropFiles.length} file{pendingDropFiles.length > 1 ? 's' : ''}</h3>
+            <p className="text-sm text-muted-foreground mb-4">What type of file is this?</p>
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="outline"
+                className="justify-start h-11"
+                onClick={() => { uploadDroppedFiles(pendingDropFiles, 'draft'); setPendingDropFiles(null); }}
+              >
+                <Badge className="bg-orange-500 mr-2 text-[10px]">Draft</Badge> Upload as Draft
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-11"
+                onClick={() => { uploadDroppedFiles(pendingDropFiles, 'attachment'); setPendingDropFiles(null); }}
+              >
+                <Badge className="bg-gray-500 mr-2 text-[10px]">Attachment</Badge> Upload as Attachment
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-11"
+                onClick={() => { uploadDroppedFiles(pendingDropFiles, 'for_print'); setPendingDropFiles(null); }}
+              >
+                <Badge className="bg-green-500 mr-2 text-[10px]">Artwork</Badge> Upload as Artwork (For Print)
+              </Button>
+            </div>
+            <Button variant="ghost" className="w-full mt-3 text-muted-foreground" onClick={() => setPendingDropFiles(null)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
       <FilePreviewModal isOpen={!!previewFile} onClose={() => setPreviewFile(null)} file={previewFile} />
     </Dialog>
   );
