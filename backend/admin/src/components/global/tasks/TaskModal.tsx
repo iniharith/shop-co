@@ -296,6 +296,16 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     });
   }, [fullTask, allFilesData, deletedFileIds]);
 
+  const handleDownloadAllAttachments = () => {
+    if (!combinedFiles || combinedFiles.length === 0) return;
+    toast.success(`Downloading ${combinedFiles.length} file(s)...`);
+    combinedFiles.forEach((file: any, index: number) => {
+      setTimeout(() => {
+        forceDownload(file.url, file.name);
+      }, index * 300);
+    });
+  };
+
   const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "");
   const [orderId, setOrderId] = useState(task.orderId || "");
   const [customerUsername, setCustomerUsername] = useState(task.customerUsername || "");
@@ -519,6 +529,16 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                             </a>
                             <button
                               type="button"
+                              onClick={handleDownloadAllAttachments}
+                              disabled={!combinedFiles || combinedFiles.length === 0}
+                              className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
+                              title="Download all attachments"
+                            >
+                              <DownloadIcon className="w-3.5 h-3.5" />
+                              Download All
+                            </button>
+                            <button
+                              type="button"
                               disabled={isGeneratingLink}
                               onClick={() => handleShareLink()}
                               className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
@@ -536,6 +556,16 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                             </a>
                             <button
                               type="button"
+                              onClick={handleDownloadAllAttachments}
+                              disabled={!combinedFiles || combinedFiles.length === 0}
+                              className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
+                              title="Download all attachments"
+                            >
+                              <DownloadIcon className="w-3.5 h-3.5" />
+                              Download All
+                            </button>
+                            <button
+                              type="button"
                               disabled={isGeneratingLink}
                               onClick={() => handleShareLink()}
                               className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
@@ -551,6 +581,16 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                               <Folder className="w-3.5 h-3.5" />
                               Artwork Folder
                             </a>
+                            <button
+                              type="button"
+                              onClick={handleDownloadAllAttachments}
+                              disabled={!combinedFiles || combinedFiles.length === 0}
+                              className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
+                              title="Download all attachments"
+                            >
+                              <DownloadIcon className="w-3.5 h-3.5" />
+                              Download All
+                            </button>
                             <button
                               type="button"
                               disabled={isGeneratingLink}
