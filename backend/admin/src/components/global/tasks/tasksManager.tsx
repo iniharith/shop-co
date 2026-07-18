@@ -258,8 +258,8 @@ export default function TasksManager() {
             </Button>
           </div>
 
-          {/* Column visibility (board only) */}
-          {viewMode === "board" && (
+          {/* Column visibility (board + list) */}
+          {(viewMode === "board" || viewMode === "list") && (
             <Popover open={columnsPopoverOpen} onOpenChange={setColumnsPopoverOpen}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 px-3 rounded-md gap-2">
@@ -441,7 +441,7 @@ export default function TasksManager() {
           {tasks.length === 0 && (
             <div className="bg-card rounded-xl border border-border/50 shadow-sm p-8 text-center text-muted-foreground">No tasks found</div>
           )}
-          {columns.map(status => {
+          {visibleColumns.map(status => {
             const sectionTasks = sortedTasks.filter((t: any) => t.status === status);
             if (sectionTasks.length === 0) return null;
             const isCollapsed = collapsedSections.includes(status);
