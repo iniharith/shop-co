@@ -85,9 +85,9 @@ export default function ChatManager() {
   };
 
   return (
-    <div className="flex h-full border border-white/10 rounded-2xl bg-background/40 backdrop-blur-md overflow-hidden shadow-xl">
+    <div className="flex h-full min-w-0 flex-col border border-white/10 rounded-2xl bg-background/40 backdrop-blur-md overflow-hidden shadow-xl md:flex-row">
       {/* Sidebar: Conversations List */}
-      <div className="w-1/3 min-w-[300px] border-r border-white/10 bg-transparent flex flex-col">
+      <div className="h-1/2 w-full min-w-0 border-b border-white/10 bg-transparent flex flex-col md:h-full md:w-1/3 md:min-w-[260px] md:border-b-0 md:border-r">
         <div className="p-4 border-b border-white/10 bg-transparent flex justify-between items-center">
           <h2 className="font-semibold text-lg flex items-center gap-2">
             <MessageCircle className="w-5 h-5 text-primary" /> Inbox
@@ -205,7 +205,7 @@ export default function ChatManager() {
       </div>
 
       {/* Main Area: Chat Window */}
-      <div className="flex-1 flex flex-col bg-transparent relative">
+      <div className="min-h-0 min-w-0 flex-1 flex flex-col bg-transparent relative">
         {activeConvId ? (
           <>
             <div className="p-4 border-b border-white/10 flex items-center justify-between shadow-sm z-10 bg-background/40 backdrop-blur-md">
@@ -224,14 +224,14 @@ export default function ChatManager() {
               </Button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 flex flex-col bg-transparent">
+            <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 md:p-6 space-y-6 flex flex-col bg-transparent">
               {messages.map((msg: any) => {
                 const isMe = msg.senderId?._id?.toString() === currentUserId || (msg.senderRole && ['admin','sysadmin','boss','designer','production','packaging'].includes(msg.senderRole) && msg.senderId?._id?.toString() === currentUserId) || msg.senderId === currentUserId;
                 return (
-                  <div key={msg._id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[70%] p-3 rounded-2xl ${isMe ? 'bg-primary text-primary-foreground rounded-tr-sm' : 'bg-muted border border-border/50 rounded-tl-sm'}`}>
+                  <div key={msg._id} className={`flex min-w-0 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`min-w-0 max-w-[85%] p-3 rounded-2xl md:max-w-[70%] ${isMe ? 'bg-primary text-primary-foreground rounded-tr-sm' : 'bg-muted border border-border/50 rounded-tl-sm'}`}>
                       {!isMe && msg.senderId && <p className="text-[10px] font-bold mb-1 opacity-70">{msg.senderId.name || msg.senderRole}</p>}
-                      <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                      <p className="text-sm whitespace-pre-wrap [overflow-wrap:anywhere]">{msg.text}</p>
                       <div className={`text-[10px] mt-1 text-right ${isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                         {format(new Date(msg.createdAt), "h:mm a")} {msg.source === 'whatsapp' && '• via WhatsApp'}
                       </div>

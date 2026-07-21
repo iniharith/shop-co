@@ -599,11 +599,6 @@ export default function ProductionManager() {
                     onClick={() => setSelectedFolder(folderId)}
                   >
                     <div className="w-10 h-10 rounded-md shrink-0 relative overflow-hidden bg-primary/5 flex items-center justify-center">
-                      {activeSubTab === "IN_PRODUCTION" && (
-                        <button type="button" onClick={(e) => handleAdvanceFlow(group, e)} className="absolute -top-1 -left-1 z-10 text-muted-foreground hover:text-emerald-500 transition-colors" title="Mark as Packaging">
-                          <CheckCircle className="w-4 h-4 bg-background rounded-full" />
-                        </button>
-                      )}
                       {getFolderPreview(group, "w-10 h-10")}
                     </div>
                     <div className="flex-1 min-w-0">
