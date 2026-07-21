@@ -84,7 +84,8 @@
   position: relative;
   isolation: isolate;
   display: flex;
-  min-height: 50rem;
+  min-height: 100svh;
+  box-sizing: border-box;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -114,9 +115,9 @@
 
 .weddingMonogram { position: relative; display: block; width: 9rem; height: 9rem; }
 .monogramArtwork { display: block; width: 100%; height: 100%; object-fit: contain; }
-.monogramInitials { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: .55rem; color: var(--gold-light); font-family: "Cormorant Garamond", serif; font-size: 1.65rem; text-shadow: 0 2px 5px rgba(35, 2, 7, .7); }
+.monogramInitials { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: .4rem; color: var(--gold-light); font-family: "Cormorant Garamond", serif; font-size: 1.45rem; line-height: 1; letter-spacing: .04em; text-shadow: 0 2px 5px rgba(35, 2, 7, .7); }
 .monogramInitials b { font-weight: 300; }
-.monogramInitials i { width: 1px; height: 2rem; rotate: 25deg; background: var(--gold); }
+.monogramInitials i { color: var(--gold); font-style: normal; font-weight: 300; }
 .monogram { opacity: 0; }
 .request { margin: .35rem 0 1.2rem; color: #ecdcc4; font-family: "Cormorant Garamond", serif; font-size: 1rem; font-style: italic; opacity: 0; }
 
@@ -214,6 +215,7 @@
 .confirmation p { margin: 0; font-family: "Cormorant Garamond", serif; font-size: 1rem; }
 .invitationFooter { display: flex; align-items: center; justify-content: center; gap: .6rem; padding: 1.5rem; background: var(--wine-dark); color: var(--gold-light); text-align: center; }
 .invitationFooter p { margin: 0; font-family: "Cormorant Garamond", serif; font-size: .92rem; }
+.countdownSection, .details, .calendarSection, .salamSection, .contactSection, .rsvpSection { min-height: 100svh; box-sizing: border-box; }
 
 .openingCover { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; overflow: hidden; background: #faf8f4; }
 .closing { background: transparent; pointer-events: none; }
@@ -233,10 +235,9 @@
 .closing .openingSeal, .closing .coverPattern, .closing .coverPanel, .closing .floralCluster { opacity: 0; }
 .openingSeal:hover { scale: 1.06; filter: brightness(1.12); }
 .waxSealArtwork { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 8px 9px rgba(20, 1, 4, .55)); animation: sealPulse 2s 1.5s ease infinite; }
-.sealMonogram { position: relative; width: 5.3rem; height: 5.3rem; }
-.sealMonogram .monogramInitials { gap: .35rem; font-size: 1.05rem; }
-.sealMonogram .monogramInitials i { height: 1.45rem; }
-.openingSeal small { position: relative; margin-top: -.35rem; color: var(--gold-light); font-family: "Cormorant Garamond", serif; font-size: .56rem; font-weight: 300; letter-spacing: .16em; text-transform: uppercase; }
+.sealMonogram { position: absolute; left: 50%; top: 50%; width: 4rem; height: 4rem; translate: -50% -50%; }
+.sealMonogram .monogramInitials { gap: .25rem; font-size: .88rem; }
+.openingSeal small { position: absolute; left: 50%; bottom: 1.05rem; translate: -50% 0; color: var(--gold-light); font-family: "Cormorant Garamond", serif; font-size: .56rem; font-weight: 300; letter-spacing: .16em; text-transform: uppercase; }
 .coverFloralFrame { inset: .2rem; }
 
 .sheetLayer { position: fixed; z-index: 60; inset: 0; display: flex; align-items: flex-end; justify-content: center; background: rgba(30, 2, 6, .34); animation: fadeIn .25s ease both; }
@@ -269,7 +270,7 @@
 @keyframes sheetUp { from { translate: 0 100%; } to { translate: 0; } }
 
 @media (max-width: 520px) {
-  .hero { min-height: 45rem; }
+  .hero { min-height: 100svh; }
   .hero::before { inset: .75rem; }
   .hero::after { inset: 1.2rem; }
   .qrLayout { flex-direction: column; text-align: center; }

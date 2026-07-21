@@ -95,7 +95,7 @@ export default function RsvpPage() {
             <FloralCluster className={styles.coverFloralFrame} />
             <div className={styles.coverPanel} aria-hidden="true" />
             <button className={styles.openingSeal} type="button" onClick={openInvitation} aria-label="Fatin dan Habri - buka jemputan">
-              <img className={styles.waxSealArtwork} src="/images/wedding-wax-seal-v2.svg" alt="" aria-hidden="true" />
+              <img className={styles.waxSealArtwork} src="/images/wedding-wax-seal-v3.svg" alt="" aria-hidden="true" />
               <WeddingMonogram className={styles.sealMonogram} />
               <small>Buka</small>
             </button>
@@ -224,7 +224,7 @@ function WeddingMonogram({ className = "" }: { className?: string }) {
   return (
     <div className={`${styles.weddingMonogram} ${className}`} role="img" aria-label="Monogram Habri dan Fatin">
       <img className={styles.monogramArtwork} src="/images/wedding-monogram.svg" alt="" aria-hidden="true" />
-      <span className={styles.monogramInitials} aria-hidden="true"><b>H</b><i /><b>F</b></span>
+      <span className={styles.monogramInitials} aria-hidden="true"><b>H</b><i>/</i><b>F</b></span>
     </div>
   );
 }
