@@ -4,13 +4,9 @@
  */
 import axios, { AxiosInstance } from 'axios';
 
-// ─── EasyParcel Marketplace OAuth2 Configuration ─────────────────────────────
-// Uses Client Credentials grant — token is obtained server-to-server.
-// No user login or redirect needed.
-const CLIENT_ID = process.env.EASYPARCEL_CLIENT_ID || '';
-const CLIENT_SECRET = process.env.EASYPARCEL_CLIENT_SECRET || '';
+// EasyParcel 2026-06 requires an access token issued by its Authorization Code flow.
+const ACCESS_TOKEN = process.env.EASYPARCEL_ACCESS_TOKEN || '';
 const BASE_URL = process.env.EASYPARCEL_BASE_URL || 'https://connect.easyparcel.my';
-const TOKEN_URL = `${BASE_URL}/oauth/token`;
 
 export interface EasyParcelTrackResult {
   trackingNumber: string;
@@ -42,54 +38,20 @@ export interface EasyParcelShipmentInput {
 }
 
 class EasyParcelService {
-  private accessToken: string | null = null;
-  private tokenExpiresAt: number = 0;
   private http: AxiosInstance;
 
   constructor() {
     this.http = axios.create({ baseURL: BASE_URL, timeout: 15000 });
   }
 
-  // ─── OAuth2: Client Credentials Token ──────────────────
-  // Automatically called before every API request.
-  // Caches the token in memory and refreshes when it expires.
   private async getAccessToken(): Promise<string> {
-    const now = Date.now();
-
-    // Return cached token if still valid (with 60s buffer)
-    if (this.accessToken && now < this.tokenExpiresAt - 60_000) {
-      return this.accessToken;
-    }
-
-    if (!CLIENT_ID || !CLIENT_SECRET) {
+    if (!ACCESS_TOKEN) {
       throw new Error(
-        'EASYPARCEL_CLIENT_ID and EASYPARCEL_CLIENT_SECRET must be set in environment variables'
+        'EasyParcel OAuth is not configured. Set EASYPARCEL_ACCESS_TOKEN from the Authorization Code flow.'
       );
     }
 
-    console.log('[EasyParcel] 🔑 Fetching new OAuth2 access token...');
-
-    const response = await axios.post(
-      TOKEN_URL,
-      new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
-      }),
-      {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        timeout: 10000,
-      }
-    );
-
-    const { access_token, expires_in } = response.data;
-
-    this.accessToken = access_token;
-    // expires_in is in seconds; store as ms timestamp
-    this.tokenExpiresAt = now + (expires_in ?? 3600) * 1000;
-
-    console.log(`[EasyParcel] ✅ Token acquired, expires in ${expires_in}s`);
-    return this.accessToken!;
+    return ACCESS_TOKEN;
   }
 
   // ─── Helper: authorized POST request ───────────────────

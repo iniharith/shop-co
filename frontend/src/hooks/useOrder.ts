@@ -48,6 +48,7 @@ export const useOrder = () => {
         customerName: "",
         address: "",
         city: "",
+        state: "",
         country: "Malaysia",
         postalCode: "",
         street: "",
@@ -107,7 +108,6 @@ export const useGetOrderById = (id: string) => {
     const responseData = response as IOrderByIdResponse
     return { data: responseData, isLoading }
 }
-
 
 
 

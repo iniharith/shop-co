@@ -75,12 +75,14 @@ const AddressForm = ({
                       const addr = profile.data.address;
                       form.setValue("street", addr.street || "");
                       form.setValue("city", addr.city || "");
+                      form.setValue("state", addr.state || "");
                       form.setValue("country", addr.country || "Malaysia");
                       form.setValue("postalCode", addr.zip || "");
                       form.setValue("address", addr.state || "");
                     } else {
                       form.setValue("street", "");
                       form.setValue("city", "");
+                      form.setValue("state", "");
                       form.setValue("country", "Malaysia");
                       form.setValue("postalCode", "");
                       form.setValue("address", "");
@@ -148,6 +150,24 @@ const AddressForm = ({
                 inputType="input"
                 errors={errors}
                 Icon={FaMapLocationDot}
+                className={{
+                  input: "w-full",
+                }}
+              />
+            )}
+          />
+          <FormField
+            control={control}
+            name="state"
+            render={({ field }) => (
+              <FormGeneratorV2
+                field={field}
+                type="text"
+                label="State"
+                placeholder="Enter your state"
+                inputType="input"
+                errors={errors}
+                Icon={FaFlag}
                 className={{
                   input: "w-full",
                 }}

@@ -25,6 +25,16 @@ export const updateParcel = async (token: string, id: string, updateData: any) =
     return response.data;
 }
 
+export const getCustomerUpdateSettings = async (token: string) => {
+    const response = await AxiosInstance(token).get(`${PARCELS_URL}/customer-update-settings`);
+    return response.data;
+}
+
+export const updateCustomerUpdateSettings = async (token: string, enabled: boolean) => {
+    const response = await AxiosInstance(token).put(`${PARCELS_URL}/customer-update-settings`, { enabled });
+    return response.data;
+}
+
 export const sendWhatsAppNotification = async (token: string, id: string) => {
     const response = await AxiosInstance(token).post(`${PARCELS_URL}/${id}/whatsapp`);
     return response.data;

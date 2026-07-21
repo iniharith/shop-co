@@ -261,21 +261,36 @@ export class OrderUsecase {
         if (order.easyparcelAwb) throw new Error("Shipment already created for this order");
 
         const weight = calculateOrderTotalWeight(order.products);
+        const legacyState = order.address?.address?.trim() || '';
+        const malaysiaStates = [
+            'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Perak', 'Perlis',
+            'Pulau Pinang', 'Penang', 'Sabah', 'Sarawak', 'Selangor', 'Terengganu', 'Kuala Lumpur',
+            'Labuan', 'Putrajaya', 'Wilayah Persekutuan Kuala Lumpur', 'Wilayah Persekutuan Labuan',
+            'Wilayah Persekutuan Putrajaya'
+        ];
+        const recipientState = order.address?.state || malaysiaStates.find(
+            state => state.toLowerCase() === legacyState.toLowerCase()
+        ) || '';
 
         const epResult = await easyparcelService.submitOrder({
             weight: weight.toString(),
             content: 'Printing Materials / Custom Products',
             value: order.totalAmount.toString(),
             customerName: order.customerName,
-            customerPhone: (order.userId as any)?.phoneNumber || '0000000000',
-            address: order.address
+            customerPhone: (order.userId as any)?.phoneNumber || '',
+            address: {
+                street: order.address.street,
+                city: order.address.city,
+                state: recipientState,
+                postalCode: order.address.postalCode,
+                country: order.address.country
+            }
         });
 
         const updatedOrder = await this.orderRepository.updateOrder(orderId, {
             easyparcelOrderNo: epResult.orderNo,
             easyparcelAwb: epResult.awb,
-            trackingNumber: epResult.awb,
-            orderStatus: 'SHIPPED' // Automatically update status
+            trackingNumber: epResult.awb
         });
 
         // Invalidate caches

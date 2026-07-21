@@ -7,6 +7,7 @@ import { z } from "zod";
 export interface IAddress {
     street: string;
     city: string;
+    state: string;
     country: string;
     postalCode: string;
     address: string;
@@ -23,6 +24,9 @@ export const addressSchema = z.object({
     }),
     city: z.string().min(1, {
         message: "Please enter a valid city",
+    }),
+    state: z.string().min(1, {
+        message: "Please enter a valid state",
     }),
     country: z.string().min(1, {
         message: "Please enter a valid country",

@@ -39,6 +39,7 @@ const AddressSchema = new Schema(
     address: { type: String, required: true },
     street: { type: String, required: true },
     city: { type: String, required: true },
+    state: { type: String, default: '' },
     postalCode: { type: String, required: true },
     country: { type: String, required: true },
   },

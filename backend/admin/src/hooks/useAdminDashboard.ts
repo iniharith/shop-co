@@ -11,6 +11,8 @@ import {
     getParcels, 
     syncParcelTracking, 
     updateParcel,
+    getCustomerUpdateSettings,
+    updateCustomerUpdateSettings,
     sendWhatsAppNotification, 
     getFileStats, 
     getGroupedFiles, 
@@ -48,6 +50,25 @@ export const useSyncParcel = () => {
 export const useUpdateParcel = () => {
     const { data: session } = useSession();
     const { mutate, isPending } = useMutationData(['updateParcelTracking'], ({ id, data }: { id: string, data: any }) => updateParcel(session?.user?.token, id, data));
+    return { mutate, isPending };
+}
+
+export const useCustomerUpdateSettings = () => {
+    const { data: session, status } = useSession();
+    return useQueryData(
+        ['whatsappCustomerUpdates'],
+        () => getCustomerUpdateSettings(session?.user?.token),
+        { enabled: status === 'authenticated' }
+    );
+}
+
+export const useUpdateCustomerUpdateSettings = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(
+        ['updateWhatsAppCustomerUpdates'],
+        (enabled: boolean) => updateCustomerUpdateSettings(session?.user?.token, enabled),
+        ['whatsappCustomerUpdates']
+    );
     return { mutate, isPending };
 }
 

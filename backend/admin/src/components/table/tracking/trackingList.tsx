@@ -5,7 +5,7 @@
 "use client";
 import React, { useState, useMemo } from "react";
 import { DataTableSkeleton } from "../../global/table/data-table-skeleton";
-import { useParcels } from "@/hooks/useAdminDashboard";
+import { useCustomerUpdateSettings, useParcels } from "@/hooks/useAdminDashboard";
 import TrackingCard from "./TrackingCard";
 import { PackageX, Search, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -14,10 +14,12 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function TrackingList() {
   const { data: response, isPending, refetch, isFetching } = useParcels();
+  const { data: updateSettings } = useCustomerUpdateSettings();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourier, setSelectedCourier] = useState("All");
 
   const parcels = (response as any)?.data || [];
+  const customerUpdatesEnabled = (updateSettings as any)?.data?.enabled === true;
 
   const couriers = ["All", ...Array.from(new Set(parcels.map((p: any) => p.courier).filter(Boolean)))];
 
@@ -86,7 +88,7 @@ export default function TrackingList() {
       {filteredParcels.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredParcels.map((parcel: any) => (
-            <TrackingCard key={parcel._id} parcel={parcel} />
+            <TrackingCard key={parcel._id} parcel={parcel} customerUpdatesEnabled={customerUpdatesEnabled} />
           ))}
         </div>
       ) : (

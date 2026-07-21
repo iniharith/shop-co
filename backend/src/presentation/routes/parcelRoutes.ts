@@ -8,6 +8,11 @@ import OrderModel from '../../infrastructure/db/models/order.model';
 import { parcelRepository } from '../../infrastructure/repositories/ParcelRepository';
 import { easyParcelService } from '../../infrastructure/services/EasyParcelService';
 import { whatsAppService } from '../../infrastructure/services/WhatsAppService';
+import {
+  areWhatsAppCustomerUpdatesEnabled,
+  setWhatsAppCustomerUpdatesEnabled,
+} from '../../infrastructure/services/CustomerUpdateSettingsService';
+import authMiddilware, { authorizeRoles } from '../middlewares/auth.middileware';
 
 const router = Router();
 
@@ -30,6 +35,35 @@ router.get(
     const stats = await parcelRepository.getStats();
     const recent = await parcelRepository.getRecentActivity(5);
     res.json({ success: true, data: stats, recent });
+  })
+);
+
+router.get(
+  '/customer-update-settings',
+  authMiddilware,
+  authorizeRoles('admin', 'sysadmin', 'boss', 'production', 'packaging'),
+  asyncHandler(async (_req: Request, res: Response) => {
+    const enabled = await areWhatsAppCustomerUpdatesEnabled();
+    res.json({ success: true, data: { enabled } });
+  })
+);
+
+router.put(
+  '/customer-update-settings',
+  authMiddilware,
+  authorizeRoles('admin', 'sysadmin', 'boss'),
+  asyncHandler(async (req: Request, res: Response) => {
+    if (typeof req.body.enabled !== 'boolean') {
+      res.status(400).json({ success: false, message: 'enabled must be a boolean' });
+      return;
+    }
+
+    const enabled = await setWhatsAppCustomerUpdatesEnabled(req.body.enabled);
+    res.json({
+      success: true,
+      data: { enabled },
+      message: `WhatsApp customer auto-updates ${enabled ? 'enabled' : 'disabled'}`,
+    });
   })
 );
 
@@ -185,7 +219,7 @@ router.put(
     }
 
     // Auto-notify customer if status changed
-    if (statusChanged && parcel.customerPhone) {
+    if (statusChanged && parcel.customerPhone && await areWhatsAppCustomerUpdatesEnabled()) {
       await whatsAppService.sendStatusUpdate({
         phone: parcel.customerPhone,
         customerName: parcel.customerName,
@@ -273,7 +307,7 @@ router.post(
         }
       }
 
-      if (statusChanged && parcel.customerPhone) {
+      if (statusChanged && parcel.customerPhone && await areWhatsAppCustomerUpdatesEnabled()) {
         const sent = await whatsAppService.sendStatusUpdate({
           phone: parcel.customerPhone,
           customerName: parcel.customerName,
@@ -302,6 +336,11 @@ router.post(
 router.post(
   '/:id/whatsapp',
   asyncHandler(async (req: Request, res: Response) => {
+    if (!await areWhatsAppCustomerUpdatesEnabled()) {
+      res.status(503).json({ success: false, message: 'WhatsApp customer updates are temporarily disabled' });
+      return;
+    }
+
     const parcel = await parcelRepository.findById(req.params.id);
     if (!parcel) {
       res.status(404).json({ success: false, message: 'Parcel not found' });

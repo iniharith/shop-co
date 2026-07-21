@@ -181,7 +181,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
                       toast.success("Shipment created successfully!");
                       queryClient.invalidateQueries({ queryKey: ['orders'] });
                     },
-                    onError: () => toast.error("Failed to create shipment")
+                    onError: (error: any) => toast.error(error.response?.data?.message || error.message || "Failed to create shipment")
                   });
                 }}
                 disabled={isShipping}

@@ -11,6 +11,8 @@ import { useSyncParcel, useSendWhatsApp } from "@/hooks/useAdminDashboard";
 import { RefreshCw, MessageSquare, Download, CircleAlert } from "lucide-react";
 import { toast } from "sonner";
 
+const WHATSAPP_CUSTOMER_UPDATES_ENABLED = process.env.NEXT_PUBLIC_ENABLE_WHATSAPP_CUSTOMER_UPDATES === "true";
+
 export const columns: ColumnDef<any>[] = [
   {
     accessorKey: "trackingNumber",
@@ -27,7 +29,7 @@ export const columns: ColumnDef<any>[] = [
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => {
+    cell: ({ row }: any) => {
       const status = row.getValue("status") as string;
       const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
         pending: "outline",
@@ -40,14 +42,14 @@ export const columns: ColumnDef<any>[] = [
       return <Badge variant={variants[status] || "default"}>{status.replace(/_/g, ' ')}</Badge>;
     },
   },
-  {
+  ...(WHATSAPP_CUSTOMER_UPDATES_ENABLED ? [{
     accessorKey: "whatsappNotified",
     header: "Notified",
-    cell: ({ row }) => {
+    cell: ({ row }: any) => {
       const notified = row.getValue("whatsappNotified") as boolean;
       return notified ? <Badge variant="default" className="bg-green-500">Yes</Badge> : <Badge variant="outline">No</Badge>;
     },
-  },
+  }] : []),
   {
     accessorKey: "updatedAt",
     header: "Last Update",
@@ -90,9 +92,11 @@ export const columns: ColumnDef<any>[] = [
           <Button variant="outline" size="sm" onClick={handleSync} disabled={isSyncing} title="Sync Tracking">
             <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
           </Button>
-          <Button variant="outline" size="sm" onClick={handleWhatsApp} disabled={isSending} title="Send WhatsApp Update">
-            <MessageSquare className="w-4 h-4 text-green-500" />
-          </Button>
+          {WHATSAPP_CUSTOMER_UPDATES_ENABLED && (
+            <Button variant="outline" size="sm" onClick={handleWhatsApp} disabled={isSending} title="Send WhatsApp Update">
+              <MessageSquare className="w-4 h-4 text-green-500" />
+            </Button>
+          )}
           {parcel.awbUrl ? (
             <Button variant="outline" size="sm" onClick={() => window.open(parcel.awbUrl, "_blank")} title="Download AWB">
               <Download className="w-4 h-4" />

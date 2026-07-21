@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 interface TrackingCardProps {
   parcel: any;
+  customerUpdatesEnabled?: boolean;
 }
 
 const statusMap: Record<string, { label: string; step: number; icon: any; color: string }> = {
@@ -29,7 +30,7 @@ const statusMap: Record<string, { label: string; step: number; icon: any; color:
   failed: { label: "Failed", step: 0, icon: CircleX, color: "text-rose-500" },
 };
 
-export default function TrackingCard({ parcel }: TrackingCardProps) {
+export default function TrackingCard({ parcel, customerUpdatesEnabled = false }: TrackingCardProps) {
   const { mutate: syncMutate, isPending: isSyncing } = useSyncParcel();
   const { mutate: whatsappMutate, isPending: isSending } = useSendWhatsApp();
   const { mutate: updateMutate, isPending: isUpdating } = useUpdateParcel();
@@ -129,11 +130,13 @@ export default function TrackingCard({ parcel }: TrackingCardProps) {
           </div>
 
           {/* Actions Footer */}
-          <div className="flex items-center justify-between pt-3 border-t border-slate-50 mt-auto">
-            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-              <Switch id={`auto-notify-${parcel._id}`} checked={autoNotify} onCheckedChange={handleAutoNotifyChange} disabled={isUpdating} />
-              <Label htmlFor={`auto-notify-${parcel._id}`} className="text-xs text-slate-600 cursor-pointer">Auto-notify</Label>
-            </div>
+          <div className={`flex items-center pt-3 border-t border-slate-50 mt-auto ${customerUpdatesEnabled ? 'justify-between' : 'justify-end'}`}>
+            {customerUpdatesEnabled && (
+              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                <Switch id={`auto-notify-${parcel._id}`} checked={autoNotify} onCheckedChange={handleAutoNotifyChange} disabled={isUpdating} />
+                <Label htmlFor={`auto-notify-${parcel._id}`} className="text-xs text-slate-600 cursor-pointer">Auto-notify</Label>
+              </div>
+            )}
 
             <div className="flex items-center gap-2">
               <Button 
@@ -147,16 +150,18 @@ export default function TrackingCard({ parcel }: TrackingCardProps) {
                 Sync
               </Button>
               
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleWhatsApp} 
-                disabled={isSending}
-                className={`rounded-full h-8 px-3 border-slate-200 hover:bg-green-50 ${parcel.whatsappNotified ? 'bg-green-50 text-green-600 border-green-200' : 'bg-white text-slate-600'}`}
-              >
-                <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
-                {parcel.whatsappNotified ? 'Notified' : 'Notify'}
-              </Button>
+              {customerUpdatesEnabled && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleWhatsApp}
+                  disabled={isSending}
+                  className={`rounded-full h-8 px-3 border-slate-200 hover:bg-green-50 ${parcel.whatsappNotified ? 'bg-green-50 text-green-600 border-green-200' : 'bg-white text-slate-600'}`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
+                  {parcel.whatsappNotified ? 'Notified' : 'Notify'}
+                </Button>
+              )}
 
               {parcel.awbUrl ? (
                 <Button 
@@ -218,10 +223,12 @@ export default function TrackingCard({ parcel }: TrackingCardProps) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-slate-500">Auto-notify</span>
-              <Switch checked={autoNotify} onCheckedChange={handleAutoNotifyChange} disabled={isUpdating} />
-            </div>
+            {customerUpdatesEnabled && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-500">Auto-notify</span>
+                <Switch checked={autoNotify} onCheckedChange={handleAutoNotifyChange} disabled={isUpdating} />
+              </div>
+            )}
           </div>
 
           <div>

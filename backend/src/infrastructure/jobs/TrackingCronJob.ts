@@ -6,6 +6,7 @@ import cron from 'node-cron';
 import { parcelRepository } from '../repositories/ParcelRepository';
 import { easyParcelService } from '../services/EasyParcelService';
 import { whatsAppService } from '../services/WhatsAppService';
+import { areWhatsAppCustomerUpdatesEnabled } from '../services/CustomerUpdateSettingsService';
 
 /**
  * Cron job that auto-syncs all active parcel statuses every 15 minutes.
@@ -62,7 +63,7 @@ async function syncAllParcels(): Promise<void> {
         });
         updatedCount++;
 
-        if (statusChanged && parcel.customerPhone) {
+        if (statusChanged && parcel.customerPhone && await areWhatsAppCustomerUpdatesEnabled()) {
           console.log(
             `[Cron] 📦 Status changed for ${parcel.trackingNumber}: ` +
               `${previousStatus} → ${result.status}`
