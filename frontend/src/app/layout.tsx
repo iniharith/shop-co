@@ -4,7 +4,7 @@
  */
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
+import { Geist, Geist_Mono, DM_Sans } from "next/font/google";
 import "./globals.css";
 import Provider from "@/components/provider";
 import Nav from "@/components/global/nav";
@@ -25,18 +25,19 @@ const provicaliAmpersand = localFont({
   ]
 });
 
-const jakarta = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  display: "swap",
 });
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
-  weight: ["500", "700"],
-  display: "swap",
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -73,10 +74,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${jakarta.variable} ${spaceGrotesk.variable} ${jakarta.className}`} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${fonarto.variable} ${provicaliAmpersand.variable} overflow-x-hidden antialiased`}
+        className={`${geistSans.variable} ${dmSans.variable} ${geistMono.variable} ${fonarto.variable} ${provicaliAmpersand.variable} overflow-x-hidden antialiased`}
       >
         <Provider session={null}>
           <div className="site-header sticky z-50 top-0">

@@ -116,7 +116,7 @@ const MobileNavSheetContent = ({
           {/* ── MOBILE SEARCH ── */}
           <form 
             onSubmit={(e) => { handleSearch(e); closeDrawer(); }}
-            className="glass-subtle flex flex-col relative rounded-xl overflow-visible mb-3 px-3 py-1"
+            className="glass-subtle relative z-50 mb-3 flex flex-col overflow-visible rounded-xl px-3 py-1"
           >
             <div className="flex items-center w-full">
               <IoSearch className="text-gray-500 dark:text-muted-foreground text-lg mr-2 shrink-0" />
@@ -131,7 +131,7 @@ const MobileNavSheetContent = ({
               />
             </div>
             {isSearchFocused && searchQuery.length > 1 && (
-              <div className="glass-panel-strong absolute top-full left-0 right-0 mt-2 rounded-xl max-h-[250px] overflow-y-auto z-50 py-2">
+              <div className="glass-panel-strong absolute left-0 right-0 top-full z-[60] mt-2 max-h-[250px] overflow-y-auto rounded-xl py-2">
                 {searchResults.length > 0 ? (
                   searchResults.map((prod: any) => (
                     <div 
@@ -288,7 +288,7 @@ const Nav = () => {
     <>
       <div className="glass-panel-strong w-full flex flex-col border-x-0 border-t-0">
         {/* ── MAIN HEADER ── */}
-        <div className="w-full px-4 md:px-7 py-3 md:py-4 flex justify-between items-center gap-3 md:gap-6 border-b border-transparent dark:border-border">
+        <div className="relative z-[70] w-full px-4 md:px-7 py-3 md:py-4 flex justify-between items-center gap-3 md:gap-6 border-b border-transparent dark:border-border">
 
           {/* Left: Hamburger + Logo */}
           <div className="flex items-center gap-2 shrink-0">
@@ -332,7 +332,7 @@ const Nav = () => {
           {/* Center: Search (desktop only) */}
           <form 
             onSubmit={handleSearch}
-            className="glass-subtle hidden md:flex flex-1 max-w-2xl mx-auto relative items-center rounded-full overflow-visible px-4 py-1"
+            className="glass-subtle relative z-[80] mx-auto hidden max-w-2xl flex-1 items-center overflow-visible rounded-full px-4 py-1 md:flex"
           >
             <IoSearch className="text-gray-500 dark:text-muted-foreground text-xl mr-2 shrink-0" />
             <Input
@@ -350,7 +350,7 @@ const Nav = () => {
 
             {/* Live Search Suggestions Dropdown */}
             {isSearchFocused && searchQuery.length > 1 && (
-              <div className="glass-panel-strong absolute top-full left-0 right-0 mt-3 rounded-2xl max-h-[300px] overflow-y-auto z-50 py-2">
+              <div className="glass-panel-strong absolute left-0 right-0 top-full z-[90] mt-3 max-h-[300px] overflow-y-auto rounded-2xl py-2">
                 {searchResults.length > 0 ? (
                   searchResults.map((prod: any) => (
                     <div 
@@ -450,7 +450,7 @@ const Nav = () => {
         </div>
 
         {/* ── DESKTOP CATEGORY NAV ── */}
-        <div className="w-full border-t border-white/10 bg-transparent hidden md:block relative z-50">
+        <div className="relative z-40 hidden w-full border-t border-white/10 bg-transparent md:block">
           <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
             {printingCategories.map((item, index) => (
               <div key={index} className="relative group">

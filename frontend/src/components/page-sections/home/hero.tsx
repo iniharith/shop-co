@@ -44,7 +44,7 @@ const Hero = () => {
         />
       </AnimatePresence>
 
-      <div className="absolute inset-0 bg-gradient-to-br from-black/90 via-black/45 to-primary/15" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
       {/* Content Container */}
       <div className="glass-panel relative z-10 flex w-full max-w-6xl flex-col items-center justify-center gap-6 rounded-[2rem] px-5 py-10 text-center md:px-20 md:py-14">
@@ -52,7 +52,7 @@ const Hero = () => {
           initial="hidden"
           animate="visible"
           variants={item_variants}
-          className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/15 px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary"
+          className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-primary/30"
         >
           <Truck size={15} /> Fast & On-Time Delivery
         </motion.div>
@@ -97,7 +97,7 @@ const Hero = () => {
           </Button>
           <Button
             onClick={() => router.push("/home/shop")}
-            className="glass-subtle border-white/20 text-white font-bold px-10 py-6 rounded-full cursor-pointer active:scale-95 transition-all duration-300 text-lg hover:border-primary/50 hover:text-primary"
+            className="bg-white/10 backdrop-blur-md border-2 border-white text-white font-bold px-10 py-6 rounded-full cursor-pointer active:scale-95 transition-all duration-300 text-lg hover:bg-white hover:text-black"
           >
             View Products
           </Button>
