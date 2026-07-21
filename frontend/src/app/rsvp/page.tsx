@@ -76,7 +76,7 @@ export default function RsvpPage() {
   function openInvitation() {
     setMusicEnabled(true);
     setCoverState("closing");
-    window.setTimeout(() => setCoverState("closed"), 700);
+    window.setTimeout(() => setCoverState("closed"), 2_000);
   }
 
   const countdown = [
@@ -87,21 +87,17 @@ export default function RsvpPage() {
   ];
 
   return (
-    <main className={`${styles.invitation} rsvp-page`}>
+    <main className={`${styles.invitation} ${coverState !== "open" ? styles.opened : ""} rsvp-page`}>
       {coverState !== "closed" && (
         <section className={`${styles.openingCover} ${coverState === "closing" ? styles.closing : ""}`} aria-label="Buka jemputan">
           <div className={styles.coverInvitation}>
             <div className={styles.coverPattern} aria-hidden="true" />
-            <FloralCluster className={styles.coverFlowersTopLeft} />
-            <FloralCluster className={styles.coverFlowersTopRight} />
-            <FloralCluster className={styles.coverFlowersBottomLeft} />
-            <FloralCluster className={styles.coverFlowersBottomRight} />
-            <div className={styles.coverPanel}>
-              <button className={styles.openingSeal} type="button" onClick={openInvitation}>
-                <span>Muhammad Habri<br />&amp; Nor Fatin</span>
-                <small>Buka</small>
-              </button>
-            </div>
+            <FloralCluster className={styles.coverFloralFrame} />
+            <div className={styles.coverPanel} aria-hidden="true" />
+            <button className={styles.openingSeal} type="button" onClick={openInvitation}>
+              <span>Muhammad Habri<br />&amp; Nor Fatin</span>
+              <small>Buka</small>
+            </button>
           </div>
         </section>
       )}
@@ -131,16 +127,13 @@ export default function RsvpPage() {
       )}
 
       <section className={styles.hero} id="utama">
-        <FloralCluster className={styles.topLeft} />
-        <FloralCluster className={styles.topRight} />
+        <FloralCluster className={styles.heroFloralFrame} />
         <div className={styles.monogram}><span>H</span><i /><span>F</span></div>
         <p className={`${styles.eyebrow} ${styles.heroEyebrow}`}>Walimatul Urus</p>
         <p className={styles.request}>Dengan penuh kesyukuran, kami menjemput</p>
         <h1><span>{wedding.brideDisplay}</span><em>&amp;</em><span>{wedding.groomDisplay}</span></h1>
         <div className={styles.dateRule}><span /> <p>Sabtu &nbsp; 05 . 09 . 2026</p> <span /></div>
         <a className={styles.scrollCue} href="#majlis"><ChevronDown size={18} /> Terokai undangan</a>
-        <FloralCluster className={styles.bottomLeft} />
-        <FloralCluster className={styles.bottomRight} />
       </section>
 
       <section className={`${styles.countdownSection} ${styles.reveal}`} data-reveal aria-label="Countdown to wedding">
@@ -170,8 +163,7 @@ export default function RsvpPage() {
       </section>
 
       <section className={`${styles.salamSection} ${styles.reveal}`} data-reveal id="salam-kasih">
-        <FloralCluster className={styles.salamFlowersLeft} />
-        <FloralCluster className={styles.salamFlowersRight} />
+        <FloralCluster className={styles.sectionFloralFrame} />
         <div className={styles.salamCard}>
           <Gift size={21} />
           <p className={styles.eyebrow}>Tanda kasih</p>
@@ -224,13 +216,7 @@ export default function RsvpPage() {
 }
 
 function FloralCluster({ className }: { className: string }) {
-  return (
-    <div className={`${styles.floralCluster} ${className}`} aria-hidden="true">
-      <span className={styles.vine} />
-      <i /><i /><i /><i /><i />
-      <b /><b /><b />
-    </div>
-  );
+  return <div className={`${styles.floralCluster} ${className}`} aria-hidden="true" />;
 }
 
 function QrPlaceholder() {
