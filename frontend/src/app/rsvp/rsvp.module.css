@@ -225,11 +225,12 @@
 .coverPanel::before, .coverPanel::after { content: ""; position: absolute; left: 14%; right: 14%; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
 .coverPanel::before { top: 16%; }
 .coverPanel::after { bottom: 16%; }
-.openingSeal { position: absolute; z-index: 6; left: 50%; top: 50%; display: flex; width: 8.2rem; height: 8.2rem; flex-direction: column; align-items: center; justify-content: center; translate: -50% -50%; border: 2px solid #a9484c; border-radius: 49% 51% 47% 53% / 46% 45% 55% 54%; background: radial-gradient(circle at 32% 27%, #9d3f45, #5f1119 58%, #2a0409); box-shadow: inset 0 0 0 4px #521017, inset 0 0 0 6px #b65855, 0 8px 18px rgba(20, 1, 4, .55); color: #fff6e8; cursor: pointer; animation: sealContent 1s .55s both, sealPulse 2s 1.5s ease infinite; transition: opacity .2s ease, scale .25s ease, filter .25s ease; }
+.openingSeal { position: absolute; z-index: 6; left: 50%; top: 50%; display: flex; width: 8.7rem; height: 8.7rem; padding: 0; flex-direction: column; align-items: center; justify-content: center; translate: -50% -50%; border: 0; background: transparent; color: #fff6e8; cursor: pointer; animation: sealContent 1s .55s both; transition: opacity .2s ease, scale .25s ease, filter .25s ease; }
 .closing .openingSeal, .closing .coverPattern, .closing .coverPanel, .closing .floralCluster { opacity: 0; }
 .openingSeal:hover { scale: 1.06; filter: brightness(1.12); }
-.sealMonogram { width: 5.3rem; height: 5.3rem; }
-.openingSeal small { margin-top: -.35rem; color: var(--gold-light); font-family: "Cormorant Garamond", serif; font-size: .56rem; font-weight: 300; letter-spacing: .16em; text-transform: uppercase; }
+.waxSealArtwork { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 8px 9px rgba(20, 1, 4, .55)); animation: sealPulse 2s 1.5s ease infinite; }
+.sealMonogram { position: relative; width: 5.3rem; height: 5.3rem; }
+.openingSeal small { position: relative; margin-top: -.35rem; color: var(--gold-light); font-family: "Cormorant Garamond", serif; font-size: .56rem; font-weight: 300; letter-spacing: .16em; text-transform: uppercase; }
 .coverFloralFrame { inset: .2rem; }
 
 .sheetLayer { position: fixed; z-index: 60; inset: 0; display: flex; align-items: flex-end; justify-content: center; background: rgba(30, 2, 6, .34); animation: fadeIn .25s ease both; }
@@ -258,7 +259,7 @@
 @keyframes floralFrame { from { scale: 1; } to { scale: 1.025; filter: drop-shadow(0 .8rem 1rem rgba(28, 2, 6, .3)) brightness(1.035); } }
 @keyframes coverAppear { from { opacity: 0; scale: 1.035; filter: blur(8px); } to { opacity: 1; scale: 1; filter: blur(0); } }
 @keyframes sealContent { from { opacity: 0; scale: .7; } to { opacity: 1; scale: 1; } }
-@keyframes sealPulse { 50% { box-shadow: inset 0 0 0 4px #521017, inset 0 0 0 6px #d17c6a, 0 8px 28px rgba(20, 1, 4, .7); } }
+@keyframes sealPulse { 50% { filter: drop-shadow(0 8px 15px rgba(20, 1, 4, .8)) brightness(1.06); } }
 @keyframes fadeIn { from { opacity: 0; } }
 @keyframes sheetUp { from { translate: 0 100%; } to { translate: 0; } }
 

@@ -95,6 +95,7 @@ export default function RsvpPage() {
             <FloralCluster className={styles.coverFloralFrame} />
             <div className={styles.coverPanel} aria-hidden="true" />
             <button className={styles.openingSeal} type="button" onClick={openInvitation} aria-label="Fatin dan Habri - buka jemputan">
+              <img className={styles.waxSealArtwork} src="/images/wedding-wax-seal.svg" alt="" aria-hidden="true" />
               <WeddingMonogram className={styles.sealMonogram} />
               <small>Buka</small>
             </button>
