@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Great+Vibes&family=Montserrat:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:ital,wght@0,300;0,700;1,300&display=swap");
 
 .invitation {
   --wine: #591019;
@@ -16,7 +16,8 @@
   background: var(--wine);
   box-shadow: 0 0 34px rgba(44, 4, 10, .24);
   color: var(--ivory);
-  font-family: "Montserrat", sans-serif;
+  font-family: "Cormorant Garamond", serif;
+  font-weight: 300;
 }
 
 .navigation {
@@ -46,7 +47,8 @@
   background: transparent;
   color: var(--gold-light);
   cursor: pointer;
-  font-family: "Montserrat", sans-serif;
+  font-family: "Cormorant Garamond", serif;
+  font-weight: 300;
   font-size: .45rem;
   transition: color .25s ease, translate .25s ease;
 }
@@ -85,7 +87,7 @@
 
 .hero::after { inset: 1.75rem; border-color: rgba(236, 211, 154, .34); }
 .hero > :not(.floralCluster) { position: relative; z-index: 2; }
-.eyebrow { margin: 0 0 .8rem; color: var(--gold); font-family: "Cinzel", serif; font-size: .64rem; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; }
+.eyebrow { margin: 0 0 .8rem; color: var(--gold); font-family: "Cormorant Garamond", serif; font-size: .7rem; font-weight: 300; letter-spacing: .22em; text-transform: uppercase; }
 .heroEyebrow { margin-top: 1.5rem; opacity: 0; }
 
 .monogram {
@@ -114,7 +116,7 @@
   flex-direction: column;
   margin: 0;
   color: var(--gold-light);
-  font-family: "Great Vibes", cursive;
+  font-family: "Allura", cursive;
   font-size: clamp(5rem, 19vw, 7rem);
   font-weight: 400;
   line-height: .65;
@@ -125,7 +127,7 @@
 .dateRule { display: flex; width: min(21rem, 85vw); align-items: center; gap: .7rem; margin-top: 3.1rem; color: var(--gold-light); opacity: 0; }
 .dateRule span { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
 .dateRule span:last-child { background: linear-gradient(90deg, var(--gold), transparent); }
-.dateRule p { margin: 0; font-family: "Cinzel", serif; font-size: .57rem; letter-spacing: .12em; }
+.dateRule p { margin: 0; font-family: "Cormorant Garamond", serif; font-size: .65rem; font-weight: 300; letter-spacing: .12em; }
 .scrollCue { display: flex; align-items: center; gap: .35rem; margin-top: 3.3rem; color: #ead4b2; font-size: .52rem; letter-spacing: .14em; text-decoration: none; text-transform: uppercase; opacity: 0; }
 .scrollCue svg { animation: float 1.8s ease-in-out infinite; }
 
@@ -140,29 +142,29 @@
 .heroFloralFrame { inset: .2rem; }
 
 .countdownSection { padding: 3.5rem 1.2rem; background: var(--paper); color: var(--wine); text-align: center; }
-.countdownSection > p { margin: 0 0 1.4rem; font-family: "Great Vibes", cursive; font-size: 1.9rem; }
+.countdownSection > p { margin: 0 0 1.4rem; font-family: "Cormorant Garamond", serif; font-size: 1.7rem; font-weight: 700; }
 .countdown { display: flex; justify-content: center; gap: clamp(.55rem, 4vw, 1.6rem); }
 .countdown div { display: flex; min-width: 3.6rem; flex-direction: column; }
-.countdown strong { color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 2.5rem; font-weight: 500; line-height: .9; }
+.countdown strong { color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 2.5rem; font-weight: 700; line-height: .9; }
 .countdown span { margin-top: .55rem; color: #916a4d; font-size: .52rem; letter-spacing: .14em; text-transform: uppercase; }
 
 .details { padding: 4.6rem 1.5rem; background: linear-gradient(150deg, #67141f, #3d080f); color: var(--ivory); text-align: center; }
-.details h2, .rsvpPanel h2, .salamCard h2 { margin: 0; color: var(--gold-light); font-family: "Great Vibes", cursive; font-size: 3.5rem; font-weight: 400; }
+.details h2, .rsvpPanel h2, .salamCard h2 { margin: 0; color: var(--gold-light); font-family: "Cormorant Garamond", serif; font-size: 2.7rem; font-weight: 700; }
 .detailsIntro { max-width: 22rem; margin: .7rem auto 2.4rem; color: #ead9c3; font-family: "Cormorant Garamond", serif; font-size: 1.08rem; line-height: 1.5; }
 .detailGrid { display: grid; border-top: 1px solid rgba(203, 165, 95, .5); border-bottom: 1px solid rgba(203, 165, 95, .5); }
 .detailGrid article { display: flex; min-height: 8rem; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem .6rem; }
 .detailGrid article + article { border-top: 1px solid rgba(203, 165, 95, .35); }
 .detailGrid svg { width: 19px; margin-bottom: .8rem; color: var(--gold); }
 .detailGrid p { margin: 0 0 .45rem; color: var(--gold); font-size: .53rem; letter-spacing: .17em; text-transform: uppercase; }
-.detailGrid strong { max-width: 18rem; color: #fff3df; font-family: "Cormorant Garamond", serif; font-size: 1.2rem; }
-.detailGrid a { margin-top: .75rem; color: var(--gold-light); font-size: .54rem; font-weight: 600; letter-spacing: .1em; text-underline-offset: 4px; text-transform: uppercase; }
+.detailGrid strong { max-width: 18rem; color: #fff3df; font-family: "Cormorant Garamond", serif; font-size: 1.2rem; font-weight: 700; }
+.detailGrid a { margin-top: .75rem; color: var(--gold-light); font-size: .62rem; font-weight: 300; letter-spacing: .1em; text-underline-offset: 4px; text-transform: uppercase; }
 
 .calendarSection, .contactSection { padding: 3.7rem 1.4rem; background: var(--paper); color: var(--wine); text-align: center; }
 .calendarSection > svg, .contactSection > svg { color: var(--gold); }
-.calendarSection h2, .contactSection h2 { margin: .1rem 0 .7rem; color: var(--wine); font-family: "Great Vibes", cursive; font-size: 3rem; font-weight: 400; }
+.calendarSection h2, .contactSection h2 { margin: .1rem 0 .7rem; color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 2.5rem; font-weight: 700; }
 .calendarSection > p:not(.eyebrow), .contactSection > p:not(.eyebrow) { max-width: 20rem; margin: 0 auto 1.4rem; color: #74473d; font-family: "Cormorant Garamond", serif; font-size: 1rem; }
 .calendarSection > div { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
-.calendarSection a, .sheetButton { padding: .8rem .4rem; border: 1px solid var(--gold); background: var(--wine); color: var(--gold-light); font-size: .56rem; font-weight: 600; letter-spacing: .08em; text-decoration: none; text-transform: uppercase; transition: background .25s ease, color .25s ease; }
+.calendarSection a, .sheetButton { padding: .8rem .4rem; border: 1px solid var(--gold); background: var(--wine); color: var(--gold-light); font-size: .64rem; font-weight: 300; letter-spacing: .08em; text-decoration: none; text-transform: uppercase; transition: background .25s ease, color .25s ease; }
 .calendarSection a:hover, .sheetButton:hover { background: var(--gold); color: var(--wine-dark); }
 
 .salamSection { position: relative; overflow: hidden; padding: 4rem 1.2rem; background: #f2e5d2; }
@@ -174,8 +176,8 @@
 .qrPlaceholder i { aspect-ratio: 1; }
 .qrPlaceholder .qrDark { background: var(--wine); }
 .bankDetails { display: flex; max-width: 13rem; flex-direction: column; }
-.bankDetails span { margin-bottom: .4rem; color: #9a7446; font-size: .52rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
-.bankDetails strong { color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 1.15rem; line-height: 1.1; }
+.bankDetails span { margin-bottom: .4rem; color: #9a7446; font-size: .6rem; font-weight: 300; letter-spacing: .14em; text-transform: uppercase; }
+.bankDetails strong { color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 1.15rem; font-weight: 700; line-height: 1.1; }
 .bankDetails p { margin: .6rem 0 0; color: #815d50; font-size: .62rem; line-height: 1.5; }
 .sectionFloralFrame { inset: -.8rem; opacity: .16; }
 
@@ -186,20 +188,20 @@
 .rsvpPanel { padding: 2.5rem 1.3rem; border: 1px solid var(--gold); outline: 1px solid rgba(203, 165, 95, .45); outline-offset: -8px; background: var(--wine); color: var(--ivory); text-align: center; }
 .rsvpPanel form { display: grid; gap: 1.15rem; margin-top: 2rem; text-align: left; }
 .rsvpPanel label, .rsvpPanel legend { color: var(--gold-light); font-size: .57rem; letter-spacing: .12em; text-transform: uppercase; }
-.rsvpPanel input, .rsvpPanel select, .rsvpPanel textarea { box-sizing: border-box; width: 100%; margin-top: .5rem; padding: .78rem; border: 1px solid rgba(203, 165, 95, .5); border-radius: 0; outline: 0; background: rgba(255, 248, 233, .07); color: #fff8ed; font-family: "Montserrat", sans-serif; font-size: .74rem; }
+.rsvpPanel input, .rsvpPanel select, .rsvpPanel textarea { box-sizing: border-box; width: 100%; margin-top: .5rem; padding: .78rem; border: 1px solid rgba(203, 165, 95, .5); border-radius: 0; outline: 0; background: rgba(255, 248, 233, .07); color: #fff8ed; font-family: "Cormorant Garamond", serif; font-size: .86rem; font-weight: 300; }
 .rsvpPanel input:focus, .rsvpPanel select:focus, .rsvpPanel textarea:focus { border-color: var(--gold-light); box-shadow: 0 0 0 2px rgba(203, 165, 95, .15); }
 .rsvpPanel input::placeholder, .rsvpPanel textarea::placeholder { color: #cdb79c; }
 .rsvpPanel select option { color: var(--wine-dark); }
 .rsvpPanel fieldset { margin: 0; padding: 0; border: 0; }
 .attendanceOptions { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; margin-top: .5rem; }
-.attendanceOptions button { min-height: 2.8rem; border: 1px solid rgba(203, 165, 95, .55); background: transparent; color: var(--gold-light); cursor: pointer; font-family: "Montserrat", sans-serif; font-size: .62rem; transition: background .25s ease, color .25s ease; }
+.attendanceOptions button { min-height: 2.8rem; border: 1px solid rgba(203, 165, 95, .55); background: transparent; color: var(--gold-light); cursor: pointer; font-family: "Cormorant Garamond", serif; font-size: .76rem; font-weight: 300; transition: background .25s ease, color .25s ease; }
 .attendanceOptions button.active { background: var(--gold); color: var(--wine-dark); }
 .attendanceOptions svg { margin-right: .3rem; vertical-align: middle; }
-.submit, .confirmation button { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; padding: .95rem 1rem; border: 1px solid var(--gold-light); background: var(--gold); color: var(--wine-dark); cursor: pointer; font-family: "Montserrat", sans-serif; font-size: .6rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+.submit, .confirmation button { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; padding: .95rem 1rem; border: 1px solid var(--gold-light); background: var(--gold); color: var(--wine-dark); cursor: pointer; font-family: "Cormorant Garamond", serif; font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
 .error { margin: 0; color: #ffd0bd; font-size: .7rem; }
 .confirmation { display: flex; flex-direction: column; align-items: center; gap: .9rem; margin-top: 2rem; }
 .confirmation > svg { box-sizing: content-box; padding: .55rem; border: 1px solid var(--gold); border-radius: 50%; color: var(--gold-light); }
-.confirmation h3 { margin: 0; font-family: "Great Vibes", cursive; font-size: 2.6rem; font-weight: 400; }
+.confirmation h3 { margin: 0; font-family: "Cormorant Garamond", serif; font-size: 2.2rem; font-weight: 700; }
 .confirmation p { margin: 0; font-family: "Cormorant Garamond", serif; font-size: 1rem; }
 .invitationFooter { display: flex; align-items: center; justify-content: center; gap: .6rem; padding: 1.5rem; background: var(--wine-dark); color: var(--gold-light); text-align: center; }
 .invitationFooter p { margin: 0; font-family: "Cormorant Garamond", serif; font-size: .92rem; }
@@ -221,23 +223,23 @@
 .openingSeal { position: absolute; z-index: 6; left: 50%; top: 50%; display: flex; width: 8.2rem; height: 8.2rem; flex-direction: column; align-items: center; justify-content: center; translate: -50% -50%; border: 2px solid #a9484c; border-radius: 49% 51% 47% 53% / 46% 45% 55% 54%; background: radial-gradient(circle at 32% 27%, #9d3f45, #5f1119 58%, #2a0409); box-shadow: inset 0 0 0 4px #521017, inset 0 0 0 6px #b65855, 0 8px 18px rgba(20, 1, 4, .55); color: #fff6e8; cursor: pointer; animation: sealContent 1s .55s both, sealPulse 2s 1.5s ease infinite; transition: opacity .2s ease, scale .25s ease, filter .25s ease; }
 .closing .openingSeal, .closing .coverPattern, .closing .coverPanel, .closing .floralCluster { opacity: 0; }
 .openingSeal:hover { scale: 1.06; filter: brightness(1.12); }
-.openingSeal span { font-family: "Great Vibes", cursive; font-size: 1.3rem; line-height: .86; }
-.openingSeal small { margin-top: .7rem; color: var(--gold-light); font-family: "Cinzel", serif; font-size: .48rem; letter-spacing: .16em; text-transform: uppercase; }
+.openingSeal span { font-family: "Allura", cursive; font-size: 1.45rem; line-height: .86; }
+.openingSeal small { margin-top: .7rem; color: var(--gold-light); font-family: "Cormorant Garamond", serif; font-size: .56rem; font-weight: 300; letter-spacing: .16em; text-transform: uppercase; }
 .coverFloralFrame { inset: .2rem; }
 
 .sheetLayer { position: fixed; z-index: 60; inset: 0; display: flex; align-items: flex-end; justify-content: center; background: rgba(30, 2, 6, .34); animation: fadeIn .25s ease both; }
 .actionSheet { position: relative; width: min(100%, 29rem); box-sizing: border-box; padding: 2.4rem 1.5rem 6rem; border-top: 1px solid var(--gold); background: var(--paper); color: var(--wine); text-align: center; box-shadow: 0 -16px 40px rgba(33, 3, 8, .3); animation: sheetUp .48s cubic-bezier(.2, .75, .2, 1) both; }
 .sheetClose { position: absolute; right: .8rem; top: .65rem; width: 2rem; height: 2rem; border: 0; background: transparent; color: var(--wine); cursor: pointer; font-size: 1.5rem; }
 .sheetContent { display: flex; flex-direction: column; align-items: center; gap: .75rem; }
-.sheetContent h2 { margin: 0; font-family: "Great Vibes", cursive; font-size: 2.8rem; font-weight: 400; }
+.sheetContent h2 { margin: 0; font-family: "Cormorant Garamond", serif; font-size: 2.4rem; font-weight: 700; }
 .sheetContent p { margin: 0 0 .6rem; color: #72493d; font-family: "Cormorant Garamond", serif; font-size: 1rem; }
-.sheetContent strong { font-family: "Cormorant Garamond", serif; font-size: 1.2rem; }
+.sheetContent strong { font-family: "Cormorant Garamond", serif; font-size: 1.2rem; font-weight: 700; }
 .sheetContent small { color: #8d6c5e; font-size: .58rem; }
 .sheetOrnament { color: var(--gold); font-family: "Cormorant Garamond", serif; font-size: .8rem; letter-spacing: .15em; }
-.sheetOrnament span { font-family: "Great Vibes", cursive; font-size: 1.5em; }
+.sheetOrnament span { font-family: "Allura", cursive; font-size: 1.5em; }
 .sheetButton { display: inline-block; min-width: 13rem; margin-top: .5rem; }
 .quickRsvp { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: .7rem; }
-.quickRsvp button { display: flex; min-height: 4.2rem; flex-direction: column; align-items: center; justify-content: center; gap: .3rem; border: 1px solid var(--gold); background: transparent; color: var(--wine); cursor: pointer; font-family: "Montserrat", sans-serif; font-size: .65rem; }
+.quickRsvp button { display: flex; min-height: 4.2rem; flex-direction: column; align-items: center; justify-content: center; gap: .3rem; border: 1px solid var(--gold); background: transparent; color: var(--wine); cursor: pointer; font-family: "Cormorant Garamond", serif; font-size: .78rem; font-weight: 300; }
 .quickRsvp button.selected { background: var(--wine); color: var(--gold-light); }
 .quickRsvp svg, .quickRsvp button > span { width: 20px; height: 20px; font-size: 1.3rem; }
 
