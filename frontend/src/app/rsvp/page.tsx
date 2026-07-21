@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Check, ChevronDown, Clock3, Gift, Heart, MapPin, Send, Users, Volume2, VolumeX } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, Clock3, Gift, Heart, MapPin, PhoneCall, Send, Users, Volume2, VolumeX } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import styles from "./rsvp.module.css";
 
@@ -101,22 +101,16 @@ export default function RsvpPage() {
           </div>
         </section>
       )}
-      <button
-        className={styles.musicButton}
-        type="button"
-        onClick={() => setMusicEnabled((enabled) => !enabled)}
-        aria-label={musicEnabled ? "Matikan muzik latar" : "Mainkan muzik latar"}
-      >
-        {musicEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
-        <span>{musicEnabled ? "Muzik on" : "Muzik off"}</span>
-      </button>
       {musicEnabled && <iframe className={styles.musicFrame} src="https://www.youtube.com/embed/JGz2aGs0MU4?autoplay=1&loop=1&playlist=JGz2aGs0MU4" title="Muzik latar majlis" allow="autoplay" />}
       <nav className={styles.navigation} aria-label="Navigation invitation">
-        <a href="#utama">H & F</a>
-        <div>
-          <a href="#majlis">Majlis</a>
-          <a href="#rsvp">RSVP</a>
-        </div>
+        <button type="button" onClick={() => setMusicEnabled((enabled) => !enabled)} aria-label={musicEnabled ? "Matikan muzik" : "Mainkan muzik"}>
+          {musicEnabled ? <Volume2 /> : <VolumeX />}<span>Muzik</span>
+        </button>
+        <a href="#kalendar"><CalendarDays /><span>Kalendar</span></a>
+        <a href="#salam-kasih"><Gift /><span>Salam Kasih</span></a>
+        <a href="#majlis"><MapPin /><span>Lokasi</span></a>
+        <a href="#hubungi"><PhoneCall /><span>Hubungi</span></a>
+        <a href="#rsvp"><Check /><span>RSVP</span></a>
       </nav>
 
       <section className={styles.hero} id="utama">
@@ -150,6 +144,14 @@ export default function RsvpPage() {
         </div>
       </section>
 
+      <section className={`${styles.calendarSection} ${styles.reveal}`} data-reveal id="kalendar">
+        <CalendarDays size={22} />
+        <p className={styles.eyebrow}>Simpan tarikh</p>
+        <h2>Tambah Ke Kalendar</h2>
+        <p>Sabtu, 5 September 2026, 11:00 pagi hingga 4:00 petang</p>
+        <div><a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Majlis+Perkahwinan+Muhammad+Habri+%26+Nor+Fatin+Nabila&dates=20260905T030000Z/20260905T080000Z&location=Kuasa+Kaseh+Event+Space" target="_blank" rel="noreferrer">Google Calendar</a><a href="https://maps.app.goo.gl/oG8vJLNdpdmtfhqT6?g_st=aw" target="_blank" rel="noreferrer">Lihat Lokasi</a></div>
+      </section>
+
       <section className={`${styles.salamSection} ${styles.reveal}`} data-reveal id="salam-kasih">
         <FloralCluster className={styles.salamFlowersLeft} />
         <FloralCluster className={styles.salamFlowersRight} />
@@ -167,6 +169,14 @@ export default function RsvpPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className={`${styles.contactSection} ${styles.reveal}`} data-reveal id="hubungi">
+        <PhoneCall size={21} />
+        <p className={styles.eyebrow}>Sebarang pertanyaan</p>
+        <h2>Hubungi Kami</h2>
+        <p>Sila hubungi pihak keluarga untuk pertanyaan berkaitan majlis.</p>
+        <div className={styles.contactPlaceholder}>Nombor telefon akan dikemas kini</div>
       </section>
 
       <section className={`${styles.rsvpSection} ${styles.reveal}`} data-reveal id="rsvp">
