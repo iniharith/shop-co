@@ -112,7 +112,11 @@
 .eyebrow { margin: 0 0 .8rem; color: var(--gold); font-family: "Cormorant Garamond", serif; font-size: .7rem; font-weight: 300; letter-spacing: .22em; text-transform: uppercase; }
 .heroEyebrow { margin-top: 1.5rem; opacity: 0; }
 
-.weddingMonogram { display: block; width: 9rem; height: 9rem; object-fit: contain; }
+.weddingMonogram { position: relative; display: block; width: 9rem; height: 9rem; }
+.monogramArtwork { display: block; width: 100%; height: 100%; object-fit: contain; }
+.monogramInitials { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: .55rem; color: var(--gold-light); font-family: "Cormorant Garamond", serif; font-size: 1.65rem; text-shadow: 0 2px 5px rgba(35, 2, 7, .7); }
+.monogramInitials b { font-weight: 300; }
+.monogramInitials i { width: 1px; height: 2rem; rotate: 25deg; background: var(--gold); }
 .monogram { opacity: 0; }
 .request { margin: .35rem 0 1.2rem; color: #ecdcc4; font-family: "Cormorant Garamond", serif; font-size: 1rem; font-style: italic; opacity: 0; }
 
@@ -135,8 +139,9 @@
 .dateRule p { margin: 0; font-family: "Cormorant Garamond", serif; font-size: .65rem; font-weight: 300; letter-spacing: .12em; }
 .scrollCue { display: flex; align-items: center; gap: .35rem; margin-top: 3.3rem; color: #ead4b2; font-size: .52rem; letter-spacing: .14em; text-decoration: none; text-transform: uppercase; opacity: 0; }
 .scrollCue svg { animation: float 1.8s ease-in-out infinite; }
+.heroEyebrow, .request, .hero h1, .dateRule, .scrollCue { text-shadow: 0 3px 9px rgba(29, 2, 6, .85); }
 
-.opened .monogram { animation: coverTextFade 3s .1s both, crestGlow 4s 3.1s ease-in-out infinite; }
+.opened .monogram { animation: coverTextFade 3s .1s both; }
 .opened .heroEyebrow { animation: coverTextFade 3s .5s both; }
 .opened .request { animation: coverTextFade 3s .75s both; }
 .opened .hero h1 { animation: coverTextFade 3s 1s both; }
@@ -162,7 +167,7 @@
 .detailGrid svg { width: 19px; margin-bottom: .8rem; color: var(--gold); }
 .detailGrid p { margin: 0 0 .45rem; color: var(--gold); font-size: .53rem; letter-spacing: .17em; text-transform: uppercase; }
 .detailGrid strong { max-width: 18rem; color: #fff3df; font-family: "Cormorant Garamond", serif; font-size: 1.2rem; font-weight: 700; }
-.detailGrid a { margin-top: .75rem; color: var(--gold-light); font-size: .62rem; font-weight: 300; letter-spacing: .1em; text-underline-offset: 4px; text-transform: uppercase; }
+.detailGrid a { margin-top: .75rem; color: var(--gold-light); font-size: .8rem; font-weight: 700; letter-spacing: .1em; text-underline-offset: 4px; text-transform: uppercase; }
 
 .calendarSection, .contactSection { padding: 3.7rem 1.4rem; background: var(--paper); color: var(--wine); text-align: center; }
 .calendarSection > svg, .contactSection > svg { color: var(--gold); }
@@ -199,9 +204,8 @@
 .rsvpPanel select option { color: var(--wine-dark); }
 .rsvpPanel fieldset { margin: 0; padding: 0; border: 0; }
 .attendanceOptions { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; margin-top: .5rem; }
-.attendanceOptions button { min-height: 2.8rem; border: 1px solid rgba(203, 165, 95, .55); background: transparent; color: var(--gold-light); cursor: pointer; font-family: "Cormorant Garamond", serif; font-size: .76rem; font-weight: 300; transition: background .25s ease, color .25s ease; }
+.attendanceOptions button { display: flex; min-height: 2.8rem; align-items: center; justify-content: center; border: 1px solid rgba(203, 165, 95, .55); background: transparent; color: var(--gold-light); cursor: pointer; font-family: "Cormorant Garamond", serif; font-size: .76rem; font-weight: 300; text-align: center; transition: background .25s ease, color .25s ease; }
 .attendanceOptions button.active { background: var(--gold); color: var(--wine-dark); }
-.attendanceOptions svg { margin-right: .3rem; vertical-align: middle; }
 .submit, .confirmation button { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; padding: .95rem 1rem; border: 1px solid var(--gold-light); background: var(--gold); color: var(--wine-dark); cursor: pointer; font-family: "Cormorant Garamond", serif; font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
 .error { margin: 0; color: #ffd0bd; font-size: .7rem; }
 .confirmation { display: flex; flex-direction: column; align-items: center; gap: .9rem; margin-top: 2rem; }
@@ -214,7 +218,7 @@
 .openingCover { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; overflow: hidden; background: #faf8f4; }
 .closing { background: transparent; pointer-events: none; }
 .coverInvitation { position: relative; width: min(100vw, 29rem); height: 100svh; min-height: 42rem; overflow: hidden; background: radial-gradient(circle at 50% 40%, #7b2934, #3a070e 75%); box-shadow: 0 0 30px rgba(43, 4, 9, .3); animation: coverAppear .75s ease-out both; transition: background .25s ease, box-shadow .25s ease; }
-.coverInvitation::before, .coverInvitation::after { content: ""; position: absolute; z-index: 5; top: 0; bottom: 0; width: 50%; border-block: 1px solid rgba(203, 165, 95, .8); background: rgba(91, 16, 25, .24); backdrop-filter: blur(5px); transition: translate 2s ease; }
+.coverInvitation::before, .coverInvitation::after { content: ""; position: absolute; z-index: 5; top: 0; bottom: 0; width: 50%; border-block: 1px solid rgba(203, 165, 95, .8); background: rgba(91, 16, 25, .24); backdrop-filter: blur(5px); transition: translate 1s ease; }
 .coverInvitation::before { left: 0; border-left: 1px solid rgba(203, 165, 95, .8); }
 .coverInvitation::after { right: 0; border-right: 1px solid rgba(203, 165, 95, .8); }
 .closing .coverInvitation { background: transparent; box-shadow: none; }
@@ -225,11 +229,13 @@
 .coverPanel::before, .coverPanel::after { content: ""; position: absolute; left: 14%; right: 14%; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
 .coverPanel::before { top: 16%; }
 .coverPanel::after { bottom: 16%; }
-.openingSeal { position: absolute; z-index: 6; left: 50%; top: 50%; display: flex; width: 8.7rem; height: 8.7rem; padding: 0; flex-direction: column; align-items: center; justify-content: center; translate: -50% -50%; border: 0; background: transparent; color: #fff6e8; cursor: pointer; animation: sealContent 1s .55s both; transition: opacity .2s ease, scale .25s ease, filter .25s ease; }
+.openingSeal { position: absolute; z-index: 6; left: 50%; top: 50%; display: flex; width: 8.7rem; height: 8.7rem; padding: 0; flex-direction: column; align-items: center; justify-content: center; translate: -50% -50%; border: 0; background: transparent; color: #fff6e8; cursor: pointer; animation: sealContent .5s .2s both; transition: opacity .2s ease, scale .25s ease, filter .25s ease; }
 .closing .openingSeal, .closing .coverPattern, .closing .coverPanel, .closing .floralCluster { opacity: 0; }
 .openingSeal:hover { scale: 1.06; filter: brightness(1.12); }
 .waxSealArtwork { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 8px 9px rgba(20, 1, 4, .55)); animation: sealPulse 2s 1.5s ease infinite; }
 .sealMonogram { position: relative; width: 5.3rem; height: 5.3rem; }
+.sealMonogram .monogramInitials { gap: .35rem; font-size: 1.05rem; }
+.sealMonogram .monogramInitials i { height: 1.45rem; }
 .openingSeal small { position: relative; margin-top: -.35rem; color: var(--gold-light); font-family: "Cormorant Garamond", serif; font-size: .56rem; font-weight: 300; letter-spacing: .16em; text-transform: uppercase; }
 .coverFloralFrame { inset: .2rem; }
 
@@ -253,7 +259,6 @@
 .isVisible { opacity: 1; transform: translateZ(0) scale(1); }
 @keyframes riseIn { from { opacity: 0; translate: 0 1.25rem; } to { opacity: 1; translate: 0; } }
 @keyframes crestIn { from { opacity: 0; scale: .72; rotate: -8deg; } to { opacity: 1; scale: 1; rotate: 0deg; } }
-@keyframes crestGlow { 50% { box-shadow: 0 0 0 8px rgba(203, 165, 95, .07), 0 0 2.5rem rgba(203, 165, 95, .17); } }
 @keyframes float { 50% { translate: 0 5px; } }
 @keyframes coverTextFade { from { opacity: 0; translate: 0 1.2rem; } to { opacity: 1; translate: 0; } }
 @keyframes floralFrame { from { scale: 1; } to { scale: 1.025; filter: drop-shadow(0 .8rem 1rem rgba(28, 2, 6, .3)) brightness(1.035); } }

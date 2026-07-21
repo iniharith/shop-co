@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Check, ChevronDown, Clock3, Gift, Heart, MapPin, PhoneCall, Send, Users, Volume2, VolumeX } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, Clock3, Gift, MapPin, PhoneCall, Send, Users, Volume2, VolumeX } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import styles from "./rsvp.module.css";
 
@@ -76,7 +76,7 @@ export default function RsvpPage() {
   function openInvitation() {
     setMusicEnabled(true);
     setCoverState("closing");
-    window.setTimeout(() => setCoverState("closed"), 2_000);
+    window.setTimeout(() => setCoverState("closed"), 1_000);
   }
 
   const countdown = [
@@ -95,7 +95,7 @@ export default function RsvpPage() {
             <FloralCluster className={styles.coverFloralFrame} />
             <div className={styles.coverPanel} aria-hidden="true" />
             <button className={styles.openingSeal} type="button" onClick={openInvitation} aria-label="Fatin dan Habri - buka jemputan">
-              <img className={styles.waxSealArtwork} src="/images/wedding-wax-seal.svg" alt="" aria-hidden="true" />
+              <img className={styles.waxSealArtwork} src="/images/wedding-wax-seal-v2.svg" alt="" aria-hidden="true" />
               <WeddingMonogram className={styles.sealMonogram} />
               <small>Buka</small>
             </button>
@@ -199,7 +199,7 @@ export default function RsvpPage() {
             <form onSubmit={submitRsvp} noValidate>
               <label>Nama tetamu<input name="guestName" type="text" placeholder="Masukkan nama anda" /></label>
               <fieldset><legend>Adakah anda dapat hadir?</legend><div className={styles.attendanceOptions}>
-                <button type="button" className={attendance === "hadir" ? styles.active : ""} onClick={() => setAttendance("hadir")}><Heart size={16} /> Hadir</button>
+                <button type="button" className={attendance === "hadir" ? styles.active : ""} onClick={() => setAttendance("hadir")}>Hadir</button>
                 <button type="button" className={attendance === "tidak-hadir" ? styles.active : ""} onClick={() => setAttendance("tidak-hadir")}>Tidak dapat hadir</button>
               </div></fieldset>
               <label>Bilangan tetamu<select name="guests" defaultValue="1"><option value="1">1 orang</option><option value="2">2 orang</option><option value="3">3 orang</option><option value="4">4 orang</option></select></label>
@@ -221,7 +221,12 @@ function FloralCluster({ className }: { className: string }) {
 }
 
 function WeddingMonogram({ className = "" }: { className?: string }) {
-  return <img className={`${styles.weddingMonogram} ${className}`} src="/images/wedding-monogram.svg" alt="Monogram Fatin dan Habri" />;
+  return (
+    <div className={`${styles.weddingMonogram} ${className}`} role="img" aria-label="Monogram Habri dan Fatin">
+      <img className={styles.monogramArtwork} src="/images/wedding-monogram.svg" alt="" aria-hidden="true" />
+      <span className={styles.monogramInitials} aria-hidden="true"><b>H</b><i /><b>F</b></span>
+    </div>
+  );
 }
 
 function QrPlaceholder() {
