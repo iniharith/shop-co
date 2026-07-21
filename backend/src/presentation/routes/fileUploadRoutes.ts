@@ -435,8 +435,7 @@ router.post(
 );
 
 // ─── POST /api/files/share-link ───────────────────────────
-// Admin: create (or reuse) a short, name-based share link for a folder
-// e.g. { folderName: "Ahmad Ali", taskId, orderId, userId } -> { slug: "ahmad-ali" }
+// Admin: create (or reuse) a short, name-based share link for a folder.
 router.post(
   '/share-link',
   authMiddilware,
@@ -537,9 +536,26 @@ router.delete(
 );
 
 // 🌐 Public: Get files for a specific folder using a short slug
+const getShareFileConditions = (link: any, slug: string): any[] => {
+  const conditions: any[] = [{ shareSlug: slug }];
+  if (link.folderId) conditions.push({ folderId: link.folderId });
+  else if (link.taskId) conditions.push({ taskId: link.taskId });
+  else if (link.orderId) conditions.push({ orderId: link.orderId });
+  else if (link.userId) conditions.push({ userId: link.userId });
+  return conditions;
+};
+
+const fileBelongsToShareLink = (file: any, link: any, slug: string): boolean =>
+  file.shareSlug === slug ||
+  (!!link.folderId && file.folderId?.toString() === link.folderId.toString()) ||
+  (!link.folderId && !!link.taskId && file.taskId?.toString() === link.taskId.toString()) ||
+  (!link.folderId && !link.taskId && !!link.orderId && file.orderId?.toString() === link.orderId.toString()) ||
+  (!link.folderId && !link.taskId && !link.orderId && !!link.userId && file.userId?.toString() === link.userId.toString());
+
 router.get(
   '/s/:slug',
   asyncHandler(async (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
     const link = await shareLinkRepository.findBySlug(req.params.slug);
     if (!link) {
       res.json({ success: true, data: [], folderName: null });
@@ -549,13 +565,7 @@ router.get(
     // Match files 3 ways and merge: by the exact slug stamp (covers every
     // customer upload through this link), and by taskId/orderId (covers
     // files the admin added directly to the folder before sharing it).
-    const orConditions: any[] = [{ shareSlug: req.params.slug }];
-    if (link.folderId) orConditions.push({ folderId: link.folderId });
-    else if (link.taskId) orConditions.push({ taskId: link.taskId });
-    else if (link.orderId) orConditions.push({ orderId: link.orderId });
-    else if (link.userId) orConditions.push({ userId: link.userId });
-
-    const files = await FileUpload.find({ $or: orConditions }).sort({ uploadedAt: -1 });
+    const files = await FileUpload.find({ $or: getShareFileConditions(link, req.params.slug) }).sort({ uploadedAt: -1 });
     res.json({ success: true, data: files, folderName: link.folderName });
   })
 );
@@ -585,13 +595,7 @@ router.get(
       return;
     }
 
-    const orConditions: any[] = [{ shareSlug: req.params.slug }];
-    if (link.folderId) orConditions.push({ folderId: link.folderId });
-    else if (link.taskId) orConditions.push({ taskId: link.taskId });
-    else if (link.orderId) orConditions.push({ orderId: link.orderId });
-    else if (link.userId) orConditions.push({ userId: link.userId });
-
-    const files = await FileUpload.find({ $or: orConditions }).sort({ uploadedAt: -1 });
+    const files = await FileUpload.find({ $or: getShareFileConditions(link, req.params.slug) }).sort({ uploadedAt: -1 });
 
     if (!files.length) {
       res.status(404).json({ success: false, message: 'No files found' });
@@ -899,6 +903,66 @@ router.post(
   })
 );
 
+// Public file content, scoped to a valid share slug. This avoids relying on
+// private storage URLs that may only appear to work from an admin's cache.
+router.get(
+  '/s/:slug/files/:id/content',
+  asyncHandler(async (req: Request, res: Response) => {
+    const link = await shareLinkRepository.findBySlug(req.params.slug);
+    if (!link) {
+      res.status(404).json({ success: false, message: 'Link not found' });
+      return;
+    }
+
+    const file = await fileUploadRepository.findById(req.params.id);
+    if (!file) {
+      res.status(404).json({ success: false, message: 'File not found' });
+      return;
+    }
+    if (!fileBelongsToShareLink(file, link, req.params.slug)) {
+      res.status(403).json({ success: false, message: 'Access denied' });
+      return;
+    }
+
+    const download = req.query.download === 'true';
+    const disposition = download ? 'attachment' : 'inline';
+    const safeName = file.originalName.replace(/"/g, '\\"');
+    res.setHeader('Cache-Control', 'private, max-age=300');
+
+    try {
+      if (file.path.includes('amazonaws.com')) {
+        const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+        const { GetObjectCommand } = require('@aws-sdk/client-s3');
+        const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
+        const urlObj = new URL(file.path);
+        const rawKey = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+        const command = new GetObjectCommand({
+          Bucket: S3_BUCKET_NAME,
+          Key: decodeURIComponent(rawKey),
+          ResponseContentDisposition: `${disposition}; filename="${safeName}"`,
+          ResponseContentType: file.mimetype || 'application/octet-stream',
+        });
+        const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+        res.redirect(signedUrl);
+        return;
+      }
+
+      const response = await fetch(file.path);
+      if (!response.ok) throw new Error('Failed to fetch file');
+      res.setHeader('Content-Disposition', `${disposition}; filename="${safeName}"`);
+      res.setHeader('Content-Type', file.mimetype || response.headers.get('content-type') || 'application/octet-stream');
+      if (!response.body) throw new Error('File response has no body');
+      const { Readable } = require('stream');
+      Readable.fromWeb(response.body).pipe(res);
+    } catch (err) {
+      console.error('[SharedContent] Failed to load file:', err);
+      if (!res.headersSent) {
+        res.status(502).json({ success: false, message: 'Failed to load file' });
+      }
+    }
+  })
+);
+
 // 🌐 Public: Delete a file from a shared folder (slug acts as auth)
 router.delete(
   '/s/:slug/files/:id',
@@ -914,10 +978,7 @@ router.delete(
       return;
     }
     // Verify file belongs to this share link
-    const belongsToLink =
-      file.shareSlug === req.params.slug ||
-      (link.taskId && file.taskId?.toString() === link.taskId?.toString()) ||
-      (link.orderId && file.orderId?.toString() === link.orderId?.toString());
+    const belongsToLink = fileBelongsToShareLink(file, link, req.params.slug);
     if (!belongsToLink) {
       res.status(403).json({ success: false, message: 'Access denied' });
       return;
@@ -952,10 +1013,7 @@ router.patch(
       res.status(404).json({ success: false, message: 'File not found' });
       return;
     }
-    const belongsToLink =
-      file.shareSlug === req.params.slug ||
-      (link.taskId && file.taskId?.toString() === link.taskId?.toString()) ||
-      (link.orderId && file.orderId?.toString() === link.orderId?.toString());
+    const belongsToLink = fileBelongsToShareLink(file, link, req.params.slug);
     if (!belongsToLink) {
       res.status(403).json({ success: false, message: 'Access denied' });
       return;

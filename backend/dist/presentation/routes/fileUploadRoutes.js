@@ -33,6 +33,7 @@ const ShareLink_1 = require("../../domain/entities/ShareLink");
 const order_repository_1 = __importDefault(require("../../infrastructure/db/repositories/order.repository"));
 const taskBroadcast_1 = require("../../shared/utils/taskBroadcast");
 const streamFilesAsZip_1 = require("../../shared/utils/streamFilesAsZip");
+const downloadProgress_1 = require("../../shared/utils/downloadProgress");
 const router = (0, express_1.Router)();
 const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB || '500', 10);
 // ─── Multer + S3 Storage ─────────────────────────
@@ -217,31 +218,62 @@ router.get('/', (0, express_async_handler_1.default)((req, res) => __awaiter(voi
     const files = yield FileUploadRepository_1.fileUploadRepository.findAll(filters);
     // Enrich files that were uploaded via a share link with the link's metadata
     // so the admin grouping logic can place them in the correct folder
-    const slugsNeeded = [...new Set(files.filter((f) => f.shareSlug).map((f) => f.shareSlug))];
-    let slugMap = {};
-    if (slugsNeeded.length > 0) {
-        const links = yield ShareLink_1.ShareLink.find({ slug: { $in: slugsNeeded } });
-        links.forEach((l) => { slugMap[l.slug] = l; });
-    }
-    const enrichedFiles = files.map((file) => {
-        const f = file.toObject ? file.toObject() : Object.assign({}, file);
-        if (f.shareSlug && slugMap[f.shareSlug]) {
-            const link = slugMap[f.shareSlug];
-            // Backfill taskId/orderId from the share link so grouping works
-            if (!f.taskId && link.taskId)
-                f.taskId = link.taskId;
-            if (!f.orderId && link.orderId)
-                f.orderId = link.orderId;
-            f._shareFolderName = link.folderName; // pass folder name to frontend
-        }
-        // Any file linked to a task is a task file for grouping purposes,
-        // regardless of what category happened to get set at upload time.
-        if (f.taskId)
-            f.category = 'TASK';
-        return f;
-    });
+    const enrichedFiles = yield enrichWithShareLinks(files);
     const stats = { totalFiles: enrichedFiles.length, totalSize: 0, pendingReview: 0, totalSizeMB: "0" };
     res.json({ success: true, data: enrichedFiles, stats, count: enrichedFiles.length });
+})));
+// Backfills taskId/orderId/folderName onto files uploaded via a share link,
+// and normalizes category for task-linked files. Shared by every endpoint
+// that returns file listings for the admin manager pages.
+function enrichWithShareLinks(files) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const slugsNeeded = [...new Set(files.filter((f) => f.shareSlug).map((f) => f.shareSlug))];
+        let slugMap = {};
+        if (slugsNeeded.length > 0) {
+            const links = yield ShareLink_1.ShareLink.find({ slug: { $in: slugsNeeded } });
+            links.forEach((l) => { slugMap[l.slug] = l; });
+        }
+        return files.map((file) => {
+            const f = file.toObject ? file.toObject() : Object.assign({}, file);
+            if (f.shareSlug && slugMap[f.shareSlug]) {
+                const link = slugMap[f.shareSlug];
+                if (!f.taskId && link.taskId)
+                    f.taskId = link.taskId;
+                if (!f.orderId && link.orderId)
+                    f.orderId = link.orderId;
+                f._shareFolderName = link.folderName;
+            }
+            if (f.taskId)
+                f.category = 'TASK';
+            return f;
+        });
+    });
+}
+// ─── GET /api/files/index ───────────────────────────────────
+// Slim, unwindowed file listing used to render the folder list (name + item
+// count) on the Artworks/Production/Packaging manager pages fast. Each
+// record only carries the fields needed to group files into folders — no
+// S3 URLs, sizes, notes, etc. — so it stays cheap to return in full instead
+// of applying the 30-day cutoff that GET / below uses (that cutoff was
+// hiding folders whose artwork was uploaded more than 30 days ago, even
+// though the underlying job was still active).
+router.get('/index', (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const files = yield FileUploadRepository_1.fileUploadRepository.findIndex();
+    const enriched = yield enrichWithShareLinks(files);
+    res.json({ success: true, data: enriched });
+})));
+// ─── GET /api/files/by-folder ────────────────────────────────
+// Full file details (thumbnails, S3 URLs, etc.) for a single folder, fetched
+// only when that folder is actually opened. Pass taskId, or orderId/userId.
+router.get('/by-folder', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { taskId, orderId, userId } = req.query;
+    if (!taskId && !orderId && !userId) {
+        res.status(400).json({ success: false, message: 'taskId, orderId, or userId is required' });
+        return;
+    }
+    const files = yield FileUploadRepository_1.fileUploadRepository.findByFolderKey({ taskId, orderId, userId });
+    const enriched = yield enrichWithShareLinks(files);
+    res.json({ success: true, data: enriched });
 })));
 // ─── GET /api/files/grouped ───────────────────────────────
 // Admin: files grouped by customer (Nextcloud folder view)
@@ -336,8 +368,7 @@ router.post('/shared/upload/:token', decodeSharedToken, upload.array('files', 10
     });
 })));
 // ─── POST /api/files/share-link ───────────────────────────
-// Admin: create (or reuse) a short, name-based share link for a folder
-// e.g. { folderName: "Ahmad Ali", taskId, orderId, userId } -> { slug: "ahmad-ali" }
+// Admin: create (or reuse) a short, name-based share link for a folder.
 router.post('/share-link', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { folderName, taskId, orderId, userId, folderId } = req.body;
     if (!folderName) {
@@ -414,7 +445,28 @@ router.delete('/share-link/:slug', auth_middileware_1.default, (0, express_async
     res.json({ success: true });
 })));
 // 🌐 Public: Get files for a specific folder using a short slug
+const getShareFileConditions = (link, slug) => {
+    const conditions = [{ shareSlug: slug }];
+    if (link.folderId)
+        conditions.push({ folderId: link.folderId });
+    else if (link.taskId)
+        conditions.push({ taskId: link.taskId });
+    else if (link.orderId)
+        conditions.push({ orderId: link.orderId });
+    else if (link.userId)
+        conditions.push({ userId: link.userId });
+    return conditions;
+};
+const fileBelongsToShareLink = (file, link, slug) => {
+    var _a, _b, _c, _d;
+    return file.shareSlug === slug ||
+        (!!link.folderId && ((_a = file.folderId) === null || _a === void 0 ? void 0 : _a.toString()) === link.folderId.toString()) ||
+        (!link.folderId && !!link.taskId && ((_b = file.taskId) === null || _b === void 0 ? void 0 : _b.toString()) === link.taskId.toString()) ||
+        (!link.folderId && !link.taskId && !!link.orderId && ((_c = file.orderId) === null || _c === void 0 ? void 0 : _c.toString()) === link.orderId.toString()) ||
+        (!link.folderId && !link.taskId && !link.orderId && !!link.userId && ((_d = file.userId) === null || _d === void 0 ? void 0 : _d.toString()) === link.userId.toString());
+};
 router.get('/s/:slug', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    res.setHeader('Cache-Control', 'no-store');
     const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
     if (!link) {
         res.json({ success: true, data: [], folderName: null });
@@ -423,17 +475,19 @@ router.get('/s/:slug', (0, express_async_handler_1.default)((req, res) => __awai
     // Match files 3 ways and merge: by the exact slug stamp (covers every
     // customer upload through this link), and by taskId/orderId (covers
     // files the admin added directly to the folder before sharing it).
-    const orConditions = [{ shareSlug: req.params.slug }];
-    if (link.folderId)
-        orConditions.push({ folderId: link.folderId });
-    else if (link.taskId)
-        orConditions.push({ taskId: link.taskId });
-    else if (link.orderId)
-        orConditions.push({ orderId: link.orderId });
-    else if (link.userId)
-        orConditions.push({ userId: link.userId });
-    const files = yield FileUpload_1.FileUpload.find({ $or: orConditions }).sort({ uploadedAt: -1 });
+    const files = yield FileUpload_1.FileUpload.find({ $or: getShareFileConditions(link, req.params.slug) }).sort({ uploadedAt: -1 });
     res.json({ success: true, data: files, folderName: link.folderName });
+})));
+// 🌐 Public: Poll real-time progress for an in-flight bulk ZIP download.
+// The frontend generates a downloadId, passes it to download-all/download-batch,
+// then polls this endpoint every ~500ms to show "Downloading... (3/12)".
+router.get('/download-progress/:downloadId', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const progress = (0, downloadProgress_1.getDownloadProgress)(req.params.downloadId);
+    if (!progress) {
+        res.status(404).json({ success: false, message: 'Unknown or expired downloadId' });
+        return;
+    }
+    res.json(Object.assign({ success: true }, progress));
 })));
 // 🌐 Public: Download all files in a shared folder as a single ZIP
 router.get('/s/:slug/download-all', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -442,22 +496,14 @@ router.get('/s/:slug/download-all', (0, express_async_handler_1.default)((req, r
         res.status(404).json({ success: false, message: 'Link not found' });
         return;
     }
-    const orConditions = [{ shareSlug: req.params.slug }];
-    if (link.folderId)
-        orConditions.push({ folderId: link.folderId });
-    else if (link.taskId)
-        orConditions.push({ taskId: link.taskId });
-    else if (link.orderId)
-        orConditions.push({ orderId: link.orderId });
-    else if (link.userId)
-        orConditions.push({ userId: link.userId });
-    const files = yield FileUpload_1.FileUpload.find({ $or: orConditions }).sort({ uploadedAt: -1 });
+    const files = yield FileUpload_1.FileUpload.find({ $or: getShareFileConditions(link, req.params.slug) }).sort({ uploadedAt: -1 });
     if (!files.length) {
         res.status(404).json({ success: false, message: 'No files found' });
         return;
     }
     const folderName = link.folderName || 'files';
-    const result = yield (0, streamFilesAsZip_1.streamFilesAsZip)(res, files.map((f) => ({ originalName: f.originalName, path: f.path })), folderName);
+    const downloadId = typeof req.query.downloadId === 'string' ? req.query.downloadId : undefined;
+    const result = yield (0, streamFilesAsZip_1.streamFilesAsZip)(res, files.map((f) => ({ originalName: f.originalName, path: f.path })), folderName, downloadId);
     if (!result.success) {
         res.status(502).json({
             success: false,
@@ -472,7 +518,7 @@ router.get('/s/:slug/download-all', (0, express_async_handler_1.default)((req, r
 // the archive, which is what caused "array buffer allocation failed" on
 // folders with many or large files. This streams server-side instead.
 router.post('/download-batch', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { fileIds, zipName } = req.body;
+    const { fileIds, zipName, downloadId } = req.body;
     if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
         res.status(400).json({ success: false, message: 'fileIds array is required' });
         return;
@@ -482,7 +528,7 @@ router.post('/download-batch', auth_middileware_1.default, (0, express_async_han
         res.status(404).json({ success: false, message: 'No files found' });
         return;
     }
-    const result = yield (0, streamFilesAsZip_1.streamFilesAsZip)(res, files.map((f) => ({ originalName: f.originalName, path: f.path })), zipName || 'files');
+    const result = yield (0, streamFilesAsZip_1.streamFilesAsZip)(res, files.map((f) => ({ originalName: f.originalName, path: f.path })), zipName || 'files', downloadId);
     if (!result.success) {
         res.status(502).json({
             success: false,
@@ -674,9 +720,63 @@ router.post('/s/:slug/upload', (0, express_async_handler_1.default)(decodeShared
         data: savedFiles,
     });
 })));
+// Public file content, scoped to a valid share slug. This avoids relying on
+// private storage URLs that may only appear to work from an admin's cache.
+router.get('/s/:slug/files/:id/content', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
+    if (!link) {
+        res.status(404).json({ success: false, message: 'Link not found' });
+        return;
+    }
+    const file = yield FileUploadRepository_1.fileUploadRepository.findById(req.params.id);
+    if (!file) {
+        res.status(404).json({ success: false, message: 'File not found' });
+        return;
+    }
+    if (!fileBelongsToShareLink(file, link, req.params.slug)) {
+        res.status(403).json({ success: false, message: 'Access denied' });
+        return;
+    }
+    const download = req.query.download === 'true';
+    const disposition = download ? 'attachment' : 'inline';
+    const safeName = file.originalName.replace(/"/g, '\\"');
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    try {
+        if (file.path.includes('amazonaws.com')) {
+            const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+            const { GetObjectCommand } = require('@aws-sdk/client-s3');
+            const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
+            const urlObj = new URL(file.path);
+            const rawKey = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+            const command = new GetObjectCommand({
+                Bucket: S3_BUCKET_NAME,
+                Key: decodeURIComponent(rawKey),
+                ResponseContentDisposition: `${disposition}; filename="${safeName}"`,
+                ResponseContentType: file.mimetype || 'application/octet-stream',
+            });
+            const signedUrl = yield getSignedUrl(s3Client, command, { expiresIn: 300 });
+            res.redirect(signedUrl);
+            return;
+        }
+        const response = yield fetch(file.path);
+        if (!response.ok)
+            throw new Error('Failed to fetch file');
+        res.setHeader('Content-Disposition', `${disposition}; filename="${safeName}"`);
+        res.setHeader('Content-Type', file.mimetype || response.headers.get('content-type') || 'application/octet-stream');
+        if (!response.body)
+            throw new Error('File response has no body');
+        const { Readable } = require('stream');
+        Readable.fromWeb(response.body).pipe(res);
+    }
+    catch (err) {
+        console.error('[SharedContent] Failed to load file:', err);
+        if (!res.headersSent) {
+            res.status(502).json({ success: false, message: 'Failed to load file' });
+        }
+    }
+})));
 // 🌐 Public: Delete a file from a shared folder (slug acts as auth)
 router.delete('/s/:slug/files/:id', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d;
     const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
     if (!link) {
         res.status(404).json({ success: false, message: 'Link not found' });
@@ -688,9 +788,7 @@ router.delete('/s/:slug/files/:id', (0, express_async_handler_1.default)((req, r
         return;
     }
     // Verify file belongs to this share link
-    const belongsToLink = file.shareSlug === req.params.slug ||
-        (link.taskId && ((_a = file.taskId) === null || _a === void 0 ? void 0 : _a.toString()) === ((_b = link.taskId) === null || _b === void 0 ? void 0 : _b.toString())) ||
-        (link.orderId && ((_c = file.orderId) === null || _c === void 0 ? void 0 : _c.toString()) === ((_d = link.orderId) === null || _d === void 0 ? void 0 : _d.toString()));
+    const belongsToLink = fileBelongsToShareLink(file, link, req.params.slug);
     if (!belongsToLink) {
         res.status(403).json({ success: false, message: 'Access denied' });
         return;
@@ -710,7 +808,6 @@ router.delete('/s/:slug/files/:id', (0, express_async_handler_1.default)((req, r
 })));
 // 🌐 Public: Add/update a note on a file from a shared folder
 router.patch('/s/:slug/files/:id/note', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d;
     const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
     if (!link) {
         res.status(404).json({ success: false, message: 'Link not found' });
@@ -721,9 +818,7 @@ router.patch('/s/:slug/files/:id/note', (0, express_async_handler_1.default)((re
         res.status(404).json({ success: false, message: 'File not found' });
         return;
     }
-    const belongsToLink = file.shareSlug === req.params.slug ||
-        (link.taskId && ((_a = file.taskId) === null || _a === void 0 ? void 0 : _a.toString()) === ((_b = link.taskId) === null || _b === void 0 ? void 0 : _b.toString())) ||
-        (link.orderId && ((_c = file.orderId) === null || _c === void 0 ? void 0 : _c.toString()) === ((_d = link.orderId) === null || _d === void 0 ? void 0 : _d.toString()));
+    const belongsToLink = fileBelongsToShareLink(file, link, req.params.slug);
     if (!belongsToLink) {
         res.status(403).json({ success: false, message: 'Access denied' });
         return;

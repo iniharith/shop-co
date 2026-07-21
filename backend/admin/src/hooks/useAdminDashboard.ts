@@ -137,7 +137,7 @@ export const useCreateShareLink = () => {
     const { data: session } = useSession();
     const { mutate, mutateAsync, isPending } = useMutationData(
         ['createShareLink'],
-        (data: { folderName: string; taskId?: string; orderId?: string; userId?: string }) =>
+        (data: { folderName: string; taskId?: string; orderId?: string; userId?: string; folderId?: string }) =>
             createShareLink(session?.user?.token, data)
     );
     return { mutate, mutateAsync, isPending };

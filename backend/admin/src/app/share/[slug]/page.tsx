@@ -29,10 +29,14 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [uploadStats, setUploadStats] = useState({ current: 0, total: 0 });
+  const publicApiFetch = (url: string, init?: RequestInit) =>
+    fetch(url, { ...init, credentials: "omit" });
+  const fileContentUrl = (fileId: string, download = false) =>
+    `${BACKEND}/api/files/s/${encodeURIComponent(slug)}/files/${encodeURIComponent(fileId)}/content${download ? "?download=true" : ""}`;
 
   const fetchFiles = async () => {
     try {
-      const res = await fetch(`${BACKEND}/api/files/s/${slug}`);
+      const res = await publicApiFetch(`${BACKEND}/api/files/s/${slug}`);
       const data = await res.json();
       if (data?.success) {
         setFiles(data.data || []);
@@ -62,7 +66,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
         const file = e.target.files[i];
         
         // 1. Get presigned URL
-        const urlRes = await fetch(`${BACKEND}/api/files/s/${slug}/upload-url`, {
+        const urlRes = await publicApiFetch(`${BACKEND}/api/files/s/${slug}/upload-url`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ filename: file.name, contentType: file.type })
@@ -89,7 +93,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
         };
 
         // 3. Save metadata immediately
-        const metaRes = await fetch(`${BACKEND}/api/files/s/${slug}/save-metadata`, {
+        const metaRes = await publicApiFetch(`${BACKEND}/api/files/s/${slug}/save-metadata`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ files: [fileData] })
@@ -112,7 +116,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
     if (!confirm("Delete this file? This cannot be undone.")) return;
     setDeletingId(fileId);
     try {
-      const res = await fetch(`${BACKEND}/api/files/s/${slug}/files/${fileId}`, { method: "DELETE" });
+      const res = await publicApiFetch(`${BACKEND}/api/files/s/${slug}/files/${fileId}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Delete failed");
       toast.success("File deleted");
@@ -140,7 +144,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
     if (!note) return;
     setNoteState(prev => ({ ...prev, [fileId]: { ...prev[fileId], saving: true } }));
     try {
-      const res = await fetch(`${BACKEND}/api/files/s/${slug}/files/${fileId}/note`, {
+      const res = await publicApiFetch(`${BACKEND}/api/files/s/${slug}/files/${fileId}/note`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ notes: note.value }),
@@ -167,7 +171,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
     // the actual ZIP streams in the separate fetch below.
     const pollInterval = setInterval(async () => {
       try {
-        const progRes = await fetch(`${BACKEND}/api/files/download-progress/${downloadId}`);
+        const progRes = await publicApiFetch(`${BACKEND}/api/files/download-progress/${downloadId}`);
         if (!progRes.ok) return;
         const prog = await progRes.json();
         if (prog?.total > 0) {
@@ -185,7 +189,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
       // which crashed with "array buffer allocation failed" on folders
       // with many or large files. The backend already streams safely.
       const downloadUrl = `${BACKEND}/api/files/s/${slug}/download-all?downloadId=${downloadId}`;
-      const res = await fetch(downloadUrl);
+      const res = await publicApiFetch(downloadUrl);
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         throw new Error(data?.message || "Could not download files. Please try again.");
@@ -298,7 +302,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
                   {isImage ? (
                     <div className="h-44 relative bg-muted/50 overflow-hidden flex items-center justify-center group/thumb">
                       <img 
-                        src={file.path.startsWith('http') ? file.path : `${BACKEND}/${file.path}`} 
+                        src={fileContentUrl(file._id)}
                         alt={file.originalName} 
                         loading="lazy"
                         decoding="async"
@@ -313,7 +317,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
                         <ImageIcon className="w-10 h-10 text-muted-foreground opacity-40" />
                       </div>
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center z-20">
-                        <Button variant="secondary" size="sm" onClick={() => window.open(file.path.startsWith('http') ? file.path : `${BACKEND}/${file.path}`, "_blank")} className="gap-1 shadow-sm">
+                        <Button variant="secondary" size="sm" onClick={() => window.open(fileContentUrl(file._id), "_blank")} className="gap-1 shadow-sm">
                           <Eye className="w-4 h-4" /> View
                         </Button>
                       </div>
@@ -368,7 +372,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
                     <div className="flex gap-2 pt-1 border-t">
                       <Button
                         variant="outline" size="sm" className="flex-1 h-8 text-xs gap-1"
-                        onClick={() => window.open(`${BACKEND}/api/files/${file._id}/download`, "_blank")}
+                        onClick={() => window.open(fileContentUrl(file._id, true), "_blank")}
                       >
                         <Download className="w-3 h-3" /> Download
                       </Button>

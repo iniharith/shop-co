@@ -3,7 +3,21 @@
  * Kampungcetak ®
  */
 /** @type {import('next').NextConfig} */
+const configuredBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+const staleBackendUrls = new Set([
+    "https://admin.kampungcetak.com",
+    "https://api.studioivory.art",
+]);
+const backendUrl = configuredBackendUrl && !staleBackendUrls.has(configuredBackendUrl)
+    ? configuredBackendUrl
+    : process.env.NODE_ENV === "production"
+        ? "https://shop-co-production.up.railway.app"
+        : "http://localhost:8000";
+
 const nextConfig = {
+    env: {
+        NEXT_PUBLIC_BACKEND_URL: backendUrl,
+    },
     transpilePackages: ['@heroui/react', '@heroui/spinner', 'framer-motion', '@tanstack/react-query', 'lucide-react', 'sonner'],
     eslint: {
         ignoreDuringBuilds: true, // This will ignore all ESLint errors during build
@@ -30,7 +44,7 @@ const nextConfig = {
             fallback: [
                 {
                     source: '/api/:path*',
-                    destination: 'http://localhost:8000/api/:path*',
+                    destination: `${backendUrl}/api/:path*`,
                 },
             ],
         };

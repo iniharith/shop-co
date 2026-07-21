@@ -4,7 +4,7 @@
  */
 "use client";
 import React, { useState, useMemo } from "react";
-import { useFileIndex, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles } from "@/hooks/useAdminDashboard";
+import { useFileIndex, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles, useCreateShareLink, useFolders } from "@/hooks/useAdminDashboard";
 import { useOrders, useUpdateOrderStatus } from "@/hooks/useOrder";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
@@ -25,7 +25,6 @@ import { useSession } from "next-auth/react";
 import AxiosInstance from "@/utils/axios";
 import { uploadToS3Directly } from "@/utils/s3Upload";
 import { useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 
 const categories = [
@@ -45,22 +44,15 @@ const PACKAGING_STATUS = "PACKAGING";
 
 export default function PackagingManager() {
   const { data: session } = useSession();
-  const token = (session as any)?.accessToken;
   const searchParams = useSearchParams();
   const { data: response, isPending, refetch, isFetching } = useFileIndex();
   const { data: ordersResponse } = useOrders();
   const { data: tasksResponse } = useTasks({ statuses: ["PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED"].join(',') });
   const { mutate: updateTask } = useUpdateTask();
   const { data: usersResponse } = useUsers();
+  const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
 
-  const { data: virtualFoldersResponse } = useQuery({
-    queryKey: ["virtualFolders"],
-    queryFn: async () => {
-      const res = await AxiosInstance(token).get("/api/files/virtual-folders");
-      return res.data;
-    },
-    enabled: !!token,
-  });
+  const { data: virtualFoldersResponse } = useFolders();
   const virtualFolders = (virtualFoldersResponse as any)?.data || [];
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -700,24 +692,24 @@ export default function PackagingManager() {
                       </Button>
                       <Button 
                         variant="outline" 
+                        disabled={isGeneratingLink}
                         onClick={async (e) => {
                           e.stopPropagation();
                           try {
                             const payload = {
-                              folderName: activeGroup.folderName,
+                              folderName: activeSubFolderId
+                                ? `${activeGroup.folderName} / ${virtualFolders.find((folder: any) => folder._id === activeSubFolderId)?.name || activeGroup.folderName}`
+                                : activeGroup.folderName,
                               orderId: activeGroup.orderId,
                               taskId: activeGroup.taskId,
                               userId: activeGroup.userId,
+                              folderId: activeSubFolderId || undefined,
                             };
-                            const res = await fetch("/api/files/share-link", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify(payload),
-                            });
-                            if (!res.ok) throw new Error("Failed to create share link");
-                            const data = await res.json();
-                            const link = `${window.location.origin}/share/${data.slug}`;
-                            navigator.clipboard.writeText(link);
+                            const res = await createShareLink(payload);
+                            const slug = res?.data?.slug;
+                            if (!slug) throw new Error("Failed to create share link");
+                            const link = `${window.location.origin}/share/${slug}`;
+                            await navigator.clipboard.writeText(link);
                             toast.success("Share link copied to clipboard!");
                           } catch (err) {
                             toast.error("Error creating share link");
@@ -726,7 +718,7 @@ export default function PackagingManager() {
                         className="shadow-sm h-11 sm:h-10 border-primary/20 text-primary hover:bg-primary/10"
                         title="Copy Share Link"
                       >
-                        <Share2 className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Share</span>
+                        <Share2 className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">{isGeneratingLink ? "Generating..." : "Share"}</span>
                       </Button>
                       <Button variant="secondary" onClick={(e) => handleDownloadAll(activeGroup, e)} className="shadow-sm h-11 sm:h-10">
                         <Download className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Download</span>

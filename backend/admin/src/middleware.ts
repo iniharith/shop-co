@@ -83,7 +83,6 @@ export default withAuth(
 export const config = {
   matcher: [
     "/auth/:path*",
-    "/admin/:path*",
-    "/((?!api|share|upload|_next/static|_next/image|favicon.ico).*)"
+    "/admin/:path*"
   ]
 }

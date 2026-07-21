@@ -82,7 +82,7 @@ services:
     environment:
       PORT: 3001
       NEXTAUTH_SECRET: "JUtN0lgNz+xCtfC/uuCx+djZb7HfIUNVyJaBIpjwFnA=/admin"
-      NEXT_PUBLIC_BACKEND_URL: https://api.studioivory.art
+      NEXT_PUBLIC_BACKEND_URL: https://shop-co-production.up.railway.app
       NEXT_PUBLIC_FRONTEND_URL: https://admin.studioivory.art
     networks:
       - app-network
