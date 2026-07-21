@@ -1,144 +1,82 @@
-/**
- * Coded by Harith
- * Kampungcetak ®
- */
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useCallback, useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, Cloud, ExternalLink, File, Loader2, RefreshCw, Search, Trash2 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { format } from "date-fns";
+import { toast } from "sonner";
+import PageContainer from "@/components/layout/page-container";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Cloud, FileText, Search, RefreshCw, File } from "lucide-react";
-import { toast } from "sonner";
-import { format } from "date-fns";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-
-interface S3Object {
-  key: string;
-  size: number;
-  lastModified: string;
-  storageClass: string;
-}
-
-import { useSession } from "next-auth/react";
-import LoadingAnimation from "@/components/global/LoadingAnimation";
+interface S3Object { key: string; size: number; lastModified: string; storageClass: string; }
 
 export default function AwsMediaPage() {
   const { data: session, status } = useSession();
   const [items, setItems] = useState<S3Object[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [bucket, setBucket] = useState("");
+  const [nextToken, setNextToken] = useState<string | null>(null);
+  const [tokens, setTokens] = useState<(string | null)[]>([null]);
+  const [page, setPage] = useState(0);
+  const [deleting, setDeleting] = useState("");
 
-  const fetchMedia = async () => {
+  const request = useCallback(async (path: string, options?: RequestInit) => {
+    const response = await fetch(`${BACKEND}${path}`, { ...options, headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.user?.token}`, ...options?.headers } });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) throw Object.assign(new Error(data?.message || "AWS request failed"), { status: response.status, data });
+    return data;
+  }, [session?.user?.token]);
+
+  const fetchMedia = useCallback(async (token: string | null = tokens[page]) => {
     if (!session?.user?.token) return;
     setLoading(true);
     try {
-      const res = await fetch(`${BACKEND}/api/sysadmin/aws-media`, {
-        headers: {
-          Authorization: `Bearer ${session?.user?.token}`
-        }
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Failed to fetch AWS media");
-      if (json.success) {
-        setItems(json.data.items);
-      }
+      const params = new URLSearchParams({ limit: "100" });
+      if (token) params.set("continuationToken", token);
+      const result = await request(`/api/sysadmin/aws-media?${params}`);
+      setItems((result.data.items || []).filter((item: any) => item.key));
+      setBucket(result.data.bucket || "");
+      setNextToken(result.data.nextContinuationToken || null);
+    } catch (error: any) { toast.error(error.message); }
+    finally { setLoading(false); }
+  }, [page, request, session?.user?.token, tokens]);
+
+  useEffect(() => { if (status === "authenticated") void fetchMedia(); }, [status, page]);
+
+  const openObject = async (key: string) => {
+    try { const result = await request("/api/sysadmin/aws-media/open", { method: "POST", body: JSON.stringify({ key }) }); window.open(result.data.url, "_blank", "noopener,noreferrer"); }
+    catch (error: any) { toast.error(error.message); }
+  };
+
+  const deleteObject = async (key: string, force = false) => {
+    if (!force && !confirm(`Delete this S3 object?\n\n${key}`)) return;
+    setDeleting(key);
+    try {
+      await request(`/api/sysadmin/aws-media${force ? "?force=true" : ""}`, { method: "DELETE", body: JSON.stringify({ key }) });
+      setItems(current => current.filter(item => item.key !== key));
+      toast.success("S3 object deleted");
     } catch (error: any) {
-      toast.error(error.message || "Failed to fetch AWS media");
-    } finally {
-      setLoading(false);
-    }
+      if (error.status === 409 && confirm(`${error.message}. Delete the object and its website references anyway?`)) await deleteObject(key, true);
+      else toast.error(error.message);
+    } finally { setDeleting(""); }
   };
 
-  useEffect(() => {
-    if (status !== "loading" && session?.user?.token) {
-      fetchMedia();
-    } else if (status === "unauthenticated") {
-      setLoading(false);
-    }
-  }, [session, status]);
-
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  const goNext = () => {
+    if (!nextToken) return;
+    setTokens(current => [...current.slice(0, page + 1), nextToken]);
+    setPage(current => current + 1);
   };
+  const filtered = items.filter(item => item.key.toLowerCase().includes(search.toLowerCase()));
+  const formatBytes = (bytes: number) => bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
-  const filteredItems = items.filter(item => item.key.toLowerCase().includes(search.toLowerCase()));
-
-  return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 h-[calc(100vh-theme(spacing.16))] overflow-y-auto bg-background/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl m-4">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">AWS Media Server</h2>
-        <Button onClick={fetchMedia} variant="outline" disabled={loading}>
-          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-          Refresh
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>S3 Bucket Contents</CardTitle>
-              <div className="text-sm text-muted-foreground mt-1">
-                Viewing objects in kampungcetak-storage
-              </div>
-            </div>
-            <div className="flex items-center space-x-2 relative">
-              <Search className="w-4 h-4 absolute left-3 text-muted-foreground" />
-              <Input
-                placeholder="Search files..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 w-[250px]"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <LoadingAnimation fullScreen={false} label="Loading files" />
-          ) : (
-            <div className="rounded-md border">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50 transition-colors">
-                    <th className="h-10 px-4 text-left font-medium text-muted-foreground">File Name (Key)</th>
-                    <th className="h-10 px-4 text-left font-medium text-muted-foreground">Size</th>
-                    <th className="h-10 px-4 text-left font-medium text-muted-foreground">Last Modified</th>
-                    <th className="h-10 px-4 text-left font-medium text-muted-foreground">Class</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredItems.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="p-8 text-center text-muted-foreground">No files found</td>
-                    </tr>
-                  ) : (
-                    filteredItems.map((item, index) => (
-                      <tr key={index} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                        <td className="p-4 align-middle">
-                          <div className="flex items-center">
-                            <File className="w-4 h-4 mr-2 text-muted-foreground" />
-                            <span className="truncate max-w-[300px] sm:max-w-[500px]" title={item.key}>{item.key}</span>
-                          </div>
-                        </td>
-                        <td className="p-4 align-middle">{formatBytes(item.size)}</td>
-                        <td className="p-4 align-middle">{format(new Date(item.lastModified), 'PPpp')}</td>
-                        <td className="p-4 align-middle"><span className="text-xs bg-muted px-2 py-1 rounded-md">{item.storageClass}</span></td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+  return <PageContainer><div className="w-full space-y-6 rounded-3xl border border-white/10 bg-background/40 p-5 shadow-xl backdrop-blur-md md:p-8">
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Tools</p><h1 className="mt-1 text-3xl font-bold">AWS Media Server</h1><p className="mt-2 text-sm text-muted-foreground">Browse, open and safely remove objects from {bucket || "the configured bucket"}.</p></div><div className="flex gap-2"><div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><Input value={search} onChange={event => setSearch(event.target.value)} placeholder="Filter current page..." className="pl-9"/></div><Button variant="outline" onClick={() => fetchMedia()} disabled={loading}><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`}/></Button></div></div>
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-card/45">
+      {loading ? <div className="flex h-64 items-center justify-center"><Loader2 className="size-6 animate-spin text-primary"/></div> : <div className="divide-y divide-white/10">{filtered.length === 0 ? <div className="p-12 text-center text-muted-foreground">No objects on this page</div> : filtered.map(item => <div key={item.key} className="grid gap-3 p-4 hover:bg-muted/20 md:grid-cols-[minmax(0,1fr)_110px_180px_110px]"><div className="flex min-w-0 items-center gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><File className="size-4"/></span><span className="truncate text-sm" title={item.key}>{item.key}</span></div><span className="self-center text-xs text-muted-foreground">{formatBytes(item.size || 0)}</span><span className="self-center text-xs text-muted-foreground">{item.lastModified ? format(new Date(item.lastModified), "dd MMM yy, HH:mm") : "Unknown"}</span><div className="flex justify-end gap-2"><Button size="sm" variant="outline" onClick={() => openObject(item.key)}><ExternalLink className="size-3.5"/></Button><Button size="sm" variant="outline" className="text-destructive" disabled={deleting === item.key} onClick={() => deleteObject(item.key)}>{deleting === item.key ? <Loader2 className="size-3.5 animate-spin"/> : <Trash2 className="size-3.5"/>}</Button></div></div>)}</div>}
     </div>
-  );
+    <div className="flex items-center justify-between"><span className="text-xs text-muted-foreground">Page {page + 1}, up to 100 objects per page</span><div className="flex gap-2"><Button variant="outline" disabled={page === 0 || loading} onClick={() => setPage(current => current - 1)}><ChevronLeft className="mr-1 size-4"/>Previous</Button><Button variant="outline" disabled={!nextToken || loading} onClick={goNext}>Next<ChevronRight className="ml-1 size-4"/></Button></div></div>
+  </div></PageContainer>;
 }

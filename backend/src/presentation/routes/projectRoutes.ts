@@ -7,7 +7,9 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Router, Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import mongoose from 'mongoose';
+import { createHash, randomBytes } from 'crypto';
 import { Project } from '../../domain/entities/Project';
+import { ProjectShare } from '../../domain/entities/ProjectShare';
 import { s3Client, S3_BUCKET_NAME } from '../../infrastructure/config/s3';
 import authMiddilware, { authorizeRoles } from '../middlewares/auth.middileware';
 
@@ -27,6 +29,48 @@ const withSignedFileUrls = async (project: any) => {
   })));
   return data;
 };
+
+const hashShareToken = (token: string) => createHash('sha256').update(token).digest('hex');
+
+router.get(
+  '/shared/:token',
+  asyncHandler(async (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const share = await ProjectShare.findOne({
+      tokenHash: hashShareToken(req.params.token),
+      revokedAt: null,
+      expiresAt: { $gt: new Date() },
+    });
+    if (!share) {
+      res.status(404).json({ success: false, message: 'Project share link not found or expired' });
+      return;
+    }
+    const project = await Project.findById(share.projectId);
+    if (!project) {
+      res.status(404).json({ success: false, message: 'Project not found' });
+      return;
+    }
+    share.lastAccessedAt = new Date();
+    await share.save();
+    const data = await withSignedFileUrls(project);
+    res.json({
+      success: true,
+      data: {
+        title: data.title,
+        description: data.description,
+        updatedAt: data.updatedAt,
+        files: data.files.map((file: any) => ({
+          _id: file._id,
+          originalName: file.originalName,
+          mimetype: file.mimetype,
+          size: file.size,
+          uploadedAt: file.uploadedAt,
+          previewUrl: file.previewUrl,
+        })),
+      },
+    });
+  })
+);
 
 router.use(authMiddilware, authorizeRoles('sysadmin', 'admin', 'boss', 'designer'));
 
@@ -94,6 +138,25 @@ router.patch(
       return;
     }
     res.json({ success: true, data: await withSignedFileUrls(project) });
+  })
+);
+
+router.post(
+  '/:id/share',
+  asyncHandler(async (req: Request, res: Response) => {
+    if (!await Project.exists({ _id: req.params.id })) {
+      res.status(404).json({ success: false, message: 'Project not found' });
+      return;
+    }
+    const token = randomBytes(32).toString('base64url');
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await ProjectShare.create({
+      projectId: req.params.id,
+      tokenHash: hashShareToken(token),
+      createdBy: (req as any).userId,
+      expiresAt,
+    });
+    res.status(201).json({ success: true, data: { token, expiresAt } });
   })
 );
 

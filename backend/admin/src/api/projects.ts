@@ -83,3 +83,8 @@ export const deleteProjectFile = async (token: string, projectId: string, fileId
   const response = await AxiosInstance(token).delete(`/api/projects/${projectId}/files/${fileId}`);
   return response.data;
 };
+
+export const createProjectShare = async (token: string, projectId: string) => {
+  const response = await AxiosInstance(token).post(`/api/projects/${projectId}/share`);
+  return response.data;
+};

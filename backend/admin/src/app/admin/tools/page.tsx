@@ -2,10 +2,17 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Activity, ArrowUpRight, Bot, ChartNoAxesCombined, Cloud, Sparkles } from "lucide-react";
+import { Activity, ArrowUpRight, Bot, ChartNoAxesCombined, ClipboardList, Cloud, Sparkles } from "lucide-react";
 import PageContainer from "@/components/layout/page-container";
 
 const tools = [
+  {
+    title: "Website Logs",
+    description: "Track successful changes, uploads, deletions and status updates.",
+    href: "/admin/tools/audit-log",
+    icon: ClipboardList,
+    tone: "from-rose-500/20 to-orange-500/5 text-rose-400",
+  },
   {
     title: "Staff Reports",
     description: "Sales, orders, storage and operational summaries.",
@@ -70,7 +77,7 @@ export default function ToolsPage() {
               >
                 <div className={`absolute inset-0 bg-gradient-to-br opacity-80 ${tool.tone.split(" text-")[0]}`} />
                 <div className="relative flex h-full flex-col">
-                  <div className={`flex size-12 items-center justify-center rounded-2xl bg-background/70 shadow-sm ${tool.tone.split(" ").at(-1)}`}>
+                  <div className={`flex size-12 items-center justify-center rounded-2xl bg-background/70 shadow-sm ${tool.tone.split(" ").slice(-1)[0]}`}>
                     <Icon className="size-5" />
                   </div>
                   <div className="mt-auto pt-10">

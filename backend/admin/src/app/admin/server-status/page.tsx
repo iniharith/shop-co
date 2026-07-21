@@ -1,546 +1,79 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Loader2, Activity, Database, Server, Archive, Globe, Train, Cloud, CheckCircle2, XCircle, Clock } from "lucide-react";
-import { toast } from "sonner";
-import { format, formatDistanceToNow } from "date-fns";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { Activity, Cloud, Database, ExternalLink, HardDrive, Loader2, MemoryStick, RefreshCw, Server, Timer, Wifi } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { LineChart, Line, BarChart, Bar, AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import LoadingAnimation from "@/components/global/LoadingAnimation";
+import { formatDistanceToNow } from "date-fns";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import PageContainer from "@/components/layout/page-container";
+import { Button } from "@/components/ui/button";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const formatBytes = (bytes = 0) => bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : bytes < 1024 ** 3 ? `${(bytes / 1024 ** 2).toFixed(1)} MB` : `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+const formatUptime = (seconds = 0) => `${Math.floor(seconds / 86400)}d ${Math.floor((seconds % 86400) / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
 
-export default function ServerHealthPage() {
-  const { data: session } = useSession();
-  const [data, setData] = useState<any | null>(null);
+export default function ServerStatusPage() {
+  const { data: session, status } = useSession();
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Deployments state
-  const [deploymentsModalOpen, setDeploymentsModalOpen] = useState(false);
-  const [deployments, setDeployments] = useState<any[]>([]);
-  const [loadingDeployments, setLoadingDeployments] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+  const [lastSuccess, setLastSuccess] = useState<Date | null>(null);
 
-  const fetchDeployments = async () => {
-    const token = (session?.user as any)?.token || (typeof window !== 'undefined' && localStorage.getItem('token')) || "";
+  const fetchHealth = useCallback(async (initial = false) => {
+    const token = session?.user?.token;
     if (!token) return;
-    
-    setDeploymentsModalOpen(true);
-    setLoadingDeployments(true);
+    initial ? setLoading(true) : setRefreshing(true);
     try {
-      const res = await fetch(`${BACKEND}/api/sysadmin/deployments`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-        credentials: "include",
-      });
-      const json = await res.json();
-      if (json.success) setDeployments(json.data);
-      else throw new Error("Failed");
-    } catch(e) {
-      toast.error("Failed to load deployment history");
-    } finally {
-      setLoadingDeployments(false);
-    }
-  };
-
-  const [logsModalOpen, setLogsModalOpen] = useState(false);
-  const [serverLogs, setServerLogs] = useState<string>("");
-  const [loadingLogs, setLoadingLogs] = useState(false);
-
-  const fetchLogs = async () => {
-    const token = (session?.user as any)?.token || (typeof window !== 'undefined' && localStorage.getItem('token')) || "";
-    if (!token) return;
-    
-    setLogsModalOpen(true);
-    setLoadingLogs(true);
-    try {
-      const res = await fetch(`${BACKEND}/api/sysadmin/logs`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-        credentials: "include",
-      });
-      const json = await res.json();
-      if (json.success) setServerLogs(json.data);
-      else throw new Error("Failed");
-    } catch(e) {
-      toast.error("Failed to load server logs");
-    } finally {
-      setLoadingLogs(false);
-    }
-  };
-
-  const fetchHealth = React.useCallback(async () => {
-    const token = (session?.user as any)?.token || (typeof window !== 'undefined' && localStorage.getItem('token')) || "";
-    if (!token) return;
-
-    setLoading(true);
-    try {
-      const res = await fetch(`${BACKEND}/api/sysadmin/health`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: "include",
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Failed to fetch health data");
-      if (json.success) {
-        setData(json.data);
-      }
-    } catch (error: any) {
-      toast.error(error.message || "Failed to fetch server health");
-    } finally {
-      setLoading(false);
-    }
-  }, [session]);
+      const response = await fetch(`${BACKEND}/api/sysadmin/health`, { headers: { Authorization: `Bearer ${token}` } });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success) throw new Error(result?.message || "Health service unavailable");
+      setData(result.data);
+      setLastSuccess(new Date(result.data.timestamp || Date.now()));
+      setError("");
+    } catch (err: any) { setError(err.message || "Health service unavailable"); }
+    finally { setLoading(false); setRefreshing(false); }
+  }, [session?.user?.token]);
 
   useEffect(() => {
-    const token = (session?.user as any)?.token || (typeof window !== 'undefined' && localStorage.getItem('token')) || "";
-    if (!token) return;
+    if (status !== "authenticated") return;
+    void fetchHealth(true);
+    let timeout: ReturnType<typeof setTimeout>;
+    const schedule = () => { timeout = setTimeout(async () => { if (!document.hidden) await fetchHealth(); schedule(); }, 30000); };
+    schedule();
+    return () => clearTimeout(timeout);
+  }, [status, fetchHealth]);
 
-    fetchHealth();
-    // Auto refresh every 5 seconds to show bandwidth changes
-    const interval = setInterval(fetchHealth, 5000);
-    return () => clearInterval(interval);
-  }, [fetchHealth, session]);
+  if (loading && !data) return <div className="flex h-full items-center justify-center"><Loader2 className="size-7 animate-spin text-primary" /></div>;
+  if (!data) return <div className="flex h-full flex-col items-center justify-center gap-4 text-muted-foreground"><p>{error || "No health data available"}</p><Button onClick={() => fetchHealth(true)}>Try Again</Button></div>;
 
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0 || !bytes) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB", "TB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
+  const memoryPercent = data.server.totalMem ? Math.round(data.server.usedMem / data.server.totalMem * 100) : 0;
+  const diskPercent = data.server.diskTotal ? Math.round((data.server.diskTotal - data.server.diskFree) / data.server.diskTotal * 100) : 0;
+  const bandwidth = data.charts?.bandwidth || [];
+  const latestBandwidth = bandwidth[bandwidth.length - 1];
+  const progression = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(); date.setDate(date.getDate() - (6 - index));
+    const key = date.toISOString().slice(0, 10);
+    return { date: key, count: data.charts?.progression?.find((entry: any) => entry._id === key)?.count || 0 };
+  });
 
-  const formatUptime = (seconds: number) => {
-    if (!seconds) return "0m";
-    const d = Math.floor(seconds / (3600 * 24));
-    const h = Math.floor((seconds % (3600 * 24)) / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    return `${d}d ${h}h ${m}m`;
-  };
-
-  if (loading && !data) {
-    return <LoadingAnimation fullScreen={false} label="Loading server status" />;
-  }
-
-  if (!data) return null;
-
-  return (
-    <div className="min-h-screen bg-transparent text-white p-4 md:p-8 font-sans h-[calc(100vh-theme(spacing.16))] overflow-y-auto">
-      {/* Header matching the image */}
-      <div className="flex flex-wrap items-center justify-between mb-8 gap-4">
-        <div className="flex flex-wrap items-center space-x-2 md:space-x-6">
-          <div className="flex items-center text-white font-bold text-xl mr-4">
-            <Activity className="w-6 h-6 mr-2" />
-          </div>
-          <div className="flex flex-wrap gap-2 md:space-x-4 text-xs md:text-sm font-medium text-gray-500">
-            <span className="text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-full flex items-center">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-2"></div>Overview
-            </span>
-            <span className="hover:text-white transition-colors cursor-pointer px-3 py-1.5">Notes</span>
-            <span className="hover:text-white transition-colors cursor-pointer px-3 py-1.5">Document</span>
-            <span className="hover:text-white transition-colors cursor-pointer px-3 py-1.5">Labs</span>
-            <span className="hover:text-white transition-colors cursor-pointer px-3 py-1.5">Settings</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex justify-between items-end mb-2">
-            <h1 className="text-3xl font-semibold tracking-tight">Your Server Health Snapshot</h1>
-            <div className="text-right text-gray-500 text-xs hidden sm:block">
-              <div className="mb-1">{format(new Date(), 'EEEE, dd MMMM yyyy')}</div>
-              <div>{format(new Date(), 'hh:mm a')}</div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Progression Chart */}
-            <div className="md:col-span-2 bg-card/40 backdrop-blur-md p-6 rounded-[28px] border border-white/10">
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center font-medium">
-                  <div className="w-6 h-6 bg-blue-500 rounded-md flex items-center justify-center mr-3 text-white">
-                    <Activity size={14} />
-                  </div>
-                  Task Progression
-                </div>
-                <div className="text-xs bg-[#242731] text-gray-400 px-3 py-1.5 rounded-lg border border-gray-800">
-                  Last 7 Days
-                </div>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-6">
-                <div className="min-w-[120px]">
-                  <div className="text-gray-500 text-xs font-medium mb-1">Avg tasks/day</div>
-                  <div className="text-4xl font-semibold mb-6 tracking-tight">
-                    {((data.charts?.progression || []).reduce((acc: number, curr: any) => acc + curr.count, 0) / Math.max(1, (data.charts?.progression || []).length)).toFixed(1)}
-                  </div>
-                  <div className="text-blue-400 text-xs font-medium mb-1 flex items-center">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-1.5"></div>
-                    Completed
-                  </div>
-                  <div className="text-2xl font-semibold">{data.application?.taskTotal || 0}</div>
-                </div>
-                <div className="flex-1 h-[140px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data.charts?.progression || []}>
-                      <Tooltip 
-                        cursor={{fill: '#242731'}} 
-                        contentStyle={{backgroundColor: '#171923', border: '1px solid #374151', borderRadius: '12px', color: '#fff'}} 
-                        itemStyle={{color: '#fff'}}
-                      />
-                      <Bar dataKey="count" fill="#4B5563" radius={[6,6,6,6]} activeBar={{ fill: '#3B82F6' }} barSize={30} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-
-            {/* RAM Usage */}
-            <div className="bg-green-500/10 backdrop-blur-md text-green-400 p-6 rounded-[28px] flex flex-col justify-between relative overflow-hidden border border-green-500/20">
-              <div className="font-semibold text-sm z-10 opacity-90">RAM usage level</div>
-              <div className="text-6xl font-bold z-10 text-right tracking-tighter mt-4">
-                {((data.server.usedMem / data.server.totalMem) * 100).toFixed(0)}<span className="text-2xl font-semibold ml-1 opacity-80">%</span>
-              </div>
-              <div className="text-xs mt-6 z-10 font-medium opacity-80">
-                {formatBytes(data.server.usedMem)} used
-              </div>
-              
-              {/* Decorative Arc Graphic */}
-              <svg className="absolute bottom-[-20%] left-[-15%] w-[130%] opacity-20 pointer-events-none" viewBox="0 0 100 50">
-                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="currentColor" strokeWidth="12" strokeDasharray="4,6" strokeLinecap="round" />
-              </svg>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Disk Usage */}
-            <div className="bg-card/40 backdrop-blur-md text-white p-6 rounded-[28px] border border-white/10">
-              <div className="text-sm font-semibold text-gray-500 mb-4">Disk capacity</div>
-              <div className="flex justify-between items-end mb-6">
-                <div className="text-4xl font-bold tracking-tight">
-                  {(data.server.diskTotal || 0) > 0 ? ((1 - ((data.server.diskFree || 0) / (data.server.diskTotal || 1))) * 100).toFixed(0) : 0}
-                  <span className="text-xl font-semibold text-gray-400 ml-1">%</span>
-                </div>
-              </div>
-              <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
-                <div 
-                  className="bg-black h-full rounded-full" 
-                  style={{ width: `${(data.server.diskTotal || 0) > 0 ? ((1 - ((data.server.diskFree || 0) / (data.server.diskTotal || 1))) * 100) : 0}%` }}
-                ></div>
-              </div>
-              <div className="flex justify-between mt-3 text-xs text-gray-500 font-medium">
-                <span>{formatBytes((data.server.diskTotal || 0) - (data.server.diskFree || 0))} used</span>
-                <span>{formatBytes(data.server.diskTotal || 0)} total</span>
-              </div>
-            </div>
-
-            {/* CPU Usage */}
-            <div className="bg-card/40 backdrop-blur-md p-6 rounded-[28px] border border-white/10 flex flex-col justify-between">
-              <div className="text-sm text-gray-400 font-medium">CPU Load</div>
-              <div className="flex items-end justify-between mt-2">
-                <div className="h-[60px] w-full mr-2">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={[
-                      {v: data.server.cpuLoad?.[2] || 0}, 
-                      {v: data.server.cpuLoad?.[1] || 0}, 
-                      {v: data.server.cpuLoad?.[0] || 0}
-                    ]}>
-                      <Area type="monotone" dataKey="v" stroke="#3b82f6" strokeWidth={3} fill="#3b82f6" fillOpacity={0.1} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="text-4xl font-bold text-white tracking-tight leading-none mb-1">
-                  {(data.server.cpuLoad?.[0] || 0).toFixed(1)}
-                  <span className="text-[10px] text-gray-500 ml-1 uppercase font-semibold">Avg</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Bandwidth */}
-            <div className="bg-card/40 backdrop-blur-md p-6 rounded-[28px] border border-white/10 flex flex-col justify-between">
-              <div className="text-sm text-gray-400 font-medium">Data transfer</div>
-              <div className="flex justify-between items-end mt-2">
-                <div className="text-3xl font-bold text-white tracking-tight leading-none mb-1">
-                  {formatBytes(data.charts?.bandwidth?.[(data.charts?.bandwidth?.length || 1) - 1]?.bytesOut || 0)}
-                  <span className="text-[10px] text-gray-500 ml-1 uppercase font-semibold">/s</span>
-                </div>
-              </div>
-              <div className="h-[40px] w-full mt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={(data.charts?.bandwidth || []).slice(-15)}>
-                    <Line type="stepAfter" dataKey="bytesOut" stroke="#ef4444" strokeWidth={3} dot={{ r: 4, fill: '#ef4444', strokeWidth: 0 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-
-          {/* External Services & Infrastructure Footer */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Vercel Status */}
-            {/* Vercel Status */}
-            <div onClick={fetchDeployments} className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between items-start h-[130px] group hover:border-white/20 transition-all cursor-pointer hover:bg-card/60">
-              <div className="flex items-center space-x-3 w-full">
-                <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center shrink-0">
-                  <Globe size={18} />
-                </div>
-                <div className="overflow-hidden">
-                  <div className="text-white font-semibold truncate group-hover:text-blue-400 transition-colors">Vercel (Frontend)</div>
-                  <div className="text-xs text-gray-500 truncate">kampungcetak.com</div>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center justify-between w-full">
-                <div className={`text-xs font-bold px-3 py-1.5 rounded-full flex items-center ${data.external?.vercel?.readyState === 'READY' ? 'bg-green-500/10 text-green-400' : data.external?.vercel?.readyState ? 'bg-yellow-500/10 text-yellow-400' : 'bg-gray-500/10 text-gray-400'}`}>
-                  <div className={`w-1.5 h-1.5 rounded-full mr-2 ${data.external?.vercel?.readyState === 'READY' ? 'bg-green-400' : 'bg-gray-400'}`}></div>
-                  {data.external?.vercel?.readyState || 'UNKNOWN'}
-                </div>
-                <div className="text-xs text-gray-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">View history</div>
-              </div>
-            </div>
-            
-            {/* Railway Status */}
-            <div onClick={fetchDeployments} className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between items-start h-[130px] group hover:border-white/20 transition-all cursor-pointer hover:bg-card/60">
-              <div className="flex items-center space-x-3 w-full">
-                <div className="w-10 h-10 rounded-full bg-[#13111C] border border-white/10 text-white flex items-center justify-center shrink-0">
-                  <Train size={18} />
-                </div>
-                <div className="overflow-hidden">
-                  <div className="text-white font-semibold truncate group-hover:text-purple-400 transition-colors">Railway (Backend)</div>
-                  <div className="text-xs text-gray-500 truncate">{data.external?.railway?.environment || 'Production'}</div>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center justify-between w-full">
-                <div className={`text-xs font-bold px-3 py-1.5 rounded-full flex items-center ${data.external?.railway?.status === 'ACTIVE' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                  <div className={`w-1.5 h-1.5 rounded-full mr-2 ${data.external?.railway?.status === 'ACTIVE' ? 'bg-green-400' : 'bg-red-400'}`}></div>
-                  {data.external?.railway?.status || 'UNKNOWN'}
-                </div>
-                <div className="text-xs text-gray-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">View history</div>
-              </div>
-            </div>
-
-            {/* AWS Server Status */}
-            <div className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between items-start h-[130px] group hover:border-white/20 transition-all">
-              <div className="flex items-center space-x-3 w-full">
-                <div className="w-10 h-10 rounded-full bg-[#FF9900]/10 text-[#FF9900] flex items-center justify-center shrink-0">
-                  <Cloud size={18} />
-                </div>
-                <div className="overflow-hidden">
-                  <div className="text-white font-semibold truncate">AWS S3 Server</div>
-                  <div className="text-xs text-gray-500 truncate">kampungcetak-storage</div>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center justify-between w-full">
-                <div className={`text-xs font-bold px-3 py-1.5 rounded-full flex items-center ${data.external?.aws === 'ONLINE' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                  <div className={`w-1.5 h-1.5 rounded-full mr-2 ${data.external?.aws === 'ONLINE' ? 'bg-green-400' : 'bg-red-400'}`}></div>
-                  {data.external?.aws || 'UNKNOWN'}
-                </div>
-              </div>
-            </div>
-
-            {/* MongoDB Status */}
-            <div className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between items-start h-[130px] group hover:border-white/20 transition-all">
-              <div className="flex items-center space-x-3 w-full">
-                <div className="w-10 h-10 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center shrink-0">
-                  <Database size={18} />
-                </div>
-                <div className="overflow-hidden">
-                  <div className="text-white font-semibold truncate">MongoDB Atlas</div>
-                  <div className="text-xs text-gray-500 truncate">{data.database?.detailed?.connections?.current || 0} active conn</div>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center justify-between w-full">
-                <div className={`text-xs font-bold px-3 py-1.5 rounded-full flex items-center ${data.database?.status === 'Connected' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                  <div className={`w-1.5 h-1.5 rounded-full mr-2 ${data.database?.status === 'Connected' ? 'bg-green-400' : 'bg-red-400'}`}></div>
-                  {data.database?.status || 'Unknown'}
-                </div>
-              </div>
-            </div>
-
-            {/* Server Error Logs */}
-            <div onClick={fetchLogs} className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between items-start h-[130px] group hover:border-white/20 transition-all cursor-pointer hover:bg-card/60">
-              <div className="flex items-center space-x-3 w-full">
-                <div className="w-10 h-10 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
-                  <Archive size={18} />
-                </div>
-                <div className="overflow-hidden">
-                  <div className="text-white font-semibold truncate group-hover:text-red-400 transition-colors">Server Error Logs</div>
-                  <div className="text-xs text-gray-500 truncate">error.log</div>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center justify-between w-full">
-                <div className="text-xs font-bold px-3 py-1.5 rounded-full flex items-center bg-red-500/10 text-red-400">
-                  <div className="w-1.5 h-1.5 rounded-full mr-2 bg-red-400"></div>
-                  View Logs
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Sidebar - Analytics */}
-        <div className="bg-card/40 backdrop-blur-md rounded-[32px] p-8 border border-white/10 flex flex-col">
-          <h2 className="text-xl font-bold mb-8">System Analytics & Files</h2>
-          
-          <div className="bg-background/40 backdrop-blur-sm rounded-3xl p-6 mb-8 relative overflow-hidden border border-white/5">
-            <div className="text-gray-400 text-sm mb-2 text-center font-medium relative z-10">Total Artwork Files</div>
-            <div className="text-6xl font-bold text-center text-white my-6 tracking-tighter relative z-10">
-              {data.application?.artworkTotal || 0}
-            </div>
-            <div className="flex justify-center mt-2 relative z-10">
-              <span className="bg-[#064e3b] text-[#4ade80] px-4 py-1.5 rounded-full text-xs font-bold flex items-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#4ade80] mr-2"></div> Available
-              </span>
-            </div>
-            
-            {/* Background pattern */}
-            <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-               <div className="grid grid-cols-6 grid-rows-6 h-full w-full gap-2 p-2">
-                 {Array.from({length: 36}).map((_, i) => (
-                   <div key={i} className="w-full h-full bg-gray-500 rounded-full"></div>
-                 ))}
-               </div>
-            </div>
-          </div>
-
-          <div className="space-y-3 flex-1">
-            <div className="flex items-center justify-between p-4 rounded-2xl hover:bg-[#1E212B] transition-colors group">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-black">
-                  <Archive size={20} />
-                </div>
-                <div>
-                  <div className="font-semibold text-white group-hover:text-blue-400 transition-colors">Storage Used</div>
-                  <div className="text-xs text-gray-500 font-medium">Uploaded volume</div>
-                </div>
-              </div>
-              <div className="font-bold text-white">{formatBytes(data.application?.storageUsed || 0)}</div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 rounded-2xl hover:bg-[#1E212B] transition-colors group">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-full bg-[#2A2E39] flex items-center justify-center text-white">
-                  <Server size={20} />
-                </div>
-                <div>
-                  <div className="font-semibold text-white group-hover:text-blue-400 transition-colors">Server Space</div>
-                  <div className="text-xs text-gray-500 font-medium">Physical capacity</div>
-                </div>
-              </div>
-              <div className="font-bold text-white">{formatBytes(data.server.diskTotal || 0)}</div>
-            </div>
-          </div>
-
-          <button 
-            className="w-full bg-[#3B82F6] hover:bg-[#2563EB] text-white font-bold py-4 rounded-2xl mt-8 transition-colors shadow-lg shadow-blue-500/20"
-            onClick={fetchHealth}
-          >
-            Force Refresh Analytics
-          </button>
-        </div>
-      </div>
-
-      <Dialog open={deploymentsModalOpen} onOpenChange={setDeploymentsModalOpen}>
-        <DialogContent className="max-w-4xl bg-[#111] text-white border-white/10 rounded-2xl h-[80vh] flex flex-col p-0 overflow-hidden">
-          <DialogHeader className="p-6 border-b border-white/10 pb-4 bg-[#111] shrink-0">
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
-              <Globe className="w-5 h-5 text-blue-400" />
-              Deployment History
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-0 bg-[#0a0a0a]">
-            {loadingDeployments ? (
-              <div className="h-full flex items-center justify-center">
-                <LoadingAnimation fullScreen={false} label="" scale={0.5} />
-              </div>
-            ) : (
-              <div className="w-full">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-gray-400 uppercase bg-[#161616] sticky top-0 border-b border-white/5 z-10">
-                    <tr>
-                      <th className="px-6 py-4 font-semibold">Deployment</th>
-                      <th className="px-6 py-4 font-semibold">Status</th>
-                      <th className="px-6 py-4 font-semibold">Environment</th>
-                      <th className="px-6 py-4 font-semibold text-right">Age</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {deployments.map((dep, i) => (
-                      <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="font-medium text-white mb-1 line-clamp-1 flex items-center gap-2">
-                            {dep.service.includes('Vercel') ? <Globe className="w-3.5 h-3.5 text-blue-400" /> : <Train className="w-3.5 h-3.5 text-purple-400" />}
-                            {dep.commitMessage}
-                          </div>
-                          <div className="text-xs text-gray-500 flex items-center gap-2">
-                            <span className="bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded border border-gray-700">{dep.branch}</span>
-                            {dep.url && (
-                              <a href={dep.url} target="_blank" rel="noreferrer" className="hover:text-blue-400 truncate max-w-[200px]">
-                                {dep.url.replace('https://', '')}
-                              </a>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className={`flex items-center gap-2 font-medium px-2.5 py-1 rounded-full w-fit ${
-                            ['READY', 'SUCCESS'].includes(dep.status) ? 'bg-emerald-500/10 text-emerald-400' :
-                            ['ERROR', 'FAILED'].includes(dep.status) ? 'bg-red-500/10 text-red-400' :
-                            'bg-yellow-500/10 text-yellow-400'
-                          }`}>
-                            {['READY', 'SUCCESS'].includes(dep.status) ? <CheckCircle2 className="w-3.5 h-3.5" /> : 
-                             ['ERROR', 'FAILED'].includes(dep.status) ? <XCircle className="w-3.5 h-3.5" /> : 
-                             <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                            {dep.status}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-gray-300 font-medium capitalize flex items-center gap-1.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                            {dep.environment}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="text-gray-400 flex items-center justify-end gap-1.5">
-                            <Clock className="w-3 h-3" />
-                            {formatDistanceToNow(new Date(dep.createdAt))} ago
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {deployments.length === 0 && !loadingDeployments && (
-                      <tr>
-                        <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
-                          No deployment history available.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={logsModalOpen} onOpenChange={setLogsModalOpen}>
-        <DialogContent className="max-w-4xl bg-[#111] text-white border-white/10 rounded-2xl h-[80vh] flex flex-col p-0 overflow-hidden">
-          <DialogHeader className="p-6 border-b border-white/10 pb-4 bg-[#111] shrink-0">
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
-              <Archive className="w-5 h-5 text-red-400" />
-              Server Error Logs
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto p-4 bg-[#0a0a0a]">
-            {loadingLogs ? (
-              <div className="h-full flex items-center justify-center">
-                <LoadingAnimation fullScreen={false} label="" scale={0.5} />
-              </div>
-            ) : (
-              <pre className="text-xs text-green-400 font-mono whitespace-pre-wrap break-words">
-                {serverLogs || "No logs available."}
-              </pre>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+  return <PageContainer><div className="w-full space-y-6 rounded-3xl border border-white/10 bg-background/40 p-5 shadow-xl backdrop-blur-md md:p-8">
+    <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Infrastructure</p><h1 className="mt-1 text-3xl font-bold">Server Status</h1><p className="mt-2 text-sm text-muted-foreground">Application, container and integration telemetry with 30-second refresh.</p></div><div className="flex items-center gap-3"><span className="text-xs text-muted-foreground">{lastSuccess ? `Updated ${formatDistanceToNow(lastSuccess, { addSuffix: true })}` : "Never updated"}</span><Button variant="outline" onClick={() => fetchHealth()} disabled={refreshing}>{refreshing ? <Loader2 className="mr-2 size-4 animate-spin"/> : <RefreshCw className="mr-2 size-4"/>}Refresh</Button></div></div>
+    {error && <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-400">Showing last successful data. Refresh failed: {error}</div>}
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <Metric icon={MemoryStick} title="Container memory" value={`${memoryPercent}%`} detail={`${formatBytes(data.server.usedMem)} of ${formatBytes(data.server.totalMem)}`} tone="text-emerald-400 bg-emerald-500/10" />
+      <Metric icon={Activity} title="System load (1 min)" value={Number(data.server.cpuLoad?.[0] || 0).toFixed(2)} detail={`${data.server.cpuLoad?.length || 0} load averages reported`} tone="text-blue-400 bg-blue-500/10" />
+      <Metric icon={HardDrive} title="Ephemeral disk" value={`${diskPercent}%`} detail={`${formatBytes(data.server.diskFree)} free`} tone="text-amber-400 bg-amber-500/10" />
+      <Metric icon={Timer} title="Container uptime" value={formatUptime(data.server.uptime)} detail="Resets when the service restarts" tone="text-violet-400 bg-violet-500/10" />
     </div>
-  );
+    <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
+      <section className="rounded-[26px] border border-white/10 bg-card/50 p-5 md:p-6"><div className="mb-5"><h2 className="font-semibold">Tasks created in the last 7 days</h2><p className="text-xs text-muted-foreground">Creation volume, not task completion.</p></div><div className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={progression}><CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.15}/><XAxis dataKey="date" tickFormatter={value => value.slice(5)} fontSize={11}/><YAxis allowDecimals={false} fontSize={11}/><Tooltip contentStyle={{ borderRadius: 12, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}/><Bar dataKey="count" fill="hsl(var(--primary))" radius={[6,6,0,0]}/></BarChart></ResponsiveContainer></div></section>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1"><Metric icon={Server} title="Application records" value={`${data.application.taskTotal} tasks`} detail={`${data.application.artworkTotal} artwork records`} tone="text-primary bg-primary/10"/><Metric icon={Wifi} title="Backend HTTP traffic" value={`${formatBytes(latestBandwidth?.bytesOut || 0)} / 5s`} detail={`${formatBytes(latestBandwidth?.bytesIn || 0)} received in sample window`} tone="text-cyan-400 bg-cyan-500/10"/><Metric icon={Cloud} title="Tracked file metadata" value={formatBytes(data.application.storageUsed)} detail="Database total; not full S3 bucket usage" tone="text-orange-400 bg-orange-500/10"/></section>
+    </div>
+    <section><h2 className="mb-4 text-lg font-semibold">Integrations</h2><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatusCard icon={Database} title="MongoDB" status={data.database.status} healthy={data.database.status === "Connected"}/><StatusCard icon={Cloud} title="AWS S3 access" status={data.external.aws} healthy={data.external.aws === "ONLINE"} href="/admin/aws-media"/><StatusCard icon={ExternalLink} title="Latest Vercel deployment" status={data.external.vercel.readyState || "UNCONFIGURED"} healthy={data.external.vercel.readyState === "READY"}/><StatusCard icon={Server} title="Railway API token" status={data.external.railway.status || "UNCONFIGURED"} healthy={data.external.railway.status === "ACTIVE"}/></div></section>
+  </div></PageContainer>;
 }
+
+function Metric({ icon: Icon, title, value, detail, tone }: any) { return <div className="rounded-[24px] border border-white/10 bg-card/50 p-5"><div className={`flex size-10 items-center justify-center rounded-xl ${tone}`}><Icon className="size-5"/></div><p className="mt-5 text-xs font-medium text-muted-foreground">{title}</p><p className="mt-1 text-2xl font-bold">{value}</p><p className="mt-2 text-xs text-muted-foreground">{detail}</p></div>; }
+function StatusCard({ icon: Icon, title, status, healthy, href }: any) { const content = <div className="rounded-[22px] border border-white/10 bg-card/50 p-5 transition hover:border-primary/30"><div className="flex items-center justify-between"><Icon className="size-5 text-muted-foreground"/><span className={`size-2.5 rounded-full ${healthy ? "bg-emerald-400" : "bg-amber-400"}`}/></div><p className="mt-5 text-sm font-semibold">{title}</p><p className="mt-1 text-xs text-muted-foreground">{status}</p></div>; return href ? <Link href={href}>{content}</Link> : content; }

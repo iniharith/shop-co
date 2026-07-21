@@ -20,29 +20,34 @@ export default function ReportsPage() {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [reportData, setReportData] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadedUserId, setLoadedUserId] = useState("");
 
   const users = Array.isArray(usersResponse?.users) ? usersResponse.users : [];
 
-  const fetchReport = React.useCallback(async (userId: string) => {
+  const fetchReport = React.useCallback(async (userId: string, signal?: AbortSignal) => {
     if (!userId) return;
     const token = (session?.user as any)?.token || (typeof window !== 'undefined' && localStorage.getItem('token')) || "";
     if (!token) return;
 
     setLoading(true);
+    setReportData(null);
+    setLoadedUserId("");
     try {
       const res = await fetch(`${BACKEND}/api/sysadmin/reports?userId=${userId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         },
         credentials: "include",
+        signal,
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || "Failed to fetch report data");
       if (json.success) {
         setReportData(json.data);
+        setLoadedUserId(userId);
       }
     } catch (error: any) {
-      toast.error(error.message || "Failed to fetch report");
+      if (error.name !== 'AbortError') toast.error(error.message || "Failed to fetch report");
       setReportData(null);
     } finally {
       setLoading(false);
@@ -51,7 +56,9 @@ export default function ReportsPage() {
 
   useEffect(() => {
     if (selectedUserId) {
-      fetchReport(selectedUserId);
+      const controller = new AbortController();
+      fetchReport(selectedUserId, controller.signal);
+      return () => controller.abort();
     } else {
       setReportData(null);
     }
@@ -98,7 +105,7 @@ export default function ReportsPage() {
             </SelectContent>
           </Select>
           
-          {selectedUserId && reportData && (
+          {selectedUserId && reportData && loadedUserId === selectedUserId && !loading && (
             <button 
               onClick={() => window.print()}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
@@ -138,28 +145,29 @@ export default function ReportsPage() {
             />
             <MetricCard 
               icon={<CheckCircle className="w-5 h-5 text-green-400" />} 
-              title="Tasks Completed" 
+              title="Completed / Downstream"
               value={reportData.tasksCompleted} 
             />
             <MetricCard 
               icon={<Clock className="w-5 h-5 text-orange-400" />} 
-              title="Avg Time Taken" 
+              title="Est. Design Cycle"
               value={reportData.avgTimeFormatted || "-"} 
             />
             <MetricCard 
               icon={<File className="w-5 h-5 text-purple-400" />} 
-              title="File Quantity" 
+              title="Retained Files"
               value={reportData.fileQuantity} 
             />
             <MetricCard 
               icon={<TrendingUp className="w-5 h-5 text-yellow-400" />} 
-              title="Efficiency" 
+              title="Completion Ratio"
               value={`${reportData.efficiency}%`} 
             />
           </div>
 
           <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4 lg:p-6 backdrop-blur-sm mt-6">
-            <h3 className="text-lg font-medium mb-6 text-gray-200">Tasks Completed (Last 30 Days)</h3>
+            <h3 className="text-lg font-medium mb-2 text-gray-200">Status Completions (Last 30 Days)</h3>
+            <p className="mb-6 text-xs text-gray-500">Based on the latest recorded status-change timestamp. Reassignment history is not yet available.</p>
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={reportData.chartData}>
@@ -203,7 +211,7 @@ export default function ReportsPage() {
       </div>
 
       {/* --- A4 Print Layout --- */}
-      {selectedUserId && reportData && (
+      {selectedUserId && reportData && loadedUserId === selectedUserId && (
         <div className="hidden print:block bg-white text-black p-4 text-sm w-full font-sans">
           <div className="border-b-2 border-gray-900 pb-4 mb-6">
             <h1 className="text-2xl font-bold text-gray-900 uppercase tracking-wider">Staff Performance Report</h1>

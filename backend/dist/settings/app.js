@@ -34,6 +34,8 @@ const chatRoutes_1 = __importDefault(require("../presentation/routes/chatRoutes"
 const appRoutes_1 = __importDefault(require("../presentation/routes/appRoutes"));
 const webhook_route_1 = __importDefault(require("../presentation/routes/webhook.route"));
 const projectRoutes_1 = __importDefault(require("../presentation/routes/projectRoutes"));
+const auditRoutes_1 = __importDefault(require("../presentation/routes/auditRoutes"));
+const audit_middleware_1 = require("../presentation/middlewares/audit.middleware");
 const bandwidthTracker_1 = require("../shared/utils/bandwidthTracker");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -58,6 +60,7 @@ app.use(express_1.default.static(path_1.default.join(__dirname, '../../public'))
 app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../../uploads')));
 // -------------------- security middleware-------------------------------
 app.use((0, express_mongo_sanitize_1.default)());
+app.use(audit_middleware_1.auditMiddleware);
 if (process.env.NODE_ENV === "development")
     app.use((0, morgan_1.default)("dev"));
 // -------------------------  routes-------------------------------
@@ -75,6 +78,7 @@ app.use('/api/parcels', parcelRoutes_1.default);
 app.use('/api/files', fileUploadRoutes_1.default);
 app.use('/api/tasks', taskRoutes_1.default);
 app.use('/api/projects', projectRoutes_1.default);
+app.use('/api/audit-logs', auditRoutes_1.default);
 app.use('/api/tools', toolsRoutes_1.default);
 app.use('/api/chat', chatRoutes_1.default);
 app.use('/api/sysadmin', sysadminRoutes_1.default);

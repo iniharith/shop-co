@@ -2,7 +2,7 @@
 
 import { DragEvent, use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Download, File, FileImage, Loader2, Save, Trash2, UploadCloud } from "lucide-react";
+import { ArrowLeft, Download, File, FileImage, Loader2, Save, Share2, Trash2, UploadCloud } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import PageContainer from "@/components/layout/page-container";
@@ -11,7 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Project, ProjectFile } from "@/api/projects";
+import { createProjectShare } from "@/api/projects";
 import { useDeleteProjectFile, useProject, useUpdateProject, useUploadProjectFile } from "@/hooks/useProjects";
+import { useSession } from "next-auth/react";
 
 const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
@@ -22,6 +24,7 @@ const formatBytes = (bytes: number) => {
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const { data: session } = useSession();
   const inputRef = useRef<HTMLInputElement>(null);
   const { data, isLoading, isError } = useProject(id);
   const project: Project | undefined = data?.data;
@@ -32,6 +35,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [description, setDescription] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     if (!project) return;
@@ -92,6 +96,20 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const shareProject = async () => {
+    setSharing(true);
+    try {
+      const response = await createProjectShare(session?.user?.token || "", id);
+      const link = `${window.location.origin}/share/project/${response.data.token}`;
+      await navigator.clipboard.writeText(link);
+      toast.success("Read-only project link copied. It expires in 30 days.");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to create project share link");
+    } finally {
+      setSharing(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="flex h-full items-center justify-center"><Loader2 className="size-7 animate-spin text-primary" /></div>;
   }
@@ -116,7 +134,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <Button asChild variant="ghost" className="rounded-xl">
               <Link href="/admin/projects"><ArrowLeft className="mr-2 size-4" /> Projects</Link>
             </Button>
-            <div className="text-xs text-muted-foreground">Updated {format(new Date(project.updatedAt), "dd MMM yyyy, HH:mm")}</div>
+            <div className="flex items-center gap-3">
+              <div className="hidden text-xs text-muted-foreground sm:block">Updated {format(new Date(project.updatedAt), "dd MMM yyyy, HH:mm")}</div>
+              <Button variant="outline" onClick={shareProject} disabled={sharing}>
+                {sharing ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Share2 className="mr-2 size-4" />} Share Project
+              </Button>
+            </div>
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[1.35fr_1fr]">

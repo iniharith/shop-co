@@ -6,7 +6,8 @@ import asyncHandler from 'express-async-handler';
 import authMiddilware, { authorizeRoles } from '../middlewares/auth.middileware';
 import os from 'os';
 import mongoose from 'mongoose';
-import { ListObjectsV2Command, HeadBucketCommand } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, HeadBucketCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import axios from 'axios';
 import { s3Client, S3_BUCKET_NAME } from '../../infrastructure/config/s3';
 import fs from 'fs/promises';
@@ -101,7 +102,8 @@ router.get(
     try {
       if (process.env.VERCEL_ACCESS_TOKEN && process.env.VERCEL_PROJECT_ID) {
         const vRes = await axios.get(`https://api.vercel.com/v6/deployments?projectId=${process.env.VERCEL_PROJECT_ID}&limit=1`, {
-          headers: { Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}` }
+          headers: { Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}` },
+          timeout: 5000,
         });
         const latest = vRes.data.deployments?.[0];
         if (latest) {
@@ -115,7 +117,8 @@ router.get(
       if (process.env.RAILWAY_API_TOKEN) {
         const query = `query { me { name } }`;
         const rRes = await axios.post('https://backboard.railway.app/graphql/v2', { query }, {
-           headers: { Authorization: `Bearer ${process.env.RAILWAY_API_TOKEN}` }
+           headers: { Authorization: `Bearer ${process.env.RAILWAY_API_TOKEN}` },
+           timeout: 5000,
         });
         if (rRes.data && !rRes.data.errors) railwayStatus.status = 'ACTIVE';
         else railwayStatus.status = 'ERROR';
@@ -328,7 +331,7 @@ router.get(
 
     const params: any = {
       Bucket: S3_BUCKET_NAME,
-      MaxKeys: 1000,
+      MaxKeys: Math.min(Math.max(Number(req.query.limit) || 100, 1), 250),
     };
 
     if (prefix) params.Prefix = String(prefix);
@@ -351,7 +354,9 @@ router.get(
           items,
           isTruncated: data.IsTruncated,
           nextContinuationToken: data.NextContinuationToken,
-          prefix: data.Prefix
+          prefix: data.Prefix,
+          bucket: S3_BUCKET_NAME,
+          keyCount: data.KeyCount || 0,
         }
       });
     } catch (error: any) {
@@ -384,18 +389,22 @@ router.get(
       return `${d} DAYS ${h}HRS ${m}MIN`;
     };
 
-    // 1. Total Assigned Tasks
-    const tasksAssigned = await Task.countDocuments({ assignee: userId, isDeleted: false });
+    const terminalStatuses = ['DONE_DESIGN', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED'];
+    const activeFilter = { assignee: userId, isDeleted: { $ne: true } };
+    const completedFilter = { ...activeFilter, $or: [{ isDone: true }, { status: { $in: terminalStatuses } }] };
+
+    // Current tasks assigned to this staff member.
+    const tasksAssigned = await Task.countDocuments(activeFilter);
 
     // 2. Tasks Completed
-    const tasksCompleted = await Task.countDocuments({ assignee: userId, isDeleted: false, isDone: true });
+    const tasksCompleted = await Task.countDocuments(completedFilter);
 
     // 3. Average Task Time
     // Computed below using activities array
 
     // 4. File Quantity (attached to their assigned tasks)
     const filesAgg = await Task.aggregate([
-      { $match: { assignee: userId, isDeleted: false } },
+      { $match: activeFilter },
       { $project: { fileCount: { $size: { $ifNull: ["$files", []] } } } },
       { $group: { _id: null, totalFiles: { $sum: "$fileCount" } } }
     ]);
@@ -409,9 +418,9 @@ router.get(
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
     const chartDataRaw = await Task.aggregate([
-      { $match: { assignee: userId, isDeleted: false, isDone: true, updatedAt: { $gte: thirtyDaysAgo } } },
+      { $match: { ...completedFilter, statusUpdatedAt: { $gte: thirtyDaysAgo } } },
       { $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$updatedAt" } },
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$statusUpdatedAt" } },
           completed: { $sum: 1 }
       }},
       { $sort: { _id: 1 } }
@@ -431,8 +440,8 @@ router.get(
     }
 
     // 7. Detailed Tasks for Report Printing
-    const detailedTasksRaw = await Task.find({ assignee: userId, isDeleted: false })
-      .select('title status isDone files createdAt updatedAt activities')
+    const detailedTasksRaw = await Task.find(activeFilter)
+      .select('title status isDone files createdAt updatedAt statusUpdatedAt activities')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -479,8 +488,8 @@ router.get(
       
       if (doneDesignActivity) {
          timeTookMs = new Date(doneDesignActivity.createdAt).getTime() - startTime;
-      } else if (['DONE_DESIGN', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED'].includes(t.status)) {
-         timeTookMs = new Date(t.updatedAt).getTime() - startTime;
+       } else if (terminalStatuses.includes(t.status)) {
+          timeTookMs = new Date(t.statusUpdatedAt || t.updatedAt).getTime() - startTime;
       }
 
       if (timeTookMs !== null && timeTookMs >= 0) {
@@ -510,6 +519,13 @@ router.get(
         avgTimeFormatted,
         fileQuantity,
         efficiency,
+        metricNotes: {
+          tasksAssigned: 'Current tasks assigned to this staff member',
+          tasksCompleted: 'Current assigned tasks in a completed or downstream status',
+          efficiency: 'Completion ratio of current assigned tasks',
+          averageTime: 'Estimated design cycle based on recorded task activity',
+          files: 'Files currently retained on assigned tasks',
+        },
         chartData,
         detailedTasks
       }
@@ -537,6 +553,35 @@ router.get(
         res.json({ success: true, data: logs });
     })
 );
+
+router.post('/aws-media/open', asyncHandler(async (req: Request, res: Response) => {
+  const key = typeof req.body.key === 'string' ? req.body.key : '';
+  if (!key) return void res.status(400).json({ success: false, message: 'Object key is required' });
+  const url = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: S3_BUCKET_NAME, Key: key }), { expiresIn: 300 });
+  res.json({ success: true, data: { url, expiresIn: 300 } });
+}));
+
+router.delete('/aws-media', asyncHandler(async (req: Request, res: Response) => {
+  const key = typeof req.body.key === 'string' ? req.body.key : '';
+  if (!key) return void res.status(400).json({ success: false, message: 'Object key is required' });
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const [fileRefs, taskRefs] = await Promise.all([
+    FileUpload.countDocuments({ $or: [{ filename: key }, { path: { $regex: escaped } }] }),
+    Task.countDocuments({ 'files.url': { $regex: escaped } }),
+  ]);
+  if ((fileRefs || taskRefs) && req.query.force !== 'true') {
+    res.status(409).json({ success: false, message: 'This object is referenced by website records', references: { files: fileRefs, tasks: taskRefs } });
+    return;
+  }
+  await s3Client.send(new DeleteObjectCommand({ Bucket: S3_BUCKET_NAME, Key: key }));
+  if (req.query.force === 'true') {
+    await Promise.all([
+      FileUpload.deleteMany({ $or: [{ filename: key }, { path: { $regex: escaped } }] }),
+      Task.updateMany({}, { $pull: { files: { url: { $regex: escaped } } } }),
+    ]);
+  }
+  res.json({ success: true });
+}));
 
 // Proxy the HTTP-only AI agent through the authenticated HTTPS backend.
 router.get(

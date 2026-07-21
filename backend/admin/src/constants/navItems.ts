@@ -102,6 +102,10 @@ export const AdminNavItems: NavItem[] = [
                 url: '/admin/tools',
             },
             {
+                title: 'Website Logs',
+                url: '/admin/tools/audit-log',
+            },
+            {
                 title: 'Reports',
                 url: '/admin/reports',
             },
@@ -138,6 +142,9 @@ export const roleByNavItems = (role: string) => {
         // Only sysadmin, admin, and boss can access the administrative tools.
         allowedTitles = allowedTitles.filter(title => title !== 'Server Status' && title !== 'Tools');
     }
+
+    // Route and implementation remain available; only hide it from navigation for now.
+    allowedTitles = allowedTitles.filter(title => title !== 'Print Drafts');
 
     return AdminNavItems
         .filter(item => allowedTitles.includes(item.title))

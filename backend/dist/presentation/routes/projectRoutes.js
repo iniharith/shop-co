@@ -54,7 +54,9 @@ const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const express_1 = require("express");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const mongoose_1 = __importDefault(require("mongoose"));
+const crypto_1 = require("crypto");
 const Project_1 = require("../../domain/entities/Project");
+const ProjectShare_1 = require("../../domain/entities/ProjectShare");
 const s3_1 = require("../../infrastructure/config/s3");
 const auth_middileware_1 = __importStar(require("../middlewares/auth.middileware"));
 const router = (0, express_1.Router)();
@@ -67,6 +69,43 @@ const withSignedFileUrls = (project) => __awaiter(void 0, void 0, void 0, functi
     })));
     return data;
 });
+const hashShareToken = (token) => (0, crypto_1.createHash)('sha256').update(token).digest('hex');
+router.get('/shared/:token', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    res.setHeader('Cache-Control', 'no-store');
+    const share = yield ProjectShare_1.ProjectShare.findOne({
+        tokenHash: hashShareToken(req.params.token),
+        revokedAt: null,
+        expiresAt: { $gt: new Date() },
+    });
+    if (!share) {
+        res.status(404).json({ success: false, message: 'Project share link not found or expired' });
+        return;
+    }
+    const project = yield Project_1.Project.findById(share.projectId);
+    if (!project) {
+        res.status(404).json({ success: false, message: 'Project not found' });
+        return;
+    }
+    share.lastAccessedAt = new Date();
+    yield share.save();
+    const data = yield withSignedFileUrls(project);
+    res.json({
+        success: true,
+        data: {
+            title: data.title,
+            description: data.description,
+            updatedAt: data.updatedAt,
+            files: data.files.map((file) => ({
+                _id: file._id,
+                originalName: file.originalName,
+                mimetype: file.mimetype,
+                size: file.size,
+                uploadedAt: file.uploadedAt,
+                previewUrl: file.previewUrl,
+            })),
+        },
+    });
+})));
 router.use(auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('sysadmin', 'admin', 'boss', 'designer'));
 router.get('/', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
@@ -121,6 +160,21 @@ router.patch('/:id', (0, express_async_handler_1.default)((req, res) => __awaite
         return;
     }
     res.json({ success: true, data: yield withSignedFileUrls(project) });
+})));
+router.post('/:id/share', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!(yield Project_1.Project.exists({ _id: req.params.id }))) {
+        res.status(404).json({ success: false, message: 'Project not found' });
+        return;
+    }
+    const token = (0, crypto_1.randomBytes)(32).toString('base64url');
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    yield ProjectShare_1.ProjectShare.create({
+        projectId: req.params.id,
+        tokenHash: hashShareToken(token),
+        createdBy: req.userId,
+        expiresAt,
+    });
+    res.status(201).json({ success: true, data: { token, expiresAt } });
 })));
 router.post('/:id/upload-url', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { filename, contentType, size } = req.body;

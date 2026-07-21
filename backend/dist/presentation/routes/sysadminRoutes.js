@@ -54,12 +54,18 @@ const auth_middileware_1 = __importStar(require("../middlewares/auth.middileware
 const os_1 = __importDefault(require("os"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const client_s3_1 = require("@aws-sdk/client-s3");
+const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const axios_1 = __importDefault(require("axios"));
 const s3_1 = require("../../infrastructure/config/s3");
 const promises_1 = __importDefault(require("fs/promises"));
 const Task_1 = require("../../domain/entities/Task");
 const FileUpload_1 = require("../../domain/entities/FileUpload");
 const bandwidthTracker_1 = require("../../shared/utils/bandwidthTracker");
+const order_model_1 = __importDefault(require("../../infrastructure/db/models/order.model"));
+const ParcelRepository_1 = require("../../infrastructure/repositories/ParcelRepository");
+const FileUploadRepository_1 = require("../../infrastructure/repositories/FileUploadRepository");
+const VirtualFolderRepository_1 = require("../../infrastructure/repositories/VirtualFolderRepository");
+const TaskRepository_1 = require("../../infrastructure/repositories/TaskRepository");
 const socketHandler_1 = require("../../infrastructure/socket/socketHandler");
 const router = (0, express_1.Router)();
 router.get('/online-users', (req, res) => {
@@ -135,7 +141,8 @@ router.get('/health', (0, express_async_handler_1.default)((req, res) => __await
     try {
         if (process.env.VERCEL_ACCESS_TOKEN && process.env.VERCEL_PROJECT_ID) {
             const vRes = yield axios_1.default.get(`https://api.vercel.com/v6/deployments?projectId=${process.env.VERCEL_PROJECT_ID}&limit=1`, {
-                headers: { Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}` }
+                headers: { Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}` },
+                timeout: 5000,
             });
             const latest = (_b = vRes.data.deployments) === null || _b === void 0 ? void 0 : _b[0];
             if (latest) {
@@ -151,7 +158,8 @@ router.get('/health', (0, express_async_handler_1.default)((req, res) => __await
         if (process.env.RAILWAY_API_TOKEN) {
             const query = `query { me { name } }`;
             const rRes = yield axios_1.default.post('https://backboard.railway.app/graphql/v2', { query }, {
-                headers: { Authorization: `Bearer ${process.env.RAILWAY_API_TOKEN}` }
+                headers: { Authorization: `Bearer ${process.env.RAILWAY_API_TOKEN}` },
+                timeout: 5000,
             });
             if (rRes.data && !rRes.data.errors)
                 railwayStatus.status = 'ACTIVE';
@@ -217,6 +225,37 @@ router.get('/health', (0, express_async_handler_1.default)((req, res) => __await
             },
             timestamp: new Date()
         }
+    });
+})));
+// ─── GET /api/sysadmin/dashboard-summary ─────────────────────────
+// Collapses the parcel/file/folder/task/order/online-user stats the admin
+// dashboard needs — previously 5 separate client round trips fired on every
+// page open — into a single request. The underlying queries still run in
+// parallel (via Promise.all), just on the server instead of over the wire,
+// each reusing the same already-windowed (30/60-day) repository calls the
+// individual endpoints use, so the numbers stay identical to before.
+router.get('/dashboard-summary', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    const [parcelStats, fileStats, folders, totalTasks, totalOrders] = yield Promise.all([
+        ParcelRepository_1.parcelRepository.getStats(),
+        FileUploadRepository_1.fileUploadRepository.getStorageStats(),
+        VirtualFolderRepository_1.virtualFolderRepository.findAll(),
+        TaskRepository_1.taskRepository.countRecent(),
+        // Count-only query instead of the fully-populated getOrders() list,
+        // since the dashboard only ever needed the total.
+        order_model_1.default.countDocuments({ createdAt: { $gte: sixtyDaysAgo } }),
+    ]);
+    res.json({
+        success: true,
+        data: {
+            orders: { total: totalOrders },
+            parcels: parcelStats,
+            files: fileStats,
+            tasks: { total: totalTasks },
+            folders: { total: folders.length },
+            onlineUsers: { count: (0, socketHandler_1.getOnlineUsersCount)() },
+        },
     });
 })));
 // ─── GET /api/sysadmin/deployments ─────────────────────────
@@ -326,7 +365,7 @@ router.get('/aws-media', (0, express_async_handler_1.default)((req, res) => __aw
     const { prefix, continuationToken } = req.query;
     const params = {
         Bucket: s3_1.S3_BUCKET_NAME,
-        MaxKeys: 1000,
+        MaxKeys: Math.min(Math.max(Number(req.query.limit) || 100, 1), 250),
     };
     if (prefix)
         params.Prefix = String(prefix);
@@ -347,7 +386,9 @@ router.get('/aws-media', (0, express_async_handler_1.default)((req, res) => __aw
                 items,
                 isTruncated: data.IsTruncated,
                 nextContinuationToken: data.NextContinuationToken,
-                prefix: data.Prefix
+                prefix: data.Prefix,
+                bucket: s3_1.S3_BUCKET_NAME,
+                keyCount: data.KeyCount || 0,
             }
         });
     }
@@ -375,15 +416,18 @@ router.get('/reports', (0, express_async_handler_1.default)((req, res) => __awai
         const m = String(minutes).padStart(2, '0');
         return `${d} DAYS ${h}HRS ${m}MIN`;
     };
-    // 1. Total Assigned Tasks
-    const tasksAssigned = yield Task_1.Task.countDocuments({ assignee: userId, isDeleted: false });
+    const terminalStatuses = ['DONE_DESIGN', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED'];
+    const activeFilter = { assignee: userId, isDeleted: { $ne: true } };
+    const completedFilter = Object.assign(Object.assign({}, activeFilter), { $or: [{ isDone: true }, { status: { $in: terminalStatuses } }] });
+    // Current tasks assigned to this staff member.
+    const tasksAssigned = yield Task_1.Task.countDocuments(activeFilter);
     // 2. Tasks Completed
-    const tasksCompleted = yield Task_1.Task.countDocuments({ assignee: userId, isDeleted: false, isDone: true });
+    const tasksCompleted = yield Task_1.Task.countDocuments(completedFilter);
     // 3. Average Task Time
     // Computed below using activities array
     // 4. File Quantity (attached to their assigned tasks)
     const filesAgg = yield Task_1.Task.aggregate([
-        { $match: { assignee: userId, isDeleted: false } },
+        { $match: activeFilter },
         { $project: { fileCount: { $size: { $ifNull: ["$files", []] } } } },
         { $group: { _id: null, totalFiles: { $sum: "$fileCount" } } }
     ]);
@@ -394,9 +438,9 @@ router.get('/reports', (0, express_async_handler_1.default)((req, res) => __awai
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const chartDataRaw = yield Task_1.Task.aggregate([
-        { $match: { assignee: userId, isDeleted: false, isDone: true, updatedAt: { $gte: thirtyDaysAgo } } },
+        { $match: Object.assign(Object.assign({}, completedFilter), { statusUpdatedAt: { $gte: thirtyDaysAgo } }) },
         { $group: {
-                _id: { $dateToString: { format: "%Y-%m-%d", date: "$updatedAt" } },
+                _id: { $dateToString: { format: "%Y-%m-%d", date: "$statusUpdatedAt" } },
                 completed: { $sum: 1 }
             } },
         { $sort: { _id: 1 } }
@@ -414,8 +458,8 @@ router.get('/reports', (0, express_async_handler_1.default)((req, res) => __awai
         });
     }
     // 7. Detailed Tasks for Report Printing
-    const detailedTasksRaw = yield Task_1.Task.find({ assignee: userId, isDeleted: false })
-        .select('title status isDone files createdAt updatedAt activities')
+    const detailedTasksRaw = yield Task_1.Task.find(activeFilter)
+        .select('title status isDone files createdAt updatedAt statusUpdatedAt activities')
         .sort({ createdAt: -1 })
         .lean();
     let totalDurationMs = 0;
@@ -459,8 +503,8 @@ router.get('/reports', (0, express_async_handler_1.default)((req, res) => __awai
         if (doneDesignActivity) {
             timeTookMs = new Date(doneDesignActivity.createdAt).getTime() - startTime;
         }
-        else if (['DONE_DESIGN', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED'].includes(t.status)) {
-            timeTookMs = new Date(t.updatedAt).getTime() - startTime;
+        else if (terminalStatuses.includes(t.status)) {
+            timeTookMs = new Date(t.statusUpdatedAt || t.updatedAt).getTime() - startTime;
         }
         if (timeTookMs !== null && timeTookMs >= 0) {
             timeTookFormatted = formatMsToDuration(timeTookMs);
@@ -486,6 +530,13 @@ router.get('/reports', (0, express_async_handler_1.default)((req, res) => __awai
             avgTimeFormatted,
             fileQuantity,
             efficiency,
+            metricNotes: {
+                tasksAssigned: 'Current tasks assigned to this staff member',
+                tasksCompleted: 'Current assigned tasks in a completed or downstream status',
+                efficiency: 'Completion ratio of current assigned tasks',
+                averageTime: 'Estimated design cycle based on recorded task activity',
+                files: 'Files currently retained on assigned tasks',
+            },
             chartData,
             detailedTasks
         }
@@ -505,6 +556,35 @@ router.get('/logs', auth_middileware_1.default, (0, auth_middileware_1.authorize
         logs = lines.slice(Math.max(lines.length - 1000, 0)).join('\n');
     }
     res.json({ success: true, data: logs });
+})));
+router.post('/aws-media/open', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const key = typeof req.body.key === 'string' ? req.body.key : '';
+    if (!key)
+        return void res.status(400).json({ success: false, message: 'Object key is required' });
+    const url = yield (0, s3_request_presigner_1.getSignedUrl)(s3_1.s3Client, new client_s3_1.GetObjectCommand({ Bucket: s3_1.S3_BUCKET_NAME, Key: key }), { expiresIn: 300 });
+    res.json({ success: true, data: { url, expiresIn: 300 } });
+})));
+router.delete('/aws-media', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const key = typeof req.body.key === 'string' ? req.body.key : '';
+    if (!key)
+        return void res.status(400).json({ success: false, message: 'Object key is required' });
+    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const [fileRefs, taskRefs] = yield Promise.all([
+        FileUpload_1.FileUpload.countDocuments({ $or: [{ filename: key }, { path: { $regex: escaped } }] }),
+        Task_1.Task.countDocuments({ 'files.url': { $regex: escaped } }),
+    ]);
+    if ((fileRefs || taskRefs) && req.query.force !== 'true') {
+        res.status(409).json({ success: false, message: 'This object is referenced by website records', references: { files: fileRefs, tasks: taskRefs } });
+        return;
+    }
+    yield s3_1.s3Client.send(new client_s3_1.DeleteObjectCommand({ Bucket: s3_1.S3_BUCKET_NAME, Key: key }));
+    if (req.query.force === 'true') {
+        yield Promise.all([
+            FileUpload_1.FileUpload.deleteMany({ $or: [{ filename: key }, { path: { $regex: escaped } }] }),
+            Task_1.Task.updateMany({}, { $pull: { files: { url: { $regex: escaped } } } }),
+        ]);
+    }
+    res.json({ success: true });
 })));
 // Proxy the HTTP-only AI agent through the authenticated HTTPS backend.
 router.get('/whatsapp-ai-logs', (0, auth_middileware_1.authorizeRoles)('sysadmin'), (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
