@@ -5,6 +5,8 @@
 import React from "react";
 import { Banknote, Building2, Check, CreditCard, LockKeyhole, Smartphone } from "lucide-react";
 
+export const dynamic = "force-static";
+
 const PaymentsPage = () => {
   const banks = ["Maybank2u", "CIMB Clicks", "Public Bank", "RHB Now", "Hong Leong Connect", "AmOnline", "Bank Islam", "Bank Rakyat", "Affin Bank", "BSN", "UOB", "Standard Chartered"];
   const methods = [

@@ -545,21 +545,21 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             <div className={`glass-panel p-6 rounded-3xl mt-6 overflow-x-auto w-full mb-10 ${className}`}>
             <h2 className="text-xl font-bold tracking-tight text-primary mb-4">{product.category === 'kad-kahwin' ? 'Package Pricing' : 'Format & Size Pricing'}</h2>
             <table className="w-full text-sm text-center border-collapse">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-white/5 border-b border-border">
                 <tr>
-                  <th className="p-3 text-left font-semibold text-gray-700 border border-gray-200">Quantity</th>
+                  <th className="p-3 text-left font-semibold text-foreground border border-border">Quantity</th>
                   {product.category === 'flyers' ? (
                     <>
-                      <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A3</th>
-                      <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A4</th>
-                      <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A5</th>
+                      <th className="p-3 font-semibold text-foreground border border-border w-1/4">A3</th>
+                      <th className="p-3 font-semibold text-foreground border border-border w-1/4">A4</th>
+                      <th className="p-3 font-semibold text-foreground border border-border w-1/4">A5</th>
                     </>
                   ) : (
-                    <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/2">Price (RM)</th>
+                    <th className="p-3 font-semibold text-foreground border border-border w-1/2">Price (RM)</th>
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-border">
                 {availableQuantities.map((q) => {
                   const qPrices = matrixRow.quantityPrices[q];
                   
@@ -567,15 +567,15 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                     const price = qPrices; // For kad-kahwin, qPrices is just a number
                     const isSelected = quantity === q;
                     return (
-                      <tr key={q} className="hover:bg-gray-50 transition-colors">
-                        <td className="p-3 text-left font-semibold text-gray-800 border border-gray-200">{q}</td>
+                      <tr key={q} className="hover:bg-white/5 transition-colors">
+                        <td className="p-3 text-left font-semibold text-foreground border border-border">{q}</td>
                         <td 
                           onClick={() => {
                             if (price) {
                               setQuantity(q);
                             }
                           }}
-                          className={`p-3 border border-gray-200 transition-all ${!price ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'cursor-pointer'} ${isSelected ? 'bg-primary/10 border-2 border-primary font-bold text-primary shadow-inner' : 'text-gray-600 hover:bg-primary/5'}`}
+                          className={`p-3 border border-border transition-all ${!price ? 'bg-muted/40 text-muted-foreground cursor-not-allowed' : 'cursor-pointer'} ${isSelected ? 'bg-primary/10 border-2 border-primary font-bold text-primary shadow-inner' : 'text-muted-foreground hover:bg-primary/5'}`}
                         >
                           {price ? `RM ${price.toFixed(2)}` : 'N/A'}
                         </td>
@@ -584,8 +584,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                   }
 
                   return (
-                    <tr key={q} className="hover:bg-gray-50 transition-colors">
-                      <td className="p-3 text-left font-semibold text-gray-800 border border-gray-200">{q}</td>
+                    <tr key={q} className="hover:bg-white/5 transition-colors">
+                      <td className="p-3 text-left font-semibold text-foreground border border-border">{q}</td>
                       {['A3', 'A4', 'A5'].map((size) => {
                         const price = qPrices ? qPrices[size] : null;
                         const isSelected = quantity === q && selectedGridSize === size;
@@ -598,7 +598,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                 setSelectedGridSize(size);
                               }
                             }}
-                            className={`p-3 border border-gray-200 transition-all ${!price ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'cursor-pointer'} ${isSelected ? 'bg-primary/10 border-2 border-primary font-bold text-primary shadow-inner' : 'text-gray-600 hover:bg-primary/5'}`}
+                            className={`p-3 border border-border transition-all ${!price ? 'bg-muted/40 text-muted-foreground cursor-not-allowed' : 'cursor-pointer'} ${isSelected ? 'bg-primary/10 border-2 border-primary font-bold text-primary shadow-inner' : 'text-muted-foreground hover:bg-primary/5'}`}
                           >
                             {price ? `RM ${price.toFixed(2)}` : 'N/A'}
                           </td>

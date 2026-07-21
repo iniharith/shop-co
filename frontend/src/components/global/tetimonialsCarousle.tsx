@@ -77,7 +77,7 @@ export default function TestimonialsCarousel({
             >
               <Card
                 key={testimonial.id}
-                className="border border-gray-100 shadow-sm"
+                className="min-h-56 border-white/10 bg-card/40 backdrop-blur-md"
               >
                 <CardContent className="p-6">
                   <div className="flex mb-2">
@@ -91,7 +91,7 @@ export default function TestimonialsCarousel({
                       <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
                     )}
                   </div>
-                  <p className="text-gray-600 text-sm leading-relaxed">
+                  <p className="text-muted-foreground text-sm leading-relaxed">
                     {testimonial.text}
                   </p>
                 </CardContent>

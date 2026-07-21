@@ -6,11 +6,11 @@
 import { cn } from "@/lib/utils";
 import type { IProduct } from "@/types/IProduct";
 import { Star } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "nextjs-toploader/app";
 import { Button } from "@heroui/button";
 import { MdOutlineShoppingBag } from "react-icons/md";
 import { useAddtoCart } from "@/hooks/useCart";
+import { getProductArtworkFallback } from "@/utils/productArtworkFallback";
 
 interface ProductCardProps {
   product: IProduct;
@@ -38,12 +38,14 @@ const ProductCard = ({ product }: ProductCardProps) => {
       className="glass-panel group shrink-0 cursor-pointer rounded-3xl p-2 h-full flex flex-col transition-all duration-300 hover:-translate-y-1 hover:border-primary/30"
     >
       <div className="relative mb-3 w-full aspect-square overflow-hidden rounded-[1.25rem] bg-muted">
-        <Image
+        <img
           src={image || "/placeholder.svg"}
           alt={product.name}
-          fill
-          sizes="(max-width: 768px) 50vw, 25vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          onError={(event) => {
+            event.currentTarget.onerror = null;
+            event.currentTarget.src = getProductArtworkFallback(product.name, product.category || "Print");
+          }}
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
       </div>

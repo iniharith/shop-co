@@ -4,14 +4,12 @@
  */
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { Geist, Geist_Mono, DM_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import Provider from "@/components/provider";
 import Nav from "@/components/global/nav";
 import { Footer } from "@/components/global/footer";
 import Cta from "@/components/global/cta";
-import { getServerSession } from "next-auth";
-import { authConfig } from "@/config/auth.config";
 
 const fonarto = localFont({
   src: "./fonts/fonarto.woff",
@@ -27,19 +25,18 @@ const provicaliAmpersand = localFont({
   ]
 });
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
-});
-
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
-  subsets: ["latin"],
+  weight: ["500", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -70,20 +67,18 @@ export const metadata: Metadata = {
 
 import FloatingChatWidget from "@/components/global/FloatingChatWidget";
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Public storefront routes must remain available if authentication is temporarily misconfigured.
-  const session = await getServerSession(authConfig).catch(() => null);
   return (
-    <html lang="en">
+    <html lang="en" className={`${jakarta.variable} ${spaceGrotesk.variable} ${jakarta.className}`} suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${dmSans.variable} overflow-x-hidden ${geistMono.variable} ${fonarto.variable} ${provicaliAmpersand.variable} antialiased`}
+        className={`${fonarto.variable} ${provicaliAmpersand.variable} overflow-x-hidden antialiased`}
       >
-        <Provider session={session}>
+        <Provider session={null}>
           <div className="site-header sticky z-50 top-0">
             <Nav />
           </div>

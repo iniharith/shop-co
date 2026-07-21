@@ -8,6 +8,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { item_variants } from "@/constants/framer-motion";
 import { useRouter } from "nextjs-toploader/app";
+import { Truck } from "lucide-react";
 
 const images = [
   "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=1920&q=80",
@@ -28,7 +29,7 @@ const Hero = () => {
   }, []);
 
   return (
-    <div className="relative w-full h-[80vh] min-h-[500px] flex items-center justify-center overflow-hidden bg-black">
+    <div className="relative w-full min-h-[680px] flex items-center justify-center overflow-hidden bg-black px-3 py-12 md:px-8">
       {/* Background Slider */}
       <AnimatePresence mode="popLayout">
         <motion.img
@@ -43,17 +44,17 @@ const Hero = () => {
         />
       </AnimatePresence>
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-br from-black/90 via-black/45 to-primary/15" />
 
       {/* Content Container */}
-      <div className="relative z-10 flex flex-col items-center justify-center text-center px-5 md:px-20 gap-6 w-full max-w-5xl mx-auto">
+      <div className="glass-panel relative z-10 flex w-full max-w-6xl flex-col items-center justify-center gap-6 rounded-[2rem] px-5 py-10 text-center md:px-20 md:py-14">
         <motion.div
           initial="hidden"
           animate="visible"
           variants={item_variants}
-          className="bg-primary text-white text-xs px-4 py-1.5 rounded-full font-bold tracking-wider uppercase shadow-lg shadow-primary/30"
+          className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/15 px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary"
         >
-          🚀 Fast & On-Time Delivery
+          <Truck size={15} /> Fast & On-Time Delivery
         </motion.div>
 
         <motion.h1
@@ -96,14 +97,14 @@ const Hero = () => {
           </Button>
           <Button
             onClick={() => router.push("/home/shop")}
-            className="bg-white/10 backdrop-blur-md border-2 border-white text-white font-bold px-10 py-6 rounded-full cursor-pointer active:scale-95 transition-all duration-300 text-lg hover:bg-white hover:text-black"
+            className="glass-subtle border-white/20 text-white font-bold px-10 py-6 rounded-full cursor-pointer active:scale-95 transition-all duration-300 text-lg hover:border-primary/50 hover:text-primary"
           >
             View Products
           </Button>
         </motion.div>
 
         {/* Stats */}
-        <div className="flex gap-8 md:gap-16 items-center mt-12 justify-center flex-wrap pt-8 border-t border-white/20 w-full max-w-3xl">
+        <div className="flex gap-8 md:gap-16 items-center mt-6 justify-center flex-wrap pt-8 border-t border-white/10 w-full max-w-3xl">
           {[
             { count: "50+", label: "Print Products" },
             { count: "10K+", label: "Happy Customers" },
