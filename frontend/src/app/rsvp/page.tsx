@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Check, ChevronDown, Clock3, Heart, MapPin, Send, Users } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, Clock3, Gift, Heart, MapPin, Send, Users, Volume2, VolumeX } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import styles from "./rsvp.module.css";
 
@@ -31,6 +31,8 @@ export default function RsvpPage() {
   const [attendance, setAttendance] = useState<Attendance>("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [coverState, setCoverState] = useState<"open" | "closing" | "closed">("open");
+  const [musicEnabled, setMusicEnabled] = useState(false);
 
   useEffect(() => {
     setRemaining(getTimeRemaining());
@@ -67,6 +69,12 @@ export default function RsvpPage() {
     setSubmitted(true);
   }
 
+  function openInvitation() {
+    setMusicEnabled(true);
+    setCoverState("closing");
+    window.setTimeout(() => setCoverState("closed"), 700);
+  }
+
   const countdown = [
     [remaining.days, "Hari"],
     [remaining.hours, "Jam"],
@@ -76,6 +84,29 @@ export default function RsvpPage() {
 
   return (
     <main className={`${styles.invitation} rsvp-page`}>
+      {coverState !== "closed" && (
+        <section className={`${styles.openingCover} ${coverState === "closing" ? styles.closing : ""}`} aria-label="Buka jemputan">
+          <FloralCluster className={styles.coverFlowersLeft} />
+          <FloralCluster className={styles.coverFlowersRight} />
+          <div className={styles.openingCard}>
+            <p className={styles.eyebrow}>Walimatul Urus</p>
+            <div className={styles.openingMonogram}>H <span>&amp;</span> F</div>
+            <p>Anda dijemput ke majlis perkahwinan</p>
+            <h1>Muhammad Habri<br />&amp; Nor Fatin Nabila</h1>
+            <button type="button" onClick={openInvitation}><Heart size={15} fill="currentColor" /> Buka Jemputan</button>
+          </div>
+        </section>
+      )}
+      <button
+        className={styles.musicButton}
+        type="button"
+        onClick={() => setMusicEnabled((enabled) => !enabled)}
+        aria-label={musicEnabled ? "Matikan muzik latar" : "Mainkan muzik latar"}
+      >
+        {musicEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
+        <span>{musicEnabled ? "Muzik on" : "Muzik off"}</span>
+      </button>
+      {musicEnabled && <iframe className={styles.musicFrame} src="https://www.youtube.com/embed/JGz2aGs0MU4?autoplay=1&loop=1&playlist=JGz2aGs0MU4" title="Muzik latar majlis" allow="autoplay" />}
       <nav className={styles.navigation} aria-label="Navigation invitation">
         <a href="#utama">H & F</a>
         <div>
@@ -115,6 +146,25 @@ export default function RsvpPage() {
         </div>
       </section>
 
+      <section className={`${styles.salamSection} ${styles.reveal}`} data-reveal id="salam-kasih">
+        <FloralCluster className={styles.salamFlowersLeft} />
+        <FloralCluster className={styles.salamFlowersRight} />
+        <div className={styles.salamCard}>
+          <Gift size={21} />
+          <p className={styles.eyebrow}>Tanda kasih</p>
+          <h2>Salam Kasih</h2>
+          <p className={styles.salamCopy}>Kehadiran dan doa restu anda sudah cukup bermakna. Sekiranya anda ingin memberi tanda kasih, imbas kod QR di bawah.</p>
+          <div className={styles.qrLayout}>
+            <QrPlaceholder />
+            <div className={styles.bankDetails}>
+              <span>QR sementara</span>
+              <strong>Maklumat bank akan dikemas kini</strong>
+              <p>Sila gantikan dengan kod DuitNow atau QR bank pengantin sebelum jemputan dikongsi.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className={`${styles.rsvpSection} ${styles.reveal}`} data-reveal id="rsvp">
         <div className={styles.rsvpPanel}>
           <p className={styles.eyebrow}>Pengesahan kehadiran</p>
@@ -125,7 +175,7 @@ export default function RsvpPage() {
             <form onSubmit={submitRsvp} noValidate>
               <label>Nama tetamu<input name="guestName" type="text" placeholder="Masukkan nama anda" /></label>
               <fieldset><legend>Adakah anda dapat hadir?</legend><div className={styles.attendanceOptions}>
-                <button type="button" className={attendance === "hadir" ? styles.active : ""} onClick={() => setAttendance("hadir")}><Heart size={16} /> Insya-Allah hadir</button>
+                <button type="button" className={attendance === "hadir" ? styles.active : ""} onClick={() => setAttendance("hadir")}><Heart size={16} /> Hadir</button>
                 <button type="button" className={attendance === "tidak-hadir" ? styles.active : ""} onClick={() => setAttendance("tidak-hadir")}>Tidak dapat hadir</button>
               </div></fieldset>
               <label>Bilangan tetamu<select name="guests" defaultValue="1"><option value="1">1 orang</option><option value="2">2 orang</option><option value="3">3 orang</option><option value="4">4 orang</option></select></label>
@@ -150,4 +200,10 @@ function FloralCluster({ className }: { className: string }) {
       <b /><b /><b />
     </div>
   );
+}
+
+function QrPlaceholder() {
+  const cells = Array.from({ length: 169 }, (_, index) => index);
+  const filled = new Set([0, 1, 2, 3, 12, 13, 14, 15, 24, 25, 26, 27, 36, 37, 38, 39, 48, 49, 50, 51, 60, 61, 62, 63, 72, 73, 74, 75, 84, 85, 86, 87, 96, 97, 98, 99, 108, 109, 110, 111, 120, 121, 122, 123, 132, 133, 134, 135, 144, 145, 146, 147, 156, 157, 158, 159]);
+  return <div className={styles.qrPlaceholder} aria-label="Kod QR sementara">{cells.map((index) => <i className={filled.has(index) || (index * 7 + index % 5) % 4 === 0 ? styles.qrDark : ""} key={index} />)}</div>;
 }
