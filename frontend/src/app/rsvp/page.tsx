@@ -86,14 +86,18 @@ export default function RsvpPage() {
     <main className={`${styles.invitation} rsvp-page`}>
       {coverState !== "closed" && (
         <section className={`${styles.openingCover} ${coverState === "closing" ? styles.closing : ""}`} aria-label="Buka jemputan">
-          <FloralCluster className={styles.coverFlowersLeft} />
-          <FloralCluster className={styles.coverFlowersRight} />
-          <div className={styles.openingCard}>
-            <p className={styles.eyebrow}>Walimatul Urus</p>
-            <div className={styles.openingMonogram}>H <span>&amp;</span> F</div>
-            <p>Anda dijemput ke majlis perkahwinan</p>
-            <h1>Muhammad Habri<br />&amp; Nor Fatin Nabila</h1>
-            <button type="button" onClick={openInvitation}><Heart size={15} fill="currentColor" /> Buka Jemputan</button>
+          <div className={styles.coverInvitation}>
+            <div className={styles.coverPattern} aria-hidden="true" />
+            <FloralCluster className={styles.coverFlowersTopLeft} />
+            <FloralCluster className={styles.coverFlowersTopRight} />
+            <FloralCluster className={styles.coverFlowersBottomLeft} />
+            <FloralCluster className={styles.coverFlowersBottomRight} />
+            <div className={styles.coverPanel}>
+              <button className={styles.openingSeal} type="button" onClick={openInvitation}>
+                <span>Muhammad Habri<br />&amp; Nor Fatin</span>
+                <small>Buka</small>
+              </button>
+            </div>
           </div>
         </section>
       )}
