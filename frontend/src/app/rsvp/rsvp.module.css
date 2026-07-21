@@ -215,7 +215,7 @@
 .confirmation p { margin: 0; font-family: "Cormorant Garamond", serif; font-size: 1rem; }
 .invitationFooter { display: flex; align-items: center; justify-content: center; gap: .6rem; padding: 1.5rem; background: var(--wine-dark); color: var(--gold-light); text-align: center; }
 .invitationFooter p { margin: 0; font-family: "Cormorant Garamond", serif; font-size: .92rem; }
-.countdownSection, .details, .calendarSection, .salamSection, .contactSection, .rsvpSection { min-height: 100svh; box-sizing: border-box; }
+.hero, .countdownSection, .details, .calendarSection, .salamSection, .contactSection, .rsvpSection { box-sizing: border-box; min-height: 100svh; scroll-snap-align: start; scroll-snap-stop: always; }
 
 .openingCover { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; overflow: hidden; background: #faf8f4; }
 .closing { background: transparent; pointer-events: none; }
@@ -284,3 +284,4 @@
 }
 
 :global(html) { scroll-behavior: smooth; }
+:global(html:has(.rsvp-page)) { scroll-snap-type: y mandatory; }
