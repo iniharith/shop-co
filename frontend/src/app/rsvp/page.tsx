@@ -18,6 +18,9 @@ const wedding = {
 
 type Attendance = "hadir" | "tidak-hadir" | "";
 type Sheet = "calendar" | "gift" | "location" | "contact" | "rsvp" | null;
+type Wish = { id: string; name: string; message: string };
+
+const wishesStorageKey = "fatin-habri-wedding-wishes";
 
 function getTimeRemaining() {
   const difference = Math.max(0, wedding.startsAt - Date.now());
@@ -37,11 +40,21 @@ export default function RsvpPage() {
   const [coverState, setCoverState] = useState<"open" | "closing" | "closed">("open");
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [activeSheet, setActiveSheet] = useState<Sheet>(null);
+  const [wishes, setWishes] = useState<Wish[]>([]);
 
   useEffect(() => {
     setRemaining(getTimeRemaining());
     const timer = window.setInterval(() => setRemaining(getTimeRemaining()), 1_000);
     return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(wishesStorageKey);
+      if (stored) setWishes((JSON.parse(stored) as Wish[]).slice(0, 12));
+    } catch {
+      setWishes([]);
+    }
   }, []);
 
   useEffect(() => {
@@ -63,10 +76,24 @@ export default function RsvpPage() {
   function submitRsvp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const guestName = form.get("guestName")?.toString().trim() ?? "";
+    const message = form.get("message")?.toString().trim() ?? "";
 
-    if (!form.get("guestName")?.toString().trim() || !attendance) {
+    if (!guestName || !attendance) {
       setError("Sila isi nama dan pilih status kehadiran anda.");
       return;
+    }
+
+    if (message) {
+      setWishes((current) => {
+        const next = [{ id: `${Date.now()}-${guestName}`, name: guestName, message }, ...current].slice(0, 12);
+        try {
+          window.localStorage.setItem(wishesStorageKey, JSON.stringify(next));
+        } catch {
+          // The wish still appears for this session when storage is unavailable.
+        }
+        return next;
+      });
     }
 
     setError("");
@@ -142,6 +169,15 @@ export default function RsvpPage() {
         <div className={styles.countdown}>
           {countdown.map(([value, label]) => <div key={label as string}><strong>{String(value).padStart(2, "0")}</strong><span>{label}</span></div>)}
         </div>
+        {wishes.length > 0 && (
+          <div className={styles.wishes}>
+            <span className={styles.wishOrnament} aria-hidden="true">H &amp; F</span>
+            <h2>Ucapan Untuk Pengantin</h2>
+            <div className={styles.wishList} aria-live="polite">
+              {wishes.slice(0, 4).map((wish) => <blockquote key={wish.id}><p>&ldquo;{wish.message}&rdquo;</p><cite>{wish.name}</cite></blockquote>)}
+            </div>
+          </div>
+        )}
       </section>
 
       <section className={`${styles.details} ${styles.reveal}`} data-reveal id="majlis">
@@ -197,13 +233,13 @@ export default function RsvpPage() {
             <div className={styles.confirmation} role="status"><Check /><h3>Terima kasih</h3><p>Kehadiran anda telah direkodkan untuk sesi ini. Kami menantikan kehadiran anda.</p><button type="button" onClick={() => setSubmitted(false)}>Kemaskini respons</button></div>
           ) : (
             <form onSubmit={submitRsvp} noValidate>
-              <label>Nama tetamu<input name="guestName" type="text" placeholder="Masukkan nama anda" /></label>
+              <label>Nama tetamu<input name="guestName" type="text" maxLength={80} placeholder="Masukkan nama anda" /></label>
               <fieldset><legend>Adakah anda dapat hadir?</legend><div className={styles.attendanceOptions}>
                 <button type="button" className={attendance === "hadir" ? styles.active : ""} onClick={() => setAttendance("hadir")}>Hadir</button>
                 <button type="button" className={attendance === "tidak-hadir" ? styles.active : ""} onClick={() => setAttendance("tidak-hadir")}>Tidak dapat hadir</button>
               </div></fieldset>
               <label>Bilangan tetamu<select name="guests" defaultValue="1"><option value="1">1 orang</option><option value="2">2 orang</option><option value="3">3 orang</option><option value="4">4 orang</option></select></label>
-              <label>Ucapan untuk pengantin <textarea name="message" rows={3} placeholder="Tulis ucapan anda di sini..." /></label>
+              <label>Ucapan untuk pengantin <textarea name="message" rows={3} maxLength={180} placeholder="Tulis ucapan anda di sini..." /></label>
               {error && <p className={styles.error} role="alert">{error}</p>}
               <button className={styles.submit} type="submit">Hantar RSVP <Send size={16} /></button>
             </form>

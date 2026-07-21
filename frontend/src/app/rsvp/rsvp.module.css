@@ -50,7 +50,7 @@
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   width: min(100%, 29rem);
-  padding: .55rem .2rem .65rem;
+  padding: .55rem .2rem calc(.65rem + env(safe-area-inset-bottom));
   translate: -50% 0;
   border-top: 1px solid rgba(236, 211, 154, .55);
   background: rgba(61, 7, 14, .96);
@@ -152,12 +152,19 @@
 .floralCluster { position: absolute; z-index: 1; inset: 0; pointer-events: none; background: url("/images/wedding-floral.png") center / 100% 100% no-repeat; filter: drop-shadow(0 .6rem .8rem rgba(28, 2, 6, .2)); animation: floralFrame 6s ease-in-out infinite alternate; }
 .heroFloralFrame { inset: .2rem; }
 
-.countdownSection { padding: 3.5rem 1.2rem; background: var(--paper); color: var(--wine); text-align: center; }
+.countdownSection { display: flex; padding: 3.5rem 1.2rem; flex-direction: column; justify-content: center; background: var(--paper); color: var(--wine); text-align: center; }
 .countdownSection > p { margin: 0 0 1.4rem; font-family: "Cormorant Garamond", serif; font-size: 1.7rem; font-weight: 700; }
 .countdown { display: flex; justify-content: center; gap: clamp(.55rem, 4vw, 1.6rem); }
 .countdown div { display: flex; min-width: 3.6rem; flex-direction: column; }
 .countdown strong { color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 2.5rem; font-weight: 700; line-height: .9; }
 .countdown span { margin-top: .55rem; color: #916a4d; font-size: .52rem; letter-spacing: .14em; text-transform: uppercase; }
+.wishes { margin-top: 2.4rem; padding-top: 1.8rem; border-top: 1px solid rgba(89, 16, 25, .2); }
+.wishOrnament { display: block; margin-bottom: .55rem; color: var(--gold); font-family: "Cormorant Garamond", serif; font-size: .58rem; letter-spacing: .24em; }
+.wishes h2 { margin: 0 0 1.15rem; color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 1.35rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.wishList { display: grid; gap: .9rem; }
+.wishList blockquote { margin: 0; }
+.wishList p { margin: 0 auto .25rem; max-width: 22rem; color: #74473d; font-family: "Cormorant Garamond", serif; font-size: .9rem; line-height: 1.35; }
+.wishList cite { color: #8c693d; font-family: "Cormorant Garamond", serif; font-size: .55rem; font-style: normal; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 
 .details { padding: 4.6rem 1.5rem; background: linear-gradient(150deg, #67141f, #3d080f); color: var(--ivory); text-align: center; }
 .details h2, .rsvpPanel h2, .salamCard h2 { margin: 0; color: var(--gold-light); font-family: "Cormorant Garamond", serif; font-size: 2.7rem; font-weight: 700; }
@@ -215,7 +222,7 @@
 .confirmation p { margin: 0; font-family: "Cormorant Garamond", serif; font-size: 1rem; }
 .invitationFooter { display: flex; align-items: center; justify-content: center; gap: .6rem; padding: 1.5rem; background: var(--wine-dark); color: var(--gold-light); text-align: center; }
 .invitationFooter p { margin: 0; font-family: "Cormorant Garamond", serif; font-size: .92rem; }
-.hero, .countdownSection, .details, .calendarSection, .salamSection, .contactSection, .rsvpSection { box-sizing: border-box; min-height: 100svh; scroll-snap-align: start; scroll-snap-stop: always; }
+.hero, .countdownSection, .details, .calendarSection, .salamSection, .contactSection, .rsvpSection { box-sizing: border-box; min-height: 100svh; padding-bottom: calc(6.25rem + env(safe-area-inset-bottom)); scroll-snap-align: start; scroll-snap-stop: always; }
 
 .openingCover { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; overflow: hidden; background: #faf8f4; }
 .closing { background: transparent; pointer-events: none; }
