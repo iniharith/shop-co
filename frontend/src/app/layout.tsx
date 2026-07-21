@@ -83,13 +83,15 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${dmSans.variable} overflow-x-hidden w-screen ${geistMono.variable} ${fonarto.variable} ${provicaliAmpersand.variable} bg-gray-100 dark:bg-background antialiased`}
       >
         <Provider session={session}>
-          <div className="sticky z-50 top-0">
+          <div className="site-header sticky z-50 top-0">
             <Nav />
           </div>
-          <div className="w-full min-h-[50vh]">{children}</div>
-          <Cta />
-          <Footer />
-          <FloatingChatWidget />
+          <main className="w-full min-h-[50vh]">{children}</main>
+          <div className="site-footer">
+            <Cta />
+            <Footer />
+            <FloatingChatWidget />
+          </div>
         </Provider>
       </body>
     </html>
