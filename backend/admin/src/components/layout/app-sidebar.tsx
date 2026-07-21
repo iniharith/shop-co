@@ -102,18 +102,20 @@ export default function AppSidebar() {
               const Icon = item.icon
                 ? Icons[item.icon as keyof typeof Icons]
                 : Icons.logo;
+              const hasActiveChild = item.items?.some((subItem: any) => pathname === subItem.url);
+              const isItemActive = pathname === item.url || hasActiveChild;
               return item?.items && item?.items?.length > 0 ? (
                 <Collapsible
                   key={item.title}
                   asChild
-                  defaultOpen={item.isActive}
+                  defaultOpen={item.isActive || isItemActive}
                   className="group/collapsible"
                 >
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton
                         tooltip={item.title}
-                        isActive={pathname === item.url}
+                        isActive={isItemActive}
                         className="text-base font-bold py-6"
                       >
                         <div className="inherit flex items-center gap-2">

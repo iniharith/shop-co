@@ -506,4 +506,10 @@ router.get('/logs', auth_middileware_1.default, (0, auth_middileware_1.authorize
     }
     res.json({ success: true, data: logs });
 })));
+// Proxy the HTTP-only AI agent through the authenticated HTTPS backend.
+router.get('/whatsapp-ai-logs', (0, auth_middileware_1.authorizeRoles)('sysadmin'), (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const logsUrl = process.env.WHATSAPP_AI_LOGS_URL || 'http://56.68.8.52:5002/api/logs';
+    const response = yield axios_1.default.get(logsUrl, { timeout: 8000 });
+    res.json(response.data);
+})));
 exports.default = router;

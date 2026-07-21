@@ -14,6 +14,13 @@ export const AdminNavItems: NavItem[] = [
         items: [] // Empty array as there are no child items for Dashboard
     },
     {
+        title: 'Projects',
+        url: '/admin/projects',
+        icon: 'kanban',
+        shortcut: ['p', 'j'],
+        isActive: false,
+    },
+    {
         title: 'Users',
         url: '/admin/superAdmin/users',
         icon: 'user2',
@@ -85,11 +92,15 @@ export const AdminNavItems: NavItem[] = [
     },
     {
         title: 'Tools',
-        url: '/admin/reports',
+        url: '/admin/tools',
         icon: 'wrench',
         shortcut: ['t', 'o'],
         isActive: false,
         items: [
+            {
+                title: 'Tools Overview',
+                url: '/admin/tools',
+            },
             {
                 title: 'Reports',
                 url: '/admin/reports',
@@ -97,33 +108,20 @@ export const AdminNavItems: NavItem[] = [
             {
                 title: 'Image Upscale',
                 url: '/admin/tools/upscale',
-            }
-        ]
-    },
-    {
-        title: 'Server Status',
-        url: '/admin/server-status',
-        icon: 'server',
-        shortcut: ['s', 's'],
-        isActive: false,
-        items: [
+            },
             {
-                title: 'Health Dashboard',
+                title: 'Server Status',
                 url: '/admin/server-status',
             },
             {
                 title: 'AWS Media Server',
                 url: '/admin/aws-media',
+            },
+            {
+                title: 'WhatsApp AI Logs',
+                url: '/admin/whatsapp-logs',
             }
         ]
-    },
-    {
-        title: 'WhatsApp AI Logs',
-        url: '/admin/whatsapp-logs',
-        icon: 'server',
-        shortcut: ['w', 'w'],
-        isActive: false,
-        items: []
     }
 ];
 
@@ -135,16 +133,16 @@ export const roleByNavItems = (role: string) => {
     } else if (role === "packaging") {
         allowedTitles = ['Tracking', 'Chat', 'Packaging', 'History'];
     } else if (role === "designer") {
-        allowedTitles = ['Artworks', 'Print Drafts', 'Tasks', 'Chat'];
+        allowedTitles = ['Projects', 'Artworks', 'Print Drafts', 'Tasks', 'Chat'];
     } else if (role !== "sysadmin" && role !== "admin" && role !== "boss") {
-        // Only sysadmin, admin, boss can see Server Status and Tools (Reports + Image Upscale)
+        // Only sysadmin, admin, and boss can access the administrative tools.
         allowedTitles = allowedTitles.filter(title => title !== 'Server Status' && title !== 'Tools');
     }
 
-    // Only SYSADMIN can see WhatsApp AI Logs
-    if (role !== "sysadmin") {
-        allowedTitles = allowedTitles.filter(title => title !== 'WhatsApp AI Logs');
-    }
-
-    return AdminNavItems.filter(item => allowedTitles.includes(item.title));
+    return AdminNavItems
+        .filter(item => allowedTitles.includes(item.title))
+        .map(item => item.title === 'Tools' && role !== 'sysadmin'
+            ? { ...item, items: item.items?.filter(child => child.url !== '/admin/whatsapp-logs') }
+            : item
+        );
 };

@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
-import { Bot, Terminal } from "lucide-react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
+import { Bot, Loader2, Terminal } from "lucide-react";
 import { useSession } from "next-auth/react";
+
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 interface LogEntry {
   timestamp: string;
@@ -11,14 +13,18 @@ interface LogEntry {
 }
 
 export default function WhatsAppLogsPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const endOfLogsRef = useRef<HTMLDivElement>(null);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
+    const token = session?.user?.token;
+    if (!token) return;
     try {
-      const res = await fetch("http://56.68.8.52:5002/api/logs");
+      const res = await fetch(`${BACKEND}/api/sysadmin/whatsapp-ai-logs`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) throw new Error("Failed to fetch logs");
       const json = await res.json();
       setLogs(json.logs || []);
@@ -26,14 +32,14 @@ export default function WhatsAppLogsPage() {
     } catch (err: any) {
       setError(err.message || "Failed to connect to the WhatsApp AI Agent API.");
     }
-  };
+  }, [session?.user?.token]);
 
   useEffect(() => {
     // Fetch logs immediately, then poll every 2 seconds
     fetchLogs();
     const interval = setInterval(fetchLogs, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchLogs]);
 
   useEffect(() => {
     // Auto-scroll to bottom when new logs arrive
@@ -41,6 +47,10 @@ export default function WhatsAppLogsPage() {
   }, [logs]);
 
   // Restrict to sysadmin only (double-check on client side just in case)
+  if (status === "loading") {
+    return <div className="flex h-full items-center justify-center"><Loader2 className="size-6 animate-spin text-primary" /></div>;
+  }
+
   if (session?.user?.role !== "sysadmin") {
     return (
       <div className="flex h-full items-center justify-center text-gray-500">

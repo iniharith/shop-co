@@ -33,6 +33,7 @@ const sysadminRoutes_1 = __importDefault(require("../presentation/routes/sysadmi
 const chatRoutes_1 = __importDefault(require("../presentation/routes/chatRoutes"));
 const appRoutes_1 = __importDefault(require("../presentation/routes/appRoutes"));
 const webhook_route_1 = __importDefault(require("../presentation/routes/webhook.route"));
+const projectRoutes_1 = __importDefault(require("../presentation/routes/projectRoutes"));
 const bandwidthTracker_1 = require("../shared/utils/bandwidthTracker");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -73,6 +74,7 @@ app.use('/api/folders', virtualFolderRoutes_1.default);
 app.use('/api/parcels', parcelRoutes_1.default);
 app.use('/api/files', fileUploadRoutes_1.default);
 app.use('/api/tasks', taskRoutes_1.default);
+app.use('/api/projects', projectRoutes_1.default);
 app.use('/api/tools', toolsRoutes_1.default);
 app.use('/api/chat', chatRoutes_1.default);
 app.use('/api/sysadmin', sysadminRoutes_1.default);

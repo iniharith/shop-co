@@ -29,6 +29,7 @@ import sysadminRoutes from '../presentation/routes/sysadminRoutes';
 import chatRoutes from '../presentation/routes/chatRoutes';
 import appRoutes from '../presentation/routes/appRoutes';
 import webhookRouter from '../presentation/routes/webhook.route';
+import projectRoutes from '../presentation/routes/projectRoutes';
 import { bandwidthMiddleware } from '../shared/utils/bandwidthTracker';
 
 dotenv.config();
@@ -79,6 +80,7 @@ app.use('/api/folders', virtualFolderRoutes);
 app.use('/api/parcels', parcelRoutes);
 app.use('/api/files', fileUploadRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/projects', projectRoutes);
 app.use('/api/tools', toolsRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/sysadmin', sysadminRoutes);
