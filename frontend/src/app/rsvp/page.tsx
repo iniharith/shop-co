@@ -220,42 +220,7 @@ function FloralCluster({ className }: { className: string }) {
 }
 
 function WeddingMonogram({ className = "" }: { className?: string }) {
-  return (
-    <svg className={`${styles.weddingMonogram} ${className}`} viewBox="0 0 180 180" role="img" aria-label="Fatin dan Habri">
-      <g className={styles.wreath}>
-        <path d="M88 19C49 20 24 49 21 87c-3 39 22 69 57 75" />
-        <path d="M92 19c39 1 64 30 67 68 3 39-22 69-57 75" />
-        <path d="M79 163c8 3 14 3 22 0" />
-        <g>
-          <ellipse cx="48" cy="38" rx="3" ry="8" transform="rotate(-42 48 38)" />
-          <ellipse cx="36" cy="52" rx="3" ry="8" transform="rotate(-55 36 52)" />
-          <ellipse cx="28" cy="69" rx="3" ry="8" transform="rotate(-69 28 69)" />
-          <ellipse cx="24" cy="91" rx="3" ry="8" transform="rotate(-85 24 91)" />
-          <ellipse cx="28" cy="113" rx="3" ry="8" transform="rotate(-108 28 113)" />
-          <ellipse cx="39" cy="133" rx="3" ry="8" transform="rotate(-126 39 133)" />
-          <ellipse cx="56" cy="149" rx="3" ry="8" transform="rotate(-142 56 149)" />
-          <ellipse cx="132" cy="38" rx="3" ry="8" transform="rotate(42 132 38)" />
-          <ellipse cx="144" cy="52" rx="3" ry="8" transform="rotate(55 144 52)" />
-          <ellipse cx="152" cy="69" rx="3" ry="8" transform="rotate(69 152 69)" />
-          <ellipse cx="156" cy="91" rx="3" ry="8" transform="rotate(85 156 91)" />
-          <ellipse cx="152" cy="113" rx="3" ry="8" transform="rotate(108 152 113)" />
-          <ellipse cx="141" cy="133" rx="3" ry="8" transform="rotate(126 141 133)" />
-          <ellipse cx="124" cy="149" rx="3" ry="8" transform="rotate(142 124 149)" />
-        </g>
-        <g className={styles.wreathBerries}>
-          <circle cx="60" cy="27" r="2" /><circle cx="43" cy="43" r="2" /><circle cx="31" cy="61" r="2" />
-          <circle cx="25" cy="80" r="2" /><circle cx="25" cy="103" r="2" /><circle cx="34" cy="124" r="2" />
-          <circle cx="48" cy="142" r="2" /><circle cx="69" cy="157" r="2" />
-          <circle cx="120" cy="27" r="2" /><circle cx="137" cy="43" r="2" /><circle cx="149" cy="61" r="2" />
-          <circle cx="155" cy="80" r="2" /><circle cx="155" cy="103" r="2" /><circle cx="146" cy="124" r="2" />
-          <circle cx="132" cy="142" r="2" /><circle cx="111" cy="157" r="2" />
-        </g>
-      </g>
-      <line className={styles.monogramDivider} x1="90" y1="48" x2="90" y2="128" />
-      <text className={styles.monogramLetter} x="67" y="84">F</text>
-      <text className={styles.monogramLetter} x="111" y="120">H</text>
-    </svg>
-  );
+  return <img className={`${styles.weddingMonogram} ${className}`} src="/images/wedding-monogram.svg" alt="Monogram Fatin dan Habri" />;
 }
 
 function QrPlaceholder() {

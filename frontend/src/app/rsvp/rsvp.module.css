@@ -112,13 +112,8 @@
 .eyebrow { margin: 0 0 .8rem; color: var(--gold); font-family: "Cormorant Garamond", serif; font-size: .7rem; font-weight: 300; letter-spacing: .22em; text-transform: uppercase; }
 .heroEyebrow { margin-top: 1.5rem; opacity: 0; }
 
-.weddingMonogram { display: block; width: 9rem; height: 9rem; overflow: visible; color: var(--gold-light); }
+.weddingMonogram { display: block; width: 9rem; height: 9rem; object-fit: contain; }
 .monogram { opacity: 0; }
-.wreath { fill: none; stroke: currentColor; stroke-width: 1.25; stroke-linecap: round; stroke-linejoin: round; }
-.wreath ellipse { fill: rgba(236, 211, 154, .16); }
-.wreathBerries { fill: currentColor; stroke: none; }
-.monogramDivider { stroke: currentColor; stroke-width: 1.35; }
-.monogramLetter { fill: currentColor; font-family: "Cormorant Garamond", serif; font-size: 38px; font-weight: 300; }
 .request { margin: .35rem 0 1.2rem; color: #ecdcc4; font-family: "Cormorant Garamond", serif; font-size: 1rem; font-style: italic; opacity: 0; }
 
 .hero h1 {
@@ -234,7 +229,6 @@
 .closing .openingSeal, .closing .coverPattern, .closing .coverPanel, .closing .floralCluster { opacity: 0; }
 .openingSeal:hover { scale: 1.06; filter: brightness(1.12); }
 .sealMonogram { width: 5.3rem; height: 5.3rem; }
-.sealMonogram .monogramLetter { font-size: 42px; }
 .openingSeal small { margin-top: -.35rem; color: var(--gold-light); font-family: "Cormorant Garamond", serif; font-size: .56rem; font-weight: 300; letter-spacing: .16em; text-transform: uppercase; }
 .coverFloralFrame { inset: .2rem; }
 
