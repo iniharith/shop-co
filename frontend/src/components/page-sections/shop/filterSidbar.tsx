@@ -54,7 +54,7 @@ export default function FilterSidebar() {
   const materialList = ["Art Paper", "Art Card", "Glossy Photo Paper", "Matte Premium Paper", "Canvas", "Tarpaulin"];
 
   return (
-    <div className="w-full md:max-w-[300px] p-4 md:border-input border-transparent border md:mt-5 rounded-lg bg-white dark:bg-card shadow-sm">
+    <div className="glass-panel w-full md:max-w-[300px] p-5 md:mt-5 rounded-3xl md:sticky md:top-32">
       <div className="flex items-center border-b border-border pb-3 justify-between mb-4">
         <h2 className="text-lg font-bold text-gray-900 dark:text-foreground">Filters</h2>
         <button onClick={resetFilters} className="text-xs font-semibold text-primary hover:underline">
@@ -180,7 +180,7 @@ export default function FilterSidebar() {
 
       {/* Apply Button */}
       <Button
-        className="w-full bg-primary text-white hover:bg-primary/90 rounded-xl py-6 mt-6 font-bold text-sm shadow-md"
+        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-6 mt-6 font-bold text-sm shadow-md"
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       >
         Apply Filters

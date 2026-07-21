@@ -27,7 +27,9 @@ export interface IOrder {
     totalAmount: number;
     paymentMethod: 'COD' | 'ONLINE';
     paymentStatus: 'PENDING' | 'PAID' | 'FAILED';
-    orderStatus: 'PLACED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+    orderStatus: 'PLACED' | 'PROCESSING' | 'READY_TO_SHIP' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+    easyparcelAwb?: string;
+    trackingNumber?: string;
     deliveryBoy?: string;
     address: IAddress;
     isDeleted?: boolean;

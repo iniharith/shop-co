@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200" role="img" aria-labelledby="title desc">
+  <title id="title">Wind Flag</title>
+  <desc id="desc">Kampung Cetak product artwork for Wind Flag</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="hsl(259 48% 15%)"/><stop offset="1" stop-color="hsl(311 55% 7%)"/></linearGradient>
+    <linearGradient id="product" x1="0" y1="0" x2="1" y2="1"><stop stop-color="hsl(259 64% 58%)"/><stop offset="1" stop-color="hsl(311 62% 34%)"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="28" stdDeviation="30" flood-color="#000" flood-opacity=".42"/></filter>
+    <radialGradient id="glow"><stop stop-color="#f0b90b" stop-opacity=".24"/><stop offset="1" stop-color="#f0b90b" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1200" height="1200" rx="72" fill="url(#bg)"/>
+  <circle cx="1020" cy="110" r="390" fill="url(#glow)"/>
+  <circle cx="100" cy="1060" r="310" fill="url(#glow)" opacity=".45"/>
+  <circle cx="384" cy="592" r="8" fill="rgba(255,255,255,.2)"/><circle cx="925" cy="487" r="8" fill="rgba(255,255,255,.2)"/><circle cx="762" cy="500" r="8" fill="rgba(255,255,255,.2)"/><circle cx="247" cy="152" r="8" fill="rgba(255,255,255,.2)"/><circle cx="596" cy="883" r="8" fill="rgba(255,255,255,.2)"/><circle cx="857" cy="474" r="8" fill="rgba(255,255,255,.2)"/><circle cx="554" cy="755" r="8" fill="rgba(255,255,255,.2)"/>
+  <g filter="url(#shadow)"><g transform="translate(600 580) rotate(4)"><rect x="-275" y="-210" width="550" height="330" rx="24" fill="url(#product)" stroke="rgba(255,255,255,.5)" stroke-width="8"/><path d="M-190-115h250M-190-45h375M-190 25h310" stroke="rgba(255,255,255,.78)" stroke-width="24" stroke-linecap="round"/><path d="M-200 120v165M200 120v165M-250 285h500" stroke="#f0b90b" stroke-width="18" stroke-linecap="round"/></g></g>
+  <rect x="64" y="62" width="310" height="54" rx="27" fill="rgba(255,255,255,.09)" stroke="rgba(255,255,255,.16)"/>
+  <circle cx="95" cy="89" r="9" fill="#f0b90b"/>
+  <text x="119" y="96" fill="white" opacity=".8" font-family="Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="2">WIND FLAG</text>
+  <text x="64" y="1010" fill="white" font-family="Arial, sans-serif" font-size="62" font-weight="800">Wind Flag</text>
+  <text x="66" y="1062" fill="white" opacity=".58" font-family="Arial, sans-serif" font-size="23" font-weight="600" letter-spacing="4">KAMPUNG CETAK / 9738</text>
+  <rect x="64" y="1100" width="1072" height="2" fill="rgba(255,255,255,.16)"/>
+  <text x="64" y="1145" fill="#f0b90b" font-family="Arial, sans-serif" font-size="21" font-weight="800" letter-spacing="3">PRINTED WITH PURPOSE</text>
+</svg>

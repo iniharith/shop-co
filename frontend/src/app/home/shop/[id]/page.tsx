@@ -28,9 +28,9 @@ const page = () => {
 
     
   return (
-    <div className="w-full py-5 md:px-10 px-5 max-w-[1400px] mx-auto">
+    <div className="page-shell py-8">
       {/* Custom Dynamic Breadcrumbs */}
-      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-muted-foreground mb-6 bg-white dark:bg-card p-3 rounded-xl border border-gray-200 dark:border-border shadow-sm">
+      <div className="glass-subtle flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-muted-foreground mb-6 p-3 rounded-2xl">
          <Link href="/" className="hover:text-primary transition-colors">Home</Link>
          <span>/</span>
          <Link href="/home/shop" className="hover:text-primary transition-colors">Shop</Link>
@@ -52,14 +52,14 @@ const page = () => {
         <div className="grid border-b border-gray-200 pb-10 grid-cols-1 mt-6 lg:grid-cols-12 gap-8 items-start">
           {/* ── LEFT COLUMN: IMAGES & DESCRIPTION ── */}
           <div className="w-full lg:col-span-7 space-y-8">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+             <div className="glass-panel p-3 md:p-5 rounded-3xl">
               <ProductGallery images={product.images} />
             </div>
             
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+             <div className="glass-panel p-6 rounded-3xl space-y-4">
               <h2 className="text-xl font-bold tracking-tight text-primary">Product Information</h2>
               <div className="w-full h-px bg-gray-200"></div>
-              <p className="text-gray-600 leading-relaxed text-sm md:text-base">
+               <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
                 {product.description || "High quality printing service offering excellent results with vibrant colors and durability. Ideal for professional and personal use."}
               </p>
             </div>

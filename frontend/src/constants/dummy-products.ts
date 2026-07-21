@@ -2,7 +2,7 @@
  * Coded by Harith
  * Kampungcetak ®
  */
-export const dummyProducts: any[] = [
+const catalogProducts: any[] = [
   {
     "_id": "prod-100",
     "name": "Banner",
@@ -3296,7 +3296,7 @@ export const dummyProducts: any[] = [
     ]
   },
   {
-      "_id": "prod-141",
+      "_id": "prod-114",
       "name": "Paper Bag",
       "description": "Premium paper bags with your custom design, perfect for retail, events, and corporate gifts. Available in various sizes and materials.",
       "price": 0,
@@ -10439,3 +10439,15 @@ export const dummyProducts: any[] = [
     ]
   },
 ];
+
+const productImageSlug = (value: string) => value
+  .toLowerCase()
+  .normalize("NFKD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .replace(/[^a-z0-9]+/g, "-")
+  .replace(/^-|-$/g, "");
+
+export const dummyProducts = catalogProducts.map((product) => ({
+  ...product,
+  images: [`/images/catalog/${product._id}-${productImageSlug(product.name)}.svg`],
+}));

@@ -75,18 +75,19 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getServerSession(authConfig);
+  // Public storefront routes must remain available if authentication is temporarily misconfigured.
+  const session = await getServerSession(authConfig).catch(() => null);
   return (
     <html lang="en">
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${dmSans.variable} overflow-x-hidden w-screen ${geistMono.variable} ${fonarto.variable} ${provicaliAmpersand.variable} bg-gray-100 dark:bg-background antialiased`}
+        className={`${geistSans.variable} ${dmSans.variable} overflow-x-hidden ${geistMono.variable} ${fonarto.variable} ${provicaliAmpersand.variable} antialiased`}
       >
         <Provider session={session}>
           <div className="site-header sticky z-50 top-0">
             <Nav />
           </div>
-          <main className="w-full min-h-[50vh]">{children}</main>
+          <main className="relative w-full min-h-[50vh]">{children}</main>
           <div className="site-footer">
             <Cta />
             <Footer />

@@ -3,8 +3,15 @@
  * Kampungcetak ®
  */
 import type { NextConfig } from "next";
+import path from "node:path";
+
+const projectRoot = path.resolve(__dirname);
 
 const nextConfig: NextConfig = {
+  outputFileTracingRoot: projectRoot,
+  turbopack: {
+    root: projectRoot,
+  },
   images: {
     // Images are already optimized via AWS S3 — skip Vercel's transformation pipeline
     unoptimized: true,
@@ -35,9 +42,6 @@ const nextConfig: NextConfig = {
         protocol: "https",
       },
     ],
-  },
-  typescript: {
-    ignoreBuildErrors: true,
   },
 };
 

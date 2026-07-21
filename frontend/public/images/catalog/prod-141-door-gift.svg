@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200" role="img" aria-labelledby="title desc">
+  <title id="title">Door Gift</title>
+  <desc id="desc">Kampung Cetak product artwork for Door Gift</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="hsl(250 48% 15%)"/><stop offset="1" stop-color="hsl(308 55% 7%)"/></linearGradient>
+    <linearGradient id="product" x1="0" y1="0" x2="1" y2="1"><stop stop-color="hsl(250 64% 58%)"/><stop offset="1" stop-color="hsl(308 62% 34%)"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="28" stdDeviation="30" flood-color="#000" flood-opacity=".42"/></filter>
+    <radialGradient id="glow"><stop stop-color="#f0b90b" stop-opacity=".24"/><stop offset="1" stop-color="#f0b90b" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1200" height="1200" rx="72" fill="url(#bg)"/>
+  <circle cx="1020" cy="110" r="390" fill="url(#glow)"/>
+  <circle cx="100" cy="1060" r="310" fill="url(#glow)" opacity=".45"/>
+  <circle cx="530" cy="226" r="4" fill="rgba(255,255,255,.2)"/><circle cx="998" cy="724" r="4" fill="rgba(255,255,255,.2)"/><circle cx="798" cy="198" r="4" fill="rgba(255,255,255,.2)"/><circle cx="785" cy="421" r="4" fill="rgba(255,255,255,.2)"/><circle cx="345" cy="178" r="4" fill="rgba(255,255,255,.2)"/><circle cx="211" cy="542" r="4" fill="rgba(255,255,255,.2)"/><circle cx="751" cy="789" r="4" fill="rgba(255,255,255,.2)"/>
+  <g filter="url(#shadow)"><g transform="translate(600 585) rotate(-2)"><rect x="-245" y="-120" width="490" height="350" rx="34" fill="url(#product)" stroke="rgba(255,255,255,.45)" stroke-width="8"/><rect x="-280" y="-190" width="560" height="105" rx="28" fill="#f0b90b"/><rect x="-42" y="-190" width="84" height="420" fill="rgba(255,255,255,.7)"/><path d="M0-190c-165-25-140-155-48-118 50 20 48 118 48 118zm0 0c165-25 140-155 48-118-50 20-48 118-48 118z" fill="none" stroke="#f0b90b" stroke-width="24"/></g></g>
+  <rect x="64" y="62" width="310" height="54" rx="27" fill="rgba(255,255,255,.09)" stroke="rgba(255,255,255,.16)"/>
+  <circle cx="95" cy="89" r="9" fill="#f0b90b"/>
+  <text x="119" y="96" fill="white" opacity=".8" font-family="Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="2">DOOR GIFT</text>
+  <text x="64" y="1010" fill="white" font-family="Arial, sans-serif" font-size="62" font-weight="800">Door Gift</text>
+  <text x="66" y="1062" fill="white" opacity=".58" font-family="Arial, sans-serif" font-size="23" font-weight="600" letter-spacing="4">KAMPUNG CETAK / 3117</text>
+  <rect x="64" y="1100" width="1072" height="2" fill="rgba(255,255,255,.16)"/>
+  <text x="64" y="1145" fill="#f0b90b" font-family="Arial, sans-serif" font-size="21" font-weight="800" letter-spacing="3">PRINTED WITH PURPOSE</text>
+</svg>

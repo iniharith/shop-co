@@ -7,7 +7,6 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
 import { Instagram } from "lucide-react";
 import { SiTiktok, SiShopee } from "react-icons/si";
 
@@ -40,7 +39,7 @@ const SocialIcon = ({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center justify-center w-8 h-8 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+      className="glass-subtle flex items-center justify-center w-9 h-9 rounded-full hover:border-primary/40 hover:text-primary transition-colors"
     >
       {children}
     </a>
@@ -49,8 +48,8 @@ const SocialIcon = ({
 
 export function Footer() {
   return (
-    <footer className="w-full rounded-t-lg py-12 md:px-[3rem] px-[.5rem] bg-gray-300 border-t">
-      <div className="grid mt-5 grid-cols-1 md:grid-cols-12 gap-8">
+    <footer className="glass-panel-strong w-full rounded-t-[2rem] border-x-0 border-b-0 py-12 md:px-12 px-5">
+      <div className="page-shell grid mt-5 grid-cols-1 md:grid-cols-12 gap-8">
         <div className="md:col-span-3 space-y-4">
 
           {/* ── FOOTER LOGO ── */}
@@ -62,7 +61,7 @@ export function Footer() {
               height={72}
               className="object-contain rounded-2xl"
             />
-            <h2 className="text-2xl font-bold tracking-tighter">
+             <h2 className="text-2xl font-bold tracking-tight text-primary">
               Kampung Cetak
             </h2>
           </Link>
@@ -127,36 +126,16 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row justify-between items-center mt-12 pt-8 border-t">
+      <div className="page-shell flex flex-col md:flex-row justify-between items-center mt-12 pt-8 border-t border-white/10">
         <p className="text-xs text-muted-foreground mb-4 md:mb-0">
           Kampung Cetak © 2026, All Rights Reserved
         </p>
-        <div className="flex items-center space-x-4">
-          <img
-            src="https://cdn-icons-png.flaticon.com/128/349/349221.png"
-            alt="Visa"
-            className="h-8 w-auto"
-          />
-          <img
-            src="https://cdn-icons-png.flaticon.com/128/196/196578.png"
-            alt="Mastercard"
-            className="h-8 w-auto"
-          />
-          <img
-            src="https://cdn-icons-png.flaticon.com/128/174/174861.png"
-            alt="PayPal"
-            className="h-8 w-auto"
-          />
-          <img
-            src="https://cdn-icons-png.flaticon.com/128/888/888871.png"
-            alt="Apple Pay"
-            className="h-8 w-auto"
-          />
-          <img
-            src="https://cdn-icons-png.flaticon.com/128/6124/6124998.png"
-            alt="Google Pay"
-            className="h-8 w-auto"
-          />
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {["VISA", "MASTERCARD", "FPX", "E-WALLET"].map((method) => (
+            <span key={method} className="glass-subtle rounded-lg px-3 py-2 text-[10px] font-black tracking-wider text-muted-foreground">
+              {method}
+            </span>
+          ))}
         </div>
       </div>
     </footer>

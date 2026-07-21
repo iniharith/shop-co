@@ -9,12 +9,12 @@ export default withAuth(
     function proxy(req) {
         const token = req.nextauth.token;
         const isLoggedIn = !!token;
-        const userRole = token?.role;
-        const protectedRoutes = ["/home/cart", "/home/cart/checkout", "/home/profile", "/home/profile/orders"];
+        const protectedRoutes = ["/home/cart", "/home/profile"];
+        const isProtectedRoute = protectedRoutes.some((route) =>
+            req.nextUrl.pathname === route || req.nextUrl.pathname.startsWith(`${route}/`)
+        );
         
-        console.log(req.nextUrl.pathname, isLoggedIn, protectedRoutes.includes(req.nextUrl.pathname))
-        
-        if (!isLoggedIn && protectedRoutes.includes(req.nextUrl.pathname)) {
+        if (!isLoggedIn && isProtectedRoute) {
             return NextResponse.redirect(new URL("/", req.url));
         }
 
@@ -37,5 +37,5 @@ export default withAuth(
 );
 
 export const config = {
-    matcher: ["/home/:path*", "/((?!api|_next/static|_next/image|favicon.ico).*)"],
+    matcher: ["/home/cart/:path*", "/home/profile/:path*"],
 };

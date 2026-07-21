@@ -5,19 +5,12 @@
 "use client";
 import { cn } from "@/lib/utils";
 import type { IProduct } from "@/types/IProduct";
-import { ShoppingCart, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import Image from "next/image";
-import type React from "react";
-import { useState, useEffect } from "react";
 import { useRouter } from "nextjs-toploader/app";
-import axios from "axios";
-import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
 import { Button } from "@heroui/button";
 import { MdOutlineShoppingBag } from "react-icons/md";
 import { useAddtoCart } from "@/hooks/useCart";
-import { motion } from "framer-motion";
-import { item_variants } from "@/constants/framer-motion";
 
 interface ProductCardProps {
   product: IProduct;
@@ -29,52 +22,35 @@ const ProductCard = ({ product }: ProductCardProps) => {
     product.images?.length && product.images[0].startsWith("/") && !product.images[0].startsWith("/images/") && !product.images[0].startsWith("/placeholder")
       ? process.env.NEXT_PUBLIC_BACKEND_URL + product.images[0]
       : product.images[0];
-  const [imageLoading, setImageLoading] = useState(false);
-
-  const handleImageLoad = async () => {
-    try {
-      await axios.get(image).then((res: any) => {
-        setImageLoading(false);
-      });
-    } catch (error) {
-      console.log(error);
-      toast.error(`Error loading image of ${product.name}`);
-    }
-  };
-
   const { mutate, isPending } = useAddtoCart();
   const handleAddToCart = () => {
+    const firstSize = product.sizes?.[0] as unknown as string | { size: string };
     mutate({
       productId: product._id,
-      size: product.sizes[0].size,
+      size: typeof firstSize === "string" ? firstSize : firstSize?.size || "Standard",
       quantity: 1,
     });
   };
 
-  // useEffect(() => {
-  //   handleImageLoad();
-  // }, []);
-
   return (
     <div
       onClick={() => router.push(`/home/shop/${product._id}`)}
-      className="bg-gray-200/50 dark:bg-card shrink-0 hover:bg-gray-400/20 transition-all cursor-pointer hover:scale-95 duration-300 rounded-lg p-1 h-full flex flex-col"
+      className="glass-panel group shrink-0 cursor-pointer rounded-3xl p-2 h-full flex flex-col transition-all duration-300 hover:-translate-y-1 hover:border-primary/30"
     >
-      <div className="relative mb-4 w-full aspect-square">
-        {imageLoading ? (
-          <Skeleton className="w-full bg-gray-400/30 dark:bg-muted h-full rounded-lg" />
-        ) : (
-          <Image
-            src={image || "/placeholder.svg"}
-            alt={product.name}
-            fill
-            className="object-cover rounded-lg"
-          />
-        )}
+      <div className="relative mb-3 w-full aspect-square overflow-hidden rounded-[1.25rem] bg-muted">
+        <Image
+          src={image || "/placeholder.svg"}
+          alt={product.name}
+          fill
+          sizes="(max-width: 768px) 50vw, 25vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
       </div>
-      <div className="w-full p-1  grid grid-cols-1 md:grid-cols-2 gap-2">
-        <div className="col-span-1">
-          <h3 className="font-medium text-lg mb-2">{product.name}</h3>
+      <div className="w-full flex flex-1 flex-col p-2">
+        <div className="flex-1">
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-primary">{product.category?.replaceAll("-", " ")}</p>
+          <h3 className="font-bold text-base md:text-lg mb-2 line-clamp-2">{product.name}</h3>
           <div className="flex items-center mb-2">
             {[...Array(5)].map((_, i) => (
               <Star
@@ -110,11 +86,13 @@ const ProductCard = ({ product }: ProductCardProps) => {
             </div>
           )}
         </div>
-        <div className="col-span-1 md:flex hidden items-center justify-end">
+        <div className="mt-4 flex items-center justify-end" onClick={(event) => event.stopPropagation()}>
           <Button
             onPress={handleAddToCart}
+            isLoading={isPending}
             size="sm"
-            className="bg-muted-foreground/30 cursor-pointer hover:bg-muted-foreground/50 transition-all duration-300 active:scale-95 border-muted-foreground/50 border rounded-full w-[3rem] h-[3rem] text-white"
+            aria-label={`Add ${product.name} to cart`}
+            className="bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90 transition-all duration-300 active:scale-95 border border-white/10 rounded-full w-[2.75rem] h-[2.75rem] min-w-0"
           >
             <MdOutlineShoppingBag />
           </Button>

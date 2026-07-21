@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
+    "artwork:generate": "node scripts/generate-product-artwork.mjs",
     "lint": "next lint"
   },
   "dependencies": {

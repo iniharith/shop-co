@@ -6,24 +6,25 @@
 import { useRouter } from "nextjs-toploader/app";
 import React from "react";
 import { printingCategories } from "@/constants";
+import { Files, Flag, Frame, Gift, Heart, Package, Printer, Shirt, Tag } from "lucide-react";
 
 // Define some mapping for icons and colors based on the category name
-const categoryStyles: Record<string, { icon: string; color: string }> = {
-  "DIGITAL PRINTING": { icon: "🖨️", color: "bg-blue-50 dark:bg-blue-900/20" },
-  "DISPLAY ITEM": { icon: "🚩", color: "bg-red-50 dark:bg-red-900/20" },
-  "DIGITAL OFFSET": { icon: "📄", color: "bg-yellow-50 dark:bg-yellow-900/20" },
-  "PREMIUM GIFT": { icon: "🎁", color: "bg-green-50 dark:bg-green-900/20" },
-  "APPAREL": { icon: "👕", color: "bg-purple-50 dark:bg-purple-900/20" },
-  "FRAME": { icon: "🖼️", color: "bg-orange-50 dark:bg-orange-900/20" },
-  "WEDDING PRODUCT": { icon: "💍", color: "bg-pink-50 dark:bg-pink-900/20" },
-  "FOOD PACKAGING": { icon: "🍔", color: "bg-teal-50 dark:bg-teal-900/20" },
+const categoryStyles: Record<string, { icon: typeof Printer; color: string }> = {
+  "DIGITAL PRINTING": { icon: Printer, color: "text-blue-400" },
+  "DISPLAY ITEM": { icon: Flag, color: "text-rose-400" },
+  "DIGITAL OFFSET": { icon: Files, color: "text-amber-400" },
+  "PREMIUM GIFT": { icon: Gift, color: "text-emerald-400" },
+  "APPAREL": { icon: Shirt, color: "text-violet-400" },
+  "FRAME": { icon: Frame, color: "text-orange-400" },
+  "WEDDING PRODUCT": { icon: Heart, color: "text-pink-400" },
+  "FOOD PACKAGING": { icon: Package, color: "text-cyan-400" },
 };
 
 const Categorys = () => {
   const router = useRouter();
 
   return (
-    <div className="w-full py-16 grid place-items-center bg-gray-50 dark:bg-background border-y border-gray-200 dark:border-border">
+    <div className="w-full py-20 grid place-items-center border-y border-white/10">
       <div className="md:w-[80%] w-[90%]">
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold dark:text-foreground">Explore Our Products</h1>
@@ -31,14 +32,15 @@ const Categorys = () => {
         </div>
         <div className="grid md:grid-cols-4 sm:grid-cols-2 grid-cols-2 gap-4">
           {printingCategories.map((category, index) => {
-            const style = categoryStyles[category.label] || { icon: "🏷️", color: "bg-gray-50 dark:bg-card" };
+            const style = categoryStyles[category.label] || { icon: Tag, color: "text-primary" };
+            const Icon = style.icon;
             return (
               <div
                 key={index}
-                className={`${style.color} cursor-pointer hover:scale-95 transition-all duration-300 rounded-xl p-5 flex flex-col gap-2 border border-transparent dark:border-border/50 hover:shadow-lg`}
+                className="glass-panel group cursor-pointer transition-all duration-300 rounded-3xl p-5 flex flex-col gap-3 hover:-translate-y-1 hover:border-primary/30"
                 onClick={() => router.push(category.href)}
               >
-                <span className="text-4xl drop-shadow-sm">{style.icon}</span>
+                <span className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 ${style.color}`}><Icon size={24} /></span>
                 <h2 className="font-bold text-sm dark:text-foreground">{category.label}</h2>
                 <p className="text-gray-500 dark:text-muted-foreground text-xs leading-relaxed z-10 relative">
                   {category.subItems?.slice(0, 3).map((s, i) => (

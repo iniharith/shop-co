@@ -299,10 +299,10 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const quantityStepNum = currentStep++;
 
   return (
-    <div className="bg-white dark:bg-card rounded-2xl shadow-lg border border-gray-200 dark:border-border sticky top-24 overflow-hidden">
+    <div className="glass-panel rounded-3xl sticky top-32 overflow-hidden">
       
       {/* Product Header inside configurator */}
-      <div className="p-6 bg-gray-50 dark:bg-black/20 border-b border-gray-200 dark:border-border">
+      <div className="p-6 bg-white/5 border-b border-white/10">
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-foreground">{product.name}</h1>
         <div className="flex items-center gap-2 mt-2">
           <StarRating rating={product.rating} maxRating={5} />
@@ -542,7 +542,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
         
           const PricingTable = ({ className }: { className: string }) => (
-            <div className={`bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mt-6 overflow-x-auto w-full mb-10 ${className}`}>
+            <div className={`glass-panel p-6 rounded-3xl mt-6 overflow-x-auto w-full mb-10 ${className}`}>
             <h2 className="text-xl font-bold tracking-tight text-primary mb-4">{product.category === 'kad-kahwin' ? 'Package Pricing' : 'Format & Size Pricing'}</h2>
             <table className="w-full text-sm text-center border-collapse">
               <thead className="bg-gray-50 border-b border-gray-200">
@@ -626,7 +626,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
         {/* ── PRICE SUMMARY ── */}
         {/* End of conditional */}
-        <div className="bg-gray-100 dark:bg-black/40 rounded-xl p-5 space-y-3 mt-8 border border-gray-200 dark:border-border">
+        <div className="glass-subtle rounded-2xl p-5 space-y-3 mt-8">
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
             <span>Subtotal</span>
             <span>RM {subtotal.toFixed(2)}</span>

@@ -26,7 +26,7 @@ import { container_variants, item_variants } from "@/constants/framer-motion";
 
 const ITEMS_PER_PAGE = 8;
 
-const IslamicKhatPage = () => {
+const IslamicKhatContent = () => {
   const { data, isPending } = useGetProductByCategory("Islamic Khat");
   const products = (data as { products?: any[] })?.products || [];
   
@@ -38,16 +38,16 @@ const IslamicKhatPage = () => {
   return (
     <div
     
-      className="w-full py-5 md:px-8 px-5"
+      className="page-shell py-8"
     >
       <Breadcrumbs />
-      <div className="w-full grid md:mt-0 mt-5 grid-cols-1 md:grid-cols-4">
+      <div className="w-full grid gap-6 md:mt-0 mt-5 grid-cols-1 md:grid-cols-4">
         <div className="col-span-1 md:block hidden">
           <FilterSidebar />
         </div>
         <div className="md:col-span-3 flex flex-col gap-5 col-span-4">
-          <div className="w-full flex justify-between items-center">
-            <h1 className="text-2xl font-bold">Islamic Khat</h1>
+          <div className="glass-subtle w-full flex justify-between items-center rounded-2xl px-5 py-4">
+            <div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Curated collection</p><h1 className="text-2xl font-bold">Islamic Khat</h1></div>
             <div className="flex items-center gap-2">
               <p className="text-sm text-gray-500">
                 {products?.length || 0}&nbsp;products&nbsp;found
@@ -69,7 +69,7 @@ const IslamicKhatPage = () => {
             variants={container_variants}
             initial="hidden"
             animate="visible"
-            className="grid md:grid-cols-4 grid-cols-2 gap-5"
+            className="grid xl:grid-cols-3 md:grid-cols-2 grid-cols-2 gap-3 md:gap-5"
           >
             {!isPending &&
               paginatedProducts.length > 0 &&
@@ -112,5 +112,11 @@ const IslamicKhatPage = () => {
     </div>
   );
 };
+
+const IslamicKhatPage = () => (
+  <Suspense fallback={<div className="page-shell py-8"><ProductCardSkeleton /></div>}>
+    <IslamicKhatContent />
+  </Suspense>
+);
 
 export default IslamicKhatPage;

@@ -286,7 +286,7 @@ const Nav = () => {
 
   return (
     <>
-      <div className="w-full flex flex-col bg-gray-200 dark:bg-background">
+      <div className="glass-panel-strong w-full flex flex-col border-x-0 border-t-0">
         {/* ── MAIN HEADER ── */}
         <div className="w-full px-4 md:px-7 py-3 md:py-4 flex justify-between items-center gap-3 md:gap-6 border-b border-transparent dark:border-border">
 
@@ -332,7 +332,7 @@ const Nav = () => {
           {/* Center: Search (desktop only) */}
           <form 
             onSubmit={handleSearch}
-            className="hidden md:flex flex-1 max-w-2xl mx-auto relative items-center bg-white dark:bg-card rounded-full border border-gray-300 dark:border-border shadow-sm overflow-hidden px-4 py-1"
+            className="glass-subtle hidden md:flex flex-1 max-w-2xl mx-auto relative items-center rounded-full overflow-visible px-4 py-1"
           >
             <IoSearch className="text-gray-500 dark:text-muted-foreground text-xl mr-2 shrink-0" />
             <Input
@@ -344,13 +344,13 @@ const Nav = () => {
               onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
               placeholder="Search products, services, or categories..."
             />
-            <Button type="submit" className="bg-primary text-white rounded-full px-6 h-9 shrink-0 ml-2">
+            <Button type="submit" className="bg-primary text-primary-foreground rounded-full px-6 h-9 shrink-0 ml-2 font-bold">
               Search
             </Button>
 
             {/* Live Search Suggestions Dropdown */}
             {isSearchFocused && searchQuery.length > 1 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-card border border-gray-200 dark:border-border shadow-xl rounded-xl max-h-[300px] overflow-y-auto z-50 py-2">
+              <div className="glass-panel-strong absolute top-full left-0 right-0 mt-3 rounded-2xl max-h-[300px] overflow-y-auto z-50 py-2">
                 {searchResults.length > 0 ? (
                   searchResults.map((prod: any) => (
                     <div 
@@ -363,7 +363,7 @@ const Nav = () => {
                       className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-muted cursor-pointer transition-colors"
                     >
                       <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 shrink-0">
-                        <Image src={prod.images[0]?.url || "/images/kampung-cetak-logo.png"} alt={prod.name} width={40} height={40} className="object-cover w-full h-full" />
+                        <Image src={prod.images?.[0] || "/images/kampung-cetak-logo.png"} alt={prod.name} width={40} height={40} className="object-cover w-full h-full" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-sm font-semibold text-gray-900 dark:text-foreground">{prod.name}</span>
@@ -450,7 +450,7 @@ const Nav = () => {
         </div>
 
         {/* ── DESKTOP CATEGORY NAV ── */}
-        <div className="w-full bg-white dark:bg-card border-y border-gray-200 dark:border-border hidden md:block relative z-50">
+        <div className="w-full border-t border-white/10 bg-transparent hidden md:block relative z-50">
           <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
             {printingCategories.map((item, index) => (
               <div key={index} className="relative group">
@@ -468,7 +468,7 @@ const Nav = () => {
                 </div>
 
                 {/* Dropdown */}
-                <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white dark:bg-popover border border-gray-200 dark:border-border shadow-xl rounded-md min-w-[220px] py-2 z-50">
+                <div className="glass-panel-strong absolute left-0 top-full hidden group-hover:flex flex-col rounded-2xl min-w-[220px] py-2 z-50">
                   {item.subItems?.map((sub, idx) => (
                     <Link
                       key={idx}
