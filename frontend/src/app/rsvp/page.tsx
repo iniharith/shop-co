@@ -38,6 +38,22 @@ export default function RsvpPage() {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    const sections = document.querySelectorAll<HTMLElement>("[data-reveal]");
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add(styles.isVisible);
+          observer.unobserve(entry.target);
+        }
+      }),
+      { threshold: 0.16 },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+
   function submitRsvp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -69,26 +85,26 @@ export default function RsvpPage() {
       </nav>
 
       <section className={styles.hero} id="utama">
-        <div className={`${styles.floralCluster} ${styles.topLeft}`} aria-hidden="true"><i /><i /><i /><i /><i /></div>
-        <div className={`${styles.floralCluster} ${styles.topRight}`} aria-hidden="true"><i /><i /><i /><i /><i /></div>
-        <p className={styles.eyebrow}>Walimatulurus</p>
+        <FloralCluster className={styles.topLeft} />
+        <FloralCluster className={styles.topRight} />
+        <p className={`${styles.eyebrow} ${styles.heroEyebrow}`}>Walimatul Urus</p>
         <div className={styles.monogram}><span>H</span><i /><span>F</span></div>
         <p className={styles.request}>Dengan penuh kesyukuran, kami menjemput</p>
         <h1><span>{wedding.groom}</span><em>&amp;</em><span>{wedding.bride}</span></h1>
         <div className={styles.dateRule}><span /> <p>05 . 09 . 2026</p> <span /></div>
         <a className={styles.scrollCue} href="#majlis"><ChevronDown size={18} /> Terokai undangan</a>
-        <div className={`${styles.floralCluster} ${styles.bottomLeft}`} aria-hidden="true"><i /><i /><i /><i /><i /></div>
-        <div className={`${styles.floralCluster} ${styles.bottomRight}`} aria-hidden="true"><i /><i /><i /><i /><i /></div>
+        <FloralCluster className={styles.bottomLeft} />
+        <FloralCluster className={styles.bottomRight} />
       </section>
 
-      <section className={styles.countdownSection} aria-label="Countdown to wedding">
+      <section className={`${styles.countdownSection} ${styles.reveal}`} data-reveal aria-label="Countdown to wedding">
         <p>Menanti hari bahagia</p>
         <div className={styles.countdown}>
           {countdown.map(([value, label]) => <div key={label as string}><strong>{String(value).padStart(2, "0")}</strong><span>{label}</span></div>)}
         </div>
       </section>
 
-      <section className={styles.details} id="majlis">
+      <section className={`${styles.details} ${styles.reveal}`} data-reveal id="majlis">
         <p className={styles.eyebrow}>Save the date</p>
         <h2>Majlis Perkahwinan</h2>
         <p className={styles.detailsIntro}>Merafak sembah dan setinggi-tinggi penghargaan atas kesudian tuan/puan untuk bersama kami meraikan hari istimewa ini.</p>
@@ -99,7 +115,7 @@ export default function RsvpPage() {
         </div>
       </section>
 
-      <section className={styles.rsvpSection} id="rsvp">
+      <section className={`${styles.rsvpSection} ${styles.reveal}`} data-reveal id="rsvp">
         <div className={styles.rsvpPanel}>
           <p className={styles.eyebrow}>Pengesahan kehadiran</p>
           <h2>RSVP</h2>
@@ -123,5 +139,15 @@ export default function RsvpPage() {
 
       <footer className={styles.invitationFooter}><Users size={17} /><p>Dengan penuh kesyukuran, kami menantikan kehadiran anda.</p></footer>
     </main>
+  );
+}
+
+function FloralCluster({ className }: { className: string }) {
+  return (
+    <div className={`${styles.floralCluster} ${className}`} aria-hidden="true">
+      <span className={styles.vine} />
+      <i /><i /><i /><i /><i />
+      <b /><b /><b />
+    </div>
   );
 }
