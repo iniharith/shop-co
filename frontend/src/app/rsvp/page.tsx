@@ -7,6 +7,8 @@ import styles from "./rsvp.module.css";
 const wedding = {
   groom: "Muhammad Habri Bin Marzuki",
   bride: "Nor Fatin Nabila Binti Nasir",
+  groomDisplay: "Habri",
+  brideDisplay: "Fatin",
   date: "Saturday, 5 September 2026",
   time: "11:00 AM - 4:00 PM",
   venue: "Kuasa Kaseh Event Space",
@@ -15,6 +17,7 @@ const wedding = {
 };
 
 type Attendance = "hadir" | "tidak-hadir" | "";
+type Sheet = "calendar" | "gift" | "location" | "contact" | "rsvp" | null;
 
 function getTimeRemaining() {
   const difference = Math.max(0, wedding.startsAt - Date.now());
@@ -33,6 +36,7 @@ export default function RsvpPage() {
   const [error, setError] = useState("");
   const [coverState, setCoverState] = useState<"open" | "closing" | "closed">("open");
   const [musicEnabled, setMusicEnabled] = useState(false);
+  const [activeSheet, setActiveSheet] = useState<Sheet>(null);
 
   useEffect(() => {
     setRemaining(getTimeRemaining());
@@ -106,21 +110,34 @@ export default function RsvpPage() {
         <button type="button" onClick={() => setMusicEnabled((enabled) => !enabled)} aria-label={musicEnabled ? "Matikan muzik" : "Mainkan muzik"}>
           {musicEnabled ? <Volume2 /> : <VolumeX />}<span>Muzik</span>
         </button>
-        <a href="#kalendar"><CalendarDays /><span>Kalendar</span></a>
-        <a href="#salam-kasih"><Gift /><span>Salam Kasih</span></a>
-        <a href="#majlis"><MapPin /><span>Lokasi</span></a>
-        <a href="#hubungi"><PhoneCall /><span>Hubungi</span></a>
-        <a href="#rsvp"><Check /><span>RSVP</span></a>
+        <button type="button" onClick={() => setActiveSheet("calendar")}><CalendarDays /><span>Kalendar</span></button>
+        <button type="button" onClick={() => setActiveSheet("gift")}><Gift /><span>Salam Kasih</span></button>
+        <button type="button" onClick={() => setActiveSheet("location")}><MapPin /><span>Lokasi</span></button>
+        <button type="button" onClick={() => setActiveSheet("contact")}><PhoneCall /><span>Hubungi</span></button>
+        <button type="button" onClick={() => setActiveSheet("rsvp")}><Check /><span>RSVP</span></button>
       </nav>
+
+      {activeSheet && (
+        <div className={styles.sheetLayer} role="presentation" onClick={() => setActiveSheet(null)}>
+          <section className={styles.actionSheet} role="dialog" aria-modal="true" aria-label="Maklumat jemputan" onClick={(event) => event.stopPropagation()}>
+            <button className={styles.sheetClose} type="button" onClick={() => setActiveSheet(null)} aria-label="Tutup">&times;</button>
+            {activeSheet === "calendar" && <CalendarSheet />}
+            {activeSheet === "gift" && <GiftSheet />}
+            {activeSheet === "location" && <LocationSheet />}
+            {activeSheet === "contact" && <ContactSheet />}
+            {activeSheet === "rsvp" && <QuickRsvp attendance={attendance} setAttendance={setAttendance} close={() => setActiveSheet(null)} />}
+          </section>
+        </div>
+      )}
 
       <section className={styles.hero} id="utama">
         <FloralCluster className={styles.topLeft} />
         <FloralCluster className={styles.topRight} />
-        <p className={`${styles.eyebrow} ${styles.heroEyebrow}`}>Walimatul Urus</p>
         <div className={styles.monogram}><span>H</span><i /><span>F</span></div>
+        <p className={`${styles.eyebrow} ${styles.heroEyebrow}`}>Walimatul Urus</p>
         <p className={styles.request}>Dengan penuh kesyukuran, kami menjemput</p>
-        <h1><span>{wedding.groom}</span><em>&amp;</em><span>{wedding.bride}</span></h1>
-        <div className={styles.dateRule}><span /> <p>05 . 09 . 2026</p> <span /></div>
+        <h1><span>{wedding.brideDisplay}</span><em>&amp;</em><span>{wedding.groomDisplay}</span></h1>
+        <div className={styles.dateRule}><span /> <p>Sabtu &nbsp; 05 . 09 . 2026</p> <span /></div>
         <a className={styles.scrollCue} href="#majlis"><ChevronDown size={18} /> Terokai undangan</a>
         <FloralCluster className={styles.bottomLeft} />
         <FloralCluster className={styles.bottomRight} />
@@ -220,4 +237,34 @@ function QrPlaceholder() {
   const cells = Array.from({ length: 169 }, (_, index) => index);
   const filled = new Set([0, 1, 2, 3, 12, 13, 14, 15, 24, 25, 26, 27, 36, 37, 38, 39, 48, 49, 50, 51, 60, 61, 62, 63, 72, 73, 74, 75, 84, 85, 86, 87, 96, 97, 98, 99, 108, 109, 110, 111, 120, 121, 122, 123, 132, 133, 134, 135, 144, 145, 146, 147, 156, 157, 158, 159]);
   return <div className={styles.qrPlaceholder} aria-label="Kod QR sementara">{cells.map((index) => <i className={filled.has(index) || (index * 7 + index % 5) % 4 === 0 ? styles.qrDark : ""} key={index} />)}</div>;
+}
+
+function SheetHeading({ children }: { children: React.ReactNode }) {
+  return <><div className={styles.sheetOrnament}>H <span>&amp;</span> F</div><h2>{children}</h2></>;
+}
+
+function CalendarSheet() {
+  return <div className={styles.sheetContent}><SheetHeading>Kalendar</SheetHeading><p>Sabtu, 5 September 2026<br />11:00 pagi - 4:00 petang</p><a className={styles.sheetButton} href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Majlis+Perkahwinan+Muhammad+Habri+%26+Nor+Fatin+Nabila&dates=20260905T030000Z/20260905T080000Z&location=Kuasa+Kaseh+Event+Space" target="_blank" rel="noreferrer">Tambah ke Google Calendar</a></div>;
+}
+
+function GiftSheet() {
+  return <div className={styles.sheetContent}><SheetHeading>Salam Kasih</SheetHeading><p>Kehadiran dan doa restu anda sudah cukup bermakna.</p><QrPlaceholder /><small>QR sementara - menunggu kod bank pengantin</small></div>;
+}
+
+function LocationSheet() {
+  return <div className={styles.sheetContent}><SheetHeading>Lokasi</SheetHeading><MapPin /><strong>Kuasa Kaseh Event Space</strong><a className={styles.sheetButton} href="https://maps.app.goo.gl/oG8vJLNdpdmtfhqT6?g_st=aw" target="_blank" rel="noreferrer">Buka Google Maps</a></div>;
+}
+
+function ContactSheet() {
+  return <div className={styles.sheetContent}><SheetHeading>Hubungi</SheetHeading><p>Nombor telefon keluarga akan dikemas kini.</p></div>;
+}
+
+function QuickRsvp({ attendance, setAttendance, close }: { attendance: Attendance; setAttendance: (value: Attendance) => void; close: () => void }) {
+  function choose(value: Attendance) {
+    setAttendance(value);
+    close();
+    window.setTimeout(() => document.getElementById("rsvp")?.scrollIntoView({ behavior: "smooth" }), 250);
+  }
+
+  return <div className={styles.sheetContent}><SheetHeading>RSVP &amp; Ucapan</SheetHeading><p>Sahkan kehadiran anda.</p><div className={styles.quickRsvp}><button className={attendance === "hadir" ? styles.selected : ""} type="button" onClick={() => choose("hadir")}><Check />Hadir</button><button className={attendance === "tidak-hadir" ? styles.selected : ""} type="button" onClick={() => choose("tidak-hadir")}><span>&times;</span>Tidak Hadir</button></div></div>;
 }
