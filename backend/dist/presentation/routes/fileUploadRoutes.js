@@ -469,7 +469,7 @@ router.get('/s/:slug', (0, express_async_handler_1.default)((req, res) => __awai
     res.setHeader('Cache-Control', 'no-store');
     const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
     if (!link) {
-        res.json({ success: true, data: [], folderName: null });
+        res.status(404).json({ success: false, code: 'SHARE_LINK_NOT_FOUND', message: 'Share link not found' });
         return;
     }
     // Match files 3 ways and merge: by the exact slug stamp (covers every
@@ -566,7 +566,8 @@ router.post('/customer/upload-url', (0, express_async_handler_1.default)((req, r
     const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const key = `kampungcetak/customer_uploads/${username}/${uniqueSuffix}-${safeFilename}`;
+    const safeUsername = username.toString().replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 100) || 'customer';
+    const key = `kampungcetak/customer_uploads/${safeUsername}/${uniqueSuffix}-${safeFilename}`;
     const command = new PutObjectCommand({
         Bucket: S3_BUCKET_NAME,
         Key: key,
@@ -612,7 +613,7 @@ router.post('/customer/save-metadata', (0, express_async_handler_1.default)((req
         category: 'CUSTOMER_UPLOAD',
         filename: f.key,
         originalName: f.originalName,
-        mimetype: f.mimetype,
+        mimetype: f.mimetype || 'application/octet-stream',
         size: f.size,
         path: f.path,
         taskId: savedTask._id.toString(),
@@ -686,7 +687,7 @@ router.post('/s/:slug/save-metadata', (0, express_async_handler_1.default)(decod
         shareSlug,
         filename: f.key,
         originalName: f.originalName,
-        mimetype: f.mimetype,
+        mimetype: f.mimetype || 'application/octet-stream',
         size: f.size,
         path: f.path,
         adminReviewed: false,

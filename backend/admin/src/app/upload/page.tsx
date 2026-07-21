@@ -103,7 +103,7 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(url, { ...options, signal: controller.signal });
+    return await fetch(url, { ...options, credentials: "omit", signal: controller.signal });
   } catch (err: any) {
     if (err.name === "AbortError") {
       throw new Error("Request timed out. Please check your internet connection and try again.");
@@ -119,7 +119,8 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
 function uploadToS3WithProgress(url: string, file: File, onProgress: (pct: number) => void): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.timeout = 180000; // 3 minutes — large print files over mobile data need headroom
+    // Allow roughly 128 KB/s for large artwork, bounded to 5-30 minutes.
+    xhr.timeout = Math.min(30 * 60 * 1000, Math.max(5 * 60 * 1000, Math.ceil(file.size / (128 * 1024) * 1000)));
     xhr.open("PUT", url);
     xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
     xhr.upload.onprogress = (e) => {
@@ -243,7 +244,7 @@ export default function CustomerUploadPortal() {
     setFileStates(prev => prev.filter((_, i) => i !== index));
   };
 
-  const uploadOneFile = async (index: number) => {
+  const uploadOneFile = async (index: number): Promise<FileState["uploaded"] | null> => {
     const { file } = fileStates[index];
     setFileStates(prev => prev.map((f, i) => i === index ? { ...f, status: "uploading", progress: 0, error: undefined } : f));
 
@@ -276,15 +277,15 @@ export default function CustomerUploadPortal() {
       const uploaded = {
         key,
         originalName: file.name,
-        mimetype: file.type,
+        mimetype: file.type || "application/octet-stream",
         size: file.size,
         path: publicUrl
       };
       setFileStates(prev => prev.map((f, i) => i === index ? { ...f, status: "done", progress: 100, uploaded } : f));
-      return true;
+      return uploaded;
     } catch (err: any) {
       setFileStates(prev => prev.map((f, i) => i === index ? { ...f, status: "error", error: err.message || "Upload failed" } : f));
-      return false;
+      return null;
     }
   };
 
@@ -309,35 +310,28 @@ export default function CustomerUploadPortal() {
     // the main fix for the page feeling slow with multiple files.
     let cursor = 0;
     let completedCount = 0;
+    const uploadedByIndex = new Map<number, FileState["uploaded"]>();
     async function worker() {
       while (cursor < pendingIndexes.length) {
         const myIndex = pendingIndexes[cursor++];
-        await uploadOneFile(myIndex);
+        const uploaded = await uploadOneFile(myIndex);
+        if (uploaded) uploadedByIndex.set(myIndex, uploaded);
         completedCount++;
         toast.loading(`Uploading files (${completedCount}/${pendingIndexes.length})...`, { id: toastId });
       }
     }
     await Promise.all(Array.from({ length: Math.min(UPLOAD_CONCURRENCY, pendingIndexes.length) }, worker));
 
-    // Re-read latest state after all workers finish
-    setFileStates(current => {
-      const allDone = current.every(f => f.status === "done");
-      const anyFailed = current.some(f => f.status === "error");
+    const uploadedFiles = fileStates.map((state, index) => state.uploaded || uploadedByIndex.get(index));
+    if (uploadedFiles.some(file => !file)) {
+      toast.error("Some files failed to upload. Fix your connection and press Submit again; completed files won't be re-uploaded.", { id: toastId });
+      setUploading(false);
+      return;
+    }
 
-      if (!allDone) {
-        toast.error(
-          anyFailed
-            ? "Some files failed to upload. Fix your connection and press Submit again — completed files won't be re-uploaded."
-            : "Upload incomplete. Please try again.",
-          { id: toastId }
-        );
-        setUploading(false);
-        return current;
-      }
-
-      // 3. All files uploaded to S3 — now save metadata (10s timeout)
-      const uploadedFiles = current.map(f => f.uploaded).filter(Boolean);
-      fetchWithTimeout(`${BACKEND}/api/files/customer/save-metadata`, {
+    // Finalize outside a React state updater so Strict Mode cannot submit twice.
+    try {
+      const metaRes = await fetchWithTimeout(`${BACKEND}/api/files/customer/save-metadata`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -347,24 +341,23 @@ export default function CustomerUploadPortal() {
           phoneNumber: phoneNumber.trim(),
           item: item.trim()
         })
-      }, 60000)
-        .then(async (metaRes) => {
-          if (!metaRes.ok) throw new Error("Failed to save file metadata. Please try submitting again.");
-          const data = await metaRes.json();
-          setGeneratedLink(`https://admin.kampungcetak.com/share/${data.shareLinkSlug}`);
-          toast.success(langDict.successStatus, { id: toastId });
-          setSuccess(true);
-          setFileStates([]);
-        })
-        .catch((err: any) => {
-          // Files are already safely in S3 at this point — pressing Submit
-          // again will retry only the metadata save, not re-upload files.
-          toast.error(err.message || "Couldn't finalize your submission. Please press Submit again.", { id: toastId });
-        })
-        .finally(() => setUploading(false));
-
-      return current;
-    });
+      }, 60000);
+      const data = await metaRes.json().catch(() => null);
+      if (!metaRes.ok || !data?.success) {
+        throw new Error(data?.message || "Failed to save file metadata. Please try submitting again.");
+      }
+      if (!data.shareLinkSlug || typeof data.shareLinkSlug !== "string") {
+        throw new Error("Upload completed, but the share link could not be created. Please contact admin.");
+      }
+      setGeneratedLink(`${window.location.origin}/share/${data.shareLinkSlug}`);
+      toast.success(langDict.successStatus, { id: toastId });
+      setSuccess(true);
+      setFileStates([]);
+    } catch (err: any) {
+      toast.error(err.message || "Couldn't finalize your submission. Please press Submit again.", { id: toastId });
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (success) {

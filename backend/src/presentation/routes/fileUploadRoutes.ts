@@ -558,7 +558,7 @@ router.get(
     res.setHeader('Cache-Control', 'no-store');
     const link = await shareLinkRepository.findBySlug(req.params.slug);
     if (!link) {
-      res.json({ success: true, data: [], folderName: null });
+      res.status(404).json({ success: false, code: 'SHARE_LINK_NOT_FOUND', message: 'Share link not found' });
       return;
     }
 
@@ -693,7 +693,8 @@ router.post(
     
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const key = `kampungcetak/customer_uploads/${username}/${uniqueSuffix}-${safeFilename}`;
+    const safeUsername = username.toString().replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 100) || 'customer';
+    const key = `kampungcetak/customer_uploads/${safeUsername}/${uniqueSuffix}-${safeFilename}`;
 
     const command = new PutObjectCommand({
       Bucket: S3_BUCKET_NAME,
@@ -751,7 +752,7 @@ router.post(
           category: 'CUSTOMER_UPLOAD',
           filename: f.key,
           originalName: f.originalName,
-          mimetype: f.mimetype,
+          mimetype: f.mimetype || 'application/octet-stream',
           size: f.size,
           path: f.path,
           taskId: savedTask._id.toString(),
@@ -851,7 +852,7 @@ router.post(
           shareSlug,
           filename: f.key,
           originalName: f.originalName,
-          mimetype: f.mimetype,
+          mimetype: f.mimetype || 'application/octet-stream',
           size: f.size,
           path: f.path,
           adminReviewed: false,

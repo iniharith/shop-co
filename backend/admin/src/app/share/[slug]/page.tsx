@@ -17,6 +17,7 @@ import Image from "next/image";
 import ThemeToggle from "@/components/layout/ThemeToggle/theme-toggle";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
 export default function PublicSlugFolderView({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -24,7 +25,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [folderName, setFolderName] = useState("");
-  const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState<"not-found" | "service" | null>(null);
   const [noteState, setNoteState] = useState<Record<string, { open: boolean; value: string; saving: boolean }>>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
@@ -36,17 +37,21 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
 
   const fetchFiles = async () => {
     try {
+      setLoadError(null);
       const res = await publicApiFetch(`${BACKEND}/api/files/s/${slug}`);
-      const data = await res.json();
-      if (data?.success) {
+      const data = await res.json().catch(() => null);
+      if (res.status === 404) {
+        setLoadError("not-found");
+      } else if (!res.ok || !data) {
+        setLoadError("service");
+      } else if (data.success && data.folderName) {
         setFiles(data.data || []);
-        if (data.folderName) setFolderName(data.folderName);
-        else setNotFound(true);
+        setFolderName(data.folderName);
       } else {
-        setNotFound(true);
+        setLoadError("not-found");
       }
     } catch {
-      setNotFound(true);
+      setLoadError("service");
     } finally {
       setLoading(false);
     }
@@ -56,14 +61,21 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
+    const selectedFiles = Array.from(e.target.files);
+    const oversizedFiles = selectedFiles.filter(file => file.size > MAX_FILE_SIZE);
+    if (oversizedFiles.length > 0) {
+      toast.error(`${oversizedFiles.map(file => file.name).join(", ")} exceeded the 200MB limit.`);
+      e.target.value = "";
+      return;
+    }
     setUploading(true);
-    setUploadStats({ current: 0, total: e.target.files.length });
-    const toastId = toast.loading(`Uploading files (0/${e.target.files.length})...`);
+    setUploadStats({ current: 0, total: selectedFiles.length });
+    const toastId = toast.loading(`Uploading files (0/${selectedFiles.length})...`);
     try {
-      for (let i = 0; i < e.target.files.length; i++) {
-        toast.loading(`Uploading files (${i + 1}/${e.target.files.length})...`, { id: toastId });
-        setUploadStats({ current: i + 1, total: e.target.files.length });
-        const file = e.target.files[i];
+      for (let i = 0; i < selectedFiles.length; i++) {
+        toast.loading(`Uploading files (${i + 1}/${selectedFiles.length})...`, { id: toastId });
+        setUploadStats({ current: i + 1, total: selectedFiles.length });
+        const file = selectedFiles[i];
         
         // 1. Get presigned URL
         const urlRes = await publicApiFetch(`${BACKEND}/api/files/s/${slug}/upload-url`, {
@@ -72,8 +84,9 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
           body: JSON.stringify({ filename: file.name, contentType: file.type })
         });
         
-        if (!urlRes.ok) throw new Error("Gagal mendapatkan link muat naik");
-        const { url, key, publicUrl } = await urlRes.json();
+        const urlData = await urlRes.json().catch(() => null);
+        if (!urlRes.ok || !urlData?.url) throw new Error(urlData?.message || "Failed to get upload link");
+        const { url, key, publicUrl } = urlData;
         
         // 2. Upload directly to S3
         const s3Res = await fetch(url, {
@@ -87,7 +100,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
         const fileData = {
           key,
           originalName: file.name,
-          mimetype: file.type,
+          mimetype: file.type || "application/octet-stream",
           size: file.size,
           path: publicUrl
         };
@@ -99,7 +112,8 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
           body: JSON.stringify({ files: [fileData] })
         });
         
-        if (!metaRes.ok) throw new Error("Gagal menyimpan metadata fail");
+        const metaData = await metaRes.json().catch(() => null);
+        if (!metaRes.ok || !metaData?.success) throw new Error(metaData?.message || "Failed to save file metadata");
       }
 
       toast.success("Files uploaded successfully!", { id: toastId });
@@ -225,10 +239,12 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
     </div>
   );
 
-  if (notFound) return (
+  if (loadError) return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="p-12 text-center text-muted-foreground bg-card border border-dashed rounded-xl shadow-sm max-w-md">
-        This link is invalid or has expired.
+        {loadError === "not-found"
+          ? "This share link was not found. Please ask the sender to generate a new link."
+          : "The file service is temporarily unavailable. Please try again shortly."}
       </div>
     </div>
   );
@@ -264,7 +280,6 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
               className="hidden"
               onChange={handleUpload}
               disabled={uploading}
-              accept="image/*,application/pdf"
             />
             <label htmlFor="upload-artwork" className="w-full sm:w-auto">
               <Button asChild variant="outline" className="w-full sm:w-auto cursor-pointer gap-2" disabled={uploading}>
