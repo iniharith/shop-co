@@ -77,6 +77,9 @@ export default function PackagingManager() {
   const [bulkTargetStatus, setBulkTargetStatus] = useState<string>("SHIPPED");
   const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN", "IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING", "PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "FAILED"];
 
+  // Optimistic removal — folders removed instantly from UI when tick button is clicked
+  const [movedFolderIds, setMovedFolderIds] = useState<Set<string>>(new Set());
+
   // Upload Modal State
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadData, setUploadData] = useState({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "" });
@@ -94,6 +97,9 @@ export default function PackagingManager() {
     if (!confirm(`Move ${selectedFolderIds.length} folder(s) to "${bulkTargetStatus.replace(/_/g, ' ')}"?`)) return;
 
     const targets = groupedFiles.filter((g: any) => selectedFolderIds.includes(`${g.folderName}-${g.orderId}-${g.taskId || ""}`));
+    // Optimistic: remove all selected folders instantly
+    setMovedFolderIds(prev => new Set([...prev, ...selectedFolderIds]));
+    setSelectedFolder(null);
     let done = 0;
     const total = targets.length;
     const finish = () => {
@@ -121,6 +127,8 @@ export default function PackagingManager() {
   const groupedFiles = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     return groupedFromServer.filter((group: any) => {
+      const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
+      if (movedFolderIds.has(folderId)) return false; // optimistic removal
       if (group.orderStatus !== activeSubTab) return false;
       if (activeTab !== "ALL" && group.category !== activeTab && group.files?.[0]?.category !== activeTab) return false;
       if (!query) return true;
@@ -129,7 +137,7 @@ export default function PackagingManager() {
         || group.taskId?.toLowerCase().includes(query)
         || group.files?.some((file: any) => file.originalName?.toLowerCase().includes(query));
     });
-  }, [groupedFromServer, searchQuery, activeTab, activeSubTab]);
+  }, [groupedFromServer, searchQuery, activeTab, activeSubTab, movedFolderIds]);
 
   // Once a folder is opened, fetch its full file details on demand — the
   // folder LIST only ever needed names/counts, which the slim index above
@@ -269,16 +277,26 @@ export default function PackagingManager() {
 
   const handleAdvanceFlow = (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    // Packaging has just one stage, so the tick always moves the item on to Shipped
+    // Optimistic: instantly remove from list and clear selection
+    const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
+    setMovedFolderIds(prev => new Set([...prev, folderId]));
+    setSelectedFolder(null);
+
     if (group.taskId) {
       updateTask({ id: group.taskId, data: { status: "SHIPPED" } }, {
-        onSuccess: () => toast.success("Task moved to Shipped!"),
-        onError: () => toast.error("Failed to update status")
+        onSuccess: () => toast.success("✅ Moved to Shipped!"),
+        onError: () => {
+          toast.error("Failed to update status");
+          setMovedFolderIds(prev => { const s = new Set(prev); s.delete(folderId); return s; });
+        }
       });
     } else if (group.orderId) {
       updateOrderStatus({ id: group.orderId, status: "SHIPPED" }, {
-        onSuccess: () => toast.success("Order moved to Shipped!"),
-        onError: () => toast.error("Failed to update status")
+        onSuccess: () => toast.success("✅ Moved to Shipped!"),
+        onError: () => {
+          toast.error("Failed to update status");
+          setMovedFolderIds(prev => { const s = new Set(prev); s.delete(folderId); return s; });
+        }
       });
     }
   };
