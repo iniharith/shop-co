@@ -299,10 +299,10 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const quantityStepNum = currentStep++;
 
   return (
-    <div className="glass-panel rounded-3xl sticky top-32 overflow-hidden">
+    <div className="bg-white dark:bg-card rounded-2xl shadow-lg border border-gray-200 dark:border-border sticky top-24 overflow-hidden">
       
       {/* Product Header inside configurator */}
-      <div className="p-6 bg-white/5 border-b border-white/10">
+      <div className="p-6 bg-gray-50 dark:bg-black/20 border-b border-gray-200 dark:border-border">
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-foreground">{product.name}</h1>
         <div className="flex items-center gap-2 mt-2">
           <StarRating rating={product.rating} maxRating={5} />
@@ -542,24 +542,24 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
         
           const PricingTable = ({ className }: { className: string }) => (
-            <div className={`glass-panel p-6 rounded-3xl mt-6 overflow-x-auto w-full mb-10 ${className}`}>
+            <div className={`bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mt-6 overflow-x-auto w-full mb-10 ${className}`}>
             <h2 className="text-xl font-bold tracking-tight text-primary mb-4">{product.category === 'kad-kahwin' ? 'Package Pricing' : 'Format & Size Pricing'}</h2>
             <table className="w-full text-sm text-center border-collapse">
-              <thead className="bg-white/5 border-b border-border">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="p-3 text-left font-semibold text-foreground border border-border">Quantity</th>
+                  <th className="p-3 text-left font-semibold text-gray-700 border border-gray-200">Quantity</th>
                   {product.category === 'flyers' ? (
                     <>
-                      <th className="p-3 font-semibold text-foreground border border-border w-1/4">A3</th>
-                      <th className="p-3 font-semibold text-foreground border border-border w-1/4">A4</th>
-                      <th className="p-3 font-semibold text-foreground border border-border w-1/4">A5</th>
+                      <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A3</th>
+                      <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A4</th>
+                      <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A5</th>
                     </>
                   ) : (
-                    <th className="p-3 font-semibold text-foreground border border-border w-1/2">Price (RM)</th>
+                    <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/2">Price (RM)</th>
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-gray-200">
                 {availableQuantities.map((q) => {
                   const qPrices = matrixRow.quantityPrices[q];
                   
@@ -567,15 +567,15 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                     const price = qPrices; // For kad-kahwin, qPrices is just a number
                     const isSelected = quantity === q;
                     return (
-                      <tr key={q} className="hover:bg-white/5 transition-colors">
-                        <td className="p-3 text-left font-semibold text-foreground border border-border">{q}</td>
+                      <tr key={q} className="hover:bg-gray-50 transition-colors">
+                        <td className="p-3 text-left font-semibold text-gray-800 border border-gray-200">{q}</td>
                         <td 
                           onClick={() => {
                             if (price) {
                               setQuantity(q);
                             }
                           }}
-                          className={`p-3 border border-border transition-all ${!price ? 'bg-muted/40 text-muted-foreground cursor-not-allowed' : 'cursor-pointer'} ${isSelected ? 'bg-primary/10 border-2 border-primary font-bold text-primary shadow-inner' : 'text-muted-foreground hover:bg-primary/5'}`}
+                          className={`p-3 border border-gray-200 transition-all ${!price ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'cursor-pointer'} ${isSelected ? 'bg-primary/10 border-2 border-primary font-bold text-primary shadow-inner' : 'text-gray-600 hover:bg-primary/5'}`}
                         >
                           {price ? `RM ${price.toFixed(2)}` : 'N/A'}
                         </td>
@@ -584,8 +584,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                   }
 
                   return (
-                    <tr key={q} className="hover:bg-white/5 transition-colors">
-                      <td className="p-3 text-left font-semibold text-foreground border border-border">{q}</td>
+                    <tr key={q} className="hover:bg-gray-50 transition-colors">
+                      <td className="p-3 text-left font-semibold text-gray-800 border border-gray-200">{q}</td>
                       {['A3', 'A4', 'A5'].map((size) => {
                         const price = qPrices ? qPrices[size] : null;
                         const isSelected = quantity === q && selectedGridSize === size;
@@ -598,7 +598,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                 setSelectedGridSize(size);
                               }
                             }}
-                            className={`p-3 border border-border transition-all ${!price ? 'bg-muted/40 text-muted-foreground cursor-not-allowed' : 'cursor-pointer'} ${isSelected ? 'bg-primary/10 border-2 border-primary font-bold text-primary shadow-inner' : 'text-muted-foreground hover:bg-primary/5'}`}
+                            className={`p-3 border border-gray-200 transition-all ${!price ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'cursor-pointer'} ${isSelected ? 'bg-primary/10 border-2 border-primary font-bold text-primary shadow-inner' : 'text-gray-600 hover:bg-primary/5'}`}
                           >
                             {price ? `RM ${price.toFixed(2)}` : 'N/A'}
                           </td>
@@ -626,7 +626,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
         {/* ── PRICE SUMMARY ── */}
         {/* End of conditional */}
-        <div className="glass-subtle rounded-2xl p-5 space-y-3 mt-8">
+        <div className="bg-gray-100 dark:bg-black/40 rounded-xl p-5 space-y-3 mt-8 border border-gray-200 dark:border-border">
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
             <span>Subtotal</span>
             <span>RM {subtotal.toFixed(2)}</span>

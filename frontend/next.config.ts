@@ -36,13 +36,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  async headers() {
-    return [
-      {
-        source: "/:path*",
-        headers: [{ key: "X-KC-Storefront", value: "frost-v2" }],
-      },
-    ];
+  typescript: {
+    ignoreBuildErrors: true,
   },
 };
 

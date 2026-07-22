@@ -10,6 +10,8 @@ import Provider from "@/components/provider";
 import Nav from "@/components/global/nav";
 import { Footer } from "@/components/global/footer";
 import Cta from "@/components/global/cta";
+import { getServerSession } from "next-auth";
+import { authConfig } from "@/config/auth.config";
 
 const fonarto = localFont({
   src: "./fonts/fonarto.woff",
@@ -68,22 +70,23 @@ export const metadata: Metadata = {
 
 import FloatingChatWidget from "@/components/global/FloatingChatWidget";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getServerSession(authConfig);
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${dmSans.variable} ${geistMono.variable} ${fonarto.variable} ${provicaliAmpersand.variable} overflow-x-hidden antialiased`}
+        className={`${geistSans.variable} ${dmSans.variable} overflow-x-hidden w-screen ${geistMono.variable} ${fonarto.variable} ${provicaliAmpersand.variable} bg-gray-100 dark:bg-background antialiased`}
       >
-        <Provider session={null}>
+        <Provider session={session}>
           <div className="site-header sticky z-50 top-0">
             <Nav />
           </div>
-          <main className="relative w-full min-h-[50vh]">{children}</main>
+          <main className="w-full min-h-[50vh]">{children}</main>
           <div className="site-footer">
             <Cta />
             <Footer />

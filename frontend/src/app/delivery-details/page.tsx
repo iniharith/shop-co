@@ -2,61 +2,82 @@
  * Coded by Harith
  * Kampungcetak ®
  */
+"use client";
+
 import React from "react";
-import { Clock3, MapPin, PackageCheck, Route, Store, Truck } from "lucide-react";
 
 const DeliveryPage = () => {
   const partners = [
-    "J&T Express", "Pos Laju", "Ninja Van", "DHL eCommerce",
-    "City-Link Express", "GDEX", "Lalamove", "GrabExpress",
-  ];
-
-  const details = [
-    { icon: Clock3, title: "Processing Time", text: "Tempoh pemprosesan bergantung pada produk dan kaedah cetakan. Pesanan standard disediakan dalam 3-5 hari bekerja." },
-    { icon: Route, title: "Shipping Time", text: "Semenanjung Malaysia: 1-3 hari bekerja. Sabah dan Sarawak: 3-5 hari bekerja." },
-    { icon: PackageCheck, title: "Track Your Order", text: "Nombor tracking akan dihantar melalui e-mel dan turut tersedia dalam dashboard akaun anda." },
-    { icon: Store, title: "Self-Pickup", text: "Self-pickup tersedia di pejabat utama Selangor selepas anda menerima pengesahan bahawa pesanan telah siap." },
+    { name: "J&T Express", src: "https://www.jtexpress.my/assets/img/logo.png" },
+    { name: "Pos Laju", src: "https://www.pos.com.my/media/wysiwyg/pos-logo.png" },
+    { name: "Ninja Van", src: "https://www.ninjavan.co/wp-content/uploads/sites/4/2021/04/ninjavan-logo-dark.png" },
+    { name: "DHL eCommerce", src: "https://www.dhl.com/content/dam/dhl/global/core/images/logos/dhl-logo.svg" },
+    { name: "City-Link Express", src: "https://www.citylinkexpress.com/wp-content/uploads/2020/06/citylink-logo-dark.png" },
+    { name: "GDEX", src: "https://www.gdexpress.com/malaysia/wp-content/uploads/2019/12/logo-gdex.png" },
+    { name: "Lalamove", src: "https://www.lalamove.com/hubfs/Lalamove%20Website%202020/logo/Lalamove_Logo_Color.svg" },
+    { name: "GrabExpress", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Grab_Logo.svg/512px-Grab_Logo.svg.png" }
   ];
 
   return (
-    <div className="min-h-screen py-12 md:py-20">
-      <div className="page-shell">
-        <div className="glass-panel relative overflow-hidden rounded-[2rem] px-6 py-12 text-center md:px-12 md:py-16">
-          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/15 blur-3xl" />
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/30 bg-primary/15 text-primary">
-            <Truck size={28} />
-          </div>
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-primary">Nationwide delivery</p>
-          <h1 className="text-4xl font-extrabold tracking-tight md:text-6xl">Delivery Partners</h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground md:text-lg">
-            Kami bekerjasama dengan rangkaian kurier dipercayai untuk memastikan hasil cetakan anda tiba dengan selamat dan tepat pada masanya.
+    <div className="min-h-screen bg-gray-50 py-16 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-16">
+          <h1 className="text-5xl font-extrabold text-gray-900 tracking-tight mb-8">
+            OUR PARTNER FOR DELIVERY
+          </h1>
+          <p className="max-w-2xl mx-auto text-xl text-gray-500">
+            We partner with the best courier services in Malaysia to ensure your prints arrive safely and on time.
           </p>
         </div>
 
-        <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
-          {partners.map((partner, index) => (
-            <div key={partner} className="glass-subtle group flex min-h-32 flex-col items-center justify-center rounded-2xl p-5 text-center transition hover:-translate-y-1 hover:border-primary/35">
-              <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 font-black text-primary">
-                {String(index + 1).padStart(2, "0")}
-              </div>
-              <span className="font-bold">{partner}</span>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 items-center justify-items-center">
+          {partners.map((partner) => (
+            <div key={partner.name} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center w-full h-40 hover:shadow-md transition-all">
+              {/* Note: We use standard img tags here because some external logos might not be configured in next.config.js */}
+              {partner.name === "GrabExpress" ? (
+                <div className="flex flex-col items-center justify-center">
+                  <img
+                    src={partner.src}
+                    alt={partner.name}
+                    className="max-h-16 max-w-full object-contain mb-2"
+                  />
+                  <span className="font-bold text-gray-800 text-lg">Express</span>
+                </div>
+              ) : (
+                <img
+                  src={partner.src}
+                  alt={partner.name}
+                  className="max-h-20 max-w-full object-contain"
+                  onError={(e) => {
+                    // Fallback to text if logo fails to load
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+              )}
+              <span className="hidden font-bold text-gray-800 text-xl text-center">{partner.name}</span>
             </div>
           ))}
         </div>
-
-        <div className="glass-panel mt-8 rounded-[2rem] p-6 md:p-10">
-          <div className="mb-8 flex items-center gap-3">
-            <MapPin className="text-primary" />
-            <h2 className="text-2xl font-bold md:text-3xl">Delivery Information</h2>
-          </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {details.map(({ icon: Icon, title, text }) => (
-              <div key={title} className="glass-subtle rounded-2xl p-5 md:p-6">
-                <Icon className="mb-4 text-primary" size={24} />
-                <h3 className="mb-2 font-bold">{title}</h3>
-                <p className="text-sm leading-7 text-muted-foreground">{text}</p>
-              </div>
-            ))}
+        <div className="mt-20 bg-white p-8 md:p-12 rounded-3xl shadow-sm border border-gray-100">
+            <h2 className="text-3xl font-bold text-gray-900 mb-6">Delivery Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-lg text-gray-600">
+                <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Processing Time</h3>
+                    <p>All orders require a processing time depending on the printing method and product. Standard processing takes 3-5 business days before the item is handed over to our delivery partners.</p>
+                </div>
+                <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Shipping Time</h3>
+                    <p>Peninsular Malaysia: 1-3 working days.<br/>Sabah & Sarawak: 3-5 working days.</p>
+                </div>
+                <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Tracking Your Order</h3>
+                    <p>Once your order has been shipped, you will receive a tracking number via email and you can also track it through your account dashboard.</p>
+                </div>
+                <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Self-Pickup</h3>
+                    <p>Self-pickup is available at our main office in Selangor during working hours. Please wait for the confirmation email before coming to collect your order.</p>
+                </div>
             </div>
         </div>
       </div>

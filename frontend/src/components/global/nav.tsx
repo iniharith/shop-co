@@ -63,7 +63,7 @@ const MobileNavSheetContent = ({
           { "--initial-transform": "calc(100% + 8px)" } as React.CSSProperties
         }
       >
-        <div className="glass-panel-strong h-full w-full grow px-3 py-1 flex flex-col rounded-[20px] overflow-y-auto">
+        <div className="bg-gray-200 dark:bg-card h-full w-full grow px-3 py-1 flex flex-col rounded-[16px] overflow-y-auto">
 
           {/* ── HEADER: Logo + Close ── */}
           <Drawer.Title className="font-medium px-0 border-b border-dashed border-zinc-900/20 justify-between flex items-center mb-3 text-white">
@@ -94,7 +94,7 @@ const MobileNavSheetContent = ({
           {session?.user?.id && (
             <button
               onClick={() => { router.push("/home/profile"); closeDrawer(); }}
-              className="glass-subtle flex items-center gap-3 mb-3 px-3 py-2 rounded-xl transition-colors text-left"
+              className="flex items-center gap-3 mb-3 px-3 py-2 bg-white dark:bg-popover rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-muted transition-colors text-left"
             >
               <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden">
                 {(() => {
@@ -116,7 +116,7 @@ const MobileNavSheetContent = ({
           {/* ── MOBILE SEARCH ── */}
           <form 
             onSubmit={(e) => { handleSearch(e); closeDrawer(); }}
-            className="glass-subtle relative z-50 mb-3 flex flex-col overflow-visible rounded-xl px-3 py-1"
+            className="flex flex-col relative bg-white dark:bg-card rounded-xl border border-gray-300 dark:border-border shadow-sm overflow-visible mb-3 px-3 py-1"
           >
             <div className="flex items-center w-full">
               <IoSearch className="text-gray-500 dark:text-muted-foreground text-lg mr-2 shrink-0" />
@@ -131,7 +131,7 @@ const MobileNavSheetContent = ({
               />
             </div>
             {isSearchFocused && searchQuery.length > 1 && (
-              <div className="glass-panel-strong absolute left-0 right-0 top-full z-[60] mt-2 max-h-[250px] overflow-y-auto rounded-xl py-2">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-card border border-gray-200 dark:border-border shadow-xl rounded-xl max-h-[250px] overflow-y-auto z-50 py-2">
                 {searchResults.length > 0 ? (
                   searchResults.map((prod: any) => (
                     <div 
@@ -144,8 +144,8 @@ const MobileNavSheetContent = ({
                       }}
                       className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 dark:hover:bg-muted cursor-pointer transition-colors"
                     >
-                      <div className="w-8 h-8 rounded-md overflow-hidden bg-muted/40 shrink-0">
-                        <Image src={prod.images?.[0] || "/images/kampung-cetak-logo.png"} alt={prod.name} width={32} height={32} className="object-cover w-full h-full" />
+                      <div className="w-8 h-8 rounded-md overflow-hidden bg-gray-100 shrink-0">
+                        <Image src={prod.images[0]?.url || "/images/kampung-cetak-logo.png"} alt={prod.name} width={32} height={32} className="object-cover w-full h-full" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-gray-900 dark:text-foreground">{prod.name}</span>
@@ -200,8 +200,8 @@ const MobileNavSheetContent = ({
                       className={cn(
                         "w-full flex items-center justify-between px-3 py-2.5 text-sm font-semibold transition-colors rounded-xl",
                         isOpen
-                          ? "bg-primary text-primary-foreground"
-                          : "text-primary hover:bg-white/5"
+                          ? "bg-primary text-white"
+                          : "text-primary hover:bg-white dark:hover:bg-muted"
                       )}
                       onClick={() => {
                         if (hasSubItems) {
@@ -222,7 +222,7 @@ const MobileNavSheetContent = ({
 
                     {/* Sub-items — only visible when accordion is open */}
                     {hasSubItems && isOpen && (
-                      <div className="glass-subtle rounded-b-xl px-2 pb-2 flex flex-col gap-0.5 animate-in slide-in-from-top-1 duration-150">
+                      <div className="bg-white dark:bg-popover rounded-b-xl px-2 pb-2 flex flex-col gap-0.5 animate-in slide-in-from-top-1 duration-150">
                         {item.subItems!.map((sub, idx) => (
                           <Link
                             key={idx}
@@ -286,9 +286,9 @@ const Nav = () => {
 
   return (
     <>
-      <div className="glass-panel-strong w-full flex flex-col border-x-0 border-t-0">
+      <div className="w-full flex flex-col bg-gray-200 dark:bg-background">
         {/* ── MAIN HEADER ── */}
-        <div className="relative z-[70] w-full px-4 md:px-7 py-3 md:py-4 flex justify-between items-center gap-3 md:gap-6 border-b border-transparent dark:border-border">
+        <div className="w-full px-4 md:px-7 py-3 md:py-4 flex justify-between items-center gap-3 md:gap-6 border-b border-transparent dark:border-border">
 
           {/* Left: Hamburger + Logo */}
           <div className="flex items-center gap-2 shrink-0">
@@ -332,7 +332,7 @@ const Nav = () => {
           {/* Center: Search (desktop only) */}
           <form 
             onSubmit={handleSearch}
-            className="glass-subtle relative z-[80] mx-auto hidden max-w-2xl flex-1 items-center overflow-visible rounded-full px-4 py-1 md:flex"
+            className="hidden md:flex flex-1 max-w-2xl mx-auto relative items-center bg-white dark:bg-card rounded-full border border-gray-300 dark:border-border shadow-sm overflow-hidden px-4 py-1"
           >
             <IoSearch className="text-gray-500 dark:text-muted-foreground text-xl mr-2 shrink-0" />
             <Input
@@ -344,13 +344,13 @@ const Nav = () => {
               onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
               placeholder="Search products, services, or categories..."
             />
-            <Button type="submit" className="bg-primary text-primary-foreground rounded-full px-6 h-9 shrink-0 ml-2 font-bold">
+            <Button type="submit" className="bg-primary text-white rounded-full px-6 h-9 shrink-0 ml-2">
               Search
             </Button>
 
             {/* Live Search Suggestions Dropdown */}
             {isSearchFocused && searchQuery.length > 1 && (
-              <div className="glass-panel-strong absolute left-0 right-0 top-full z-[90] mt-3 max-h-[300px] overflow-y-auto rounded-2xl py-2">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-card border border-gray-200 dark:border-border shadow-xl rounded-xl max-h-[300px] overflow-y-auto z-50 py-2">
                 {searchResults.length > 0 ? (
                   searchResults.map((prod: any) => (
                     <div 
@@ -362,8 +362,8 @@ const Nav = () => {
                       }}
                       className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-muted cursor-pointer transition-colors"
                     >
-                      <div className="w-10 h-10 rounded-md overflow-hidden bg-muted/40 shrink-0">
-                        <Image src={prod.images?.[0] || "/images/kampung-cetak-logo.png"} alt={prod.name} width={40} height={40} className="object-cover w-full h-full" />
+                      <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 shrink-0">
+                        <Image src={prod.images[0]?.url || "/images/kampung-cetak-logo.png"} alt={prod.name} width={40} height={40} className="object-cover w-full h-full" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-sm font-semibold text-gray-900 dark:text-foreground">{prod.name}</span>
@@ -450,7 +450,7 @@ const Nav = () => {
         </div>
 
         {/* ── DESKTOP CATEGORY NAV ── */}
-        <div className="relative z-40 hidden w-full border-t border-white/10 bg-transparent md:block">
+        <div className="w-full bg-white dark:bg-card border-y border-gray-200 dark:border-border hidden md:block relative z-50">
           <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
             {printingCategories.map((item, index) => (
               <div key={index} className="relative group">
@@ -468,7 +468,7 @@ const Nav = () => {
                 </div>
 
                 {/* Dropdown */}
-                <div className="glass-panel-strong absolute left-0 top-full hidden group-hover:flex flex-col rounded-2xl min-w-[220px] py-2 z-50">
+                <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white dark:bg-popover border border-gray-200 dark:border-border shadow-xl rounded-md min-w-[220px] py-2 z-50">
                   {item.subItems?.map((sub, idx) => (
                     <Link
                       key={idx}

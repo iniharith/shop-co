@@ -24,12 +24,12 @@ const Provider = ({
         <ReactQueryProvider>
             <NextTopLoader
               height={2}
-              shadow="0 0 10px hsl(45 93% 47%)"
-              color="hsl(45 93% 47%)"
+              shadow="0 0 10px white"
+              color="white"
               showSpinner={false}
               zIndex={999999999999999}
             />
-            <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+            <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
               <HeroUIProvider>
                 <Toaster
                   visibleToasts={1}

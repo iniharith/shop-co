@@ -5,6 +5,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { getImageUrl } from "@/utils/getImageUrl";
 
@@ -25,7 +26,7 @@ export function ProductGallery({ images }: ProductGalleryProps) {
             <button
               key={index}
               className={cn(
-                "relative cursor-pointer aspect-square h-20 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all bg-muted",
+                "relative cursor-pointer aspect-square h-20 flex-shrink-0 overflow-hidden rounded-md border-2 transition-all bg-black",
                 selectedImage === index
                   ? "border-primary"
                   : "border-transparent hover:border-muted-foreground/30"
@@ -41,11 +42,11 @@ export function ProductGallery({ images }: ProductGalleryProps) {
           ))}
         </div>
       )}
-      <div className="relative flex items-center justify-center aspect-square w-full overflow-hidden rounded-[1.5rem] bg-muted">
+      <div className="relative flex items-center justify-center aspect-square w-full overflow-hidden rounded-md bg-black">
         <img
           src={images?.length > 0 ? getImageUrl(displayImages[selectedImage]) : displayImages[0]}
           alt="Product image"
-          className="w-full h-full object-cover"
+          className="w-[80%] h-[80%] object-contain"
         />
       </div>
     </div>
