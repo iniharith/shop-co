@@ -20,10 +20,10 @@ import { VirtualFolder } from '../../domain/entities/VirtualFolder';
 import OrderRepository from '../../infrastructure/db/repositories/order.repository';
 import OrderModel from '../../infrastructure/db/models/order.model';
 import User from '../../infrastructure/db/models/user.model';
-import { RedisService } from '../../infrastructure/redis/redis';
 
-const enrichedIndexCache = new RedisService();
-const ENRICHED_INDEX_CACHE_KEY = 'files:enrichedIndex:v1';
+// In-memory cache for enriched folder-group data (avoids Redis dependency in production)
+const enrichedIndexCache = new Map<string, { data: any; expiresAt: number }>();
+const ENRICHED_CACHE_TTL = 120_000; // 2 minutes
 import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
 import { streamFilesAsZip } from '../../shared/utils/streamFilesAsZip';
 import { getDownloadProgress } from '../../shared/utils/downloadProgress';
@@ -337,16 +337,10 @@ router.get(
     const taskStatusFilter = (req.query.taskStatuses as string)?.split(',').filter(Boolean) || ARTWORK_STATUSES;
 
     // Try cache first (keyed by status filter). Raced against a short
-    // timeout so a slow or momentarily-unhealthy Redis connection never
-    // meaningfully delays this response — if it doesn't answer almost
-    // instantly, just fall through to querying MongoDB directly.
-    const cacheKey = `${ENRICHED_INDEX_CACHE_KEY}:${taskStatusFilter.join(',')}`;
-    const cached = await Promise.race([
-      enrichedIndexCache.get(cacheKey),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 150)),
-    ]);
-    if (cached) {
-      try { res.json({ success: true, data: JSON.parse(cached) }); return; } catch { /* rebuild */ }
+    const cacheKey = taskStatusFilter.join(',');
+    const cached = enrichedIndexCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      res.json({ success: true, data: cached.data }); return;
     }
 
     // 1. Load enriched file index
@@ -450,9 +444,8 @@ router.get(
 
     res.json({ success: true, data: result });
 
-    // Fire-and-forget — cache write happens after the response is already
-    // sent, so a slow/unhealthy Redis can never add latency here.
-    enrichedIndexCache.set(cacheKey, JSON.stringify(result), 120).catch(() => {});
+    // Cache result in-memory for 2 minutes
+    enrichedIndexCache.set(cacheKey, { data: result, expiresAt: Date.now() + ENRICHED_CACHE_TTL });
   })
 );
 
