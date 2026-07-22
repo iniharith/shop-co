@@ -270,21 +270,15 @@ export default function PackagingManager() {
   const handleAdvanceFlow = (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
     // Packaging has just one stage, so the tick always moves the item on to Shipped
-    if (group.isTask) {
+    if (group.taskId) {
       updateTask({ id: group.taskId, data: { status: "SHIPPED" } }, {
-        onSuccess: () => {
-          toast.success("Status dikemaskini! Berpindah ke History...");
-          setTimeout(() => router.push("/admin/history"), 800);
-        },
-        onError: () => toast.error("Gagal kemaskini status")
+        onSuccess: () => toast.success("Task moved to Shipped!"),
+        onError: () => toast.error("Failed to update status")
       });
-    } else {
+    } else if (group.orderId) {
       updateOrderStatus({ id: group.orderId, status: "SHIPPED" }, {
-        onSuccess: () => {
-          toast.success("Status dikemaskini! Berpindah ke History...");
-          setTimeout(() => router.push("/admin/history"), 800);
-        },
-        onError: () => toast.error("Gagal kemaskini status")
+        onSuccess: () => toast.success("Order moved to Shipped!"),
+        onError: () => toast.error("Failed to update status")
       });
     }
   };
@@ -620,7 +614,7 @@ export default function PackagingManager() {
           </div>
 
           {/* RIGHT PANEL (DETAIL) */}
-          <div className="w-full lg:w-2/3 xl:w-3/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
+          <div className="w-full lg:w-2/3 xl:w-3/4 min-w-0 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
             {selectedFolder ? (() => {
               const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId || ""}` === selectedFolder);
               if (!activeGroup) {
@@ -633,11 +627,12 @@ export default function PackagingManager() {
                 if (activeGroup.orderId) return f.orderId === activeGroup.orderId;
                 return f.userId === activeGroup.userId && !f.taskId && !f.orderId;
               });
-              const visibleFiles = activeFolderFiles.filter((f: any) => 
+              const allGroupFiles = activeFolderFiles.length > 0 ? activeFolderFiles : (activeGroup.files || []);
+              const visibleFiles = allGroupFiles.filter((f: any) => 
                 activeSubFolderId ? f.folderId === activeSubFolderId : (!f.folderId || f.folderId === 'null')
               );
 
-              if (isFolderFilesPending) {
+              if (isFolderFilesPending && allGroupFiles.length === 0) {
                 return (
                   <div className="flex justify-center items-center h-[40vh]">
                     <LoadingAnimation fullScreen={false} label="Loading folder" />
@@ -658,8 +653,8 @@ export default function PackagingManager() {
               const dueDate = activeTask?.dueDate ? format(new Date(activeTask.dueDate), 'dd MMM yyyy') : "N/A";
 
               return (
-                <div className="flex flex-col h-full">
-                  <div className="p-4 sm:p-6 border-b bg-muted/10 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center shrink-0">
+                <div className="flex flex-col h-full min-w-0">
+                  <div className="p-4 sm:p-6 border-b bg-muted/10 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center shrink-0 min-w-0">
                     <div className="flex-1 min-w-0">
                       <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2 truncate">
                         <Folder className="w-6 h-6 text-primary shrink-0" />
@@ -672,7 +667,7 @@ export default function PackagingManager() {
                       )}
                     </div>
                     
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto shrink-0">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0 shrink-0">
                       <div className="flex items-center gap-2 bg-background border rounded-md p-1 pl-3 shadow-sm">
                         <span className="text-xs font-semibold text-muted-foreground">Status:</span>
                         <select 
@@ -738,8 +733,8 @@ export default function PackagingManager() {
                   </div>
 
                   {/* Task / Order Details Card */}
-                  <div className="px-4 sm:px-6 py-4 border-b bg-card">
-                    <div className="flex flex-col xl:flex-row gap-6">
+                  <div className="px-4 sm:px-6 py-4 border-b bg-card min-w-0">
+                    <div className="flex flex-col 2xl:flex-row gap-6">
                       {/* Description */}
                       <div className="flex-1 min-w-0">
                         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Description</h3>
@@ -749,7 +744,7 @@ export default function PackagingManager() {
                       </div>
                       
                       {/* Properties Grid */}
-                      <div className="w-full xl:w-72 shrink-0">
+                      <div className="w-full 2xl:w-72 shrink-0">
                         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Properties</h3>
                         <div className="bg-muted/30 border rounded-lg p-3 sm:p-4 space-y-3">
                           <div className="flex items-center justify-between gap-2">

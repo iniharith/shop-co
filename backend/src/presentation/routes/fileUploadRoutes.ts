@@ -392,9 +392,10 @@ router.get(
     // 2. Collect unique references with ObjectId validation
     const orderIds = [...new Set(enriched.filter((f: any) => f.orderId && mongoose.Types.ObjectId.isValid(f.orderId)).map((f: any) => f.orderId))];
     const userIds = [...new Set(enriched.filter((f: any) => !f.taskId && f.userId && mongoose.Types.ObjectId.isValid(f.userId)).map((f: any) => f.userId))];
+    const allTaskIds = [...new Set(enriched.filter((f: any) => f.taskId && mongoose.Types.ObjectId.isValid(f.taskId)).map((f: any) => f.taskId))];
 
-    // 3. Load all tasks in this queue
-    const [tasks, taskFileCounts, orders, users] = await Promise.all([
+    // 3. Load all tasks in this queue & all referenced tasks by ID
+    const [tasks, taskFileCounts, orders, users, allReferencedTasks] = await Promise.all([
       Task.find({ status: { $in: statusQueryValues }, isDeleted: { $ne: true } })
         .select('title status orderId category')
         .lean(),
@@ -404,9 +405,11 @@ router.get(
       ]),
       orderIds.length ? OrderModel.find({ _id: { $in: orderIds } }).select('orderStatus userId').lean() : [],
       userIds.length ? User.find({ _id: { $in: userIds } }).select('name').lean() : [],
+      allTaskIds.length ? Task.find({ _id: { $in: allTaskIds }, isDeleted: { $ne: true } }).select('title status orderId category').lean() : [],
     ]);
 
     const taskMap = new Map(tasks.map((t: any) => [t._id.toString(), t]));
+    const allTaskMap = new Map(allReferencedTasks.map((t: any) => [t._id.toString(), t]));
     const taskFileCountMap = new Map(taskFileCounts.map((t: any) => [t._id.toString(), t.fileCount || 0]));
     const orderMap = new Map(orders.map((o: any) => [o._id.toString(), o]));
     const userMap = new Map(users.map((u: any) => [u._id.toString(), u]));
@@ -418,24 +421,31 @@ router.get(
       let folderName: string;
       let isTask = false;
 
-      if (file.taskId && taskMap.has(file.taskId)) {
-        const task = taskMap.get(file.taskId)!;
-        if (!matchesStatus(task.status)) continue;
-        groupKey = `task:${file.taskId}`;
-        folderName = task.title;
-        isTask = true;
-      } else {
-        if (file._shareFolderName) {
-          folderName = file._shareFolderName;
+      if (file.taskId) {
+        const task = allTaskMap.get(file.taskId) || taskMap.get(file.taskId);
+        if (task) {
+          if (!matchesStatus(task.status)) {
+            // Task status does not match requested queue filter — skip file
+            continue;
+          }
+          groupKey = `task:${file.taskId}`;
+          folderName = task.title;
+          isTask = true;
         } else {
-          const user = userMap.get(file.userId);
-          folderName = user?.name || file.userId || 'Unknown';
+          if (file.orderId) {
+            const order = orderMap.get(file.orderId);
+            if (order && !matchesStatus((order as any).orderStatus)) continue;
+          }
+          groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
+          folderName = file._shareFolderName || userMap.get(file.userId)?.name || file.userId || 'Unknown';
         }
+      } else {
         if (file.orderId) {
           const order = orderMap.get(file.orderId);
           if (order && !matchesStatus((order as any).orderStatus)) continue;
         }
         groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
+        folderName = file._shareFolderName || userMap.get(file.userId)?.name || file.userId || 'Unknown';
       }
 
       if (!groups[groupKey]) {

@@ -20,7 +20,9 @@ import { Folder } from "lucide-react";
 const HistoryManager = () => {
   const { data, isPending, refetch, isFetching } = useOrders();
   const { data: deletedTasksData, isPending: isTasksPending, refetch: refetchTasks, isFetching: isFetchingTasks } = useTasks({ deleted: 'true' });
+  const { data: doneTasksData } = useTasks({ statuses: 'SHIPPED,DELIVERED,DONE_DESIGN,DONE,IN_TRANSIT' });
   const deletedTasks = (deletedTasksData as any);
+  const doneTasks: any[] = (doneTasksData as any)?.tasks || [];
   const { data: fileIndexResponse } = useFileIndex();
   const allFiles = (fileIndexResponse as any)?.data || [];
   const { mutate: permanentDeleteTaskMutate, isPending: isPermanentDeleting } = usePermanentDeleteTask();
@@ -42,7 +44,7 @@ const HistoryManager = () => {
     let orders = data?.orders || [];
     
     if (activeTab === "DONE") {
-      orders = orders.filter((o: any) => !o.isArchived && (o.orderStatus === "DELIVERED" || o.orderStatus === "DONE_DESIGN" || o.orderStatus === "SHIPPED"));
+      orders = orders.filter((o: any) => !o.isArchived && (o.orderStatus === "DELIVERED" || o.orderStatus === "DONE_DESIGN" || o.orderStatus === "SHIPPED" || o.orderStatus === "IN_TRANSIT"));
     } else if (activeTab === "CANCELLED") {
       orders = orders.filter((o: any) => !o.isArchived && (o.orderStatus === "CANCELLED" || o.orderStatus === "FAILED"));
     } else if (activeTab === "ARCHIVED") {
@@ -62,6 +64,23 @@ const HistoryManager = () => {
     
     return orders;
   }, [data, activeTab, searchQuery]);
+
+  const filteredDoneTasks = useMemo(() => {
+    if (activeTab !== "DONE") return [];
+    const displayedOrderIds = new Set((filteredOrders || []).map((o: any) => o._id));
+    let tasks = doneTasks.filter((t: any) => !t.orderId || !displayedOrderIds.has(t.orderId));
+    
+    if (searchQuery.trim()) {
+      const lowerQuery = searchQuery.toLowerCase();
+      tasks = tasks.filter((t: any) => 
+        t.title?.toLowerCase().includes(lowerQuery) ||
+        t.customerUsername?.toLowerCase().includes(lowerQuery) ||
+        t.orderId?.toLowerCase().includes(lowerQuery) ||
+        t._id?.toLowerCase().includes(lowerQuery)
+      );
+    }
+    return tasks;
+  }, [doneTasks, activeTab, searchQuery, filteredOrders]);
 
   const filteredTasks = useMemo(() => {
     let tasks = deletedTasks?.tasks || [];
@@ -175,35 +194,70 @@ const HistoryManager = () => {
             </div>
           )
         ) : (
-          filteredOrders.length === 0 ? (
+          (filteredOrders.length === 0 && filteredDoneTasks.length === 0) ? (
             <div className="flex flex-col items-center justify-center py-16 text-center bg-card rounded-2xl border border-dashed border-border/60">
               <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mb-4">
                 <PackageX className="w-8 h-8 text-muted-foreground" />
               </div>
-              <h3 className="text-xl font-semibold mb-1 text-foreground">No orders found</h3>
+              <h3 className="text-xl font-semibold mb-1 text-foreground">No orders or tasks found</h3>
               <p className="text-muted-foreground text-sm max-w-sm">
-                We couldn't find any orders in this history view.
+                We couldn't find any completed items in this history view.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 pb-10">
-              {filteredOrders.map((order: any) => (
-                <div key={order._id} className={activeTab === "CANCELLED" ? "border-2 border-red-500 bg-red-50 rounded-2xl p-2 relative overflow-hidden" : activeTab === "ARCHIVED" ? "border-2 border-indigo-500 bg-indigo-50/50 rounded-2xl p-2 relative overflow-hidden" : ""}>
-                  {activeTab === "CANCELLED" && (
-                    <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10">
-                      CANCELLED
-                    </div>
-                  )}
-                  {activeTab === "ARCHIVED" && (
-                    <div className="absolute top-0 right-0 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10 flex items-center gap-1">
-                      <Archive className="w-3 h-3" /> ARCHIVED
-                    </div>
-                  )}
-                  <div className={activeTab === "CANCELLED" ? "[&_*]:text-red-900" : activeTab === "ARCHIVED" ? "[&_*]:text-indigo-900" : ""}>
-                    <OrderCard order={order} />
+            <div className="space-y-6 pb-10">
+              {filteredDoneTasks.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Completed Tasks ({filteredDoneTasks.length})</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filteredDoneTasks.map((task: any) => {
+                      const taskFiles = allFiles.filter((f: any) => f.taskId === task._id);
+                      return (
+                        <div key={task._id} className="flex items-center justify-between p-4 bg-emerald-50/50 border-2 border-emerald-200 rounded-2xl cursor-pointer hover:border-emerald-400 transition-all" onClick={() => setSelectedTask(task)}>
+                          <div className="flex items-center gap-4">
+                            <div className="bg-emerald-100 p-3 rounded-xl">
+                              <Folder className="w-6 h-6 text-emerald-700" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-base hover:underline text-emerald-950">{task.title}</h4>
+                              <div className="flex flex-wrap gap-2 text-xs text-emerald-800 mt-1">
+                                <span className="bg-emerald-200/60 px-2 py-0.5 rounded font-semibold uppercase">{task.status}</span>
+                                {task.orderId && <span>Order: #{task.orderId}</span>}
+                                <span>{taskFiles.length} file(s)</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              ))}
+              )}
+
+              {filteredOrders.length > 0 && (
+                <div className="space-y-3">
+                  {filteredDoneTasks.length > 0 && <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Orders ({filteredOrders.length})</h3>}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+                    {filteredOrders.map((order: any) => (
+                      <div key={order._id} className={activeTab === "CANCELLED" ? "border-2 border-red-500 bg-red-50 rounded-2xl p-2 relative overflow-hidden" : activeTab === "ARCHIVED" ? "border-2 border-indigo-500 bg-indigo-50/50 rounded-2xl p-2 relative overflow-hidden" : ""}>
+                        {activeTab === "CANCELLED" && (
+                          <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10">
+                            CANCELLED
+                          </div>
+                        )}
+                        {activeTab === "ARCHIVED" && (
+                          <div className="absolute top-0 right-0 bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10 flex items-center gap-1">
+                            <Archive className="w-3 h-3" /> ARCHIVED
+                          </div>
+                        )}
+                        <div className={activeTab === "CANCELLED" ? "[&_*]:text-red-900" : activeTab === "ARCHIVED" ? "[&_*]:text-indigo-900" : ""}>
+                          <OrderCard order={order} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )
         )}
