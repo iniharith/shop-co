@@ -24,7 +24,7 @@ const Provider = ({
   initialLocale: Locale;
 }) => {
   return (
-      <SessionProvider session={session}>
+      <SessionProvider session={session} refetchOnWindowFocus={false}>
         <ReactQueryProvider>
             <NextTopLoader
               height={2}

@@ -20,8 +20,8 @@ export const useAddtoCart = (type?: "update") => {
 }
 
 export const useGetCart = () => {
-    const { data: session } = useSession()
-    const { data, isLoading, error } = useQueryData(['cart'], () => getCart(session?.user?.token || ""),)
+    const { data: session, status } = useSession()
+    const { data, isLoading, error } = useQueryData(['cart'], () => getCart(session?.user?.token || ""), { enabled: status === "authenticated" })
     const response = data as { message: string, cart: ICart }
     return { data: response, isLoading, error }
 }
@@ -46,7 +46,6 @@ export const useClearCart = () => {
     })
     return { mutate, isPending, isSuccess, error }
 }
-
 
 
 

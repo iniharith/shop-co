@@ -7,7 +7,6 @@ import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import React, { useEffect } from "react";
 import { toast } from "sonner";
-import { refreshAuth } from "@/api/auth";
 import { registerSessionRefresh, refreshSessionToken } from "@/utils/axios";
 
 let _isSigningOut = false;
@@ -20,22 +19,11 @@ const LiveSessionMonitor = ({ children }: { children: React.ReactNode }) => {
   // Register a session-refresh handler so the axios 401 interceptor can
   // persist freshly-issued tokens back into the NextAuth session.
   useEffect(() => {
-    registerSessionRefresh(async () => {
-      const refreshToken = (session?.user as any)?.refreshToken;
-      if (!refreshToken) return null;
-      try {
-        const res = await refreshAuth(refreshToken);
-        if (res?.success && res?.accessToken) {
-          await update({
-            token: res.accessToken,
-            refreshToken: res.refreshToken || refreshToken,
-          } as any);
-          return res.accessToken;
-        }
-      } catch {
-        /* ignore */
-      }
-      return null;
+    registerSessionRefresh(async ({ accessToken, refreshToken }) => {
+      await update({
+        token: accessToken,
+        refreshToken: refreshToken || (session?.user as any)?.refreshToken,
+      } as any);
     });
     return () => registerSessionRefresh(null);
   }, [session, update]);
@@ -56,22 +44,6 @@ const LiveSessionMonitor = ({ children }: { children: React.ReactNode }) => {
       });
     }
   }, [status, pathname]);
-
-  useEffect(() => {
-    if (status === "authenticated" && session?.user?.token) {
-      // Background sync for profile changes made by sysadmins
-      import("@/api/users").then(m => {
-        m.getUsers((session.user as any).token).then(res => {
-          if (res?.data && Array.isArray(res.data)) {
-            const currentUser = res.data.find((u: any) => u._id === (session.user as any).id);
-            if (currentUser && currentUser.avatar !== (session.user as any).avatar) {
-              update({ ...session, avatar: currentUser.avatar } as any);
-            }
-          }
-        }).catch(err => console.error("Failed to sync session:", err));
-      });
-    }
-  }, [status, (session?.user as any)?.id]);
 
   return <>{children}</>;
 };

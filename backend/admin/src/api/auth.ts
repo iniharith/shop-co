@@ -5,6 +5,7 @@
 "use client"
 import { AUTH_URL } from "@/constants/api"
 import AxiosInstance from "@/utils/axios"
+import axios from "axios"
 
 
 
@@ -26,8 +27,11 @@ export const signUp = async (data: any) => {
 }
 
 export const refreshAuth = async (refreshToken: string) => {
-    const response = await AxiosInstance().post(`${AUTH_URL}/refresh`, {
+    const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}${AUTH_URL}/refresh`, {
         refreshToken,
+    }, {
+        timeout: 15000,
+        withCredentials: true,
     });
     return response.data
 }

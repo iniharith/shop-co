@@ -12,27 +12,28 @@ export const authConfig: AuthOptions = {
             name: "Credentials",
             credentials: {
                 email: { label: "Email", type: "email", placeholder: "your@email.com" },
-                name: { label: "Password", type: "password" },
-                id: { label: "Id", type: "id" },
-                token: { label: "Token", type: "token" },
-                avatar: { label: "Avatar", type: "text" },
+                password: { label: "Password", type: "password" },
             },
-            authorize(credentials) {
-                console.log("authorize", credentials)
-                if (!credentials?.email || !credentials?.name || !credentials.id) {
-                    console.log("Email and name and id are required.");
-                    return null;
-                }
-
-                const user: User & { avatar?: string } = {
-                    id: credentials.id,
-                    name: credentials.name,
-                    email: credentials.email as string,
-                    token: credentials.token as string,
-                    avatar: credentials.avatar as string,
-                };
-
-                return user;
+            async authorize(credentials) {
+                if (!credentials?.email || !credentials?.password) return null;
+                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+                const response = await fetch(`${backendUrl}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: credentials.email, password: credentials.password }),
+                    signal: AbortSignal.timeout(15_000),
+                    cache: 'no-store',
+                });
+                if (!response.ok) return null;
+                const data = await response.json();
+                if (!data?.user?._id || !data?.accessToken) return null;
+                return {
+                    id: data.user._id,
+                    name: data.user.name,
+                    email: data.user.email,
+                    token: data.accessToken,
+                    avatar: data.user.avatar || '',
+                } as User & { avatar?: string };
             }
         }),
     ],

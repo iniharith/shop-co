@@ -46,6 +46,7 @@ app.use(
         credentials: true,
         methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
         allowedHeaders: ["Content-Type", "Authorization"],
+        maxAge: 86400,
     })
 );
 
@@ -54,6 +55,7 @@ app.options("*", cors({
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    maxAge: 86400,
 }));
 
 // -------------------- util middleware-------------------------------

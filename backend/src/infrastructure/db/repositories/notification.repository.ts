@@ -16,7 +16,7 @@ export class NotificationRepository extends BaseRepository<NotificationDocument>
     }
 
     async getNotificationsByUserId(userId: string) {
-        return await this.model.find({ userId }).sort({ createdAt: -1 });
+        return await this.model.find({ userId }).sort({ createdAt: -1 }).limit(50).lean();
     }
 
     async markAllNotificationsAsRead(userId: string) {

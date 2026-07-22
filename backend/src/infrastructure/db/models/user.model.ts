@@ -42,7 +42,7 @@ UserSchema.pre<IUserDocument>("save", async function (next) {
 
 
 UserSchema.methods.comparePassword = function (password: string) {
-    return bcrypt.compareSync(password, this.password);
+    return bcrypt.compare(password, this.password);
 }
 
 const User = mongoose.model<IUserDocument>('User', UserSchema);

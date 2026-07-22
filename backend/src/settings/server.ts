@@ -17,7 +17,7 @@ import { handleRedisAndSocketMessageAdmin, handleRedisAndSocketMessageClient } f
 import { socketIoSetup } from '../infrastructure/socket/socketHandler';
 import { startTrackingCronJob } from '../infrastructure/jobs/TrackingCronJob';
 import { startTaskAutoTransitionJob } from '../infrastructure/jobs/TaskStatusAutoTransition';
-import { ensureParcelIndexes, Parcel } from '../domain/entities/Parcel';
+import { ensureParcelIndexes } from '../domain/entities/Parcel';
 
 process.on("uncaughtException", (err) => {
     console.log("UNCAUGHT Exception! Ignoring ...");
@@ -37,12 +37,6 @@ async function main() {
     config();
 
     await connectDB();
-    await ensureParcelIndexes();
-    
-    // Force all existing parcels to have whatsappNotified: true per user request
-    await Parcel.updateMany({}, { $set: { whatsappNotified: true } }).catch(console.error);
-
-    await initProduct();
     await initAdmin();
     redisService.connect();
     const server = http.createServer(app);
@@ -57,6 +51,9 @@ async function main() {
 
     server.listen(PORT, () => {
         console.log(`🎉 Server running on port ${PORT}`);
+        void Promise.all([ensureParcelIndexes(), initProduct()]).catch((error) => {
+            console.error('Background startup maintenance failed:', error);
+        });
         startTrackingCronJob(); // Auto-sync parcels every 15 min
         startTaskAutoTransitionJob(); // Auto-move PACKAGING → DELIVERED after 14 days
     });

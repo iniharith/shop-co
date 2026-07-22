@@ -22,7 +22,7 @@ export class UserUsecase {
         if (!user) {
             throw new Error("User not found");
         }
-        if (!user.comparePassword(password)) {
+        if (!await user.comparePassword(password)) {
             throw new Error("Invalid password");
         }
         const accessToken = this.jwtService.generateAccessToken({ userId: user._id });

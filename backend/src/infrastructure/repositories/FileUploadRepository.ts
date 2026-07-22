@@ -7,7 +7,16 @@ import { RedisService } from '../redis/redis';
 import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
 
 const redisService = new RedisService();
-export const notifyFileClients = () => redisService.publish(REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' })).catch(console.error);
+const FILE_INDEX_CACHE_KEY = 'files:index:v1';
+let fileNotificationTimer: ReturnType<typeof setTimeout> | null = null;
+export const notifyFileClients = () => {
+  if (fileNotificationTimer) clearTimeout(fileNotificationTimer);
+  fileNotificationTimer = setTimeout(async () => {
+    fileNotificationTimer = null;
+    await redisService.del(FILE_INDEX_CACHE_KEY);
+    await redisService.publish(REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' }));
+  }, 300);
+};
 
 export class FileUploadRepository {
   async create(data: Partial<IFileUpload>): Promise<IFileUpload> {
@@ -17,7 +26,7 @@ export class FileUploadRepository {
   }
 
   async findByUserId(userId: string): Promise<IFileUpload[]> {
-    return FileUpload.find({ userId }).sort({ uploadedAt: -1 });
+    return FileUpload.find({ userId }).sort({ uploadedAt: -1 }).limit(200).lean() as unknown as Promise<IFileUpload[]>;
   }
 
   async findByOrderId(orderId: string): Promise<IFileUpload[]> {
@@ -51,9 +60,16 @@ export class FileUploadRepository {
   // file records. Actual file details are fetched per-folder, on demand,
   // via findByFolderKey() below once a folder is opened.
   async findIndex(): Promise<Pick<IFileUpload, 'userId' | 'orderId' | 'taskId' | 'category' | 'tag' | 'shareSlug' | 'folderId' | 'uploadedAt' | 'originalName'>[]> {
-    return FileUpload.find({}, 'userId orderId taskId category tag shareSlug folderId uploadedAt originalName')
+    const cached = await redisService.get(FILE_INDEX_CACHE_KEY);
+    if (cached) {
+      try { return JSON.parse(cached); } catch { /* rebuild malformed cache */ }
+    }
+    const files = await FileUpload.find({}, 'userId orderId taskId category tag shareSlug folderId uploadedAt originalName')
       .sort({ uploadedAt: -1 })
-      .lean() as unknown as Promise<any[]>;
+      .maxTimeMS(10_000)
+      .lean() as unknown as any[];
+    await redisService.set(FILE_INDEX_CACHE_KEY, JSON.stringify(files), 30);
+    return files;
   }
 
   // Full file details for a single folder, fetched only when that folder is
@@ -74,7 +90,7 @@ export class FileUploadRepository {
       query.userId = params.userId;
     }
     if (Object.keys(query).length === 0) return [];
-    return FileUpload.find(query).sort({ uploadedAt: -1 }).lean() as unknown as Promise<IFileUpload[]>;
+    return FileUpload.find(query).sort({ uploadedAt: -1 }).maxTimeMS(10_000).lean() as unknown as Promise<IFileUpload[]>;
   }
 
   async findById(id: string): Promise<IFileUpload | null> {

@@ -90,13 +90,13 @@ export const useSendWhatsApp = () => {
 }
 
 export const useFileStats = () => {
-    const { data: session } = useSession();
-    return useQueryData(['fileStats'], () => getFileStats(session?.user?.token));
+    const { data: session, status } = useSession();
+    return useQueryData(['fileStats'], () => getFileStats(session?.user?.token), { enabled: status === 'authenticated', staleTime: 60_000 });
 }
 
 export const useGroupedFiles = () => {
-    const { data: session } = useSession();
-    return useQueryData(['groupedFiles'], () => getGroupedFiles(session?.user?.token));
+    const { data: session, status } = useSession();
+    return useQueryData(['groupedFiles'], () => getGroupedFiles(session?.user?.token), { enabled: status === 'authenticated', staleTime: 30_000 });
 }
 
 export const useAllFiles = () => {
@@ -104,7 +104,7 @@ export const useAllFiles = () => {
     return useQueryData(
         ['allFiles'],
         () => getAllFiles(session?.user?.token),
-        { enabled: status !== "loading" }
+        { enabled: status === "authenticated", staleTime: 30_000 }
     );
 }
 
@@ -116,7 +116,7 @@ export const useFileIndex = () => {
     return useQueryData(
         ['fileIndex'],
         () => getFileIndex(session?.user?.token),
-        { enabled: status !== "loading" }
+        { enabled: status === "authenticated", staleTime: 30_000 }
     );
 }
 
@@ -132,7 +132,7 @@ export const useFilesByFolder = (params: { taskId?: string | null; orderId?: str
             orderId: params?.orderId || undefined,
             userId: params?.userId || undefined,
         }),
-        { enabled: status !== "loading" && !!params && !!key }
+        { enabled: status === "authenticated" && !!params && !!key, staleTime: 30_000 }
     );
 }
 
@@ -180,7 +180,7 @@ export const useFolders = () => {
     return useQueryData(
         ['virtualFolders'],
         () => getFolders(session?.user?.token),
-        { enabled: status !== "loading" }
+        { enabled: status === "authenticated", staleTime: 60_000 }
     );
 }
 
@@ -252,6 +252,6 @@ export const useDashboardSummary = () => {
     return useQueryData(
         ['dashboardSummary'],
         () => getDashboardSummary(session?.user?.token),
-        { enabled: status !== "loading", refetchInterval: 10000 }
+        { enabled: status === "authenticated", refetchInterval: 60_000, staleTime: 30_000 }
     );
 }

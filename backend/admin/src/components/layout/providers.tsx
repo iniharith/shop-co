@@ -25,7 +25,7 @@ export default function Providers({
   return (
     <>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-        <SessionProvider session={session}>
+        <SessionProvider session={session} refetchOnWindowFocus={false}>
           <BackgroundProvider>
             <ReactQueryProvider>
               <HeroUIProvider>

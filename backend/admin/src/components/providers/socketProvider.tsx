@@ -12,6 +12,8 @@ import { removeTaskFromCaches, updateTaskCaches } from "@/utils/taskCache";
 
 const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const { data: session } = useSession();
+  const token = (session?.user as any)?.token as string | undefined;
+  const userId = (session?.user as any)?.id as string | undefined;
   const client = useQueryClient();
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -31,10 +33,10 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    const token = (session?.user as any)?.token;
     if (!session?.user || !token) return;
     const socket = getSocket(session);
     let fallbackInterval: ReturnType<typeof setInterval> | null = null;
+    let fallbackTimeout: ReturnType<typeof setTimeout> | null = null;
 
     const refreshActiveTaskData = () => {
       if (document.visibilityState !== "visible") return;
@@ -63,10 +65,15 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       fallbackInterval = setInterval(() => {
         refreshActiveTaskData();
         refreshActiveFileData();
-      }, 2000);
+      }, 20_000);
     };
 
     const handleConnect = () => {
+      if (fallbackTimeout) {
+        clearTimeout(fallbackTimeout);
+        fallbackTimeout = null;
+      }
+      stopFallbackPolling();
       refreshActiveTaskData();
       refreshActiveFileData();
     };
@@ -127,10 +134,11 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     if (socket.connected) handleConnect();
-    else startFallbackPolling();
+    else fallbackTimeout = setTimeout(startFallbackPolling, 5_000);
 
     return () => {
       stopFallbackPolling();
+      if (fallbackTimeout) clearTimeout(fallbackTimeout);
       socket.off("connect", handleConnect);
       socket.off("connect_error", handleConnectError);
       socket.off("disconnect", handleDisconnect);
@@ -143,7 +151,7 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       disconnectSocket();
     };
-  }, [client, session]);
+  }, [client, token, userId]);
 
   return <>{children}</>;
 };

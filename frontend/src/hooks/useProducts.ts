@@ -40,13 +40,10 @@ export const useProducts = (id?: string) => {
     const client = useQueryClient()
     const apiFn = !id ? getProducts : getProductById;
     const queryKey = !id ? "products" : "product";
-    const { data, isPending } = useQueryData([queryKey], () => apiFn(id as string));
+    const shouldFetch = Boolean(id && !id.startsWith('prod-'));
+    const { data, isPending } = useQueryData([queryKey, id], () => apiFn(id as string), { enabled: shouldFetch, staleTime: 5 * 60_000 });
     type type = IProductResponse & IProductByIdResponse;
     const response = data as type;
-
-    useEffect(() => {
-        if (id) client.invalidateQueries({ queryKey: [queryKey], exact: true })
-    }, [id]);
 
     // FORCE return the new printing products, completely ignoring the old clothing items in the DB
     if (!id) {
@@ -79,11 +76,9 @@ export const useSearchProducts = (query: string) => {
 }
 
 export const useGetProductByCategory = (category: string) => {
-    const { data, isPending } = useQueryData(["getProductByCategory", category], () => getProductByCategory(category));
     // Force category mock
     const filtered = dummyProducts.filter(p => p?.category === category);
     return { data: { products: filtered.length > 0 ? filtered : dummyProducts.filter(p=>p) }, isPending: false };
-    return { data, isPending };
 }
 
 
@@ -100,17 +95,6 @@ export const useFilterProducts = () => {
     const searchQuery = searchParams.get('search') || '';
     
     const { serviceCategories, turnarounds, formats, materials, priceRange } = useFilterStore();
-    const { data, isPending, refetch } = useQueryData(["filterProducts", serviceCategories, turnarounds, formats, materials, priceRange], () => filterProducts({ 
-        category: serviceCategories, 
-        minPrice: priceRange[0], 
-        maxPrice: priceRange[1], 
-        size: formats 
-    }));
-    
-    useEffect(() => {
-        refetch();
-    }, [serviceCategories, turnarounds, formats, materials, priceRange]);
-    
     // FORCE return the new printing products, simulating frontend filtering
     let filtered = [...dummyProducts.filter(p=>p)];
     
@@ -135,12 +119,8 @@ export const useFilterProducts = () => {
         filtered = filtered.filter(p => p?.sizes && p.sizes.some((s: any) => formats.includes(s)));
     }
     
-    return { data: { products: filtered }, isPending: false, refetch };
-
-    const response = data as IProductResponse;
-    return { data: response, isPending, refetch };
+    return { data: { products: filtered }, isPending: false, refetch: () => Promise.resolve() };
 }
-
 
 
 

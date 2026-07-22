@@ -56,5 +56,9 @@ const FileUploadSchema = new Schema<IFileUpload>(
 );
 
 FileUploadSchema.index({ createdAt: -1 });
+FileUploadSchema.index({ taskId: 1, uploadedAt: -1 });
+FileUploadSchema.index({ orderId: 1, uploadedAt: -1 });
+FileUploadSchema.index({ userId: 1, uploadedAt: -1 });
+FileUploadSchema.index({ shareSlug: 1, uploadedAt: -1 });
 
 export const FileUpload = mongoose.model<IFileUpload>('FileUpload', FileUploadSchema);

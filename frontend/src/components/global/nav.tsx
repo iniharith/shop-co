@@ -3,7 +3,7 @@
  * Kampungcetak ®
  */
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { navItems, printingCategories } from "@/constants";
@@ -22,7 +22,6 @@ import { useNav } from "@/hooks/useNav";
 import AuthModal from "../page-sections/auth/authModal";
 import { CgProfile } from "react-icons/cg";
 import { ThemeSwitcher } from "./ThemeSwitcher";
-import { useSearchProducts } from "@/hooks/useProducts";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { categoryLabels } from "@/i18n/messages";
@@ -269,6 +268,7 @@ const Nav = () => {
   } = useNav();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const getAvatarUrl = () => {
     const avatar = (session?.user as any)?.avatar || (session?.user as any)?.image;
@@ -277,9 +277,25 @@ const Nav = () => {
     return `${process.env.NEXT_PUBLIC_BACKEND_URL}/${avatar.replace(/\\/g, '/').replace(/^\/?/, '')}`;
   };
 
-  // Use the search products hook for live suggestions
-  const { data: searchData } = useSearchProducts(searchQuery.length > 1 ? searchQuery : "");
-  const searchResults = (searchData as any)?.products || [];
+  useEffect(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      const { dummyProducts } = await import("@/constants/dummy-products");
+      if (!active) return;
+      setSearchResults(dummyProducts.filter((product: any) =>
+        product.name?.toLowerCase().includes(query) || product.category?.toLowerCase().includes(query)
+      ).slice(0, 8));
+    }, 180);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [searchQuery]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

@@ -9,6 +9,7 @@ import type { JwtPayload } from "jsonwebtoken";
 import { messages, statusCodes } from "../../shared/constants/api.constant";
 import { AuthRequest } from "../../domain/types/api";
 
+const authUserCache = new Map<string, { user: any; expiresAt: number }>();
 
 
 export const authMiddilware = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -29,7 +30,14 @@ export const authMiddilware = async (req: AuthRequest, res: Response, next: Next
             res.status(statusCodes.NOT_FOUND);
             throw new Error(messages.NOT_FOUND);
         }
-        const user = await userSchema.findById(userId);
+        const cached = authUserCache.get(userId as string);
+        let user = cached && cached.expiresAt > Date.now() ? cached.user : null;
+        if (!user) {
+            user = await userSchema.findById(userId)
+                .select('_id role verified name email avatar phoneNumber')
+                .lean();
+            if (user) authUserCache.set(userId as string, { user, expiresAt: Date.now() + 30_000 });
+        }
         if (!user) {
             console.log('user not found or user is Blocked');
             res.status(statusCodes.BAD_REQUEST);

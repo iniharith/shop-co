@@ -22,8 +22,7 @@ const data = [
 
 const initProduct = async () => {
     const productRepository = new ProductRepository();
-    const productList = await productRepository.findAll();
-    if (productList.length > 0) {
+    if (await productRepository.hasAny()) {
         console.log("🎉 Products already initialized");
 
 
@@ -33,11 +32,9 @@ const initProduct = async () => {
 
 
     const products = await productRepository.createMany(data);
-    console.log(products);
     console.log(products.length);
     console.log("🎉 Products initialized successfully");
 }
 
 export default initProduct;
-
 

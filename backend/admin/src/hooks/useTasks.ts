@@ -14,17 +14,17 @@ export const useTasks = (filters?: any) => {
     return useQueryData(
         ['tasks', filters],
         () => getTasks(session?.user?.token, filters),
-        { enabled: status !== "loading" }
+        { enabled: status === "authenticated", staleTime: 30_000 }
     );
 }
 
 export const useTask = (id: string | undefined) => {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
     // staleTime: 30s so reopening the same task feels instant (uses cache).
     // Socket events via socketProvider will invalidate and refresh when a
     // teammate makes a change, keeping the modal up-to-date in real-time.
     return useQueryData(['task', id], () => getTask(session?.user?.token, id!), {
-        enabled: !!id,
+        enabled: status === "authenticated" && !!id,
         staleTime: 30000,
     });
 }

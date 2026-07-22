@@ -16,6 +16,10 @@ export class ProductRepository extends BaseRepository<IProductDocument> {
         return await this.model.insertMany(products);
     }
 
+    async hasAny(): Promise<boolean> {
+        return Boolean(await this.model.exists({}));
+    }
+
     async findByName(name: string) {
         return await this.model.findOne({ name });
     }

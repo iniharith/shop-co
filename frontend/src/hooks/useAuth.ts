@@ -12,8 +12,6 @@ import { useRouter } from "nextjs-toploader/app";
 import signUpSchema from "@/schema/signUpSchema";
 import { IAuthSchema } from "@/types";
 import { signUp } from "@/api/auth";
-import { login } from "@/api/auth";
-import { IApiResponse } from "@/types/api";
 import { useEffect, useState } from "react";
 
 export const useAuth = (type: "login" | "signup" = "login") => {
@@ -23,7 +21,16 @@ export const useAuth = (type: "login" | "signup" = "login") => {
 
   const defaultValues = type === "login" ? { email: "", password: "" } : { email: "", password: "", name: "", role: "" };
 
-  const apiFn = type === "login" ? login : signUp;
+  const apiFn = async (data: any) => {
+    if (type === "signup") await signUp(data);
+    const result = await signIn("credentials", {
+      email: data.email,
+      password: data.password,
+      redirect: false,
+    });
+    if (result?.error) throw new Error("Invalid email or password");
+    return result;
+  };
 
 
   const router = useRouter();
@@ -41,21 +48,8 @@ export const useAuth = (type: "login" | "signup" = "login") => {
 
   const { form, control, errors, onFormSubmit, reset } = useZodFormV2(schema, (data: any) => mutate(data), defaultValues as any, { mode: "onSubmit", showToastOnError: true });
 
-  async function onSubmit(data: IApiResponse) {
+  async function onSubmit() {
     try {
-      const res = await signIn("credentials", {
-        email: data.user.email,
-        token: data.accessToken,
-        id: data.user._id,
-        name: data.user.name,
-        avatar: data.user.avatar || "",
-        redirect: false
-      })
-      if (res?.error) {
-        toast.error("Session error: " + res.error);
-        setIsLoading(false);
-        return;
-      }
       const message = type === "login" ? "Login successful" : "Signup successful";
       toast.success(message);
       router.push("/home/profile");
@@ -69,4 +63,3 @@ export const useAuth = (type: "login" | "signup" = "login") => {
   return { form, control, errors, onFormSubmit, mutate, isPending: isLoading, error: mutationError, isSuccess }
 
 }
-

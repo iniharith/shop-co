@@ -8,22 +8,22 @@ import { useMutationData } from "./useMutation";
 import AxiosInstance from "@/utils/axios";
 
 export const useConversations = () => {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
     const token = session?.user?.token;
     return useQueryData(['conversations'], async () => {
         const res = await AxiosInstance(token).get(`/api/chat/conversations`);
         return res.data;
-    });
+    }, { enabled: status === "authenticated", staleTime: 60_000 });
 }
 
 export const useMessages = (conversationId: string) => {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
     const token = session?.user?.token;
     return useQueryData(['messages', conversationId], async () => {
         if (!conversationId) return { messages: [] };
         const res = await AxiosInstance(token).get(`/api/chat/conversations/${conversationId}/messages`);
         return res.data;
-    }, { refetchInterval: 3000 });
+    }, { enabled: status === "authenticated" && Boolean(conversationId), refetchInterval: 10_000 });
 }
 
 export const useSendMessage = (conversationId: string) => {

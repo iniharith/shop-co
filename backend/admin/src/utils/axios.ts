@@ -13,12 +13,12 @@ const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL;
 const api = axios.create({
   baseURL,
   withCredentials: true,
-  timeout: 60000,
+  timeout: 15000,
 });
 
 // Registered by LiveSessionMonitor (which holds the NextAuth `update` fn).
 // Returns the new access token after a successful refresh, or null.
-type RefreshHandler = () => Promise<string | null>;
+type RefreshHandler = (tokens: { accessToken: string; refreshToken?: string }) => Promise<void>;
 let _sessionRefreshHandler: RefreshHandler | null = null;
 export const registerSessionRefresh = (handler: RefreshHandler | null) => {
   _sessionRefreshHandler = handler;
@@ -36,11 +36,7 @@ const attemptRefresh = async (): Promise<string | null> => {
       const res = await refreshAuth(refreshToken);
       if (res?.success && res?.accessToken) {
         const newToken = res.accessToken;
-        // Persist new tokens back into the NextAuth session if a handler is registered.
-        if (_sessionRefreshHandler) {
-          const persisted = await _sessionRefreshHandler();
-          if (persisted) return persisted;
-        }
+        if (_sessionRefreshHandler) await _sessionRefreshHandler({ accessToken: newToken, refreshToken: res.refreshToken });
         return newToken;
       }
       return null;
@@ -63,7 +59,8 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error?.response?.status === 401 && !originalRequest._retry) {
+    const isAuthRequest = String(originalRequest?.url || '').includes('/api/auth/');
+    if (error?.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
       originalRequest._retry = true;
       const newToken = await attemptRefresh();
       if (newToken) {

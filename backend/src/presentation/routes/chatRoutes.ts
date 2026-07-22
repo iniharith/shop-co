@@ -22,37 +22,30 @@ router.get(
     // For admins, we might want to return ALL conversations, or just theirs + customer ones.
     // For simplicity, let's just return conversations they are part of, or all if admin?
     const role = authReq.role;
-    let conversations;
-    
-    if (['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(role)) {
-      // Admins see all conversations for now
-      conversations = await chatRepository.findConversationsByUser(userId); // Or fetch all if needed
-      // Actually, fetching all conversations is better for an admin dashboard
-      const { ConversationModel } = await import('../../infrastructure/db/models/conversation.model');
-      conversations = await ConversationModel.find({
+    const { ConversationModel } = await import('../../infrastructure/db/models/conversation.model');
+    const conversationQuery = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(role)
+      ? {
         $or: [
-          { type: 'admin_customer' }, // Admins can see all customer support chats
-          { type: 'admin_admin', participants: userId } // Admins ONLY see admin-admin chats if they are in it
+          { type: 'admin_customer' },
+          { type: 'admin_admin', participants: userId }
         ]
-      })
-        .populate('participants', 'name email role')
-        .sort({ lastMessageAt: -1 });
-    } else {
-      conversations = await chatRepository.findConversationsByUser(userId);
-    }
+      }
+      : { participants: userId };
+    const conversations = await ConversationModel.find(conversationQuery)
+      .populate('participants', 'name email role')
+      .sort({ lastMessageAt: -1 })
+      .limit(50)
+      .lean();
     const { MessageModel } = await import('../../infrastructure/db/models/message.model');
-    
-    // Add unread count to each conversation
-    const conversationsWithUnread = await Promise.all(
-      conversations.map(async (conv: any) => {
-        const unreadCount = await MessageModel.countDocuments({
-          conversationId: conv._id,
-          senderId: { $ne: userId },
-          isRead: false
-        });
-        return { ...conv.toObject(), unreadCount };
-      })
-    );
+    const unreadCounts = await MessageModel.aggregate([
+      { $match: { conversationId: { $in: conversations.map((conv: any) => conv._id) }, senderId: { $ne: userId }, isRead: false } },
+      { $group: { _id: '$conversationId', count: { $sum: 1 } } },
+    ]);
+    const unreadByConversation = new Map(unreadCounts.map((item: any) => [item._id.toString(), item.count]));
+    const conversationsWithUnread = conversations.map((conv: any) => ({
+      ...conv,
+      unreadCount: unreadByConversation.get(conv._id.toString()) || 0,
+    }));
     
     res.json({ success: true, conversations: conversationsWithUnread });
   })

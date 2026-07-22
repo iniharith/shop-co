@@ -5,7 +5,6 @@
 "use client";
 import { CART_URL } from "@/constants/api";
 import AxiosInstance from "@/utils/axios";
-import { dummyProducts } from "@/constants/dummy-products";
 
 // Helper to get local cart
 const getLocalCart = () => {
@@ -24,6 +23,7 @@ const saveLocalCart = (cart: any[]) => {
 export const addToCart = async (productId: string, size: string, quantity: number, token: string, artworkUrl?: string) => {
     // Intercept dummy products to bypass backend verification
     if (productId.startsWith("prod-")) {
+        const { dummyProducts } = await import("@/constants/dummy-products");
         const product = dummyProducts.find(p => p._id === productId);
         if (product) {
             const cart = getLocalCart();
@@ -92,4 +92,3 @@ export const removeFromCart = async (productId: string, size: string, token: str
     });
     return response.data;
 };
-

@@ -11,8 +11,8 @@ import { useMutationData } from "./useMutation";
 import { queryClient } from "@/components/provider/react-query";
 
 export const useNotifications = () => {
-    const { data: session } = useSession();
-    const { data, isPending } = useQueryData(["notifications"], () => getNotifications(session?.user?.token as string));
+    const { data: session, status } = useSession();
+    const { data, isPending } = useQueryData(["notifications"], () => getNotifications(session?.user?.token as string), { enabled: status === "authenticated" });
     const response = data as INotificationResponse;
     return { data: response, isPending };
 }
@@ -25,4 +25,3 @@ export const useMarkAllNotificationsAsRead = () => {
 
     return { mutate, isPending };
 }
-

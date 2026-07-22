@@ -28,7 +28,11 @@ export class TaskRepository {
     daysAgo.setDate(daysAgo.getDate() - days);
     query.createdAt = { $gte: daysAgo };
 
-    return Task.find(query).select('-comments -activities').sort({ createdAt: -1 }).lean() as unknown as Promise<ITask[]>;
+    return Task.find(query)
+      .select('-comments -activities -files')
+      .sort({ createdAt: -1 })
+      .maxTimeMS(10_000)
+      .lean() as unknown as Promise<ITask[]>;
   }
 
   async findById(id: string): Promise<ITask | null> {

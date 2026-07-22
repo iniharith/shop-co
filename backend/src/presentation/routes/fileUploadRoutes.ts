@@ -244,6 +244,8 @@ router.get(
 // Admin: list all uploaded files with optional filter
 router.get(
   '/',
+  authMiddilware,
+  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
   asyncHandler(async (req: Request, res: Response) => {
     const { reviewed, search } = req.query as { reviewed?: string; search?: string };
     const filters: any = {};
@@ -297,6 +299,8 @@ async function enrichWithShareLinks(files: any[]): Promise<any[]> {
 // though the underlying job was still active).
 router.get(
   '/index',
+  authMiddilware,
+  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
   asyncHandler(async (_req: Request, res: Response) => {
     const files = await fileUploadRepository.findIndex();
     const enriched = await enrichWithShareLinks(files);
@@ -309,6 +313,8 @@ router.get(
 // only when that folder is actually opened. Pass taskId, or orderId/userId.
 router.get(
   '/by-folder',
+  authMiddilware,
+  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
   asyncHandler(async (req: Request, res: Response) => {
     const { taskId, orderId, userId } = req.query as { taskId?: string; orderId?: string; userId?: string };
     if (!taskId && !orderId && !userId) {
@@ -325,6 +331,8 @@ router.get(
 // Admin: files grouped by customer (Nextcloud folder view)
 router.get(
   '/grouped',
+  authMiddilware,
+  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
   asyncHandler(async (_req: Request, res: Response) => {
     const grouped = await fileUploadRepository.getFilesGroupedByUser();
     const stats = await fileUploadRepository.getStorageStats();

@@ -45,6 +45,8 @@ const NotificationSchema = new Schema<NotificationDocument>(
       timestamps: true, // adds createdAt and updatedAt
     }
   );
+  NotificationSchema.index({ userId: 1, createdAt: -1 });
+  NotificationSchema.index({ userId: 1, read: 1 });
   
   export const NotificationModel = mongoose.model<NotificationDocument>(
     "Notification",

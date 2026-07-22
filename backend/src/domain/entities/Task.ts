@@ -83,5 +83,8 @@ const TaskSchema = new Schema<ITask>(
 );
 
 TaskSchema.index({ createdAt: -1 });
+TaskSchema.index({ status: 1, isDeleted: 1, createdAt: -1 });
+TaskSchema.index({ assignee: 1, status: 1, createdAt: -1 });
+TaskSchema.index({ orderId: 1 });
 
 export const Task = mongoose.model<ITask>('Task', TaskSchema);

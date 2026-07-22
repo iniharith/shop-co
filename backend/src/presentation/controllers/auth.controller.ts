@@ -40,10 +40,12 @@ export class AuthController {
                 });
             }
             const { user, accessToken, refreshToken } = await this.authUsecase.loginUser(email, password);
+            const safeUser = user.toObject();
+            delete (safeUser as any).password;
             res.status(statusCodes.OK).json({
                 success: true,
                 message: "User logged in successfully",
-                user,
+                user: safeUser,
                 accessToken,
                 refreshToken
             });
@@ -75,10 +77,12 @@ export class AuthController {
                 });
             }
             const { user, accessToken, refreshToken } = await this.authUsecase.registerUser({ email, password, name });
+            const safeUser = user.toObject();
+            delete (safeUser as any).password;
             res.status(statusCodes.CREATED).json({
                 success: true,
                 message: "User registered successfully",
-                user,
+                user: safeUser,
                 accessToken,
                 refreshToken
             });

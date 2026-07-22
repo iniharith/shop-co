@@ -31,8 +31,6 @@ export default withAuth(
     const isSuperAdminPage = path.startsWith("/admin/superAdmin");
     const hasAdminAccess = [Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(token?.role as Roles);
 
-    console.log(path, "path 🟢")
-    
     if (path == "/auth/signout") {
       if (!isLoggedIn) {
         return NextResponse.redirect(new URL("/auth/login", req.url));
@@ -59,6 +57,12 @@ export default withAuth(
 
       // Allow verified users or ANY internal staff role to bypass verified check
       const isInternalStaff = [Roles.ADMIN, Roles.SYSADMIN, Roles.DESIGNER, Roles.BOSS, Roles.PRODUCTION, Roles.PACKAGING].includes(userRole as Roles);
+
+      if (path === "/admin/dashboard") {
+        if (userRole === Roles.PRODUCTION) return NextResponse.redirect(new URL("/admin/production", req.url));
+        if (userRole === Roles.PACKAGING) return NextResponse.redirect(new URL("/admin/packaging", req.url));
+        if (userRole === Roles.DESIGNER) return NextResponse.redirect(new URL("/admin/tasks", req.url));
+      }
       
       if (isLoggedIn && !isInternalStaff && isVerified === "false") {
         return NextResponse.redirect(new URL("/auth/signout", req.url));

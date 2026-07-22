@@ -3,7 +3,7 @@
  * Kampungcetak ®
  */
 // admin/auth.config.ts
-import { AuthOptions, DefaultSession, User } from "next-auth";
+import { AuthOptions, DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 export const authConfig: AuthOptions = {
@@ -12,43 +12,36 @@ export const authConfig: AuthOptions = {
       name: "Credentials",
         credentials: {
           email: { label: "Email", type: "email", placeholder: "your@email.com" },
-          name: { label: "Password", type: "password" },
-          id: { label: "Id", type: "id" },
-          role: { label: "Role", type: "role" },
-          token: { label: "Token", type: "token" },
-          refreshToken: { label: "RefreshToken", type: "refreshToken" },
-          verified: { label: "Verified", type: "boolean" },
-          avatar: { label: "Avatar", type: "text" },
+          password: { label: "Password", type: "password" },
         },
         async authorize(credentials) {
-          console.log("authorize", credentials)
-          if (!credentials?.email || !credentials?.name || !credentials.id) {
-            console.log("Email and name and id are required.");
-            return null;
-          }
-
-          // Mock user for now, replace with actual DB call
-          const user = {
-            token: credentials?.token as string,
-            refreshToken: credentials?.refreshToken as string,
-            id: credentials?.id,
-            name: credentials.name,
-            email: credentials.email as string,
-            role: credentials.role as string,
-            verified: credentials.verified as any,
-            avatar: credentials.avatar as string
+          if (!credentials?.email || !credentials?.password) return null;
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+          const response = await fetch(`${backendUrl}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: credentials.email, password: credentials.password }),
+            signal: AbortSignal.timeout(15_000),
+            cache: 'no-store',
+          });
+          if (!response.ok) return null;
+          const data = await response.json();
+          if (!data?.user?._id || !data?.accessToken) return null;
+          return {
+            token: data.accessToken,
+            refreshToken: data.refreshToken,
+            id: data.user._id,
+            name: data.user.name,
+            email: data.user.email,
+            role: data.user.role,
+            verified: data.user.verified,
+            avatar: data.user.avatar || '',
           };
-
-          if (user) {
-            return user;
-          } else {
-            return null;
-          }
         }
     }),
   ],
   pages: {
-    signIn: "/login" // Custom sign-in page
+    signIn: "/auth/login"
   },
   session: {
     strategy: "jwt"

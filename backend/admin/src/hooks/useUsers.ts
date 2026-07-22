@@ -13,7 +13,7 @@ export const useUsers = () => {
     const { data, isPending, refetch, isFetching } = useQueryData(
         ['users'],
         () => getUsers(session?.user?.token),
-        { enabled: status !== "loading" }
+        { enabled: status === "authenticated", staleTime: 5 * 60_000 }
     )
     const response = data as IUserApiResponse
     return { data: response, isPending, refetch, isFetching }

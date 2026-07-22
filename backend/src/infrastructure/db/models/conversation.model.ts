@@ -39,5 +39,7 @@ const ConversationSchema = new Schema(
   },
   { timestamps: true }
 );
+ConversationSchema.index({ type: 1, lastMessageAt: -1 });
+ConversationSchema.index({ participants: 1, lastMessageAt: -1 });
 
 export const ConversationModel = mongoose.model<IConversationDocument>('Conversation', ConversationSchema);
