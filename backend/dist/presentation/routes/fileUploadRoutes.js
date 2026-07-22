@@ -51,6 +51,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 const express_1 = require("express");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
+const mongoose_1 = __importDefault(require("mongoose"));
 const multer_1 = __importDefault(require("multer"));
 const s3_1 = require("../../infrastructure/config/s3");
 const multer_s3_1 = __importDefault(require("multer-s3"));
@@ -324,7 +325,24 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
     const rawStatuses = (_a = req.query.taskStatuses) === null || _a === void 0 ? void 0 : _a.split(',').filter(Boolean);
     const taskStatusFilter = rawStatuses && rawStatuses.length > 0 ? rawStatuses : ARTWORK_STATUSES;
     const filterUpper = taskStatusFilter.map(s => s.toUpperCase());
-    const statusRegexes = filterUpper.map(s => new RegExp(`^${s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i'));
+    // Generate plain string variants for MongoDB queries ($in array)
+    const statusQueryValues = Array.from(new Set([
+        ...filterUpper,
+        ...filterUpper.map(s => s.toLowerCase()),
+        ...filterUpper.map(s => s.replace(/_/g, ' ')),
+        ...filterUpper.map(s => s.replace(/_/g, '-')),
+        "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "REVIEWED", "PENDING_ARTWORK_APPROVAL"
+    ]));
+    const matchesStatus = (status) => {
+        if (!status)
+            return false;
+        const s = status.toUpperCase();
+        const sNormalized = s.replace(/[\s-]/g, '_');
+        return filterUpper.some(f => {
+            const fNormalized = f.replace(/[\s-]/g, '_');
+            return f === s || fNormalized === sNormalized || s.includes(f) || f.includes(s);
+        });
+    };
     // Try cache: Redis first, in-memory as fallback
     const cacheKey = `${ENRICHED_CACHE_KEY_PREFIX}${filterUpper.join(',')}`;
     let cachedData = null;
@@ -346,18 +364,16 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
     // 1. Load enriched file index
     const files = yield FileUploadRepository_1.fileUploadRepository.findIndex();
     const enriched = yield enrichWithShareLinks(files);
-    // 2. Collect unique references
-    const orderIds = [...new Set(enriched.filter((f) => f.orderId).map((f) => f.orderId))];
-    const userIds = [...new Set(enriched.filter((f) => !f.taskId).map((f) => f.userId))];
-    // 3. Load all tasks in this queue, not only tasks that already have a
-    // FileUpload record. Older/direct task uploads live in task.files, and
-    // tasks without files must still appear as valid zero-file folders.
+    // 2. Collect unique references with ObjectId validation
+    const orderIds = [...new Set(enriched.filter((f) => f.orderId && mongoose_1.default.Types.ObjectId.isValid(f.orderId)).map((f) => f.orderId))];
+    const userIds = [...new Set(enriched.filter((f) => !f.taskId && f.userId && mongoose_1.default.Types.ObjectId.isValid(f.userId)).map((f) => f.userId))];
+    // 3. Load all tasks in this queue
     const [tasks, taskFileCounts, orders, users] = yield Promise.all([
-        Task_1.Task.find({ status: { $in: statusRegexes }, isDeleted: { $ne: true } })
+        Task_1.Task.find({ status: { $in: statusQueryValues }, isDeleted: { $ne: true } })
             .select('title status orderId category')
             .lean(),
         Task_1.Task.aggregate([
-            { $match: { status: { $in: statusRegexes }, isDeleted: { $ne: true } } },
+            { $match: { status: { $in: statusQueryValues }, isDeleted: { $ne: true } } },
             { $project: { fileCount: { $size: { $ifNull: ['$files', []] } } } },
         ]),
         orderIds.length ? order_model_1.default.find({ _id: { $in: orderIds } }).select('orderStatus userId').lean() : [],
@@ -375,7 +391,7 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
         let isTask = false;
         if (file.taskId && taskMap.has(file.taskId)) {
             const task = taskMap.get(file.taskId);
-            if (!filterUpper.includes((task.status || '').toUpperCase()))
+            if (!matchesStatus(task.status))
                 continue;
             groupKey = `task:${file.taskId}`;
             folderName = task.title;
@@ -391,7 +407,7 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
             }
             if (file.orderId) {
                 const order = orderMap.get(file.orderId);
-                if (order && !filterUpper.includes((order.orderStatus || '').toUpperCase()))
+                if (order && !matchesStatus(order.orderStatus))
                     continue;
             }
             groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
@@ -411,7 +427,7 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
     }
     // 5. Add empty placeholders for tasks that have no files yet
     for (const task of tasks) {
-        if (!filterUpper.includes((task.status || '').toUpperCase()))
+        if (!matchesStatus(task.status))
             continue;
         const key = `task:${task._id}`;
         if (!groups[key]) {
@@ -434,9 +450,6 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
             orderStatus = ((_a = taskMap.get(g.taskId)) === null || _a === void 0 ? void 0 : _a.status) || null;
         else if (g.orderId)
             orderStatus = ((_b = orderMap.get(g.orderId)) === null || _b === void 0 ? void 0 : _b.orderStatus) || null;
-        // New uploads are represented by FileUpload records; legacy/direct
-        // task uploads can exist only in task.files. Use the larger value to
-        // avoid showing a misleading zero or double-counting synced uploads.
         const taskFileCount = g.taskId ? (taskFileCountMap.get(g.taskId) || 0) : 0;
         return Object.assign(Object.assign({}, g), { orderStatus, fileCount: Math.max(g.files.length, taskFileCount) });
     });
