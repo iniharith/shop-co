@@ -348,18 +348,26 @@ router.get(
     const enriched = await enrichWithShareLinks(files);
 
     // 2. Collect unique references
-    const taskIds = [...new Set(enriched.filter((f: any) => f.taskId).map((f: any) => f.taskId))];
     const orderIds = [...new Set(enriched.filter((f: any) => f.orderId).map((f: any) => f.orderId))];
     const userIds = [...new Set(enriched.filter((f: any) => !f.taskId).map((f: any) => f.userId))];
 
-    // 3. Batch-load all references in parallel
-    const [tasks, orders, users] = await Promise.all([
-      taskIds.length ? Task.find({ _id: { $in: taskIds } }).select('title status orderId category').lean() : [],
+    // 3. Load all tasks in this queue, not only tasks that already have a
+    // FileUpload record. Older/direct task uploads live in task.files, and
+    // tasks without files must still appear as valid zero-file folders.
+    const [tasks, taskFileCounts, orders, users] = await Promise.all([
+      Task.find({ status: { $in: taskStatusFilter }, isDeleted: { $ne: true } })
+        .select('title status orderId category')
+        .lean(),
+      Task.aggregate([
+        { $match: { status: { $in: taskStatusFilter }, isDeleted: { $ne: true } } },
+        { $project: { fileCount: { $size: { $ifNull: ['$files', []] } } } },
+      ]),
       orderIds.length ? OrderModel.find({ _id: { $in: orderIds } }).select('orderStatus userId').lean() : [],
       userIds.length ? User.find({ _id: { $in: userIds } }).select('name').lean() : [],
     ]);
 
     const taskMap = new Map(tasks.map((t: any) => [t._id.toString(), t]));
+    const taskFileCountMap = new Map(taskFileCounts.map((t: any) => [t._id.toString(), t.fileCount || 0]));
     const orderMap = new Map(orders.map((o: any) => [o._id.toString(), o]));
     const userMap = new Map(users.map((u: any) => [u._id.toString(), u]));
 
@@ -398,6 +406,7 @@ router.get(
           taskId: file.taskId || '',
           userId: file.userId || '',
           isTask,
+          category: isTask ? taskMap.get(file.taskId)?.category : file.category,
           files: [],
         };
       }
@@ -415,6 +424,7 @@ router.get(
           taskId: (task as any)._id.toString(),
           userId: '',
           isTask: true,
+          category: (task as any).category,
           files: [],
         };
       }
@@ -425,7 +435,11 @@ router.get(
       let orderStatus: string | null = null;
       if (g.taskId) orderStatus = taskMap.get(g.taskId)?.status || null;
       else if (g.orderId) orderStatus = (orderMap.get(g.orderId) as any)?.orderStatus || null;
-      return { ...g, orderStatus, fileCount: g.files.length };
+      // New uploads are represented by FileUpload records; legacy/direct
+      // task uploads can exist only in task.files. Use the larger value to
+      // avoid showing a misleading zero or double-counting synced uploads.
+      const taskFileCount = g.taskId ? (taskFileCountMap.get(g.taskId) || 0) : 0;
+      return { ...g, orderStatus, fileCount: Math.max(g.files.length, taskFileCount) };
     });
 
     // Cache for 2 minutes

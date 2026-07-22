@@ -79,6 +79,7 @@ export const useUpdateTask = () => {
         onSettled: (data, error, variables) => {
             client.invalidateQueries({ queryKey: ['tasks'] });
             client.invalidateQueries({ queryKey: ['orders'] });
+            client.invalidateQueries({ queryKey: ['folderGroup'] });
             if (variables?.id) {
                 client.invalidateQueries({ queryKey: ['task', variables.id] });
             }

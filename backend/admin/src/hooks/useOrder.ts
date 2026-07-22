@@ -21,7 +21,7 @@ export const useOrders = () => {
 
 export const useUpdateOrderStatus = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['updateOrderStatus'], ({ id, status }: any) => updateOrderStatus(session?.user?.token, id, status), ["orders", "tasks"])
+    const { mutate, isPending } = useMutationData(['updateOrderStatus'], ({ id, status }: any) => updateOrderStatus(session?.user?.token, id, status), ["orders", "tasks", "folderGroup"])
     return { mutate, isPending }
 }
 

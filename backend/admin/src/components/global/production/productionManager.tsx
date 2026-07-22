@@ -4,7 +4,7 @@
  */
 "use client";
 import React, { useState, useMemo } from "react";
-import { useFileIndex, useFolderGroup, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles, useCreateShareLink, useFolders } from "@/hooks/useAdminDashboard";
+import { useFolderGroup, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles, useCreateShareLink, useFolders } from "@/hooks/useAdminDashboard";
 import { useOrders, useUpdateOrderStatus } from "@/hooks/useOrder";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
@@ -40,13 +40,12 @@ const categories = [
   "FOOD PACKAGING"
 ];
 
-const ALL_STATUSES = ["IN_PRODUCTION", "HOLD_PRINTING"];
+const ALL_STATUSES = ["IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING"];
 
 export default function ProductionManager() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
-  const { data: response, isPending, refetch, isFetching } = useFileIndex();
-  const { data: folderGroupResponse, isPending: folderGroupPending } = useFolderGroup(ALL_STATUSES);
+  const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching } = useFolderGroup(ALL_STATUSES);
   const groupedFromServer: any[] = (folderGroupResponse as any)?.data || [];
   const { data: ordersResponse } = useOrders();
   const { data: tasksResponse } = useTasks({ statuses: ALL_STATUSES.join(',') });
@@ -113,113 +112,21 @@ export default function ProductionManager() {
     });
   };
 
-  const allFiles: any[] = (response as any)?.data || [];
-
-  const filteredFiles = useMemo(() => {
-    let result = allFiles;
-    const tasks = (tasksResponse as any)?.tasks || [];
-    if (activeTab !== "ALL") {
-      result = result.filter((f: any) => {
-        if (f.taskId) {
-          const task = tasks.find((t: any) => t._id === f.taskId);
-          return task?.category === activeTab;
-        }
-        return f.category === activeTab;
-      });
-    }
-
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return result;
-
-    return result.filter((file: any) => {
-      const nameMatch = file.originalName?.toLowerCase().includes(q);
-      const idMatch = file.userId?.toString().toLowerCase().includes(q);
-      const shortIdMatch = file.userId?.toString().slice(-6).toLowerCase().includes(q);
-      const orderMatch = file.orderId?.toString().toLowerCase().includes(q);
-      return nameMatch || idMatch || shortIdMatch || orderMatch;
-    });
-  }, [allFiles, searchQuery, activeTab]);
-
+  // The backend already returns the correct status queue, folder metadata and
+  // file count. Reusing this light index avoids downloading/joining every
+  // order, user and file whenever this page is opened.
   const groupedFiles = useMemo(() => {
-    const orders = ordersResponse?.orders || [];
-    const productionOrders = orders.filter((o: any) => o.orderStatus === 'IN_PRODUCTION');
-    const productionOrderIds = productionOrders.map((o: any) => o._id.toString());
-    const users = (usersResponse as any)?.data || [];
-    const tasks = (tasksResponse as any)?.tasks || [];
-    const productionTasks = tasks.filter((t: any) => t.status === activeSubTab);
-    const productionTaskIds = productionTasks.map((t: any) => t._id.toString());
-    
-    const filteredProductionOrders = orders.filter((o: any) => o.orderStatus === activeSubTab);
-    const productionOrderIdsFiltered = filteredProductionOrders.map((o: any) => o._id.toString());
-    const productionUserIds = filteredProductionOrders.map((o: any) => o.userId?.toString());
-
-    const groups: Record<string, any[]> = {};
-    filteredFiles.forEach((file: any) => {
-      let groupName = "Unassigned";
-      let orderIdStr = "";
-      let taskIdStr = "";
-      let isTask = false;
-      
-      const isTaskFile = !!file.taskId;
-      const isProductionTask = isTaskFile && productionTaskIds.includes(file.taskId?.toString());
-      const isProductionOrder = !isTaskFile && (productionOrderIdsFiltered.includes(file.orderId?.toString()) || productionUserIds.includes(file.userId?.toString()));
-      
-      if (!isProductionOrder && !isProductionTask) return;
-
-      if (isProductionTask) {
-        const task = tasks.find((t: any) => t._id === file.taskId);
-        groupName = task?.title || "Deleted Task";
-        taskIdStr = file.taskId;
-        orderIdStr = task?.orderId || "";
-        isTask = true;
-      } else {
-        const user = users.find((u: any) => u._id?.toString() === file.userId?.toString());
-        groupName = user?.name || file.userId;
-        if (file.orderId) {
-           orderIdStr = file.orderId;
-        } else {
-           const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString() && o.orderStatus === activeSubTab);
-           if (order) orderIdStr = order._id;
-        }
-      }
-
-      const key = JSON.stringify({ name: groupName, orderId: orderIdStr, taskId: taskIdStr, isTask });
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(file);
+    const query = searchQuery.trim().toLowerCase();
+    return groupedFromServer.filter((group: any) => {
+      if (group.orderStatus !== activeSubTab) return false;
+      if (activeTab !== "ALL" && group.category !== activeTab && group.files?.[0]?.category !== activeTab) return false;
+      if (!query) return true;
+      return group.folderName?.toLowerCase().includes(query)
+        || group.orderId?.toLowerCase().includes(query)
+        || group.taskId?.toLowerCase().includes(query)
+        || group.files?.some((file: any) => file.originalName?.toLowerCase().includes(query));
     });
-
-    productionTasks.forEach((task: any) => {
-      if (activeTab !== "ALL" && task.category !== activeTab) return; // respect active tab for empty folders
-      const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id, isTask: true });
-      if (!groups[key]) {
-        groups[key] = [];
-      }
-    });
-
-    return Object.entries(groups).map(([keyStr, files]) => {
-      const parsed = JSON.parse(keyStr);
-      let orderStatus = "N/A";
-      const task = parsed.taskId ? tasks.find((t: any) => t._id?.toString() === parsed.taskId?.toString()) : null;
-      if (!parsed.isTask && parsed.orderId) {
-        const order = orders.find((o: any) => o._id === parsed.orderId);
-        if (order) orderStatus = order.orderStatus;
-      } else if (parsed.isTask) {
-         orderStatus = task?.status || activeSubTab;
-      }
-      const fileCount = Math.max(files.length, task?.files?.length || 0);
-      return {
-        folderName: parsed.name,
-        orderId: parsed.orderId,
-        taskId: parsed.taskId,
-        folderId: parsed.folderId,
-        isTask: parsed.isTask, 
-        userId: files.length > 0 ? files[0].userId : "",
-        orderStatus: orderStatus,
-        fileCount: fileCount,
-        files: files.sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-      };
-    }).sort((a, b) => a.folderName.localeCompare(b.folderName));
-  }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab, activeSubTab]);
+  }, [groupedFromServer, searchQuery, activeTab, activeSubTab]);
 
   // Once a folder is opened, fetch its full file details on demand — the
   // folder LIST only ever needed names/counts, which the slim index above
@@ -520,7 +427,7 @@ export default function ProductionManager() {
     );
   };
 
-  if (!groupedFromServer.length && isPending && !allFiles.length) return <LoadingAnimation fullScreen={false} label="Loading files" />;
+  if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fullScreen={false} label="Loading files" />;
 
   return (
     <div className="space-y-6 bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">
@@ -878,7 +785,7 @@ export default function ProductionManager() {
                   <div className="p-4 sm:p-6 flex-1 overflow-y-auto bg-muted/5 relative">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-                        {activeSubFolderId ? "Subfolder Contents" : `${activeGroup.files.length} Attachments`}
+                        {activeSubFolderId ? "Subfolder Contents" : `${activeGroup.fileCount} Attachments`}
                       </h3>
                       {activeSubFolderId && (
                         <Button variant="ghost" size="sm" onClick={() => setActiveSubFolderId(null)}>
