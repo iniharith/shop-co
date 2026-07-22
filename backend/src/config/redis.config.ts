@@ -7,10 +7,14 @@ import { config } from "dotenv";
 config();
 
 export const createRedisClient = (clientType: 'subscriber' | 'publisher' | 'standard' = 'standard') => {
-    const redisUrl = process.env.REDIS_PUBLIC_URL || process.env.REDIS_URL;
+    const redisUrl = process.env.REDIS_URL
+        || process.env.REDIS_PUBLIC_URL
+        || (process.env.REDIS_HOST
+            ? `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT || '6379'}`
+            : undefined);
     
     if (!redisUrl) {
-        console.warn(`[Warning] REDIS_URL environment variable is missing. Redis ${clientType} client will be disabled.`);
+        console.warn(`[Warning] Redis configuration is missing. Redis ${clientType} client will be disabled.`);
         return null;
     }
 

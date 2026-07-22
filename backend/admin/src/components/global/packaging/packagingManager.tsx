@@ -11,7 +11,7 @@ import { useUsers } from "@/hooks/useUsers";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, CheckCircle, User, Tag, Calendar, Link, Share2 } from "lucide-react";
+import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, CheckCircle, User, Tag, Calendar, Link, Share2, CheckSquare } from "lucide-react";
 import { forceDownload } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -21,9 +21,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useSession } from "next-auth/react";
 import AxiosInstance from "@/utils/axios";
-import { uploadToS3Directly } from "@/utils/s3Upload";
+import { uploadFilesToS3Directly } from "@/utils/s3Upload";
 import { useSearchParams } from "next/navigation";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 
@@ -67,16 +68,50 @@ export default function PackagingManager() {
   const [previewFile, setPreviewFile] = useState<any>(null);
   const [commentText, setCommentText] = useState("");
 
+  // Bulk status move state
+  const [bulkSelectMode, setBulkSelectMode] = useState<boolean>(false);
+  const [selectedFolderIds, setSelectedFolderIds] = useState<string[]>([]);
+  const [bulkTargetStatus, setBulkTargetStatus] = useState<string>("SHIPPED");
+  const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN", "IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING", "PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "FAILED"];
+
   // Upload Modal State
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadData, setUploadData] = useState({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "" });
   const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { mutate: reviewFileMutate, isPending: isReviewing } = useReviewFile();
   const { mutate: deleteFileMutate, isPending: isDeleting } = useDeleteFile();
   const { mutate: bulkDeleteMutate, isPending: isBulkDeleting } = useBulkDeleteFiles();
 
   const { mutate: updateOrderStatus, isPending: isUpdatingStatus } = useUpdateOrderStatus();
+
+  const handleBulkStatusMove = () => {
+    if (selectedFolderIds.length === 0) return;
+    if (!confirm(`Move ${selectedFolderIds.length} folder(s) to "${bulkTargetStatus.replace(/_/g, ' ')}"?`)) return;
+
+    const targets = groupedFiles.filter((g: any) => selectedFolderIds.includes(`${g.folderName}-${g.orderId}-${g.taskId || ""}`));
+    let done = 0;
+    const total = targets.length;
+    const finish = () => {
+      done += 1;
+      if (done === total) {
+        toast.success(`Moved ${total} folder(s) to ${bulkTargetStatus.replace(/_/g, ' ')}`);
+        setSelectedFolderIds([]);
+        setBulkSelectMode(false);
+      }
+    };
+
+    targets.forEach((group: any) => {
+      if (group.taskId) {
+        updateTask({ id: group.taskId, data: { status: bulkTargetStatus } }, { onSuccess: finish, onError: finish });
+      } else if (group.orderId) {
+        updateOrderStatus({ id: group.orderId, status: bulkTargetStatus }, { onSuccess: finish, onError: finish });
+      } else {
+        finish();
+      }
+    });
+  };
 
   const allFiles: any[] = (response as any)?.data || [];
 
@@ -164,13 +199,14 @@ export default function PackagingManager() {
     return Object.entries(groups).map(([keyStr, files]) => {
       const parsed = JSON.parse(keyStr);
       let orderStatus = "N/A";
+      const task = parsed.taskId ? tasks.find((t: any) => t._id?.toString() === parsed.taskId?.toString()) : null;
       if (!parsed.isTask && parsed.orderId) {
         const order = orders.find((o: any) => o._id === parsed.orderId);
         if (order) orderStatus = order.orderStatus;
       } else if (parsed.isTask) {
-         const task = tasks.find((t: any) => t._id === parsed.taskId);
          orderStatus = task?.status || activeSubTab;
       }
+      const fileCount = Math.max(files.length, task?.files?.length || 0);
       return {
         folderName: parsed.name,
         orderId: parsed.orderId,
@@ -179,6 +215,7 @@ export default function PackagingManager() {
         isTask: parsed.isTask,
         userId: files.length > 0 ? files[0].userId : undefined,
         orderStatus: orderStatus,
+        fileCount: fileCount,
         files: files.sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
       };
     }).sort((a, b) => a.folderName.localeCompare(b.folderName));
@@ -351,37 +388,42 @@ export default function PackagingManager() {
   };
 
   const handleUploadSubmit = async () => {
-    
+    if (isUploading) return;
     if (!uploadFiles || uploadFiles.length === 0) return toast.error("Please select a file");
 
-      try {
-        const token = session?.user?.token || localStorage.getItem('token') || ""; 
-          
-        const uploadPromises = Array.from(uploadFiles).map(async (f) => {
-          // 1. Direct S3 Upload
-          const uploadedData = await uploadToS3Directly(token, f);
-          
-          // 2. Save Metadata
-          const metadata = {
-            userId: uploadData.userId || undefined,
-            orderId: uploadData.orderId || undefined,
-            category: uploadData.category || "DIGITAL PRINTING",
-            notes: uploadData.notes || undefined,
-            files: [uploadedData]
-          };
+    setIsUploading(true);
+    try {
+      const token = session?.user?.token || localStorage.getItem('token') || "";
 
-          const res = await AxiosInstance(token).post("/api/files/save-metadata", metadata);
-          return res.data;
-        });
+      const { uploaded, failed } = await uploadFilesToS3Directly(token, uploadFiles);
+      if (uploaded.length === 0) throw failed[0]?.error || new Error("Upload failed");
 
-        await Promise.all(uploadPromises);
+      await AxiosInstance(token).post("/api/files/save-metadata", {
+        userId: uploadData.userId || undefined,
+        orderId: uploadData.orderId || undefined,
+        category: uploadData.category || "DIGITAL PRINTING",
+        notes: uploadData.notes || undefined,
+        files: uploaded,
+      });
 
-        toast.success("Artwork uploaded successfully");
-        setUploadModalOpen(false);
-        window.location.reload();
-      } catch (e: any) {
-        toast.error(e.message || "Failed to upload artwork");
+      await refetch();
+
+      if (failed.length > 0) {
+        const remaining = new DataTransfer();
+        failed.forEach(({ file }) => remaining.items.add(file));
+        setUploadFiles(remaining.files);
+        toast.error(`${failed.length} file(s) failed. Successful files were saved; retry the remaining files.`);
+        return;
       }
+
+      toast.success("Artwork uploaded successfully");
+      setUploadFiles(null);
+      setUploadModalOpen(false);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to upload artwork");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const getFileIcon = (mimetype: string) => {
@@ -475,7 +517,7 @@ export default function PackagingManager() {
     );
   };
 
-  if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artworks" />;
+  if (isPending && !allFiles.length) return <LoadingAnimation fullScreen={false} label="Loading files" />;
 
   return (
     <div className="space-y-6 bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">
@@ -517,7 +559,9 @@ export default function PackagingManager() {
               <List className="w-4 h-4" />
             </button>
           </div>
-          <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
+          <Dialog open={uploadModalOpen} onOpenChange={(open) => {
+            if (!isUploading) setUploadModalOpen(open);
+          }}>
             <DialogTrigger asChild>
               <Button><Plus className="w-4 h-4 mr-2" /> Upload File</Button>
             </DialogTrigger>
@@ -535,7 +579,7 @@ export default function PackagingManager() {
                 </div>
                 <div className="space-y-2">
                   <Label>Files *</Label>
-                  <Input type="file" multiple onChange={e => setUploadFiles(e.target.files)} />
+                  <Input type="file" multiple disabled={isUploading} onChange={e => setUploadFiles(e.target.files)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Admin Notes</Label>
@@ -543,8 +587,8 @@ export default function PackagingManager() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setUploadModalOpen(false)}>Cancel</Button>
-                <Button onClick={handleUploadSubmit}>Upload</Button>
+                <Button variant="outline" disabled={isUploading} onClick={() => setUploadModalOpen(false)}>Cancel</Button>
+                <Button disabled={isUploading} onClick={handleUploadSubmit}>{isUploading ? "Uploading..." : "Upload"}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -568,14 +612,50 @@ export default function PackagingManager() {
           
           {/* LEFT PANEL (MASTER) */}
           <div className="w-full lg:w-1/3 xl:w-1/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
-            <div className="p-4 border-b bg-muted/30 font-semibold text-sm flex justify-between items-center shrink-0">
+            <div className="p-4 border-b bg-muted/30 font-semibold text-sm flex justify-between items-center shrink-0 gap-2">
               <span>Task Folders</span>
-              <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">{groupedFiles.length}</span>
+              <div className="flex items-center gap-2">
+                <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">{groupedFiles.length}</span>
+                <Button
+                  variant={bulkSelectMode ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => { setBulkSelectMode(v => !v); setSelectedFolderIds([]); }}
+                  title="Move multiple folders to a status in one click"
+                >
+                  <CheckSquare className="w-3.5 h-3.5 mr-1" /> Bulk Move
+                </Button>
+              </div>
             </div>
+            {bulkSelectMode && (
+              <div className="p-3 border-b bg-muted/20 flex flex-col gap-2 shrink-0">
+                <span className="text-xs text-muted-foreground">{selectedFolderIds.length} folder(s) selected</span>
+                <div className="flex items-center gap-2">
+                  <select
+                    className="flex-1 h-8 text-xs rounded-md border border-input bg-background px-2"
+                    value={bulkTargetStatus}
+                    onChange={(e) => setBulkTargetStatus(e.target.value)}
+                  >
+                    {ALL_MOVE_STATUSES.map(s => (
+                      <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                  <Button
+                    size="sm"
+                    className="h-8 px-3 text-xs shrink-0"
+                    disabled={selectedFolderIds.length === 0 || isUpdatingStatus}
+                    onClick={handleBulkStatusMove}
+                  >
+                    Apply
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {groupedFiles.map((group) => {
                 const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
                 const isSelected = selectedFolder === folderId;
+                const isBulkChecked = selectedFolderIds.includes(folderId);
                 return (
                   <div 
                     key={folderId} 
@@ -584,8 +664,18 @@ export default function PackagingManager() {
                         ? 'bg-primary/10 border-l-4 border-primary shadow-sm' 
                         : 'border border-transparent hover:bg-muted'
                     }`}
-                    onClick={() => setSelectedFolder(folderId)}
+                    onClick={() => bulkSelectMode
+                      ? setSelectedFolderIds(prev => prev.includes(folderId) ? prev.filter(id => id !== folderId) : [...prev, folderId])
+                      : setSelectedFolder(folderId)
+                    }
                   >
+                    {bulkSelectMode && (
+                      <Checkbox
+                        checked={isBulkChecked}
+                        onCheckedChange={() => setSelectedFolderIds(prev => prev.includes(folderId) ? prev.filter(id => id !== folderId) : [...prev, folderId])}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
                     <div className="w-10 h-10 rounded-md shrink-0 relative overflow-hidden bg-primary/5 flex items-center justify-center">
                       {getFolderPreview(group, "w-10 h-10")}
                     </div>
@@ -594,7 +684,7 @@ export default function PackagingManager() {
                        {group.orderId && <p className="text-xs text-muted-foreground truncate font-medium mt-0.5">Order: {group.orderId}</p>}
                     </div>
                     <div className="shrink-0 flex items-center gap-2">
-                      <span className="text-[10px] font-medium bg-background border px-1.5 py-0.5 rounded-full">{group.files.length}</span>
+                      <span className="text-[10px] font-medium bg-background border px-1.5 py-0.5 rounded-full">{group.fileCount} file(s)</span>
                       <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-primary translate-x-1' : 'text-muted-foreground'}`} />
                     </div>
                   </div>

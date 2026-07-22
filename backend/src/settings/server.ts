@@ -51,11 +51,13 @@ async function main() {
 
     server.listen(PORT, () => {
         console.log(`🎉 Server running on port ${PORT}`);
-        void Promise.all([ensureParcelIndexes(), initProduct()]).catch((error) => {
-            console.error('Background startup maintenance failed:', error);
-        });
-        startTrackingCronJob(); // Auto-sync parcels every 15 min
-        startTaskAutoTransitionJob(); // Auto-move PACKAGING → DELIVERED after 14 days
+        setTimeout(() => {
+            void Promise.all([ensureParcelIndexes(), initProduct()]).catch((error) => {
+                console.error('Background startup maintenance failed:', error);
+            });
+            startTrackingCronJob(); // Auto-sync parcels every 15 min
+            startTaskAutoTransitionJob(); // Auto-move PACKAGING → DELIVERED after 14 days
+        }, 30_000);
     });
 }
 

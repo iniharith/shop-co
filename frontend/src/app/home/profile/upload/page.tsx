@@ -44,6 +44,28 @@ function formatDate(d: string) {
 }
 
 const API = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/tiff', 'application/pdf'];
+const MAX_MB = 50;
+const MAX_FILES = 10;
+const UPLOAD_CONCURRENCY = 3;
+
+type DirectUploadResult = Awaited<ReturnType<typeof uploadToS3Directly>>;
+
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      throw new Error('Permintaan mengambil masa terlalu lama. Semak sambungan internet dan cuba lagi.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 export default function UploadPage() {
   const { data: session } = useSession();
@@ -61,23 +83,18 @@ export default function UploadPage() {
   const [myFiles, setMyFiles] = useState<UploadedFile[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/tiff', 'application/pdf'];
-  const MAX_MB = 50;
+  const uploadedFilesRef = useRef(new Map<string, DirectUploadResult>());
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchMyFiles();
-  }, []);
-
-  async function fetchMyFiles() {
+  const fetchMyFiles = useCallback(async () => {
+    if (!token) return;
+    setLoadingFiles(true);
     try {
-      if (!token) return;
-      const res = await fetch(`${API}/api/files/my`, { 
+      const res = await fetchWithTimeout(`${API}/api/files/my`, {
         headers: { Authorization: `Bearer ${token}` },
-        credentials: 'include' 
-      });
+        credentials: 'include'
+      }, 30_000);
       const data = await res.json();
       if (data.success) setMyFiles(data.data);
     } catch (e) {
@@ -85,30 +102,40 @@ export default function UploadPage() {
     } finally {
       setLoadingFiles(false);
     }
-  }
+  }, [token]);
+
+  useEffect(() => {
+    void fetchMyFiles();
+  }, [fetchMyFiles]);
 
   const addFiles = useCallback((files: File[]) => {
+    let validationError = '';
     const valid = files.filter(f => {
       if (!ALLOWED.includes(f.type)) {
-        setError(`Fail "${f.name}" tidak dibenarkan. Hanya JPG, PNG, PDF, TIFF, WEBP.`);
+        validationError ||= `Fail "${f.name}" tidak dibenarkan. Hanya JPG, PNG, PDF, TIFF, WEBP.`;
         return false;
       }
       if (f.size > MAX_MB * 1024 * 1024) {
-        setError(`Fail "${f.name}" terlalu besar (maks ${MAX_MB}MB).`);
+        validationError ||= `Fail "${f.name}" terlalu besar (maks ${MAX_MB}MB).`;
         return false;
       }
       return true;
     });
 
-    const newItems: QueuedFile[] = valid.map(f => ({
+    const accepted = valid.slice(0, Math.max(0, MAX_FILES - queue.length));
+    if (accepted.length < valid.length) {
+      validationError ||= `Maksimum ${MAX_FILES} fail untuk setiap muat naik.`;
+    }
+
+    const newItems: QueuedFile[] = accepted.map(f => ({
       file: f,
       id: `${Date.now()}-${Math.random()}`,
       preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
     }));
 
     setQueue(prev => [...prev, ...newItems]);
-    setError('');
-  }, [ALLOWED]);
+    setError(validationError);
+  }, [queue.length]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -120,6 +147,7 @@ export default function UploadPage() {
   const onDragLeave = () => setDragActive(false);
 
   function removeFromQueue(id: string) {
+    uploadedFilesRef.current.delete(id);
     setQueue(prev => {
       const item = prev.find(q => q.id === id);
       if (item?.preview) URL.revokeObjectURL(item.preview);
@@ -128,44 +156,79 @@ export default function UploadPage() {
   }
 
   async function handleUpload() {
+    if (uploading) return;
     if (!queue.length) { setError('Sila pilih sekurang-kurangnya satu fail.'); return; }
     if (!orderId.trim()) { setError('No. Pesanan wajib diisi. (Order ID is mandatory).'); return; }
     setUploading(true);
     setError('');
 
     try {
-      const uploadPromises = queue.map(async (q) => {
-        // 1. Direct S3 Upload
-        const uploadedData = await uploadToS3Directly(token, q.file, API);
-        
-        // 2. Save Metadata
-        const metadata = {
-          orderId: orderId,
-          notes: notes || undefined,
-          files: [uploadedData]
-        };
+      const batch = [...queue];
+      const failures: Error[] = [];
+      let cursor = 0;
 
-        const res = await fetch(`${API}/api/files/save-metadata`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify(metadata)
-        });
+      async function worker() {
+        while (cursor < batch.length) {
+          const item = batch[cursor++];
+          if (uploadedFilesRef.current.has(item.id)) continue;
 
-        const data = await res.json();
-        if (!data.success) throw new Error(data.message);
-        return data;
+          try {
+            const uploaded = await uploadToS3Directly(token, item.file, API);
+            uploadedFilesRef.current.set(item.id, uploaded);
+          } catch (error: any) {
+            failures.push(error instanceof Error ? error : new Error('Muat naik gagal'));
+          }
+        }
+      }
+
+      await Promise.all(
+        Array.from({ length: Math.min(UPLOAD_CONCURRENCY, batch.length) }, () => worker())
+      );
+
+      const successfulItems = batch.flatMap(item => {
+        const uploaded = uploadedFilesRef.current.get(item.id);
+        return uploaded ? [{ item, uploaded }] : [];
       });
 
-      await Promise.all(uploadPromises);
+      if (successfulItems.length === 0) {
+        throw failures[0] || new Error('Muat naik gagal. Cuba lagi.');
+      }
+
+      const res = await fetchWithTimeout(`${API}/api/files/save-metadata`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          orderId,
+          notes: notes || undefined,
+          files: successfulItems.map(({ uploaded }) => uploaded),
+        })
+      }, 60_000);
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || 'Gagal menyimpan maklumat fail. Cuba lagi.');
+      }
+
+      const successfulIds = new Set(successfulItems.map(({ item }) => item.id));
+      successfulItems.forEach(({ item }) => {
+        if (item.preview) URL.revokeObjectURL(item.preview);
+        uploadedFilesRef.current.delete(item.id);
+      });
+      setQueue(prev => prev.filter(item => !successfulIds.has(item.id)));
+      await fetchMyFiles();
+
+      const failedCount = batch.length - successfulItems.length;
+      if (failedCount > 0) {
+        setError(`${failedCount} fail gagal dimuat naik. Fail yang berjaya sudah disimpan; cuba lagi untuk baki fail.`);
+        return;
+      }
 
       setUploadSuccess(true);
-      setQueue([]);
       setOrderId('');
       setNotes('');
-      await fetchMyFiles();
     } catch (e: any) {
       setError(e.message || 'Muat naik gagal. Cuba lagi.');
     } finally {
@@ -275,7 +338,10 @@ export default function UploadPage() {
                   multiple
                   accept=".jpg,.jpeg,.png,.webp,.tiff,.pdf,.heic,.heif"
                   className="hidden"
-                  onChange={e => addFiles(Array.from(e.target.files || []))}
+                  onChange={e => {
+                    addFiles(Array.from(e.target.files || []));
+                    e.target.value = '';
+                  }}
                 />
                 <div className="text-5xl mb-4">☁️</div>
                 <p className="text-base font-semibold text-black mb-1">Seret fail ke sini atau klik untuk pilih</p>

@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   mongo:
     image: mongo:latest
@@ -55,8 +53,7 @@ services:
       FRONTEND_URL: https://studioivory.art
       ADMIN_URL: https://admin.studioivory.art
       MONGO_URI: mongodb://abshar:123@mongo:27017/shop-co?authSource=admin
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379
       ADMIN_EMAIL: admin@gmail.com
       ADMIN_PASSWORD: admin
       JWT_REFRESH_SECRET: 8590026442@Abshar*
@@ -65,7 +62,7 @@ services:
     networks:
       - app-network
     healthcheck:
-       test: ["CMD", "curl", "-f", "https://localhost:8000/health"]
+       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
        interval: 10s
        timeout: 5s
        retries: 5

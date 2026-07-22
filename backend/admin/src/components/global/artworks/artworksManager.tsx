@@ -26,7 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import AxiosInstance from "@/utils/axios";
-import { uploadToS3Directly } from "@/utils/s3Upload";
+import { uploadFilesToS3Directly, uploadToS3Directly } from "@/utils/s3Upload";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 
 const categories = [
@@ -73,6 +73,7 @@ export default function ArtworksManager() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadData, setUploadData] = useState({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "", folderId: "" });
   const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Subfolder State
   const [activeSubFolderId, setActiveSubFolderId] = useState<string | null>(null);
@@ -91,7 +92,7 @@ export default function ArtworksManager() {
   } | null>(null);
 
   const { data: virtualFoldersResponse, isPending: foldersPending } = useFolders();
-  const virtualFolders = virtualFoldersResponse?.data || [];
+  const virtualFolders = (virtualFoldersResponse as any)?.data || [];
   const { mutate: createFolderMutate, isPending: isCreatingFolder } = useCreateFolder();
   const { mutate: renameFolderMutate, isPending: isRenamingFolder } = useRenameFolder();
   const { mutate: deleteFolderMutate, isPending: isDeletingFolder } = useDeleteFolder();
@@ -227,12 +228,15 @@ export default function ArtworksManager() {
 
     return Object.entries(groups).map(([keyStr, files]) => {
       const parsed = JSON.parse(keyStr);
+      const task = parsed.taskId ? tasks.find((t: any) => t._id?.toString() === parsed.taskId?.toString()) : null;
+      const fileCount = Math.max(files.length, task?.files?.length || 0);
       return {
         folderName: parsed.name,
         orderId: parsed.orderId,
         taskId: parsed.taskId,
         userId: files.length > 0 ? files[0].userId : "",
-        files
+        files,
+        fileCount
       };
     });
   }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab]);
@@ -242,7 +246,7 @@ export default function ArtworksManager() {
   // per-order/per-user upload folders that never became a task).
   const visibleGroupedFiles = useMemo(() => {
     return groupedFiles.filter((g: any) => {
-      if (!showEmptyFolders && g.files.length === 0) return false;
+      if (!showEmptyFolders && g.fileCount === 0) return false;
       if (folderScope === "tasks" && !g.taskId) return false;
       return true;
     });
@@ -449,37 +453,43 @@ export default function ArtworksManager() {
   };
 
   const handleUploadSubmit = async () => {
+    if (isUploading) return;
     if (!uploadFiles || uploadFiles.length === 0) return toast.error("Please select a file");
 
+    setIsUploading(true);
     try {
       const token = session?.user?.token || localStorage.getItem('token') || ""; 
-      
-      const uploadPromises = Array.from(uploadFiles).map(async (f) => {
-        // 1. Direct S3 Upload
-        const uploadedData = await uploadToS3Directly(token, f);
-        
-        // 2. Save Metadata
-        const metadata = {
-          userId: uploadData.userId || undefined,
-          orderId: uploadData.orderId || undefined,
-          taskId: uploadData.taskId || undefined,
-          folderId: uploadData.folderId || undefined,
-          category: uploadData.taskId ? 'TASK' : uploadData.category,
-          notes: uploadData.notes,
-          files: [uploadedData]
-        };
 
-        const res = await AxiosInstance(token).post("/api/files/save-metadata", metadata);
-        return res.data;
+      const { uploaded, failed } = await uploadFilesToS3Directly(token, uploadFiles);
+      if (uploaded.length === 0) throw failed[0]?.error || new Error("Upload failed");
+
+      await AxiosInstance(token).post("/api/files/save-metadata", {
+        userId: uploadData.userId || undefined,
+        orderId: uploadData.orderId || undefined,
+        taskId: uploadData.taskId || undefined,
+        folderId: uploadData.folderId || undefined,
+        category: uploadData.taskId ? 'TASK' : uploadData.category,
+        notes: uploadData.notes,
+        files: uploaded,
       });
 
-      await Promise.all(uploadPromises);
+      await refetch();
+
+      if (failed.length > 0) {
+        const remaining = new DataTransfer();
+        failed.forEach(({ file }) => remaining.items.add(file));
+        setUploadFiles(remaining.files);
+        toast.error(`${failed.length} file(s) failed. Successful files were saved; retry the remaining files.`);
+        return;
+      }
+
       toast.success("Artwork uploaded successfully");
       setUploadFiles(null);
       setUploadModalOpen(false);
-      refetch();
     } catch (e: any) {
       toast.error(e.message || "Failed to upload artwork");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -595,7 +605,7 @@ export default function ArtworksManager() {
       </div>
     );
   };
-if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artworks" />;
+if (isPending && !allFiles.length) return <LoadingAnimation fullScreen={false} label="Loading artworks" />;
 
   return (
     <div className="space-y-6 bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">
@@ -638,10 +648,11 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
             </button>
           </div>
           <Dialog open={uploadModalOpen} onOpenChange={(open) => {
+            if (isUploading) return;
             setUploadModalOpen(open);
             if (!open) {
               setUploadFiles(null);
-              setUploadData({ category: "DIGITAL PRINTING", notes: "" });
+              setUploadData({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "", folderId: "" });
             }
           }}>
             <Button onClick={() => {
@@ -668,6 +679,7 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
                     <input 
                       type="file" 
                       multiple 
+                      disabled={isUploading}
                       onChange={e => setUploadFiles(e.target.files)}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                       title="Click to select files"
@@ -720,12 +732,12 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
                 </div>
               </div>
               <DialogFooter className="border-t border-white/5 pt-4 mt-2 px-6 pb-6">
-                <Button variant="outline" onClick={() => {
+                <Button variant="outline" disabled={isUploading} onClick={() => {
                   setUploadModalOpen(false);
                   setUploadFiles(null);
-                  setUploadData({ category: "DIGITAL PRINTING", notes: "" });
+                  setUploadData({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "", folderId: "" });
                 }}>Cancel</Button>
-                <Button onClick={handleUploadSubmit}>Upload</Button>
+                <Button disabled={isUploading} onClick={handleUploadSubmit}>{isUploading ? "Uploading..." : "Upload"}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -838,7 +850,7 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate" title={group.folderName}>{group.folderName}</p>
                       {group.orderId && <p className="text-[11px] font-bold text-foreground/70 truncate">Order: {group.orderId}</p>}
-                      <p className="text-xs text-muted-foreground">{group.files.length} file(s)</p>
+                      <p className="text-xs text-muted-foreground">{group.fileCount} file(s)</p>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                       <Button
@@ -902,65 +914,88 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
                 className={`relative transition-colors rounded-xl ${isDragOverFolder ? 'bg-primary/5 border border-primary border-dashed p-4' : ''}`}
                 onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverFolder(true); }}
                 onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverFolder(true); }}
-                onDrop={async (e) => {
+                onDrop={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   setIsDragOverFolder(false);
                   if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                     const files = Array.from(e.dataTransfer.files);
                     const token = (session as any)?.user?.token || localStorage.getItem('token') || "";
-                    
-                    const uploadPromises = files.map(async (f) => {
-                      const id = Date.now().toString() + Math.random().toString(36).substring(7);
-                      const abortController = new AbortController();
-                      
+
+                    const uploadItems = files.map((file) => ({
+                      file,
+                      id: Date.now().toString() + Math.random().toString(36).substring(7),
+                      abortController: new AbortController(),
+                    }));
+
+                    uploadItems.forEach(({ file, id, abortController }) => {
                       addUpload({
                         id,
-                        name: f.name,
+                        name: file.name,
                         tag: "Artwork",
                         taskId: activeGroup.taskId,
-                        file: f,
+                        file,
                         abortController
                       });
+                    });
+
+                    const uploadBatch = async () => {
+                      const uploaded = new Array<{ id: string; data: Awaited<ReturnType<typeof uploadToS3Directly>> } | undefined>(uploadItems.length);
+                      const errors: Error[] = [];
+                      let cursor = 0;
+
+                      async function worker() {
+                        while (cursor < uploadItems.length) {
+                          const index = cursor++;
+                          const { file, id, abortController } = uploadItems[index];
+
+                          try {
+                            updateStatus(id, 'uploading');
+                            const folderPath = activeGroup.userId || activeGroup.taskId || 'general';
+                            const data = await uploadToS3Directly(token, file, folderPath, (percent) => updateProgress(id, percent), abortController);
+                            uploaded[index] = { id, data };
+                          } catch (err: any) {
+                            const error = err instanceof Error ? err : new Error('Upload failed');
+                            errors.push(error);
+                            updateStatus(id, 'error', error.message);
+                          }
+                        }
+                      }
+
+                      await Promise.all(
+                        Array.from({ length: Math.min(3, uploadItems.length) }, () => worker())
+                      );
+
+                      const successful = uploaded.filter((item): item is NonNullable<typeof item> => Boolean(item));
+                      if (successful.length === 0) throw errors[0] || new Error('Upload failed');
 
                       try {
-                        updateStatus(id, 'uploading');
-                        // 1. Direct S3 Upload
-                        const folderPath = activeGroup.userId || activeGroup.taskId || 'general';
-                        const uploadedData = await uploadToS3Directly(token, f, folderPath, (percent) => updateProgress(id, percent), abortController);
-                        
-                        // 2. Save Metadata
-                        const shareSlug = activeGroup.files.find((f: any) => f.shareSlug)?.shareSlug;
-                        const metadata = {
+                        const shareSlug = activeGroup.files.find((file: any) => file.shareSlug)?.shareSlug;
+                        await AxiosInstance(token).post("/api/files/save-metadata", {
                           userId: activeGroup.userId || undefined,
                           orderId: activeGroup.orderId || undefined,
                           taskId: activeGroup.taskId || undefined,
                           folderId: activeSubFolderId || undefined,
                           shareSlug: shareSlug || undefined,
                           category: activeGroup.taskId ? 'TASK' : (activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING"),
-                          files: [uploadedData]
-                        };
-
-                        const res = await AxiosInstance(token).post("/api/files/save-metadata", metadata);
-                        updateStatus(id, 'success');
-                        return res.data;
+                          files: successful.map(({ data }) => data),
+                        });
+                        successful.forEach(({ id }) => updateStatus(id, 'success'));
+                        await refetch();
                       } catch (err: any) {
-                        if (err.name === 'AbortError') {
-                          updateStatus(id, 'error', 'Upload cancelled');
-                        } else {
-                          updateStatus(id, 'error', err.message || 'Upload failed');
-                        }
+                        successful.forEach(({ id }) => updateStatus(id, 'error', err.message || 'Failed to save metadata'));
                         throw err;
                       }
-                    });
 
-                    toast.promise(Promise.all(uploadPromises), {
+                      if (errors.length > 0) {
+                        throw new Error(`${errors.length} file(s) failed; successful files were saved.`);
+                      }
+                    };
+
+                    toast.promise(uploadBatch(), {
                       loading: `Uploading ${files.length} files...`,
-                      success: () => {
-                        refetch();
-                        return 'Files uploaded successfully';
-                      },
-                      error: 'Failed to upload files'
+                      success: 'Files uploaded successfully',
+                      error: (error) => error.message || 'Failed to upload files'
                     });
                   }
                 }}

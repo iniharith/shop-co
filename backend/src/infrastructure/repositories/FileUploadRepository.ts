@@ -25,6 +25,35 @@ export class FileUploadRepository {
     return result;
   }
 
+  async createMany(data: Partial<IFileUpload>[]): Promise<IFileUpload[]> {
+    const identities = data
+      .filter((file) => file.userId && file.filename)
+      .map((file) => ({ userId: file.userId, filename: file.filename }));
+    const existing = identities.length > 0
+      ? await FileUpload.find({ $or: identities }).lean()
+      : [];
+    const byIdentity = new Map(
+      existing.map((file) => [`${file.userId}:${file.filename}`, file as unknown as IFileUpload])
+    );
+    const missingByIdentity = new Map<string, Partial<IFileUpload>>();
+
+    data.forEach((file) => {
+      const identity = `${file.userId}:${file.filename}`;
+      if (!byIdentity.has(identity)) missingByIdentity.set(identity, file);
+    });
+
+    const missing = Array.from(missingByIdentity.values());
+    if (missing.length > 0) {
+      const created = await FileUpload.insertMany(missing);
+      created.forEach((file) => byIdentity.set(`${file.userId}:${file.filename}`, file as unknown as IFileUpload));
+      notifyFileClients();
+    }
+
+    return data
+      .map((file) => byIdentity.get(`${file.userId}:${file.filename}`))
+      .filter((file): file is IFileUpload => Boolean(file));
+  }
+
   async findByUserId(userId: string): Promise<IFileUpload[]> {
     return FileUpload.find({ userId }).sort({ uploadedAt: -1 }).limit(200).lean() as unknown as Promise<IFileUpload[]>;
   }

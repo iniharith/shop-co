@@ -4,6 +4,8 @@
  */
 import AxiosInstance from "./axios";
 
+export type S3UploadResult = { fileUrl: string, key: string, name: string, type: string, size: number };
+
 export const uploadToS3Directly = async (token: string, file: File, folderPath?: string, onProgress?: (percent: number) => void, abortController?: AbortController) => {
   // 1. Get presigned URL from backend
   const presignRes = await AxiosInstance(token).post("/api/files/presigned-url", {
@@ -19,15 +21,11 @@ export const uploadToS3Directly = async (token: string, file: File, folderPath?:
   const { signedUrl, fileUrl, key } = presignRes.data;
 
   // 2. Upload file directly to S3 using XHR to track progress
-  return new Promise<{ fileUrl: string, key: string, name: string, type: string, size: number }>((resolve, reject) => {
+  return new Promise<S3UploadResult>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
 
-    // Without a timeout, a stalled connection (dropped packet, S3 hiccup,
-    // backgrounded tab) leaves the promise pending forever — the UI shows
-    // "Uploading... 100%" indefinitely with no way to know it failed.
-    // 2 minutes is generous for large artwork files while still giving up
-    // eventually instead of hanging silently.
-    xhr.timeout = 120000;
+    // Allow roughly 128 KB/s for large artwork, bounded to 5-30 minutes.
+    xhr.timeout = Math.min(30 * 60 * 1000, Math.max(5 * 60 * 1000, Math.ceil(file.size / (128 * 1024) * 1000)));
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && onProgress) {
@@ -64,4 +62,41 @@ export const uploadToS3Directly = async (token: string, file: File, folderPath?:
     xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
     xhr.send(file);
   });
+};
+
+export const uploadFilesToS3Directly = async (
+  token: string,
+  files: FileList | File[],
+  folderPath?: string,
+  concurrency = 3,
+) => {
+  const items = Array.from(files);
+  const uploaded = new Array<S3UploadResult | undefined>(items.length);
+  const failed: Array<{ file: File; error: Error }> = [];
+  let cursor = 0;
+
+  async function worker() {
+    while (cursor < items.length) {
+      const index = cursor++;
+      const file = items[index];
+
+      try {
+        uploaded[index] = await uploadToS3Directly(token, file, folderPath);
+      } catch (error) {
+        failed.push({
+          file,
+          error: error instanceof Error ? error : new Error("Upload failed"),
+        });
+      }
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(Math.max(1, concurrency), items.length) }, () => worker())
+  );
+
+  return {
+    uploaded: uploaded.filter((file): file is S3UploadResult => Boolean(file)),
+    failed,
+  };
 };

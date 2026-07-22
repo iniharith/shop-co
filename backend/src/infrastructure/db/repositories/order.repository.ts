@@ -28,6 +28,12 @@ export class OrderRepository {
         return await this.orderModel.findById(orderId).populate("products.product").populate("userId");
     }
 
+    async getOrderOwnerId(orderId: string): Promise<string | null> {
+        const order = await this.orderModel.findById(orderId).select("userId").lean();
+        const userId = (order as any)?.userId;
+        return userId ? userId.toString() : null;
+    }
+
     async getOrderByAwb(awb: string): Promise<IOrderDocument | null> {
         return await this.orderModel.findOne({ easyparcelAwb: awb }).populate("products.product").populate("userId");
     }

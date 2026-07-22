@@ -96,7 +96,7 @@ export const useFileStats = () => {
 
 export const useGroupedFiles = () => {
     const { data: session, status } = useSession();
-    return useQueryData(['groupedFiles'], () => getGroupedFiles(session?.user?.token), { enabled: status === 'authenticated', staleTime: 30_000 });
+    return useQueryData(['groupedFiles'], () => getGroupedFiles(session?.user?.token), { enabled: status === 'authenticated', staleTime: 300_000 });
 }
 
 export const useAllFiles = () => {
@@ -104,24 +104,19 @@ export const useAllFiles = () => {
     return useQueryData(
         ['allFiles'],
         () => getAllFiles(session?.user?.token),
-        { enabled: status === "authenticated", staleTime: 30_000 }
+        { enabled: status === "authenticated", staleTime: 300_000 }
     );
 }
 
-// Powers the folder list (name + item count) on the Artworks/Production/
-// Packaging pages. Slim + unwindowed, so it stays fast while still showing
-// every folder regardless of how old its files are.
 export const useFileIndex = () => {
     const { data: session, status } = useSession();
     return useQueryData(
         ['fileIndex'],
         () => getFileIndex(session?.user?.token),
-        { enabled: status === "authenticated", staleTime: 30_000 }
+        { enabled: status === "authenticated", staleTime: 300_000 }
     );
 }
 
-// Full file details for one folder — only fetched once a folder is opened
-// (taskId, or orderId/userId). Pass undefined/null to skip fetching.
 export const useFilesByFolder = (params: { taskId?: string | null; orderId?: string | null; userId?: string | null } | null) => {
     const { data: session, status } = useSession();
     const key = params ? (params.taskId || `${params.orderId || ''}:${params.userId || ''}`) : null;
@@ -132,7 +127,7 @@ export const useFilesByFolder = (params: { taskId?: string | null; orderId?: str
             orderId: params?.orderId || undefined,
             userId: params?.userId || undefined,
         }),
-        { enabled: status === "authenticated" && !!params && !!key, staleTime: 30_000 }
+        { enabled: status === "authenticated" && !!params && !!key, staleTime: 300_000 }
     );
 }
 
@@ -153,7 +148,6 @@ export const useBulkDeleteFiles = () => {
     const { mutate, isPending } = useMutationData(['bulkDeleteFiles'], (fileIds: string[]) => bulkDeleteFiles(session?.user?.token, fileIds), ['groupedFiles', 'allFiles', 'tasks', 'fileIndex', 'filesByFolder']);
     return { mutate, isPending };
 }
-
 
 export const useRenameFile = () => {
     const { data: session } = useSession();

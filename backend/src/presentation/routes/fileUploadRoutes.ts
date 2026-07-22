@@ -161,14 +161,25 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const { orderId, taskId, notes, userId: bodyUserId, category, tag, folderId, shareSlug, files } = req.body;
     const authReq = req as any;
-    
+
     // If admin provides a userId in the body, upload on their behalf
     const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(authReq.role);
-    let userId = (isAdmin && bodyUserId) ? bodyUserId : undefined;
-    
-    // If no userId is provided, but taskId or orderId is, do not fallback to admin's ID
-    if (!userId && !taskId && !orderId) {
-      userId = authReq.userId || authReq.user?.id;
+    const authenticatedUserId = authReq.userId || authReq.user?._id?.toString() || authReq.user?.id;
+    let userId = isAdmin ? bodyUserId : authenticatedUserId;
+
+    if (orderId && (!isAdmin || !userId)) {
+      const orderOwnerId = await OrderRepository.getOrderOwnerId(orderId);
+
+      if (!isAdmin && orderOwnerId !== authenticatedUserId) {
+        res.status(403).json({ success: false, message: 'Pesanan tidak sah untuk pengguna ini' });
+        return;
+      }
+
+      if (isAdmin && orderOwnerId) userId = orderOwnerId;
+    }
+
+    if (isAdmin && !userId && !taskId && !orderId) {
+      userId = authenticatedUserId;
     }
 
     if (!userId && !taskId) {
@@ -181,25 +192,23 @@ router.post(
       return;
     }
 
-    const savedFiles = await Promise.all(
-      files.map((file: any) =>
-        fileUploadRepository.create({
-          userId: userId || 'admin',
-          orderId: orderId || undefined,
-          taskId: taskId || undefined,
-          category: category || undefined,
-          tag: tag || undefined,
-          filename: file.key || file.filename || file.originalname || file.name,
-          originalName: file.originalname || file.name,
-          mimetype: file.mimetype || file.type || 'application/octet-stream',
-          size: file.size || 0,
-          path: file.fileUrl || file.path || file.url,
-          notes: notes || undefined,
-          adminReviewed: false,
-          folderId: folderId || undefined,
-          shareSlug: shareSlug || undefined,
-        })
-      )
+    const savedFiles = await fileUploadRepository.createMany(
+      files.map((file: any) => ({
+        userId: userId || 'admin',
+        orderId: orderId || undefined,
+        taskId: taskId || undefined,
+        category: category || undefined,
+        tag: tag || undefined,
+        filename: file.key || file.filename || file.originalname || file.name,
+        originalName: file.originalname || file.name,
+        mimetype: file.mimetype || file.type || 'application/octet-stream',
+        size: file.size || 0,
+        path: file.fileUrl || file.path || file.url,
+        notes: notes || undefined,
+        adminReviewed: false,
+        folderId: folderId || undefined,
+        shareSlug: shareSlug || undefined,
+      }))
     );
 
     // Optionally notify customer via WhatsApp
