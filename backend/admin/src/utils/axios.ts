@@ -36,11 +36,15 @@ const triggerForceLogout = () => {
   markSigningOut();
   if (typeof document !== "undefined") {
     document.cookie = 'fallback_admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    document.cookie = 'next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    document.cookie = '__Secure-next-auth.session-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
   }
   if (typeof window !== "undefined") {
-    signOut({ callbackUrl: '/auth/login' }).then(() => {
-      toast.error("Session expired, please login again");
-    }).catch(() => {});
+    try { toast.error("Session expired, please login again"); } catch {}
+    signOut({ callbackUrl: '/auth/login', redirect: false }).catch(() => {});
+    setTimeout(() => {
+      window.location.href = '/auth/login';
+    }, 300);
   }
 };
 
