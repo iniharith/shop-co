@@ -11,7 +11,7 @@ const connectSocket = (server) => {
     return new socket_io_1.Server(server, {
         cors: {
             origin: true,
-            methods: ["GET", "POST", "PUT", "DELETE"],
+            methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
             credentials: true
         },
         connectTimeout: 20000,

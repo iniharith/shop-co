@@ -40,22 +40,32 @@ const audit_middleware_1 = require("../presentation/middlewares/audit.middleware
 const bandwidthTracker_1 = require("../shared/utils/bandwidthTracker");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
+const corsOptions = {
+    origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, curl, server-to-server)
+        if (!origin)
+            return callback(null, true);
+        return callback(null, true);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
+    allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Accept",
+        "Origin",
+        "Access-Control-Request-Method",
+        "Access-Control-Request-Headers",
+        "Cache-Control",
+        "Pragma"
+    ],
+    exposedHeaders: ["Content-Range", "X-Content-Range"],
+    maxAge: 86400,
+};
+app.use((0, cors_1.default)(corsOptions));
 app.use(bandwidthTracker_1.bandwidthMiddleware);
 app.use((0, cookie_parser_1.default)());
-app.use((0, cors_1.default)({
-    origin: true,
-    credentials: true,
-    methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    maxAge: 86400,
-}));
-app.options("*", (0, cors_1.default)({
-    origin: true,
-    credentials: true,
-    methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    maxAge: 86400,
-}));
 // -------------------- util middleware-------------------------------
 app.use(express_1.default.json({ limit: '500mb' }));
 app.use(express_1.default.urlencoded({ extended: true, limit: '500mb' }));

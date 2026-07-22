@@ -68,8 +68,11 @@ const order_repository_1 = __importDefault(require("../../infrastructure/db/repo
 const order_model_1 = __importDefault(require("../../infrastructure/db/models/order.model"));
 const user_model_1 = __importDefault(require("../../infrastructure/db/models/user.model"));
 const redis_1 = require("../../infrastructure/redis/redis");
+// Tiered cache: Redis primary, in-memory fallback when Redis connection drops
 const enrichedIndexCache = new redis_1.RedisService();
-const ENRICHED_INDEX_CACHE_KEY = 'files:enrichedIndex:v1';
+const ENRICHED_CACHE_KEY_PREFIX = 'files:enrichedIndex:';
+const ENRICHED_CACHE_TTL = 120; // seconds
+const memCache = new Map();
 const taskBroadcast_1 = require("../../shared/utils/taskBroadcast");
 const streamFilesAsZip_1 = require("../../shared/utils/streamFilesAsZip");
 const downloadProgress_1 = require("../../shared/utils/downloadProgress");
@@ -316,18 +319,29 @@ router.get('/index', auth_middileware_1.default, (0, auth_middileware_1.authoriz
 // Accepts ?taskStatuses= comma-separated list to filter by task status
 // (defaults to artwork statuses if omitted).
 router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     const ARTWORK_STATUSES = ["PLACED", "IN_DESIGN", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "PEMBETULAN", "DONE_DESIGN"];
-    const taskStatusFilter = ((_a = req.query.taskStatuses) === null || _a === void 0 ? void 0 : _a.split(',').filter(Boolean)) || ARTWORK_STATUSES;
-    // Try cache first (keyed by status filter)
-    const cacheKey = `${ENRICHED_INDEX_CACHE_KEY}:${taskStatusFilter.join(',')}`;
-    const cached = yield enrichedIndexCache.get(cacheKey);
-    if (cached) {
-        try {
-            res.json({ success: true, data: JSON.parse(cached) });
-            return;
-        }
-        catch ( /* rebuild */_b) { /* rebuild */ }
+    const rawStatuses = (_a = req.query.taskStatuses) === null || _a === void 0 ? void 0 : _a.split(',').filter(Boolean);
+    const taskStatusFilter = rawStatuses && rawStatuses.length > 0 ? rawStatuses : ARTWORK_STATUSES;
+    const filterUpper = taskStatusFilter.map(s => s.toUpperCase());
+    const statusRegexes = filterUpper.map(s => new RegExp(`^${s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i'));
+    // Try cache: Redis first, in-memory as fallback
+    const cacheKey = `${ENRICHED_CACHE_KEY_PREFIX}${filterUpper.join(',')}`;
+    let cachedData = null;
+    try {
+        const raw = yield enrichedIndexCache.get(cacheKey);
+        if (raw)
+            cachedData = JSON.parse(raw);
+    }
+    catch ( /* Redis unavailable, try in-memory */_c) { /* Redis unavailable, try in-memory */ }
+    if (!cachedData) {
+        const mem = memCache.get(cacheKey);
+        if (mem && mem.expiresAt > Date.now())
+            cachedData = mem.data;
+    }
+    if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+        res.json({ success: true, data: cachedData });
+        return;
     }
     // 1. Load enriched file index
     const files = yield FileUploadRepository_1.fileUploadRepository.findIndex();
@@ -339,11 +353,11 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
     // FileUpload record. Older/direct task uploads live in task.files, and
     // tasks without files must still appear as valid zero-file folders.
     const [tasks, taskFileCounts, orders, users] = yield Promise.all([
-        Task_1.Task.find({ status: { $in: taskStatusFilter }, isDeleted: { $ne: true } })
+        Task_1.Task.find({ status: { $in: statusRegexes }, isDeleted: { $ne: true } })
             .select('title status orderId category')
             .lean(),
         Task_1.Task.aggregate([
-            { $match: { status: { $in: taskStatusFilter }, isDeleted: { $ne: true } } },
+            { $match: { status: { $in: statusRegexes }, isDeleted: { $ne: true } } },
             { $project: { fileCount: { $size: { $ifNull: ['$files', []] } } } },
         ]),
         orderIds.length ? order_model_1.default.find({ _id: { $in: orderIds } }).select('orderStatus userId').lean() : [],
@@ -359,11 +373,9 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
         let groupKey;
         let folderName;
         let isTask = false;
-        if (file.taskId) {
+        if (file.taskId && taskMap.has(file.taskId)) {
             const task = taskMap.get(file.taskId);
-            if (!task)
-                continue;
-            if (!taskStatusFilter.includes(task.status))
+            if (!filterUpper.includes((task.status || '').toUpperCase()))
                 continue;
             groupKey = `task:${file.taskId}`;
             folderName = task.title;
@@ -379,7 +391,7 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
             }
             if (file.orderId) {
                 const order = orderMap.get(file.orderId);
-                if (order && !taskStatusFilter.includes(order.orderStatus || ''))
+                if (order && !filterUpper.includes((order.orderStatus || '').toUpperCase()))
                     continue;
             }
             groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
@@ -391,6 +403,7 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
                 taskId: file.taskId || '',
                 userId: file.userId || '',
                 isTask,
+                category: isTask ? (_b = taskMap.get(file.taskId)) === null || _b === void 0 ? void 0 : _b.category : file.category,
                 files: [],
             };
         }
@@ -398,7 +411,7 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
     }
     // 5. Add empty placeholders for tasks that have no files yet
     for (const task of tasks) {
-        if (!taskStatusFilter.includes(task.status))
+        if (!filterUpper.includes((task.status || '').toUpperCase()))
             continue;
         const key = `task:${task._id}`;
         if (!groups[key]) {
@@ -408,6 +421,7 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
                 taskId: task._id.toString(),
                 userId: '',
                 isTask: true,
+                category: task.category,
                 files: [],
             };
         }
@@ -426,9 +440,12 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
         const taskFileCount = g.taskId ? (taskFileCountMap.get(g.taskId) || 0) : 0;
         return Object.assign(Object.assign({}, g), { orderStatus, fileCount: Math.max(g.files.length, taskFileCount) });
     });
-    // Cache for 2 minutes
-    yield enrichedIndexCache.set(cacheKey, JSON.stringify(result), 120);
     res.json({ success: true, data: result });
+    // Cache in Redis + in-memory fallback only when non-empty
+    if (result.length > 0) {
+        enrichedIndexCache.set(cacheKey, JSON.stringify(result), ENRICHED_CACHE_TTL).catch(() => { });
+        memCache.set(cacheKey, { data: result, expiresAt: Date.now() + ENRICHED_CACHE_TTL * 1000 });
+    }
 })));
 // ─── GET /api/files/by-folder ────────────────────────────────
 // Full file details (thumbnails, S3 URLs, etc.) for a single folder, fetched

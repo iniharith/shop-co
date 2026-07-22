@@ -11,7 +11,7 @@ const connectSocket = (server: http.Server<typeof http.IncomingMessage, typeof h
     return new Server(server, {
         cors: {
             origin: true,
-            methods: ["GET", "POST", "PUT", "DELETE"],
+            methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
             credentials: true
         },
         connectTimeout: 20000,

@@ -108,7 +108,13 @@ class FileUploadRepository {
     // via findByFolderKey() below once a folder is opened.
     findIndex() {
         return __awaiter(this, void 0, void 0, function* () {
-            const cached = yield redisService.get(FILE_INDEX_CACHE_KEY);
+            // Raced against a short timeout — a slow/unhealthy Redis should never
+            // meaningfully delay this response, since it's on the hot path for
+            // every Artworks/Production/Packaging page load.
+            const cached = yield Promise.race([
+                redisService.get(FILE_INDEX_CACHE_KEY),
+                new Promise((resolve) => setTimeout(() => resolve(null), 150)),
+            ]);
             if (cached) {
                 try {
                     return JSON.parse(cached);
@@ -119,7 +125,8 @@ class FileUploadRepository {
                 .sort({ uploadedAt: -1 })
                 .maxTimeMS(10000)
                 .lean();
-            yield redisService.set(FILE_INDEX_CACHE_KEY, JSON.stringify(files), 300);
+            // Fire-and-forget — don't make the caller wait on the cache write.
+            redisService.set(FILE_INDEX_CACHE_KEY, JSON.stringify(files), 300).catch(() => { });
             return files;
         });
     }
@@ -194,7 +201,10 @@ class FileUploadRepository {
     }
     getStorageStats() {
         return __awaiter(this, void 0, void 0, function* () {
-            const cached = yield redisService.get(FILE_STATS_CACHE_KEY);
+            const cached = yield Promise.race([
+                redisService.get(FILE_STATS_CACHE_KEY),
+                new Promise((resolve) => setTimeout(() => resolve(null), 150)),
+            ]);
             if (cached) {
                 try {
                     return JSON.parse(cached);
@@ -216,7 +226,7 @@ class FileUploadRepository {
             ]);
             const result = stats[0] || { totalFiles: 0, totalSize: 0, pendingReview: 0 };
             const output = Object.assign(Object.assign({}, result), { totalSizeMB: (result.totalSize / (1024 * 1024)).toFixed(2) });
-            yield redisService.set(FILE_STATS_CACHE_KEY, JSON.stringify(output), 60);
+            redisService.set(FILE_STATS_CACHE_KEY, JSON.stringify(output), 60).catch(() => { });
             return output;
         });
     }

@@ -38,25 +38,32 @@ import { bandwidthMiddleware } from '../shared/utils/bandwidthTracker';
 dotenv.config();
 const app = express();
 
-app.use(bandwidthMiddleware);
-app.use(cookieParser())
-app.use(
-    cors({
-        origin: true,
-        credentials: true,
-        methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
-        allowedHeaders: ["Content-Type", "Authorization"],
-        maxAge: 86400,
-    })
-);
-
-app.options("*", cors({
-    origin: true,
+const corsOptions: cors.CorsOptions = {
+    origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, curl, server-to-server)
+        if (!origin) return callback(null, true);
+        return callback(null, true);
+    },
     credentials: true,
-    methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
+    allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Accept",
+        "Origin",
+        "Access-Control-Request-Method",
+        "Access-Control-Request-Headers",
+        "Cache-Control",
+        "Pragma"
+    ],
+    exposedHeaders: ["Content-Range", "X-Content-Range"],
     maxAge: 86400,
-}));
+};
+
+app.use(cors(corsOptions));
+app.use(bandwidthMiddleware);
+app.use(cookieParser());
 
 // -------------------- util middleware-------------------------------
 app.use(express.json({ limit: '500mb' }));
