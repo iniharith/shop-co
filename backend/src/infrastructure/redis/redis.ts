@@ -61,26 +61,6 @@ export class RedisService {
         }
     }
 
-    async delByPrefix(prefix: string) {
-        if (!this.redis) return;
-        try {
-            let cursor = '0';
-            do {
-                const [nextCursor, keys] = await this.redis.scan(
-                    cursor,
-                    'MATCH',
-                    `${prefix}*`,
-                    'COUNT',
-                    100
-                );
-                cursor = nextCursor;
-                if (keys.length) await this.redis.del(...keys);
-            } while (cursor !== '0');
-        } catch (e) {
-            console.error("Redis prefix delete error:", e);
-        }
-    }
-
     async publish(channel: string, message: string) {
         if (!this.redis) return;
         try {

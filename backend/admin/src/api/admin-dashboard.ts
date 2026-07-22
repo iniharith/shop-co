@@ -25,11 +25,6 @@ export const updateParcel = async (token: string, id: string, updateData: any) =
     return response.data;
 }
 
-export const syncAllParcelTracking = async (token: string) => {
-    const response = await AxiosInstance(token).post(`${PARCELS_URL}/sync-all`);
-    return response.data;
-}
-
 export const getCustomerUpdateSettings = async (token: string) => {
     const response = await AxiosInstance(token).get(`${PARCELS_URL}/customer-update-settings`);
     return response.data;
@@ -67,15 +62,6 @@ export const getFileIndex = async (token: string) => {
     return response.data;
 }
 
-// Server-side grouped folder listing — returns folder names + file records
-// already grouped by task/order/user, eliminating client-side joins.
-// Accepts ?taskStatuses= to filter which task statuses to include.
-export const getFolderGroup = async (token: string, taskStatuses?: string[]) => {
-    const params = taskStatuses?.length ? `?taskStatuses=${taskStatuses.join(',')}` : '';
-    const response = await AxiosInstance(token).get(`${FILES_URL}/folder-group${params}`);
-    return response.data;
-}
-
 // Full file details for one folder, fetched only once that folder is opened.
 export const getFilesByFolder = async (token: string, params: { taskId?: string; orderId?: string; userId?: string }) => {
     const query = new URLSearchParams(
@@ -100,7 +86,7 @@ export const bulkDeleteFiles = async (token: string, fileIds: string[]) => {
     return response.data;
 }
 
-export const createShareLink = async (token: string, data: { folderName: string; taskId?: string; orderId?: string; userId?: string; folderId?: string; audience?: 'CUSTOMER' | 'SUPPLIER' }) => {
+export const createShareLink = async (token: string, data: { folderName: string; taskId?: string; orderId?: string; userId?: string; folderId?: string }) => {
     const response = await AxiosInstance(token).post(`${FILES_URL}/share-link`, data);
     return response.data;
 }

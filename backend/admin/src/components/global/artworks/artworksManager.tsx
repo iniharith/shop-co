@@ -4,7 +4,7 @@
  */
 "use client";
 import React, { useState, useMemo } from "react";
-import { useFolderGroup, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile, useCreateShareLink, useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, useMoveFile } from "@/hooks/useAdminDashboard";
+import { useFileIndex, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile, useCreateShareLink, useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, useMoveFile } from "@/hooks/useAdminDashboard";
 import { useOrders, useUpdateOrderStatus } from "@/hooks/useOrder";
 import { useUsers } from "@/hooks/useUsers";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
@@ -26,7 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import AxiosInstance from "@/utils/axios";
-import { uploadFilesToS3Directly, uploadToS3Directly } from "@/utils/s3Upload";
+import { uploadToS3Directly } from "@/utils/s3Upload";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 
 const categories = [
@@ -48,19 +48,18 @@ const ALL_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIE
 // page; PACKAGING belongs to the Packaging page; everything after that
 // (shipped/delivered/cancelled/failed) belongs to History.
 const ARTWORK_VISIBLE_STATUSES = ["PLACED", "IN_DESIGN", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "PEMBETULAN", "DONE_DESIGN"];
-const ARTWORK_STATUSES = ARTWORK_VISIBLE_STATUSES;
 
 export default function ArtworksManager() {
   const { addUpload, updateProgress, updateStatus } = useUploadStore();
   const { data: session } = useSession();
-  // Folder list from server-side grouped endpoint — fast, single query
-  const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching } = useFolderGroup(ARTWORK_STATUSES);
-  const groupedFromServer: any[] = (folderGroupResponse as any)?.data || [];
-  const { data: ordersResponse } = useOrders();
-  const { data: usersResponse } = useUsers();
-  const { data: tasksResponse } = useTasks({ statuses: ALL_STATUSES.join(',') });
+  const { data: response, isPending, refetch, isFetching: isFetchingFiles } = useFileIndex();
+  const { data: ordersResponse, isFetching: isFetchingOrders } = useOrders();
+  const { data: usersResponse, isPending: usersPending } = useUsers();
+  const { data: tasksResponse, isPending: tasksPending } = useTasks({ statuses: ALL_STATUSES.join(',') });
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
   const searchParams = useSearchParams();
+
+  const isFetching = isFetchingFiles || isFetchingOrders;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
@@ -74,7 +73,6 @@ export default function ArtworksManager() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadData, setUploadData] = useState({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "", folderId: "" });
   const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
 
   // Subfolder State
   const [activeSubFolderId, setActiveSubFolderId] = useState<string | null>(null);
@@ -85,15 +83,9 @@ export default function ArtworksManager() {
   const [moveToFolderModalOpen, setMoveToFolderModalOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<any>(null);
   const [previewList, setPreviewList] = useState<any[]>([]);
-  const [shareTarget, setShareTarget] = useState<{
-    folderName: string;
-    taskId?: string;
-    orderId?: string;
-    userId?: string;
-  } | null>(null);
 
   const { data: virtualFoldersResponse, isPending: foldersPending } = useFolders();
-  const virtualFolders = (virtualFoldersResponse as any)?.data || [];
+  const virtualFolders = virtualFoldersResponse?.data || [];
   const { mutate: createFolderMutate, isPending: isCreatingFolder } = useCreateFolder();
   const { mutate: renameFolderMutate, isPending: isRenamingFolder } = useRenameFolder();
   const { mutate: deleteFolderMutate, isPending: isDeletingFolder } = useDeleteFolder();
@@ -123,66 +115,157 @@ export default function ArtworksManager() {
   const [showEmptyFolders, setShowEmptyFolders] = useState<boolean>(true);
   const [folderScope, setFolderScope] = useState<"all" | "tasks">("all");
 
-  const allFiles: any[] = groupedFromServer.flatMap((g: any) => g.files);
+  const allFiles: any[] = (response as any)?.data || [];
 
-  // Server-side grouping already handles status filtering and ordering.
-  // Client just filters by category tab and search query.
-  const visibleGroupedFiles = useMemo(() => {
-    let result = groupedFromServer;
-
+  const filteredFiles = useMemo(() => {
+    let result = allFiles;
+    const tasks = (tasksResponse as any)?.tasks || [];
     if (activeTab !== "ALL") {
-      result = result.filter((g: any) => {
-        const firstFile = g.files?.[0];
-        return firstFile?.category === activeTab;
+      result = result.filter((f: any) => {
+        if (f.taskId) {
+          const task = tasks.find((t: any) => t._id === f.taskId);
+          return task?.category === activeTab;
+        }
+        return f.category === activeTab;
       });
     }
 
-    if (!showEmptyFolders) {
-      result = result.filter((g: any) => g.files?.length > 0);
-    }
-    if (folderScope === "tasks") {
-      result = result.filter((g: any) => g.taskId);
-    }
+    // Hide background images from Artworks Manager
+    result = result.filter((file: any) => file.category !== "UI_BACKGROUND");
 
     const q = searchQuery.trim().toLowerCase();
-    if (q) {
-      result = result.filter((g: any) => {
-        const nameMatch = g.folderName?.toLowerCase().includes(q);
-        const fileMatch = g.files?.some((f: any) =>
-          f.originalName?.toLowerCase().includes(q) ||
-          f.userId?.toString().toLowerCase().includes(q)
-        );
-        return nameMatch || fileMatch;
-      });
-    }
+    if (!q) return result;
 
-    return result;
-  }, [groupedFromServer, activeTab, showEmptyFolders, folderScope, searchQuery]);
+    return result.filter((file: any) => {
+      const nameMatch = file.originalName?.toLowerCase().includes(q);
+      const idMatch = file.userId?.toString().toLowerCase().includes(q);
+      const shortIdMatch = file.userId?.toString().slice(-6).toLowerCase().includes(q);
+      const orderMatch = file.orderId?.toString().toLowerCase().includes(q);
+      return nameMatch || idMatch || shortIdMatch || orderMatch;
+    });
+  }, [allFiles, searchQuery, activeTab]);
+
+  const groupedFiles = useMemo(() => {
+    const orders = ordersResponse?.orders || [];
+    const users = usersResponse?.users || [];
+    const tasks = (tasksResponse as any)?.tasks || [];
+    const groups: Record<string, any[]> = {};
+    filteredFiles.forEach((file: any) => {
+      let groupName = "Unassigned";
+      let orderIdStr = "";
+      
+      let shouldExclude = false;
+
+      let taskIdStr = "";
+
+      if (file.taskId) {
+        const task = tasks.find((t: any) => t._id === file.taskId);
+        if (!task) return; // Skip files whose task was deleted/missing — shown in History > Deleted Tasks
+        groupName = task.title;
+        orderIdStr = task.orderId || "";
+        taskIdStr = file.taskId;
+        
+        if (!ARTWORK_VISIBLE_STATUSES.includes(task.status)) {
+            shouldExclude = true;
+        }
+      } else {
+        // Files uploaded via share link carry _shareFolderName from the backend enrichment
+        if (file._shareFolderName) {
+          groupName = file._shareFolderName;
+        } else {
+          const user = users.find((u: any) => u._id?.toString() === file.userId?.toString());
+          groupName = user?.name || file.userId;
+        }
+
+        if (file.orderId) {
+          orderIdStr = file.orderId;
+        } else {
+          // fallback to see if we can find an order matching this file's userId
+          const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString());
+          if (order) orderIdStr = order._id;
+        }
+      }
+      
+      const isTaskFile = !!file.taskId;
+
+      // Only apply order-status exclusion for non-TASK files
+      // Task files are already handled by task status above — don't double-exclude them.
+      // Artwork Manager only owns the pre-production stages; once an order
+      // moves to IN_PRODUCTION/PACKAGING/etc it lives on its own page.
+      if (!isTaskFile && orderIdStr) {
+          const order = orders.find((o: any) => o._id === orderIdStr);
+          if (order && !ARTWORK_VISIBLE_STATUSES.includes((order as any).orderStatus)) {
+              shouldExclude = true;
+          }
+      }
+      
+      if (shouldExclude) return;
+
+      const key = JSON.stringify({ name: groupName, orderId: orderIdStr, taskId: taskIdStr });
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push(file);
+    });
+
+    // explicitly add empty folders for any Tasks that don't have files yet
+    tasks.forEach((task: any) => {
+      if (ARTWORK_VISIBLE_STATUSES.includes(task.status)) {
+        if (activeTab !== "ALL" && task.category !== activeTab) return; // respect active tab for empty folders
+        const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id });
+        if (!groups[key]) {
+          groups[key] = [];
+        }
+      }
+    });
+
+    return Object.entries(groups).map(([keyStr, files]) => {
+      const parsed = JSON.parse(keyStr);
+      return {
+        folderName: parsed.name,
+        orderId: parsed.orderId,
+        taskId: parsed.taskId,
+        userId: files.length > 0 ? files[0].userId : "",
+        files
+      };
+    });
+  }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab]);
+
+  // Declutter the master folder list: hide empty task placeholders by
+  // default, and optionally show only real task folders (hiding the
+  // per-order/per-user upload folders that never became a task).
+  const visibleGroupedFiles = useMemo(() => {
+    return groupedFiles.filter((g: any) => {
+      if (!showEmptyFolders && g.files.length === 0) return false;
+      if (folderScope === "tasks" && !g.taskId) return false;
+      return true;
+    });
+  }, [groupedFiles, showEmptyFolders, folderScope]);
 
   // Once a folder is opened, fetch its full file details (thumbnails, S3
   // URLs, etc.) on demand — the folder LIST above only ever needed names
   // and counts, which the slim index already provides.
   const activeFolderIdentity = useMemo(() => {
     if (!selectedFolder) return null;
-    const g = groupedFromServer.find(g => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
+    const g = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
     if (!g) return null;
     return g.taskId
       ? { taskId: g.taskId }
       : { orderId: g.orderId || null, userId: g.userId || null };
-  }, [selectedFolder, groupedFromServer]);
+  }, [selectedFolder, groupedFiles]);
 
   const { data: folderFilesResponse, isPending: isFolderFilesPending } = useFilesByFolder(activeFolderIdentity);
   const activeFolderFiles: any[] = (folderFilesResponse as any)?.data || [];
 
   React.useEffect(() => {
     const folderQuery = searchParams.get("folder");
-    if (folderQuery && groupedFromServer.length > 0 && !selectedFolder) {
-      const match = groupedFromServer.find(g => g.folderName === folderQuery);
+    if (folderQuery && groupedFiles.length > 0 && !selectedFolder) {
+      const match = groupedFiles.find(g => g.folderName === folderQuery);
       if (match) {
         setSelectedFolder(`${match.folderName}-${match.orderId}-${match.taskId}`);
       }
     }
-  }, [searchParams, groupedFromServer, selectedFolder]);
+  }, [searchParams, groupedFiles, selectedFolder]);
 
   React.useEffect(() => {
     setSelectedFiles([]);
@@ -321,7 +404,7 @@ export default function ArtworksManager() {
     if (selectedFolderIds.length === 0) return;
     if (!confirm(`Move ${selectedFolderIds.length} folder(s) to "${bulkTargetStatus.replace(/_/g, ' ')}"?`)) return;
 
-    const targets = groupedFromServer.filter((g: any) => selectedFolderIds.includes(`${g.folderName}-${g.orderId}-${g.taskId}`));
+    const targets = groupedFiles.filter((g: any) => selectedFolderIds.includes(`${g.folderName}-${g.orderId}-${g.taskId}`));
     let done = 0;
     const total = targets.length;
     const finish = () => {
@@ -360,43 +443,37 @@ export default function ArtworksManager() {
   };
 
   const handleUploadSubmit = async () => {
-    if (isUploading) return;
     if (!uploadFiles || uploadFiles.length === 0) return toast.error("Please select a file");
 
-    setIsUploading(true);
     try {
       const token = session?.user?.token || localStorage.getItem('token') || ""; 
+      
+      const uploadPromises = Array.from(uploadFiles).map(async (f) => {
+        // 1. Direct S3 Upload
+        const uploadedData = await uploadToS3Directly(token, f);
+        
+        // 2. Save Metadata
+        const metadata = {
+          userId: uploadData.userId || undefined,
+          orderId: uploadData.orderId || undefined,
+          taskId: uploadData.taskId || undefined,
+          folderId: uploadData.folderId || undefined,
+          category: uploadData.taskId ? 'TASK' : uploadData.category,
+          notes: uploadData.notes,
+          files: [uploadedData]
+        };
 
-      const { uploaded, failed } = await uploadFilesToS3Directly(token, uploadFiles);
-      if (uploaded.length === 0) throw failed[0]?.error || new Error("Upload failed");
-
-      await AxiosInstance(token).post("/api/files/save-metadata", {
-        userId: uploadData.userId || undefined,
-        orderId: uploadData.orderId || undefined,
-        taskId: uploadData.taskId || undefined,
-        folderId: uploadData.folderId || undefined,
-        category: uploadData.taskId ? 'TASK' : uploadData.category,
-        notes: uploadData.notes,
-        files: uploaded,
+        const res = await AxiosInstance(token).post("/api/files/save-metadata", metadata);
+        return res.data;
       });
 
-      await refetch();
-
-      if (failed.length > 0) {
-        const remaining = new DataTransfer();
-        failed.forEach(({ file }) => remaining.items.add(file));
-        setUploadFiles(remaining.files);
-        toast.error(`${failed.length} file(s) failed. Successful files were saved; retry the remaining files.`);
-        return;
-      }
-
+      await Promise.all(uploadPromises);
       toast.success("Artwork uploaded successfully");
       setUploadFiles(null);
       setUploadModalOpen(false);
+      refetch();
     } catch (e: any) {
       toast.error(e.message || "Failed to upload artwork");
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -425,20 +502,6 @@ export default function ArtworksManager() {
     const shareLink = `${window.location.origin}/share/file/${file._id}`;
     navigator.clipboard.writeText(shareLink);
     toast.success("Share link copied to clipboard");
-  };
-
-  const handleAudienceShare = async (audience: "CUSTOMER" | "SUPPLIER") => {
-    if (!shareTarget) return;
-    try {
-      const res = await createShareLink({ ...shareTarget, audience });
-      const slug = res?.data?.slug;
-      if (!slug) throw new Error("Share link was not returned");
-      await navigator.clipboard.writeText(`${window.location.origin}/share/${slug}`);
-      setShareTarget(null);
-      toast.success(`${audience === "CUSTOMER" ? "Customer" : "Supplier"} share link copied`);
-    } catch {
-      toast.error("Failed to generate share link");
-    }
   };
 
   const getFileThumbnail = (file: any, contextFiles: any[] = []) => {
@@ -512,7 +575,7 @@ export default function ArtworksManager() {
       </div>
     );
   };
-if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fullScreen={false} label="Loading artworks" />;
+if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artworks" />;
 
   return (
     <div className="space-y-6 bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">
@@ -555,11 +618,10 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
             </button>
           </div>
           <Dialog open={uploadModalOpen} onOpenChange={(open) => {
-            if (isUploading) return;
             setUploadModalOpen(open);
             if (!open) {
               setUploadFiles(null);
-              setUploadData({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "", folderId: "" });
+              setUploadData({ category: "DIGITAL PRINTING", notes: "" });
             }
           }}>
             <Button onClick={() => {
@@ -586,7 +648,6 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                     <input 
                       type="file" 
                       multiple 
-                      disabled={isUploading}
                       onChange={e => setUploadFiles(e.target.files)}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                       title="Click to select files"
@@ -639,12 +700,12 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                 </div>
               </div>
               <DialogFooter className="border-t border-white/5 pt-4 mt-2 px-6 pb-6">
-                <Button variant="outline" disabled={isUploading} onClick={() => {
+                <Button variant="outline" onClick={() => {
                   setUploadModalOpen(false);
                   setUploadFiles(null);
-                  setUploadData({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "", taskId: "", folderId: "" });
+                  setUploadData({ category: "DIGITAL PRINTING", notes: "" });
                 }}>Cancel</Button>
-                <Button disabled={isUploading} onClick={handleUploadSubmit}>{isUploading ? "Uploading..." : "Upload"}</Button>
+                <Button onClick={handleUploadSubmit}>Upload</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -659,7 +720,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
         </TabsList>
       </Tabs>
 
-      {groupedFromServer.length === 0 ? (
+      {groupedFiles.length === 0 ? (
         <div className="p-8 text-center text-muted-foreground border border-dashed rounded-xl">
           No artwork for now to view.
         </div>
@@ -757,7 +818,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate" title={group.folderName}>{group.folderName}</p>
                       {group.orderId && <p className="text-[11px] font-bold text-foreground/70 truncate">Order: {group.orderId}</p>}
-                      <p className="text-xs text-muted-foreground">{group.fileCount} file(s)</p>
+                      <p className="text-xs text-muted-foreground">{group.files.length} file(s)</p>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                       <Button
@@ -793,7 +854,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
           {selectedFolder ? (
           <div className="space-y-4 p-4 sm:p-6 flex-1 overflow-y-auto">
           {(() => {
-            const activeGroup = groupedFromServer.find(g => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
+            const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
             if (!activeGroup) {
               setTimeout(() => setSelectedFolder(null), 0);
               return null;
@@ -821,88 +882,65 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                 className={`relative transition-colors rounded-xl ${isDragOverFolder ? 'bg-primary/5 border border-primary border-dashed p-4' : ''}`}
                 onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverFolder(true); }}
                 onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverFolder(true); }}
-                onDrop={(e) => {
+                onDrop={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   setIsDragOverFolder(false);
                   if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                     const files = Array.from(e.dataTransfer.files);
                     const token = (session as any)?.user?.token || localStorage.getItem('token') || "";
-
-                    const uploadItems = files.map((file) => ({
-                      file,
-                      id: Date.now().toString() + Math.random().toString(36).substring(7),
-                      abortController: new AbortController(),
-                    }));
-
-                    uploadItems.forEach(({ file, id, abortController }) => {
+                    
+                    const uploadPromises = files.map(async (f) => {
+                      const id = Date.now().toString() + Math.random().toString(36).substring(7);
+                      const abortController = new AbortController();
+                      
                       addUpload({
                         id,
-                        name: file.name,
+                        name: f.name,
                         tag: "Artwork",
                         taskId: activeGroup.taskId,
-                        file,
+                        file: f,
                         abortController
                       });
-                    });
-
-                    const uploadBatch = async () => {
-                      const uploaded = new Array<{ id: string; data: Awaited<ReturnType<typeof uploadToS3Directly>> } | undefined>(uploadItems.length);
-                      const errors: Error[] = [];
-                      let cursor = 0;
-
-                      async function worker() {
-                        while (cursor < uploadItems.length) {
-                          const index = cursor++;
-                          const { file, id, abortController } = uploadItems[index];
-
-                          try {
-                            updateStatus(id, 'uploading');
-                            const folderPath = activeGroup.userId || activeGroup.taskId || 'general';
-                            const data = await uploadToS3Directly(token, file, folderPath, (percent) => updateProgress(id, percent), abortController);
-                            uploaded[index] = { id, data };
-                          } catch (err: any) {
-                            const error = err instanceof Error ? err : new Error('Upload failed');
-                            errors.push(error);
-                            updateStatus(id, 'error', error.message);
-                          }
-                        }
-                      }
-
-                      await Promise.all(
-                        Array.from({ length: Math.min(3, uploadItems.length) }, () => worker())
-                      );
-
-                      const successful = uploaded.filter((item): item is NonNullable<typeof item> => Boolean(item));
-                      if (successful.length === 0) throw errors[0] || new Error('Upload failed');
 
                       try {
-                        const shareSlug = activeGroup.files.find((file: any) => file.shareSlug)?.shareSlug;
-                        await AxiosInstance(token).post("/api/files/save-metadata", {
+                        updateStatus(id, 'uploading');
+                        // 1. Direct S3 Upload
+                        const folderPath = activeGroup.userId || activeGroup.taskId || 'general';
+                        const uploadedData = await uploadToS3Directly(token, f, folderPath, (percent) => updateProgress(id, percent), abortController);
+                        
+                        // 2. Save Metadata
+                        const shareSlug = activeGroup.files.find((f: any) => f.shareSlug)?.shareSlug;
+                        const metadata = {
                           userId: activeGroup.userId || undefined,
                           orderId: activeGroup.orderId || undefined,
                           taskId: activeGroup.taskId || undefined,
                           folderId: activeSubFolderId || undefined,
                           shareSlug: shareSlug || undefined,
                           category: activeGroup.taskId ? 'TASK' : (activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING"),
-                          files: successful.map(({ data }) => data),
-                        });
-                        successful.forEach(({ id }) => updateStatus(id, 'success'));
-                        await refetch();
+                          files: [uploadedData]
+                        };
+
+                        const res = await AxiosInstance(token).post("/api/files/save-metadata", metadata);
+                        updateStatus(id, 'success');
+                        return res.data;
                       } catch (err: any) {
-                        successful.forEach(({ id }) => updateStatus(id, 'error', err.message || 'Failed to save metadata'));
+                        if (err.name === 'AbortError') {
+                          updateStatus(id, 'error', 'Upload cancelled');
+                        } else {
+                          updateStatus(id, 'error', err.message || 'Upload failed');
+                        }
                         throw err;
                       }
+                    });
 
-                      if (errors.length > 0) {
-                        throw new Error(`${errors.length} file(s) failed; successful files were saved.`);
-                      }
-                    };
-
-                    toast.promise(uploadBatch(), {
+                    toast.promise(Promise.all(uploadPromises), {
                       loading: `Uploading ${files.length} files...`,
-                      success: 'Files uploaded successfully',
-                      error: (error) => error.message || 'Failed to upload files'
+                      success: () => {
+                        refetch();
+                        return 'Files uploaded successfully';
+                      },
+                      error: 'Failed to upload files'
                     });
                   }
                 }}
@@ -968,20 +1006,34 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                               <Printer className="w-4 h-4 mr-2" /> Print Drafts
                             </Button>
                           )}
-                          <Button
+                          <Button 
+
                             variant="outline" 
                             size="sm" 
                             disabled={isGeneratingLink}
-                            onClick={() => {
-                              setShareTarget({
-                                folderName: activeGroup.folderName,
-                                taskId: activeGroup.taskId || undefined,
-                                orderId: activeGroup.orderId || undefined,
-                                userId: activeGroup.userId || undefined,
-                              });
+                            onClick={async () => {
+                                try {
+                                  const res = await createShareLink({
+                                    folderName: activeSubFolderId ? `${activeGroup.folderName} / ${virtualFolders.find((f: any) => f._id === activeSubFolderId)?.name || activeGroup.folderName}` : activeGroup.folderName,
+                                    taskId: activeGroup.taskId || undefined,
+                                    orderId: activeGroup.orderId || undefined,
+                                    userId: activeGroup.userId || undefined,
+                                    folderId: activeSubFolderId || undefined,
+                                  });
+                                  const slug = res?.data?.slug;
+                                  if (!slug) {
+                                    toast.error("Failed to generate share link");
+                                    return;
+                                  }
+                                  const link = `${window.location.origin}/share/${slug}`;
+                                  navigator.clipboard.writeText(link);
+                                  toast.success("Share link copied to clipboard");
+                                } catch (e) {
+                                  toast.error("Failed to generate share link");
+                                }
                             }}
                           >
-                          <Share2 className="w-4 h-4 mr-2" /> {isGeneratingLink ? "Generating..." : "Share Link"}
+                          <Folder className="w-4 h-4 mr-2" /> {isGeneratingLink ? "Generating..." : "Share Link"}
                         </Button>
                         {activeGroup.taskId && (
                           <Button 
@@ -1305,46 +1357,6 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
         </div>
       )}
 
-      <Dialog open={Boolean(shareTarget)} onOpenChange={(open) => { if (!open) setShareTarget(null); }}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Choose Share Link Audience</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            The selected audience controls which files and folders can be accessed through this link.
-          </p>
-          <div className="grid gap-3 py-3 sm:grid-cols-2">
-            <button
-              type="button"
-              className="rounded-2xl border border-blue-500/25 bg-blue-500/5 p-5 text-left transition hover:border-blue-500/60 hover:bg-blue-500/10 disabled:opacity-50"
-              disabled={isGeneratingLink}
-              onClick={() => handleAudienceShare("CUSTOMER")}
-            >
-              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-blue-500 text-white">
-                <User className="h-5 w-5" />
-              </div>
-              <p className="font-semibold text-foreground">Send to Customer</p>
-              <p className="mt-1 text-sm leading-5 text-muted-foreground">Shows root Draft and Attachment files only. Subfolders and For Print are hidden.</p>
-            </button>
-            <button
-              type="button"
-              className="rounded-2xl border border-lime-500/30 bg-lime-500/5 p-5 text-left transition hover:border-lime-500/70 hover:bg-lime-500/10 disabled:opacity-50"
-              disabled={isGeneratingLink}
-              onClick={() => handleAudienceShare("SUPPLIER")}
-            >
-              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-lime-400 text-black">
-                <Printer className="h-5 w-5" />
-              </div>
-              <p className="font-semibold text-foreground">Send to Supplier</p>
-              <p className="mt-1 text-sm leading-5 text-muted-foreground">Shows For Print files only, including files organised inside subfolders.</p>
-            </button>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShareTarget(null)}>Cancel</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Comment Modal */}
       <Dialog open={commentModalOpen} onOpenChange={setCommentModalOpen}>
         <DialogContent>
@@ -1385,7 +1397,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
             <Button 
               disabled={isCreatingFolder || !newFolderName.trim()} 
               onClick={() => {
-                const activeGroup = groupedFromServer.find((g: any) => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
+                const activeGroup = groupedFiles.find((g: any) => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
                 if (activeGroup) {
                   createFolderMutate(
                     { name: newFolderName, taskId: activeGroup.taskId, userId: activeGroup.userId },
@@ -1452,7 +1464,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
           </DialogHeader>
           <div className="py-4 flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-2">
             {(() => {
-              const activeGroup = groupedFromServer.find((g: any) => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
+              const activeGroup = groupedFiles.find((g: any) => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
               const groupFolders = activeGroup ? virtualFolders.filter((f: any) => 
                 activeGroup.taskId ? f.taskId === activeGroup.taskId : f.userId === activeGroup.userId
               ) : [];

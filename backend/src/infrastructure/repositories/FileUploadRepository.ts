@@ -7,22 +7,7 @@ import { RedisService } from '../redis/redis';
 import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
 
 const redisService = new RedisService();
-const FILE_INDEX_CACHE_KEY = 'files:index:v1';
-const FILE_STATS_CACHE_KEY = 'files:stats:v1';
-const FILE_FOLDER_GROUP_CACHE_PREFIX = 'files:enrichedIndex:';
-let fileNotificationTimer: ReturnType<typeof setTimeout> | null = null;
-export const notifyFileClients = () => {
-  if (fileNotificationTimer) clearTimeout(fileNotificationTimer);
-  fileNotificationTimer = setTimeout(async () => {
-    fileNotificationTimer = null;
-    await redisService.del(FILE_INDEX_CACHE_KEY);
-    await redisService.del(FILE_STATS_CACHE_KEY);
-    // Folder-group responses are keyed by status filters. Clear every
-    // variant so the visible file count updates immediately after a change.
-    await redisService.delByPrefix(FILE_FOLDER_GROUP_CACHE_PREFIX);
-    await redisService.publish(REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' }));
-  }, 300);
-};
+export const notifyFileClients = () => redisService.publish(REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' })).catch(console.error);
 
 export class FileUploadRepository {
   async create(data: Partial<IFileUpload>): Promise<IFileUpload> {
@@ -31,37 +16,8 @@ export class FileUploadRepository {
     return result;
   }
 
-  async createMany(data: Partial<IFileUpload>[]): Promise<IFileUpload[]> {
-    const identities = data
-      .filter((file) => file.userId && file.filename)
-      .map((file) => ({ userId: file.userId, filename: file.filename }));
-    const existing = identities.length > 0
-      ? await FileUpload.find({ $or: identities }).lean()
-      : [];
-    const byIdentity = new Map(
-      existing.map((file) => [`${file.userId}:${file.filename}`, file as unknown as IFileUpload])
-    );
-    const missingByIdentity = new Map<string, Partial<IFileUpload>>();
-
-    data.forEach((file) => {
-      const identity = `${file.userId}:${file.filename}`;
-      if (!byIdentity.has(identity)) missingByIdentity.set(identity, file);
-    });
-
-    const missing = Array.from(missingByIdentity.values());
-    if (missing.length > 0) {
-      const created = await FileUpload.insertMany(missing);
-      created.forEach((file) => byIdentity.set(`${file.userId}:${file.filename}`, file as unknown as IFileUpload));
-      notifyFileClients();
-    }
-
-    return data
-      .map((file) => byIdentity.get(`${file.userId}:${file.filename}`))
-      .filter((file): file is IFileUpload => Boolean(file));
-  }
-
   async findByUserId(userId: string): Promise<IFileUpload[]> {
-    return FileUpload.find({ userId }).sort({ uploadedAt: -1 }).limit(200).lean() as unknown as Promise<IFileUpload[]>;
+    return FileUpload.find({ userId }).sort({ uploadedAt: -1 });
   }
 
   async findByOrderId(orderId: string): Promise<IFileUpload[]> {
@@ -78,12 +34,6 @@ export class FileUploadRepository {
         { orderId: { $regex: filters.search, $options: 'i' } },
       ];
     }
-    
-    // Speed optimization: Only load files from the last 30 days by default to prevent massive payloads.
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    query.uploadedAt = { $gte: thirtyDaysAgo };
-
     return FileUpload.find(query).sort({ uploadedAt: -1 }).lean() as unknown as Promise<IFileUpload[]>;
   }
 
@@ -95,23 +45,9 @@ export class FileUploadRepository {
   // file records. Actual file details are fetched per-folder, on demand,
   // via findByFolderKey() below once a folder is opened.
   async findIndex(): Promise<Pick<IFileUpload, 'userId' | 'orderId' | 'taskId' | 'category' | 'tag' | 'shareSlug' | 'folderId' | 'uploadedAt' | 'originalName'>[]> {
-    // Raced against a short timeout — a slow/unhealthy Redis should never
-    // meaningfully delay this response, since it's on the hot path for
-    // every Artworks/Production/Packaging page load.
-    const cached = await Promise.race([
-      redisService.get(FILE_INDEX_CACHE_KEY),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 150)),
-    ]);
-    if (cached) {
-      try { return JSON.parse(cached); } catch { /* rebuild malformed cache */ }
-    }
-    const files = await FileUpload.find({}, 'userId orderId taskId category tag shareSlug folderId uploadedAt originalName')
+    return FileUpload.find({}, 'userId orderId taskId category tag shareSlug folderId uploadedAt originalName')
       .sort({ uploadedAt: -1 })
-      .maxTimeMS(10_000)
-      .lean() as unknown as any[];
-    // Fire-and-forget — don't make the caller wait on the cache write.
-    redisService.set(FILE_INDEX_CACHE_KEY, JSON.stringify(files), 300).catch(() => {});
-    return files;
+      .lean() as unknown as Promise<any[]>;
   }
 
   // Full file details for a single folder, fetched only when that folder is
@@ -132,7 +68,7 @@ export class FileUploadRepository {
       query.userId = params.userId;
     }
     if (Object.keys(query).length === 0) return [];
-    return FileUpload.find(query).sort({ uploadedAt: -1 }).maxTimeMS(10_000).lean() as unknown as Promise<IFileUpload[]>;
+    return FileUpload.find(query).sort({ uploadedAt: -1 }).lean() as unknown as Promise<IFileUpload[]>;
   }
 
   async findById(id: string): Promise<IFileUpload | null> {
@@ -190,16 +126,7 @@ export class FileUploadRepository {
     pendingReview: number;
     totalSizeMB: string;
   }> {
-    const cached = await Promise.race([
-      redisService.get(FILE_STATS_CACHE_KEY),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 150)),
-    ]);
-    if (cached) {
-      try { return JSON.parse(cached); } catch { /* rebuild malformed cache */ }
-    }
-
     const stats = await FileUpload.aggregate([
-      { $match: { /* lightweight — no date filter, full scan */ } },
       {
         $group: {
           _id: null,
@@ -213,44 +140,18 @@ export class FileUploadRepository {
     ]);
 
     const result = stats[0] || { totalFiles: 0, totalSize: 0, pendingReview: 0 };
-    const output = {
+    return {
       ...result,
       totalSizeMB: (result.totalSize / (1024 * 1024)).toFixed(2),
     };
-    redisService.set(FILE_STATS_CACHE_KEY, JSON.stringify(output), 60).catch(() => {});
-    return output;
   }
 
   async getFilesGroupedByUser(): Promise<any[]> {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
     return FileUpload.aggregate([
-      {
-        $match: { uploadedAt: { $gte: thirtyDaysAgo } }
-      },
       {
         $group: {
           _id: '$userId',
-          files: {
-            $push: {
-              _id: '$_id',
-              originalName: '$originalName',
-              mimetype: '$mimetype',
-              size: '$size',
-              uploadedAt: '$uploadedAt',
-              taskId: '$taskId',
-              orderId: '$orderId',
-              category: '$category',
-              tag: '$tag',
-              adminReviewed: '$adminReviewed',
-              adminNotes: '$adminNotes',
-              thumbnailPath: '$thumbnailPath',
-              folderId: '$folderId',
-              shareSlug: '$shareSlug',
-              path: { $substrCP: ['$path', 0, 100] },
-            }
-          },
+          files: { $push: '$$ROOT' },
           totalFiles: { $sum: 1 },
           totalSize: { $sum: '$size' },
           pendingReview: {
