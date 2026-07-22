@@ -872,6 +872,12 @@ router.get(
 // pulling every file's full bytes into browser memory before assembling
 // the archive, which is what caused "array buffer allocation failed" on
 // folders with many or large files. This streams server-side instead.
+//
+// Concurrent download limiter — cap at 5 simultaneous ZIP jobs to prevent
+// Node.js from being overwhelmed when multiple folders are downloaded at once.
+let activeDownloads = 0;
+const MAX_CONCURRENT_DOWNLOADS = 5;
+
 router.post(
   '/download-batch',
   authMiddilware,
@@ -882,11 +888,21 @@ router.post(
       return;
     }
 
+    if (activeDownloads >= MAX_CONCURRENT_DOWNLOADS) {
+      res.status(429).json({ success: false, message: 'Terlalu banyak download serentak. Sila tunggu sebentar dan cuba semula.' });
+      return;
+    }
+
     const files = await FileUpload.find({ _id: { $in: fileIds } });
     if (!files.length) {
       res.status(404).json({ success: false, message: 'No files found' });
       return;
     }
+
+    activeDownloads++;
+    // Decrement counter when response finishes (whether success, error, or client abort)
+    res.on('close', () => { activeDownloads = Math.max(0, activeDownloads - 1); });
+    res.on('finish', () => { activeDownloads = Math.max(0, activeDownloads - 1); });
 
     const result = await streamFilesAsZip(
       res,
@@ -903,6 +919,7 @@ router.post(
     }
   })
 );
+
 
 // 🌐 Public: Upload files to a folder using a short slug
 const decodeSharedSlug = async (req: any, res: any, next: any) => {

@@ -253,7 +253,7 @@ router.put(
 
     // Clear the folder-group cache so Production/Packaging pages see the updated status
     if (req.body.status && req.body.status !== oldTask?.status) {
-      void clearFolderGroupCache().catch(() => {});
+      await clearFolderGroupCache().catch(() => {});
     }
 
     // Refetch to include newly added activities in the response and broadcast

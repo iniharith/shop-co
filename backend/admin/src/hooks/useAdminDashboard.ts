@@ -125,7 +125,12 @@ export const useFolderGroup = (taskStatuses?: string[]) => {
     return useQueryData(
         ['folderGroup', taskStatuses],
         () => getFolderGroup(session?.user?.token, taskStatuses),
-        { enabled: status === "authenticated", staleTime: 5 * 60_000 }
+        {
+            enabled: status === "authenticated",
+            staleTime: 0,           // always refetch — ensures moved folders don't re-appear on navigation
+            refetchOnWindowFocus: true,
+            refetchOnMount: true,
+        }
     );
 }
 
@@ -139,7 +144,7 @@ export const useFilesByFolder = (params: { taskId?: string | null; orderId?: str
             orderId: params?.orderId || undefined,
             userId: params?.userId || undefined,
         }),
-        { enabled: status === "authenticated" && !!params && !!key, staleTime: 300_000 }
+        { enabled: status === "authenticated" && !!params && !!key, staleTime: 0 }
     );
 }
 

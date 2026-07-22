@@ -26,10 +26,31 @@ const resolveDownloadUrl = async (filePath: string): Promise<string> => {
     const urlObj = new URL(filePath);
     const rawKey = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
     const key = decodeURIComponent(rawKey);
-    return await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: S3_BUCKET_NAME, Key: key }), { expiresIn: 300 });
+    return await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: S3_BUCKET_NAME, Key: key }), { expiresIn: 600 });
   } catch (e) {
     console.warn(`Could not sign URL for ${filePath}:`, e);
     return filePath;
+  }
+};
+
+// Fetch with timeout + one retry on transient failure
+const fetchWithRetry = async (url: string, attempt = 0): Promise<globalThis.Response> => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30_000); // 30s timeout per file
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok && attempt === 0) {
+      // Single retry on first failure
+      return fetchWithRetry(url, 1);
+    }
+    return res;
+  } catch (e: any) {
+    clearTimeout(timer);
+    if (attempt === 0 && e.name !== 'AbortError') {
+      return fetchWithRetry(url, 1);
+    }
+    throw e;
   }
 };
 
@@ -45,53 +66,50 @@ export async function streamFilesAsZip(
   downloadId?: string
 ): Promise<{ success: boolean }> {
   // archiver v8 removed the old callable factory pattern (archiver('zip', opts))
-  // and now exports classes directly — ZipArchive replaces it. append/pipe/
-  // finalize and all events (including 'entry', used below) work identically.
+  // and now exports classes directly — ZipArchive replaces it.
   const { ZipArchive } = require('archiver');
   const { Readable } = require('stream');
   const safeZipName = zipName.replace(/[^a-zA-Z0-9 _-]/g, '_');
 
-  // ── Pre-check phase: confirm each file is reachable via a cheap ranged
-  // GET (first byte only) before committing to a response. ──────────────
-  const candidates: { name: string; url: string }[] = [];
-  const skipped: string[] = [];
+  if (files.length === 0) {
+    return { success: false };
+  }
 
-  for (const file of files) {
-    try {
-      const downloadUrl = await resolveDownloadUrl(file.path);
-      // NOTE: presigned S3 URLs are cryptographically bound to the HTTP
-      // method they were signed for (GetObjectCommand => GET). Issuing a
-      // HEAD request against a GET-signed URL fails signature validation
-      // and returns 403 for every file, every time. Use a ranged GET
-      // (first byte only) instead — same signed method, minimal transfer.
-      const headRes = await fetch(downloadUrl, { headers: { Range: 'bytes=0-0' } });
-      if (!headRes.ok) {
-        skipped.push(file.originalName);
-        console.warn(`[streamFilesAsZip] Skipping ${file.originalName}: HTTP ${headRes.status}`);
-        continue;
-      }
-      candidates.push({ name: file.originalName, url: downloadUrl });
-    } catch (e) {
-      skipped.push(file.originalName);
-      console.warn(`[streamFilesAsZip] Skipping ${file.originalName}:`, e);
+  // Resolve all presigned URLs concurrently (network I/O, safe to parallelise)
+  // Limit concurrency to avoid S3 rate limiting when many folders are downloaded at once
+  const SIGN_CONCURRENCY = 5;
+  const resolved: { name: string; url: string }[] = [];
+  for (let i = 0; i < files.length; i += SIGN_CONCURRENCY) {
+    const batch = files.slice(i, i + SIGN_CONCURRENCY);
+    const results = await Promise.allSettled(
+      batch.map(f => resolveDownloadUrl(f.path).then(url => ({ name: f.originalName, url })))
+    );
+    for (const r of results) {
+      if (r.status === 'fulfilled') resolved.push(r.value);
     }
   }
 
-  if (candidates.length === 0) {
+  if (resolved.length === 0) {
     return { success: false };
   }
 
   res.setHeader('Content-Type', 'application/zip');
   res.setHeader('Content-Disposition', `attachment; filename="${safeZipName}.zip"`);
-  if (skipped.length) {
-    res.setHeader('X-Skipped-Files', String(skipped.length));
+
+  const skippedCount = files.length - resolved.length;
+  if (skippedCount > 0) {
+    res.setHeader('X-Skipped-Files', String(skippedCount));
   }
 
-  const archive = new ZipArchive({ zlib: { level: 6 } });
-  archive.on('error', (err: any) => { console.error('Archive error:', err); res.end(); });
+  const archive = new ZipArchive({ zlib: { level: 1 } }); // level 1 = fastest, least CPU
+  archive.on('error', (err: any) => {
+    console.error('[streamFilesAsZip] Archive error:', err);
+    if (!res.headersSent) res.status(500).end();
+    else res.end();
+  });
   archive.pipe(res);
 
-  // ── Streaming phase: fetch + append ONE file at a time. ──────────────
+  // ── Streaming phase: fetch + append ONE file at a time ──────────────
   const appendAndWait = (name: string, stream: any) =>
     new Promise<void>((resolve, reject) => {
       const onEntry = (entry: any) => {
@@ -110,13 +128,17 @@ export async function streamFilesAsZip(
       archive.append(stream, { name });
     });
 
-  const total = candidates.length;
+  const total = resolved.length;
   let completed = 0;
   setDownloadProgress(downloadId, 0, total);
-  for (const { name, url } of candidates) {
+
+  for (const { name, url } of resolved) {
     try {
-      const fileRes = await fetch(url);
-      if (!fileRes.ok || !fileRes.body) continue;
+      const fileRes = await fetchWithRetry(url);
+      if (!fileRes.ok || !fileRes.body) {
+        console.warn(`[streamFilesAsZip] Skipping ${name}: HTTP ${fileRes.status}`);
+        continue;
+      }
       await appendAndWait(name, Readable.fromWeb(fileRes.body as any));
     } catch (e) {
       console.warn(`[streamFilesAsZip] Failed streaming ${name} into archive:`, e);

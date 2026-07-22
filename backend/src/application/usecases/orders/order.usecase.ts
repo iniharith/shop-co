@@ -201,7 +201,7 @@ export class OrderUsecase {
             await this.redisService.del(REDIS_KEYS.ORDERS + order.userId.toString());
         }
         // Clear folder-group cache so Production/Packaging pages see updated status immediately
-        void clearFolderGroupCache().catch(() => {});
+        await clearFolderGroupCache().catch(() => {});
         
         // Sync Order status back to Task
         try {
