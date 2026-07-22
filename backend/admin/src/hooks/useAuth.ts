@@ -49,7 +49,10 @@ export const useAuth = (type: "login" | "signup" = "login") => {
   function onSubmit() {
     setIsLoading(false)
     localStorage.setItem("loginId", getValues("email"))
-    router.push("/admin/dashboard")
+    // Hard navigation (not router.push) so the freshly-issued session/token
+    // is guaranteed to be picked up on every device/browser, instead of a
+    // stale cached session persisting across a client-side route change.
+    window.location.href = "/admin/dashboard"
   }
 
 
