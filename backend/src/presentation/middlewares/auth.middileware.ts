@@ -84,12 +84,12 @@ export const refreshTokenMidllWare = async (req: AuthRequest, res: Response, nex
             next();
         } else {
             console.log('no refresh token')
-            res.status(statusCodes.BAD_REQUEST).json({ message: "user token is expired" })
+            res.status(statusCodes.UNAUTHORIZED).json({ message: "user token is expired" })
 
         }
     } catch (error) {
         console.log(error, 'refresh token error');
-        res.status(statusCodes.BAD_REQUEST).json({ message: "user token is expired" })
+        res.status(statusCodes.UNAUTHORIZED).json({ message: "user token is expired" })
     }
 }
 

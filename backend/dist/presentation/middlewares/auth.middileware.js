@@ -80,12 +80,12 @@ const refreshTokenMidllWare = (req, res, next) => __awaiter(void 0, void 0, void
         }
         else {
             console.log('no refresh token');
-            res.status(api_constant_1.statusCodes.BAD_REQUEST).json({ message: "user token is expired" });
+            res.status(api_constant_1.statusCodes.UNAUTHORIZED).json({ message: "user token is expired" });
         }
     }
     catch (error) {
         console.log(error, 'refresh token error');
-        res.status(api_constant_1.statusCodes.BAD_REQUEST).json({ message: "user token is expired" });
+        res.status(api_constant_1.statusCodes.UNAUTHORIZED).json({ message: "user token is expired" });
     }
 });
 exports.refreshTokenMidllWare = refreshTokenMidllWare;

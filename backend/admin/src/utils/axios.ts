@@ -4,8 +4,10 @@
  */
 "use client"
 import axios from 'axios';
-import { getSession } from "next-auth/react";
+import { getSession, signOut } from "next-auth/react";
+import { toast } from "sonner";
 import { refreshAuth } from "@/api/auth";
+import { markSigningOut } from "@/components/layout/liveSessionMonitor";
 
 const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -25,6 +27,22 @@ export const registerSessionRefresh = (handler: RefreshHandler | null) => {
 };
 
 let _refreshing: Promise<string | null> | null = null;
+let _latestAccessToken: string | null = null;
+let _isLoggingOut = false;
+
+const triggerForceLogout = () => {
+  if (_isLoggingOut) return;
+  _isLoggingOut = true;
+  markSigningOut();
+  if (typeof document !== "undefined") {
+    document.cookie = 'fallback_admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+  }
+  if (typeof window !== "undefined") {
+    signOut({ callbackUrl: '/auth/login' }).then(() => {
+      toast.error("Session expired, please login again");
+    }).catch(() => {});
+  }
+};
 
 const attemptRefresh = async (): Promise<string | null> => {
   if (_refreshing) return _refreshing;
@@ -32,15 +50,21 @@ const attemptRefresh = async (): Promise<string | null> => {
     try {
       const session = await getSession();
       const refreshToken = (session?.user as any)?.refreshToken;
-      if (!refreshToken) return null;
+      if (!refreshToken) {
+        triggerForceLogout();
+        return null;
+      }
       const res = await refreshAuth(refreshToken);
       if (res?.success && res?.accessToken) {
         const newToken = res.accessToken;
+        _latestAccessToken = newToken;
         if (_sessionRefreshHandler) await _sessionRefreshHandler({ accessToken: newToken, refreshToken: res.refreshToken });
         return newToken;
       }
+      triggerForceLogout();
       return null;
     } catch {
+      triggerForceLogout();
       return null;
     } finally {
       _refreshing = null;
@@ -54,6 +78,13 @@ export const refreshSessionToken = async (): Promise<boolean> => {
   const token = await attemptRefresh();
   return !!token;
 };
+
+api.interceptors.request.use((config) => {
+  if (_latestAccessToken && !config.url?.includes('/api/auth/')) {
+    config.headers.Authorization = `Bearer ${_latestAccessToken}`;
+  }
+  return config;
+});
 
 api.interceptors.response.use(
   (response) => response,
@@ -75,8 +106,10 @@ api.interceptors.response.use(
 );
 
 const AxiosInstance = (token: string = "") => {
-  if (token) {
+  if (token && !_latestAccessToken) {
     api.defaults.headers.common.Authorization = `Bearer ${token}`;
+  } else if (_latestAccessToken) {
+    api.defaults.headers.common.Authorization = `Bearer ${_latestAccessToken}`;
   }
   return api;
 };
