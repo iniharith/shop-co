@@ -48,18 +48,19 @@ const ALL_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIE
 // page; PACKAGING belongs to the Packaging page; everything after that
 // (shipped/delivered/cancelled/failed) belongs to History.
 const ARTWORK_VISIBLE_STATUSES = ["PLACED", "IN_DESIGN", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "PEMBETULAN", "DONE_DESIGN"];
+const ARTWORK_STATUSES = ARTWORK_VISIBLE_STATUSES;
 
 export default function ArtworksManager() {
   const { addUpload, updateProgress, updateStatus } = useUploadStore();
   const { data: session } = useSession();
-  const { data: response, isPending, refetch, isFetching: isFetchingFiles } = useFileIndex();
-  const { data: ordersResponse, isFetching: isFetchingOrders } = useOrders();
-  const { data: usersResponse, isPending: usersPending } = useUsers();
-  const { data: tasksResponse, isPending: tasksPending } = useTasks({ statuses: ALL_STATUSES.join(',') });
+  // Folder list from server-side grouped endpoint — fast, single query
+  const { data: folderGroupResponse, isPending: folderGroupPending } = useFolderGroup(ARTWORK_STATUSES);
+  const groupedFromServer: any[] = (folderGroupResponse as any)?.data || [];
+  const { data: ordersResponse } = useOrders();
+  const { data: usersResponse } = useUsers();
+  const { data: tasksResponse } = useTasks({ statuses: ALL_STATUSES.join(',') });
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
   const searchParams = useSearchParams();
-
-  const isFetching = isFetchingFiles || isFetchingOrders;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
@@ -122,160 +123,66 @@ export default function ArtworksManager() {
   const [showEmptyFolders, setShowEmptyFolders] = useState<boolean>(true);
   const [folderScope, setFolderScope] = useState<"all" | "tasks">("all");
 
-  const allFiles: any[] = (response as any)?.data || [];
+  const allFiles: any[] = groupedFromServer.flatMap((g: any) => g.files);
 
-  const filteredFiles = useMemo(() => {
-    let result = allFiles;
-    const tasks = (tasksResponse as any)?.tasks || [];
+  // Server-side grouping already handles status filtering and ordering.
+  // Client just filters by category tab and search query.
+  const visibleGroupedFiles = useMemo(() => {
+    let result = groupedFromServer;
+
     if (activeTab !== "ALL") {
-      result = result.filter((f: any) => {
-        if (f.taskId) {
-          const task = tasks.find((t: any) => t._id === f.taskId);
-          return task?.category === activeTab;
-        }
-        return f.category === activeTab;
+      result = result.filter((g: any) => {
+        const firstFile = g.files?.[0];
+        return firstFile?.category === activeTab;
       });
     }
 
-    // Hide background images from Artworks Manager
-    result = result.filter((file: any) => file.category !== "UI_BACKGROUND");
+    if (!showEmptyFolders) {
+      result = result.filter((g: any) => g.files?.length > 0);
+    }
+    if (folderScope === "tasks") {
+      result = result.filter((g: any) => g.taskId);
+    }
 
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return result;
+    if (q) {
+      result = result.filter((g: any) => {
+        const nameMatch = g.folderName?.toLowerCase().includes(q);
+        const fileMatch = g.files?.some((f: any) =>
+          f.originalName?.toLowerCase().includes(q) ||
+          f.userId?.toString().toLowerCase().includes(q)
+        );
+        return nameMatch || fileMatch;
+      });
+    }
 
-    return result.filter((file: any) => {
-      const nameMatch = file.originalName?.toLowerCase().includes(q);
-      const idMatch = file.userId?.toString().toLowerCase().includes(q);
-      const shortIdMatch = file.userId?.toString().slice(-6).toLowerCase().includes(q);
-      const orderMatch = file.orderId?.toString().toLowerCase().includes(q);
-      return nameMatch || idMatch || shortIdMatch || orderMatch;
-    });
-  }, [allFiles, searchQuery, activeTab]);
-
-  const groupedFiles = useMemo(() => {
-    const orders = ordersResponse?.orders || [];
-    const users = usersResponse?.users || [];
-    const tasks = (tasksResponse as any)?.tasks || [];
-    const groups: Record<string, any[]> = {};
-    filteredFiles.forEach((file: any) => {
-      let groupName = "Unassigned";
-      let orderIdStr = "";
-      
-      let shouldExclude = false;
-
-      let taskIdStr = "";
-
-      if (file.taskId) {
-        const task = tasks.find((t: any) => t._id === file.taskId);
-        if (!task) return; // Skip files whose task was deleted/missing — shown in History > Deleted Tasks
-        groupName = task.title;
-        orderIdStr = task.orderId || "";
-        taskIdStr = file.taskId;
-        
-        if (!ARTWORK_VISIBLE_STATUSES.includes(task.status)) {
-            shouldExclude = true;
-        }
-      } else {
-        // Files uploaded via share link carry _shareFolderName from the backend enrichment
-        if (file._shareFolderName) {
-          groupName = file._shareFolderName;
-        } else {
-          const user = users.find((u: any) => u._id?.toString() === file.userId?.toString());
-          groupName = user?.name || file.userId;
-        }
-
-        if (file.orderId) {
-          orderIdStr = file.orderId;
-        } else {
-          // fallback to see if we can find an order matching this file's userId
-          const order = orders.find((o: any) => o.userId?.toString() === file.userId?.toString());
-          if (order) orderIdStr = order._id;
-        }
-      }
-      
-      const isTaskFile = !!file.taskId;
-
-      // Only apply order-status exclusion for non-TASK files
-      // Task files are already handled by task status above — don't double-exclude them.
-      // Artwork Manager only owns the pre-production stages; once an order
-      // moves to IN_PRODUCTION/PACKAGING/etc it lives on its own page.
-      if (!isTaskFile && orderIdStr) {
-          const order = orders.find((o: any) => o._id === orderIdStr);
-          if (order && !ARTWORK_VISIBLE_STATUSES.includes((order as any).orderStatus)) {
-              shouldExclude = true;
-          }
-      }
-      
-      if (shouldExclude) return;
-
-      const key = JSON.stringify({ name: groupName, orderId: orderIdStr, taskId: taskIdStr });
-      if (!groups[key]) {
-        groups[key] = [];
-      }
-      groups[key].push(file);
-    });
-
-    // explicitly add empty folders for any Tasks that don't have files yet
-    tasks.forEach((task: any) => {
-      if (ARTWORK_VISIBLE_STATUSES.includes(task.status)) {
-        if (activeTab !== "ALL" && task.category !== activeTab) return; // respect active tab for empty folders
-        const key = JSON.stringify({ name: task.title, orderId: task.orderId || "", taskId: task._id });
-        if (!groups[key]) {
-          groups[key] = [];
-        }
-      }
-    });
-
-    return Object.entries(groups).map(([keyStr, files]) => {
-      const parsed = JSON.parse(keyStr);
-      const task = parsed.taskId ? tasks.find((t: any) => t._id?.toString() === parsed.taskId?.toString()) : null;
-      const fileCount = Math.max(files.length, task?.files?.length || 0);
-      return {
-        folderName: parsed.name,
-        orderId: parsed.orderId,
-        taskId: parsed.taskId,
-        userId: files.length > 0 ? files[0].userId : "",
-        files,
-        fileCount
-      };
-    });
-  }, [filteredFiles, ordersResponse, usersResponse, tasksResponse, activeTab]);
-
-  // Declutter the master folder list: hide empty task placeholders by
-  // default, and optionally show only real task folders (hiding the
-  // per-order/per-user upload folders that never became a task).
-  const visibleGroupedFiles = useMemo(() => {
-    return groupedFiles.filter((g: any) => {
-      if (!showEmptyFolders && g.fileCount === 0) return false;
-      if (folderScope === "tasks" && !g.taskId) return false;
-      return true;
-    });
-  }, [groupedFiles, showEmptyFolders, folderScope]);
+    return result;
+  }, [groupedFromServer, activeTab, showEmptyFolders, folderScope, searchQuery]);
 
   // Once a folder is opened, fetch its full file details (thumbnails, S3
   // URLs, etc.) on demand — the folder LIST above only ever needed names
   // and counts, which the slim index already provides.
   const activeFolderIdentity = useMemo(() => {
     if (!selectedFolder) return null;
-    const g = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
+    const g = groupedFromServer.find(g => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
     if (!g) return null;
     return g.taskId
       ? { taskId: g.taskId }
       : { orderId: g.orderId || null, userId: g.userId || null };
-  }, [selectedFolder, groupedFiles]);
+  }, [selectedFolder, groupedFromServer]);
 
   const { data: folderFilesResponse, isPending: isFolderFilesPending } = useFilesByFolder(activeFolderIdentity);
   const activeFolderFiles: any[] = (folderFilesResponse as any)?.data || [];
 
   React.useEffect(() => {
     const folderQuery = searchParams.get("folder");
-    if (folderQuery && groupedFiles.length > 0 && !selectedFolder) {
-      const match = groupedFiles.find(g => g.folderName === folderQuery);
+    if (folderQuery && groupedFromServer.length > 0 && !selectedFolder) {
+      const match = groupedFromServer.find(g => g.folderName === folderQuery);
       if (match) {
         setSelectedFolder(`${match.folderName}-${match.orderId}-${match.taskId}`);
       }
     }
-  }, [searchParams, groupedFiles, selectedFolder]);
+  }, [searchParams, groupedFromServer, selectedFolder]);
 
   React.useEffect(() => {
     setSelectedFiles([]);
@@ -414,7 +321,7 @@ export default function ArtworksManager() {
     if (selectedFolderIds.length === 0) return;
     if (!confirm(`Move ${selectedFolderIds.length} folder(s) to "${bulkTargetStatus.replace(/_/g, ' ')}"?`)) return;
 
-    const targets = groupedFiles.filter((g: any) => selectedFolderIds.includes(`${g.folderName}-${g.orderId}-${g.taskId}`));
+    const targets = groupedFromServer.filter((g: any) => selectedFolderIds.includes(`${g.folderName}-${g.orderId}-${g.taskId}`));
     let done = 0;
     const total = targets.length;
     const finish = () => {
@@ -605,7 +512,7 @@ export default function ArtworksManager() {
       </div>
     );
   };
-if (isPending && !allFiles.length) return <LoadingAnimation fullScreen={false} label="Loading artworks" />;
+if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fullScreen={false} label="Loading artworks" />;
 
   return (
     <div className="space-y-6 bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">
@@ -752,7 +659,7 @@ if (isPending && !allFiles.length) return <LoadingAnimation fullScreen={false} l
         </TabsList>
       </Tabs>
 
-      {groupedFiles.length === 0 ? (
+      {groupedFromServer.length === 0 ? (
         <div className="p-8 text-center text-muted-foreground border border-dashed rounded-xl">
           No artwork for now to view.
         </div>
@@ -886,7 +793,7 @@ if (isPending && !allFiles.length) return <LoadingAnimation fullScreen={false} l
           {selectedFolder ? (
           <div className="space-y-4 p-4 sm:p-6 flex-1 overflow-y-auto">
           {(() => {
-            const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
+            const activeGroup = groupedFromServer.find(g => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
             if (!activeGroup) {
               setTimeout(() => setSelectedFolder(null), 0);
               return null;
@@ -1478,7 +1385,7 @@ if (isPending && !allFiles.length) return <LoadingAnimation fullScreen={false} l
             <Button 
               disabled={isCreatingFolder || !newFolderName.trim()} 
               onClick={() => {
-                const activeGroup = groupedFiles.find((g: any) => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
+                const activeGroup = groupedFromServer.find((g: any) => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
                 if (activeGroup) {
                   createFolderMutate(
                     { name: newFolderName, taskId: activeGroup.taskId, userId: activeGroup.userId },
@@ -1545,7 +1452,7 @@ if (isPending && !allFiles.length) return <LoadingAnimation fullScreen={false} l
           </DialogHeader>
           <div className="py-4 flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-2">
             {(() => {
-              const activeGroup = groupedFiles.find((g: any) => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
+              const activeGroup = groupedFromServer.find((g: any) => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
               const groupFolders = activeGroup ? virtualFolders.filter((f: any) => 
                 activeGroup.taskId ? f.taskId === activeGroup.taskId : f.userId === activeGroup.userId
               ) : [];

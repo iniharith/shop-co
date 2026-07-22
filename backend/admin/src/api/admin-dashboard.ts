@@ -67,6 +67,15 @@ export const getFileIndex = async (token: string) => {
     return response.data;
 }
 
+// Server-side grouped folder listing — returns folder names + file records
+// already grouped by task/order/user, eliminating client-side joins.
+// Accepts ?taskStatuses= to filter which task statuses to include.
+export const getFolderGroup = async (token: string, taskStatuses?: string[]) => {
+    const params = taskStatuses?.length ? `?taskStatuses=${taskStatuses.join(',')}` : '';
+    const response = await AxiosInstance(token).get(`${FILES_URL}/folder-group${params}`);
+    return response.data;
+}
+
 // Full file details for one folder, fetched only once that folder is opened.
 export const getFilesByFolder = async (token: string, params: { taskId?: string; orderId?: string; userId?: string }) => {
     const query = new URLSearchParams(

@@ -46,9 +46,12 @@ const PACKAGING_STATUS = "PACKAGING";
 export default function PackagingManager() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
+  const PACKAGING_STATUSES = ["PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED"];
   const { data: response, isPending, refetch, isFetching } = useFileIndex();
+  const { data: folderGroupResponse, isPending: folderGroupPending } = useFolderGroup(PACKAGING_STATUSES);
+  const groupedFromServer: any[] = (folderGroupResponse as any)?.data || [];
   const { data: ordersResponse } = useOrders();
-  const { data: tasksResponse } = useTasks({ statuses: ["PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED"].join(',') });
+  const { data: tasksResponse } = useTasks({ statuses: PACKAGING_STATUSES.join(',') });
   const { mutate: updateTask } = useUpdateTask();
   const { data: usersResponse } = useUsers();
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
@@ -517,7 +520,7 @@ export default function PackagingManager() {
     );
   };
 
-  if (isPending && !allFiles.length) return <LoadingAnimation fullScreen={false} label="Loading files" />;
+  if (!groupedFromServer.length && isPending && !allFiles.length) return <LoadingAnimation fullScreen={false} label="Loading files" />;
 
   return (
     <div className="space-y-6 bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">

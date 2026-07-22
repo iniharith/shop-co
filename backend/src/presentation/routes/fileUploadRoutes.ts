@@ -18,6 +18,12 @@ import { shareLinkRepository } from '../../infrastructure/repositories/ShareLink
 import { ShareLink } from '../../domain/entities/ShareLink';
 import { VirtualFolder } from '../../domain/entities/VirtualFolder';
 import OrderRepository from '../../infrastructure/db/repositories/order.repository';
+import OrderModel from '../../infrastructure/db/models/order.model';
+import User from '../../infrastructure/db/models/user.model';
+import { RedisService } from '../../infrastructure/redis/redis';
+
+const enrichedIndexCache = new RedisService();
+const ENRICHED_INDEX_CACHE_KEY = 'files:enrichedIndex:v1';
 import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
 import { streamFilesAsZip } from '../../shared/utils/streamFilesAsZip';
 import { getDownloadProgress } from '../../shared/utils/downloadProgress';
@@ -314,6 +320,118 @@ router.get(
     const files = await fileUploadRepository.findIndex();
     const enriched = await enrichWithShareLinks(files);
     res.json({ success: true, data: enriched });
+  })
+);
+
+// ─── GET /api/files/folder-group ─────────────────────────────
+// Server-side grouping of files into task/order/user folders with counts.
+// Eliminates the client-side O(n*m) join between files, tasks, orders, users.
+// Accepts ?taskStatuses= comma-separated list to filter by task status
+// (defaults to artwork statuses if omitted).
+router.get(
+  '/folder-group',
+  authMiddilware,
+  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const ARTWORK_STATUSES = ["PLACED","IN_DESIGN","IN_PROGRESS","PENDING_ARTWORK","ARTWORK_REVIEWED","ARTWORK_REJECTED","PEMBETULAN","DONE_DESIGN"];
+    const taskStatusFilter = (req.query.taskStatuses as string)?.split(',').filter(Boolean) || ARTWORK_STATUSES;
+
+    // Try cache first (keyed by status filter)
+    const cacheKey = `${ENRICHED_INDEX_CACHE_KEY}:${taskStatusFilter.join(',')}`;
+    const cached = await enrichedIndexCache.get(cacheKey);
+    if (cached) {
+      try { res.json({ success: true, data: JSON.parse(cached) }); return; } catch { /* rebuild */ }
+    }
+
+    // 1. Load enriched file index
+    const files: any[] = await fileUploadRepository.findIndex();
+    const enriched = await enrichWithShareLinks(files);
+
+    // 2. Collect unique references
+    const taskIds = [...new Set(enriched.filter((f: any) => f.taskId).map((f: any) => f.taskId))];
+    const orderIds = [...new Set(enriched.filter((f: any) => f.orderId).map((f: any) => f.orderId))];
+    const userIds = [...new Set(enriched.filter((f: any) => !f.taskId).map((f: any) => f.userId))];
+
+    // 3. Batch-load all references in parallel
+    const [tasks, orders, users] = await Promise.all([
+      taskIds.length ? Task.find({ _id: { $in: taskIds } }).select('title status orderId category').lean() : [],
+      orderIds.length ? OrderModel.find({ _id: { $in: orderIds } }).select('orderStatus userId').lean() : [],
+      userIds.length ? User.find({ _id: { $in: userIds } }).select('name').lean() : [],
+    ]);
+
+    const taskMap = new Map(tasks.map((t: any) => [t._id.toString(), t]));
+    const orderMap = new Map(orders.map((o: any) => [o._id.toString(), o]));
+    const userMap = new Map(users.map((u: any) => [u._id.toString(), u]));
+
+    // 4. Group files
+    const groups: Record<string, any> = {};
+    for (const file of enriched) {
+      let groupKey: string;
+      let folderName: string;
+      let isTask = false;
+
+      if (file.taskId) {
+        const task = taskMap.get(file.taskId);
+        if (!task) continue;
+        if (!taskStatusFilter.includes(task.status)) continue;
+        groupKey = `task:${file.taskId}`;
+        folderName = task.title;
+        isTask = true;
+      } else {
+        if (file._shareFolderName) {
+          folderName = file._shareFolderName;
+        } else {
+          const user = userMap.get(file.userId);
+          folderName = user?.name || file.userId || 'Unknown';
+        }
+        if (file.orderId) {
+          const order = orderMap.get(file.orderId);
+          if (order && !taskStatusFilter.includes((order as any).orderStatus || '')) continue;
+        }
+        groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
+      }
+
+      if (!groups[groupKey]) {
+        groups[groupKey] = {
+          folderName,
+          orderId: file.orderId || '',
+          taskId: file.taskId || '',
+          userId: file.userId || '',
+          isTask,
+          files: [],
+        };
+      }
+      groups[groupKey].files.push(file);
+    }
+
+    // 5. Add empty placeholders for tasks that have no files yet
+    for (const task of tasks) {
+      if (!taskStatusFilter.includes((task as any).status)) continue;
+      const key = `task:${(task as any)._id}`;
+      if (!groups[key]) {
+        groups[key] = {
+          folderName: (task as any).title,
+          orderId: (task as any).orderId || '',
+          taskId: (task as any)._id.toString(),
+          userId: '',
+          isTask: true,
+          files: [],
+        };
+      }
+    }
+
+    // Enrich with orderStatus and derived fields
+    const result = Object.values(groups).map((g: any) => {
+      let orderStatus: string | null = null;
+      if (g.taskId) orderStatus = taskMap.get(g.taskId)?.status || null;
+      else if (g.orderId) orderStatus = (orderMap.get(g.orderId) as any)?.orderStatus || null;
+      return { ...g, orderStatus, fileCount: g.files.length };
+    });
+
+    // Cache for 2 minutes
+    await enrichedIndexCache.set(cacheKey, JSON.stringify(result), 120);
+
+    res.json({ success: true, data: result });
   })
 );
 

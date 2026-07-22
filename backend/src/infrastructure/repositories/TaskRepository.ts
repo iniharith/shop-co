@@ -23,10 +23,11 @@ export class TaskRepository {
       query.isDeleted = { $ne: true };
     }
 
-    const days = filters?.days || 30;
-    const daysAgo = new Date();
-    daysAgo.setDate(daysAgo.getDate() - days);
-    query.createdAt = { $gte: daysAgo };
+    if (filters?.days !== undefined) {
+      const daysAgo = new Date();
+      daysAgo.setDate(daysAgo.getDate() - filters.days);
+      query.createdAt = { $gte: daysAgo };
+    }
 
     return Task.find(query)
       .select('-comments -activities -files')

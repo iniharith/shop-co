@@ -19,6 +19,7 @@ import {
     getGroupedFiles, 
     getAllFiles,
     getFileIndex,
+    getFolderGroup,
     getFilesByFolder,
     reviewFile, 
     deleteFile,
@@ -114,6 +115,17 @@ export const useFileIndex = () => {
         ['fileIndex'],
         () => getFileIndex(session?.user?.token),
         { enabled: status === "authenticated", staleTime: 300_000 }
+    );
+}
+
+// Server-side grouped folder data — replaces the expensive client-side join
+// between files, tasks, orders and users. Accepts optional task status filter.
+export const useFolderGroup = (taskStatuses?: string[]) => {
+    const { data: session, status } = useSession();
+    return useQueryData(
+        ['folderGroup', taskStatuses],
+        () => getFolderGroup(session?.user?.token, taskStatuses),
+        { enabled: status === "authenticated", staleTime: 5 * 60_000 }
     );
 }
 
