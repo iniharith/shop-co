@@ -16,14 +16,13 @@ export const useOrders = () => {
         { enabled: status === "authenticated", refetchInterval: 60_000, staleTime: 30_000 }
     )
     const response = data as IOrderApiResponse
-    )
-    const response = data as IOrderApiResponse
     return { data: response, isPending, refetch, isFetching }
 }
 
 export const useUpdateOrderStatus = () => {
     const { data: session } = useSession();
     const { mutate, isPending } = useMutationData(['updateOrderStatus'], ({ id, status }: any) => updateOrderStatus(session?.user?.token, id, status), ["orders", "tasks", "folderGroup"])
+    return { mutate, isPending }
 }
 
 export const useCreateManualOrder = () => {
