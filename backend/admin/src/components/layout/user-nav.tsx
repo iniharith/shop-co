@@ -17,7 +17,7 @@ import {
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
-export function UserNav() {
+export function UserNav({ showDetails = false }: { showDetails?: boolean }) {
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -26,8 +26,18 @@ export function UserNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
-          <Avatar className='h-8 w-8'>
+        <Button
+          variant='ghost'
+          className={showDetails
+            ? 'relative h-11 w-auto gap-3 rounded-full border border-border/60 bg-background/80 py-1 pl-1 pr-1 shadow-sm hover:bg-background lg:pl-4'
+            : 'relative h-8 w-8 rounded-full'}
+        >
+          {showDetails && (
+            <span className='hidden max-w-28 truncate text-sm font-semibold lg:block'>
+              {session.user?.name || 'Account'}
+            </span>
+          )}
+          <Avatar className={showDetails ? 'h-9 w-9 ring-2 ring-background' : 'h-8 w-8'}>
             <AvatarImage
               src={((session.user as any)?.avatar || (session.user as any)?.image)?.startsWith('http') ? ((session.user as any)?.avatar || (session.user as any)?.image) : ((session.user as any)?.avatar || (session.user as any)?.image) ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${((session.user as any)?.avatar || (session.user as any)?.image).replace(/^\//, '')}` : ''}
               alt={session.user?.name ?? ''}

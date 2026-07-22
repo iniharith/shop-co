@@ -16,8 +16,11 @@ import { useNotifications } from '@/hooks/useNotification';
 import { useEffect } from 'react';
 import NotificationsPanel from '../global/notifications-drawer';
 import UploadMonitor from '../global/upload-monitor';
+import { usePathname } from 'next/navigation';
 
 export default function Header() {
+  const pathname = usePathname();
+  const isDashboard = pathname === '/admin/dashboard';
   const { data: notificationsResponse } = useNotifications();
   const notifications = notificationsResponse?.notifications || [];
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -40,6 +43,39 @@ export default function Header() {
       }
     }
   }, [unreadCount, notifications]);
+
+  if (isDashboard) {
+    return (
+      <header className='flex h-20 shrink-0 items-center px-3 sm:px-4'>
+        <div className='flex min-w-0 flex-1 items-center gap-2 rounded-[28px] border border-white/50 bg-card/75 p-2 shadow-[0_18px_50px_-35px_rgba(15,23,42,0.55)] backdrop-blur-xl dark:border-white/10'>
+          <div className='flex shrink-0 items-center gap-2 pl-1 sm:pl-2'>
+            <SidebarTrigger className='hidden h-10 w-10 rounded-full bg-background/80 md:flex' />
+            <div className='hidden items-center gap-2 sm:flex'>
+              <div className='flex h-9 w-9 items-center justify-center rounded-full bg-foreground text-xs font-black tracking-tight text-background'>KC</div>
+              <div className='hidden xl:block'>
+                <p className='text-sm font-bold leading-none'>Kampung Cetak</p>
+                <p className='mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground'>Admin Console</p>
+              </div>
+            </div>
+          </div>
+
+          <SearchInput
+            className='mx-auto min-w-0 flex-1 sm:max-w-xl'
+            inputClassName='h-11 rounded-full border-0 bg-background/90 pl-10 pr-14 shadow-sm md:w-full lg:w-full'
+            placeholder='Search orders, users or tracking...'
+          />
+
+          <div className='flex shrink-0 items-center gap-1 sm:gap-2'>
+            <div className='hidden sm:block'><SyncButton /></div>
+            <div className='hidden md:block'><UploadMonitor /></div>
+            <NotificationsPanel notifications={notifications} />
+            <div className='hidden sm:block'><ThemeToggle /></div>
+            <UserNav showDetails />
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className='flex h-16 shrink-0 items-center justify-between gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12'>

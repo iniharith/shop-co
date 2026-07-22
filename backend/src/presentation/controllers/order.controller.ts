@@ -205,8 +205,8 @@ export class OrderController {
      */
     async getTracking(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            const tracking = await this.orderUsecase.getTracking(req.params.orderId);
-            res.status(statusCodes.OK).json({ message: "Tracking status fetched successfully", tracking });
+            const result = await this.orderUsecase.getTracking(req.params.orderId, req.userId as string, req.role);
+            res.status(statusCodes.OK).json({ message: "Tracking status fetched successfully", ...result });
         } catch (error: any) {
             next(error);
         }

@@ -6,6 +6,8 @@
 
 import React, { useState, useEffect } from "react";
 import { APIProvider, Map, AdvancedMarker, Pin } from "@vis.gl/react-google-maps";
+import { useSession } from "next-auth/react";
+import { getTracking } from "@/api/order";
 
 interface TrackingEvent {
   status: string;
@@ -49,38 +51,45 @@ function formatDate(d: string) {
 }
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
-const API = process.env.NEXT_PUBLIC_API_URL || "";
-
 export default function OrderTracker({ orderId }: { orderId: string }) {
+  const { data: session, status: sessionStatus } = useSession();
   const [parcel, setParcel] = useState<ParcelData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (sessionStatus === "loading") return;
+    const token = session?.user?.token;
+    if (!token) {
+      setError("Sesi anda telah tamat. Sila log masuk semula.");
+      setLoading(false);
+      return;
+    }
+    const accessToken = token;
+    let active = true;
     async function fetchParcel() {
       try {
-        const res = await fetch(`${API}/api/parcels`, { credentials: "include" });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.message);
-
-        // Normally we'd filter by orderId exactly, but since this is mock data and orders/parcels
-        // might not be exactly 1-to-1 mapped in the current DB, we just take the first parcel
-        // or one matching the orderId if available.
-        const found = data.data.find((p: ParcelData) => p.orderId === orderId) || data.data[0];
-        
-        if (!found) {
+        const data = await getTracking(accessToken, orderId);
+        if (!active) return;
+        if (!data.parcel) {
           setError("Tiada rekod penghantaran untuk pesanan ini.");
         } else {
-          setParcel(found);
+          setParcel(data.parcel);
+          setError("");
         }
       } catch (e: any) {
-        setError(e.message || "Gagal memuatkan status penghantaran.");
+        if (active) setError(e.response?.data?.message || e.message || "Gagal memuatkan status penghantaran.");
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
     fetchParcel();
-  }, [orderId]);
+    const interval = window.setInterval(fetchParcel, 60_000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [orderId, session?.user?.token, sessionStatus]);
 
   if (loading) {
     return (

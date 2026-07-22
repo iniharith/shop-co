@@ -4,6 +4,17 @@ import { parcelRepository } from '../repositories/ParcelRepository';
 import { areWhatsAppCustomerUpdatesEnabled } from './CustomerUpdateSettingsService';
 import { easyParcelService, EasyParcelParcelStatus, mapEasyParcelOrderStatus, mapEasyParcelStatus } from './EasyParcelService';
 import { whatsAppService } from './WhatsAppService';
+import { RedisService } from '../redis/redis';
+import { REDIS_KEYS } from '../../shared/constants/redis.constant';
+
+const redisService = new RedisService();
+
+async function invalidateOrderCaches(orderId: string): Promise<void> {
+  const order = await OrderModel.findById(orderId).select('userId').lean();
+  await redisService.del(REDIS_KEYS.ORDERS);
+  await redisService.del(REDIS_KEYS.ORDERS + orderId);
+  if (order?.userId) await redisService.del(REDIS_KEYS.ORDERS + order.userId.toString());
+}
 
 function whatsappStatus(status: EasyParcelParcelStatus): 'pending' | 'picked_up' | 'in_transit' | 'delivered' | 'failed' {
   if (status === 'cancelled' || status === 'returned' || status === 'failed') return 'failed';
@@ -44,6 +55,7 @@ export async function updateOrderFromEasyParcelStatus(
     },
     { $set: update }
   );
+  await invalidateOrderCaches(orderId);
   return result.modifiedCount > 0;
 }
 
@@ -89,6 +101,7 @@ export async function reconcilePendingAwbs(parcels: IParcel[]): Promise<number> 
         courier: shipment.courier,
       },
     });
+    await invalidateOrderCaches(parcel.orderId);
     if (shipment.statusCode !== undefined) {
       await parcelRepository.updateProviderStatus(parcel._id.toString(), observedAt, {
         shipmentStatusCode: shipment.statusCode,

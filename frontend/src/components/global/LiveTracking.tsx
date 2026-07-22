@@ -21,9 +21,9 @@ export const LiveTracking = ({ orderId, awb }: LiveTrackingProps) => {
   useEffect(() => {
     if (!token || !orderId) return;
     
-    getTracking(token, orderId)
+      getTracking(token, orderId)
       .then((res) => {
-        setTracking(res.tracking);
+        setTracking(res.parcel);
       })
       .catch((err) => {
         console.error("Failed to fetch tracking data", err);
@@ -43,11 +43,9 @@ export const LiveTracking = ({ orderId, awb }: LiveTrackingProps) => {
     );
   }
 
-  if (!tracking || !tracking.result || !tracking.result[0]) {
+  if (!tracking) {
     return null;
   }
-
-  const data = tracking.result[0];
 
   return (
     <Card className="p-6 mb-8 bg-muted-foreground/10 overflow-hidden">
@@ -55,18 +53,18 @@ export const LiveTracking = ({ orderId, awb }: LiveTrackingProps) => {
         <Truck size={20} /> Live EasyParcel Tracking (AWB: {awb})
       </h2>
       <div className="space-y-4">
-        {data.tracker?.map((t: any, i: number) => (
+        {tracking.events?.map((event: any, i: number) => (
           <div key={i} className="flex gap-4 border-l-2 border-primary/30 pl-4 relative ml-2 pb-2">
             <div className="absolute w-3 h-3 bg-primary rounded-full -left-[7px] top-1"></div>
             <div>
-              <p className="font-semibold text-sm">{t.status}</p>
+              <p className="font-semibold text-sm">{event.description || event.status}</p>
               <p className="text-xs text-muted-foreground">
-                {new Date(t.date).toLocaleString()} - {t.location}
+                {new Date(event.timestamp).toLocaleString()} {event.location ? `- ${event.location}` : ""}
               </p>
             </div>
           </div>
         ))}
-        {(!data.tracker || data.tracker.length === 0) && (
+        {(!tracking.events || tracking.events.length === 0) && (
           <p className="text-sm text-muted-foreground">No tracking updates yet.</p>
         )}
       </div>

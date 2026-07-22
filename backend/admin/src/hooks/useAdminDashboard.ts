@@ -38,19 +38,23 @@ export const useParcelStats = () => {
 }
 
 export const useParcels = (filters?: any) => {
-    const { data: session } = useSession();
-    return useQueryData(['parcels', filters], () => getParcels(session?.user?.token));
+    const { data: session, status } = useSession();
+    return useQueryData(
+        ['parcels', filters],
+        () => getParcels(session?.user?.token),
+        { enabled: status !== 'loading', refetchInterval: 60_000 }
+    );
 }
 
 export const useSyncParcel = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['syncParcelTracking'], (id: string) => syncParcelTracking(session?.user?.token, id), ['parcels']);
+    const { mutate, isPending } = useMutationData(['syncParcelTracking'], (id: string) => syncParcelTracking(session?.user?.token, id), ['parcels', 'orders']);
     return { mutate, isPending };
 }
 
 export const useSyncAllParcels = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['syncAllParcelTracking'], () => syncAllParcelTracking(session?.user?.token), ['parcels']);
+    const { mutate, isPending } = useMutationData(['syncAllParcelTracking'], () => syncAllParcelTracking(session?.user?.token), ['parcels', 'orders']);
     return { mutate, isPending };
 }
 

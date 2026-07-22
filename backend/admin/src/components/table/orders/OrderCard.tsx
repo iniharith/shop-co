@@ -182,7 +182,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
                 <SelectItem value="FAILED">Failed</SelectItem>
               </SelectContent>
             </Select>
-            {!order.easyparcelShipmentId && order.easyparcelBookingStatus !== "submitted" && ["DONE_PRINTING", "PACKAGING"].includes(order.orderStatus) && order.paymentStatus === "PAID" && (
+            {!order.trackingNumber && !order.easyparcelShipmentId && order.easyparcelBookingStatus !== "submitted" && ["DONE_PRINTING", "PACKAGING"].includes(order.orderStatus) && order.paymentStatus === "PAID" && (
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -193,6 +193,14 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
               >
                 Create AWB
               </button>
+            )}
+            {!order.trackingNumber && !order.easyparcelShipmentId && order.easyparcelBookingStatus !== "submitted" && !(order.paymentStatus === "PAID" && ["DONE_PRINTING", "PACKAGING"].includes(order.orderStatus)) && (
+              <span
+                className="rounded border border-muted-foreground/20 bg-muted/60 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+                title={order.paymentStatus !== "PAID" ? "Mark payment as paid before creating an AWB" : "Move order to Done Printing or Packaging before creating an AWB"}
+              >
+                {order.paymentStatus !== "PAID" ? "AWB after payment" : "AWB after printing"}
+              </span>
             )}
             {order.easyparcelBookingStatus === "submitted" && (
               <button

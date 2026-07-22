@@ -327,8 +327,9 @@ export class OrderUsecase {
         );
         if (!locked) throw new Error('Shipment is already being submitted or the order is no longer shippable');
 
+        let result;
         try {
-            const result = await easyParcelService.submitOrder({
+            result = await easyParcelService.submitOrder({
                 ...shipment,
                 serviceId: input.serviceId.trim(),
                 collectionDate: input.collectionDate,
@@ -337,7 +338,20 @@ export class OrderUsecase {
                 itemValue: order.totalAmount,
                 currency: 'MYR',
             });
-            const bookingStatus = result.awbNumber ? 'booked' : 'awb_pending';
+        } catch (error) {
+            const definitelyRejected = error instanceof EasyParcelApiError && !error.ambiguous;
+            await OrderModel.findByIdAndUpdate(orderId, {
+                $set: { easyparcelBookingStatus: definitelyRejected ? 'failed' : 'submitted' }
+            });
+            if (!definitelyRejected) {
+                throw new Error('EasyParcel submission result is uncertain. Reconcile the shipment before retrying to avoid a duplicate charge.');
+            }
+            throw error;
+        }
+
+        const bookingStatus = result.awbNumber ? 'booked' : 'awb_pending';
+        let updatedOrder: IOrderDocument | null = null;
+        try {
             const orderUpdate: any = {
                 easyparcelOrderNo: result.orderNumber,
                 easyparcelShipmentId: result.shipmentNumber,
@@ -350,7 +364,7 @@ export class OrderUsecase {
                 courier: result.courier,
                 shippingPrice: result.shippingPrice,
             };
-            const updatedOrder = await this.orderRepository.updateOrder(orderId, orderUpdate);
+            updatedOrder = await this.orderRepository.updateOrder(orderId, orderUpdate);
             const sender = this.buildSender();
             const receiver = this.buildReceiver(order, input);
             await parcelRepository.upsertByOrderId(orderId, {
@@ -379,18 +393,25 @@ export class OrderUsecase {
                 status: 'pending',
                 lastStatus: '',
             });
-            await this.invalidateOrderCaches(order);
-            return updatedOrder as IOrderDocument;
         } catch (error) {
-            const definitelyRejected = error instanceof EasyParcelApiError && !error.ambiguous;
+            console.error('EasyParcel shipment booked but local persistence failed:', error);
             await OrderModel.findByIdAndUpdate(orderId, {
-                $set: { easyparcelBookingStatus: definitelyRejected ? 'failed' : 'submitted' }
-            });
-            if (!definitelyRejected) {
-                throw new Error('EasyParcel submission result is uncertain. Reconcile the shipment before retrying to avoid a duplicate charge.');
-            }
-            throw error;
+                $set: {
+                    easyparcelOrderNo: result.orderNumber,
+                    easyparcelShipmentId: result.shipmentNumber,
+                    easyparcelBookingStatus: 'submitted',
+                    easyparcelAwb: result.awbNumber || '',
+                    trackingNumber: result.awbNumber || '',
+                    awbUrl: result.awbUrl,
+                    awbUrlsByFormat: result.awbUrlsByFormat,
+                    trackingUrl: result.trackingUrl,
+                    courier: result.courier,
+                },
+            }).catch(() => undefined);
+            throw new Error(`EasyParcel booked shipment ${result.shipmentNumber}, but local tracking sync needs repair. Use Reconcile and do not create another shipment.`);
         }
+        await this.invalidateOrderCaches(order).catch((error) => console.error('Failed to invalidate order caches:', error));
+        return updatedOrder as IOrderDocument;
     }
 
     async refreshShipping(orderId: string): Promise<IOrderDocument> {
@@ -510,11 +531,39 @@ export class OrderUsecase {
         return (await OrderModel.findById(orderId)) as IOrderDocument;
     }
 
-    async getTracking(orderId: string): Promise<any> {
+    async getTracking(orderId: string, requesterUserId: string, requesterRole?: string): Promise<any> {
         const order = await this.orderRepository.getOrderById(orderId);
         if (!order) throw new Error('Order not found');
-        if (!order.easyparcelAwb) throw new Error('No tracking number available for this order');
-        return easyParcelService.trackParcels([order.easyparcelAwb]);
+        const staffRoles = ['admin', 'sysadmin', 'boss', 'production', 'packaging'];
+        const ownerId = (order.userId as any)?._id?.toString() || order.userId?.toString();
+        if (!staffRoles.includes(requesterRole || '') && ownerId !== requesterUserId) {
+            throw new Error('Order not found');
+        }
+
+        const parcel = (await parcelRepository.findByOrderId(orderId))[0];
+        if (!parcel) return { parcel: null, tracking: [] };
+        let tracking: any[] = [];
+        if (parcel.trackingNumber) {
+            try {
+                tracking = await easyParcelService.trackParcels([parcel.trackingNumber]);
+            } catch (error) {
+                console.error('Live EasyParcel tracking unavailable; returning stored parcel status:', error);
+            }
+        }
+        return {
+            parcel: {
+                _id: parcel._id,
+                orderId: parcel.orderId,
+                trackingNumber: parcel.trackingNumber,
+                courier: parcel.courier,
+                status: parcel.status,
+                events: parcel.events,
+                bookingStatus: parcel.bookingStatus,
+                trackingUrl: parcel.trackingUrl,
+                updatedAt: parcel.updatedAt,
+            },
+            tracking,
+        };
     }
 
     async processEasyParcelWebhook(payload: any): Promise<boolean> {
@@ -599,6 +648,8 @@ export class OrderUsecase {
         }
         await this.redisService.del(REDIS_KEYS.ORDERS);
         await this.redisService.del(REDIS_KEYS.ORDERS + parcel.orderId);
+        const linkedOrder = await OrderModel.findById(parcel.orderId).select('userId').lean();
+        if (linkedOrder?.userId) await this.redisService.del(REDIS_KEYS.ORDERS + linkedOrder.userId.toString());
         return true;
     }
 

@@ -15,7 +15,9 @@ import User from "../../../infrastructure/db/models/user.model";
 import OrderModel from "../../../infrastructure/db/models/order.model";
 import { FileUpload } from "../../../domain/entities/FileUpload";
 import { Parcel } from "../../../domain/entities/Parcel";
+import { Task } from "../../../domain/entities/Task";
 import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
 export class AdminUsecase {
     private readonly userRepository: UserRepository;
     private readonly jwtService: IJwtService;
@@ -84,10 +86,11 @@ export class AdminUsecase {
 
     async createManualOrder(data: any): Promise<IOrderDocument> {
         let user;
-        const mongoose = require('mongoose');
         
-        if (data.userId && mongoose.Types.ObjectId.isValid(data.userId)) {
+        if (data.userId) {
+             if (!mongoose.Types.ObjectId.isValid(data.userId)) throw new Error('Linked User ID is invalid');
              user = await User.findById(data.userId);
+             if (!user) throw new Error('Linked user was not found');
         }
 
         if (user) {
@@ -99,36 +102,44 @@ export class AdminUsecase {
              data.customerName = data.customerName || "External Customer";
         }
 
-        const order = await OrderModel.create(data);
-
-        // Auto-create Task for this order
-        try {
-            const { TaskRepository } = require('../../../infrastructure/repositories/TaskRepository');
-            const taskRepository = new TaskRepository();
-            await taskRepository.create({
-                title: `Order: ${order._id.toString().slice(-6).toUpperCase()} - ${data.customerName}`,
-                description: `Manual order task for Order ${order._id.toString()}.`,
-                orderId: order._id.toString(),
-                customerUsername: data.customerName,
-                category: data.productChoice || 'UNASSIGNED',
-                status: 'TODO',
-            });
-        } catch (e) {
-            console.error('Failed to auto-create task for manual order:', e);
-        }
-
         if (data.trackingNumber) {
-            await Parcel.create({
-                orderId: order._id.toString(),
-                trackingNumber: data.trackingNumber,
-                customerName: data.customerName,
-                customerPhone: "000000000", // Default since it's required
-                courier: data.courier || "unknown",
-                status: "pending",
-                whatsappNotified: false
-            });
+            const duplicate = await Parcel.exists({ trackingNumber: data.trackingNumber });
+            if (duplicate) throw new Error('Tracking number already exists');
         }
 
+        const session = await mongoose.startSession();
+        let order: IOrderDocument | null = null;
+        try {
+            await session.withTransaction(async () => {
+                const [createdOrder] = await OrderModel.create([data], { session });
+                order = createdOrder;
+                await Task.create([{
+                    title: `Order: ${createdOrder._id.toString().slice(-6).toUpperCase()} - ${data.customerName}`,
+                    description: `Manual order task for Order ${createdOrder._id.toString()}.`,
+                    orderId: createdOrder._id.toString(),
+                    customerUsername: data.customerName,
+                    category: data.productChoice || 'UNASSIGNED',
+                    status: data.orderStatus || 'PLACED',
+                }], { session });
+
+                if (data.trackingNumber) {
+                    await Parcel.create([{
+                        orderId: createdOrder._id.toString(),
+                        trackingNumber: data.trackingNumber,
+                        customerName: data.customerName,
+                        customerPhone: data.shippingCustomerPhone,
+                        customerEmail: data.shippingCustomerEmail,
+                        recipientAddress: [data.address?.street, data.address?.address].filter(Boolean).join(', '),
+                        courier: data.courier || "unknown",
+                        status: "pending",
+                        whatsappNotified: false,
+                    }], { session });
+                }
+            });
+        } finally {
+            await session.endSession();
+        }
+        if (!order) throw new Error('Manual order transaction did not complete');
         return order;
     }
 

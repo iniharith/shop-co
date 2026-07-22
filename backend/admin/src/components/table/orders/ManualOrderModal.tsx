@@ -24,6 +24,24 @@ interface ManualOrderModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const initialFormData = {
+  customerName: "",
+  userId: "",
+  platform: "WEB",
+  totalAmount: "",
+  orderStatus: "PLACED",
+  address1: "",
+  address2: "",
+  postcode: "",
+  city: "",
+  state: "MY-01",
+  customerPhone: "",
+  customerEmail: "",
+  trackingNumber: "",
+  courier: "none",
+  productChoice: "",
+};
+
 export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpenChange }) => {
   const { mutate: createOrder, isPending } = useCreateManualOrder();
   const { data: productsData } = useProducts();
@@ -44,43 +62,41 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
   const [openProductBox, setOpenProductBox] = useState(false);
   const [productSearch, setProductSearch] = useState("");
 
-  const [formData, setFormData] = useState({
-    userId: "",
-    platform: "WEB",
-    totalAmount: "",
-    status: "pending",
-    fullAddress: "",
-    trackingNumber: "",
-    courier: "none",
-    productChoice: "",
-  });
+  const [formData, setFormData] = useState(initialFormData);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.userId || !formData.totalAmount) {
-      toast.error("Customer Name/ID and Total Amount are required");
+    if (!formData.customerName || !formData.totalAmount || !formData.customerPhone || !formData.address1 || !formData.postcode || !formData.city) {
+      toast.error("Customer, phone, amount and complete shipping address are required");
+      return;
+    }
+    if (!/^\d{5}$/.test(formData.postcode)) {
+      toast.error("Malaysian postcode must contain 5 digits");
       return;
     }
 
     const payload = {
       userId: formData.userId,
-      customerName: formData.userId, // Sending input as customerName too
+      customerName: formData.customerName,
       platform: formData.platform,
       totalAmount: parseFloat(formData.totalAmount),
-      status: formData.status,
+      orderStatus: formData.orderStatus,
       products: [], // Empty products for manual orders by default or can add items
       orderNotes: formData.productChoice ? `Product: ${formData.productChoice}` : "",
       trackingNumber: formData.trackingNumber,
       courier: formData.courier === "none" ? undefined : formData.courier,
       paymentMethod: "ONLINE",
-      paymentStatus: "PAID", 
+      paymentStatus: "PAID",
+      shippingCustomerPhone: formData.customerPhone,
+      shippingCustomerEmail: formData.customerEmail || undefined,
       address: {
-        address: formData.fullAddress || "Manual Entry",
-        street: formData.fullAddress || "Manual Entry",
-        city: "Manual Entry",
-        country: "Malaysia",
-        postalCode: "00000"
+        address: formData.address2 || formData.address1,
+        street: formData.address1,
+        city: formData.city,
+        state: formData.state,
+        country: "MY",
+        postalCode: formData.postcode,
       }
     };
 
@@ -88,7 +104,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
       onSuccess: () => {
         toast.success("Manual order created successfully");
         onOpenChange(false);
-        setFormData({ userId: "", platform: "WEB", totalAmount: "", status: "pending", fullAddress: "", trackingNumber: "", courier: "none", productChoice: "" });
+        setFormData(initialFormData);
         window.location.reload();
       },
       onError: (error: any) => {
@@ -99,19 +115,21 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Add External/Manual Order</DialogTitle>
                 <DialogDescription className="sr-only">Dialog Content</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label>Customer Name / User ID *</Label>
-            <Input 
-              value={formData.userId} 
-              onChange={e => setFormData({ ...formData, userId: e.target.value })} 
-              placeholder="e.g. 64a1b..." 
-            />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Customer Name *</Label>
+              <Input value={formData.customerName} onChange={e => setFormData({ ...formData, customerName: e.target.value })} placeholder="Customer or company name" />
+            </div>
+            <div className="space-y-2">
+              <Label>Linked User ID</Label>
+              <Input value={formData.userId} onChange={e => setFormData({ ...formData, userId: e.target.value })} placeholder="Optional Mongo user ID" />
+            </div>
           </div>
           <div className="space-y-2">
             <Label>Platform</Label>
@@ -247,26 +265,55 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
           </div>
           <div className="space-y-2">
             <Label>Initial Status</Label>
-            <Select value={formData.status} onValueChange={v => setFormData({ ...formData, status: v })}>
+            <Select value={formData.orderStatus} onValueChange={v => setFormData({ ...formData, orderStatus: v })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="shipped">Shipped</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
+                <SelectItem value="PLACED">Placed</SelectItem>
+                <SelectItem value="DONE_PRINTING">Done Printing</SelectItem>
+                <SelectItem value="PACKAGING">Packaging (Ready for AWB)</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">EasyParcel Create AWB becomes available when the paid order is Done Printing or Packaging.</p>
           </div>
-          <div className="space-y-2">
-            <Label>Full Address</Label>
-            <Textarea 
-              value={formData.fullAddress} 
-              onChange={e => setFormData({ ...formData, fullAddress: e.target.value })} 
-              placeholder="e.g. No 12, Jalan 3/4..." 
-              rows={3}
-            />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Customer Phone *</Label>
+              <Input value={formData.customerPhone} onChange={e => setFormData({ ...formData, customerPhone: e.target.value })} placeholder="01116141946" />
+            </div>
+            <div className="space-y-2">
+              <Label>Customer Email</Label>
+              <Input type="email" value={formData.customerEmail} onChange={e => setFormData({ ...formData, customerEmail: e.target.value })} placeholder="customer@example.com" />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Address Line 1 *</Label>
+              <Textarea value={formData.address1} onChange={e => setFormData({ ...formData, address1: e.target.value })} placeholder="No. 12, Jalan..." rows={2} />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Address Line 2</Label>
+              <Input value={formData.address2} onChange={e => setFormData({ ...formData, address2: e.target.value })} placeholder="Building, area or unit (optional)" />
+            </div>
+            <div className="space-y-2">
+              <Label>Postcode *</Label>
+              <Input inputMode="numeric" maxLength={5} value={formData.postcode} onChange={e => setFormData({ ...formData, postcode: e.target.value.replace(/\D/g, "") })} placeholder="81750" />
+            </div>
+            <div className="space-y-2">
+              <Label>City *</Label>
+              <Input value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} placeholder="Masai" />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label>State *</Label>
+              <Select value={formData.state} onValueChange={v => setFormData({ ...formData, state: v })}>
+                <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="MY-01">Johor</SelectItem><SelectItem value="MY-02">Kedah</SelectItem><SelectItem value="MY-03">Kelantan</SelectItem><SelectItem value="MY-04">Melaka</SelectItem>
+                  <SelectItem value="MY-05">Negeri Sembilan</SelectItem><SelectItem value="MY-06">Pahang</SelectItem><SelectItem value="MY-07">Pulau Pinang</SelectItem><SelectItem value="MY-08">Perak</SelectItem>
+                  <SelectItem value="MY-09">Perlis</SelectItem><SelectItem value="MY-10">Selangor</SelectItem><SelectItem value="MY-11">Terengganu</SelectItem><SelectItem value="MY-12">Sabah</SelectItem>
+                  <SelectItem value="MY-13">Sarawak</SelectItem><SelectItem value="MY-14">Kuala Lumpur</SelectItem><SelectItem value="MY-15">Labuan</SelectItem><SelectItem value="MY-16">Putrajaya</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>

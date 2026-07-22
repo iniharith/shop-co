@@ -64,7 +64,7 @@ export default function Page(props: pageProps) {
               ) : connection?.connected ? (
                 <div className="flex items-center gap-2">
                   <Button variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600" disabled>
-                    <CheckCircle2 className="mr-2 h-4 w-4" />EasyParcel Connected
+                    <CheckCircle2 className="mr-2 h-4 w-4" />EasyParcel {connection?.environment === "sandbox" ? "Sandbox " : ""}Connected
                   </Button>
                   {canConnectEasyParcel && <Button variant="ghost" size="sm" onClick={handleConnectEasyParcel} disabled={connectingEasyParcel}>Reconnect</Button>}
                 </div>

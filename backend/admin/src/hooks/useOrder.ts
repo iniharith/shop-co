@@ -13,7 +13,7 @@ export const useOrders = () => {
     const { data, isPending, refetch, isFetching } = useQueryData(
         ['orders'],
         () => getOrders(session?.user?.token),
-        { enabled: status !== "loading" }
+        { enabled: status !== "loading", refetchInterval: 60_000 }
     )
     const response = data as IOrderApiResponse
     return { data: response, isPending, refetch, isFetching }

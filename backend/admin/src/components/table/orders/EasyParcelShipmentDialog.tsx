@@ -53,8 +53,8 @@ export default function EasyParcelShipmentDialog({ order, open, onOpenChange }: 
     length: 30,
     height: 10,
     collectionDate: tomorrow(),
-    customerPhone: user?.phoneNumber || "",
-    customerEmail: user?.email || "",
+    customerPhone: order.shippingCustomerPhone || user?.phoneNumber || "",
+    customerEmail: order.shippingCustomerEmail || user?.email || "",
   });
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [selectedServiceId, setSelectedServiceId] = useState("");
@@ -68,12 +68,12 @@ export default function EasyParcelShipmentDialog({ order, open, onOpenChange }: 
     setDetails((current) => ({
       ...current,
       collectionDate: tomorrow(),
-      customerPhone: user?.phoneNumber || current.customerPhone,
-      customerEmail: user?.email || current.customerEmail,
+      customerPhone: order.shippingCustomerPhone || user?.phoneNumber || current.customerPhone,
+      customerEmail: order.shippingCustomerEmail || user?.email || current.customerEmail,
     }));
     setQuotations([]);
     setSelectedServiceId("");
-  }, [open, user?.email, user?.phoneNumber]);
+  }, [open, order.shippingCustomerEmail, order.shippingCustomerPhone, user?.email, user?.phoneNumber]);
 
   const packagePayload = {
     weight: details.weight,
@@ -150,8 +150,17 @@ export default function EasyParcelShipmentDialog({ order, open, onOpenChange }: 
           <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4 text-sm text-blue-700 dark:text-blue-300">
             An EasyParcel account is not connected yet. Use the Connect EasyParcel button at the top of the Orders page.
           </div>
+        ) : !connectionData?.shippingConfigured ? (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-300">
+            Sender configuration is incomplete: {(connectionData?.missingShippingConfiguration || []).join(", ")}. Add these variables in Railway before requesting rates.
+          </div>
         ) : (
           <>
+            {connectionData?.environment === "sandbox" && (
+              <div className="rounded-xl border border-blue-500/25 bg-blue-500/10 p-3 text-sm text-blue-700 dark:text-blue-300">
+                Sandbox mode: booking can generate a test shipment and AWB, but tracking status may remain static.
+              </div>
+            )}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2"><Label htmlFor="ep-weight">Weight (kg)</Label><Input id="ep-weight" type="number" min="0.01" step="0.01" value={details.weight} onChange={(event) => updateNumber("weight", event.target.value)} /></div>
               <div className="space-y-2"><Label htmlFor="ep-width">Width (cm)</Label><Input id="ep-width" type="number" min="0.1" step="0.1" value={details.width} onChange={(event) => updateNumber("width", event.target.value)} /></div>

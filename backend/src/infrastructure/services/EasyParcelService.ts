@@ -256,9 +256,21 @@ class EasyParcelService {
       .every((name) => Boolean(process.env[name]?.trim()));
   }
 
-  async getConnectionStatus(): Promise<{ configured: boolean; connected: boolean; needsReconnect: boolean; environment: string; expiresAt: Date | null }> {
+  private missingShippingConfiguration(): string[] {
+    return [
+      'EASYPARCEL_SENDER_NAME',
+      'EASYPARCEL_SENDER_PHONE',
+      'EASYPARCEL_SENDER_ADDRESS_1',
+      'EASYPARCEL_SENDER_POSTCODE',
+      'EASYPARCEL_SENDER_CITY',
+      'EASYPARCEL_SENDER_SUBDIVISION_CODE',
+    ].filter((name) => !process.env[name]?.trim());
+  }
+
+  async getConnectionStatus(): Promise<{ configured: boolean; shippingConfigured: boolean; missingShippingConfiguration: string[]; connected: boolean; needsReconnect: boolean; environment: string; expiresAt: Date | null }> {
     const connection = await EasyParcelConnection.findOne({ key: 'singleton' }).lean();
     const configured = this.isConfigured();
+    const missingShippingConfiguration = this.missingShippingConfiguration();
     const refreshExpired = Boolean(connection?.refreshTokenExpiresAt && connection.refreshTokenExpiresAt <= new Date());
     const invalidated = Boolean(connection?.invalidatedAt);
     let tokensReadable = Boolean(connection?.accessTokenEncrypted && connection?.refreshTokenEncrypted);
@@ -272,6 +284,8 @@ class EasyParcelService {
     }
     return {
       configured,
+      shippingConfigured: missingShippingConfiguration.length === 0,
+      missingShippingConfiguration,
       connected: configured && tokensReadable && !refreshExpired && !invalidated,
       needsReconnect: Boolean(connection?.accessTokenEncrypted) && (!configured || !tokensReadable || refreshExpired || invalidated),
       environment: connection?.environment || process.env.EASYPARCEL_ENV?.trim() || 'sandbox',
