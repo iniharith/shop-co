@@ -8,12 +8,14 @@ import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
 
 const redisService = new RedisService();
 const FILE_INDEX_CACHE_KEY = 'files:index:v1';
+const FILE_STATS_CACHE_KEY = 'files:stats:v1';
 let fileNotificationTimer: ReturnType<typeof setTimeout> | null = null;
 export const notifyFileClients = () => {
   if (fileNotificationTimer) clearTimeout(fileNotificationTimer);
   fileNotificationTimer = setTimeout(async () => {
     fileNotificationTimer = null;
     await redisService.del(FILE_INDEX_CACHE_KEY);
+    await redisService.del(FILE_STATS_CACHE_KEY);
     await redisService.publish(REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' }));
   }, 300);
 };
@@ -97,7 +99,7 @@ export class FileUploadRepository {
       .sort({ uploadedAt: -1 })
       .maxTimeMS(10_000)
       .lean() as unknown as any[];
-    await redisService.set(FILE_INDEX_CACHE_KEY, JSON.stringify(files), 30);
+    await redisService.set(FILE_INDEX_CACHE_KEY, JSON.stringify(files), 300);
     return files;
   }
 
@@ -177,7 +179,13 @@ export class FileUploadRepository {
     pendingReview: number;
     totalSizeMB: string;
   }> {
+    const cached = await redisService.get(FILE_STATS_CACHE_KEY);
+    if (cached) {
+      try { return JSON.parse(cached); } catch { /* rebuild malformed cache */ }
+    }
+
     const stats = await FileUpload.aggregate([
+      { $match: { /* lightweight — no date filter, full scan */ } },
       {
         $group: {
           _id: null,
@@ -191,10 +199,12 @@ export class FileUploadRepository {
     ]);
 
     const result = stats[0] || { totalFiles: 0, totalSize: 0, pendingReview: 0 };
-    return {
+    const output = {
       ...result,
       totalSizeMB: (result.totalSize / (1024 * 1024)).toFixed(2),
     };
+    await redisService.set(FILE_STATS_CACHE_KEY, JSON.stringify(output), 60);
+    return output;
   }
 
   async getFilesGroupedByUser(): Promise<any[]> {
@@ -208,7 +218,25 @@ export class FileUploadRepository {
       {
         $group: {
           _id: '$userId',
-          files: { $push: '$$ROOT' },
+          files: {
+            $push: {
+              _id: '$_id',
+              originalName: '$originalName',
+              mimetype: '$mimetype',
+              size: '$size',
+              uploadedAt: '$uploadedAt',
+              taskId: '$taskId',
+              orderId: '$orderId',
+              category: '$category',
+              tag: '$tag',
+              adminReviewed: '$adminReviewed',
+              adminNotes: '$adminNotes',
+              thumbnailPath: '$thumbnailPath',
+              folderId: '$folderId',
+              shareSlug: '$shareSlug',
+              path: { $substrCP: ['$path', 0, 100] },
+            }
+          },
           totalFiles: { $sum: 1 },
           totalSize: { $sum: '$size' },
           pendingReview: {

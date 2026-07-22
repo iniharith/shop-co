@@ -1483,20 +1483,24 @@ router.put(
 router.get('/drafts/pending', async (req: Request, res: Response) => {
   try {
     const drafts = await fileUploadRepository.findAll({ search: '' });
-    // Filter out locally because findAll doesn't support tag natively without modifying repo
     const pending = (drafts as any[]).filter(d => d.tag === 'draft' && d.botNotified !== true);
     
-    // We need to find the phone number for each draft.
-    // Usually it's in the Task description or userId (if it starts with user_)
+    // Batch-load all referenced tasks in one query instead of N+1
+    const taskIds = [...new Set(pending.filter(d => d.taskId).map(d => d.taskId))];
+    const tasks = taskIds.length > 0
+      ? await Task.find({ _id: { $in: taskIds } }).select('description').lean()
+      : [];
+    const taskMap = new Map(tasks.map((t: any) => [t._id.toString(), t]));
+    
     const results = [];
     for (const draft of pending) {
       let phone = null;
       if (draft.userId && draft.userId.startsWith('user_')) {
         phone = draft.userId.replace('user_', '');
       } else if (draft.taskId) {
-        const task = await Task.findById(draft.taskId);
-        if (task && task.description && task.description.includes('Phone Number:')) {
-          const match = task.description.match(/Phone Number:\s*(\d+)/);
+        const task = taskMap.get(draft.taskId.toString());
+        if (task && (task as any).description && (task as any).description.includes('Phone Number:')) {
+          const match = (task as any).description.match(/Phone Number:\s*(\d+)/);
           if (match) phone = match[1];
         }
       }
@@ -1504,7 +1508,7 @@ router.get('/drafts/pending', async (req: Request, res: Response) => {
       if (phone) {
         results.push({
           _id: draft._id,
-          url: draft.path, // S3 url
+          url: draft.path,
           phone,
           orderId: draft.orderId
         });
