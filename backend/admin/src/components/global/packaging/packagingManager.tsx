@@ -42,11 +42,11 @@ const categories = [
 
 // Packaging only ever deals with one status, so there are no sub-tabs (unlike Production's Printing/Hold/Done Printing)
 const PACKAGING_STATUS = "PACKAGING";
+const PACKAGING_STATUSES = ["PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED"];
 
 export default function PackagingManager() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
-  const PACKAGING_STATUSES = ["PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED"];
   const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching } = useFolderGroup(PACKAGING_STATUSES);
   const groupedFromServer: any[] = (folderGroupResponse as any)?.data || [];
   const { data: ordersResponse } = useOrders();

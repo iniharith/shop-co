@@ -95,7 +95,13 @@ export class FileUploadRepository {
   // file records. Actual file details are fetched per-folder, on demand,
   // via findByFolderKey() below once a folder is opened.
   async findIndex(): Promise<Pick<IFileUpload, 'userId' | 'orderId' | 'taskId' | 'category' | 'tag' | 'shareSlug' | 'folderId' | 'uploadedAt' | 'originalName'>[]> {
-    const cached = await redisService.get(FILE_INDEX_CACHE_KEY);
+    // Raced against a short timeout — a slow/unhealthy Redis should never
+    // meaningfully delay this response, since it's on the hot path for
+    // every Artworks/Production/Packaging page load.
+    const cached = await Promise.race([
+      redisService.get(FILE_INDEX_CACHE_KEY),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 150)),
+    ]);
     if (cached) {
       try { return JSON.parse(cached); } catch { /* rebuild malformed cache */ }
     }
@@ -103,7 +109,8 @@ export class FileUploadRepository {
       .sort({ uploadedAt: -1 })
       .maxTimeMS(10_000)
       .lean() as unknown as any[];
-    await redisService.set(FILE_INDEX_CACHE_KEY, JSON.stringify(files), 300);
+    // Fire-and-forget — don't make the caller wait on the cache write.
+    redisService.set(FILE_INDEX_CACHE_KEY, JSON.stringify(files), 300).catch(() => {});
     return files;
   }
 
@@ -183,7 +190,10 @@ export class FileUploadRepository {
     pendingReview: number;
     totalSizeMB: string;
   }> {
-    const cached = await redisService.get(FILE_STATS_CACHE_KEY);
+    const cached = await Promise.race([
+      redisService.get(FILE_STATS_CACHE_KEY),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 150)),
+    ]);
     if (cached) {
       try { return JSON.parse(cached); } catch { /* rebuild malformed cache */ }
     }
@@ -207,7 +217,7 @@ export class FileUploadRepository {
       ...result,
       totalSizeMB: (result.totalSize / (1024 * 1024)).toFixed(2),
     };
-    await redisService.set(FILE_STATS_CACHE_KEY, JSON.stringify(output), 60);
+    redisService.set(FILE_STATS_CACHE_KEY, JSON.stringify(output), 60).catch(() => {});
     return output;
   }
 

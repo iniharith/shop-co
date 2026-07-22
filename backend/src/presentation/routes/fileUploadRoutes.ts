@@ -336,9 +336,15 @@ router.get(
     const ARTWORK_STATUSES = ["PLACED","IN_DESIGN","IN_PROGRESS","PENDING_ARTWORK","ARTWORK_REVIEWED","ARTWORK_REJECTED","PEMBETULAN","DONE_DESIGN"];
     const taskStatusFilter = (req.query.taskStatuses as string)?.split(',').filter(Boolean) || ARTWORK_STATUSES;
 
-    // Try cache first (keyed by status filter)
+    // Try cache first (keyed by status filter). Raced against a short
+    // timeout so a slow or momentarily-unhealthy Redis connection never
+    // meaningfully delays this response — if it doesn't answer almost
+    // instantly, just fall through to querying MongoDB directly.
     const cacheKey = `${ENRICHED_INDEX_CACHE_KEY}:${taskStatusFilter.join(',')}`;
-    const cached = await enrichedIndexCache.get(cacheKey);
+    const cached = await Promise.race([
+      enrichedIndexCache.get(cacheKey),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 150)),
+    ]);
     if (cached) {
       try { res.json({ success: true, data: JSON.parse(cached) }); return; } catch { /* rebuild */ }
     }
@@ -442,10 +448,11 @@ router.get(
       return { ...g, orderStatus, fileCount: Math.max(g.files.length, taskFileCount) };
     });
 
-    // Cache for 2 minutes
-    await enrichedIndexCache.set(cacheKey, JSON.stringify(result), 120);
-
     res.json({ success: true, data: result });
+
+    // Fire-and-forget — cache write happens after the response is already
+    // sent, so a slow/unhealthy Redis can never add latency here.
+    enrichedIndexCache.set(cacheKey, JSON.stringify(result), 120).catch(() => {});
   })
 );
 
