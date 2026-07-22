@@ -63,6 +63,7 @@ const order_model_1 = __importDefault(require("../../../infrastructure/db/models
 const ParcelRepository_1 = require("../../../infrastructure/repositories/ParcelRepository");
 const CustomerUpdateSettingsService_1 = require("../../../infrastructure/services/CustomerUpdateSettingsService");
 const EasyParcelTrackingSyncService_1 = require("../../../infrastructure/services/EasyParcelTrackingSyncService");
+const fileUploadRoutes_1 = require("../../../presentation/routes/fileUploadRoutes");
 function requiredSenderEnv(name) {
     var _a;
     const value = (_a = process.env[name]) === null || _a === void 0 ? void 0 : _a.trim();
@@ -217,6 +218,8 @@ class OrderUsecase {
             if (order.userId) {
                 yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + order.userId.toString());
             }
+            // Clear folder-group cache so Production/Packaging pages see updated status immediately
+            void (0, fileUploadRoutes_1.clearFolderGroupCache)().catch(() => { });
             // Sync Order status back to Task
             try {
                 if (syncTasks) {

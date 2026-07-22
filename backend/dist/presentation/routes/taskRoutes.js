@@ -64,6 +64,7 @@ const redis_1 = require("../../infrastructure/redis/redis");
 const redis_constant_1 = require("../../shared/constants/redis.constant");
 const taskBroadcast_1 = require("../../shared/utils/taskBroadcast");
 const FileUploadRepository_1 = require("../../infrastructure/repositories/FileUploadRepository");
+const fileUploadRoutes_1 = require("./fileUploadRoutes");
 const redisService = new redis_1.RedisService();
 const TASK_FILE_TAGS = new Set(['attachment', 'draft', 'for_print']);
 const normalizeTaskFileTag = (tag) => {
@@ -256,6 +257,10 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
                 console.error('Failed to sync status to order:', e);
             }
         }
+    }
+    // Clear the folder-group cache so Production/Packaging pages see the updated status
+    if (req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status)) {
+        void (0, fileUploadRoutes_1.clearFolderGroupCache)().catch(() => { });
     }
     // Refetch to include newly added activities in the response and broadcast
     const freshTask = yield TaskRepository_1.taskRepository.findById(req.params.id);

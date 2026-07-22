@@ -45,6 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.clearFolderGroupCache = void 0;
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -69,14 +70,24 @@ const order_repository_1 = __importDefault(require("../../infrastructure/db/repo
 const order_model_1 = __importDefault(require("../../infrastructure/db/models/order.model"));
 const user_model_1 = __importDefault(require("../../infrastructure/db/models/user.model"));
 const redis_1 = require("../../infrastructure/redis/redis");
+const taskBroadcast_1 = require("../../shared/utils/taskBroadcast");
+const streamFilesAsZip_1 = require("../../shared/utils/streamFilesAsZip");
+const downloadProgress_1 = require("../../shared/utils/downloadProgress");
 // Tiered cache: Redis primary, in-memory fallback when Redis connection drops
 const enrichedIndexCache = new redis_1.RedisService();
 const ENRICHED_CACHE_KEY_PREFIX = 'files:enrichedIndex:';
 const ENRICHED_CACHE_TTL = 120; // seconds
 const memCache = new Map();
-const taskBroadcast_1 = require("../../shared/utils/taskBroadcast");
-const streamFilesAsZip_1 = require("../../shared/utils/streamFilesAsZip");
-const downloadProgress_1 = require("../../shared/utils/downloadProgress");
+const clearFolderGroupCache = () => __awaiter(void 0, void 0, void 0, function* () {
+    memCache.clear();
+    try {
+        yield enrichedIndexCache.delByPrefix(ENRICHED_CACHE_KEY_PREFIX);
+    }
+    catch (err) {
+        console.error('Failed to clear folderGroup cache:', err);
+    }
+});
+exports.clearFolderGroupCache = clearFolderGroupCache;
 const router = (0, express_1.Router)();
 const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB || '500', 10);
 // ─── Multer + S3 Storage ─────────────────────────
@@ -320,7 +331,7 @@ router.get('/index', auth_middileware_1.default, (0, auth_middileware_1.authoriz
 // Accepts ?taskStatuses= comma-separated list to filter by task status
 // (defaults to artwork statuses if omitted).
 router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
+    var _a, _b, _c, _d;
     const ARTWORK_STATUSES = ["PLACED", "IN_DESIGN", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "PEMBETULAN", "DONE_DESIGN"];
     const rawStatuses = (_a = req.query.taskStatuses) === null || _a === void 0 ? void 0 : _a.split(',').filter(Boolean);
     const taskStatusFilter = rawStatuses && rawStatuses.length > 0 ? rawStatuses : ARTWORK_STATUSES;
@@ -351,7 +362,7 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
         if (raw)
             cachedData = JSON.parse(raw);
     }
-    catch ( /* Redis unavailable, try in-memory */_c) { /* Redis unavailable, try in-memory */ }
+    catch ( /* Redis unavailable, try in-memory */_e) { /* Redis unavailable, try in-memory */ }
     if (!cachedData) {
         const mem = memCache.get(cacheKey);
         if (mem && mem.expiresAt > Date.now())
@@ -367,8 +378,9 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
     // 2. Collect unique references with ObjectId validation
     const orderIds = [...new Set(enriched.filter((f) => f.orderId && mongoose_1.default.Types.ObjectId.isValid(f.orderId)).map((f) => f.orderId))];
     const userIds = [...new Set(enriched.filter((f) => !f.taskId && f.userId && mongoose_1.default.Types.ObjectId.isValid(f.userId)).map((f) => f.userId))];
-    // 3. Load all tasks in this queue
-    const [tasks, taskFileCounts, orders, users] = yield Promise.all([
+    const allTaskIds = [...new Set(enriched.filter((f) => f.taskId && mongoose_1.default.Types.ObjectId.isValid(f.taskId)).map((f) => f.taskId))];
+    // 3. Load all tasks in this queue & all referenced tasks by ID
+    const [tasks, taskFileCounts, orders, users, allReferencedTasks] = yield Promise.all([
         Task_1.Task.find({ status: { $in: statusQueryValues }, isDeleted: { $ne: true } })
             .select('title status orderId category')
             .lean(),
@@ -378,8 +390,10 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
         ]),
         orderIds.length ? order_model_1.default.find({ _id: { $in: orderIds } }).select('orderStatus userId').lean() : [],
         userIds.length ? user_model_1.default.find({ _id: { $in: userIds } }).select('name').lean() : [],
+        allTaskIds.length ? Task_1.Task.find({ _id: { $in: allTaskIds }, isDeleted: { $ne: true } }).select('title status orderId category').lean() : [],
     ]);
     const taskMap = new Map(tasks.map((t) => [t._id.toString(), t]));
+    const allTaskMap = new Map(allReferencedTasks.map((t) => [t._id.toString(), t]));
     const taskFileCountMap = new Map(taskFileCounts.map((t) => [t._id.toString(), t.fileCount || 0]));
     const orderMap = new Map(orders.map((o) => [o._id.toString(), o]));
     const userMap = new Map(users.map((u) => [u._id.toString(), u]));
@@ -389,28 +403,35 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
         let groupKey;
         let folderName;
         let isTask = false;
-        if (file.taskId && taskMap.has(file.taskId)) {
-            const task = taskMap.get(file.taskId);
-            if (!matchesStatus(task.status))
-                continue;
-            groupKey = `task:${file.taskId}`;
-            folderName = task.title;
-            isTask = true;
-        }
-        else {
-            if (file._shareFolderName) {
-                folderName = file._shareFolderName;
+        if (file.taskId) {
+            const task = allTaskMap.get(file.taskId) || taskMap.get(file.taskId);
+            if (task) {
+                if (!matchesStatus(task.status)) {
+                    // Task status does not match requested queue filter — skip file
+                    continue;
+                }
+                groupKey = `task:${file.taskId}`;
+                folderName = task.title;
+                isTask = true;
             }
             else {
-                const user = userMap.get(file.userId);
-                folderName = (user === null || user === void 0 ? void 0 : user.name) || file.userId || 'Unknown';
+                if (file.orderId) {
+                    const order = orderMap.get(file.orderId);
+                    if (order && !matchesStatus(order.orderStatus))
+                        continue;
+                }
+                groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
+                folderName = file._shareFolderName || ((_b = userMap.get(file.userId)) === null || _b === void 0 ? void 0 : _b.name) || file.userId || 'Unknown';
             }
+        }
+        else {
             if (file.orderId) {
                 const order = orderMap.get(file.orderId);
                 if (order && !matchesStatus(order.orderStatus))
                     continue;
             }
             groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
+            folderName = file._shareFolderName || ((_c = userMap.get(file.userId)) === null || _c === void 0 ? void 0 : _c.name) || file.userId || 'Unknown';
         }
         if (!groups[groupKey]) {
             groups[groupKey] = {
@@ -419,7 +440,7 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
                 taskId: file.taskId || '',
                 userId: file.userId || '',
                 isTask,
-                category: isTask ? (_b = taskMap.get(file.taskId)) === null || _b === void 0 ? void 0 : _b.category : file.category,
+                category: isTask ? (_d = taskMap.get(file.taskId)) === null || _d === void 0 ? void 0 : _d.category : file.category,
                 files: [],
             };
         }
