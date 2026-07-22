@@ -20,10 +20,13 @@ import { VirtualFolder } from '../../domain/entities/VirtualFolder';
 import OrderRepository from '../../infrastructure/db/repositories/order.repository';
 import OrderModel from '../../infrastructure/db/models/order.model';
 import User from '../../infrastructure/db/models/user.model';
+import { RedisService } from '../../infrastructure/redis/redis';
 
-// In-memory cache for enriched folder-group data (avoids Redis dependency in production)
-const enrichedIndexCache = new Map<string, { data: any; expiresAt: number }>();
-const ENRICHED_CACHE_TTL = 120_000; // 2 minutes
+// Tiered cache: Redis primary, in-memory fallback when Redis connection drops
+const enrichedIndexCache = new RedisService();
+const ENRICHED_CACHE_KEY_PREFIX = 'files:enrichedIndex:';
+const ENRICHED_CACHE_TTL = 120; // seconds
+const memCache = new Map<string, { data: any; expiresAt: number }>();
 import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
 import { streamFilesAsZip } from '../../shared/utils/streamFilesAsZip';
 import { getDownloadProgress } from '../../shared/utils/downloadProgress';
@@ -336,11 +339,19 @@ router.get(
     const ARTWORK_STATUSES = ["PLACED","IN_DESIGN","IN_PROGRESS","PENDING_ARTWORK","ARTWORK_REVIEWED","ARTWORK_REJECTED","PEMBETULAN","DONE_DESIGN"];
     const taskStatusFilter = (req.query.taskStatuses as string)?.split(',').filter(Boolean) || ARTWORK_STATUSES;
 
-    // Try cache first (keyed by status filter). Raced against a short
-    const cacheKey = taskStatusFilter.join(',');
-    const cached = enrichedIndexCache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) {
-      res.json({ success: true, data: cached.data }); return;
+    // Try cache: Redis first, in-memory as fallback
+    const cacheKey = `${ENRICHED_CACHE_KEY_PREFIX}${taskStatusFilter.join(',')}`;
+    let cachedData: any = null;
+    try {
+      const raw = await enrichedIndexCache.get(cacheKey);
+      if (raw) cachedData = JSON.parse(raw);
+    } catch { /* Redis unavailable, try in-memory */ }
+    if (!cachedData) {
+      const mem = memCache.get(cacheKey);
+      if (mem && mem.expiresAt > Date.now()) cachedData = mem.data;
+    }
+    if (cachedData) {
+      res.json({ success: true, data: cachedData }); return;
     }
 
     // 1. Load enriched file index
@@ -444,8 +455,9 @@ router.get(
 
     res.json({ success: true, data: result });
 
-    // Cache result in-memory for 2 minutes
-    enrichedIndexCache.set(cacheKey, { data: result, expiresAt: Date.now() + ENRICHED_CACHE_TTL });
+    // Cache in Redis + in-memory fallback
+    enrichedIndexCache.set(cacheKey, JSON.stringify(result), ENRICHED_CACHE_TTL).catch(() => {});
+    memCache.set(cacheKey, { data: result, expiresAt: Date.now() + ENRICHED_CACHE_TTL * 1000 });
   })
 );
 
