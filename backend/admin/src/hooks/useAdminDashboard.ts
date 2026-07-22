@@ -105,7 +105,7 @@ export const useAllFiles = () => {
     return useQueryData(
         ['allFiles'],
         () => getAllFiles(session?.user?.token),
-        { enabled: status === "authenticated", staleTime: 300_000 }
+        { enabled: status === "authenticated", staleTime: 0 }
     );
 }
 
