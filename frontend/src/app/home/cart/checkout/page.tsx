@@ -102,7 +102,7 @@ const page = () => {
 
               <AnimatedButton
                 disabled={cartItems.length === 0 || isLoading}
-                className="w-full hover:bg-primary/90 cursor-pointer mt-3 bg-primary text-white rounded-lg  "
+                className="w-full hover:bg-primary/90 cursor-pointer mt-3 bg-primary text-primary-foreground rounded-lg"
                 isLoading={isLoading}
                 loadingText="Checking out..."
                 onClick={() => {

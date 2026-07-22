@@ -12,6 +12,8 @@ import { Footer } from "@/components/global/footer";
 import Cta from "@/components/global/cta";
 import { getServerSession } from "next-auth";
 import { authConfig } from "@/config/auth.config";
+import { cookies } from "next/headers";
+import type { Locale } from "@/i18n/messages";
 
 const fonarto = localFont({
   src: "./fonts/fonarto.woff",
@@ -76,13 +78,15 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getServerSession(authConfig);
+  const cookieStore = await cookies();
+  const savedLocale = cookieStore.get("kc_locale")?.value;
+  const locale: Locale = savedLocale === "ms" ? "ms" : "en";
   return (
-    <html lang="en">
+    <html lang={locale} suppressHydrationWarning>
       <body
-        suppressHydrationWarning
-        className={`${geistSans.variable} ${dmSans.variable} overflow-x-hidden w-screen ${geistMono.variable} ${fonarto.variable} ${provicaliAmpersand.variable} bg-gray-100 dark:bg-background antialiased`}
+        className={`${geistSans.variable} ${dmSans.variable} overflow-x-hidden w-screen ${geistMono.variable} ${fonarto.variable} ${provicaliAmpersand.variable} bg-background text-foreground antialiased`}
       >
-        <Provider session={session}>
+        <Provider session={session} initialLocale={locale}>
           <div className="site-header sticky z-50 top-0">
             <Nav />
           </div>

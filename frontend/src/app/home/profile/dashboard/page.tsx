@@ -148,7 +148,7 @@ export default function DashboardPage() {
           <div className="flex gap-4 mt-6 flex-wrap">
             <Link
               href="/home/profile/upload"
-              className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg"
+              className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg"
             >
               ☁️ Muat Naik Fail
             </Link>

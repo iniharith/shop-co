@@ -7,9 +7,9 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
 import { Instagram } from "lucide-react";
 import { SiTiktok, SiShopee } from "react-icons/si";
+import { useLanguage } from "@/i18n/LanguageProvider";
 
 const FooterLink = ({
   href,
@@ -40,7 +40,7 @@ const SocialIcon = ({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center justify-center w-8 h-8 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+      className="flex items-center justify-center w-8 h-8 rounded-full bg-background hover:bg-accent transition-colors"
     >
       {children}
     </a>
@@ -48,8 +48,9 @@ const SocialIcon = ({
 };
 
 export function Footer() {
+  const { t } = useLanguage();
   return (
-    <footer className="w-full rounded-t-lg py-12 md:px-[3rem] px-[.5rem] bg-gray-300 border-t">
+    <footer className="w-full rounded-t-lg py-12 md:px-[3rem] px-[.5rem] bg-muted text-foreground border-t border-border">
       <div className="grid mt-5 grid-cols-1 md:grid-cols-12 gap-8">
         <div className="md:col-span-3 space-y-4">
 
@@ -68,8 +69,7 @@ export function Footer() {
           </Link>
 
           <p className="text-sm text-muted-foreground">
-            Percetakan berkualiti tinggi untuk kad nama, flyers, banner,
-            sticker & lebih lagi. Penghantaran pantas seluruh Malaysia.
+            {t("footer.description")}
           </p>
           <div className="flex space-x-2">
             <SocialIcon href="https://www.instagram.com/kampungcetak.my/">
@@ -88,37 +88,37 @@ export function Footer() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="space-y-4">
               <h3 className="text-sm font-semibold uppercase tracking-wider">
-                Company
+                {t("footer.company")}
               </h3>
               <ul className="space-y-2">
-                <li><FooterLink href="/about">About</FooterLink></li>
-                <li><FooterLink href="/features">Features</FooterLink></li>
-                <li><FooterLink href="/works">Works</FooterLink></li>
-                <li><FooterLink href="/career">Career</FooterLink></li>
+                <li><FooterLink href="/about">{t("footer.about")}</FooterLink></li>
+                <li><FooterLink href="/features">{t("footer.features")}</FooterLink></li>
+                <li><FooterLink href="/works">{t("footer.works")}</FooterLink></li>
+                <li><FooterLink href="/career">{t("footer.career")}</FooterLink></li>
               </ul>
             </div>
 
             <div className="space-y-4">
               <h3 className="text-sm font-semibold uppercase tracking-wider">
-                Help
+                {t("footer.help")}
               </h3>
               <ul className="space-y-2">
-                <li><FooterLink href="/support">Customer Support</FooterLink></li>
-                <li><FooterLink href="/delivery-details">Delivery Details</FooterLink></li>
-                <li><FooterLink href="/terms">Terms & Conditions</FooterLink></li>
-                <li><FooterLink href="/privacy">Privacy Policy</FooterLink></li>
+                <li><FooterLink href="/support">{t("footer.support")}</FooterLink></li>
+                <li><FooterLink href="/delivery-details">{t("footer.delivery")}</FooterLink></li>
+                <li><FooterLink href="/terms">{t("footer.terms")}</FooterLink></li>
+                <li><FooterLink href="/privacy">{t("footer.privacy")}</FooterLink></li>
               </ul>
             </div>
 
             <div className="space-y-4">
               <h3 className="text-sm font-semibold uppercase tracking-wider">
-                FAQ
+                {t("footer.faq")}
               </h3>
               <ul className="space-y-2">
-                <li><FooterLink href="/home/profile">Account</FooterLink></li>
-                <li><FooterLink href="/home/profile/orders">Manage Deliveries</FooterLink></li>
-                <li><FooterLink href="/home/profile/dashboard">Orders</FooterLink></li>
-                <li><FooterLink href="/payment">Payments</FooterLink></li>
+                <li><FooterLink href="/home/profile">{t("footer.account")}</FooterLink></li>
+                <li><FooterLink href="/home/profile/orders">{t("footer.deliveries")}</FooterLink></li>
+                <li><FooterLink href="/home/profile/dashboard">{t("footer.orders")}</FooterLink></li>
+                <li><FooterLink href="/payment">{t("footer.payments")}</FooterLink></li>
               </ul>
             </div>
 
@@ -129,7 +129,7 @@ export function Footer() {
 
       <div className="flex flex-col md:flex-row justify-between items-center mt-12 pt-8 border-t">
         <p className="text-xs text-muted-foreground mb-4 md:mb-0">
-          Kampung Cetak © 2026, All Rights Reserved
+          Kampung Cetak © 2026, {t("footer.rights")}
         </p>
         <div className="flex items-center space-x-4">
           <img

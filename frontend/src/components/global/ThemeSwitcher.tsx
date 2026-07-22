@@ -11,7 +11,7 @@ import { Button } from "@heroui/button";
 
 export function ThemeSwitcher() {
   const [mounted, setMounted] = useState(false);
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => {
     setMounted(true);
@@ -30,12 +30,13 @@ export function ThemeSwitcher() {
       isIconOnly
       variant="ghost"
       className="rounded-full w-9 h-9"
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      aria-label={resolvedTheme === "dark" ? "Use light theme" : "Use dark theme"}
+      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
     >
-      {theme === "dark" ? (
+      {resolvedTheme === "dark" ? (
         <FiSun size={18} className="text-yellow-400" />
       ) : (
-        <FiMoon size={18} className="text-slate-700" />
+        <FiMoon size={18} className="text-foreground" />
       )}
     </Button>
   );

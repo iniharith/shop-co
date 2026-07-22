@@ -58,7 +58,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   return (
     <div
       onClick={() => router.push(`/home/shop/${product._id}`)}
-      className="bg-gray-200/50 dark:bg-card shrink-0 hover:bg-gray-400/20 transition-all cursor-pointer hover:scale-95 duration-300 rounded-lg p-1 h-full flex flex-col"
+      className="bg-card text-card-foreground border border-border shrink-0 hover:bg-muted/60 transition-all cursor-pointer hover:scale-95 duration-300 rounded-lg p-1 h-full flex flex-col"
     >
       <div className="relative mb-4 w-full aspect-square">
         {imageLoading ? (
@@ -86,7 +86,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
                     ? "text-yellow-400"
                     : i < product.rating
                     ? "text-yellow-400 fill-yellow-400"
-                    : "text-gray-300 dark:text-muted"
+                    : "text-muted-foreground/40"
                 )}
               />
             ))}
@@ -114,7 +114,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <Button
             onPress={handleAddToCart}
             size="sm"
-            className="bg-muted-foreground/30 cursor-pointer hover:bg-muted-foreground/50 transition-all duration-300 active:scale-95 border-muted-foreground/50 border rounded-full w-[3rem] h-[3rem] text-white"
+            className="bg-secondary text-secondary-foreground cursor-pointer hover:bg-accent transition-all duration-300 active:scale-95 border-border border rounded-full w-[3rem] h-[3rem]"
           >
             <MdOutlineShoppingBag />
           </Button>

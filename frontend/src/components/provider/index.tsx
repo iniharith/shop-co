@@ -11,13 +11,17 @@ import NextTopLoader from "nextjs-toploader";
 import ReactQueryProvider from "./react-query";
 import { SessionProvider, SessionProviderProps } from "next-auth/react";
 import LiveSessionMonitor from "./liveSessionMonitor";
+import { LanguageProvider } from "@/i18n/LanguageProvider";
+import type { Locale } from "@/i18n/messages";
 
 const Provider = ({
   children,
   session,
+  initialLocale,
 }: {
   children: React.ReactNode;
   session: SessionProviderProps["session"];
+  initialLocale: Locale;
 }) => {
   return (
       <SessionProvider session={session}>
@@ -30,14 +34,16 @@ const Provider = ({
               zIndex={999999999999999}
             />
             <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-              <HeroUIProvider>
-                <Toaster
-                  visibleToasts={1}
-                  position="bottom-center"
-                  richColors
-                />
-                <LiveSessionMonitor>{children}</LiveSessionMonitor>
-              </HeroUIProvider>
+              <LanguageProvider initialLocale={initialLocale}>
+                <HeroUIProvider>
+                  <Toaster
+                    visibleToasts={1}
+                    position="bottom-center"
+                    richColors
+                  />
+                  <LiveSessionMonitor>{children}</LiveSessionMonitor>
+                </HeroUIProvider>
+              </LanguageProvider>
             </ThemeProvider>
         </ReactQueryProvider>
       </SessionProvider>

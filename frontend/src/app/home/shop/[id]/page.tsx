@@ -49,17 +49,17 @@ const page = () => {
       </div>
       {isPending && <ProductDetailSkeleton />}
       {!isPending && product && (
-        <div className="grid border-b border-gray-200 pb-10 grid-cols-1 mt-6 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid border-b border-border pb-10 grid-cols-1 mt-6 lg:grid-cols-12 gap-8 items-start">
           {/* ── LEFT COLUMN: IMAGES & DESCRIPTION ── */}
           <div className="w-full lg:col-span-7 space-y-8">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+            <div className="bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border">
               <ProductGallery images={product.images} />
             </div>
             
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+            <div className="bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border space-y-4">
               <h2 className="text-xl font-bold tracking-tight text-primary">Product Information</h2>
-              <div className="w-full h-px bg-gray-200"></div>
-              <p className="text-gray-600 leading-relaxed text-sm md:text-base">
+              <div className="w-full h-px bg-border"></div>
+              <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
                 {product.description || "High quality printing service offering excellent results with vibrant colors and durability. Ideal for professional and personal use."}
               </p>
             </div>

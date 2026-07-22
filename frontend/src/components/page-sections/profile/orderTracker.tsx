@@ -106,16 +106,16 @@ export default function OrderTracker({ orderId }: { orderId: string }) {
   const mapCenter = { lat: 3.1478, lng: 101.6953 };
 
   return (
-    <div className="bg-gray-50/50 rounded-2xl p-4 md:p-6 border border-gray-100 shadow-inner mt-4">
+    <div className="bg-muted/50 rounded-2xl p-4 md:p-6 border border-border shadow-inner mt-4">
       {/* Header Info */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">EasyParcel Tracking</div>
-          <div className="text-lg font-black font-mono text-black">{parcel.trackingNumber}</div>
+          <div className="text-xs text-muted-foreground font-bold uppercase tracking-widest mb-1">EasyParcel Tracking</div>
+          <div className="text-lg font-black font-mono text-foreground">{parcel.trackingNumber}</div>
         </div>
-        <div className="bg-white px-4 py-2 rounded-xl border border-gray-200 text-sm flex gap-4">
+        <div className="bg-card px-4 py-2 rounded-xl border border-border text-sm flex gap-4">
           <div>
-            <span className="text-gray-500">Kurier:</span>{" "}
+            <span className="text-muted-foreground">Kurier:</span>{" "}
             <span className="font-bold uppercase">{parcel.courier}</span>
           </div>
         </div>
@@ -125,7 +125,7 @@ export default function OrderTracker({ orderId }: { orderId: string }) {
       {!isFailed && (
         <div className="relative mt-4 mb-10 px-2 md:px-8">
           <div className="flex items-center justify-between relative">
-            <div className="absolute top-4 left-0 right-0 h-1 bg-gray-200 rounded-full -z-0" />
+            <div className="absolute top-4 left-0 right-0 h-1 bg-muted rounded-full -z-0" />
             <div
               className="absolute top-4 left-0 h-1 bg-primary rounded-full transition-all duration-1000 ease-out -z-0"
               style={{ width: `${Math.min(stepIndex / (STEPS.length - 1), 1) * 100}%` }}
@@ -141,10 +141,10 @@ export default function OrderTracker({ orderId }: { orderId: string }) {
                     w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 shadow-sm
                     ${
                       done
-                        ? "bg-primary text-white scale-100"
+                        ? "bg-primary text-primary-foreground scale-100"
                         : current
-                        ? "bg-primary text-white scale-110 ring-4 ring-primary/20 animate-pulse"
-                        : "bg-white border-2 border-gray-200 text-gray-300 scale-90"
+                        ? "bg-primary text-primary-foreground scale-110 ring-4 ring-primary/20 animate-pulse"
+                        : "bg-card border-2 border-border text-muted-foreground scale-90"
                     }
                   `}
                   >
@@ -152,7 +152,7 @@ export default function OrderTracker({ orderId }: { orderId: string }) {
                   </div>
                   <div
                     className={`absolute top-10 text-center text-[10px] md:text-xs font-bold max-w-16 md:max-w-none leading-tight whitespace-nowrap
-                    ${done || current ? "text-black" : "text-gray-400"}
+                    ${done || current ? "text-foreground" : "text-muted-foreground"}
                   `}
                   >
                     {step.label}
@@ -168,36 +168,36 @@ export default function OrderTracker({ orderId }: { orderId: string }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         
         {/* Timeline */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
-          <h3 className="text-sm font-bold mb-4 text-black flex items-center gap-2">
+        <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
+          <h3 className="text-sm font-bold mb-4 text-foreground flex items-center gap-2">
             <span>📋</span> Sejarah Pergerakan
           </h3>
           <div className="max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
             {parcel.events && parcel.events.length > 0 ? (
-              <div className="space-y-4 relative before:absolute before:inset-0 before:ml-[11px] before:-translate-x-px before:h-full before:w-0.5 before:bg-gray-200">
+              <div className="space-y-4 relative before:absolute before:inset-0 before:ml-[11px] before:-translate-x-px before:h-full before:w-0.5 before:bg-border">
                 {parcel.events.slice().reverse().map((ev, i) => (
                   <div key={i} className="relative flex items-start gap-4">
                     <div
-                      className={`flex-shrink-0 flex items-center justify-center w-6 h-6 mt-1 rounded-full border-4 border-white shadow-sm z-10
+                       className={`flex-shrink-0 flex items-center justify-center w-6 h-6 mt-1 rounded-full border-4 border-card shadow-sm z-10
                       ${i === 0 ? "bg-primary" : "bg-gray-300"}
                     `}
                     />
-                    <div className="flex-1 bg-gray-50 rounded-xl p-3 border border-gray-100">
-                      <div className="font-bold text-sm text-gray-900">{ev.status || ev.description}</div>
-                      <div className="text-[11px] text-gray-500 font-medium my-1">{formatDate(ev.timestamp)}</div>
-                      {ev.location && <div className="text-xs text-gray-600 mt-1">📍 {ev.location}</div>}
+                    <div className="flex-1 bg-muted/50 rounded-xl p-3 border border-border">
+                      <div className="font-bold text-sm text-foreground">{ev.status || ev.description}</div>
+                      <div className="text-[11px] text-muted-foreground font-medium my-1">{formatDate(ev.timestamp)}</div>
+                      {ev.location && <div className="text-xs text-muted-foreground mt-1">📍 {ev.location}</div>}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-xs italic">Tiada rekod lagi.</p>
+              <p className="text-muted-foreground text-xs italic">Tiada rekod lagi.</p>
             )}
           </div>
         </div>
 
         {/* Map */}
-        <div className="bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 h-[300px] relative">
+        <div className="bg-muted rounded-2xl overflow-hidden border border-border h-[300px] relative">
           {GOOGLE_MAPS_API_KEY ? (
             <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>
               <Map defaultZoom={12} defaultCenter={mapCenter} mapId="DEMO_MAP_ID" disableDefaultUI={true}>
@@ -209,8 +209,8 @@ export default function OrderTracker({ orderId }: { orderId: string }) {
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
               <div className="text-4xl mb-3">🗺️</div>
-              <p className="font-bold text-gray-800 text-sm mb-1">Live Map Integrasi</p>
-              <p className="text-[10px] text-gray-500 max-w-[200px]">
+              <p className="font-bold text-foreground text-sm mb-1">Live Map Integrasi</p>
+              <p className="text-[10px] text-muted-foreground max-w-[200px]">
                 Sila masukkan Google Maps API Key dalam file .env
               </p>
             </div>

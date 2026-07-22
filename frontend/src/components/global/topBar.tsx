@@ -23,7 +23,7 @@ const TopBar = () => {
   }, []);
 
   return (
-    <div className="bg-primary relative overflow-hidden w-full py-1 text-sm text-white grid place-items-center  h-[30px]">
+    <div className="bg-primary relative overflow-hidden w-full py-1 text-sm text-primary-foreground grid place-items-center h-[30px]">
       <AnimatePresence mode="wait">
         <motion.p
           key={index}

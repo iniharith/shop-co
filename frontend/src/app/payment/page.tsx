@@ -5,8 +5,11 @@
 "use client";
 
 import React from "react";
+import { useLanguage } from "@/i18n/LanguageProvider";
 
 const PaymentsPage = () => {
+  const { locale } = useLanguage();
+  const isMalay = locale === "ms";
   const banks = [
     { name: "Maybank2u", src: "https://www.maybank2u.com.my/maybank2u/malaysia/en/personal/images/m2u-logo.png" },
     { name: "CIMB Clicks", src: "https://www.cimbclicks.com.my/content/dam/cimbclicks/cimb-clicks-logo.svg" },
@@ -23,36 +26,36 @@ const PaymentsPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-16 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-muted/30 text-foreground py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
-          <h1 className="text-5xl font-extrabold text-gray-900 tracking-tight mb-8 uppercase">
-            WE ACCEPT
+          <h1 className="text-5xl font-extrabold text-foreground tracking-tight mb-8 uppercase">
+            {isMalay ? "KAEDAH PEMBAYARAN" : "WE ACCEPT"}
           </h1>
-          <p className="max-w-2xl mx-auto text-xl text-gray-500">
-            Secure, fast, and reliable payment methods for your convenience.
+          <p className="max-w-2xl mx-auto text-xl text-muted-foreground">
+            {isMalay ? "Kaedah pembayaran yang selamat, pantas dan boleh dipercayai untuk kemudahan anda." : "Secure, fast, and reliable payment methods for your convenience."}
           </p>
         </div>
 
         {/* Global Cards & FPX */}
-        <div className="bg-white p-10 rounded-3xl shadow-sm border border-gray-100 mb-12">
+        <div className="bg-card text-card-foreground p-10 rounded-3xl shadow-sm border border-border mb-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
 
             <div className="flex flex-col items-center justify-center space-y-4">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Credit / Debit Cards</h2>
+              <h2 className="text-2xl font-bold text-foreground mb-4">{isMalay ? "Kad Kredit / Debit" : "Credit / Debit Cards"}</h2>
               <div className="flex gap-6">
                 <img src="https://cdn-icons-png.flaticon.com/128/349/349221.png" alt="Visa" className="h-16 w-auto object-contain" />
                 <img src="https://cdn-icons-png.flaticon.com/128/196/196578.png" alt="Mastercard" className="h-16 w-auto object-contain" />
               </div>
             </div>
 
-            <div className="flex flex-col items-center justify-center space-y-4 border-t md:border-t-0 md:border-l border-gray-100 pt-8 md:pt-0">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Online Banking</h2>
+            <div className="flex flex-col items-center justify-center space-y-4 border-t md:border-t-0 md:border-l border-border pt-8 md:pt-0">
+              <h2 className="text-2xl font-bold text-foreground mb-4">{isMalay ? "Perbankan Dalam Talian" : "Online Banking"}</h2>
               <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/FPX_logo.svg/1200px-FPX_logo.svg.png" alt="FPX" className="h-16 w-auto object-contain" />
             </div>
 
-            <div className="flex flex-col items-center justify-center space-y-4 border-t md:border-t-0 md:border-l border-gray-100 pt-8 md:pt-0">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">E-Wallets</h2>
+            <div className="flex flex-col items-center justify-center space-y-4 border-t md:border-t-0 md:border-l border-border pt-8 md:pt-0">
+              <h2 className="text-2xl font-bold text-foreground mb-4">{isMalay ? "E-Dompet" : "E-Wallets"}</h2>
               <div className="flex gap-4">
                   <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Touch_%27n_Go_eWallet_logo.svg/1200px-Touch_%27n_Go_eWallet_logo.svg.png" alt="TNG" className="h-12 w-auto object-contain" />
                   <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Grab_Logo.svg/1200px-Grab_Logo.svg.png" alt="GrabPay" className="h-12 w-auto object-contain" />
@@ -64,7 +67,7 @@ const PaymentsPage = () => {
 
         {/* Supported Banks grid */}
         <div className="text-center mb-10 mt-16">
-          <h2 className="text-3xl font-bold text-gray-900">Supported Banks via FPX</h2>
+          <h2 className="text-3xl font-bold text-foreground">{isMalay ? "Bank yang Disokong melalui FPX" : "Supported Banks via FPX"}</h2>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 items-center justify-items-center">

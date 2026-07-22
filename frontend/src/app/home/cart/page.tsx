@@ -109,7 +109,7 @@ const page = () => {
                       router.push("/home/shop");
                     }
                   }}
-                  className="w-full active:scale-95 transition-all duration-300 hover:bg-primary/90 cursor-pointer mt-3 bg-primary text-white rounded-lg  "
+                  className="w-full active:scale-95 transition-all duration-300 hover:bg-primary/90 cursor-pointer mt-3 bg-primary text-primary-foreground rounded-lg"
                 >
                   {cartItems.length > 0 ? "Checkout" : "Go to shop"}
                 </Button>

@@ -4,11 +4,9 @@
  */
 "use client";
 import { Breadcrumbs } from "@/components/global/breadcrumb";
-import { products } from "@/constants/data";
 import ProductCard from "@/components/global/productCard";
 import { PaginationDemo } from "@/components/global/pagination";
 import { CgOptions } from "react-icons/cg";
-import { Button } from "@heroui/button";
 import FilterSidebar from "@/components/page-sections/shop/filterSidbar";
 import {
   Drawer,
@@ -19,14 +17,16 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { useFilterProducts, useProducts } from "@/hooks/useProducts";
+import { useFilterProducts } from "@/hooks/useProducts";
 import ProductCardSkeleton from "@/components/loading/ProductCardSkeleton";
 import { motion } from "framer-motion";
 import { container_variants, item_variants } from "@/constants/framer-motion";
+import { useLanguage } from "@/i18n/LanguageProvider";
 
 const ITEMS_PER_PAGE = 8;
 
-const page = () => {
+const ShopContent = () => {
+  const { t } = useLanguage();
   const { data, isPending } = useFilterProducts();
   const products = data?.products || [];
   
@@ -47,13 +47,13 @@ const page = () => {
         </div>
         <div className="md:col-span-3 flex flex-col gap-5 col-span-4">
           <div className="w-full flex justify-between items-center">
-            <h1 className="text-2xl font-bold">All Products</h1>
+            <h1 className="text-2xl font-bold">{t("shop.title")}</h1>
             <div className="flex items-center gap-2">
-              <p className="text-sm text-gray-500">
-                {products?.length || 0}&nbsp;products&nbsp;found
+              <p className="text-sm text-muted-foreground">
+                {products?.length || 0}&nbsp;{t("shop.productsFound")}
               </p>
               <Drawer>
-                <DrawerTrigger className="bg-gray-300/30 md:hidden flex cursor-pointer rounded-full hover:scale-105 transition-all duration-300 border-input border-1 p-1">
+                <DrawerTrigger className="bg-muted md:hidden flex cursor-pointer rounded-full hover:scale-105 transition-all duration-300 border-input border p-1">
                   <CgOptions className="rotate-90" />
                 </DrawerTrigger>
                 <DrawerTitle className="hidden">Filters</DrawerTitle>
@@ -94,18 +94,16 @@ const page = () => {
                     alt=""
                   />
                 </div>
-                <p className="text-gray-500">No products found</p>
+                <p className="text-muted-foreground">{t("shop.noProducts")}</p>
               </div>
             )}
           </motion.div>
           <div className="w-full border-t border-border pt-5">
-            <Suspense fallback={<div>Loading...</div>}>
-              <PaginationDemo
-                totalPages={totalPages}
-                currentPage={currentPage}
-                onPageChange={(page) => {}}
-              />
-            </Suspense>
+            <PaginationDemo
+              totalPages={totalPages}
+              currentPage={currentPage}
+              onPageChange={() => {}}
+            />
           </div>
         </div>
       </div>
@@ -113,4 +111,10 @@ const page = () => {
   );
 };
 
-export default page;
+const ShopPage = () => (
+  <Suspense fallback={<div className="min-h-[50vh] p-8 text-muted-foreground">Loading...</div>}>
+    <ShopContent />
+  </Suspense>
+);
+
+export default ShopPage;

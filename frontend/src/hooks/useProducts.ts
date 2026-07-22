@@ -5,13 +5,36 @@
 "use client"
 import { ICategoryResponse, IProductByIdResponse, IProductResponse } from "@/types/api";
 import { useQueryData } from "./useQueryData"
-import { getProductByCategory, getProductById, getProducts, getAvailableCategories, searchProducts, filterProducts } from "@/api/product";
+import { getProductByCategory, getProductById, getProducts, getAvailableCategories, filterProducts } from "@/api/product";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFilterStore } from "@/store/filterStore";
 import { useSearchParams } from "next/navigation";
 
 import { dummyProducts } from "@/constants/dummy-products";
+
+const searchAliases: Record<string, string> = {
+    "cetakan digital": "digital printing",
+    "item pameran": "display item",
+    "offset digital": "digital offset",
+    "hadiah premium": "premium gift",
+    pakaian: "apparel",
+    bingkai: "frame",
+    "produk perkahwinan": "wedding",
+    "pembungkusan makanan": "food packaging",
+    "khat islamik": "islamic khat",
+};
+
+const getSearchTerms = (query: string) => {
+    const normalized = query.trim().toLowerCase();
+    return [normalized, searchAliases[normalized]].filter(Boolean) as string[];
+};
+
+const matchesSearch = (product: any, terms: string[]) => terms.some((term) =>
+    product?.name?.toLowerCase().includes(term) ||
+    product?.description?.toLowerCase().includes(term) ||
+    product?.category?.toLowerCase().includes(term)
+);
 
 export const useProducts = (id?: string) => {
     const client = useQueryClient()
@@ -50,11 +73,9 @@ export const useProducts = (id?: string) => {
 
 
 export const useSearchProducts = (query: string) => {
-    const { data, isPending } = useQueryData(["searchProducts", query], () => searchProducts(query));
-    // Force search mock
-    const filtered = dummyProducts.filter(p => p?.name?.toLowerCase().includes(query.toLowerCase()) || p?.description?.toLowerCase().includes(query.toLowerCase()));
+    const terms = getSearchTerms(query);
+    const filtered = terms[0]?.length < 2 ? [] : dummyProducts.filter((product) => matchesSearch(product, terms));
     return { data: { products: filtered }, isPending: false };
-    return { data, isPending };
 }
 
 export const useGetProductByCategory = (category: string) => {
@@ -94,7 +115,8 @@ export const useFilterProducts = () => {
     let filtered = [...dummyProducts.filter(p=>p)];
     
     if (searchQuery) {
-        filtered = filtered.filter(p => p?.name?.toLowerCase().includes(searchQuery.toLowerCase()) || p?.description?.toLowerCase().includes(searchQuery.toLowerCase()));
+        const terms = getSearchTerms(searchQuery);
+        filtered = filtered.filter((product) => matchesSearch(product, terms));
     }
     
     if (priceRange) {
@@ -118,8 +140,6 @@ export const useFilterProducts = () => {
     const response = data as IProductResponse;
     return { data: response, isPending, refetch };
 }
-
-
 
 
 

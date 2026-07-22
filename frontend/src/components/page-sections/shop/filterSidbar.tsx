@@ -15,8 +15,10 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useFilterStore } from "@/store/filterStore";
+import { useLanguage } from "@/i18n/LanguageProvider";
 
 export default function FilterSidebar() {
+  const { locale, t } = useLanguage();
   const {
     serviceCategories,
     turnarounds,
@@ -52,13 +54,33 @@ export default function FilterSidebar() {
   const turnaroundList = ["Standard (3-4 Days)", "Express (1-2 Days)"];
   const formatList = ["A4", "A5", "A3", "Custom Size", "Large Format"];
   const materialList = ["Art Paper", "Art Card", "Glossy Photo Paper", "Matte Premium Paper", "Canvas", "Tarpaulin"];
+  const malayLabels: Record<string, string> = {
+    "Digital Printing": "Cetakan Digital",
+    "Display Item": "Item Pameran",
+    "Digital Offset": "Offset Digital",
+    "Premium Gift": "Hadiah Premium",
+    Apparel: "Pakaian",
+    "Wedding Product": "Produk Perkahwinan",
+    "Food Packaging": "Pembungkusan Makanan",
+    "Islamic Khat": "Khat Islamik",
+    "Standard (3-4 Days)": "Standard (3-4 Hari)",
+    "Express (1-2 Days)": "Ekspres (1-2 Hari)",
+    "Custom Size": "Saiz Tersuai",
+    "Large Format": "Format Besar",
+    "Art Paper": "Kertas Art",
+    "Art Card": "Kad Art",
+    "Glossy Photo Paper": "Kertas Foto Berkilat",
+    "Matte Premium Paper": "Kertas Premium Matte",
+    Tarpaulin: "Kanvas Tarpaulin",
+  };
+  const displayLabel = (label: string) => locale === "ms" ? malayLabels[label] || label : label;
 
   return (
     <div className="w-full md:max-w-[300px] p-4 md:border-input border-transparent border md:mt-5 rounded-lg bg-white dark:bg-card shadow-sm">
       <div className="flex items-center border-b border-border pb-3 justify-between mb-4">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-foreground">Filters</h2>
+        <h2 className="text-lg font-bold text-foreground">{t("filters.title")}</h2>
         <button onClick={resetFilters} className="text-xs font-semibold text-primary hover:underline">
-          Clear All
+          {t("filters.clear")}
         </button>
       </div>
 
@@ -67,7 +89,7 @@ export default function FilterSidebar() {
         {/* Service Categories */}
         <AccordionItem value="categories" className="border-b border-gray-100 dark:border-border">
           <AccordionTrigger className="hover:no-underline">
-            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Service Category</h3>
+            <h3 className="text-sm font-bold text-foreground">{t("filters.category")}</h3>
           </AccordionTrigger>
           <AccordionContent>
             <div className="flex flex-col gap-3 pt-2 pb-4">
@@ -78,7 +100,7 @@ export default function FilterSidebar() {
                     onCheckedChange={() => toggleArrayItem(category, serviceCategories, setServiceCategories)}
                     className="h-4 w-4 rounded border-gray-300 text-primary data-[state=checked]:bg-primary"
                   />
-                  <span className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-primary transition-colors">{category}</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-primary transition-colors">{displayLabel(category)}</span>
                 </label>
               ))}
             </div>
@@ -88,7 +110,7 @@ export default function FilterSidebar() {
         {/* Turnaround Time */}
         <AccordionItem value="turnaround" className="border-b border-gray-100 dark:border-border">
           <AccordionTrigger className="hover:no-underline">
-            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Turnaround Time</h3>
+            <h3 className="text-sm font-bold text-foreground">{t("filters.turnaround")}</h3>
           </AccordionTrigger>
           <AccordionContent>
             <div className="flex flex-col gap-3 pt-2 pb-4">
@@ -99,7 +121,7 @@ export default function FilterSidebar() {
                     onCheckedChange={() => toggleArrayItem(time, turnarounds, setTurnarounds)}
                     className="h-4 w-4 rounded border-gray-300 text-primary data-[state=checked]:bg-primary"
                   />
-                  <span className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-primary transition-colors">{time}</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-primary transition-colors">{displayLabel(time)}</span>
                 </label>
               ))}
             </div>
@@ -109,7 +131,7 @@ export default function FilterSidebar() {
         {/* Price Range */}
         <AccordionItem value="price" className="border-b border-gray-100 dark:border-border">
           <AccordionTrigger className="hover:no-underline">
-            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Price Range</h3>
+            <h3 className="text-sm font-bold text-foreground">{t("filters.price")}</h3>
           </AccordionTrigger>
           <AccordionContent>
             <div className="pt-4 pb-6 px-2">
@@ -133,7 +155,7 @@ export default function FilterSidebar() {
         {/* Format / Size */}
         <AccordionItem value="format" className="border-b border-gray-100 dark:border-border">
           <AccordionTrigger className="hover:no-underline">
-            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Format & Size</h3>
+            <h3 className="text-sm font-bold text-foreground">{t("filters.format")}</h3>
           </AccordionTrigger>
           <AccordionContent>
             <div className="flex flex-wrap gap-2 pt-2 pb-4">
@@ -144,11 +166,11 @@ export default function FilterSidebar() {
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
                     formats.includes(format)
-                      ? "bg-primary text-white border-primary"
+                      ? "bg-primary text-primary-foreground border-primary"
                       : "bg-transparent text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-primary hover:text-primary"
                   )}
                 >
-                  {format}
+                  {displayLabel(format)}
                 </button>
               ))}
             </div>
@@ -158,7 +180,7 @@ export default function FilterSidebar() {
         {/* Material */}
         <AccordionItem value="material" className="border-b-0">
           <AccordionTrigger className="hover:no-underline">
-            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Material</h3>
+            <h3 className="text-sm font-bold text-foreground">{t("filters.material")}</h3>
           </AccordionTrigger>
           <AccordionContent>
             <div className="flex flex-col gap-3 pt-2 pb-2">
@@ -169,7 +191,7 @@ export default function FilterSidebar() {
                     onCheckedChange={() => toggleArrayItem(mat, materials, setMaterials)}
                     className="h-4 w-4 rounded border-gray-300 text-primary data-[state=checked]:bg-primary"
                   />
-                  <span className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-primary transition-colors">{mat}</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-300 group-hover:text-primary transition-colors">{displayLabel(mat)}</span>
                 </label>
               ))}
             </div>
@@ -180,10 +202,10 @@ export default function FilterSidebar() {
 
       {/* Apply Button */}
       <Button
-        className="w-full bg-primary text-white hover:bg-primary/90 rounded-xl py-6 mt-6 font-bold text-sm shadow-md"
+        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl py-6 mt-6 font-bold text-sm shadow-md"
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       >
-        Apply Filters
+        {t("filters.apply")}
       </Button>
     </div>
   );

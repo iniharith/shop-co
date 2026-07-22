@@ -100,7 +100,7 @@ const NotificationsDrawer = ({
                 <TabsTrigger value="new" className="relative">
                   New
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center">
                       {unreadCount}
                     </span>
                   )}
@@ -182,7 +182,7 @@ const NotificationsDrawer = ({
             {filteredNotifications.length > 0 && (
               <div className="mt-4 pt-2 border-t border-gray-200">
                 <Button
-                  className="w-full justify-center rounded-md bg-primary text-white hover:bg-primary/90"
+                  className="w-full justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
                   size="sm"
                   isLoading={isPending}
                   onPress={() => {

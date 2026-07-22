@@ -25,7 +25,7 @@ const orderCard = () => {
     <div className="text-center py-12 flex flex-col items-center justify-center">
       <PackageOpen className="mx-auto h-16 w-16 text-gray-400 mb-4" />
       <h3 className="text-xl font-bold text-gray-900 dark:text-foreground">No order made yet, start shopping</h3>
-      <Button asChild className="mt-6 bg-primary text-white hover:bg-primary/90 px-8 py-6 rounded-full font-bold">
+      <Button asChild className="mt-6 bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 rounded-full font-bold">
         <Link href="/home/shop">Start Shopping</Link>
       </Button>
     </div>

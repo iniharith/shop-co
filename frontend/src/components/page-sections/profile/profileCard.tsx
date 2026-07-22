@@ -223,7 +223,7 @@ const ProfileCard = () => {
               <Button
                 onClick={() => setIsEditing(true)}
                 variant="outline"
-                className="gap-2 rounded-full px-5 border-primary text-primary hover:bg-primary hover:text-white transition-all"
+                className="gap-2 rounded-full px-5 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all"
               >
                 <Edit2 size={15} /> Edit Profile
               </Button>

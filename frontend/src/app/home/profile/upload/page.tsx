@@ -224,7 +224,7 @@ export default function UploadPage() {
               </p>
               <button
                 onClick={resetForm}
-                className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-xl font-semibold transition-colors"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-xl font-semibold transition-colors"
               >
                 + Muat Naik Fail Lain
               </button>
@@ -341,7 +341,7 @@ export default function UploadPage() {
                   w-full py-4 rounded-2xl font-bold text-base transition-all duration-200 flex items-center justify-center gap-3
                   ${uploading || !queue.length
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-primary hover:bg-primary/90 text-white shadow-md'
+                    : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-md'
                   }
                 `}
               >

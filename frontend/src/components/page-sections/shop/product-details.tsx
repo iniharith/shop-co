@@ -15,12 +15,15 @@ import { toast } from "sonner";
 import { useUIStore } from "@/store/uiStore";
 import { useAddtoCart } from "@/hooks/useCart";
 import AnimatedButton from "@/components/animation/animatedButton";
+import { useLanguage } from "@/i18n/LanguageProvider";
 
 interface ProductDetailsProps {
   product: IProduct;
 }
 
 export function ProductDetails({ product }: ProductDetailsProps) {
+  const { locale } = useLanguage();
+  const label = (english: string, malay: string) => locale === "ms" ? malay : english;
   const { id } = useParams();
   const { data: session } = useSession();
   const { setIsAuthModalOpen } = useUIStore();
@@ -306,7 +309,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-foreground">{product.name}</h1>
         <div className="flex items-center gap-2 mt-2">
           <StarRating rating={product.rating} maxRating={5} />
-          <span className="text-sm text-gray-500 dark:text-muted-foreground">({product.rating} / 5 reviews)</span>
+          <span className="text-sm text-gray-500 dark:text-muted-foreground">({product.rating} / 5 {label("reviews", "ulasan")})</span>
         </div>
       </div>
 
@@ -319,17 +322,17 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
               {designStepNum}
             </span>
-            <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Design & Artwork</h2>
+            <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">{label("Design & Artwork", "Reka Bentuk & Karya")}</h2>
           </div>
           
           <div className="grid grid-cols-1 gap-2">
             {product.name?.toLowerCase() === "portrait" ? (
               <div className="flex flex-col p-6 border-2 border-primary bg-primary/5 dark:bg-primary/10 rounded-xl shadow-sm text-center">
                 <h3 className="text-xl font-black text-gray-900 dark:text-foreground uppercase mb-2">
-                  UPLOAD YOUR PICTURE AT PROFILE PAGE
+                  {label("UPLOAD YOUR PICTURE AT PROFILE PAGE", "MUAT NAIK GAMBAR DI HALAMAN PROFIL")}
                 </h3>
                 <p className="text-base text-gray-600 dark:text-muted-foreground">
-                  AFTER YOU HAVE PLACED THE ORDER
+                  {label("AFTER YOU HAVE PLACED THE ORDER", "SELEPAS ANDA MEMBUAT PESANAN")}
                 </p>
               </div>
             ) : (
@@ -347,9 +350,9 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                       checked={designOption === "upload"}
                       onChange={() => setDesignOption("upload")}
                     />
-                    <span className="text-sm font-bold text-gray-800 dark:text-foreground">I have my own design</span>
+                    <span className="text-sm font-bold text-gray-800 dark:text-foreground">{label("I have my own design", "Saya mempunyai reka bentuk sendiri")}</span>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">Upload your print-ready artwork (PDF, AI, PSD) during checkout or in your dashboard.</p>
+                  <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">{label("Upload your print-ready artwork (PDF, AI, PSD) during checkout or in your dashboard.", "Muat naik karya sedia cetak (PDF, AI, PSD) semasa checkout atau melalui dashboard.")}</p>
                 </label>
 
                 <label className={`flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
@@ -366,11 +369,11 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                         checked={designOption === "design"}
                         onChange={() => setDesignOption("design")}
                       />
-                      <span className="text-sm font-bold text-gray-800 dark:text-foreground">Let KampungCetak design for you</span>
+                      <span className="text-sm font-bold text-gray-800 dark:text-foreground">{label("Let Kampung Cetak design for you", "Biar Kampung Cetak mereka bentuk untuk anda")}</span>
                     </div>
                     <span className="text-sm font-semibold text-primary">+RM 100.00</span>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">Our professional designers will create a stunning custom design for your brand.</p>
+                  <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">{label("Our professional designers will create a custom design for your brand.", "Pereka profesional kami akan menghasilkan reka bentuk khas untuk jenama anda.")}</p>
                 </label>
               </>
             )}
@@ -383,7 +386,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           <div className="space-y-4">
             <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">{formatStepNum}</span>
-              <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Format & Material</h2>
+              <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">{label("Format & Material", "Format & Bahan")}</h2>
             </div>
             {renderOptions(step1Options)}
           </div>
@@ -394,7 +397,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           <div className="space-y-4">
             <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">{printingStepNum}</span>
-              <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Printing & Options</h2>
+              <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">{label("Printing & Options", "Cetakan & Pilihan")}</h2>
             </div>
             {renderOptions(step2Options)}
           </div>
@@ -407,7 +410,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
                 {addonsStepNum}
               </span>
-              <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">Addons</h2>
+              <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">{label("Add-ons", "Tambahan")}</h2>
             </div>
             {renderOptions(step3Addons)}
           </div>
@@ -419,7 +422,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
               {quantityStepNum}
             </span>
-            <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">{stepTurnaround.length > 0 ? 'Quantity & Turnaround' : 'Quantity'}</h2>
+            <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">{stepTurnaround.length > 0 ? label("Quantity & Turnaround", "Kuantiti & Tempoh Siap") : label("Quantity", "Kuantiti")}</h2>
           </div>
           
           {stepTurnaround.length > 0 ? (() => {
@@ -446,7 +449,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 <table className="w-full text-sm text-center">
                   <thead className="bg-gray-50 dark:bg-black/20 border-b border-gray-200 dark:border-border">
                     <tr>
-                      <th className="p-3 text-left font-semibold text-gray-700 dark:text-gray-200">Quantity</th>
+                      <th className="p-3 text-left font-semibold text-gray-700 dark:text-gray-200">{label("Quantity", "Kuantiti")}</th>
                       {turnaroundOpt.options.map((opt, idx) => (
                         <th key={idx} className="p-3 font-semibold text-gray-700 dark:text-gray-200">{opt.label}</th>
                       ))}
@@ -487,7 +490,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           {stepTurnaround.length > 1 && renderOptions(stepTurnaround.slice(1))}
 
           <div className="space-y-3 pt-2">
-            <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide">Quantity</label>
+            <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide">{label("Quantity", "Kuantiti")}</label>
             {product.matrixPricing?.enabled && !product.matrixPricing.hideQuantityGrid && availableQuantities.length > 0 ? (
               <div className="grid grid-cols-3 gap-2">
                 {availableQuantities.map((q) => (
@@ -506,7 +509,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
               </div>
             ) : (
               <div className="p-4 border-2 border-gray-200 dark:border-border rounded-xl flex items-center justify-between">
-                <span className="text-sm font-medium dark:text-foreground">Total Pieces</span>
+                <span className="text-sm font-medium dark:text-foreground">{label("Total Pieces", "Jumlah Unit")}</span>
                 <QuantityPicker
                   quantity={quantity}
                   onDecrement={() => setQuantity((q) => Math.max(minQuantity, q - 1))}
@@ -542,20 +545,20 @@ export function ProductDetails({ product }: ProductDetailsProps) {
 
         
           const PricingTable = ({ className }: { className: string }) => (
-            <div className={`bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mt-6 overflow-x-auto w-full mb-10 ${className}`}>
-            <h2 className="text-xl font-bold tracking-tight text-primary mb-4">{product.category === 'kad-kahwin' ? 'Package Pricing' : 'Format & Size Pricing'}</h2>
+            <div className={`bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border mt-6 overflow-x-auto w-full mb-10 ${className}`}>
+            <h2 className="text-xl font-bold tracking-tight text-primary mb-4">{product.category === 'kad-kahwin' ? label("Package Pricing", "Harga Pakej") : label("Format & Size Pricing", "Harga Format & Saiz")}</h2>
             <table className="w-full text-sm text-center border-collapse">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted border-b border-border">
                 <tr>
-                  <th className="p-3 text-left font-semibold text-gray-700 border border-gray-200">Quantity</th>
+                  <th className="p-3 text-left font-semibold text-foreground border border-border">{label("Quantity", "Kuantiti")}</th>
                   {product.category === 'flyers' ? (
                     <>
-                      <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A3</th>
-                      <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A4</th>
-                      <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/4">A5</th>
+                      <th className="p-3 font-semibold text-foreground border border-border w-1/4">A3</th>
+                      <th className="p-3 font-semibold text-foreground border border-border w-1/4">A4</th>
+                      <th className="p-3 font-semibold text-foreground border border-border w-1/4">A5</th>
                     </>
                   ) : (
-                    <th className="p-3 font-semibold text-gray-700 border border-gray-200 w-1/2">Price (RM)</th>
+                    <th className="p-3 font-semibold text-foreground border border-border w-1/2">{label("Price", "Harga")} (RM)</th>
                   )}
                 </tr>
               </thead>
@@ -567,15 +570,15 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                     const price = qPrices; // For kad-kahwin, qPrices is just a number
                     const isSelected = quantity === q;
                     return (
-                      <tr key={q} className="hover:bg-gray-50 transition-colors">
-                        <td className="p-3 text-left font-semibold text-gray-800 border border-gray-200">{q}</td>
+                      <tr key={q} className="hover:bg-muted/50 transition-colors">
+                        <td className="p-3 text-left font-semibold text-foreground border border-border">{q}</td>
                         <td 
                           onClick={() => {
                             if (price) {
                               setQuantity(q);
                             }
                           }}
-                          className={`p-3 border border-gray-200 transition-all ${!price ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'cursor-pointer'} ${isSelected ? 'bg-primary/10 border-2 border-primary font-bold text-primary shadow-inner' : 'text-gray-600 hover:bg-primary/5'}`}
+                          className={`p-3 border border-border transition-all ${!price ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'cursor-pointer'} ${isSelected ? 'bg-primary/10 border-2 border-primary font-bold text-primary shadow-inner' : 'text-muted-foreground hover:bg-muted/50'}`}
                         >
                           {price ? `RM ${price.toFixed(2)}` : 'N/A'}
                         </td>
@@ -584,8 +587,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                   }
 
                   return (
-                    <tr key={q} className="hover:bg-gray-50 transition-colors">
-                      <td className="p-3 text-left font-semibold text-gray-800 border border-gray-200">{q}</td>
+                    <tr key={q} className="hover:bg-muted/50 transition-colors">
+                      <td className="p-3 text-left font-semibold text-foreground border border-border">{q}</td>
                       {['A3', 'A4', 'A5'].map((size) => {
                         const price = qPrices ? qPrices[size] : null;
                         const isSelected = quantity === q && selectedGridSize === size;
@@ -598,7 +601,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                 setSelectedGridSize(size);
                               }
                             }}
-                            className={`p-3 border border-gray-200 transition-all ${!price ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'cursor-pointer'} ${isSelected ? 'bg-primary/10 border-2 border-primary font-bold text-primary shadow-inner' : 'text-gray-600 hover:bg-primary/5'}`}
+                            className={`p-3 border border-border transition-all ${!price ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'cursor-pointer'} ${isSelected ? 'bg-primary/10 border-2 border-primary font-bold text-primary shadow-inner' : 'text-muted-foreground hover:bg-muted/50'}`}
                           >
                             {price ? `RM ${price.toFixed(2)}` : 'N/A'}
                           </td>
@@ -628,21 +631,21 @@ export function ProductDetails({ product }: ProductDetailsProps) {
         {/* End of conditional */}
         <div className="bg-gray-100 dark:bg-black/40 rounded-xl p-5 space-y-3 mt-8 border border-gray-200 dark:border-border">
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-            <span>Subtotal</span>
+            <span>{label("Subtotal", "Subjumlah")}</span>
             <span>RM {subtotal.toFixed(2)}</span>
           </div>
           <div className="w-full h-px bg-gray-300 dark:bg-border my-2"></div>
           <div className="flex justify-between items-end">
-            <span className="text-base font-semibold text-gray-900 dark:text-foreground">Total Price</span>
+            <span className="text-base font-semibold text-gray-900 dark:text-foreground">{label("Total Price", "Jumlah Harga")}</span>
             <div className="text-right">
               <span className="text-3xl font-extrabold text-primary">RM {total.toFixed(2)}</span>
-              <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">Delivery price will be shown at checkout</p>
+              <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">{label("Delivery price will be shown at checkout", "Caj penghantaran akan dipaparkan semasa checkout")}</p>
             </div>
           </div>
         </div>
 
         <AnimatedButton
-          text="Add to Cart"
+          text={label("Add to Cart", "Tambah ke Troli")}
           type="submit"
           isLoading={isPending}
           className="w-full bg-primary text-primary-foreground py-4 font-bold text-lg rounded-xl active:scale-95 transition-all cursor-pointer shadow-lg shadow-primary/20 hover:shadow-primary/40"

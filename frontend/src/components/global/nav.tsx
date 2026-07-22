@@ -23,6 +23,9 @@ import AuthModal from "../page-sections/auth/authModal";
 import { CgProfile } from "react-icons/cg";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { useSearchProducts } from "@/hooks/useProducts";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import { useLanguage } from "@/i18n/LanguageProvider";
+import { categoryLabels } from "@/i18n/messages";
 
 // ── Mobile Drawer Content ────────────────────────────────────────────────────
 const MobileNavSheetContent = ({
@@ -47,6 +50,7 @@ const MobileNavSheetContent = ({
   handleSearch: (e: React.FormEvent) => void;
 }) => {
   const pathname = usePathname();
+  const { locale, t } = useLanguage();
   // Track which category accordion is open (by index, null = none)
   const [openCategory, setOpenCategory] = useState<number | null>(null);
 
@@ -63,10 +67,10 @@ const MobileNavSheetContent = ({
           { "--initial-transform": "calc(100% + 8px)" } as React.CSSProperties
         }
       >
-        <div className="bg-gray-200 dark:bg-card h-full w-full grow px-3 py-1 flex flex-col rounded-[16px] overflow-y-auto">
+        <div className="bg-muted text-foreground h-full w-full grow px-3 py-1 flex flex-col rounded-[16px] overflow-y-auto">
 
           {/* ── HEADER: Logo + Close ── */}
-          <Drawer.Title className="font-medium px-0 border-b border-dashed border-zinc-900/20 justify-between flex items-center mb-3 text-white">
+          <Drawer.Title className="font-medium px-0 border-b border-dashed border-border justify-between flex items-center mb-3">
             <div className="top-0 -translate-x-1 left-0 py-2">
               <Link href="/" className="flex items-center gap-2" onClick={() => closeDrawer()}>
                 <Image
@@ -96,7 +100,7 @@ const MobileNavSheetContent = ({
               onClick={() => { router.push("/home/profile"); closeDrawer(); }}
               className="flex items-center gap-3 mb-3 px-3 py-2 bg-white dark:bg-popover rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-muted transition-colors text-left"
             >
-              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden">
+              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0 overflow-hidden">
                 {(() => {
                   const avatar = (session?.user as any)?.avatar || (session?.user as any)?.image;
                   if (!avatar) return session?.user?.name ? session.user.name.charAt(0).toUpperCase() : <CgProfile size={16} />;
@@ -106,7 +110,7 @@ const MobileNavSheetContent = ({
               </div>
               <div className="overflow-hidden">
                 <p className="text-sm font-semibold text-gray-900 dark:text-foreground truncate">
-                  {session.user.name || "My Profile"}
+                  {session.user.name || t("nav.profile")}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-muted-foreground truncate">{session.user.email || ""}</p>
               </div>
@@ -116,7 +120,7 @@ const MobileNavSheetContent = ({
           {/* ── MOBILE SEARCH ── */}
           <form 
             onSubmit={(e) => { handleSearch(e); closeDrawer(); }}
-            className="flex flex-col relative bg-white dark:bg-card rounded-xl border border-gray-300 dark:border-border shadow-sm overflow-visible mb-3 px-3 py-1"
+            className="z-50 flex flex-col relative bg-card rounded-xl border border-border shadow-sm overflow-visible mb-3 px-3 py-1"
           >
             <div className="flex items-center w-full">
               <IoSearch className="text-gray-500 dark:text-muted-foreground text-lg mr-2 shrink-0" />
@@ -127,11 +131,11 @@ const MobileNavSheetContent = ({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                placeholder="Search products..."
+                placeholder={t("nav.mobileSearchPlaceholder")}
               />
             </div>
             {isSearchFocused && searchQuery.length > 1 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-card border border-gray-200 dark:border-border shadow-xl rounded-xl max-h-[250px] overflow-y-auto z-50 py-2">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-popover text-popover-foreground border border-border shadow-xl rounded-xl max-h-[250px] overflow-y-auto z-[60] py-2">
                 {searchResults.length > 0 ? (
                   searchResults.map((prod: any) => (
                     <div 
@@ -145,7 +149,7 @@ const MobileNavSheetContent = ({
                       className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 dark:hover:bg-muted cursor-pointer transition-colors"
                     >
                       <div className="w-8 h-8 rounded-md overflow-hidden bg-gray-100 shrink-0">
-                        <Image src={prod.images[0]?.url || "/images/kampung-cetak-logo.png"} alt={prod.name} width={32} height={32} className="object-cover w-full h-full" />
+                        <Image src={prod.images?.[0] || "/images/kampung-cetak-logo.png"} alt={prod.name} width={32} height={32} className="object-cover w-full h-full" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-semibold text-gray-900 dark:text-foreground">{prod.name}</span>
@@ -154,7 +158,7 @@ const MobileNavSheetContent = ({
                     </div>
                   ))
                 ) : (
-                  <div className="px-3 py-3 text-xs text-gray-500 text-center">No products found</div>
+                  <div className="px-3 py-3 text-xs text-muted-foreground text-center">{t("nav.noProducts")}</div>
                 )}
               </div>
             )}
@@ -184,9 +188,9 @@ const MobileNavSheetContent = ({
           </Drawer.Description>
 
           {/* ── CATEGORIES (accordion) ── */}
-          <div className="border-t border-dashed border-zinc-900/20 pt-3 flex-1">
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">
-              Categories
+          <div className="border-t border-dashed border-border pt-3 flex-1">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">
+              {t("nav.categories")}
             </p>
             <div className="flex flex-col gap-1">
               {printingCategories.map((item, index) => {
@@ -200,7 +204,7 @@ const MobileNavSheetContent = ({
                       className={cn(
                         "w-full flex items-center justify-between px-3 py-2.5 text-sm font-semibold transition-colors rounded-xl",
                         isOpen
-                          ? "bg-primary text-white"
+                          ? "bg-primary text-primary-foreground"
                           : "text-primary hover:bg-white dark:hover:bg-muted"
                       )}
                       onClick={() => {
@@ -212,7 +216,7 @@ const MobileNavSheetContent = ({
                         }
                       }}
                     >
-                      <span>{item.label}</span>
+                      <span>{categoryLabels[locale][item.label] || item.label}</span>
                       {hasSubItems && (
                         isOpen
                           ? <FaChevronUp className="text-xs" />
@@ -249,6 +253,7 @@ const MobileNavSheetContent = ({
 
 // ── Main Nav Component ───────────────────────────────────────────────────────
 const Nav = () => {
+  const { locale, t } = useLanguage();
   const {
     isOpen,
     setIsOpen,
@@ -286,7 +291,7 @@ const Nav = () => {
 
   return (
     <>
-      <div className="w-full flex flex-col bg-gray-200 dark:bg-background">
+      <div className="relative z-[70] w-full flex flex-col bg-muted dark:bg-background">
         {/* ── MAIN HEADER ── */}
         <div className="w-full px-4 md:px-7 py-3 md:py-4 flex justify-between items-center gap-3 md:gap-6 border-b border-transparent dark:border-border">
 
@@ -332,7 +337,7 @@ const Nav = () => {
           {/* Center: Search (desktop only) */}
           <form 
             onSubmit={handleSearch}
-            className="hidden md:flex flex-1 max-w-2xl mx-auto relative items-center bg-white dark:bg-card rounded-full border border-gray-300 dark:border-border shadow-sm overflow-hidden px-4 py-1"
+            className="z-[80] hidden md:flex flex-1 max-w-2xl mx-auto relative items-center bg-card rounded-full border border-border shadow-sm overflow-visible px-4 py-1"
           >
             <IoSearch className="text-gray-500 dark:text-muted-foreground text-xl mr-2 shrink-0" />
             <Input
@@ -342,15 +347,15 @@ const Nav = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-              placeholder="Search products, services, or categories..."
+              placeholder={t("nav.searchPlaceholder")}
             />
-            <Button type="submit" className="bg-primary text-white rounded-full px-6 h-9 shrink-0 ml-2">
-              Search
+            <Button type="submit" className="bg-primary text-primary-foreground rounded-full px-6 h-9 shrink-0 ml-2">
+              {t("nav.search")}
             </Button>
 
             {/* Live Search Suggestions Dropdown */}
             {isSearchFocused && searchQuery.length > 1 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-card border border-gray-200 dark:border-border shadow-xl rounded-xl max-h-[300px] overflow-y-auto z-50 py-2">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-popover text-popover-foreground border border-border shadow-xl rounded-xl max-h-[300px] overflow-y-auto z-[90] py-2">
                 {searchResults.length > 0 ? (
                   searchResults.map((prod: any) => (
                     <div 
@@ -363,7 +368,7 @@ const Nav = () => {
                       className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-muted cursor-pointer transition-colors"
                     >
                       <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 shrink-0">
-                        <Image src={prod.images[0]?.url || "/images/kampung-cetak-logo.png"} alt={prod.name} width={40} height={40} className="object-cover w-full h-full" />
+                        <Image src={prod.images?.[0] || "/images/kampung-cetak-logo.png"} alt={prod.name} width={40} height={40} className="object-cover w-full h-full" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-sm font-semibold text-gray-900 dark:text-foreground">{prod.name}</span>
@@ -372,7 +377,7 @@ const Nav = () => {
                     </div>
                   ))
                 ) : (
-                  <div className="px-4 py-3 text-sm text-gray-500 text-center">No products found for "{searchQuery}"</div>
+                  <div className="px-4 py-3 text-sm text-muted-foreground text-center">{t("nav.noProducts")} &quot;{searchQuery}&quot;</div>
                 )}
               </div>
             )}
@@ -380,6 +385,7 @@ const Nav = () => {
 
           {/* Right: Icons & Auth */}
           <div className="flex gap-2 md:gap-3 items-center shrink-0">
+            <LanguageSwitcher />
             <ThemeSwitcher />
             {session?.user?.id ? (
               <>
@@ -393,7 +399,7 @@ const Nav = () => {
                   >
                     <FaCartShopping className="text-xl text-gray-700 dark:text-foreground" />
                   </Button>
-                  <Badge className="absolute top-0 right-0 bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-gray-200">
+                  <Badge className="absolute top-0 right-0 bg-primary text-primary-foreground text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-muted">
                     {cartCount}
                   </Badge>
                 </div>
@@ -408,7 +414,7 @@ const Nav = () => {
                   >
                     <IoNotifications className="text-xl text-gray-700 dark:text-foreground" />
                   </Button>
-                  <Badge className="absolute top-0 right-0 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-gray-200">
+                  <Badge className="absolute top-0 right-0 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-muted">
                     {notification ? notification.filter((n) => !n.read).length : 0}
                   </Badge>
                 </div>
@@ -419,7 +425,7 @@ const Nav = () => {
                   variant="ghost"
                   className="rounded-full px-2 md:px-3 py-1 cursor-pointer hover:bg-gray-300 dark:hover:bg-muted transition-colors flex items-center gap-2"
                 >
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold shrink-0 overflow-hidden">
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold shrink-0 overflow-hidden">
                     {getAvatarUrl() ? (
                       <Image src={getAvatarUrl()} alt={session.user.name || "Profile"} width={32} height={32} className="object-cover w-full h-full" />
                     ) : session.user.name ? (
@@ -430,7 +436,7 @@ const Nav = () => {
                   </div>
                   <div className="hidden sm:flex flex-col items-start leading-tight">
                     <span className="text-sm font-semibold text-gray-800 dark:text-foreground max-w-[100px] truncate">
-                      {session.user.name || "Profile"}
+                      {session.user.name || t("nav.profile")}
                     </span>
                     <span className="text-[10px] text-gray-500 dark:text-muted-foreground max-w-[100px] truncate">
                       {session.user.email || ""}
@@ -441,16 +447,16 @@ const Nav = () => {
             ) : (
               <Button
                 onPress={() => setIsAuthModalOpen(true)}
-                className="rounded-full px-4 md:px-6 font-semibold cursor-pointer border-primary border text-sm bg-primary hover:bg-primary/90 transition-all duration-300 text-white"
+                className="rounded-full px-4 md:px-6 font-semibold cursor-pointer border-primary border text-sm bg-primary hover:bg-primary/90 transition-all duration-300 text-primary-foreground"
               >
-                Login
+                {t("nav.login")}
               </Button>
             )}
           </div>
         </div>
 
         {/* ── DESKTOP CATEGORY NAV ── */}
-        <div className="w-full bg-white dark:bg-card border-y border-gray-200 dark:border-border hidden md:block relative z-50">
+        <div className="w-full bg-card border-y border-border hidden md:block relative z-40">
           <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
             {printingCategories.map((item, index) => (
               <div key={index} className="relative group">
@@ -459,10 +465,10 @@ const Nav = () => {
                 >
                   <p className="relative text-sm inline-block overflow-hidden transition-colors">
                     <span className="inline-block transition-all duration-300 opacity-100 group-hover:-translate-y-6">
-                      {item.label}
+                      {categoryLabels[locale][item.label] || item.label}
                     </span>
                     <span className="absolute left-0 inline-block translate-y-5 transition-all duration-300 group-hover:scale-[.9] group-hover:translate-y-0">
-                      {item.label}
+                      {categoryLabels[locale][item.label] || item.label}
                     </span>
                   </p>
                 </div>

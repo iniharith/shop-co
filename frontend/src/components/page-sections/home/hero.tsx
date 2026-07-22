@@ -51,7 +51,7 @@ const Hero = () => {
           initial="hidden"
           animate="visible"
           variants={item_variants}
-          className="bg-primary text-white text-xs px-4 py-1.5 rounded-full font-bold tracking-wider uppercase shadow-lg shadow-primary/30"
+          className="bg-primary text-primary-foreground text-xs px-4 py-1.5 rounded-full font-bold tracking-wider uppercase shadow-lg shadow-primary/30"
         >
           🚀 Fast & On-Time Delivery
         </motion.div>
