@@ -25,7 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useSession } from "next-auth/react";
 import AxiosInstance from "@/utils/axios";
 import { uploadFilesToS3Directly } from "@/utils/s3Upload";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 
 const categories = [
@@ -46,6 +46,7 @@ const PACKAGING_STATUSES = ["PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED"];
 
 export default function PackagingManager() {
   const { data: session } = useSession();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching } = useFolderGroup(PACKAGING_STATUSES);
   const groupedFromServer: any[] = (folderGroupResponse as any)?.data || [];
@@ -269,7 +270,23 @@ export default function PackagingManager() {
   const handleAdvanceFlow = (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
     // Packaging has just one stage, so the tick always moves the item on to Shipped
-    handleStatusChange(group, "SHIPPED");
+    if (group.isTask) {
+      updateTask({ id: group.taskId, data: { status: "SHIPPED" } }, {
+        onSuccess: () => {
+          toast.success("Status dikemaskini! Berpindah ke History...");
+          setTimeout(() => router.push("/admin/history"), 800);
+        },
+        onError: () => toast.error("Gagal kemaskini status")
+      });
+    } else {
+      updateOrderStatus({ id: group.orderId, status: "SHIPPED" }, {
+        onSuccess: () => {
+          toast.success("Status dikemaskini! Berpindah ke History...");
+          setTimeout(() => router.push("/admin/history"), 800);
+        },
+        onError: () => toast.error("Gagal kemaskini status")
+      });
+    }
   };
 
   const handleDelete = (fileId: string) => {

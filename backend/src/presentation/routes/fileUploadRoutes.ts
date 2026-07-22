@@ -22,15 +22,24 @@ import OrderRepository from '../../infrastructure/db/repositories/order.reposito
 import OrderModel from '../../infrastructure/db/models/order.model';
 import User from '../../infrastructure/db/models/user.model';
 import { RedisService } from '../../infrastructure/redis/redis';
+import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
+import { streamFilesAsZip } from '../../shared/utils/streamFilesAsZip';
+import { getDownloadProgress } from '../../shared/utils/downloadProgress';
 
 // Tiered cache: Redis primary, in-memory fallback when Redis connection drops
 const enrichedIndexCache = new RedisService();
 const ENRICHED_CACHE_KEY_PREFIX = 'files:enrichedIndex:';
 const ENRICHED_CACHE_TTL = 120; // seconds
 const memCache = new Map<string, { data: any; expiresAt: number }>();
-import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
-import { streamFilesAsZip } from '../../shared/utils/streamFilesAsZip';
-import { getDownloadProgress } from '../../shared/utils/downloadProgress';
+
+export const clearFolderGroupCache = async () => {
+  memCache.clear();
+  try {
+    await enrichedIndexCache.delByPrefix(ENRICHED_CACHE_KEY_PREFIX);
+  } catch (err) {
+    console.error('Failed to clear folderGroup cache:', err);
+  }
+};
 
 const router = Router();
 

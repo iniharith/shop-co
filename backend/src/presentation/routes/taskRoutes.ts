@@ -18,6 +18,7 @@ import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
 import { sendPushNotification } from '../../services/pushNotification.service';
 import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
 import { fileUploadRepository, notifyFileClients } from '../../infrastructure/repositories/FileUploadRepository';
+import { clearFolderGroupCache } from './fileUploadRoutes';
 
 const redisService = new RedisService();
 type TaskFileTag = 'attachment' | 'draft' | 'for_print';
@@ -249,7 +250,12 @@ router.put(
             }
         }
     }
-    
+
+    // Clear the folder-group cache so Production/Packaging pages see the updated status
+    if (req.body.status && req.body.status !== oldTask?.status) {
+      void clearFolderGroupCache().catch(() => {});
+    }
+
     // Refetch to include newly added activities in the response and broadcast
     const freshTask = await taskRepository.findById(req.params.id);
     res.json({ success: true, task: freshTask });

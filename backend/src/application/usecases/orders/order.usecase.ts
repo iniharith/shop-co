@@ -22,6 +22,7 @@ import OrderModel from "../../../infrastructure/db/models/order.model";
 import { parcelRepository } from "../../../infrastructure/repositories/ParcelRepository";
 import { areWhatsAppCustomerUpdatesEnabled } from "../../../infrastructure/services/CustomerUpdateSettingsService";
 import { convergeOrderFromParcel } from "../../../infrastructure/services/EasyParcelTrackingSyncService";
+import { clearFolderGroupCache } from "../../../presentation/routes/fileUploadRoutes";
 
 interface ShipmentDimensions {
     weight: number;
@@ -199,6 +200,8 @@ export class OrderUsecase {
         if (order.userId) {
             await this.redisService.del(REDIS_KEYS.ORDERS + order.userId.toString());
         }
+        // Clear folder-group cache so Production/Packaging pages see updated status immediately
+        void clearFolderGroupCache().catch(() => {});
         
         // Sync Order status back to Task
         try {

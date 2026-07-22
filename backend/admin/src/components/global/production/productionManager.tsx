@@ -25,7 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useSession } from "next-auth/react";
 import AxiosInstance from "@/utils/axios";
 import { uploadFilesToS3Directly } from "@/utils/s3Upload";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 
 const categories = [
@@ -44,6 +44,7 @@ const ALL_STATUSES = ["IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING"];
 
 export default function ProductionManager() {
   const { data: session } = useSession();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching } = useFolderGroup(ALL_STATUSES);
   const groupedFromServer: any[] = (folderGroupResponse as any)?.data || [];
@@ -270,7 +271,23 @@ export default function ProductionManager() {
     if (activeSubTab === "IN_PRODUCTION") nextStatus = "PACKAGING";
     else return; // Hold state doesn't have a single "tick" next step
 
-    handleStatusChange(group, nextStatus);
+    if (group.isTask) {
+      updateTask({ id: group.taskId, data: { status: nextStatus } }, {
+        onSuccess: () => {
+          toast.success("Status dikemaskini! Berpindah ke Packaging...");
+          setTimeout(() => router.push("/admin/packaging"), 800);
+        },
+        onError: () => toast.error("Gagal kemaskini status")
+      });
+    } else {
+      updateOrderStatus({ id: group.orderId, status: nextStatus }, {
+        onSuccess: () => {
+          toast.success("Status dikemaskini! Berpindah ke Packaging...");
+          setTimeout(() => router.push("/admin/packaging"), 800);
+        },
+        onError: () => toast.error("Gagal kemaskini status")
+      });
+    }
   };
 
   const handleDelete = (fileId: string) => {
