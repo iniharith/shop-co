@@ -26,7 +26,7 @@ class UserUsecase {
             if (!user) {
                 throw new Error("User not found");
             }
-            if (!user.comparePassword(password)) {
+            if (!(yield user.comparePassword(password))) {
                 throw new Error("Invalid password");
             }
             const accessToken = this.jwtService.generateAccessToken({ userId: user._id });
@@ -84,6 +84,26 @@ class UserUsecase {
                 user.markModified('address');
             }
             return yield user.save();
+        });
+    }
+    refreshTokens(refreshToken) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const jwt = new jwt_1.default();
+            let userId;
+            try {
+                const decoded = jwt.verifyRefreshToken(refreshToken);
+                userId = decoded.userId;
+            }
+            catch (error) {
+                throw new Error("Invalid refresh token");
+            }
+            const user = yield this.userRepository.findById(userId);
+            if (!user) {
+                throw new Error("User not found or blocked");
+            }
+            const accessToken = this.jwtService.generateAccessToken({ userId: user._id });
+            const newRefreshToken = this.jwtService.generateRefreshToken({ userId: user._id });
+            return { accessToken, refreshToken: newRefreshToken };
         });
     }
 }

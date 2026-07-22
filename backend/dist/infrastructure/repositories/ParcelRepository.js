@@ -46,21 +46,54 @@ class ParcelRepository {
             return Parcel_1.Parcel.findOne({ trackingNumber });
         });
     }
+    findByShipmentId(shipmentId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return Parcel_1.Parcel.findOne({ easyparcelShipmentId: shipmentId });
+        });
+    }
     findByOrderId(orderId) {
         return __awaiter(this, void 0, void 0, function* () {
             return Parcel_1.Parcel.find({ orderId }).sort({ createdAt: -1 });
         });
     }
+    upsertByOrderId(orderId, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const setData = Object.assign(Object.assign({}, data), { orderId });
+            const update = { $set: setData };
+            if (Object.prototype.hasOwnProperty.call(data, 'trackingNumber') && !data.trackingNumber) {
+                delete setData.trackingNumber;
+                update.$unset = { trackingNumber: 1 };
+            }
+            return Parcel_1.Parcel.findOneAndUpdate({ orderId }, update, { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true });
+        });
+    }
     findActiveDeliveries() {
         return __awaiter(this, void 0, void 0, function* () {
             return Parcel_1.Parcel.find({
-                status: { $nin: ['delivered', 'failed'] },
+                status: { $nin: ['delivered', 'failed', 'cancelled', 'returned'] },
             }).sort({ updatedAt: 1 });
         });
     }
     update(id, data) {
         return __awaiter(this, void 0, void 0, function* () {
-            return Parcel_1.Parcel.findByIdAndUpdate(id, { $set: data }, { new: true, runValidators: true });
+            const setData = Object.assign({}, data);
+            const update = { $set: setData };
+            if (Object.prototype.hasOwnProperty.call(data, 'trackingNumber') && !data.trackingNumber) {
+                delete setData.trackingNumber;
+                update.$unset = { trackingNumber: 1 };
+            }
+            return Parcel_1.Parcel.findByIdAndUpdate(id, update, { new: true, runValidators: true });
+        });
+    }
+    updateProviderStatus(id, observedAt, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return Parcel_1.Parcel.findOneAndUpdate({
+                _id: id,
+                $or: [
+                    { providerStatusUpdatedAt: { $exists: false } },
+                    { providerStatusUpdatedAt: { $lt: observedAt } },
+                ],
+            }, { $set: Object.assign(Object.assign({}, data), { providerStatusUpdatedAt: observedAt }) }, { new: true, runValidators: true });
         });
     }
     delete(id) {

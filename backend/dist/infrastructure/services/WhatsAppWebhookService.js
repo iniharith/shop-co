@@ -112,7 +112,7 @@ router.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                                         yield WhatsAppService_1.whatsAppService.sendStatusUpdate({
                                             phone: from,
                                             customerName: parcel.customerName || 'Pelanggan',
-                                            trackingNumber: parcel.trackingNumber,
+                                            trackingNumber: parcel.trackingNumber || 'Pending',
                                             status: parcel.status,
                                             courier: parcel.courier,
                                         });

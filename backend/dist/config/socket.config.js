@@ -14,9 +14,9 @@ const connectSocket = (server) => {
             methods: ["GET", "POST", "PUT", "DELETE"],
             credentials: true
         },
-        connectTimeout: 10000,
-        pingTimeout: 5000,
-        pingInterval: 10000
+        connectTimeout: 20000,
+        pingTimeout: 20000,
+        pingInterval: 25000
     });
 };
 exports.default = connectSocket;

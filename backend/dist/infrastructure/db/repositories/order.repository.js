@@ -35,9 +35,21 @@ class OrderRepository {
             return yield this.orderModel.findById(orderId).populate("products.product").populate("userId");
         });
     }
+    getOrderOwnerId(orderId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const order = yield this.orderModel.findById(orderId).select("userId").lean();
+            const userId = order === null || order === void 0 ? void 0 : order.userId;
+            return userId ? userId.toString() : null;
+        });
+    }
     getOrderByAwb(awb) {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.orderModel.findOne({ easyparcelAwb: awb }).populate("products.product").populate("userId");
+        });
+    }
+    getOrderByShipmentId(shipmentId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.orderModel.findOne({ easyparcelShipmentId: shipmentId }).populate("products.product").populate("userId");
         });
     }
     createOrder(order) {

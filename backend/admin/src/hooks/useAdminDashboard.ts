@@ -145,19 +145,19 @@ export const useFilesByFolder = (params: { taskId?: string | null; orderId?: str
 
 export const useReviewFile = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['reviewFile'], ({ id, reviewed, notes }: any) => reviewFile(session?.user?.token, id, reviewed, notes), ['groupedFiles', 'fileIndex', 'filesByFolder']);
+    const { mutate, isPending } = useMutationData(['reviewFile'], ({ id, reviewed, notes }: any) => reviewFile(session?.user?.token, id, reviewed, notes), ['groupedFiles', 'fileIndex', 'folderGroup', 'filesByFolder']);
     return { mutate, isPending };
 }
 
 export const useDeleteFile = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['deleteFile'], (id: string) => deleteFile(session?.user?.token, id), ['groupedFiles', 'allFiles', 'tasks', 'fileIndex', 'filesByFolder']);
+    const { mutate, isPending } = useMutationData(['deleteFile'], (id: string) => deleteFile(session?.user?.token, id), ['groupedFiles', 'allFiles', 'tasks', 'fileIndex', 'folderGroup', 'filesByFolder']);
     return { mutate, isPending };
 }
 
 export const useBulkDeleteFiles = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['bulkDeleteFiles'], (fileIds: string[]) => bulkDeleteFiles(session?.user?.token, fileIds), ['groupedFiles', 'allFiles', 'tasks', 'fileIndex', 'filesByFolder']);
+    const { mutate, isPending } = useMutationData(['bulkDeleteFiles'], (fileIds: string[]) => bulkDeleteFiles(session?.user?.token, fileIds), ['groupedFiles', 'allFiles', 'tasks', 'fileIndex', 'folderGroup', 'filesByFolder']);
     return { mutate, isPending };
 }
 
@@ -166,7 +166,7 @@ export const useRenameFile = () => {
     const { mutate, isPending } = useMutationData(
         ['renameFile'],
         (data: { id: string, originalName: string }) => AxiosInstance(session?.user?.token).put(`/api/files//name`, { originalName: data.originalName }),
-        ['allFiles', 'groupedFiles', 'tasks', 'fileIndex', 'filesByFolder']
+        ['allFiles', 'groupedFiles', 'tasks', 'fileIndex', 'folderGroup', 'filesByFolder']
     );
     return { mutate, isPending };
 }
@@ -215,7 +215,7 @@ export const useDeleteFolder = () => {
     const { mutate, isPending } = useMutationData(
         ['deleteFolder'],
         (id: string) => deleteFolder(session?.user?.token, id),
-        ['virtualFolders', 'allFiles', 'groupedFiles', 'fileIndex', 'filesByFolder']
+        ['virtualFolders', 'allFiles', 'groupedFiles', 'fileIndex', 'folderGroup', 'filesByFolder']
     );
     return { mutate, isPending };
 }
@@ -225,7 +225,7 @@ export const useMoveFile = () => {
     const { mutate, isPending } = useMutationData(
         ['moveFile'],
         ({ fileId, folderId }: { fileId: string; folderId: string | null }) => moveFile(session?.user?.token, fileId, folderId),
-        ['allFiles', 'groupedFiles', 'fileIndex', 'filesByFolder']
+        ['allFiles', 'groupedFiles', 'fileIndex', 'folderGroup', 'filesByFolder']
     );
     return { mutate, isPending };
 }

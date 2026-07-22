@@ -16,6 +16,7 @@ exports.authorizeRoles = exports.refreshTokenMidllWare = exports.authMiddilware 
 const jwt_1 = __importDefault(require("../../shared/utils/jwt"));
 const user_model_1 = __importDefault(require("../../infrastructure/db/models/user.model"));
 const api_constant_1 = require("../../shared/constants/api.constant");
+const authUserCache = new Map();
 const authMiddilware = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { authorization: authHeader } = req.headers;
@@ -31,7 +32,15 @@ const authMiddilware = (req, res, next) => __awaiter(void 0, void 0, void 0, fun
             res.status(api_constant_1.statusCodes.NOT_FOUND);
             throw new Error(api_constant_1.messages.NOT_FOUND);
         }
-        const user = yield user_model_1.default.findById(userId);
+        const cached = authUserCache.get(userId);
+        let user = cached && cached.expiresAt > Date.now() ? cached.user : null;
+        if (!user) {
+            user = yield user_model_1.default.findById(userId)
+                .select('_id role verified name email avatar phoneNumber')
+                .lean();
+            if (user)
+                authUserCache.set(userId, { user, expiresAt: Date.now() + 30000 });
+        }
         if (!user) {
             console.log('user not found or user is Blocked');
             res.status(api_constant_1.statusCodes.BAD_REQUEST);

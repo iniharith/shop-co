@@ -48,6 +48,22 @@ router.post('/', auth_middileware_1.default, (0, express_async_handler_1.default
     });
     res.status(201).json({ success: true, data: folder, message: 'Folder created successfully' });
 })));
+// PUT /api/folders/:id
+// Rename a virtual folder
+router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const name = (_a = req.body.name) === null || _a === void 0 ? void 0 : _a.trim();
+    if (!name) {
+        res.status(400).json({ success: false, message: 'Folder name is required' });
+        return;
+    }
+    const folder = yield VirtualFolderRepository_1.virtualFolderRepository.update(req.params.id, { name });
+    if (!folder) {
+        res.status(404).json({ success: false, message: 'Folder not found' });
+        return;
+    }
+    res.json({ success: true, data: folder, message: 'Folder renamed successfully' });
+})));
 // DELETE /api/folders/:id
 // Delete a folder and ALL files inside it
 router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {

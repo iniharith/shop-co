@@ -174,8 +174,41 @@ class OrderController {
     createShipment(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const order = yield this.orderUsecase.createShipment(req.params.orderId);
+                const order = yield this.orderUsecase.createShipment(req.params.orderId, req.body);
                 res.status(api_constant_1.statusCodes.OK).json({ message: "Shipment created successfully", order });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    getShippingQuotations(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const quotations = yield this.orderUsecase.getShippingQuotations(req.params.orderId, req.body);
+                res.status(api_constant_1.statusCodes.OK).json({ message: "Shipping quotations fetched successfully", quotations });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    refreshShipping(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const order = yield this.orderUsecase.refreshShipping(req.params.orderId);
+                res.status(api_constant_1.statusCodes.OK).json({ message: "Shipment refreshed successfully", order });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    reconcileShipping(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const order = yield this.orderUsecase.reconcileSubmittedShipment(req.params.orderId, req.body.shipmentNumber);
+                res.status(api_constant_1.statusCodes.OK).json({ message: "Shipment reconciled successfully", order });
             }
             catch (error) {
                 next(error);
@@ -191,8 +224,8 @@ class OrderController {
     getTracking(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const tracking = yield this.orderUsecase.getTracking(req.params.orderId);
-                res.status(api_constant_1.statusCodes.OK).json({ message: "Tracking status fetched successfully", tracking });
+                const result = yield this.orderUsecase.getTracking(req.params.orderId, req.userId, req.role);
+                res.status(api_constant_1.statusCodes.OK).json(Object.assign({ message: "Tracking status fetched successfully" }, result));
             }
             catch (error) {
                 next(error);

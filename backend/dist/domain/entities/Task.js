@@ -76,4 +76,7 @@ const TaskSchema = new mongoose_1.Schema({
     activities: [TaskActivitySchema],
 }, { timestamps: true });
 TaskSchema.index({ createdAt: -1 });
+TaskSchema.index({ status: 1, isDeleted: 1, createdAt: -1 });
+TaskSchema.index({ assignee: 1, status: 1, createdAt: -1 });
+TaskSchema.index({ orderId: 1 });
 exports.Task = mongoose_1.default.model('Task', TaskSchema);

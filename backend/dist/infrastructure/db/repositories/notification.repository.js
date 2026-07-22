@@ -23,7 +23,7 @@ class NotificationRepository extends base_repository_1.BaseRepository {
     }
     getNotificationsByUserId(userId) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.model.find({ userId }).sort({ createdAt: -1 });
+            return yield this.model.find({ userId }).sort({ createdAt: -1 }).limit(50).lean();
         });
     }
     markAllNotificationsAsRead(userId) {

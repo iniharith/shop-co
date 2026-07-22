@@ -23,7 +23,9 @@ const user_model_1 = __importDefault(require("../../../infrastructure/db/models/
 const order_model_1 = __importDefault(require("../../../infrastructure/db/models/order.model"));
 const FileUpload_1 = require("../../../domain/entities/FileUpload");
 const Parcel_1 = require("../../../domain/entities/Parcel");
+const Task_1 = require("../../../domain/entities/Task");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const mongoose_1 = __importDefault(require("mongoose"));
 class AdminUsecase {
     constructor() {
         this.userRepository = new user_repository_1.UserRepository();
@@ -89,9 +91,12 @@ class AdminUsecase {
     createManualOrder(data) {
         return __awaiter(this, void 0, void 0, function* () {
             let user;
-            const mongoose = require('mongoose');
-            if (data.userId && mongoose.Types.ObjectId.isValid(data.userId)) {
+            if (data.userId) {
+                if (!mongoose_1.default.Types.ObjectId.isValid(data.userId))
+                    throw new Error('Linked User ID is invalid');
                 user = yield user_model_1.default.findById(data.userId);
+                if (!user)
+                    throw new Error('Linked user was not found');
             }
             if (user) {
                 data.userId = user._id;
@@ -102,34 +107,46 @@ class AdminUsecase {
                 delete data.userId;
                 data.customerName = data.customerName || "External Customer";
             }
-            const order = yield order_model_1.default.create(data);
-            // Auto-create Task for this order
-            try {
-                const { TaskRepository } = require('../../../infrastructure/repositories/TaskRepository');
-                const taskRepository = new TaskRepository();
-                yield taskRepository.create({
-                    title: `Order: ${order._id.toString().slice(-6).toUpperCase()} - ${data.customerName}`,
-                    description: `Manual order task for Order ${order._id.toString()}.`,
-                    orderId: order._id.toString(),
-                    customerUsername: data.customerName,
-                    category: data.productChoice || 'UNASSIGNED',
-                    status: 'TODO',
-                });
-            }
-            catch (e) {
-                console.error('Failed to auto-create task for manual order:', e);
-            }
             if (data.trackingNumber) {
-                yield Parcel_1.Parcel.create({
-                    orderId: order._id.toString(),
-                    trackingNumber: data.trackingNumber,
-                    customerName: data.customerName,
-                    customerPhone: "000000000", // Default since it's required
-                    courier: data.courier || "unknown",
-                    status: "pending",
-                    whatsappNotified: false
-                });
+                const duplicate = yield Parcel_1.Parcel.exists({ trackingNumber: data.trackingNumber });
+                if (duplicate)
+                    throw new Error('Tracking number already exists');
             }
+            const session = yield mongoose_1.default.startSession();
+            let order = null;
+            try {
+                yield session.withTransaction(() => __awaiter(this, void 0, void 0, function* () {
+                    var _a, _b;
+                    const [createdOrder] = yield order_model_1.default.create([data], { session });
+                    order = createdOrder;
+                    yield Task_1.Task.create([{
+                            title: `Order: ${createdOrder._id.toString().slice(-6).toUpperCase()} - ${data.customerName}`,
+                            description: `Manual order task for Order ${createdOrder._id.toString()}.`,
+                            orderId: createdOrder._id.toString(),
+                            customerUsername: data.customerName,
+                            category: data.productChoice || 'UNASSIGNED',
+                            status: data.orderStatus || 'PLACED',
+                        }], { session });
+                    if (data.trackingNumber) {
+                        yield Parcel_1.Parcel.create([{
+                                orderId: createdOrder._id.toString(),
+                                trackingNumber: data.trackingNumber,
+                                customerName: data.customerName,
+                                customerPhone: data.shippingCustomerPhone,
+                                customerEmail: data.shippingCustomerEmail,
+                                recipientAddress: [(_a = data.address) === null || _a === void 0 ? void 0 : _a.street, (_b = data.address) === null || _b === void 0 ? void 0 : _b.address].filter(Boolean).join(', '),
+                                courier: data.courier || "unknown",
+                                status: "pending",
+                                whatsappNotified: false,
+                            }], { session });
+                    }
+                }));
+            }
+            finally {
+                yield session.endSession();
+            }
+            if (!order)
+                throw new Error('Manual order transaction did not complete');
             return order;
         });
     }

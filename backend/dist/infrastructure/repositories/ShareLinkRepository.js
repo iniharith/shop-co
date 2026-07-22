@@ -29,22 +29,33 @@ class ShareLinkRepository {
     findOrCreate(params) {
         return __awaiter(this, void 0, void 0, function* () {
             const { folderName, taskId, orderId, userId, folderId } = params;
+            const audience = params.audience || 'CUSTOMER';
+            const audienceScope = audience === 'CUSTOMER'
+                ? { $or: [{ audience: 'CUSTOMER' }, { audience: { $exists: false } }] }
+                : { audience };
+            const folderScope = folderId
+                ? { folderId }
+                : { $or: [{ folderId: { $exists: false } }, { folderId: null }, { folderId: '' }] };
             // IMPORTANT: only reuse an existing link if we have a real identifier to
             // match on. An empty {} query would match the FIRST document in the
             // entire collection, silently handing back an unrelated customer's link.
             let existing = null;
             if (folderId)
-                existing = yield ShareLink_1.ShareLink.findOne({ folderId });
+                existing = yield ShareLink_1.ShareLink.findOne({ $and: [{ folderId }, audienceScope] });
             else if (taskId)
-                existing = yield ShareLink_1.ShareLink.findOne({ taskId });
+                existing = yield ShareLink_1.ShareLink.findOne({ $and: [{ taskId }, audienceScope, folderScope] });
             else if (orderId)
-                existing = yield ShareLink_1.ShareLink.findOne({ orderId });
+                existing = yield ShareLink_1.ShareLink.findOne({ $and: [{ orderId }, audienceScope, folderScope] });
             else if (userId)
-                existing = yield ShareLink_1.ShareLink.findOne({ userId });
+                existing = yield ShareLink_1.ShareLink.findOne({ $and: [{ userId }, audienceScope, folderScope] });
             if (existing) {
                 let isModified = false;
                 if (existing.folderName !== folderName) {
                     existing.folderName = folderName;
+                    isModified = true;
+                }
+                if (!existing.audience) {
+                    existing.audience = 'CUSTOMER';
                     isModified = true;
                 }
                 // Patch legacy links that don't have a slug yet
@@ -71,7 +82,7 @@ class ShareLinkRepository {
                 slug = `${base}-${counter}`;
                 counter++;
             }
-            return ShareLink_1.ShareLink.create({ slug, folderName, taskId, orderId, userId, folderId });
+            return ShareLink_1.ShareLink.create({ slug, folderName, taskId, orderId, userId, folderId, audience });
         });
     }
     findBySlug(slug) {

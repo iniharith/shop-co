@@ -46,5 +46,6 @@ const ShareLinkSchema = new mongoose_1.Schema({
     orderId: { type: String, index: true },
     userId: { type: String, index: true },
     folderId: { type: String, index: true },
+    audience: { type: String, enum: ['CUSTOMER', 'SUPPLIER'], default: 'CUSTOMER', required: true, index: true },
 }, { timestamps: true });
 exports.ShareLink = mongoose_1.default.model('ShareLink', ShareLinkSchema);

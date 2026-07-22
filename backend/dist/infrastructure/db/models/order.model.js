@@ -67,6 +67,7 @@ const AddressSchema = new mongoose_1.Schema({
     address: { type: String, required: true },
     street: { type: String, required: true },
     city: { type: String, required: true },
+    state: { type: String, default: '' },
     postalCode: { type: String, required: true },
     country: { type: String, required: true },
 }, { _id: false });
@@ -102,7 +103,7 @@ const OrderSchema = new mongoose_1.Schema({
     },
     orderStatus: {
         type: String,
-        enum: ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'],
+        enum: ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'RETURNED', 'CANCELLED', 'FAILED'],
         default: 'PLACED',
     },
     platform: {
@@ -131,6 +132,41 @@ const OrderSchema = new mongoose_1.Schema({
         type: String,
         default: '',
     },
+    easyparcelShipmentId: { type: String, index: true, sparse: true },
+    easyparcelBookingStatus: {
+        type: String,
+        enum: ['submitted', 'awb_pending', 'booked', 'failed'],
+    },
+    awbUrl: { type: String },
+    awbUrlsByFormat: {
+        A4: { type: String },
+        A5: { type: String },
+        A6: { type: String },
+    },
+    trackingUrl: { type: String },
+    courier: { type: String },
+    shippingPrice: { type: Number },
+    easyparcelServiceId: { type: String },
+    shippingWeight: { type: Number },
+    shippingDimensions: {
+        width: { type: Number },
+        length: { type: Number },
+        height: { type: Number },
+    },
+    shippingCollectionDate: { type: Date },
+    shippingCustomerPhone: { type: String },
+    shippingCustomerEmail: { type: String },
+    easyparcelShipmentStatusCode: { type: Number },
+    easyparcelStatusUpdatedAt: { type: Date },
+    easyparcelTrackingEvents: [{
+            status: { type: String, default: '' },
+            description: { type: String, default: '' },
+            location: { type: String, default: '' },
+            timestamp: { type: Date },
+        }],
 }, { timestamps: true });
+OrderSchema.index({ createdAt: -1 });
+OrderSchema.index({ userId: 1, createdAt: -1 });
+OrderSchema.index({ orderStatus: 1, createdAt: -1 });
 const OrderModel = mongoose_1.default.model('Order', OrderSchema);
 exports.default = OrderModel;

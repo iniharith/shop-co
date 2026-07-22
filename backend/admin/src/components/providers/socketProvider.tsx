@@ -47,7 +47,7 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     const refreshActiveFileData = () => {
       if (document.visibilityState !== "visible") return;
-      ["allFiles", "groupedFiles", "fileIndex", "filesByFolder"].forEach((key) => {
+      ["allFiles", "groupedFiles", "fileIndex", "folderGroup", "filesByFolder"].forEach((key) => {
         void client.invalidateQueries({ queryKey: [key], refetchType: "active" });
       });
     };

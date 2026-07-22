@@ -45,5 +45,7 @@ const EasyParcelConnectionSchema = new mongoose_1.Schema({
     oauthStateHash: { type: String },
     oauthStateExpiresAt: { type: Date },
     invalidatedAt: { type: Date },
+    refreshLockId: { type: String },
+    refreshLockExpiresAt: { type: Date },
 }, { timestamps: true });
 exports.EasyParcelConnection = mongoose_1.default.model('EasyParcelConnection', EasyParcelConnectionSchema);

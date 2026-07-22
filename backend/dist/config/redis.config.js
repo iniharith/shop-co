@@ -12,9 +12,13 @@ const ioredis_1 = __importDefault(require("ioredis"));
 const dotenv_1 = require("dotenv");
 (0, dotenv_1.config)();
 const createRedisClient = (clientType = 'standard') => {
-    const redisUrl = process.env.REDIS_PUBLIC_URL || process.env.REDIS_URL;
+    const redisUrl = process.env.REDIS_URL
+        || process.env.REDIS_PUBLIC_URL
+        || (process.env.REDIS_HOST
+            ? `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT || '6379'}`
+            : undefined);
     if (!redisUrl) {
-        console.warn(`[Warning] REDIS_URL environment variable is missing. Redis ${clientType} client will be disabled.`);
+        console.warn(`[Warning] Redis configuration is missing. Redis ${clientType} client will be disabled.`);
         return null;
     }
     const client = new ioredis_1.default(redisUrl, {

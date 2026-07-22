@@ -24,6 +24,11 @@ class ProductRepository extends base_repository_1.BaseRepository {
             return yield this.model.insertMany(products);
         });
     }
+    hasAny() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return Boolean(yield this.model.exists({}));
+        });
+    }
     findByName(name) {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.model.findOne({ name });

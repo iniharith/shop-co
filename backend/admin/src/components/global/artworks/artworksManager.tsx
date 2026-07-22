@@ -4,7 +4,7 @@
  */
 "use client";
 import React, { useState, useMemo } from "react";
-import { useFileIndex, useFolderGroup, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile, useCreateShareLink, useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, useMoveFile } from "@/hooks/useAdminDashboard";
+import { useFolderGroup, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile, useCreateShareLink, useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, useMoveFile } from "@/hooks/useAdminDashboard";
 import { useOrders, useUpdateOrderStatus } from "@/hooks/useOrder";
 import { useUsers } from "@/hooks/useUsers";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
@@ -54,7 +54,7 @@ export default function ArtworksManager() {
   const { addUpload, updateProgress, updateStatus } = useUploadStore();
   const { data: session } = useSession();
   // Folder list from server-side grouped endpoint — fast, single query
-  const { data: folderGroupResponse, isPending: folderGroupPending } = useFolderGroup(ARTWORK_STATUSES);
+  const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching } = useFolderGroup(ARTWORK_STATUSES);
   const groupedFromServer: any[] = (folderGroupResponse as any)?.data || [];
   const { data: ordersResponse } = useOrders();
   const { data: usersResponse } = useUsers();

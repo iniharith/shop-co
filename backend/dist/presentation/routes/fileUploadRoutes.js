@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -24,13 +57,19 @@ const multer_s3_1 = __importDefault(require("multer-s3"));
 const FileUploadRepository_1 = require("../../infrastructure/repositories/FileUploadRepository");
 const FileUpload_1 = require("../../domain/entities/FileUpload");
 const WhatsAppService_1 = require("../../infrastructure/services/WhatsAppService");
-const auth_middileware_1 = __importDefault(require("../middlewares/auth.middileware"));
+const auth_middileware_1 = __importStar(require("../middlewares/auth.middileware"));
 const TaskRepository_1 = require("../../infrastructure/repositories/TaskRepository");
 const Task_1 = require("../../domain/entities/Task");
 const user_repository_1 = __importDefault(require("../../infrastructure/db/repositories/user.repository"));
 const ShareLinkRepository_1 = require("../../infrastructure/repositories/ShareLinkRepository");
 const ShareLink_1 = require("../../domain/entities/ShareLink");
+const VirtualFolder_1 = require("../../domain/entities/VirtualFolder");
 const order_repository_1 = __importDefault(require("../../infrastructure/db/repositories/order.repository"));
+const order_model_1 = __importDefault(require("../../infrastructure/db/models/order.model"));
+const user_model_1 = __importDefault(require("../../infrastructure/db/models/user.model"));
+const redis_1 = require("../../infrastructure/redis/redis");
+const enrichedIndexCache = new redis_1.RedisService();
+const ENRICHED_INDEX_CACHE_KEY = 'files:enrichedIndex:v1';
 const taskBroadcast_1 = require("../../shared/utils/taskBroadcast");
 const streamFilesAsZip_1 = require("../../shared/utils/streamFilesAsZip");
 const downloadProgress_1 = require("../../shared/utils/downloadProgress");
@@ -141,15 +180,24 @@ router.post('/presigned-url', auth_middileware_1.default, (0, express_async_hand
 // ─── POST /api/files/save-metadata ────────────────────────
 // Client calls this after direct S3 upload succeeds
 router.post('/save-metadata', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e;
     const { orderId, taskId, notes, userId: bodyUserId, category, tag, folderId, shareSlug, files } = req.body;
     const authReq = req;
     // If admin provides a userId in the body, upload on their behalf
     const isAdmin = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(authReq.role);
-    let userId = (isAdmin && bodyUserId) ? bodyUserId : undefined;
-    // If no userId is provided, but taskId or orderId is, do not fallback to admin's ID
-    if (!userId && !taskId && !orderId) {
-        userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
+    const authenticatedUserId = authReq.userId || ((_b = (_a = authReq.user) === null || _a === void 0 ? void 0 : _a._id) === null || _b === void 0 ? void 0 : _b.toString()) || ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.id);
+    let userId = isAdmin ? bodyUserId : authenticatedUserId;
+    if (orderId && (!isAdmin || !userId)) {
+        const orderOwnerId = yield order_repository_1.default.getOrderOwnerId(orderId);
+        if (!isAdmin && orderOwnerId !== authenticatedUserId) {
+            res.status(403).json({ success: false, message: 'Pesanan tidak sah untuk pengguna ini' });
+            return;
+        }
+        if (isAdmin && orderOwnerId)
+            userId = orderOwnerId;
+    }
+    if (isAdmin && !userId && !taskId && !orderId) {
+        userId = authenticatedUserId;
     }
     if (!userId && !taskId) {
         res.status(401).json({ success: false, message: 'Log masuk atau Task diperlukan' });
@@ -159,7 +207,7 @@ router.post('/save-metadata', auth_middileware_1.default, (0, express_async_hand
         res.status(400).json({ success: false, message: 'Tiada fail metadata diberikan' });
         return;
     }
-    const savedFiles = yield Promise.all(files.map((file) => FileUploadRepository_1.fileUploadRepository.create({
+    const savedFiles = yield FileUploadRepository_1.fileUploadRepository.createMany(files.map((file) => ({
         userId: userId || 'admin',
         orderId: orderId || undefined,
         taskId: taskId || undefined,
@@ -176,8 +224,8 @@ router.post('/save-metadata', auth_middileware_1.default, (0, express_async_hand
         shareSlug: shareSlug || undefined,
     })));
     // Optionally notify customer via WhatsApp
-    const customerPhone = (_b = authReq.user) === null || _b === void 0 ? void 0 : _b.phone;
-    const customerName = ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.name) || 'Pelanggan';
+    const customerPhone = (_d = authReq.user) === null || _d === void 0 ? void 0 : _d.phone;
+    const customerName = ((_e = authReq.user) === null || _e === void 0 ? void 0 : _e.name) || 'Pelanggan';
     if (customerPhone) {
         WhatsAppService_1.whatsAppService
             .sendFileUploadConfirmation({
@@ -208,7 +256,7 @@ router.get('/my', auth_middileware_1.default, (0, express_async_handler_1.defaul
 })));
 // ─── GET /api/files ───────────────────────────────────────
 // Admin: list all uploaded files with optional filter
-router.get('/', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get('/', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { reviewed, search } = req.query;
     const filters = {};
     if (reviewed !== undefined)
@@ -257,15 +305,135 @@ function enrichWithShareLinks(files) {
 // of applying the 30-day cutoff that GET / below uses (that cutoff was
 // hiding folders whose artwork was uploaded more than 30 days ago, even
 // though the underlying job was still active).
-router.get('/index', (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get('/index', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const files = yield FileUploadRepository_1.fileUploadRepository.findIndex();
     const enriched = yield enrichWithShareLinks(files);
     res.json({ success: true, data: enriched });
 })));
+// ─── GET /api/files/folder-group ─────────────────────────────
+// Server-side grouping of files into task/order/user folders with counts.
+// Eliminates the client-side O(n*m) join between files, tasks, orders, users.
+// Accepts ?taskStatuses= comma-separated list to filter by task status
+// (defaults to artwork statuses if omitted).
+router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const ARTWORK_STATUSES = ["PLACED", "IN_DESIGN", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "PEMBETULAN", "DONE_DESIGN"];
+    const taskStatusFilter = ((_a = req.query.taskStatuses) === null || _a === void 0 ? void 0 : _a.split(',').filter(Boolean)) || ARTWORK_STATUSES;
+    // Try cache first (keyed by status filter)
+    const cacheKey = `${ENRICHED_INDEX_CACHE_KEY}:${taskStatusFilter.join(',')}`;
+    const cached = yield enrichedIndexCache.get(cacheKey);
+    if (cached) {
+        try {
+            res.json({ success: true, data: JSON.parse(cached) });
+            return;
+        }
+        catch ( /* rebuild */_b) { /* rebuild */ }
+    }
+    // 1. Load enriched file index
+    const files = yield FileUploadRepository_1.fileUploadRepository.findIndex();
+    const enriched = yield enrichWithShareLinks(files);
+    // 2. Collect unique references
+    const orderIds = [...new Set(enriched.filter((f) => f.orderId).map((f) => f.orderId))];
+    const userIds = [...new Set(enriched.filter((f) => !f.taskId).map((f) => f.userId))];
+    // 3. Load all tasks in this queue, not only tasks that already have a
+    // FileUpload record. Older/direct task uploads live in task.files, and
+    // tasks without files must still appear as valid zero-file folders.
+    const [tasks, taskFileCounts, orders, users] = yield Promise.all([
+        Task_1.Task.find({ status: { $in: taskStatusFilter }, isDeleted: { $ne: true } })
+            .select('title status orderId category')
+            .lean(),
+        Task_1.Task.aggregate([
+            { $match: { status: { $in: taskStatusFilter }, isDeleted: { $ne: true } } },
+            { $project: { fileCount: { $size: { $ifNull: ['$files', []] } } } },
+        ]),
+        orderIds.length ? order_model_1.default.find({ _id: { $in: orderIds } }).select('orderStatus userId').lean() : [],
+        userIds.length ? user_model_1.default.find({ _id: { $in: userIds } }).select('name').lean() : [],
+    ]);
+    const taskMap = new Map(tasks.map((t) => [t._id.toString(), t]));
+    const taskFileCountMap = new Map(taskFileCounts.map((t) => [t._id.toString(), t.fileCount || 0]));
+    const orderMap = new Map(orders.map((o) => [o._id.toString(), o]));
+    const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+    // 4. Group files
+    const groups = {};
+    for (const file of enriched) {
+        let groupKey;
+        let folderName;
+        let isTask = false;
+        if (file.taskId) {
+            const task = taskMap.get(file.taskId);
+            if (!task)
+                continue;
+            if (!taskStatusFilter.includes(task.status))
+                continue;
+            groupKey = `task:${file.taskId}`;
+            folderName = task.title;
+            isTask = true;
+        }
+        else {
+            if (file._shareFolderName) {
+                folderName = file._shareFolderName;
+            }
+            else {
+                const user = userMap.get(file.userId);
+                folderName = (user === null || user === void 0 ? void 0 : user.name) || file.userId || 'Unknown';
+            }
+            if (file.orderId) {
+                const order = orderMap.get(file.orderId);
+                if (order && !taskStatusFilter.includes(order.orderStatus || ''))
+                    continue;
+            }
+            groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
+        }
+        if (!groups[groupKey]) {
+            groups[groupKey] = {
+                folderName,
+                orderId: file.orderId || '',
+                taskId: file.taskId || '',
+                userId: file.userId || '',
+                isTask,
+                files: [],
+            };
+        }
+        groups[groupKey].files.push(file);
+    }
+    // 5. Add empty placeholders for tasks that have no files yet
+    for (const task of tasks) {
+        if (!taskStatusFilter.includes(task.status))
+            continue;
+        const key = `task:${task._id}`;
+        if (!groups[key]) {
+            groups[key] = {
+                folderName: task.title,
+                orderId: task.orderId || '',
+                taskId: task._id.toString(),
+                userId: '',
+                isTask: true,
+                files: [],
+            };
+        }
+    }
+    // Enrich with orderStatus and derived fields
+    const result = Object.values(groups).map((g) => {
+        var _a, _b;
+        let orderStatus = null;
+        if (g.taskId)
+            orderStatus = ((_a = taskMap.get(g.taskId)) === null || _a === void 0 ? void 0 : _a.status) || null;
+        else if (g.orderId)
+            orderStatus = ((_b = orderMap.get(g.orderId)) === null || _b === void 0 ? void 0 : _b.orderStatus) || null;
+        // New uploads are represented by FileUpload records; legacy/direct
+        // task uploads can exist only in task.files. Use the larger value to
+        // avoid showing a misleading zero or double-counting synced uploads.
+        const taskFileCount = g.taskId ? (taskFileCountMap.get(g.taskId) || 0) : 0;
+        return Object.assign(Object.assign({}, g), { orderStatus, fileCount: Math.max(g.files.length, taskFileCount) });
+    });
+    // Cache for 2 minutes
+    yield enrichedIndexCache.set(cacheKey, JSON.stringify(result), 120);
+    res.json({ success: true, data: result });
+})));
 // ─── GET /api/files/by-folder ────────────────────────────────
 // Full file details (thumbnails, S3 URLs, etc.) for a single folder, fetched
 // only when that folder is actually opened. Pass taskId, or orderId/userId.
-router.get('/by-folder', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get('/by-folder', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { taskId, orderId, userId } = req.query;
     if (!taskId && !orderId && !userId) {
         res.status(400).json({ success: false, message: 'taskId, orderId, or userId is required' });
@@ -277,7 +445,7 @@ router.get('/by-folder', (0, express_async_handler_1.default)((req, res) => __aw
 })));
 // ─── GET /api/files/grouped ───────────────────────────────
 // Admin: files grouped by customer (Nextcloud folder view)
-router.get('/grouped', (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get('/grouped', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const grouped = yield FileUploadRepository_1.fileUploadRepository.getFilesGroupedByUser();
     const stats = yield FileUploadRepository_1.fileUploadRepository.getStorageStats();
     res.json({ success: true, data: grouped, stats });
@@ -369,10 +537,15 @@ router.post('/shared/upload/:token', decodeSharedToken, upload.array('files', 10
 })));
 // ─── POST /api/files/share-link ───────────────────────────
 // Admin: create (or reuse) a short, name-based share link for a folder.
-router.post('/share-link', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { folderName, taskId, orderId, userId, folderId } = req.body;
+router.post('/share-link', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { folderName, taskId, orderId, userId, folderId, audience: requestedAudience } = req.body;
+    const audience = requestedAudience || 'CUSTOMER';
     if (!folderName) {
         res.status(400).json({ success: false, message: 'folderName diperlukan' });
+        return;
+    }
+    if (!['CUSTOMER', 'SUPPLIER'].includes(audience)) {
+        res.status(400).json({ success: false, message: 'audience mesti CUSTOMER atau SUPPLIER' });
         return;
     }
     // Always try to resolve the REAL customer userId server-side, even if the
@@ -413,13 +586,14 @@ router.post('/share-link', auth_middileware_1.default, (0, express_async_handler
         orderId: resolvedOrderId,
         userId: resolvedUserId,
         folderId,
+        audience,
     });
     res.json({ success: true, data: link });
 })));
 // ─── PUT /api/files/share-link/:slug ───────────────────────
 // Admin: backfill userId on an existing share link if it was created
 // before the customer's userId was resolvable (fixes old links).
-router.put('/share-link/:slug', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.put('/share-link/:slug', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
     if (!link) {
         res.status(404).json({ success: false, message: 'Link tidak dijumpai' });
@@ -434,13 +608,13 @@ router.put('/share-link/:slug', auth_middileware_1.default, (0, express_async_ha
 })));
 // ─── GET /api/files/share-links ────────────────────────────
 // Admin: list all share links (for diagnosing/cleaning up old/ambiguous ones)
-router.get('/share-links', auth_middileware_1.default, (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get('/share-links', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const links = yield ShareLink_1.ShareLink.find().sort({ createdAt: -1 });
     res.json({ success: true, data: links });
 })));
 // ─── DELETE /api/files/share-link/:slug ────────────────────
 // Admin: delete a share link (e.g. a stale/ambiguous one)
-router.delete('/share-link/:slug', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.delete('/share-link/:slug', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     yield ShareLink_1.ShareLink.deleteOne({ slug: req.params.slug });
     res.json({ success: true });
 })));
@@ -457,13 +631,39 @@ const getShareFileConditions = (link, slug) => {
         conditions.push({ userId: link.userId });
     return conditions;
 };
-const fileBelongsToShareLink = (file, link, slug) => {
-    var _a, _b, _c, _d;
-    return file.shareSlug === slug ||
-        (!!link.folderId && ((_a = file.folderId) === null || _a === void 0 ? void 0 : _a.toString()) === link.folderId.toString()) ||
-        (!link.folderId && !!link.taskId && ((_b = file.taskId) === null || _b === void 0 ? void 0 : _b.toString()) === link.taskId.toString()) ||
-        (!link.folderId && !link.taskId && !!link.orderId && ((_c = file.orderId) === null || _c === void 0 ? void 0 : _c.toString()) === link.orderId.toString()) ||
-        (!link.folderId && !link.taskId && !link.orderId && !!link.userId && ((_d = file.userId) === null || _d === void 0 ? void 0 : _d.toString()) === link.userId.toString());
+const shareAudience = (link) => link.audience === 'SUPPLIER' ? 'SUPPLIER' : 'CUSTOMER';
+const getShareFileQuery = (link, slug) => {
+    const audience = shareAudience(link);
+    const legacyCustomerPortal = audience === 'CUSTOMER' && String(link.folderName || '').startsWith('Artwork Upload:');
+    const customerTagConditions = [
+        { tag: { $in: ['draft', 'attachment'] } },
+        {
+            $and: [
+                { shareSlug: slug },
+                { $or: [{ tag: { $exists: false } }, { tag: null }, { tag: '' }] },
+            ],
+        },
+    ];
+    if (legacyCustomerPortal) {
+        customerTagConditions.push({ $or: [{ tag: { $exists: false } }, { tag: null }, { tag: '' }] });
+    }
+    const filters = [
+        { $or: getShareFileConditions(link, slug) },
+        audience === 'SUPPLIER'
+            ? { tag: 'for_print' }
+            : { $or: customerTagConditions },
+    ];
+    if (audience === 'CUSTOMER') {
+        filters.push({
+            $or: [
+                { folderId: { $exists: false } },
+                { folderId: null },
+                { folderId: '' },
+                { folderId: 'null' },
+            ],
+        });
+    }
+    return { $and: filters };
 };
 router.get('/s/:slug', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.setHeader('Cache-Control', 'no-store');
@@ -475,8 +675,15 @@ router.get('/s/:slug', (0, express_async_handler_1.default)((req, res) => __awai
     // Match files 3 ways and merge: by the exact slug stamp (covers every
     // customer upload through this link), and by taskId/orderId (covers
     // files the admin added directly to the folder before sharing it).
-    const files = yield FileUpload_1.FileUpload.find({ $or: getShareFileConditions(link, req.params.slug) }).sort({ uploadedAt: -1 });
-    res.json({ success: true, data: files, folderName: link.folderName });
+    const files = yield FileUpload_1.FileUpload.find(getShareFileQuery(link, req.params.slug))
+        .select('_id originalName mimetype size uploadedAt notes tag folderId')
+        .sort({ uploadedAt: -1 });
+    const audience = shareAudience(link);
+    let folders = [];
+    if (audience === 'SUPPLIER' && link.taskId) {
+        folders = yield VirtualFolder_1.VirtualFolder.find({ taskId: link.taskId }).select('_id name').sort({ name: 1 }).lean();
+    }
+    res.json({ success: true, data: files, folders, folderName: link.folderName, audience });
 })));
 // 🌐 Public: Poll real-time progress for an in-flight bulk ZIP download.
 // The frontend generates a downloadId, passes it to download-all/download-batch,
@@ -496,7 +703,7 @@ router.get('/s/:slug/download-all', (0, express_async_handler_1.default)((req, r
         res.status(404).json({ success: false, message: 'Link not found' });
         return;
     }
-    const files = yield FileUpload_1.FileUpload.find({ $or: getShareFileConditions(link, req.params.slug) }).sort({ uploadedAt: -1 });
+    const files = yield FileUpload_1.FileUpload.find(getShareFileQuery(link, req.params.slug)).sort({ uploadedAt: -1 });
     if (!files.length) {
         res.status(404).json({ success: false, message: 'No files found' });
         return;
@@ -538,6 +745,7 @@ router.post('/download-batch', auth_middileware_1.default, (0, express_async_han
 })));
 // 🌐 Public: Upload files to a folder using a short slug
 const decodeSharedSlug = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
     if (!link) {
         res.status(404).json({ success: false, message: 'Link tidak dijumpai' });
@@ -546,8 +754,25 @@ const decodeSharedSlug = (req, res, next) => __awaiter(void 0, void 0, void 0, f
     req.userId = link.userId || 'customer';
     req.taskId = link.taskId;
     req.orderId = link.orderId;
-    req.folderId = link.folderId;
+    const requestedFolderId = typeof ((_a = req.body) === null || _a === void 0 ? void 0 : _a.folderId) === 'string' ? req.body.folderId : undefined;
+    if (requestedFolderId && shareAudience(link) === 'SUPPLIER') {
+        if (!link.taskId || !/^[a-f\d]{24}$/i.test(requestedFolderId)) {
+            res.status(400).json({ success: false, message: 'Invalid supplier folder' });
+            return;
+        }
+        const folderExists = yield VirtualFolder_1.VirtualFolder.exists({ _id: requestedFolderId, taskId: link.taskId });
+        if (!folderExists) {
+            res.status(403).json({ success: false, message: 'Supplier folder is outside this share link' });
+            return;
+        }
+        req.folderId = requestedFolderId;
+    }
+    else {
+        req.folderId = link.folderId;
+    }
     req.shareSlug = req.params.slug;
+    req.shareAudience = shareAudience(link);
+    req.shareTag = shareAudience(link) === 'SUPPLIER' ? 'for_print' : 'attachment';
     // Preserve folder type so the admin UI re-groups this upload into the
     // SAME folder the link was generated from (task folders are grouped by
     // taskId/category, not by userId).
@@ -617,6 +842,7 @@ router.post('/customer/save-metadata', (0, express_async_handler_1.default)((req
         size: f.size,
         path: f.path,
         taskId: savedTask._id.toString(),
+        tag: 'attachment',
         adminReviewed: false,
     })));
     // ── Real-time: broadcast the new task + files to all admin tabs ────────
@@ -627,6 +853,7 @@ router.post('/customer/save-metadata', (0, express_async_handler_1.default)((req
         taskId: savedTask._id.toString(),
         orderId: orderId,
         userId: username,
+        audience: 'CUSTOMER',
     });
     res.json({ success: true, data: savedFiles, task: savedTask, shareLinkSlug: shareLink.slug });
 })));
@@ -677,7 +904,7 @@ router.post('/s/:slug/save-metadata', (0, express_async_handler_1.default)(decod
         res.status(400).json({ success: false, message: 'Files required' });
         return;
     }
-    const { taskId, orderId, userId, folderId, shareCategory, shareSlug } = req;
+    const { taskId, orderId, userId, folderId, shareCategory, shareSlug, shareTag } = req;
     const savedFiles = yield Promise.all(files.map((f) => FileUploadRepository_1.fileUploadRepository.create({
         userId: userId || 'customer',
         orderId: orderId || undefined,
@@ -685,6 +912,7 @@ router.post('/s/:slug/save-metadata', (0, express_async_handler_1.default)(decod
         folderId: folderId || undefined,
         category: shareCategory || 'artwork',
         shareSlug,
+        tag: shareTag,
         filename: f.key,
         originalName: f.originalName,
         mimetype: f.mimetype || 'application/octet-stream',
@@ -696,7 +924,7 @@ router.post('/s/:slug/save-metadata', (0, express_async_handler_1.default)(decod
 })));
 router.post('/s/:slug/upload', (0, express_async_handler_1.default)(decodeSharedSlug), upload.array('files', 100), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const files = req.files;
-    const { taskId, orderId, userId, folderId, shareCategory, shareSlug } = req;
+    const { taskId, orderId, userId, folderId, shareCategory, shareSlug, shareTag } = req;
     if (!files || files.length === 0) {
         res.status(400).json({ success: false, message: 'Tiada fail dipilih' });
         return;
@@ -708,6 +936,7 @@ router.post('/s/:slug/upload', (0, express_async_handler_1.default)(decodeShared
         folderId: folderId || undefined,
         category: shareCategory || 'artwork',
         shareSlug,
+        tag: shareTag,
         filename: file.key || file.filename || file.originalname,
         originalName: file.originalname,
         mimetype: file.mimetype,
@@ -729,13 +958,9 @@ router.get('/s/:slug/files/:id/content', (0, express_async_handler_1.default)((r
         res.status(404).json({ success: false, message: 'Link not found' });
         return;
     }
-    const file = yield FileUploadRepository_1.fileUploadRepository.findById(req.params.id);
+    const file = yield FileUpload_1.FileUpload.findOne(Object.assign({ _id: req.params.id }, getShareFileQuery(link, req.params.slug)));
     if (!file) {
         res.status(404).json({ success: false, message: 'File not found' });
-        return;
-    }
-    if (!fileBelongsToShareLink(file, link, req.params.slug)) {
-        res.status(403).json({ success: false, message: 'Access denied' });
         return;
     }
     const download = req.query.download === 'true';
@@ -783,15 +1008,9 @@ router.delete('/s/:slug/files/:id', (0, express_async_handler_1.default)((req, r
         res.status(404).json({ success: false, message: 'Link not found' });
         return;
     }
-    const file = yield FileUploadRepository_1.fileUploadRepository.findById(req.params.id);
+    const file = yield FileUpload_1.FileUpload.findOne(Object.assign({ _id: req.params.id }, getShareFileQuery(link, req.params.slug)));
     if (!file) {
         res.status(404).json({ success: false, message: 'File not found' });
-        return;
-    }
-    // Verify file belongs to this share link
-    const belongsToLink = fileBelongsToShareLink(file, link, req.params.slug);
-    if (!belongsToLink) {
-        res.status(403).json({ success: false, message: 'Access denied' });
         return;
     }
     try {
@@ -814,14 +1033,9 @@ router.patch('/s/:slug/files/:id/note', (0, express_async_handler_1.default)((re
         res.status(404).json({ success: false, message: 'Link not found' });
         return;
     }
-    const file = yield FileUploadRepository_1.fileUploadRepository.findById(req.params.id);
+    const file = yield FileUpload_1.FileUpload.findOne(Object.assign({ _id: req.params.id }, getShareFileQuery(link, req.params.slug)));
     if (!file) {
         res.status(404).json({ success: false, message: 'File not found' });
-        return;
-    }
-    const belongsToLink = fileBelongsToShareLink(file, link, req.params.slug);
-    if (!belongsToLink) {
-        res.status(403).json({ success: false, message: 'Access denied' });
         return;
     }
     const { notes } = req.body;
@@ -1130,10 +1344,13 @@ router.put('/:id/move', auth_middileware_1.default, (0, express_async_handler_1.
 router.get('/drafts/pending', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const drafts = yield FileUploadRepository_1.fileUploadRepository.findAll({ search: '' });
-        // Filter out locally because findAll doesn't support tag natively without modifying repo
         const pending = drafts.filter(d => d.tag === 'draft' && d.botNotified !== true);
-        // We need to find the phone number for each draft.
-        // Usually it's in the Task description or userId (if it starts with user_)
+        // Batch-load all referenced tasks in one query instead of N+1
+        const taskIds = [...new Set(pending.filter(d => d.taskId).map(d => d.taskId))];
+        const tasks = taskIds.length > 0
+            ? yield Task_1.Task.find({ _id: { $in: taskIds } }).select('description').lean()
+            : [];
+        const taskMap = new Map(tasks.map((t) => [t._id.toString(), t]));
         const results = [];
         for (const draft of pending) {
             let phone = null;
@@ -1141,7 +1358,7 @@ router.get('/drafts/pending', (req, res) => __awaiter(void 0, void 0, void 0, fu
                 phone = draft.userId.replace('user_', '');
             }
             else if (draft.taskId) {
-                const task = yield Task_1.Task.findById(draft.taskId);
+                const task = taskMap.get(draft.taskId.toString());
                 if (task && task.description && task.description.includes('Phone Number:')) {
                     const match = task.description.match(/Phone Number:\s*(\d+)/);
                     if (match)
@@ -1151,7 +1368,7 @@ router.get('/drafts/pending', (req, res) => __awaiter(void 0, void 0, void 0, fu
             if (phone) {
                 results.push({
                     _id: draft._id,
-                    url: draft.path, // S3 url
+                    url: draft.path,
                     phone,
                     orderId: draft.orderId
                 });

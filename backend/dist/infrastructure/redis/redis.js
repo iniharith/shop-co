@@ -27,6 +27,10 @@ class RedisService {
     connect() {
         this.redis = redis;
     }
+    isReady() {
+        var _a, _b;
+        return ((_a = this.redis) === null || _a === void 0 ? void 0 : _a.status) === 'ready' && ((_b = this.redisSubscriber) === null || _b === void 0 ? void 0 : _b.status) === 'ready';
+    }
     set(key, value, ttl) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.redis)
@@ -66,6 +70,24 @@ class RedisService {
             }
             catch (e) {
                 console.error("Redis del error:", e);
+            }
+        });
+    }
+    delByPrefix(prefix) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.redis)
+                return;
+            try {
+                let cursor = '0';
+                do {
+                    const [nextCursor, keys] = yield this.redis.scan(cursor, 'MATCH', `${prefix}*`, 'COUNT', 100);
+                    cursor = nextCursor;
+                    if (keys.length)
+                        yield this.redis.del(...keys);
+                } while (cursor !== '0');
+            }
+            catch (e) {
+                console.error("Redis prefix delete error:", e);
             }
         });
     }

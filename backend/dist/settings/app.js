@@ -35,6 +35,7 @@ const appRoutes_1 = __importDefault(require("../presentation/routes/appRoutes"))
 const webhook_route_1 = __importDefault(require("../presentation/routes/webhook.route"));
 const projectRoutes_1 = __importDefault(require("../presentation/routes/projectRoutes"));
 const auditRoutes_1 = __importDefault(require("../presentation/routes/auditRoutes"));
+const easyParcelRoutes_1 = __importDefault(require("../presentation/routes/easyParcelRoutes"));
 const audit_middleware_1 = require("../presentation/middlewares/audit.middleware");
 const bandwidthTracker_1 = require("../shared/utils/bandwidthTracker");
 dotenv_1.default.config();
@@ -46,12 +47,14 @@ app.use((0, cors_1.default)({
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    maxAge: 86400,
 }));
 app.options("*", (0, cors_1.default)({
     origin: true,
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    maxAge: 86400,
 }));
 // -------------------- util middleware-------------------------------
 app.use(express_1.default.json({ limit: '500mb' }));
@@ -70,6 +73,7 @@ app.use(api_constant_1.apiRoutes.PRODUCT, product_route_1.default);
 app.use(api_constant_1.apiRoutes.CART, cart_route_1.default);
 app.use(api_constant_1.apiRoutes.ORDER, order_route_1.default);
 app.use('/api/webhooks', webhook_route_1.default);
+app.use('/api/easyparcel', easyParcelRoutes_1.default);
 app.use(api_constant_1.apiRoutes.ADMIN, admin_route_1.default);
 app.use('/api/notifications', notification_route_1.default);
 app.use('/api/folders', virtualFolderRoutes_1.default);

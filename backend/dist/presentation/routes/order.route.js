@@ -17,6 +17,10 @@ router.get("/status/:status", auth_middileware_1.authMiddilware, orderController
 router.get("/:orderId", auth_middileware_1.authMiddilware, orderController.getOrderById.bind(orderController));
 router.put("/:orderId", auth_middileware_1.authMiddilware, orderController.updateOrderStatus.bind(orderController));
 router.put("/:orderId/archive", auth_middileware_1.authMiddilware, orderController.archiveOrder.bind(orderController));
-router.post("/:orderId/ship", auth_middileware_1.authMiddilware, orderController.createShipment.bind(orderController));
+const shippingRoles = (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'production', 'packaging');
+router.post("/:orderId/shipping/quotations", auth_middileware_1.authMiddilware, shippingRoles, orderController.getShippingQuotations.bind(orderController));
+router.post("/:orderId/ship", auth_middileware_1.authMiddilware, shippingRoles, orderController.createShipment.bind(orderController));
+router.post("/:orderId/shipping/refresh", auth_middileware_1.authMiddilware, shippingRoles, orderController.refreshShipping.bind(orderController));
+router.post("/:orderId/shipping/reconcile", auth_middileware_1.authMiddilware, shippingRoles, orderController.reconcileShipping.bind(orderController));
 router.get("/:orderId/tracking", auth_middileware_1.authMiddilware, orderController.getTracking.bind(orderController));
 exports.default = router;

@@ -32,8 +32,18 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Parcel = void 0;
+exports.ensureParcelIndexes = ensureParcelIndexes;
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -47,20 +57,40 @@ const TrackingEventSchema = new mongoose_1.Schema({
 });
 const ParcelSchema = new mongoose_1.Schema({
     orderId: { type: String, required: true, index: true },
-    trackingNumber: { type: String, required: true, unique: true, index: true },
+    trackingNumber: { type: String, unique: true, sparse: true, index: true },
     customerPhone: { type: String, required: true },
     customerName: { type: String, required: true },
     customerEmail: { type: String },
     courier: { type: String, default: 'unknown' },
+    service: { type: String },
     status: {
         type: String,
-        enum: ['pending', 'picked_up', 'in_transit', 'out_for_delivery', 'delivered', 'failed'],
+        enum: ['pending', 'picked_up', 'in_transit', 'out_for_delivery', 'delivered', 'returned', 'on_hold', 'drop_off', 'cancelled', 'failed'],
         default: 'pending',
     },
     lastStatus: { type: String, default: '' },
     events: { type: [TrackingEventSchema], default: [] },
-    easyparcelShipmentId: { type: String },
+    easyparcelShipmentId: { type: String, unique: true, sparse: true, index: true },
+    easyparcelOrderNumber: { type: String, index: true },
+    serviceId: { type: String },
     awbUrl: { type: String },
+    awbUrlsByFormat: {
+        A4: { type: String },
+        A5: { type: String },
+        A6: { type: String },
+    },
+    trackingUrl: { type: String },
+    bookingStatus: { type: String, enum: ['submitted', 'awb_pending', 'booked', 'failed'] },
+    shipmentStatusCode: { type: Number },
+    providerStatusUpdatedAt: { type: Date },
+    collectionDate: { type: Date },
+    shippingPrice: { type: Number },
+    currency: { type: String },
+    dimensions: {
+        width: { type: Number, default: 0 },
+        length: { type: Number, default: 0 },
+        height: { type: Number, default: 0 },
+    },
     weight: { type: Number, default: 1 },
     senderName: { type: String, default: 'Kampung Cetak' },
     senderPhone: { type: String, default: '' },
@@ -68,4 +98,40 @@ const ParcelSchema = new mongoose_1.Schema({
     recipientAddress: { type: String, default: '' },
     whatsappNotified: { type: Boolean, default: true },
 }, { timestamps: true });
+ParcelSchema.set('autoIndex', false);
 exports.Parcel = mongoose_1.default.model('Parcel', ParcelSchema);
+function ensureParcelIndexes() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            yield exports.Parcel.createCollection();
+        }
+        catch (error) {
+            if ((error === null || error === void 0 ? void 0 : error.code) !== 48 && (error === null || error === void 0 ? void 0 : error.codeName) !== 'NamespaceExists')
+                throw error;
+        }
+        const indexes = yield exports.Parcel.collection.indexes();
+        const trackingIndex = indexes.find((index) => index.name === 'trackingNumber_1');
+        if (trackingIndex && (trackingIndex.unique !== true || trackingIndex.sparse !== true)) {
+            yield exports.Parcel.collection.createIndex({ trackingNumber: 1 }, { name: 'trackingNumber_sparse_unique_v2', unique: true, sparse: true });
+            try {
+                yield exports.Parcel.collection.dropIndex('trackingNumber_1');
+            }
+            catch (error) {
+                if ((error === null || error === void 0 ? void 0 : error.code) !== 27 && (error === null || error === void 0 ? void 0 : error.codeName) !== 'IndexNotFound')
+                    throw error;
+            }
+        }
+        const currentNames = new Set((yield exports.Parcel.collection.indexes()).map((index) => index.name));
+        if (!currentNames.has('orderId_1'))
+            yield exports.Parcel.collection.createIndex({ orderId: 1 }, { name: 'orderId_1' });
+        if (!currentNames.has('trackingNumber_1') && !currentNames.has('trackingNumber_sparse_unique_v2')) {
+            yield exports.Parcel.collection.createIndex({ trackingNumber: 1 }, { name: 'trackingNumber_sparse_unique_v2', unique: true, sparse: true });
+        }
+        if (!currentNames.has('easyparcelShipmentId_1')) {
+            yield exports.Parcel.collection.createIndex({ easyparcelShipmentId: 1 }, { name: 'easyparcelShipmentId_1', unique: true, sparse: true });
+        }
+        if (!currentNames.has('easyparcelOrderNumber_1')) {
+            yield exports.Parcel.collection.createIndex({ easyparcelOrderNumber: 1 }, { name: 'easyparcelOrderNumber_1' });
+        }
+    });
+}

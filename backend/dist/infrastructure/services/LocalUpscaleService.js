@@ -1,37 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -43,14 +10,30 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.upscaleImageLocally = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ *
+ * FREE image upscaler — no API key, no signup, no per-image cost.
+ * Uses UpscalerJS (open-source, MIT licensed), running on TensorFlow.js's
+ * Node.js CPU backend, entirely on your own server. Nothing is sent to any
+ * third party; the model runs locally and downloads its (free) pretrained
+ * weights once on first use, then caches them.
+ *
+ * Setup required: NONE beyond `npm install` (already added to package.json).
+ * First upscale call will be slower as it downloads model weights (~a few
+ * MB) into node_modules; every call after that is fast to start.
+ */
 let tf = null;
 let Upscaler = null;
 const loadDeps = () => {
     if (!tf) {
-        tf = require("@tensorflow/tfjs-node");
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        tf = require('@tensorflow/tfjs-node');
     }
     if (!Upscaler) {
-        Upscaler = require("upscaler/node");
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        Upscaler = require('upscaler/node');
     }
 };
 let upscalerInstance = null;

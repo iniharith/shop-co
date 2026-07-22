@@ -38,10 +38,12 @@ class AuthController {
                     });
                 }
                 const { user, accessToken, refreshToken } = yield this.authUsecase.loginUser(email, password);
+                const safeUser = user.toObject();
+                delete safeUser.password;
                 res.status(api_constant_1.statusCodes.OK).json({
                     success: true,
                     message: "User logged in successfully",
-                    user,
+                    user: safeUser,
                     accessToken,
                     refreshToken
                 });
@@ -72,16 +74,52 @@ class AuthController {
                     });
                 }
                 const { user, accessToken, refreshToken } = yield this.authUsecase.registerUser({ email, password, name });
+                const safeUser = user.toObject();
+                delete safeUser.password;
                 res.status(api_constant_1.statusCodes.CREATED).json({
                     success: true,
                     message: "User registered successfully",
-                    user,
+                    user: safeUser,
                     accessToken,
                     refreshToken
                 });
             }
             catch (error) {
                 next(error);
+            }
+        });
+    }
+    /**
+     * @description Refresh access token using a valid refresh token
+     * @Method POST
+     * @Route /api/auth/refresh
+     * @Body refreshToken: string
+     * @ResponseJson {success: boolean, accessToken: string, refreshToken: string}
+     */
+    refresh(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            try {
+                const refreshToken = ((_a = req.cookies) === null || _a === void 0 ? void 0 : _a.__refreshToken) || ((_b = req.body) === null || _b === void 0 ? void 0 : _b.refreshToken);
+                if (!refreshToken) {
+                    return res.status(api_constant_1.statusCodes.BAD_REQUEST).json({
+                        success: false,
+                        message: "Refresh token required"
+                    });
+                }
+                const { accessToken, refreshToken: newRefreshToken } = yield this.authUsecase.refreshTokens(refreshToken);
+                return res.status(api_constant_1.statusCodes.OK).json({
+                    success: true,
+                    message: "Token refreshed",
+                    accessToken,
+                    refreshToken: newRefreshToken
+                });
+            }
+            catch (error) {
+                return res.status(api_constant_1.statusCodes.UNAUTHORIZED).json({
+                    success: false,
+                    message: error.message || "Invalid refresh token"
+                });
             }
         });
     }

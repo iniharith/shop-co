@@ -48,7 +48,7 @@ UserSchema.pre("save", function (next) {
     });
 });
 UserSchema.methods.comparePassword = function (password) {
-    return bcryptjs_1.default.compareSync(password, this.password);
+    return bcryptjs_1.default.compare(password, this.password);
 };
 const User = mongoose_1.default.model('User', UserSchema);
 exports.default = User;

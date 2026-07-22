@@ -53,11 +53,10 @@ exports.startTaskAutoTransitionJob = startTaskAutoTransitionJob;
 const node_cron_1 = __importDefault(require("node-cron"));
 const Task_1 = require("../../domain/entities/Task");
 const taskBroadcast_1 = require("../../shared/utils/taskBroadcast");
+const Parcel_1 = require("../../domain/entities/Parcel");
 const PACKAGING_TO_DELIVERED_DAYS = 14;
 /**
- * Cron job that automatically transitions tasks stuck in PACKAGING status
- * to DELIVERED after 14 days. Syncs the status change to the linked Order.
- * These orders then appear in the History > Done / Completed tab.
+ * Reconciles old packaging tasks only after parcel tracking confirms delivery.
  */
 function startTaskAutoTransitionJob() {
     console.log(`[Cron] 🕐 Task auto-transition job registered (runs daily at 2 AM)`);
@@ -92,7 +91,11 @@ function transitionPackagingToDelivered() {
                 try {
                     const taskId = task._id.toString();
                     const orderId = task.orderId;
-                    // Update task status
+                    if (!orderId || !(yield Parcel_1.Parcel.exists({ orderId: orderId.toString(), status: 'delivered' }))) {
+                        console.log(`[Cron] Skipping "${task.title}" because parcel delivery is not confirmed`);
+                        continue;
+                    }
+                    // Update task status only after the provider-backed Parcel is delivered.
                     yield Task_1.Task.findByIdAndUpdate(taskId, {
                         $set: {
                             status: 'DELIVERED',

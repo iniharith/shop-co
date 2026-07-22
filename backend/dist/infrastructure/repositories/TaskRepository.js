@@ -40,11 +40,16 @@ class TaskRepository {
             else {
                 query.isDeleted = { $ne: true };
             }
-            const days = (filters === null || filters === void 0 ? void 0 : filters.days) || 30;
-            const daysAgo = new Date();
-            daysAgo.setDate(daysAgo.getDate() - days);
-            query.createdAt = { $gte: daysAgo };
-            return Task_1.Task.find(query).select('-comments -activities').sort({ createdAt: -1 }).lean();
+            if ((filters === null || filters === void 0 ? void 0 : filters.days) !== undefined) {
+                const daysAgo = new Date();
+                daysAgo.setDate(daysAgo.getDate() - filters.days);
+                query.createdAt = { $gte: daysAgo };
+            }
+            return Task_1.Task.find(query)
+                .select('-comments -activities -files')
+                .sort({ createdAt: -1 })
+                .maxTimeMS(10000)
+                .lean();
         });
     }
     findById(id) {
@@ -60,6 +65,21 @@ class TaskRepository {
     updateByOrderId(orderId, data) {
         return __awaiter(this, void 0, void 0, function* () {
             yield Task_1.Task.updateMany({ orderId }, { $set: data });
+        });
+    }
+    findByOrderId(orderId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return Task_1.Task.find({ orderId });
+        });
+    }
+    countRecent() {
+        return __awaiter(this, arguments, void 0, function* (days = 30) {
+            const createdAfter = new Date();
+            createdAfter.setDate(createdAfter.getDate() - days);
+            return Task_1.Task.countDocuments({
+                isDeleted: { $ne: true },
+                createdAt: { $gte: createdAfter },
+            });
         });
     }
     delete(id) {

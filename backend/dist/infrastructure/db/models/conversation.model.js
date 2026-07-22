@@ -63,4 +63,6 @@ const ConversationSchema = new mongoose_1.Schema({
         default: Date.now,
     },
 }, { timestamps: true });
+ConversationSchema.index({ type: 1, lastMessageAt: -1 });
+ConversationSchema.index({ participants: 1, lastMessageAt: -1 });
 exports.ConversationModel = mongoose_1.default.model('Conversation', ConversationSchema);

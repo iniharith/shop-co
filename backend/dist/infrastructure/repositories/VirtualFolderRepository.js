@@ -47,5 +47,12 @@ class VirtualFolderRepository {
             return result;
         });
     }
+    update(id, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const result = yield VirtualFolder_1.VirtualFolder.findByIdAndUpdate(id, { $set: data }, { new: true });
+            notifyClients();
+            return result;
+        });
+    }
 }
 exports.virtualFolderRepository = new VirtualFolderRepository();

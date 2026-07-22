@@ -9,6 +9,7 @@ import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
 const redisService = new RedisService();
 const FILE_INDEX_CACHE_KEY = 'files:index:v1';
 const FILE_STATS_CACHE_KEY = 'files:stats:v1';
+const FILE_FOLDER_GROUP_CACHE_PREFIX = 'files:enrichedIndex:';
 let fileNotificationTimer: ReturnType<typeof setTimeout> | null = null;
 export const notifyFileClients = () => {
   if (fileNotificationTimer) clearTimeout(fileNotificationTimer);
@@ -16,6 +17,9 @@ export const notifyFileClients = () => {
     fileNotificationTimer = null;
     await redisService.del(FILE_INDEX_CACHE_KEY);
     await redisService.del(FILE_STATS_CACHE_KEY);
+    // Folder-group responses are keyed by status filters. Clear every
+    // variant so the visible file count updates immediately after a change.
+    await redisService.delByPrefix(FILE_FOLDER_GROUP_CACHE_PREFIX);
     await redisService.publish(REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' }));
   }, 300);
 };

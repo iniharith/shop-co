@@ -27,13 +27,11 @@ const data = [
 ];
 const initProduct = () => __awaiter(void 0, void 0, void 0, function* () {
     const productRepository = new product_repository_1.ProductRepository();
-    const productList = yield productRepository.findAll();
-    if (productList.length > 0) {
+    if (yield productRepository.hasAny()) {
         console.log("🎉 Products already initialized");
         return;
     }
     const products = yield productRepository.createMany(data);
-    console.log(products);
     console.log(products.length);
     console.log("🎉 Products initialized successfully");
 });

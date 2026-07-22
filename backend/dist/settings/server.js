@@ -28,6 +28,7 @@ const redis_1 = require("../infrastructure/redis/redis");
 const redisMessagesHandler_1 = require("../infrastructure/redis/redisMessagesHandler");
 const socketHandler_1 = require("../infrastructure/socket/socketHandler");
 const TrackingCronJob_1 = require("../infrastructure/jobs/TrackingCronJob");
+const TaskStatusAutoTransition_1 = require("../infrastructure/jobs/TaskStatusAutoTransition");
 const Parcel_1 = require("../domain/entities/Parcel");
 process.on("uncaughtException", (err) => {
     console.log("UNCAUGHT Exception! Ignoring ...");
@@ -43,9 +44,6 @@ function main() {
     return __awaiter(this, void 0, void 0, function* () {
         (0, dotenv_1.config)();
         yield (0, db_config_1.default)();
-        // Force all existing parcels to have whatsappNotified: true per user request
-        yield Parcel_1.Parcel.updateMany({}, { $set: { whatsappNotified: true } }).catch(console.error);
-        yield (0, initProduct_script_1.default)();
         yield (0, initAdmin_1.initAdmin)();
         redisService.connect();
         const server = http_1.default.createServer(app_1.default);
@@ -58,7 +56,13 @@ function main() {
         (0, redisMessagesHandler_1.handleRedisAndSocketMessageAdmin)(redisService, adminNameSpace);
         server.listen(constants_1.PORT, () => {
             console.log(`🎉 Server running on port ${constants_1.PORT}`);
-            (0, TrackingCronJob_1.startTrackingCronJob)(); // Auto-sync parcels every 15 min
+            setTimeout(() => {
+                void Promise.all([(0, Parcel_1.ensureParcelIndexes)(), (0, initProduct_script_1.default)()]).catch((error) => {
+                    console.error('Background startup maintenance failed:', error);
+                });
+                (0, TrackingCronJob_1.startTrackingCronJob)(); // Auto-sync parcels every 15 min
+                (0, TaskStatusAutoTransition_1.startTaskAutoTransitionJob)(); // Auto-move PACKAGING → DELIVERED after 14 days
+            }, 30000);
         });
     });
 }

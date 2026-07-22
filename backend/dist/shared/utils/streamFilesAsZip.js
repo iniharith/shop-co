@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.streamFilesAsZip = streamFilesAsZip;
+const downloadProgress_1 = require("./downloadProgress");
 const resolveDownloadUrl = (filePath) => __awaiter(void 0, void 0, void 0, function* () {
     if (!filePath.includes('amazonaws.com'))
         return filePath;
@@ -32,7 +33,7 @@ const resolveDownloadUrl = (filePath) => __awaiter(void 0, void 0, void 0, funct
  * Returns { success: false } (without touching `res`) if zero files were
  * reachable, so the caller can send its own error response instead.
  */
-function streamFilesAsZip(res, files, zipName) {
+function streamFilesAsZip(res, files, zipName, downloadId) {
     return __awaiter(this, void 0, void 0, function* () {
         // archiver v8 removed the old callable factory pattern (archiver('zip', opts))
         // and now exports classes directly — ZipArchive replaces it. append/pipe/
@@ -93,6 +94,9 @@ function streamFilesAsZip(res, files, zipName) {
             archive.on('entry', onEntry);
             archive.append(stream, { name });
         });
+        const total = candidates.length;
+        let completed = 0;
+        (0, downloadProgress_1.setDownloadProgress)(downloadId, 0, total);
         for (const { name, url } of candidates) {
             try {
                 const fileRes = yield fetch(url);
@@ -103,8 +107,13 @@ function streamFilesAsZip(res, files, zipName) {
             catch (e) {
                 console.warn(`[streamFilesAsZip] Failed streaming ${name} into archive:`, e);
             }
+            finally {
+                completed++;
+                (0, downloadProgress_1.setDownloadProgress)(downloadId, completed, total);
+            }
         }
         yield archive.finalize();
+        (0, downloadProgress_1.setDownloadProgress)(downloadId, total, total, true);
         return { success: true };
     });
 }

@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -21,8 +54,12 @@ const express_async_handler_1 = __importDefault(require("express-async-handler")
 const order_model_1 = __importDefault(require("../../infrastructure/db/models/order.model"));
 const ParcelRepository_1 = require("../../infrastructure/repositories/ParcelRepository");
 const EasyParcelService_1 = require("../../infrastructure/services/EasyParcelService");
+const EasyParcelTrackingSyncService_1 = require("../../infrastructure/services/EasyParcelTrackingSyncService");
 const WhatsAppService_1 = require("../../infrastructure/services/WhatsAppService");
+const CustomerUpdateSettingsService_1 = require("../../infrastructure/services/CustomerUpdateSettingsService");
+const auth_middileware_1 = __importStar(require("../middlewares/auth.middileware"));
 const router = (0, express_1.Router)();
+router.use(auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'production', 'packaging'));
 // ─── GET /api/parcels ─────────────────────────────────────────────────────────
 // List all parcels with optional filters (admin)
 router.get('/', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -36,6 +73,22 @@ router.get('/stats', (0, express_async_handler_1.default)((_req, res) => __await
     const stats = yield ParcelRepository_1.parcelRepository.getStats();
     const recent = yield ParcelRepository_1.parcelRepository.getRecentActivity(5);
     res.json({ success: true, data: stats, recent });
+})));
+router.get('/customer-update-settings', (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const enabled = yield (0, CustomerUpdateSettingsService_1.areWhatsAppCustomerUpdatesEnabled)();
+    res.json({ success: true, data: { enabled } });
+})));
+router.put('/customer-update-settings', (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    if (typeof req.body.enabled !== 'boolean') {
+        res.status(400).json({ success: false, message: 'enabled must be a boolean' });
+        return;
+    }
+    const enabled = yield (0, CustomerUpdateSettingsService_1.setWhatsAppCustomerUpdatesEnabled)(req.body.enabled);
+    res.json({
+        success: true,
+        data: { enabled },
+        message: `WhatsApp customer auto-updates ${enabled ? 'enabled' : 'disabled'}`,
+    });
 })));
 // ─── POST /api/parcels ────────────────────────────────────────────────────────
 // Create a new parcel record (admin)
@@ -96,7 +149,6 @@ router.put('/:id', (0, express_async_handler_1.default)((req, res) => __awaiter(
         'senderAddress',
         'recipientAddress',
         'courier',
-        'easyparcelShipmentId',
     ];
     const update = {};
     allowed.forEach((k) => {
@@ -111,12 +163,12 @@ router.put('/:id', (0, express_async_handler_1.default)((req, res) => __awaiter(
     // Sync order status if parcel status is updated manually
     if (update.status && updated.orderId) {
         let orderStatusStr = '';
-        if (['picked_up', 'in_transit', 'out_for_delivery'].includes(update.status))
+        if (update.status === 'picked_up')
+            orderStatusStr = 'SHIPPED';
+        if (['in_transit', 'out_for_delivery'].includes(update.status))
             orderStatusStr = 'IN_TRANSIT';
         if (update.status === 'delivered')
             orderStatusStr = 'DELIVERED';
-        if (update.status === 'failed')
-            orderStatusStr = 'CANCELLED';
         if (orderStatusStr) {
             yield order_model_1.default.findByIdAndUpdate(updated.orderId, { orderStatus: orderStatusStr });
         }
@@ -131,48 +183,52 @@ router.put('/:id/track', (0, express_async_handler_1.default)((req, res) => __aw
         res.status(404).json({ success: false, message: 'Parcel not found' });
         return;
     }
-    const result = yield EasyParcelService_1.easyParcelService.trackParcel(parcel.trackingNumber);
+    yield (0, EasyParcelTrackingSyncService_1.reconcilePendingAwbs)([parcel]);
+    const refreshedParcel = yield ParcelRepository_1.parcelRepository.findById(req.params.id);
+    if (!(refreshedParcel === null || refreshedParcel === void 0 ? void 0 : refreshedParcel.trackingNumber)) {
+        res.status(409).json({ success: false, message: 'AWB is still pending from EasyParcel' });
+        return;
+    }
+    const requestedAt = new Date();
+    const result = (yield EasyParcelService_1.easyParcelService.trackParcels([refreshedParcel.trackingNumber]))[0];
     if (!result) {
         res
             .status(502)
             .json({ success: false, message: 'Could not fetch tracking from EasyParcel. Check your API key.' });
         return;
     }
-    const statusChanged = result.status !== parcel.status;
-    const updated = yield ParcelRepository_1.parcelRepository.update(req.params.id, {
-        lastStatus: parcel.status,
+    const statusChanged = refreshedParcel.shipmentStatusCode === undefined
+        ? result.status !== refreshedParcel.status
+        : result.statusCode !== refreshedParcel.shipmentStatusCode;
+    const courier = result.courier === 'unknown' ? refreshedParcel.courier : result.courier;
+    const observedAt = (0, EasyParcelTrackingSyncService_1.providerObservationTime)(result.events, requestedAt);
+    const updated = yield ParcelRepository_1.parcelRepository.updateProviderStatus(req.params.id, observedAt, {
+        lastStatus: refreshedParcel.status,
         status: result.status,
-        courier: result.courier,
+        shipmentStatusCode: result.statusCode,
+        courier,
         events: result.events,
     });
-    if (statusChanged && (updated === null || updated === void 0 ? void 0 : updated.orderId)) {
-        let orderStatusStr = '';
-        if (['picked_up', 'in_transit', 'out_for_delivery'].includes(result.status))
-            orderStatusStr = 'IN_TRANSIT';
-        if (result.status === 'delivered')
-            orderStatusStr = 'DELIVERED';
-        if (result.status === 'failed')
-            orderStatusStr = 'CANCELLED';
-        if (orderStatusStr) {
-            yield order_model_1.default.findByIdAndUpdate(updated.orderId, { orderStatus: orderStatusStr });
-        }
-    }
+    const current = updated || (yield ParcelRepository_1.parcelRepository.findById(req.params.id));
+    if (current)
+        yield (0, EasyParcelTrackingSyncService_1.convergeOrderFromParcel)(current);
+    const appliedStatusChanged = statusChanged && Boolean(updated);
     // Auto-notify customer if status changed
-    if (statusChanged && parcel.customerPhone) {
+    if (appliedStatusChanged && parcel.customerPhone && (yield (0, CustomerUpdateSettingsService_1.areWhatsAppCustomerUpdatesEnabled)())) {
         yield WhatsAppService_1.whatsAppService.sendStatusUpdate({
             phone: parcel.customerPhone,
             customerName: parcel.customerName,
-            trackingNumber: parcel.trackingNumber,
+            trackingNumber: refreshedParcel.trackingNumber,
             status: result.status,
-            courier: result.courier,
+            courier,
         });
         yield ParcelRepository_1.parcelRepository.update(req.params.id, { whatsappNotified: true });
     }
     res.json({
         success: true,
-        data: updated,
-        statusChanged,
-        previousStatus: parcel.status,
+        data: current,
+        statusChanged: appliedStatusChanged,
+        previousStatus: refreshedParcel.status,
         newStatus: result.status,
     });
 })));
@@ -196,67 +252,34 @@ router.get('/:id/awb', (0, express_async_handler_1.default)((req, res) => __awai
         res.json({ success: true, awbUrl: parcel.awbUrl });
         return;
     }
-    const awbUrl = yield EasyParcelService_1.easyParcelService.getAWB(parcel.easyparcelShipmentId);
-    if (!awbUrl) {
-        res.status(502).json({ success: false, message: 'Could not fetch AWB from EasyParcel' });
+    yield (0, EasyParcelTrackingSyncService_1.reconcilePendingAwbs)([parcel]);
+    const refreshedParcel = yield ParcelRepository_1.parcelRepository.findById(req.params.id);
+    if (!(refreshedParcel === null || refreshedParcel === void 0 ? void 0 : refreshedParcel.awbUrl)) {
+        res.status(409).json({ success: false, message: 'AWB is still pending from EasyParcel' });
         return;
     }
-    yield ParcelRepository_1.parcelRepository.update(req.params.id, { awbUrl });
-    res.json({ success: true, awbUrl });
+    res.json({ success: true, awbUrl: refreshedParcel.awbUrl, awbUrlsByFormat: refreshedParcel.awbUrlsByFormat });
 })));
 // ─── POST /api/parcels/sync-all ───────────────────────────────────────────────
 // Manually trigger sync of all active parcels
 router.post('/sync-all', (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const activeParcels = yield ParcelRepository_1.parcelRepository.findActiveDeliveries();
-    let updated = 0;
-    let notified = 0;
-    for (const parcel of activeParcels) {
-        const result = yield EasyParcelService_1.easyParcelService.trackParcel(parcel.trackingNumber);
-        if (!result)
-            continue;
-        const statusChanged = result.status !== parcel.status;
-        const updatedParcel = yield ParcelRepository_1.parcelRepository.update(parcel._id, {
-            status: result.status,
-            courier: result.courier,
-            events: result.events,
-        });
-        updated++;
-        if (statusChanged && (updatedParcel === null || updatedParcel === void 0 ? void 0 : updatedParcel.orderId)) {
-            let orderStatusStr = '';
-            if (['picked_up', 'in_transit', 'out_for_delivery'].includes(result.status))
-                orderStatusStr = 'IN_TRANSIT';
-            if (result.status === 'delivered')
-                orderStatusStr = 'DELIVERED';
-            if (result.status === 'failed')
-                orderStatusStr = 'CANCELLED';
-            if (orderStatusStr) {
-                yield order_model_1.default.findByIdAndUpdate(updatedParcel.orderId, { orderStatus: orderStatusStr });
-            }
-        }
-        if (statusChanged && parcel.customerPhone) {
-            const sent = yield WhatsAppService_1.whatsAppService.sendStatusUpdate({
-                phone: parcel.customerPhone,
-                customerName: parcel.customerName,
-                trackingNumber: parcel.trackingNumber,
-                status: result.status,
-                courier: result.courier,
-            });
-            if (sent) {
-                yield ParcelRepository_1.parcelRepository.update(parcel._id, { whatsappNotified: true });
-                notified++;
-            }
-        }
-    }
+    const { updated, notified, reconciled } = yield (0, EasyParcelTrackingSyncService_1.syncParcelTracking)(activeParcels);
     res.json({
         success: true,
         message: `Synced ${updated} parcel(s), sent ${notified} WhatsApp notification(s)`,
         updated,
         notified,
+        reconciled,
     });
 })));
 // ─── POST /api/parcels/:id/whatsapp ───────────────────────────────────────────
 // Manually send a WhatsApp status update to a customer
 router.post('/:id/whatsapp', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!(yield (0, CustomerUpdateSettingsService_1.areWhatsAppCustomerUpdatesEnabled)())) {
+        res.status(503).json({ success: false, message: 'WhatsApp customer updates are temporarily disabled' });
+        return;
+    }
     const parcel = yield ParcelRepository_1.parcelRepository.findById(req.params.id);
     if (!parcel) {
         res.status(404).json({ success: false, message: 'Parcel not found' });
@@ -265,7 +288,7 @@ router.post('/:id/whatsapp', (0, express_async_handler_1.default)((req, res) => 
     const sent = yield WhatsAppService_1.whatsAppService.sendStatusUpdate({
         phone: parcel.customerPhone,
         customerName: parcel.customerName,
-        trackingNumber: parcel.trackingNumber,
+        trackingNumber: parcel.trackingNumber || 'Pending',
         status: parcel.status,
         courier: parcel.courier,
     });

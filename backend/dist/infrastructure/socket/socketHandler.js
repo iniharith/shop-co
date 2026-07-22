@@ -8,20 +8,53 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getOnlineUsersCount = exports.getReceiverSocketId = exports.socketIoSetup = void 0;
+/**
+ * Coded by Harith
+ * Kampungcetak ®
+ */
 const user_repository_1 = require("../db/repositories/user.repository");
+const jwt_1 = __importDefault(require("../../shared/utils/jwt"));
+const redis_1 = require("../redis/redis");
 const userSocketMap = new Map();
 const socketIoSetup = (io) => __awaiter(void 0, void 0, void 0, function* () {
     const userRepository = new user_repository_1.UserRepository();
+    const redisService = new redis_1.RedisService();
+    const adminRoles = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'];
+    if (io.name === '/admin') {
+        io.use((socket, next) => __awaiter(void 0, void 0, void 0, function* () {
+            var _a;
+            try {
+                const token = (_a = socket.handshake.auth) === null || _a === void 0 ? void 0 : _a.token;
+                if (!token)
+                    return next(new Error('Unauthorized'));
+                const { userId } = new jwt_1.default().verifyAccessToken(token);
+                if (!userId)
+                    return next(new Error('Unauthorized'));
+                const user = yield userRepository.findById(userId);
+                if (!user || !adminRoles.includes(user.role)) {
+                    return next(new Error('Unauthorized'));
+                }
+                socket.data.userId = userId.toString();
+                socket.data.user = user;
+                next();
+            }
+            catch (_b) {
+                next(new Error('Unauthorized'));
+            }
+        }));
+    }
     // listen when client is connected to socket
     io.on("connection", (socket) => __awaiter(void 0, void 0, void 0, function* () {
-        // const socketController = new SocketController(io);
-        const userId = socket.handshake.query["userId"];
+        const userId = socket.data.userId || socket.handshake.query["userId"];
         console.log("🟡 user conneted to socket from id:", socket.id, userId);
         if (userId && userId !== null && !!userId) {
             try {
-                const user = yield userRepository.findById(userId);
+                const user = socket.data.user || (yield userRepository.findById(userId));
                 if (user) {
                     // socket.join(userId as string)
                     userSocketMap.set(userId, socket.id);
@@ -29,6 +62,19 @@ const socketIoSetup = (io) => __awaiter(void 0, void 0, void 0, function* () {
                         message: `🔵 user:${user === null || user === void 0 ? void 0 : user.name} joined room `
                     });
                     console.log(`🟢 user data updated , ${user.name} is online`);
+                    if (io.name === '/admin') {
+                        socket.emit('realtime_status', { ready: redisService.isReady() });
+                    }
+                    const realtimeStatusInterval = io.name === '/admin'
+                        ? setInterval(() => socket.emit('realtime_status', { ready: redisService.isReady() }), 2000)
+                        : null;
+                    socket.on('disconnect', () => {
+                        if (realtimeStatusInterval)
+                            clearInterval(realtimeStatusInterval);
+                        if (userSocketMap.get(userId) === socket.id) {
+                            userSocketMap.delete(userId);
+                        }
+                    });
                 }
                 else {
                     userSocketMap.delete(userId);
