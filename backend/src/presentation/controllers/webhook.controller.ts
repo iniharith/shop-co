@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { OrderUsecase } from "../../application/usecases/orders/order.usecase";
 import { statusCodes } from "../../shared/constants/api.constant";
+import crypto from "crypto";
 
 export class WebhookController {
     private readonly orderUsecase: OrderUsecase;
@@ -17,15 +18,22 @@ export class WebhookController {
      */
     async easyParcelWebhook(req: Request, res: Response) {
         try {
-            console.log("Received EasyParcel Webhook:", req.body);
-            // Quick ack to EasyParcel so they don't timeout
-            res.status(statusCodes.OK).json({ status: "Received" });
-
-            // Process asynchronously
-            this.orderUsecase.processEasyParcelWebhook(req.body);
-        } catch (error) {
-            console.error("EasyParcel Webhook Error:", error);
-            // Already responded, so we just log
+            const expected = process.env.EASYPARCEL_WEBHOOK_SECRET?.trim() || "";
+            const received = typeof req.query.token === "string" ? req.query.token : "";
+            const expectedBuffer = Buffer.from(expected);
+            const receivedBuffer = Buffer.from(received);
+            const validSecret = expectedBuffer.length > 0
+                && expectedBuffer.length === receivedBuffer.length
+                && crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+            if (!validSecret) {
+                res.status(statusCodes.UNAUTHORIZED).json({ received: false });
+                return;
+            }
+            const processed = await this.orderUsecase.processEasyParcelWebhook(req.body);
+            res.status(statusCodes.OK).json({ received: true, processed });
+        } catch (error: any) {
+            console.error("EasyParcel webhook processing failed:", error?.message);
+            res.status(statusCodes.INTERNAL_SERVER_ERROR).json({ received: false, processed: false });
         }
     }
 }

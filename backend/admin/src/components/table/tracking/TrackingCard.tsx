@@ -3,12 +3,10 @@
  * Kampungcetak ®
  */
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSyncParcel, useSendWhatsApp, useUpdateParcel } from "@/hooks/useAdminDashboard";
@@ -27,6 +25,10 @@ const statusMap: Record<string, { label: string; step: number; icon: any; color:
   in_transit: { label: "In Transit", step: 2, icon: Truck, color: "text-indigo-500" },
   out_for_delivery: { label: "Out for Delivery", step: 3, icon: Truck, color: "text-orange-500" },
   delivered: { label: "Delivered", step: 4, icon: CircleCheckBig, color: "text-emerald-500" },
+  returned: { label: "Returned", step: 0, icon: CircleX, color: "text-rose-500" },
+  on_hold: { label: "On Hold", step: 1, icon: Clock, color: "text-amber-500" },
+  drop_off: { label: "Dropped Off", step: 1, icon: Package, color: "text-blue-500" },
+  cancelled: { label: "Cancelled", step: 0, icon: CircleX, color: "text-rose-500" },
   failed: { label: "Failed", step: 0, icon: CircleX, color: "text-rose-500" },
 };
 
@@ -34,13 +36,6 @@ export default function TrackingCard({ parcel, customerUpdatesEnabled = false }:
   const { mutate: syncMutate, isPending: isSyncing } = useSyncParcel();
   const { mutate: whatsappMutate, isPending: isSending } = useSendWhatsApp();
   const { mutate: updateMutate, isPending: isUpdating } = useUpdateParcel();
-
-  const [autoNotify, setAutoNotify] = useState(parcel.whatsappNotified ?? true);
-
-  const handleAutoNotifyChange = (checked: boolean) => {
-    setAutoNotify(checked);
-    updateMutate({ id: parcel._id, data: { whatsappNotified: checked } });
-  };
 
   const handleSync = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -75,7 +70,7 @@ export default function TrackingCard({ parcel, customerUpdatesEnabled = false }:
           <div className="flex justify-between items-start">
             <div className="flex flex-col">
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{parcel.courier}</span>
-              <h3 className="font-display text-lg font-bold text-slate-900 mt-1">{parcel.trackingNumber}</h3>
+              <h3 className="font-display text-lg font-bold text-slate-900 mt-1">{parcel.trackingNumber || "AWB pending"}</h3>
             </div>
             <div onClick={(e) => e.stopPropagation()}>
               <Select 
@@ -96,6 +91,10 @@ export default function TrackingCard({ parcel, customerUpdatesEnabled = false }:
                   <SelectItem value="in_transit">In Transit</SelectItem>
                   <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
                   <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="returned">Returned</SelectItem>
+                  <SelectItem value="on_hold">On Hold</SelectItem>
+                  <SelectItem value="drop_off">Dropped Off</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
                   <SelectItem value="failed">Failed</SelectItem>
                 </SelectContent>
               </Select>
@@ -130,14 +129,7 @@ export default function TrackingCard({ parcel, customerUpdatesEnabled = false }:
           </div>
 
           {/* Actions Footer */}
-          <div className={`flex items-center pt-3 border-t border-slate-50 mt-auto ${customerUpdatesEnabled ? 'justify-between' : 'justify-end'}`}>
-            {customerUpdatesEnabled && (
-              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                <Switch id={`auto-notify-${parcel._id}`} checked={autoNotify} onCheckedChange={handleAutoNotifyChange} disabled={isUpdating} />
-                <Label htmlFor={`auto-notify-${parcel._id}`} className="text-xs text-slate-600 cursor-pointer">Auto-notify</Label>
-              </div>
-            )}
-
+          <div className="flex items-center justify-end pt-3 border-t border-slate-50 mt-auto">
             <div className="flex items-center gap-2">
               <Button 
                 variant="outline" 
@@ -163,11 +155,11 @@ export default function TrackingCard({ parcel, customerUpdatesEnabled = false }:
                 </Button>
               )}
 
-              {parcel.awbUrl ? (
+              {(parcel.awbUrlsByFormat?.A6 || parcel.awbUrlsByFormat?.A4 || parcel.awbUrl) ? (
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={(e) => { e.stopPropagation(); window.open(parcel.awbUrl, "_blank"); }}
+                  onClick={(e) => { e.stopPropagation(); window.open(parcel.awbUrlsByFormat?.A6 || parcel.awbUrlsByFormat?.A4 || parcel.awbUrl, "_blank", "noopener,noreferrer"); }}
                   className="rounded-full h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                   title="Download AWB"
                 >
@@ -192,7 +184,7 @@ export default function TrackingCard({ parcel, customerUpdatesEnabled = false }:
           <div className="flex flex-col gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
             <div className="flex justify-between items-center">
               <span className="text-sm text-slate-500">Tracking No.</span>
-              <span className="font-semibold text-slate-900">{parcel.trackingNumber}</span>
+              <span className="font-semibold text-slate-900">{parcel.trackingNumber || "AWB pending"}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-slate-500">Customer</span>
@@ -219,16 +211,14 @@ export default function TrackingCard({ parcel, customerUpdatesEnabled = false }:
                   <SelectItem value="in_transit">In Transit</SelectItem>
                   <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
                   <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="returned">Returned</SelectItem>
+                  <SelectItem value="on_hold">On Hold</SelectItem>
+                  <SelectItem value="drop_off">Dropped Off</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
                   <SelectItem value="failed">Failed</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            {customerUpdatesEnabled && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-500">Auto-notify</span>
-                <Switch checked={autoNotify} onCheckedChange={handleAutoNotifyChange} disabled={isUpdating} />
-              </div>
-            )}
           </div>
 
           <div>
@@ -247,7 +237,7 @@ export default function TrackingCard({ parcel, customerUpdatesEnabled = false }:
                       <span className="text-sm font-medium text-slate-900">{event.description || event.status}</span>
                       <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
                         <Clock className="w-3 h-3" />
-                        <span>{event.datetime ? format(new Date(event.datetime), "dd MMM yyyy, HH:mm") : 'N/A'}</span>
+                        <span>{event.timestamp || event.datetime ? format(new Date(event.timestamp || event.datetime), "dd MMM yyyy, HH:mm") : 'N/A'}</span>
                         {event.location && (
                           <>
                             <span>•</span>

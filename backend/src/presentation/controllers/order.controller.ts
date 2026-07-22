@@ -127,7 +127,7 @@ export class OrderController {
      */ 
     async getOrdersByStatus(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            const orders = await this.orderUsecase.getOrdersByStatus(req.params.status as "PLACED" | "IN_PROGRESS" | "PENDING_ARTWORK" | "ARTWORK_REVIEWED" | "ARTWORK_REJECTED" | "IN_DESIGN" | "PEMBETULAN" | "DONE_DESIGN" | "IN_PRODUCTION" | "HOLD_PRINTING" | "DONE_PRINTING" | "PACKAGING" | "SHIPPED" | "IN_TRANSIT" | "DELIVERED" | "CANCELLED" | "FAILED");
+            const orders = await this.orderUsecase.getOrdersByStatus(req.params.status as "PLACED" | "IN_PROGRESS" | "PENDING_ARTWORK" | "ARTWORK_REVIEWED" | "ARTWORK_REJECTED" | "IN_DESIGN" | "PEMBETULAN" | "DONE_DESIGN" | "IN_PRODUCTION" | "HOLD_PRINTING" | "DONE_PRINTING" | "PACKAGING" | "SHIPPED" | "IN_TRANSIT" | "DELIVERED" | "RETURNED" | "CANCELLED" | "FAILED");
             res.status(statusCodes.OK).json({ message: "Orders fetched successfully", orders });
         } catch (error: any) {
             next(error);
@@ -163,8 +163,35 @@ export class OrderController {
      */
     async createShipment(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            const order = await this.orderUsecase.createShipment(req.params.orderId);
+            const order = await this.orderUsecase.createShipment(req.params.orderId, req.body);
             res.status(statusCodes.OK).json({ message: "Shipment created successfully", order });
+        } catch (error: any) {
+            next(error);
+        }
+    }
+
+    async getShippingQuotations(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            const quotations = await this.orderUsecase.getShippingQuotations(req.params.orderId, req.body);
+            res.status(statusCodes.OK).json({ message: "Shipping quotations fetched successfully", quotations });
+        } catch (error: any) {
+            next(error);
+        }
+    }
+
+    async refreshShipping(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            const order = await this.orderUsecase.refreshShipping(req.params.orderId);
+            res.status(statusCodes.OK).json({ message: "Shipment refreshed successfully", order });
+        } catch (error: any) {
+            next(error);
+        }
+    }
+
+    async reconcileShipping(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            const order = await this.orderUsecase.reconcileSubmittedShipment(req.params.orderId, req.body.shipmentNumber);
+            res.status(statusCodes.OK).json({ message: "Shipment reconciled successfully", order });
         } catch (error: any) {
             next(error);
         }

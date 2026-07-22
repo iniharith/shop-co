@@ -5,16 +5,18 @@
 "use client";
 import React, { useState, useMemo } from "react";
 import { DataTableSkeleton } from "../../global/table/data-table-skeleton";
-import { useCustomerUpdateSettings, useParcels } from "@/hooks/useAdminDashboard";
+import { useCustomerUpdateSettings, useParcels, useSyncAllParcels } from "@/hooks/useAdminDashboard";
 import TrackingCard from "./TrackingCard";
 import { PackageX, Search, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 export default function TrackingList() {
   const { data: response, isPending, refetch, isFetching } = useParcels();
   const { data: updateSettings } = useCustomerUpdateSettings();
+  const { mutate: syncAll, isPending: isSyncingAll } = useSyncAllParcels();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourier, setSelectedCourier] = useState("All");
 
@@ -25,9 +27,8 @@ export default function TrackingList() {
 
   const filteredParcels = useMemo(() => {
     return parcels.filter((parcel: any) => {
-      // Exclude done or cancelled orders from tracking view
-      const excludeStatuses = ["DELIVERED", "DONE_DESIGN", "CANCELLED", "FAILED"];
-      if (excludeStatuses.includes(parcel.orderStatus)) return false;
+      const terminalStatuses = ["delivered", "cancelled", "returned", "failed"];
+      if (terminalStatuses.includes(parcel.status)) return false;
 
       const matchesSearch = 
         parcel.trackingNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -68,6 +69,18 @@ export default function TrackingList() {
           </div>
           <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="rounded-xl h-10 w-10 shadow-sm border-slate-200 shrink-0" title="Refresh Tracking">
             <RefreshCw className={`w-4 h-4 text-slate-500 ${isFetching ? 'animate-spin' : ''}`} />
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => syncAll(undefined, {
+              onSuccess: (result: any) => toast.success(`Synced ${result.updated || 0} parcel(s)`),
+              onError: (error: any) => toast.error(error.response?.data?.message || "Failed to sync EasyParcel tracking"),
+            })}
+            disabled={isSyncingAll}
+            className="rounded-xl h-10 shadow-sm border-slate-200 shrink-0"
+          >
+            <RefreshCw className={`mr-2 w-4 h-4 text-slate-500 ${isSyncingAll ? 'animate-spin' : ''}`} />
+            Sync All
           </Button>
         </div>
         <Tabs value={selectedCourier} onValueChange={setSelectedCourier} className="w-full md:w-auto overflow-x-auto">

@@ -14,10 +14,40 @@ import { RedisService } from "../../../infrastructure/redis/redis";
 import { REDIS_CHANNELS, REDIS_KEYS } from "../../../shared/constants/redis.constant";
 import { IUserDocument } from "../../../domain/interfaces/user.interface";
 import WhatsAppService from "../../../infrastructure/whatsapp/whatsapp.service";
-import { easyparcelService } from "../../../infrastructure/services/easyparcel.service";
-import { calculateOrderTotalWeight } from "../../utils/weightCalculator";
+import { easyParcelService, EasyParcelApiError, EasyParcelParty, EasyParcelShipment, mapEasyParcelStatus } from "../../../infrastructure/services/EasyParcelService";
+import { normalizeMalaysianPhone, toMalaysianSubdivisionCode } from "../../../infrastructure/services/EasyParcelUtils";
 import { emitTaskUpdated } from "../../../shared/utils/taskBroadcast";
 import { notifyFileClients } from "../../../infrastructure/repositories/FileUploadRepository";
+import OrderModel from "../../../infrastructure/db/models/order.model";
+import { parcelRepository } from "../../../infrastructure/repositories/ParcelRepository";
+import { areWhatsAppCustomerUpdatesEnabled } from "../../../infrastructure/services/CustomerUpdateSettingsService";
+import { convergeOrderFromParcel } from "../../../infrastructure/services/EasyParcelTrackingSyncService";
+
+interface ShipmentDimensions {
+    weight: number;
+    width: number;
+    length: number;
+    height: number;
+    customerPhone?: string;
+    customerEmail?: string;
+}
+
+interface CreateShipmentInput extends ShipmentDimensions {
+    serviceId: string;
+    collectionDate: string;
+}
+
+function requiredSenderEnv(name: string): string {
+    const value = process.env[name]?.trim();
+    if (!value) throw new Error(`EasyParcel sender configuration is missing ${name}`);
+    return value;
+}
+
+function validateDimensions(input: ShipmentDimensions): void {
+    for (const key of ['weight', 'width', 'length', 'height'] as const) {
+        if (!Number.isFinite(input[key]) || input[key] <= 0) throw new Error(`${key} must be a positive number`);
+    }
+}
 
 export class OrderUsecase {
     private readonly orderRepository: OrderRepository
@@ -138,7 +168,7 @@ export class OrderUsecase {
         return order;
     }
 
-    async updateOrderStatus(orderId: string, updateStatus: "PLACED" | "IN_PROGRESS" | "PENDING_ARTWORK" | "ARTWORK_REVIEWED" | "ARTWORK_REJECTED" | "IN_DESIGN" | "PEMBETULAN" | "DONE_DESIGN" | "IN_PRODUCTION" | "HOLD_PRINTING" | "DONE_PRINTING" | "PACKAGING" | "SHIPPED" | "IN_TRANSIT" | "DELIVERED" | "CANCELLED" | "FAILED", syncTasks = true, sourceTaskId?: string) {
+    async updateOrderStatus(orderId: string, updateStatus: "PLACED" | "IN_PROGRESS" | "PENDING_ARTWORK" | "ARTWORK_REVIEWED" | "ARTWORK_REJECTED" | "IN_DESIGN" | "PEMBETULAN" | "DONE_DESIGN" | "IN_PRODUCTION" | "HOLD_PRINTING" | "DONE_PRINTING" | "PACKAGING" | "SHIPPED" | "IN_TRANSIT" | "DELIVERED" | "RETURNED" | "CANCELLED" | "FAILED", syncTasks = true, sourceTaskId?: string) {
         const order = await this.orderRepository.updateOrder(orderId, { orderStatus: updateStatus });
         if (!order) throw new Error("Order not found");
         
@@ -153,7 +183,7 @@ export class OrderUsecase {
             });
 
             const user = await this.userRepository.findById(order.userId.toString());
-            if (user && user.phoneNumber) {
+            if (user && user.phoneNumber && await areWhatsAppCustomerUpdatesEnabled()) {
                 let message = `Hello ${user.name || 'Customer'}, your order (ORD-${order._id.toString().slice(-6).toUpperCase()}) status has been updated to: *${updateStatus}*.\n\nThank you for shopping with KampungCetak!`;
                 
                 if (updateStatus === "ARTWORK_REJECTED") {
@@ -232,7 +262,7 @@ export class OrderUsecase {
     }
 
 
-    async getOrdersByStatus(status: "PLACED" | "IN_PROGRESS" | "PENDING_ARTWORK" | "ARTWORK_REVIEWED" | "ARTWORK_REJECTED" | "IN_DESIGN" | "PEMBETULAN" | "DONE_DESIGN" | "IN_PRODUCTION" | "HOLD_PRINTING" | "DONE_PRINTING" | "PACKAGING" | "SHIPPED" | "IN_TRANSIT" | "DELIVERED" | "CANCELLED" | "FAILED") {
+    async getOrdersByStatus(status: "PLACED" | "IN_PROGRESS" | "PENDING_ARTWORK" | "ARTWORK_REVIEWED" | "ARTWORK_REJECTED" | "IN_DESIGN" | "PEMBETULAN" | "DONE_DESIGN" | "IN_PRODUCTION" | "HOLD_PRINTING" | "DONE_PRINTING" | "PACKAGING" | "SHIPPED" | "IN_TRANSIT" | "DELIVERED" | "RETURNED" | "CANCELLED" | "FAILED") {
         const cachedOrders = await this.redisService.get(REDIS_KEYS.ORDERS + status);
         if (cachedOrders) {
             return JSON.parse(cachedOrders);
@@ -255,102 +285,397 @@ export class OrderUsecase {
         return address;
     }
 
-    async createShipment(orderId: string): Promise<IOrderDocument> {
-        const order = await this.orderRepository.getOrderById(orderId);
-        if (!order) throw new Error("Order not found");
-        if (order.easyparcelAwb) throw new Error("Shipment already created for this order");
+    async getShippingQuotations(orderId: string, input: ShipmentDimensions): Promise<any[]> {
+        validateDimensions(input);
+        const order = await this.getShippableOrder(orderId);
+        return easyParcelService.getQuotations([this.buildShipment(order, input)]);
+    }
 
-        const weight = calculateOrderTotalWeight(order.products);
-        const legacyState = order.address?.address?.trim() || '';
-        const malaysiaStates = [
-            'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Perak', 'Perlis',
-            'Pulau Pinang', 'Penang', 'Sabah', 'Sarawak', 'Selangor', 'Terengganu', 'Kuala Lumpur',
-            'Labuan', 'Putrajaya', 'Wilayah Persekutuan Kuala Lumpur', 'Wilayah Persekutuan Labuan',
-            'Wilayah Persekutuan Putrajaya'
-        ];
-        const recipientState = order.address?.state || malaysiaStates.find(
-            state => state.toLowerCase() === legacyState.toLowerCase()
-        ) || '';
+    async createShipment(orderId: string, input: CreateShipmentInput): Promise<IOrderDocument> {
+        validateDimensions(input);
+        if (!input.serviceId?.trim()) throw new Error('serviceId is required');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(input.collectionDate || '')) {
+            throw new Error('collectionDate must use YYYY-MM-DD');
+        }
+        const order = await this.getShippableOrder(orderId);
+        if (order.easyparcelShipmentId || order.easyparcelAwb) throw new Error('Shipment already created for this order');
+        const shipment = this.buildShipment(order, input);
 
-        const epResult = await easyparcelService.submitOrder({
-            weight: weight.toString(),
-            content: 'Printing Materials / Custom Products',
-            value: order.totalAmount.toString(),
-            customerName: order.customerName,
-            customerPhone: (order.userId as any)?.phoneNumber || '',
-            address: {
-                street: order.address.street,
-                city: order.address.city,
-                state: recipientState,
-                postalCode: order.address.postalCode,
-                country: order.address.country
+        const locked = await OrderModel.findOneAndUpdate(
+            {
+                _id: orderId,
+                paymentStatus: 'PAID',
+                orderStatus: { $in: ['DONE_PRINTING', 'PACKAGING'] },
+                easyparcelShipmentId: { $exists: false },
+                $or: [
+                    { easyparcelBookingStatus: { $exists: false } },
+                    { easyparcelBookingStatus: 'failed' },
+                ],
+            },
+            {
+                $set: {
+                    easyparcelBookingStatus: 'submitted',
+                    easyparcelServiceId: input.serviceId.trim(),
+                    shippingWeight: input.weight,
+                    shippingDimensions: { width: input.width, length: input.length, height: input.height },
+                    shippingCollectionDate: new Date(`${input.collectionDate}T00:00:00.000Z`),
+                    shippingCustomerPhone: shipment.receiver.phone.number,
+                    shippingCustomerEmail: shipment.receiver.email,
+                }
+            },
+            { new: true }
+        );
+        if (!locked) throw new Error('Shipment is already being submitted or the order is no longer shippable');
+
+        try {
+            const result = await easyParcelService.submitOrder({
+                ...shipment,
+                serviceId: input.serviceId.trim(),
+                collectionDate: input.collectionDate,
+                reference: orderId,
+                itemDescription: 'Printed Products',
+                itemValue: order.totalAmount,
+                currency: 'MYR',
+            });
+            const bookingStatus = result.awbNumber ? 'booked' : 'awb_pending';
+            const orderUpdate: any = {
+                easyparcelOrderNo: result.orderNumber,
+                easyparcelShipmentId: result.shipmentNumber,
+                easyparcelBookingStatus: bookingStatus,
+                easyparcelAwb: result.awbNumber || '',
+                trackingNumber: result.awbNumber || '',
+                awbUrl: result.awbUrl,
+                awbUrlsByFormat: result.awbUrlsByFormat,
+                trackingUrl: result.trackingUrl,
+                courier: result.courier,
+                shippingPrice: result.shippingPrice,
+            };
+            const updatedOrder = await this.orderRepository.updateOrder(orderId, orderUpdate);
+            const sender = this.buildSender();
+            const receiver = this.buildReceiver(order, input);
+            await parcelRepository.upsertByOrderId(orderId, {
+                trackingNumber: result.awbNumber || undefined,
+                easyparcelOrderNumber: result.orderNumber,
+                easyparcelShipmentId: result.shipmentNumber,
+                serviceId: input.serviceId,
+                courier: result.courier || 'unknown',
+                service: result.service,
+                awbUrl: result.awbUrl,
+                awbUrlsByFormat: result.awbUrlsByFormat,
+                trackingUrl: result.trackingUrl,
+                bookingStatus,
+                collectionDate: new Date(`${input.collectionDate}T00:00:00.000Z`),
+                shippingPrice: result.shippingPrice,
+                currency: result.currency || 'MYR',
+                dimensions: { width: input.width, length: input.length, height: input.height },
+                weight: input.weight,
+                customerName: order.customerName,
+                customerPhone: receiver.phone.number,
+                customerEmail: receiver.email,
+                senderName: sender.name,
+                senderPhone: sender.phone.number,
+                senderAddress: [sender.address1, sender.address2].filter(Boolean).join(', '),
+                recipientAddress: [receiver.address1, receiver.address2].filter(Boolean).join(', '),
+                status: 'pending',
+                lastStatus: '',
+            });
+            await this.invalidateOrderCaches(order);
+            return updatedOrder as IOrderDocument;
+        } catch (error) {
+            const definitelyRejected = error instanceof EasyParcelApiError && !error.ambiguous;
+            await OrderModel.findByIdAndUpdate(orderId, {
+                $set: { easyparcelBookingStatus: definitelyRejected ? 'failed' : 'submitted' }
+            });
+            if (!definitelyRejected) {
+                throw new Error('EasyParcel submission result is uncertain. Reconcile the shipment before retrying to avoid a duplicate charge.');
             }
+            throw error;
+        }
+    }
+
+    async refreshShipping(orderId: string): Promise<IOrderDocument> {
+        const order = await this.orderRepository.getOrderById(orderId);
+        if (!order) throw new Error('Order not found');
+        if (!order.easyparcelShipmentId) throw new Error('No EasyParcel shipment exists for this order');
+        const existingParcel = await parcelRepository.findByShipmentId(order.easyparcelShipmentId);
+        if (!existingParcel) return this.reconcileSubmittedShipment(orderId, order.easyparcelShipmentId);
+        const requestedAt = new Date();
+        const shipment = await easyParcelService.getShipmentDetails(order.easyparcelShipmentId);
+        const bookingStatus = shipment.awbNumber ? 'booked' : 'awb_pending';
+        const update: any = {
+            easyparcelBookingStatus: bookingStatus,
+            easyparcelAwb: shipment.awbNumber || '',
+            trackingNumber: shipment.awbNumber || '',
+            awbUrl: shipment.awbUrl,
+            awbUrlsByFormat: shipment.awbUrlsByFormat,
+            trackingUrl: shipment.trackingUrl,
+            courier: shipment.courier,
+        };
+        await this.orderRepository.updateOrder(orderId, update);
+        if (existingParcel) {
+            await parcelRepository.update(existingParcel._id.toString(), {
+                trackingNumber: shipment.awbNumber || undefined,
+                bookingStatus,
+                awbUrl: shipment.awbUrl,
+                awbUrlsByFormat: shipment.awbUrlsByFormat,
+                trackingUrl: shipment.trackingUrl,
+                courier: shipment.courier || existingParcel.courier,
+                service: shipment.service,
+            });
+        }
+        if (shipment.statusCode !== undefined) {
+            const applied = await parcelRepository.updateProviderStatus(existingParcel._id.toString(), requestedAt, {
+                shipmentStatusCode: shipment.statusCode,
+                status: mapEasyParcelStatus(shipment.statusCode),
+            });
+            const current = applied || await parcelRepository.findById(existingParcel._id.toString());
+            if (current) await convergeOrderFromParcel(current);
+        }
+        await this.invalidateOrderCaches(order);
+        return (await OrderModel.findById(orderId)) as IOrderDocument;
+    }
+
+    async reconcileSubmittedShipment(orderId: string, shipmentNumber: string): Promise<IOrderDocument> {
+        if (!/^ES-[A-Z0-9-]+$/i.test(shipmentNumber || '')) throw new Error('A valid EasyParcel shipment number is required');
+        const order = await this.orderRepository.getOrderById(orderId);
+        if (!order) throw new Error('Order not found');
+        if (order.easyparcelShipmentId && order.easyparcelShipmentId !== shipmentNumber) {
+            throw new Error('This order is already linked to a different EasyParcel shipment');
+        }
+        if (!order.easyparcelShipmentId && order.easyparcelBookingStatus !== 'submitted') {
+            throw new Error('Only an uncertain submitted shipment can be reconciled manually');
+        }
+
+        const linkedOrder = await OrderModel.findOne({ easyparcelShipmentId: shipmentNumber, _id: { $ne: orderId } }).select('_id').lean();
+        if (linkedOrder) throw new Error('This EasyParcel shipment is already linked to another order');
+        const requestedAt = new Date();
+        const shipment = await easyParcelService.getShipmentDetails(shipmentNumber);
+        const reference = shipment.raw?.shipment_details?.reference;
+        if (reference !== orderId) {
+            throw new Error('EasyParcel shipment reference does not match this order');
+        }
+        const bookingStatus = shipment.awbNumber ? 'booked' : 'awb_pending';
+        await this.orderRepository.updateOrder(orderId, {
+            easyparcelOrderNo: shipment.raw?.order_number || order.easyparcelOrderNo,
+            easyparcelShipmentId: shipment.shipmentNumber,
+            easyparcelBookingStatus: bookingStatus,
+            easyparcelAwb: shipment.awbNumber || '',
+            trackingNumber: shipment.awbNumber || '',
+            awbUrl: shipment.awbUrl,
+            awbUrlsByFormat: shipment.awbUrlsByFormat,
+            trackingUrl: shipment.trackingUrl,
+            courier: shipment.courier,
+            shippingPrice: Number(shipment.raw?.pricing?.total_price || shipment.raw?.pricing?.shipment_price) || order.shippingPrice,
         });
 
-        const updatedOrder = await this.orderRepository.updateOrder(orderId, {
-            easyparcelOrderNo: epResult.orderNo,
-            easyparcelAwb: epResult.awb,
-            trackingNumber: epResult.awb
+        const user = order.userId as any;
+        const raw = shipment.raw || {};
+        const reconciledParcel = await parcelRepository.upsertByOrderId(orderId, {
+            trackingNumber: shipment.awbNumber || undefined,
+            easyparcelShipmentId: shipment.shipmentNumber,
+            easyparcelOrderNumber: raw.order_number || order.easyparcelOrderNo,
+            serviceId: raw.courier?.service_id || order.easyparcelServiceId,
+            courier: shipment.courier || order.courier || 'unknown',
+            service: shipment.service,
+            awbUrl: shipment.awbUrl,
+            awbUrlsByFormat: shipment.awbUrlsByFormat,
+            trackingUrl: shipment.trackingUrl,
+            bookingStatus,
+            collectionDate: order.shippingCollectionDate || (raw.shipment_details?.coll_date ? new Date(raw.shipment_details.coll_date) : undefined),
+            shippingPrice: Number(raw.pricing?.total_price || raw.pricing?.shipment_price) || order.shippingPrice,
+            currency: raw.pricing?.currency_code || 'MYR',
+            dimensions: order.shippingDimensions || {
+                width: Number(raw.shipment_details?.width) || 0,
+                length: Number(raw.shipment_details?.length) || 0,
+                height: Number(raw.shipment_details?.height) || 0,
+            },
+            weight: order.shippingWeight || Number(raw.shipment_details?.weight) || 1,
+            customerName: order.customerName,
+            customerPhone: order.shippingCustomerPhone || raw.receiver?.contact || user?.phoneNumber || 'Unavailable',
+            customerEmail: order.shippingCustomerEmail || raw.receiver?.email || user?.email,
+            senderName: raw.sender?.name || process.env.EASYPARCEL_SENDER_NAME || 'Kampung Cetak',
+            senderPhone: raw.sender?.contact || process.env.EASYPARCEL_SENDER_PHONE || '',
+            senderAddress: raw.sender?.address1 || process.env.EASYPARCEL_SENDER_ADDRESS_1 || '',
+            recipientAddress: raw.receiver?.address1 || order.address?.street || '',
         });
-
-        // Invalidate caches
-        await this.redisService.del(REDIS_KEYS.ORDERS);
-        await this.redisService.del(REDIS_KEYS.ORDERS + orderId);
-        if (order.userId) await this.redisService.del(REDIS_KEYS.ORDERS + (order.userId as any)?._id);
-
-        return updatedOrder as IOrderDocument;
+        if (shipment.statusCode !== undefined) {
+            const applied = await parcelRepository.updateProviderStatus(reconciledParcel._id.toString(), requestedAt, {
+                shipmentStatusCode: shipment.statusCode,
+                status: mapEasyParcelStatus(shipment.statusCode),
+            });
+            const current = applied || await parcelRepository.findById(reconciledParcel._id.toString());
+            if (current) await convergeOrderFromParcel(current);
+        }
+        await this.invalidateOrderCaches(order);
+        return (await OrderModel.findById(orderId)) as IOrderDocument;
     }
 
     async getTracking(orderId: string): Promise<any> {
         const order = await this.orderRepository.getOrderById(orderId);
-        if (!order) throw new Error("Order not found");
-        if (!order.easyparcelAwb) throw new Error("No tracking number available for this order");
-
-        return await easyparcelService.getTrackingStatus(order.easyparcelAwb);
+        if (!order) throw new Error('Order not found');
+        if (!order.easyparcelAwb) throw new Error('No tracking number available for this order');
+        return easyParcelService.trackParcels([order.easyparcelAwb]);
     }
 
     async processEasyParcelWebhook(payload: any): Promise<boolean> {
-        try {
-            const awb = payload.awb || payload.tracking_number;
-            const newStatus = payload.status || payload.status_name;
+        const topic = String(payload?.topic || payload?.event || '');
+        if (!['shipment.awb.update', 'shipment.status.update', 'shipment.tracking.update'].includes(topic)) return false;
+        const data = payload?.data || payload?.payload || payload || {};
+        const shipmentNumber = String(data.shipment_number || '');
+        if (!shipmentNumber) return false;
+        const parcel = await parcelRepository.findByShipmentId(shipmentNumber);
+        if (!parcel) return false;
 
-            if (!awb || !newStatus) {
-                console.log("Invalid webhook payload:", payload);
-                return false;
-            }
-
-            const order = await this.orderRepository.getOrderByAwb(awb);
-            if (!order) {
-                console.log(`Order not found for AWB: ${awb}`);
-                return false;
-            }
-
-            let sysStatus = order.orderStatus;
-            if (newStatus.toLowerCase().includes('deliver')) {
-                sysStatus = 'DELIVERED';
-            } else if (newStatus.toLowerCase().includes('transit')) {
-                sysStatus = 'IN_TRANSIT';
-            }
-
-            if (sysStatus !== order.orderStatus) {
-                await this.orderRepository.updateOrder(order._id.toString(), { orderStatus: sysStatus });
-                
-                await this.redisService.del(REDIS_KEYS.ORDERS);
-                await this.redisService.del(REDIS_KEYS.ORDERS + order._id.toString());
-                if (order.userId) await this.redisService.del(REDIS_KEYS.ORDERS + (order.userId as any)?._id);
-            }
-
-            // WhatsApp Notification
-            const user = order.userId as any;
-            if (user && user.phoneNumber) {
-                const message = `*KAMPUNGCETAK ORDER UPDATE*\n\nHi ${order.customerName},\nYour order \`${order._id.toString().slice(-8).toUpperCase()}\` tracking status has been updated by EasyParcel.\n\n*Status:* ${newStatus}\n*AWB:* ${awb}\n\nYou can track your parcel live on our website!`;
-                await WhatsAppService.sendMessage(user.phoneNumber, message);
-            }
-
-            return true;
-        } catch (e) {
-            console.error("Webhook processing error:", e);
-            return false;
+        const awb = data.awb_number || data.awb || parcel.trackingNumber;
+        const statusCode = Number(data.latest_shipment_status_code ?? data.status_code ?? data.shipment_status_code);
+        const hasStatusCode = Number.isFinite(statusCode);
+        const newStatus = hasStatusCode ? mapEasyParcelStatus(statusCode) : parcel.status;
+        const statusChanged = parcel.shipmentStatusCode === undefined
+            ? newStatus !== parcel.status
+            : hasStatusCode && statusCode !== parcel.shipmentStatusCode;
+        const eventSource = data.status_log || data.events || data.tracking_events;
+        const incomingEvents = Array.isArray(eventSource)
+            ? eventSource
+            : eventSource && typeof eventSource === 'object'
+                ? Object.values(eventSource)
+                : [];
+        const rawEvents = incomingEvents.length ? incomingEvents : [...(parcel.events || [])];
+        const providerTimestampValues = [data.event_date, data.timestamp, payload?.event_date, payload?.timestamp]
+            .concat(incomingEvents.map((event: any) => event?.event_date || event?.timestamp || event?.datetime))
+            .map((value) => value ? new Date(value) : null)
+            .filter((value): value is Date => Boolean(value && !Number.isNaN(value.getTime())));
+        const providerStatusUpdatedAt = providerTimestampValues.length
+            ? new Date(Math.max(...providerTimestampValues.map((value) => value.getTime())))
+            : undefined;
+        const events = rawEvents.map((event: any) => ({
+            status: String(event.shipment_status_code ?? event.status ?? event.status_name ?? event.status_code ?? ''),
+            description: String(event.tracking_status || event.description || event.message || ''),
+            location: String(event.location || ''),
+            timestamp: new Date(event.event_date || event.timestamp || event.datetime || Date.now()),
+        }));
+        if (!eventSource && hasStatusCode && statusChanged) {
+            events.push({
+                status: String(statusCode),
+                description: String(data.latest_tracking_status || data.shipment_status || ''),
+                location: String(data.location || ''),
+                timestamp: new Date(data.event_date || data.timestamp || Date.now()),
+            });
         }
+        const parcelUpdate = {
+            trackingNumber: awb || undefined,
+            bookingStatus: awb ? 'booked' : parcel.bookingStatus,
+            awbUrl: data.awb_url || parcel.awbUrl,
+            trackingUrl: data.tracking_url || parcel.trackingUrl,
+        };
+        let statusApplied = false;
+        let updatedParcel;
+        if (hasStatusCode && providerStatusUpdatedAt) {
+            updatedParcel = await parcelRepository.updateProviderStatus(parcel._id.toString(), providerStatusUpdatedAt, {
+                ...parcelUpdate,
+                lastStatus: statusChanged ? parcel.status : parcel.lastStatus,
+                status: newStatus,
+                shipmentStatusCode: statusCode,
+                events,
+            });
+            statusApplied = Boolean(updatedParcel);
+        }
+        if (!updatedParcel) updatedParcel = await parcelRepository.update(parcel._id.toString(), parcelUpdate);
+        const appliedStatusChanged = statusChanged && statusApplied;
+        const orderUpdate: any = {
+            easyparcelAwb: awb || '',
+            trackingNumber: awb || '',
+            easyparcelBookingStatus: awb ? 'booked' : parcel.bookingStatus,
+            awbUrl: data.awb_url || parcel.awbUrl,
+            trackingUrl: data.tracking_url || parcel.trackingUrl,
+        };
+        await OrderModel.findByIdAndUpdate(parcel.orderId, { $set: orderUpdate });
+        if (updatedParcel) await convergeOrderFromParcel(updatedParcel);
+
+        if (appliedStatusChanged && updatedParcel?.customerPhone && await areWhatsAppCustomerUpdatesEnabled()) {
+            await WhatsAppService.sendMessage(
+                updatedParcel.customerPhone,
+                `Your order ${updatedParcel.orderId.slice(-8).toUpperCase()} is now ${newStatus.replace(/_/g, ' ')}. Tracking: ${awb || 'pending'}`
+            );
+        }
+        await this.redisService.del(REDIS_KEYS.ORDERS);
+        await this.redisService.del(REDIS_KEYS.ORDERS + parcel.orderId);
+        return true;
+    }
+
+    private async getShippableOrder(orderId: string): Promise<IOrderDocument> {
+        const order = await this.orderRepository.getOrderById(orderId);
+        if (!order) throw new Error('Order not found');
+        if (order.paymentStatus !== 'PAID') throw new Error('Order must be paid before shipping');
+        if (!['DONE_PRINTING', 'PACKAGING'].includes(order.orderStatus)) {
+            throw new Error('Order must be done printing or in packaging before shipping');
+        }
+        return order;
+    }
+
+    private buildShipment(order: IOrderDocument, input: ShipmentDimensions): EasyParcelShipment {
+        return {
+            sender: this.buildSender(),
+            receiver: this.buildReceiver(order, input),
+            weight: input.weight,
+            width: input.width,
+            length: input.length,
+            height: input.height,
+            parcelValue: order.totalAmount,
+        };
+    }
+
+    private buildSender(): EasyParcelParty {
+        const countryCode = (process.env.EASYPARCEL_SENDER_COUNTRY_CODE?.trim() || 'MY').toUpperCase();
+        const subdivision = requiredSenderEnv('EASYPARCEL_SENDER_SUBDIVISION_CODE');
+        return {
+            name: requiredSenderEnv('EASYPARCEL_SENDER_NAME'),
+            company: process.env.EASYPARCEL_SENDER_COMPANY?.trim() || undefined,
+            phone: normalizeMalaysianPhone(requiredSenderEnv('EASYPARCEL_SENDER_PHONE')),
+            email: process.env.EASYPARCEL_SENDER_EMAIL?.trim() || undefined,
+            address1: requiredSenderEnv('EASYPARCEL_SENDER_ADDRESS_1'),
+            address2: process.env.EASYPARCEL_SENDER_ADDRESS_2?.trim() || undefined,
+            postcode: requiredSenderEnv('EASYPARCEL_SENDER_POSTCODE'),
+            city: requiredSenderEnv('EASYPARCEL_SENDER_CITY'),
+            subdivisionCode: countryCode === 'MY' ? toMalaysianSubdivisionCode(subdivision) : subdivision,
+            countryCode,
+        };
+    }
+
+    private buildReceiver(order: IOrderDocument, input: ShipmentDimensions): EasyParcelParty {
+        const user = order.userId as any;
+        const phone = input.customerPhone?.trim() || user?.phoneNumber || '';
+        const email = input.customerEmail?.trim() || user?.email || undefined;
+        const country = (order.address?.country || 'MY').trim();
+        const countryCode = /^(my|malaysia)$/i.test(country) ? 'MY' : country.toUpperCase();
+        if (countryCode !== 'MY') throw new Error('Only Malaysian receiver addresses are currently supported');
+        const state = order.address?.state?.trim() || order.address?.address?.trim() || '';
+        const legacyAddress = order.address?.address?.trim();
+        let address2 = legacyAddress && legacyAddress !== order.address?.street ? legacyAddress : undefined;
+        if (address2) {
+            try {
+                toMalaysianSubdivisionCode(address2);
+                address2 = undefined;
+            } catch {
+                // Legacy checkout records sometimes stored the state in `address`.
+            }
+        }
+        return {
+            name: order.customerName,
+            phone: normalizeMalaysianPhone(phone),
+            email,
+            address1: order.address?.street,
+            address2,
+            postcode: order.address?.postalCode,
+            city: order.address?.city,
+            subdivisionCode: toMalaysianSubdivisionCode(state),
+            countryCode,
+        };
+    }
+
+    private async invalidateOrderCaches(order: IOrderDocument): Promise<void> {
+        await this.redisService.del(REDIS_KEYS.ORDERS);
+        await this.redisService.del(REDIS_KEYS.ORDERS + order._id.toString());
+        const userId = (order.userId as any)?._id || order.userId;
+        if (userId) await this.redisService.del(REDIS_KEYS.ORDERS + userId.toString());
     }
 }

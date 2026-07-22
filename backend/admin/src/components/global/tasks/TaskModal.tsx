@@ -375,6 +375,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
         folderName: fullTask.title || task.title,
         taskId: task._id,
         orderId: fullTask.orderId || task.orderId || undefined,
+        audience: "CUSTOMER",
       });
       const slug = res?.data?.slug;
       if (!slug) {

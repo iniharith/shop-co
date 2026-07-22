@@ -10,12 +10,13 @@ import multerS3 from 'multer-s3';
 import { fileUploadRepository } from '../../infrastructure/repositories/FileUploadRepository';
 import { FileUpload } from '../../domain/entities/FileUpload';
 import { whatsAppService } from '../../infrastructure/services/WhatsAppService';
-import authMiddilware from '../middlewares/auth.middileware';
+import authMiddilware, { authorizeRoles } from '../middlewares/auth.middileware';
 import { taskRepository } from '../../infrastructure/repositories/TaskRepository';
 import { Task } from '../../domain/entities/Task';
 import UserRepository from '../../infrastructure/db/repositories/user.repository';
 import { shareLinkRepository } from '../../infrastructure/repositories/ShareLinkRepository';
 import { ShareLink } from '../../domain/entities/ShareLink';
+import { VirtualFolder } from '../../domain/entities/VirtualFolder';
 import OrderRepository from '../../infrastructure/db/repositories/order.repository';
 import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
 import { streamFilesAsZip } from '../../shared/utils/streamFilesAsZip';
@@ -439,11 +440,17 @@ router.post(
 router.post(
   '/share-link',
   authMiddilware,
+  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
   asyncHandler(async (req: Request, res: Response) => {
-    const { folderName, taskId, orderId, userId, folderId } = req.body;
+    const { folderName, taskId, orderId, userId, folderId, audience: requestedAudience } = req.body;
+    const audience = requestedAudience || 'CUSTOMER';
 
     if (!folderName) {
       res.status(400).json({ success: false, message: 'folderName diperlukan' });
+      return;
+    }
+    if (!['CUSTOMER', 'SUPPLIER'].includes(audience)) {
+      res.status(400).json({ success: false, message: 'audience mesti CUSTOMER atau SUPPLIER' });
       return;
     }
 
@@ -487,6 +494,7 @@ router.post(
       orderId: resolvedOrderId,
       userId: resolvedUserId,
       folderId,
+      audience,
     });
     res.json({ success: true, data: link });
   })
@@ -498,6 +506,7 @@ router.post(
 router.put(
   '/share-link/:slug',
   authMiddilware,
+  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
   asyncHandler(async (req: Request, res: Response) => {
     const link = await shareLinkRepository.findBySlug(req.params.slug);
     if (!link) {
@@ -518,6 +527,7 @@ router.put(
 router.get(
   '/share-links',
   authMiddilware,
+  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
   asyncHandler(async (_req: Request, res: Response) => {
     const links = await ShareLink.find().sort({ createdAt: -1 });
     res.json({ success: true, data: links });
@@ -529,6 +539,7 @@ router.get(
 router.delete(
   '/share-link/:slug',
   authMiddilware,
+  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
   asyncHandler(async (req: Request, res: Response) => {
     await ShareLink.deleteOne({ slug: req.params.slug });
     res.json({ success: true });
@@ -545,12 +556,42 @@ const getShareFileConditions = (link: any, slug: string): any[] => {
   return conditions;
 };
 
-const fileBelongsToShareLink = (file: any, link: any, slug: string): boolean =>
-  file.shareSlug === slug ||
-  (!!link.folderId && file.folderId?.toString() === link.folderId.toString()) ||
-  (!link.folderId && !!link.taskId && file.taskId?.toString() === link.taskId.toString()) ||
-  (!link.folderId && !link.taskId && !!link.orderId && file.orderId?.toString() === link.orderId.toString()) ||
-  (!link.folderId && !link.taskId && !link.orderId && !!link.userId && file.userId?.toString() === link.userId.toString());
+const shareAudience = (link: any): 'CUSTOMER' | 'SUPPLIER' =>
+  link.audience === 'SUPPLIER' ? 'SUPPLIER' : 'CUSTOMER';
+
+const getShareFileQuery = (link: any, slug: string): any => {
+  const audience = shareAudience(link);
+  const legacyCustomerPortal = audience === 'CUSTOMER' && String(link.folderName || '').startsWith('Artwork Upload:');
+  const customerTagConditions: any[] = [
+    { tag: { $in: ['draft', 'attachment'] } },
+    {
+      $and: [
+        { shareSlug: slug },
+        { $or: [{ tag: { $exists: false } }, { tag: null }, { tag: '' }] },
+      ],
+    },
+  ];
+  if (legacyCustomerPortal) {
+    customerTagConditions.push({ $or: [{ tag: { $exists: false } }, { tag: null }, { tag: '' }] });
+  }
+  const filters: any[] = [
+    { $or: getShareFileConditions(link, slug) },
+    audience === 'SUPPLIER'
+      ? { tag: 'for_print' }
+      : { $or: customerTagConditions },
+  ];
+  if (audience === 'CUSTOMER') {
+    filters.push({
+      $or: [
+        { folderId: { $exists: false } },
+        { folderId: null },
+        { folderId: '' },
+        { folderId: 'null' },
+      ],
+    });
+  }
+  return { $and: filters };
+};
 
 router.get(
   '/s/:slug',
@@ -565,8 +606,15 @@ router.get(
     // Match files 3 ways and merge: by the exact slug stamp (covers every
     // customer upload through this link), and by taskId/orderId (covers
     // files the admin added directly to the folder before sharing it).
-    const files = await FileUpload.find({ $or: getShareFileConditions(link, req.params.slug) }).sort({ uploadedAt: -1 });
-    res.json({ success: true, data: files, folderName: link.folderName });
+    const files = await FileUpload.find(getShareFileQuery(link, req.params.slug))
+      .select('_id originalName mimetype size uploadedAt notes tag folderId')
+      .sort({ uploadedAt: -1 });
+    const audience = shareAudience(link);
+    let folders: any[] = [];
+    if (audience === 'SUPPLIER' && link.taskId) {
+      folders = await VirtualFolder.find({ taskId: link.taskId }).select('_id name').sort({ name: 1 }).lean();
+    }
+    res.json({ success: true, data: files, folders, folderName: link.folderName, audience });
   })
 );
 
@@ -595,7 +643,7 @@ router.get(
       return;
     }
 
-    const files = await FileUpload.find({ $or: getShareFileConditions(link, req.params.slug) }).sort({ uploadedAt: -1 });
+    const files = await FileUpload.find(getShareFileQuery(link, req.params.slug)).sort({ uploadedAt: -1 });
 
     if (!files.length) {
       res.status(404).json({ success: false, message: 'No files found' });
@@ -668,8 +716,24 @@ const decodeSharedSlug = async (req: any, res: any, next: any) => {
   req.userId = link.userId || 'customer';
   req.taskId = link.taskId;
   req.orderId = link.orderId;
-  req.folderId = link.folderId;
+  const requestedFolderId = typeof req.body?.folderId === 'string' ? req.body.folderId : undefined;
+  if (requestedFolderId && shareAudience(link) === 'SUPPLIER') {
+    if (!link.taskId || !/^[a-f\d]{24}$/i.test(requestedFolderId)) {
+      res.status(400).json({ success: false, message: 'Invalid supplier folder' });
+      return;
+    }
+    const folderExists = await VirtualFolder.exists({ _id: requestedFolderId, taskId: link.taskId });
+    if (!folderExists) {
+      res.status(403).json({ success: false, message: 'Supplier folder is outside this share link' });
+      return;
+    }
+    req.folderId = requestedFolderId;
+  } else {
+    req.folderId = link.folderId;
+  }
   req.shareSlug = req.params.slug;
+  req.shareAudience = shareAudience(link);
+  req.shareTag = shareAudience(link) === 'SUPPLIER' ? 'for_print' : 'attachment';
   // Preserve folder type so the admin UI re-groups this upload into the
   // SAME folder the link was generated from (task folders are grouped by
   // taskId/category, not by userId).
@@ -756,6 +820,7 @@ router.post(
           size: f.size,
           path: f.path,
           taskId: savedTask._id.toString(),
+          tag: 'attachment',
           adminReviewed: false,
         })
       )
@@ -770,6 +835,7 @@ router.post(
       taskId: savedTask._id.toString(),
       orderId: orderId,
       userId: username,
+      audience: 'CUSTOMER',
     });
 
     res.json({ success: true, data: savedFiles, task: savedTask, shareLinkSlug: shareLink.slug });
@@ -839,7 +905,7 @@ router.post(
       return;
     }
 
-    const { taskId, orderId, userId, folderId, shareCategory, shareSlug } = req as any;
+    const { taskId, orderId, userId, folderId, shareCategory, shareSlug, shareTag } = req as any;
 
     const savedFiles = await Promise.all(
       files.map((f: any) =>
@@ -850,6 +916,7 @@ router.post(
           folderId: folderId || undefined,
           category: shareCategory || 'artwork',
           shareSlug,
+          tag: shareTag,
           filename: f.key,
           originalName: f.originalName,
           mimetype: f.mimetype || 'application/octet-stream',
@@ -870,7 +937,7 @@ router.post(
   upload.array('files', 100),
   asyncHandler(async (req: Request, res: Response) => {
     const files = req.files as (Express.Multer.File & { path: string; filename: string })[];
-    const { taskId, orderId, userId, folderId, shareCategory, shareSlug } = req as any;
+    const { taskId, orderId, userId, folderId, shareCategory, shareSlug, shareTag } = req as any;
 
     if (!files || files.length === 0) {
       res.status(400).json({ success: false, message: 'Tiada fail dipilih' });
@@ -886,6 +953,7 @@ router.post(
           folderId: folderId || undefined,
           category: shareCategory || 'artwork',
           shareSlug,
+          tag: shareTag,
           filename: (file as any).key || file.filename || file.originalname,
           originalName: file.originalname,
           mimetype: file.mimetype,
@@ -915,16 +983,11 @@ router.get(
       return;
     }
 
-    const file = await fileUploadRepository.findById(req.params.id);
+    const file = await FileUpload.findOne({ _id: req.params.id, ...getShareFileQuery(link, req.params.slug) });
     if (!file) {
       res.status(404).json({ success: false, message: 'File not found' });
       return;
     }
-    if (!fileBelongsToShareLink(file, link, req.params.slug)) {
-      res.status(403).json({ success: false, message: 'Access denied' });
-      return;
-    }
-
     const download = req.query.download === 'true';
     const disposition = download ? 'attachment' : 'inline';
     const safeName = file.originalName.replace(/"/g, '\\"');
@@ -973,15 +1036,9 @@ router.delete(
       res.status(404).json({ success: false, message: 'Link not found' });
       return;
     }
-    const file = await fileUploadRepository.findById(req.params.id);
+    const file = await FileUpload.findOne({ _id: req.params.id, ...getShareFileQuery(link, req.params.slug) });
     if (!file) {
       res.status(404).json({ success: false, message: 'File not found' });
-      return;
-    }
-    // Verify file belongs to this share link
-    const belongsToLink = fileBelongsToShareLink(file, link, req.params.slug);
-    if (!belongsToLink) {
-      res.status(403).json({ success: false, message: 'Access denied' });
       return;
     }
     try {
@@ -1009,14 +1066,9 @@ router.patch(
       res.status(404).json({ success: false, message: 'Link not found' });
       return;
     }
-    const file = await fileUploadRepository.findById(req.params.id);
+    const file = await FileUpload.findOne({ _id: req.params.id, ...getShareFileQuery(link, req.params.slug) });
     if (!file) {
       res.status(404).json({ success: false, message: 'File not found' });
-      return;
-    }
-    const belongsToLink = fileBelongsToShareLink(file, link, req.params.slug);
-    if (!belongsToLink) {
-      res.status(403).json({ success: false, message: 'Access denied' });
       return;
     }
     const { notes } = req.body;

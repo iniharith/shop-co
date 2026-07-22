@@ -5,7 +5,7 @@
 "use client";
 import React from "react";
 import { useDashboardSummary } from "@/hooks/useAdminDashboard";
-import { Box, Truck, FileText, CircleCheckBig, CircleAlert, RefreshCw, Loader2, Package, Archive, Layers, Users, FolderOpen, ClipboardList } from "lucide-react";
+import { Archive, Box, CircleAlert, CircleCheckBig, ClipboardList, FileText, FolderOpen, Layers, Package, RefreshCw, Truck, Users } from "lucide-react";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 
 export default function DashboardOverview() {
@@ -48,198 +48,178 @@ export default function DashboardOverview() {
     : 0;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex justify-end w-full">
-        <button 
-          onClick={handleRefresh} 
-          disabled={isFetching} 
-          className="flex items-center gap-2 bg-[#242731] hover:bg-[#2A2E39] text-white px-4 py-2 rounded-xl transition-colors border border-white/5 text-sm font-medium disabled:opacity-50"
+    <section className="relative isolate overflow-hidden rounded-[36px] border border-slate-200/70 bg-slate-100/65 p-3 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03] sm:p-5">
+      <div className="pointer-events-none absolute -left-20 top-20 -z-10 h-64 w-64 rounded-full bg-blue-400/10 blur-3xl" />
+      <div className="pointer-events-none absolute -right-20 bottom-0 -z-10 h-72 w-72 rounded-full bg-lime-300/10 blur-3xl" />
+
+      <div className="mb-4 flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-blue-600 dark:text-blue-400">Live operations</p>
+          <p className="mt-1 text-sm text-muted-foreground">A current view across orders, delivery, and artwork.</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleRefresh}
+          disabled={isFetching}
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-slate-950/10 bg-slate-950 px-5 py-2.5 text-sm font-semibold text-slate-50 shadow-lg shadow-slate-950/10 transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-slate-100 dark:text-slate-950 sm:w-auto"
         >
-          <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
           Refresh Dashboard
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Orders Card */}
-            <div className="bg-blue-500/10 backdrop-blur-md text-blue-400 p-6 rounded-[28px] flex flex-col justify-between relative overflow-hidden border border-blue-500/20 h-[220px]">
-              <div className="flex justify-between items-center z-10 opacity-90">
-                <div className="font-semibold text-sm">Total Orders</div>
-                <Box className="w-5 h-5 opacity-70" />
-              </div>
-              <div className="text-6xl font-bold z-10 tracking-tighter mt-4 text-white">
-                {totalOrders}
-              </div>
-              <div className="text-xs mt-4 z-10 font-medium opacity-80 flex items-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-2"></div>
-                Lifetime orders placed
-              </div>
-              
-              {/* Decorative Graphic */}
-              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-500/20 blur-3xl rounded-full pointer-events-none"></div>
-            </div>
-
-            {/* Delivery Progress */}
-            <div className="bg-card/40 backdrop-blur-md text-white p-6 rounded-[28px] border border-white/10 h-[220px] flex flex-col justify-between">
-              <div className="flex justify-between items-center mb-4">
-                <div className="text-sm font-semibold text-gray-400">Delivery Success Rate</div>
-                <Truck className="w-5 h-5 text-gray-500" />
-              </div>
-              <div className="flex justify-between items-end mb-4">
-                <div className="text-5xl font-bold tracking-tight">
-                  {deliveryProgress}
-                  <span className="text-2xl font-semibold text-gray-500 ml-1">%</span>
-                </div>
-              </div>
-              <div className="w-full bg-gray-800 h-3 rounded-full overflow-hidden">
-                <div 
-                  className="bg-green-500 h-full rounded-full transition-all duration-1000 ease-out" 
-                  style={{ width: `${deliveryProgress}%` }}
-                ></div>
-              </div>
-              <div className="flex justify-between mt-3 text-xs text-gray-500 font-medium">
-                <span>{parcelData.delivered} delivered</span>
-                <span>{parcelData.total} total parcels</span>
-              </div>
-            </div>
-          </div>
-
-          {/* New Requested Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-card/40 backdrop-blur-md p-4 rounded-[24px] border border-white/10 flex flex-col justify-center group hover:bg-card/60 transition-colors">
-              <div className="flex justify-between items-center mb-1">
-                <div className="text-gray-400 text-xs font-semibold flex items-center gap-1.5"><Truck size={14}/> Active Deliveries</div>
-              </div>
-              <div className="text-2xl font-bold text-white tracking-tight">{activeDeliveries}</div>
-            </div>
-
-            <div className="bg-card/40 backdrop-blur-md p-4 rounded-[24px] border border-white/10 flex flex-col justify-center group hover:bg-card/60 transition-colors">
-              <div className="flex justify-between items-center mb-1">
-                <div className="text-gray-400 text-xs font-semibold flex items-center gap-1.5"><ClipboardList size={14}/> Total Tasks</div>
-              </div>
-              <div className="text-2xl font-bold text-white tracking-tight">{totalTasks}</div>
-            </div>
-
-            <div className="bg-card/40 backdrop-blur-md p-4 rounded-[24px] border border-white/10 flex flex-col justify-center group hover:bg-card/60 transition-colors">
-              <div className="flex justify-between items-center mb-1">
-                <div className="text-gray-400 text-xs font-semibold flex items-center gap-1.5"><FolderOpen size={14}/> Total Folders</div>
-              </div>
-              <div className="text-2xl font-bold text-white tracking-tight">{totalFolders}</div>
-            </div>
-
-            <div className="bg-card/40 backdrop-blur-md p-4 rounded-[24px] border border-green-500/20 flex flex-col justify-center group hover:bg-card/60 transition-colors relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-green-500/10 blur-xl rounded-full pointer-events-none"></div>
-              <div className="flex justify-between items-center mb-1 relative z-10">
-                <div className="text-green-400/80 text-xs font-semibold flex items-center gap-1.5"><Users size={14}/> Users Online</div>
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div>
-              </div>
-              <div className="text-2xl font-bold text-white tracking-tight relative z-10">{onlineUsers}</div>
-            </div>
-          </div>
-
-          {/* Delivery Status Overview (4 columns) */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between group hover:border-white/20 transition-all cursor-default">
-              <div className="flex items-center space-x-3 w-full mb-3">
-                <div className="w-10 h-10 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center shrink-0">
-                  <CircleCheckBig size={18} />
-                </div>
-                <div className="text-gray-400 font-medium text-sm">Delivered</div>
-              </div>
-              <div className="text-3xl font-bold text-white tracking-tight">{parcelData.delivered || 0}</div>
-            </div>
-
-            <div className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between group hover:border-white/20 transition-all cursor-default">
-              <div className="flex items-center space-x-3 w-full mb-3">
-                <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
-                  <Truck size={18} />
-                </div>
-                <div className="text-gray-400 font-medium text-sm">In Transit</div>
-              </div>
-              <div className="text-3xl font-bold text-white tracking-tight">{parcelData.in_transit || 0}</div>
-            </div>
-
-            <div className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between group hover:border-white/20 transition-all cursor-default">
-              <div className="flex items-center space-x-3 w-full mb-3">
-                <div className="w-10 h-10 rounded-full bg-yellow-500/10 text-yellow-500 flex items-center justify-center shrink-0">
-                  <Package size={18} />
-                </div>
-                <div className="text-gray-400 font-medium text-sm">Pending</div>
-              </div>
-              <div className="text-3xl font-bold text-white tracking-tight">{parcelData.pending || 0}</div>
-            </div>
-
-            <div className="bg-card/40 backdrop-blur-md p-5 rounded-[28px] border border-white/10 flex flex-col justify-between group hover:border-white/20 transition-all cursor-default">
-              <div className="flex items-center space-x-3 w-full mb-3">
-                <div className="w-10 h-10 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center shrink-0">
-                  <CircleAlert size={18} />
-                </div>
-                <div className="text-gray-400 font-medium text-sm">Failed</div>
-              </div>
-              <div className="text-3xl font-bold text-white tracking-tight">{parcelData.failed || 0}</div>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Right Sidebar - Analytics */}
-        <div className="bg-card/40 backdrop-blur-md rounded-[32px] p-8 border border-white/10 flex flex-col h-full">
-          <h2 className="text-xl font-bold mb-8">Artwork Analytics</h2>
-          
-          <div className="bg-background/40 backdrop-blur-sm rounded-3xl p-6 mb-8 relative overflow-hidden border border-white/5 flex-shrink-0">
-            <div className="text-gray-400 text-sm mb-2 text-center font-medium relative z-10">Total Files Managed</div>
-            <div className="text-6xl font-bold text-center text-white my-6 tracking-tighter relative z-10">
-              {fileData.totalFiles}
-            </div>
-            <div className="flex justify-center mt-2 relative z-10">
-              <span className="bg-[#064e3b] text-[#4ade80] px-4 py-1.5 rounded-full text-xs font-bold flex items-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#4ade80] mr-2"></div> Uploaded
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-12 xl:auto-rows-[minmax(132px,auto)]">
+        <article className="relative flex min-h-[260px] flex-col justify-between overflow-hidden rounded-[32px] border border-slate-800 bg-slate-950 p-6 text-slate-50 shadow-xl shadow-slate-950/15 sm:col-span-2 sm:p-8 xl:col-span-8 xl:row-span-2">
+          <div className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full border-[42px] border-blue-500/25" />
+          <div className="pointer-events-none absolute bottom-8 right-8 h-20 w-20 rotate-12 rounded-[24px] bg-blue-500/20" />
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-500 text-blue-50">
+                <Box className="h-5 w-5" />
               </span>
+              <span className="text-sm font-semibold text-slate-300">Total Orders</span>
             </div>
-            
-            {/* Background pattern */}
-            <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-               <div className="grid grid-cols-6 grid-rows-6 h-full w-full gap-2 p-2">
-                 {Array.from({length: 36}).map((_, i) => (
-                   <div key={i} className="w-full h-full bg-gray-500 rounded-full"></div>
-                 ))}
-               </div>
+            <span className="rounded-full border border-white/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-blue-300">All time</span>
+          </div>
+          <div className="relative z-10 mt-10">
+            <div className="font-display text-6xl font-bold tracking-[-0.06em] sm:text-7xl">{totalOrders}</div>
+            <div className="mt-4 flex items-center gap-2 text-xs font-medium text-slate-400">
+              <span className="h-2 w-2 rounded-full bg-lime-300 shadow-[0_0_14px_rgba(190,242,100,0.8)]" />
+              Lifetime orders placed
             </div>
           </div>
+        </article>
 
-          <div className="space-y-3 flex-1">
-            <div className="flex items-center justify-between p-4 rounded-2xl hover:bg-[#1E212B] transition-colors group">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-full bg-[#2A2E39] flex items-center justify-center text-white">
-                  <Archive size={20} />
-                </div>
-                <div>
-                  <div className="font-semibold text-white group-hover:text-blue-400 transition-colors">Storage Used</div>
-                  <div className="text-xs text-gray-500 font-medium">Artwork volume</div>
-                </div>
-              </div>
-              <div className="font-bold text-white">{formatBytes(fileData.totalSize || 0)}</div>
+        <article className="relative flex min-h-[260px] flex-col justify-between overflow-hidden rounded-[32px] border border-lime-400/70 bg-lime-300 p-6 text-slate-950 shadow-xl shadow-lime-500/10 sm:col-span-2 sm:p-7 xl:col-span-4 xl:row-span-2">
+          <div className="pointer-events-none absolute -right-12 top-14 h-36 w-36 rounded-full border-[28px] border-slate-950/5" />
+          <div className="relative z-10 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-700">Delivery health</p>
+              <h3 className="mt-1 text-lg font-bold">Success Rate</h3>
             </div>
-
-            <div className="flex items-center justify-between p-4 rounded-2xl hover:bg-[#1E212B] transition-colors group">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-full bg-orange-500/10 text-orange-500 flex items-center justify-center">
-                  <Layers size={20} />
-                </div>
-                <div>
-                  <div className="font-semibold text-white group-hover:text-orange-400 transition-colors">Pending Review</div>
-                  <div className="text-xs text-gray-500 font-medium">Awaiting action</div>
-                </div>
-              </div>
-              <div className="font-bold text-white">{fileData.pendingReview || 0}</div>
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-950 text-lime-300">
+              <Truck className="h-5 w-5" />
+            </span>
+          </div>
+          <div className="relative z-10 mt-8">
+            <div className="font-display text-6xl font-bold tracking-[-0.06em]">
+              {deliveryProgress}<span className="ml-1 text-2xl tracking-normal text-slate-600">%</span>
+            </div>
+            <div
+              className="mt-6 h-3 overflow-hidden rounded-full bg-slate-950/15"
+              role="progressbar"
+              aria-label="Delivery success rate"
+              aria-valuenow={Number(deliveryProgress)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div className="h-full rounded-full bg-slate-950 transition-all duration-1000 ease-out" style={{ width: `${deliveryProgress}%` }} />
+            </div>
+            <div className="mt-3 flex justify-between gap-3 text-xs font-semibold text-slate-700">
+              <span>{parcelData.delivered} delivered</span>
+              <span>{parcelData.total} total parcels</span>
             </div>
           </div>
+        </article>
 
-        </div>
+        <article className="flex min-h-32 flex-col justify-between rounded-[28px] border border-slate-200/80 bg-white/75 p-5 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06] xl:col-span-3">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-semibold">Active Deliveries</span>
+            <Truck className="h-4 w-4 text-blue-500" />
+          </div>
+          <div className="font-display text-3xl font-bold tracking-tight text-foreground">{activeDeliveries}</div>
+        </article>
+
+        <article className="flex min-h-32 flex-col justify-between rounded-[28px] border border-slate-200/80 bg-white/75 p-5 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06] xl:col-span-3">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-semibold">Total Tasks</span>
+            <ClipboardList className="h-4 w-4 text-violet-500" />
+          </div>
+          <div className="font-display text-3xl font-bold tracking-tight text-foreground">{totalTasks}</div>
+        </article>
+
+        <article className="flex min-h-32 flex-col justify-between rounded-[28px] border border-slate-200/80 bg-white/75 p-5 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06] xl:col-span-3">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-xs font-semibold">Total Folders</span>
+            <FolderOpen className="h-4 w-4 text-amber-500" />
+          </div>
+          <div className="font-display text-3xl font-bold tracking-tight text-foreground">{totalFolders}</div>
+        </article>
+
+        <article className="relative flex min-h-32 flex-col justify-between overflow-hidden rounded-[28px] border border-emerald-200/80 bg-emerald-50/80 p-5 shadow-[0_18px_50px_-36px_rgba(16,185,129,0.45)] backdrop-blur-xl dark:border-emerald-400/20 dark:bg-emerald-400/10 xl:col-span-3">
+          <div className="pointer-events-none absolute -right-4 -top-8 h-24 w-24 rounded-full bg-emerald-400/15 blur-xl" />
+          <div className="relative flex items-center justify-between text-emerald-700 dark:text-emerald-300">
+            <span className="text-xs font-semibold">Users Online</span>
+            <span className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+            </span>
+          </div>
+          <div className="relative font-display text-3xl font-bold tracking-tight text-foreground">{onlineUsers}</div>
+        </article>
+
+        <article className="rounded-[32px] border border-slate-200/80 bg-white/75 p-5 shadow-[0_20px_60px_-38px_rgba(15,23,42,0.45)] backdrop-blur-xl sm:col-span-2 sm:p-7 dark:border-white/10 dark:bg-white/[0.06] xl:col-span-7">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Parcel flow</p>
+              <h3 className="mt-1 text-lg font-bold text-foreground">Delivery Status</h3>
+            </div>
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-400/10 dark:text-blue-300">{parcelData.total} parcels</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="rounded-[28px] bg-emerald-50/90 p-4 dark:bg-emerald-400/10">
+              <CircleCheckBig className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="mt-6 text-2xl font-bold text-foreground">{parcelData.delivered || 0}</div>
+              <div className="mt-1 text-xs font-medium text-muted-foreground">Delivered</div>
+            </div>
+            <div className="rounded-[28px] bg-blue-50/90 p-4 dark:bg-blue-400/10">
+              <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="mt-6 text-2xl font-bold text-foreground">{parcelData.in_transit || 0}</div>
+              <div className="mt-1 text-xs font-medium text-muted-foreground">In Transit</div>
+            </div>
+            <div className="rounded-[28px] bg-amber-50/90 p-4 dark:bg-amber-400/10">
+              <Package className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <div className="mt-6 text-2xl font-bold text-foreground">{parcelData.pending || 0}</div>
+              <div className="mt-1 text-xs font-medium text-muted-foreground">Pending</div>
+            </div>
+            <div className="rounded-[28px] bg-rose-50/90 p-4 dark:bg-rose-400/10">
+              <CircleAlert className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+              <div className="mt-6 text-2xl font-bold text-foreground">{parcelData.failed || 0}</div>
+              <div className="mt-1 text-xs font-medium text-muted-foreground">Failed</div>
+            </div>
+          </div>
+        </article>
+
+        <article className="relative overflow-hidden rounded-[32px] border border-blue-200/70 bg-gradient-to-br from-blue-50/95 via-white/80 to-cyan-50/70 p-5 shadow-[0_20px_60px_-38px_rgba(37,99,235,0.5)] backdrop-blur-xl sm:col-span-2 sm:p-7 dark:border-blue-400/20 dark:from-blue-950/60 dark:via-slate-950/70 dark:to-cyan-950/40 xl:col-span-5">
+          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full border-[26px] border-blue-500/10" />
+          <div className="relative z-10 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">Artwork analytics</p>
+              <h3 className="mt-1 text-lg font-bold text-foreground">Files Managed</h3>
+            </div>
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-blue-50">
+              <FileText className="h-5 w-5" />
+            </span>
+          </div>
+          <div className="relative z-10 my-7 font-display text-6xl font-bold tracking-[-0.06em] text-foreground">{fileData.totalFiles}</div>
+          <div className="relative z-10 grid gap-3 sm:grid-cols-2">
+            <div className="flex items-center justify-between rounded-[28px] border border-blue-100/80 bg-white/60 p-4 dark:border-white/10 dark:bg-white/[0.06]">
+              <div className="flex items-center gap-3">
+                <Archive className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-xs font-semibold text-muted-foreground">Storage Used</span>
+              </div>
+              <span className="text-sm font-bold text-foreground">{formatBytes(fileData.totalSize || 0)}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-[28px] border border-blue-100/80 bg-white/60 p-4 dark:border-white/10 dark:bg-white/[0.06]">
+              <div className="flex items-center gap-3">
+                <Layers className="h-4 w-4 text-orange-500" />
+                <span className="text-xs font-semibold text-muted-foreground">Pending Review</span>
+              </div>
+              <span className="text-sm font-bold text-foreground">{fileData.pendingReview || 0}</span>
+            </div>
+          </div>
+        </article>
       </div>
-    </div>
+    </section>
   );
 }

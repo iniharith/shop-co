@@ -4,6 +4,8 @@
  */
 import mongoose, { Document, Schema } from 'mongoose';
 
+export type ShareAudience = 'CUSTOMER' | 'SUPPLIER';
+
 export interface IShareLink extends Document {
   slug: string;
   folderName: string;
@@ -11,6 +13,7 @@ export interface IShareLink extends Document {
   orderId?: string;
   userId?: string;
   folderId?: string;
+  audience: ShareAudience;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,6 +26,7 @@ const ShareLinkSchema = new Schema<IShareLink>(
     orderId: { type: String, index: true },
     userId: { type: String, index: true },
     folderId: { type: String, index: true },
+    audience: { type: String, enum: ['CUSTOMER', 'SUPPLIER'], default: 'CUSTOMER', required: true, index: true },
   },
   { timestamps: true }
 );

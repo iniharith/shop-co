@@ -30,18 +30,56 @@ export class ParcelRepository {
     return Parcel.findOne({ trackingNumber });
   }
 
+  async findByShipmentId(shipmentId: string): Promise<IParcel | null> {
+    return Parcel.findOne({ easyparcelShipmentId: shipmentId });
+  }
+
   async findByOrderId(orderId: string): Promise<IParcel[]> {
     return Parcel.find({ orderId }).sort({ createdAt: -1 });
   }
 
+  async upsertByOrderId(orderId: string, data: Partial<IParcel>): Promise<IParcel> {
+    const setData: Partial<IParcel> = { ...data, orderId };
+    const update: Record<string, any> = { $set: setData };
+    if (Object.prototype.hasOwnProperty.call(data, 'trackingNumber') && !data.trackingNumber) {
+      delete setData.trackingNumber;
+      update.$unset = { trackingNumber: 1 };
+    }
+    return Parcel.findOneAndUpdate(
+      { orderId },
+      update,
+      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
+    );
+  }
+
   async findActiveDeliveries(): Promise<IParcel[]> {
     return Parcel.find({
-      status: { $nin: ['delivered', 'failed'] },
+      status: { $nin: ['delivered', 'failed', 'cancelled', 'returned'] },
     }).sort({ updatedAt: 1 });
   }
 
   async update(id: string, data: Partial<IParcel>): Promise<IParcel | null> {
-    return Parcel.findByIdAndUpdate(id, { $set: data }, { new: true, runValidators: true });
+    const setData = { ...data };
+    const update: Record<string, any> = { $set: setData };
+    if (Object.prototype.hasOwnProperty.call(data, 'trackingNumber') && !data.trackingNumber) {
+      delete setData.trackingNumber;
+      update.$unset = { trackingNumber: 1 };
+    }
+    return Parcel.findByIdAndUpdate(id, update, { new: true, runValidators: true });
+  }
+
+  async updateProviderStatus(id: string, observedAt: Date, data: Partial<IParcel>): Promise<IParcel | null> {
+    return Parcel.findOneAndUpdate(
+      {
+        _id: id,
+        $or: [
+          { providerStatusUpdatedAt: { $exists: false } },
+          { providerStatusUpdatedAt: { $lt: observedAt } },
+        ],
+      },
+      { $set: { ...data, providerStatusUpdatedAt: observedAt } },
+      { new: true, runValidators: true }
+    );
   }
 
   async delete(id: string): Promise<void> {

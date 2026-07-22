@@ -4,9 +4,7 @@
  */
 import cron from 'node-cron';
 import { parcelRepository } from '../repositories/ParcelRepository';
-import { easyParcelService } from '../services/EasyParcelService';
-import { whatsAppService } from '../services/WhatsAppService';
-import { areWhatsAppCustomerUpdatesEnabled } from '../services/CustomerUpdateSettingsService';
+import { syncParcelTracking } from '../services/EasyParcelTrackingSyncService';
 
 /**
  * Cron job that auto-syncs all active parcel statuses every 15 minutes.
@@ -38,70 +36,12 @@ async function syncAllParcels(): Promise<void> {
 
     console.log(`[Cron] Found ${activeParcels.length} active parcel(s) to sync`);
 
-    let updatedCount = 0;
-    let notifiedCount = 0;
-    let errorCount = 0;
-
-    for (const parcel of activeParcels) {
-      try {
-        const result = await easyParcelService.trackParcel(parcel.trackingNumber);
-
-        if (!result) {
-          console.warn(`[Cron] ⚠️  No result from EasyParcel for ${parcel.trackingNumber}`);
-          continue;
-        }
-
-        const previousStatus = parcel.status;
-        const statusChanged = result.status !== previousStatus;
-
-        // Always update events/courier, update status if changed
-        await parcelRepository.update(parcel._id as unknown as string, {
-          lastStatus: previousStatus,
-          status: result.status as any,
-          courier: result.courier,
-          events: result.events as any,
-        });
-        updatedCount++;
-
-        if (statusChanged && parcel.customerPhone && await areWhatsAppCustomerUpdatesEnabled()) {
-          console.log(
-            `[Cron] 📦 Status changed for ${parcel.trackingNumber}: ` +
-              `${previousStatus} → ${result.status}`
-          );
-
-          const sent = await whatsAppService.sendStatusUpdate({
-            phone: parcel.customerPhone,
-            customerName: parcel.customerName,
-            trackingNumber: parcel.trackingNumber,
-            status: result.status as any,
-            courier: result.courier,
-          });
-
-          if (sent) {
-            await parcelRepository.update(parcel._id as unknown as string, {
-              whatsappNotified: true,
-            });
-            notifiedCount++;
-            console.log(`[Cron] 📱 WhatsApp sent to ${parcel.customerPhone}`);
-          } else {
-            console.warn(
-              `[Cron] ⚠️  WhatsApp failed for ${parcel.customerPhone}`
-            );
-          }
-        }
-      } catch (innerErr: any) {
-        errorCount++;
-        console.error(
-          `[Cron] ❌ Error processing parcel ${parcel.trackingNumber}:`,
-          innerErr?.message
-        );
-      }
-    }
+    const result = await syncParcelTracking(activeParcels);
 
     const elapsed = Date.now() - startTime;
     console.log(
       `[Cron] ✅ Sync complete in ${elapsed}ms — ` +
-        `Updated: ${updatedCount}, WhatsApp sent: ${notifiedCount}, Errors: ${errorCount}`
+        `Updated: ${result.updated}, AWBs reconciled: ${result.reconciled}, WhatsApp sent: ${result.notified}`
     );
   } catch (err: any) {
     console.error('[Cron] ❌ Fatal error in parcel sync:', err?.message);

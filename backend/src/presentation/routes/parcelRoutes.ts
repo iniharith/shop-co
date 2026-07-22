@@ -7,6 +7,7 @@ import asyncHandler from 'express-async-handler';
 import OrderModel from '../../infrastructure/db/models/order.model';
 import { parcelRepository } from '../../infrastructure/repositories/ParcelRepository';
 import { easyParcelService } from '../../infrastructure/services/EasyParcelService';
+import { convergeOrderFromParcel, providerObservationTime, reconcilePendingAwbs, syncParcelTracking } from '../../infrastructure/services/EasyParcelTrackingSyncService';
 import { whatsAppService } from '../../infrastructure/services/WhatsAppService';
 import {
   areWhatsAppCustomerUpdatesEnabled,
@@ -15,6 +16,7 @@ import {
 import authMiddilware, { authorizeRoles } from '../middlewares/auth.middileware';
 
 const router = Router();
+router.use(authMiddilware, authorizeRoles('admin', 'sysadmin', 'boss', 'production', 'packaging'));
 
 // ─── GET /api/parcels ─────────────────────────────────────────────────────────
 // List all parcels with optional filters (admin)
@@ -40,8 +42,6 @@ router.get(
 
 router.get(
   '/customer-update-settings',
-  authMiddilware,
-  authorizeRoles('admin', 'sysadmin', 'boss', 'production', 'packaging'),
   asyncHandler(async (_req: Request, res: Response) => {
     const enabled = await areWhatsAppCustomerUpdatesEnabled();
     res.json({ success: true, data: { enabled } });
@@ -50,7 +50,6 @@ router.get(
 
 router.put(
   '/customer-update-settings',
-  authMiddilware,
   authorizeRoles('admin', 'sysadmin', 'boss'),
   asyncHandler(async (req: Request, res: Response) => {
     if (typeof req.body.enabled !== 'boolean') {
@@ -152,7 +151,6 @@ router.put(
       'senderAddress',
       'recipientAddress',
       'courier',
-      'easyparcelShipmentId',
     ];
     const update: any = {};
     allowed.forEach((k) => {
@@ -168,9 +166,9 @@ router.put(
     // Sync order status if parcel status is updated manually
     if (update.status && updated.orderId) {
       let orderStatusStr = '';
-      if (['picked_up', 'in_transit', 'out_for_delivery'].includes(update.status)) orderStatusStr = 'IN_TRANSIT';
-      if (update.status === 'delivered') orderStatusStr = 'DELIVERED';
-      if (update.status === 'failed') orderStatusStr = 'CANCELLED';
+       if (update.status === 'picked_up') orderStatusStr = 'SHIPPED';
+       if (['in_transit', 'out_for_delivery'].includes(update.status)) orderStatusStr = 'IN_TRANSIT';
+       if (update.status === 'delivered') orderStatusStr = 'DELIVERED';
       if (orderStatusStr) {
          await OrderModel.findByIdAndUpdate(updated.orderId, { orderStatus: orderStatusStr });
       }
@@ -191,7 +189,14 @@ router.put(
       return;
     }
 
-    const result = await easyParcelService.trackParcel(parcel.trackingNumber);
+    await reconcilePendingAwbs([parcel]);
+    const refreshedParcel = await parcelRepository.findById(req.params.id);
+    if (!refreshedParcel?.trackingNumber) {
+      res.status(409).json({ success: false, message: 'AWB is still pending from EasyParcel' });
+      return;
+    }
+    const requestedAt = new Date();
+    const result = (await easyParcelService.trackParcels([refreshedParcel.trackingNumber]))[0];
     if (!result) {
       res
         .status(502)
@@ -199,42 +204,41 @@ router.put(
       return;
     }
 
-    const statusChanged = result.status !== parcel.status;
+    const statusChanged = refreshedParcel.shipmentStatusCode === undefined
+      ? result.status !== refreshedParcel.status
+      : result.statusCode !== refreshedParcel.shipmentStatusCode;
+    const courier = result.courier === 'unknown' ? refreshedParcel.courier : result.courier;
 
-    const updated = await parcelRepository.update(req.params.id, {
-      lastStatus: parcel.status,
+    const observedAt = providerObservationTime(result.events, requestedAt);
+    const updated = await parcelRepository.updateProviderStatus(req.params.id, observedAt, {
+      lastStatus: refreshedParcel.status,
       status: result.status as any,
-      courier: result.courier,
+      shipmentStatusCode: result.statusCode,
+      courier,
       events: result.events as any,
     });
 
-    if (statusChanged && updated?.orderId) {
-      let orderStatusStr = '';
-      if (['picked_up', 'in_transit', 'out_for_delivery'].includes(result.status)) orderStatusStr = 'IN_TRANSIT';
-      if (result.status === 'delivered') orderStatusStr = 'DELIVERED';
-      if (result.status === 'failed') orderStatusStr = 'CANCELLED';
-      if (orderStatusStr) {
-         await OrderModel.findByIdAndUpdate(updated.orderId, { orderStatus: orderStatusStr });
-      }
-    }
+    const current = updated || await parcelRepository.findById(req.params.id);
+    if (current) await convergeOrderFromParcel(current);
+    const appliedStatusChanged = statusChanged && Boolean(updated);
 
     // Auto-notify customer if status changed
-    if (statusChanged && parcel.customerPhone && await areWhatsAppCustomerUpdatesEnabled()) {
+    if (appliedStatusChanged && parcel.customerPhone && await areWhatsAppCustomerUpdatesEnabled()) {
       await whatsAppService.sendStatusUpdate({
         phone: parcel.customerPhone,
         customerName: parcel.customerName,
-        trackingNumber: parcel.trackingNumber,
+        trackingNumber: refreshedParcel.trackingNumber,
         status: result.status as any,
-        courier: result.courier,
+        courier,
       });
       await parcelRepository.update(req.params.id, { whatsappNotified: true });
     }
 
     res.json({
       success: true,
-      data: updated,
-      statusChanged,
-      previousStatus: parcel.status,
+      data: current,
+      statusChanged: appliedStatusChanged,
+      previousStatus: refreshedParcel.status,
       newStatus: result.status,
     });
   })
@@ -265,14 +269,13 @@ router.get(
       return;
     }
 
-    const awbUrl = await easyParcelService.getAWB(parcel.easyparcelShipmentId);
-    if (!awbUrl) {
-      res.status(502).json({ success: false, message: 'Could not fetch AWB from EasyParcel' });
+    await reconcilePendingAwbs([parcel]);
+    const refreshedParcel = await parcelRepository.findById(req.params.id);
+    if (!refreshedParcel?.awbUrl) {
+      res.status(409).json({ success: false, message: 'AWB is still pending from EasyParcel' });
       return;
     }
-
-    await parcelRepository.update(req.params.id, { awbUrl });
-    res.json({ success: true, awbUrl });
+    res.json({ success: true, awbUrl: refreshedParcel.awbUrl, awbUrlsByFormat: refreshedParcel.awbUrlsByFormat });
   })
 );
 
@@ -282,51 +285,14 @@ router.post(
   '/sync-all',
   asyncHandler(async (_req: Request, res: Response) => {
     const activeParcels = await parcelRepository.findActiveDeliveries();
-    let updated = 0;
-    let notified = 0;
-
-    for (const parcel of activeParcels) {
-      const result = await easyParcelService.trackParcel(parcel.trackingNumber);
-      if (!result) continue;
-
-      const statusChanged = result.status !== parcel.status;
-      const updatedParcel = await parcelRepository.update(parcel._id as unknown as string, {
-        status: result.status as any,
-        courier: result.courier,
-        events: result.events as any,
-      });
-      updated++;
-
-      if (statusChanged && updatedParcel?.orderId) {
-        let orderStatusStr = '';
-        if (['picked_up', 'in_transit', 'out_for_delivery'].includes(result.status)) orderStatusStr = 'IN_TRANSIT';
-        if (result.status === 'delivered') orderStatusStr = 'DELIVERED';
-        if (result.status === 'failed') orderStatusStr = 'CANCELLED';
-        if (orderStatusStr) {
-           await OrderModel.findByIdAndUpdate(updatedParcel.orderId, { orderStatus: orderStatusStr });
-        }
-      }
-
-      if (statusChanged && parcel.customerPhone && await areWhatsAppCustomerUpdatesEnabled()) {
-        const sent = await whatsAppService.sendStatusUpdate({
-          phone: parcel.customerPhone,
-          customerName: parcel.customerName,
-          trackingNumber: parcel.trackingNumber,
-          status: result.status as any,
-          courier: result.courier,
-        });
-        if (sent) {
-          await parcelRepository.update(parcel._id as unknown as string, { whatsappNotified: true });
-          notified++;
-        }
-      }
-    }
+    const { updated, notified, reconciled } = await syncParcelTracking(activeParcels);
 
     res.json({
       success: true,
       message: `Synced ${updated} parcel(s), sent ${notified} WhatsApp notification(s)`,
       updated,
       notified,
+      reconciled,
     });
   })
 );
@@ -350,7 +316,7 @@ router.post(
     const sent = await whatsAppService.sendStatusUpdate({
       phone: parcel.customerPhone,
       customerName: parcel.customerName,
-      trackingNumber: parcel.trackingNumber,
+      trackingNumber: parcel.trackingNumber || 'Pending',
       status: parcel.status as any,
       courier: parcel.courier,
     });

@@ -31,6 +31,7 @@ import appRoutes from '../presentation/routes/appRoutes';
 import webhookRouter from '../presentation/routes/webhook.route';
 import projectRoutes from '../presentation/routes/projectRoutes';
 import auditRoutes from '../presentation/routes/auditRoutes';
+import easyParcelRoutes from '../presentation/routes/easyParcelRoutes';
 import { auditMiddleware } from '../presentation/middlewares/audit.middleware';
 import { bandwidthMiddleware } from '../shared/utils/bandwidthTracker';
 
@@ -75,6 +76,7 @@ app.use(apiRoutes.PRODUCT, productRoutes);
 app.use(apiRoutes.CART, cartRoutes);
 app.use(apiRoutes.ORDER, orderRoutes);
 app.use('/api/webhooks', webhookRouter);
+app.use('/api/easyparcel', easyParcelRoutes);
 app.use(apiRoutes.ADMIN, adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/folders', virtualFolderRoutes);

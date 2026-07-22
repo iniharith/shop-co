@@ -9,11 +9,12 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { CellAction } from "@/components/global/cell-actions";
 import OrderInfo from "@/components/global/orderInfo";
 import { cn } from "@/lib/utils";
-import { Package, CircleUserRound, MapPin, CreditCard, ShoppingBag, Trash2, Truck, Archive, ArchiveRestore, ChevronDown, ChevronUp, Printer } from "lucide-react";
+import { Package, CircleUserRound, MapPin, CreditCard, ShoppingBag, Trash2, Truck, Archive, ArchiveRestore, ChevronDown, ChevronUp, Printer, RefreshCw } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useDeleteOrder, useUpdateOrderStatus, useToggleArchiveOrder, useCreateShipment } from "@/hooks/useOrder";
+import { useDeleteOrder, useUpdateOrderStatus, useToggleArchiveOrder, useReconcileShipment, useRefreshShipment } from "@/hooks/useOrder";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import EasyParcelShipmentDialog from "./EasyParcelShipmentDialog";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -43,6 +44,8 @@ const getStatusColor = (status: string) => {
       return "bg-cyan-500/20 border-cyan-500/40 hover:bg-cyan-500/40 text-black dark:text-white";
     case "DELIVERED":
       return "bg-green-500/20 border-green-500/40 hover:bg-green-500/40 text-black dark:text-white";
+    case "RETURNED":
+      return "bg-rose-500/20 border-rose-500/40 hover:bg-rose-500/40 text-black dark:text-white";
     case "CANCELLED":
       return "bg-red-500/20 border-red-500/40 hover:bg-red-500/40 text-black dark:text-white";
     default:
@@ -69,10 +72,13 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
   const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder();
   const { mutate: updateStatus, isPending: isUpdating } = useUpdateOrderStatus();
   const { mutate: toggleArchive, isPending: isArchiving } = useToggleArchiveOrder();
-  const { mutate: createShipment, isPending: isShipping } = useCreateShipment();
+  const { mutate: refreshShipment, isPending: isRefreshingShipment } = useRefreshShipment();
+  const { mutate: reconcileShipment, isPending: isReconcilingShipment } = useReconcileShipment();
   
   const [localStatus, setLocalStatus] = React.useState<string>(order.orderStatus as string);
   const [isMinimized, setIsMinimized] = React.useState<boolean>(false);
+  const [shipmentDialogOpen, setShipmentDialogOpen] = React.useState(false);
+  const awbPrintUrl = order.awbUrlsByFormat?.A6 || order.awbUrlsByFormat?.A4 || order.awbUrl;
 
   React.useEffect(() => {
     setLocalStatus(order.orderStatus);
@@ -165,43 +171,64 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
                 <SelectItem value="PEMBETULAN">Pembetulan</SelectItem>
                 <SelectItem value="DONE_DESIGN">Done Design</SelectItem>
                 <SelectItem value="IN_PRODUCTION">In Production</SelectItem>
+                <SelectItem value="HOLD_PRINTING">Hold Printing</SelectItem>
+                <SelectItem value="DONE_PRINTING">Done Printing</SelectItem>
+                <SelectItem value="PACKAGING">Packaging</SelectItem>
                 <SelectItem value="SHIPPED">Shipped</SelectItem>
                 <SelectItem value="IN_TRANSIT">In Transit</SelectItem>
                 <SelectItem value="DELIVERED">Delivered</SelectItem>
+                <SelectItem value="RETURNED">Returned</SelectItem>
                 <SelectItem value="CANCELLED">Cancelled</SelectItem>
                 <SelectItem value="FAILED">Failed</SelectItem>
               </SelectContent>
             </Select>
-            {!(order as any).easyparcelAwb && ((order.orderStatus as string) === "PACKAGING" || order.orderStatus === "SHIPPED") && (
+            {!order.easyparcelShipmentId && order.easyparcelBookingStatus !== "submitted" && ["DONE_PRINTING", "PACKAGING"].includes(order.orderStatus) && order.paymentStatus === "PAID" && (
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
-                  createShipment(order._id as string, {
-                    onSuccess: () => {
-                      toast.success("Shipment created successfully!");
-                      queryClient.invalidateQueries({ queryKey: ['orders'] });
-                    },
-                    onError: (error: any) => toast.error(error.response?.data?.message || error.message || "Failed to create shipment")
-                  });
+                  setShipmentDialogOpen(true);
                 }}
-                disabled={isShipping}
                 className="px-2 py-1 bg-primary/10 rounded border border-primary/20 hover:bg-primary/20 text-primary transition-colors text-[10px] font-bold uppercase tracking-wider"
                 title="Create EasyParcel Shipment"
               >
-                {isShipping ? "Shipping..." : "EP Ship"}
+                Create AWB
               </button>
             )}
+            {order.easyparcelBookingStatus === "submitted" && (
+              <button
+                type="button"
+                disabled={isReconcilingShipment}
+                onClick={() => {
+                  const shipmentNumber = window.prompt("Enter the EasyParcel shipment number shown in Developer Hub (ES-...)", order.easyparcelShipmentId || "");
+                  if (!shipmentNumber) return;
+                  reconcileShipment({ orderId: order._id, shipmentNumber: shipmentNumber.trim() }, {
+                    onSuccess: () => toast.success("EasyParcel shipment reconciled"),
+                    onError: (error: any) => toast.error(error.response?.data?.message || "Could not reconcile shipment"),
+                  });
+                }}
+                className="rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[10px] font-bold uppercase text-amber-600"
+                title="Submission result was uncertain. Verify it in Developer Hub before retrying."
+              >
+                {isReconcilingShipment ? "Checking..." : "Reconcile"}
+              </button>
+            )}
+            {order.easyparcelBookingStatus === "awb_pending" && <span className="rounded-full bg-amber-500/10 px-2 py-1 text-[10px] font-semibold uppercase text-amber-600">AWB pending</span>}
             <button 
               onClick={() => {
-                if ((order as any).awbUrl) {
-                  window.open((order as any).awbUrl, "_blank");
+                if (awbPrintUrl) {
+                  window.open(awbPrintUrl, "_blank", "noopener,noreferrer");
+                } else if (order.easyparcelBookingStatus === "awb_pending") {
+                  refreshShipment(order._id, {
+                    onSuccess: () => toast.success("EasyParcel shipment refreshed"),
+                    onError: (error: any) => toast.error(error.response?.data?.message || "AWB is still pending"),
+                  });
                 }
               }}
-              disabled={!(order as any).awbUrl}
+              disabled={(!awbPrintUrl && order.easyparcelBookingStatus !== "awb_pending") || isRefreshingShipment}
               className="p-1.5 bg-muted rounded-full hover:bg-muted/80 text-muted-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title={(order as any).awbUrl ? "Print AWB" : "No AWB Available"}
+              title={awbPrintUrl ? "Print AWB" : order.easyparcelBookingStatus === "awb_pending" ? "Refresh pending AWB" : "No AWB Available"}
             >
-              <Printer className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              {order.easyparcelBookingStatus === "awb_pending" && !awbPrintUrl ? <RefreshCw className={`w-4 h-4 text-amber-600 ${isRefreshingShipment ? "animate-spin" : ""}`} /> : <Printer className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
             </button>
             <button 
               onClick={() => setIsMinimized(!isMinimized)} 
@@ -305,6 +332,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
           </CardFooter>
         </>
       )}
+      <EasyParcelShipmentDialog order={order} open={shipmentDialogOpen} onOpenChange={setShipmentDialogOpen} />
     </Card>
   );
 };

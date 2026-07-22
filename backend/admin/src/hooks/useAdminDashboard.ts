@@ -10,6 +10,7 @@ import {
     getParcelStats, 
     getParcels, 
     syncParcelTracking, 
+    syncAllParcelTracking,
     updateParcel,
     getCustomerUpdateSettings,
     updateCustomerUpdateSettings,
@@ -43,13 +44,19 @@ export const useParcels = (filters?: any) => {
 
 export const useSyncParcel = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['syncParcelTracking'], (id: string) => syncParcelTracking(session?.user?.token, id));
+    const { mutate, isPending } = useMutationData(['syncParcelTracking'], (id: string) => syncParcelTracking(session?.user?.token, id), ['parcels']);
+    return { mutate, isPending };
+}
+
+export const useSyncAllParcels = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(['syncAllParcelTracking'], () => syncAllParcelTracking(session?.user?.token), ['parcels']);
     return { mutate, isPending };
 }
 
 export const useUpdateParcel = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['updateParcelTracking'], ({ id, data }: { id: string, data: any }) => updateParcel(session?.user?.token, id, data));
+    const { mutate, isPending } = useMutationData(['updateParcelTracking'], ({ id, data }: { id: string, data: any }) => updateParcel(session?.user?.token, id, data), ['parcels']);
     return { mutate, isPending };
 }
 
@@ -158,7 +165,7 @@ export const useCreateShareLink = () => {
     const { data: session } = useSession();
     const { mutate, mutateAsync, isPending } = useMutationData(
         ['createShareLink'],
-        (data: { folderName: string; taskId?: string; orderId?: string; userId?: string; folderId?: string }) =>
+        (data: { folderName: string; taskId?: string; orderId?: string; userId?: string; folderId?: string; audience?: 'CUSTOMER' | 'SUPPLIER' }) =>
             createShareLink(session?.user?.token, data)
     );
     return { mutate, mutateAsync, isPending };

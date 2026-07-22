@@ -25,6 +25,11 @@ export const updateParcel = async (token: string, id: string, updateData: any) =
     return response.data;
 }
 
+export const syncAllParcelTracking = async (token: string) => {
+    const response = await AxiosInstance(token).post(`${PARCELS_URL}/sync-all`);
+    return response.data;
+}
+
 export const getCustomerUpdateSettings = async (token: string) => {
     const response = await AxiosInstance(token).get(`${PARCELS_URL}/customer-update-settings`);
     return response.data;
@@ -86,7 +91,7 @@ export const bulkDeleteFiles = async (token: string, fileIds: string[]) => {
     return response.data;
 }
 
-export const createShareLink = async (token: string, data: { folderName: string; taskId?: string; orderId?: string; userId?: string; folderId?: string }) => {
+export const createShareLink = async (token: string, data: { folderName: string; taskId?: string; orderId?: string; userId?: string; folderId?: string; audience?: 'CUSTOMER' | 'SUPPLIER' }) => {
     const response = await AxiosInstance(token).post(`${FILES_URL}/share-link`, data);
     return response.data;
 }

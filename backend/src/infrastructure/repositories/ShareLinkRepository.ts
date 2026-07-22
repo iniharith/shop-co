@@ -2,7 +2,7 @@
  * Coded by Harith
  * Kampungcetak ®
  */
-import { ShareLink, IShareLink } from '../../domain/entities/ShareLink';
+import { ShareLink, IShareLink, ShareAudience } from '../../domain/entities/ShareLink';
 
 const slugify = (input: string): string =>
   input
@@ -23,22 +23,34 @@ export class ShareLinkRepository {
     orderId?: string;
     userId?: string;
     folderId?: string;
+    audience?: ShareAudience;
   }): Promise<IShareLink> {
     const { folderName, taskId, orderId, userId, folderId } = params;
+    const audience: ShareAudience = params.audience || 'CUSTOMER';
+    const audienceScope: Record<string, any> = audience === 'CUSTOMER'
+      ? { $or: [{ audience: 'CUSTOMER' }, { audience: { $exists: false } }] }
+      : { audience };
+    const folderScope: Record<string, any> = folderId
+      ? { folderId }
+      : { $or: [{ folderId: { $exists: false } }, { folderId: null }, { folderId: '' }] };
 
     // IMPORTANT: only reuse an existing link if we have a real identifier to
     // match on. An empty {} query would match the FIRST document in the
     // entire collection, silently handing back an unrelated customer's link.
     let existing: IShareLink | null = null;
-    if (folderId) existing = await ShareLink.findOne({ folderId });
-    else if (taskId) existing = await ShareLink.findOne({ taskId });
-    else if (orderId) existing = await ShareLink.findOne({ orderId });
-    else if (userId) existing = await ShareLink.findOne({ userId });
+    if (folderId) existing = await ShareLink.findOne({ $and: [{ folderId }, audienceScope] });
+    else if (taskId) existing = await ShareLink.findOne({ $and: [{ taskId }, audienceScope, folderScope] });
+    else if (orderId) existing = await ShareLink.findOne({ $and: [{ orderId }, audienceScope, folderScope] });
+    else if (userId) existing = await ShareLink.findOne({ $and: [{ userId }, audienceScope, folderScope] });
 
     if (existing) {
       let isModified = false;
       if (existing.folderName !== folderName) {
         existing.folderName = folderName;
+        isModified = true;
+      }
+      if (!existing.audience) {
+        existing.audience = 'CUSTOMER';
         isModified = true;
       }
       // Patch legacy links that don't have a slug yet
@@ -68,7 +80,7 @@ export class ShareLinkRepository {
       counter++;
     }
 
-    return ShareLink.create({ slug, folderName, taskId, orderId, userId, folderId });
+    return ShareLink.create({ slug, folderName, taskId, orderId, userId, folderId, audience });
   }
 
   async findBySlug(slug: string): Promise<IShareLink | null> {

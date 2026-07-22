@@ -4,12 +4,12 @@
  */
 "use client";
 
-import React, { useEffect, useState, use, useRef } from "react";
+import React, { useEffect, useState, use } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Folder, FileText, Eye, Loader2, Upload, Download, Trash2, StickyNote, X, Check, Image as ImageIcon, CloudUpload
+  Folder, FileText, Eye, Loader2, Upload, Download, Trash2, StickyNote, X, Check, Image as ImageIcon, CloudUpload, ChevronLeft
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -25,6 +25,9 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [folderName, setFolderName] = useState("");
+  const [folders, setFolders] = useState<Array<{ _id: string; name: string }>>([]);
+  const [audience, setAudience] = useState<"CUSTOMER" | "SUPPLIER">("CUSTOMER");
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<"not-found" | "service" | null>(null);
   const [noteState, setNoteState] = useState<Record<string, { open: boolean; value: string; saving: boolean }>>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -46,6 +49,8 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
         setLoadError("service");
       } else if (data.success && data.folderName) {
         setFiles(data.data || []);
+        setFolders(data.folders || []);
+        setAudience(data.audience === "SUPPLIER" ? "SUPPLIER" : "CUSTOMER");
         setFolderName(data.folderName);
       } else {
         setLoadError("not-found");
@@ -58,6 +63,13 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
   };
 
   useEffect(() => { fetchFiles(); }, [slug]);
+
+  const visibleFiles = audience === "SUPPLIER"
+    ? folders.length === 0
+      ? files
+      : files.filter((file) => activeFolderId ? file.folderId === activeFolderId : !file.folderId || file.folderId === "null")
+    : files;
+  const activeFolder = folders.find((folder) => folder._id === activeFolderId);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -81,7 +93,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
         const urlRes = await publicApiFetch(`${BACKEND}/api/files/s/${slug}/upload-url`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename: file.name, contentType: file.type })
+          body: JSON.stringify({ filename: file.name, contentType: file.type, folderId: activeFolderId })
         });
         
         const urlData = await urlRes.json().catch(() => null);
@@ -109,7 +121,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
         const metaRes = await publicApiFetch(`${BACKEND}/api/files/s/${slug}/save-metadata`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ files: [fileData] })
+          body: JSON.stringify({ files: [fileData], folderId: activeFolderId })
         });
         
         const metaData = await metaRes.json().catch(() => null);
@@ -269,7 +281,12 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
               ) : (
                 <h1 className="text-xl font-bold">{folderName}</h1>
               )}
-              <p className="text-sm text-muted-foreground mt-1">{files.length} file{files.length !== 1 ? "s" : ""}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <p className="text-sm text-muted-foreground">{files.length} file{files.length !== 1 ? "s" : ""}</p>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider ${audience === "SUPPLIER" ? "bg-lime-500/15 text-lime-700 dark:text-lime-300" : "bg-blue-500/15 text-blue-700 dark:text-blue-300"}`}>
+                  {audience} VIEW
+                </span>
+              </div>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
@@ -299,16 +316,43 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
           </div>
         </div>
 
+        {audience === "SUPPLIER" && !activeFolderId && folders.length > 0 && (
+          <section className="space-y-3">
+            <div>
+              <h2 className="font-semibold">Production folders</h2>
+              <p className="text-sm text-muted-foreground">Open a folder to view its For Print files.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {folders.map((folder) => {
+                const count = files.filter((file) => file.folderId === folder._id).length;
+                return (
+                  <button key={folder._id} type="button" onClick={() => setActiveFolderId(folder._id)} className="flex items-center gap-3 rounded-2xl border bg-card p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-lime-500/15 text-lime-700 dark:text-lime-300"><Folder className="h-5 w-5" /></div>
+                    <div className="min-w-0"><p className="truncate font-semibold">{folder.name}</p><p className="text-xs text-muted-foreground">{count} For Print file{count !== 1 ? "s" : ""}</p></div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {audience === "SUPPLIER" && activeFolderId && (
+          <div className="flex items-center gap-3 rounded-2xl border bg-card p-4">
+            <Button variant="ghost" size="sm" onClick={() => setActiveFolderId(null)}><ChevronLeft className="mr-1 h-4 w-4" />Back</Button>
+            <div><p className="font-semibold">{activeFolder?.name || "Production folder"}</p><p className="text-xs text-muted-foreground">For Print files only</p></div>
+          </div>
+        )}
+
         {/* Files Grid */}
-        {files.length === 0 ? (
+        {visibleFiles.length === 0 ? (
           <div className="p-16 text-center text-muted-foreground bg-card border border-dashed rounded-xl shadow-sm">
             <Upload className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">No files yet</p>
-            <p className="text-sm mt-1">Upload your artwork files using the button above</p>
+            <p className="font-medium">No visible files here</p>
+            <p className="text-sm mt-1">{audience === "SUPPLIER" ? "No For Print files are available in this location." : "Only Draft and Attachment files are available to customers."}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {files.map((file) => {
+            {visibleFiles.map((file) => {
               const isImage = file.mimetype?.startsWith("image/");
               const noteEditor = noteState[file._id];
               return (

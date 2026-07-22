@@ -706,13 +706,11 @@ export default function ProductionManager() {
                           e.stopPropagation();
                           try {
                             const payload = {
-                              folderName: activeSubFolderId
-                                ? `${activeGroup.folderName} / ${virtualFolders.find((folder: any) => folder._id === activeSubFolderId)?.name || activeGroup.folderName}`
-                                : activeGroup.folderName,
+                              folderName: activeGroup.folderName,
                               orderId: activeGroup.orderId,
                               taskId: activeGroup.taskId,
                               userId: activeGroup.userId,
-                              folderId: activeSubFolderId || undefined,
+                              audience: "SUPPLIER" as const,
                             };
                             const res = await createShareLink(payload);
                             const slug = res?.data?.slug;

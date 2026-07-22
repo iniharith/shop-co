@@ -82,7 +82,7 @@ router.post('/', async (req: Request, res: Response) => {
                     await whatsAppService.sendStatusUpdate({
                       phone: from,
                       customerName: parcel.customerName || 'Pelanggan',
-                      trackingNumber: parcel.trackingNumber,
+                      trackingNumber: parcel.trackingNumber || 'Pending',
                       status: parcel.status as any,
                       courier: parcel.courier,
                     });

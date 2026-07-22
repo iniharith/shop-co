@@ -51,6 +51,53 @@ export const useBulkDeleteOrders = () => {
 
 export const useCreateShipment = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['createShipment'], (orderId: string) => import("@/api/orders").then(m => m.createShipment(session?.user?.token, orderId)), ["orders"])
+    const { mutate, isPending } = useMutationData(['createShipment'], ({ orderId, data }: { orderId: string, data: any }) => import("@/api/orders").then(m => m.createShipment(session?.user?.token, orderId, data)), ["orders", "parcels"])
     return { mutate, isPending }
+}
+
+export const useEasyParcelStatus = () => {
+    const { data: session, status } = useSession();
+    return useQueryData(
+        ['easyParcelStatus'],
+        () => import("@/api/orders").then(m => m.getEasyParcelStatus(session?.user?.token)),
+        { enabled: status === "authenticated" }
+    );
+}
+
+export const useConnectEasyParcel = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(
+        ['connectEasyParcel'],
+        () => import("@/api/orders").then(m => m.connectEasyParcel(session?.user?.token))
+    );
+    return { mutate, isPending };
+}
+
+export const useShippingQuotations = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(
+        ['easyParcelQuotations'],
+        ({ orderId, data }: { orderId: string, data: any }) => import("@/api/orders").then(m => m.getShippingQuotations(session?.user?.token, orderId, data))
+    );
+    return { mutate, isPending };
+}
+
+export const useRefreshShipment = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(
+        ['refreshEasyParcelShipment'],
+        (orderId: string) => import("@/api/orders").then(m => m.refreshShipment(session?.user?.token, orderId)),
+        ["orders", "parcels"]
+    );
+    return { mutate, isPending };
+}
+
+export const useReconcileShipment = () => {
+    const { data: session } = useSession();
+    const { mutate, isPending } = useMutationData(
+        ['reconcileEasyParcelShipment'],
+        ({ orderId, shipmentNumber }: { orderId: string, shipmentNumber: string }) => import("@/api/orders").then(m => m.reconcileShipment(session?.user?.token, orderId, shipmentNumber)),
+        ["orders", "parcels"]
+    );
+    return { mutate, isPending };
 }

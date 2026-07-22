@@ -4,7 +4,7 @@
  */
 import { Router } from "express";
 import { OrderController } from "../controllers/order.controller";
-import { authMiddilware } from "../middlewares/auth.middileware";
+import { authMiddilware, authorizeRoles } from "../middlewares/auth.middileware";
 const router = Router();
 const orderController = new OrderController();
 
@@ -30,8 +30,11 @@ router.put("/:orderId", authMiddilware, orderController.updateOrderStatus.bind(o
 
 router.put("/:orderId/archive", authMiddilware, orderController.archiveOrder.bind(orderController));
 
-router.post("/:orderId/ship", authMiddilware, orderController.createShipment.bind(orderController));
+const shippingRoles = authorizeRoles('admin', 'sysadmin', 'boss', 'production', 'packaging');
+router.post("/:orderId/shipping/quotations", authMiddilware, shippingRoles, orderController.getShippingQuotations.bind(orderController));
+router.post("/:orderId/ship", authMiddilware, shippingRoles, orderController.createShipment.bind(orderController));
+router.post("/:orderId/shipping/refresh", authMiddilware, shippingRoles, orderController.refreshShipping.bind(orderController));
+router.post("/:orderId/shipping/reconcile", authMiddilware, shippingRoles, orderController.reconcileShipping.bind(orderController));
 router.get("/:orderId/tracking", authMiddilware, orderController.getTracking.bind(orderController));
 
 export default router;
-

@@ -83,6 +83,12 @@ export default function ArtworksManager() {
   const [moveToFolderModalOpen, setMoveToFolderModalOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<any>(null);
   const [previewList, setPreviewList] = useState<any[]>([]);
+  const [shareTarget, setShareTarget] = useState<{
+    folderName: string;
+    taskId?: string;
+    orderId?: string;
+    userId?: string;
+  } | null>(null);
 
   const { data: virtualFoldersResponse, isPending: foldersPending } = useFolders();
   const virtualFolders = virtualFoldersResponse?.data || [];
@@ -502,6 +508,20 @@ export default function ArtworksManager() {
     const shareLink = `${window.location.origin}/share/file/${file._id}`;
     navigator.clipboard.writeText(shareLink);
     toast.success("Share link copied to clipboard");
+  };
+
+  const handleAudienceShare = async (audience: "CUSTOMER" | "SUPPLIER") => {
+    if (!shareTarget) return;
+    try {
+      const res = await createShareLink({ ...shareTarget, audience });
+      const slug = res?.data?.slug;
+      if (!slug) throw new Error("Share link was not returned");
+      await navigator.clipboard.writeText(`${window.location.origin}/share/${slug}`);
+      setShareTarget(null);
+      toast.success(`${audience === "CUSTOMER" ? "Customer" : "Supplier"} share link copied`);
+    } catch {
+      toast.error("Failed to generate share link");
+    }
   };
 
   const getFileThumbnail = (file: any, contextFiles: any[] = []) => {
@@ -1006,34 +1026,20 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
                               <Printer className="w-4 h-4 mr-2" /> Print Drafts
                             </Button>
                           )}
-                          <Button 
-
+                          <Button
                             variant="outline" 
                             size="sm" 
                             disabled={isGeneratingLink}
-                            onClick={async () => {
-                                try {
-                                  const res = await createShareLink({
-                                    folderName: activeSubFolderId ? `${activeGroup.folderName} / ${virtualFolders.find((f: any) => f._id === activeSubFolderId)?.name || activeGroup.folderName}` : activeGroup.folderName,
-                                    taskId: activeGroup.taskId || undefined,
-                                    orderId: activeGroup.orderId || undefined,
-                                    userId: activeGroup.userId || undefined,
-                                    folderId: activeSubFolderId || undefined,
-                                  });
-                                  const slug = res?.data?.slug;
-                                  if (!slug) {
-                                    toast.error("Failed to generate share link");
-                                    return;
-                                  }
-                                  const link = `${window.location.origin}/share/${slug}`;
-                                  navigator.clipboard.writeText(link);
-                                  toast.success("Share link copied to clipboard");
-                                } catch (e) {
-                                  toast.error("Failed to generate share link");
-                                }
+                            onClick={() => {
+                              setShareTarget({
+                                folderName: activeGroup.folderName,
+                                taskId: activeGroup.taskId || undefined,
+                                orderId: activeGroup.orderId || undefined,
+                                userId: activeGroup.userId || undefined,
+                              });
                             }}
                           >
-                          <Folder className="w-4 h-4 mr-2" /> {isGeneratingLink ? "Generating..." : "Share Link"}
+                          <Share2 className="w-4 h-4 mr-2" /> {isGeneratingLink ? "Generating..." : "Share Link"}
                         </Button>
                         {activeGroup.taskId && (
                           <Button 
@@ -1356,6 +1362,46 @@ if (isPending) return <LoadingAnimation fullScreen={false} label="Loading artwor
           </div>
         </div>
       )}
+
+      <Dialog open={Boolean(shareTarget)} onOpenChange={(open) => { if (!open) setShareTarget(null); }}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Choose Share Link Audience</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            The selected audience controls which files and folders can be accessed through this link.
+          </p>
+          <div className="grid gap-3 py-3 sm:grid-cols-2">
+            <button
+              type="button"
+              className="rounded-2xl border border-blue-500/25 bg-blue-500/5 p-5 text-left transition hover:border-blue-500/60 hover:bg-blue-500/10 disabled:opacity-50"
+              disabled={isGeneratingLink}
+              onClick={() => handleAudienceShare("CUSTOMER")}
+            >
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-blue-500 text-white">
+                <User className="h-5 w-5" />
+              </div>
+              <p className="font-semibold text-foreground">Send to Customer</p>
+              <p className="mt-1 text-sm leading-5 text-muted-foreground">Shows root Draft and Attachment files only. Subfolders and For Print are hidden.</p>
+            </button>
+            <button
+              type="button"
+              className="rounded-2xl border border-lime-500/30 bg-lime-500/5 p-5 text-left transition hover:border-lime-500/70 hover:bg-lime-500/10 disabled:opacity-50"
+              disabled={isGeneratingLink}
+              onClick={() => handleAudienceShare("SUPPLIER")}
+            >
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-lime-400 text-black">
+                <Printer className="h-5 w-5" />
+              </div>
+              <p className="font-semibold text-foreground">Send to Supplier</p>
+              <p className="mt-1 text-sm leading-5 text-muted-foreground">Shows For Print files only, including files organised inside subfolders.</p>
+            </button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShareTarget(null)}>Cancel</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Comment Modal */}
       <Dialog open={commentModalOpen} onOpenChange={setCommentModalOpen}>

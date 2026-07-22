@@ -12,6 +12,7 @@ export interface IUser {
     password: string;
     avatar: string;
     verified: boolean;
+    phoneNumber?: string;
 }
 
 export enum Roles {
@@ -53,7 +54,6 @@ export interface IOrderApiResponse {
     message: string;
     orders: IOrder[];
 }
-
 
 
 
