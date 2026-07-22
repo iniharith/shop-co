@@ -337,10 +337,13 @@ router.get(
   authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
   asyncHandler(async (req: Request, res: Response) => {
     const ARTWORK_STATUSES = ["PLACED","IN_DESIGN","IN_PROGRESS","PENDING_ARTWORK","ARTWORK_REVIEWED","ARTWORK_REJECTED","PEMBETULAN","DONE_DESIGN"];
-    const taskStatusFilter = (req.query.taskStatuses as string)?.split(',').filter(Boolean) || ARTWORK_STATUSES;
+    const rawStatuses = (req.query.taskStatuses as string)?.split(',').filter(Boolean);
+    const taskStatusFilter = rawStatuses && rawStatuses.length > 0 ? rawStatuses : ARTWORK_STATUSES;
+    const filterUpper = taskStatusFilter.map(s => s.toUpperCase());
+    const statusRegexes = filterUpper.map(s => new RegExp(`^${s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, 'i'));
 
     // Try cache: Redis first, in-memory as fallback
-    const cacheKey = `${ENRICHED_CACHE_KEY_PREFIX}${taskStatusFilter.join(',')}`;
+    const cacheKey = `${ENRICHED_CACHE_KEY_PREFIX}${filterUpper.join(',')}`;
     let cachedData: any = null;
     try {
       const raw = await enrichedIndexCache.get(cacheKey);
@@ -350,7 +353,7 @@ router.get(
       const mem = memCache.get(cacheKey);
       if (mem && mem.expiresAt > Date.now()) cachedData = mem.data;
     }
-    if (cachedData) {
+    if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
       res.json({ success: true, data: cachedData }); return;
     }
 
@@ -366,11 +369,11 @@ router.get(
     // FileUpload record. Older/direct task uploads live in task.files, and
     // tasks without files must still appear as valid zero-file folders.
     const [tasks, taskFileCounts, orders, users] = await Promise.all([
-      Task.find({ status: { $in: taskStatusFilter }, isDeleted: { $ne: true } })
+      Task.find({ status: { $in: statusRegexes }, isDeleted: { $ne: true } })
         .select('title status orderId category')
         .lean(),
       Task.aggregate([
-        { $match: { status: { $in: taskStatusFilter }, isDeleted: { $ne: true } } },
+        { $match: { status: { $in: statusRegexes }, isDeleted: { $ne: true } } },
         { $project: { fileCount: { $size: { $ifNull: ['$files', []] } } } },
       ]),
       orderIds.length ? OrderModel.find({ _id: { $in: orderIds } }).select('orderStatus userId').lean() : [],
@@ -389,10 +392,9 @@ router.get(
       let folderName: string;
       let isTask = false;
 
-      if (file.taskId) {
-        const task = taskMap.get(file.taskId);
-        if (!task) continue;
-        if (!taskStatusFilter.includes(task.status)) continue;
+      if (file.taskId && taskMap.has(file.taskId)) {
+        const task = taskMap.get(file.taskId)!;
+        if (!filterUpper.includes((task.status || '').toUpperCase())) continue;
         groupKey = `task:${file.taskId}`;
         folderName = task.title;
         isTask = true;
@@ -405,7 +407,7 @@ router.get(
         }
         if (file.orderId) {
           const order = orderMap.get(file.orderId);
-          if (order && !taskStatusFilter.includes((order as any).orderStatus || '')) continue;
+          if (order && !filterUpper.includes(((order as any).orderStatus || '').toUpperCase())) continue;
         }
         groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
       }
@@ -426,7 +428,7 @@ router.get(
 
     // 5. Add empty placeholders for tasks that have no files yet
     for (const task of tasks) {
-      if (!taskStatusFilter.includes((task as any).status)) continue;
+      if (!filterUpper.includes(((task as any).status || '').toUpperCase())) continue;
       const key = `task:${(task as any)._id}`;
       if (!groups[key]) {
         groups[key] = {
@@ -455,9 +457,11 @@ router.get(
 
     res.json({ success: true, data: result });
 
-    // Cache in Redis + in-memory fallback
-    enrichedIndexCache.set(cacheKey, JSON.stringify(result), ENRICHED_CACHE_TTL).catch(() => {});
-    memCache.set(cacheKey, { data: result, expiresAt: Date.now() + ENRICHED_CACHE_TTL * 1000 });
+    // Cache in Redis + in-memory fallback only when non-empty
+    if (result.length > 0) {
+      enrichedIndexCache.set(cacheKey, JSON.stringify(result), ENRICHED_CACHE_TTL).catch(() => {});
+      memCache.set(cacheKey, { data: result, expiresAt: Date.now() + ENRICHED_CACHE_TTL * 1000 });
+    }
   })
 );
 

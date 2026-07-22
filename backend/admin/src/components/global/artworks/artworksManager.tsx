@@ -133,7 +133,7 @@ export default function ArtworksManager() {
     if (activeTab !== "ALL") {
       result = result.filter((g: any) => {
         const firstFile = g.files?.[0];
-        return firstFile?.category === activeTab;
+        return g.category === activeTab || firstFile?.category === activeTab;
       });
     }
 
