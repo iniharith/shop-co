@@ -521,9 +521,19 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="task-modal-content max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[90vh] flex flex-col relative"
+        className="task-modal-content top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[85vh] flex flex-col relative"
         onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverModal(true); }}
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverModal(true); }}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          // relatedTarget is where the pointer is going. If it's still
+          // somewhere inside this dialog, ignore the leave — this only
+          // fires because the pointer crossed a child element boundary,
+          // not because it actually left the dialog.
+          if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+          setIsDragOverModal(false);
+        }}
         onDrop={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -535,25 +545,15 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       >
         {isDragOverModal && (
           <div
-            className="absolute inset-0 z-[70] flex items-center justify-center bg-background/85 backdrop-blur-sm border-2 border-primary border-dashed rounded-lg"
-            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverModal(false); }}
-            onDrop={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsDragOverModal(false);
-              if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                setPendingDropFiles(Array.from(e.dataTransfer.files));
-              }
-            }}
+            className="absolute inset-0 z-[70] flex items-center justify-center bg-background/85 backdrop-blur-sm border-2 border-primary border-dashed rounded-lg pointer-events-none"
           >
-            <div className="flex flex-col items-center gap-3 pointer-events-none">
+            <div className="flex flex-col items-center gap-3">
               <DownloadIcon className="w-10 h-10 text-primary animate-bounce" />
               <p className="text-lg font-bold text-primary">Drop files to attach to this task</p>
             </div>
           </div>
         )}
-        <div className="flex flex-col md:flex-row h-full overflow-y-auto md:overflow-hidden">
+        <div className="flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden">
           
           {/* Main Content (Left, 70% width) */}
           <div className="flex-none md:w-[70%] flex flex-col md:border-r border-border/50 bg-background min-h-0 shrink-0 md:shrink">
@@ -988,7 +988,7 @@ return (
           </div>
           
           {/* Sidebar (Right, 30% width) */}
-          <div className="w-full md:w-[30%] bg-muted/10 p-4 md:p-6 space-y-6 shrink-0 md:overflow-y-auto">
+          <div className="w-full md:w-[30%] bg-muted/10 p-4 md:p-6 space-y-6 min-h-0 md:overflow-y-auto">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Properties</h3>
             
             <div className="space-y-4">
