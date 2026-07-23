@@ -4,6 +4,7 @@
  */
 import { Router, Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
+import mongoose from 'mongoose';
 import multer from 'multer';
 import { s3Client, S3_BUCKET_NAME, deleteFromS3 } from '../../infrastructure/config/s3';
 import multerS3 from 'multer-s3';
@@ -21,12 +22,24 @@ import OrderRepository from '../../infrastructure/db/repositories/order.reposito
 import OrderModel from '../../infrastructure/db/models/order.model';
 import User from '../../infrastructure/db/models/user.model';
 import { RedisService } from '../../infrastructure/redis/redis';
-
-const enrichedIndexCache = new RedisService();
-const ENRICHED_INDEX_CACHE_KEY = 'files:enrichedIndex:v1';
 import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
 import { streamFilesAsZip } from '../../shared/utils/streamFilesAsZip';
 import { getDownloadProgress } from '../../shared/utils/downloadProgress';
+
+// Tiered cache: Redis primary, in-memory fallback when Redis connection drops
+const enrichedIndexCache = new RedisService();
+const ENRICHED_CACHE_KEY_PREFIX = 'files:enrichedIndex:';
+const ENRICHED_CACHE_TTL = 120; // seconds
+const memCache = new Map<string, { data: any; expiresAt: number }>();
+
+export const clearFolderGroupCache = async () => {
+  memCache.clear();
+  try {
+    await enrichedIndexCache.delByPrefix(ENRICHED_CACHE_KEY_PREFIX);
+  } catch (err) {
+    console.error('Failed to clear folderGroup cache:', err);
+  }
+};
 
 const router = Router();
 
@@ -156,42 +169,6 @@ router.post(
     const fileUrl = `https://${S3_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-southeast-5'}.amazonaws.com/${key}`;
 
     res.json({ success: true, signedUrl, fileUrl, key });
-  })
-);
-
-// ─── POST /api/files/resolve-by-path ──────────────────────
-// Used by the "Share" button on a file that doesn't have a locally-known
-// FileUpload id (e.g. because the sync at upload time silently failed).
-// Idempotent: returns the existing record for this path if one exists,
-// otherwise creates it — so share links always resolve to a real id.
-router.post(
-  '/resolve-by-path',
-  authMiddilware,
-  asyncHandler(async (req: Request, res: Response) => {
-    const { path, name, mimetype, size, taskId, orderId, category, tag } = req.body;
-    const authReq = req as any;
-
-    if (!path || !name) {
-      res.status(400).json({ success: false, message: 'path and name are required' });
-      return;
-    }
-
-    const userId = authReq.userId || authReq.user?._id?.toString() || authReq.user?.id || 'admin';
-
-    const file = await fileUploadRepository.findOrCreateByPath({
-      userId,
-      taskId: taskId || undefined,
-      orderId: orderId || undefined,
-      category: category || (taskId ? 'TASK' : 'UNCATEGORIZED'),
-      tag: tag || 'attachment',
-      filename: name,
-      originalName: name,
-      mimetype: mimetype || 'application/octet-stream',
-      size: size || 0,
-      path,
-    });
-
-    res.json({ success: true, data: file });
   })
 );
 
@@ -370,55 +347,69 @@ router.get(
   authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
   asyncHandler(async (req: Request, res: Response) => {
     const ARTWORK_STATUSES = ["PLACED","IN_DESIGN","IN_PROGRESS","PENDING_ARTWORK","ARTWORK_REVIEWED","ARTWORK_REJECTED","PEMBETULAN","DONE_DESIGN"];
-    const taskStatusFilter = (req.query.taskStatuses as string)?.split(',').filter(Boolean) || ARTWORK_STATUSES;
+    const rawStatuses = (req.query.taskStatuses as string)?.split(',').filter(Boolean);
+    const taskStatusFilter = rawStatuses && rawStatuses.length > 0 ? rawStatuses : ARTWORK_STATUSES;
+    const filterUpper = taskStatusFilter.map(s => s.toUpperCase());
 
-    // Try cache first (keyed by status filter)
-    const cacheKey = `${ENRICHED_INDEX_CACHE_KEY}:${taskStatusFilter.join(',')}`;
-    const cached = await enrichedIndexCache.get(cacheKey);
-    if (cached) {
-      try { res.json({ success: true, data: JSON.parse(cached) }); return; } catch { /* rebuild */ }
+    // Generate plain string variants for MongoDB queries ($in array)
+    const statusQueryValues = Array.from(new Set([
+      ...filterUpper,
+      ...filterUpper.map(s => s.toLowerCase()),
+      ...filterUpper.map(s => s.replace(/_/g, ' ')),
+      ...filterUpper.map(s => s.replace(/_/g, '-')),
+      "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "REVIEWED", "PENDING_ARTWORK_APPROVAL"
+    ]));
+
+    const matchesStatus = (status?: string) => {
+      if (!status) return false;
+      const s = status.toUpperCase();
+      const sNormalized = s.replace(/[\s-]/g, '_');
+      return filterUpper.some(f => {
+        const fNormalized = f.replace(/[\s-]/g, '_');
+        return f === s || fNormalized === sNormalized || s.includes(f) || f.includes(s);
+      });
+    };
+
+    // Try cache: Redis first, in-memory as fallback
+    const cacheKey = `${ENRICHED_CACHE_KEY_PREFIX}${filterUpper.join(',')}`;
+    let cachedData: any = null;
+    try {
+      const raw = await enrichedIndexCache.get(cacheKey);
+      if (raw) cachedData = JSON.parse(raw);
+    } catch { /* Redis unavailable, try in-memory */ }
+    if (!cachedData) {
+      const mem = memCache.get(cacheKey);
+      if (mem && mem.expiresAt > Date.now()) cachedData = mem.data;
+    }
+    if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+      res.json({ success: true, data: cachedData }); return;
     }
 
     // 1. Load enriched file index
     const files: any[] = await fileUploadRepository.findIndex();
     const enriched = await enrichWithShareLinks(files);
 
-    // 2. Collect unique references
-    const isValidObjectId = (id: any) => typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
-    const orderIds = [...new Set(enriched.filter((f: any) => f.orderId).map((f: any) => f.orderId))].filter(isValidObjectId);
-    const userIds = [...new Set(enriched.filter((f: any) => !f.taskId).map((f: any) => f.userId))];
+    // 2. Collect unique references with ObjectId validation
+    const orderIds = [...new Set(enriched.filter((f: any) => f.orderId && mongoose.Types.ObjectId.isValid(f.orderId)).map((f: any) => f.orderId))];
+    const userIds = [...new Set(enriched.filter((f: any) => !f.taskId && f.userId && mongoose.Types.ObjectId.isValid(f.userId)).map((f: any) => f.userId))];
+    const allTaskIds = [...new Set(enriched.filter((f: any) => f.taskId && mongoose.Types.ObjectId.isValid(f.taskId)).map((f: any) => f.taskId))];
 
-    // 3. Load all tasks in this queue, not only tasks that already have a
-    // FileUpload record. Older/direct task uploads live in task.files, and
-    // tasks without files must still appear as valid zero-file folders.
-    const [tasks, taskFileCounts, orders] = await Promise.all([
-      Task.find({ status: { $in: taskStatusFilter }, isDeleted: { $ne: true } })
-        .select('title status orderId category description assignee dueDate')
+    // 3. Load all tasks in this queue & all referenced tasks by ID
+    const [tasks, taskFileCounts, orders, users, allReferencedTasks] = await Promise.all([
+      Task.find({ status: { $in: statusQueryValues }, isDeleted: { $ne: true } })
+        .select('title status orderId category')
         .lean(),
       Task.aggregate([
-        { $match: { status: { $in: taskStatusFilter }, isDeleted: { $ne: true } } },
+        { $match: { status: { $in: statusQueryValues }, isDeleted: { $ne: true } } },
         { $project: { fileCount: { $size: { $ifNull: ['$files', []] } } } },
       ]),
       orderIds.length ? OrderModel.find({ _id: { $in: orderIds } }).select('orderStatus userId').lean() : [],
+      userIds.length ? User.find({ _id: { $in: userIds } }).select('name').lean() : [],
+      allTaskIds.length ? Task.find({ _id: { $in: allTaskIds }, isDeleted: { $ne: true } }).select('title status orderId category').lean() : [],
     ]);
 
-    // Assignee IDs come from tasks; upload-owner IDs come from non-task
-    // files. Resolve both in a single User query. Some assignee/userId
-    // values in older data aren't valid ObjectIds — filtering them out
-    // before the query prevents a single bad value from throwing a
-    // CastError and 500ing the whole folder list.
-    const assigneeIds = [...new Set(tasks.filter((t: any) => t.assignee).map((t: any) => t.assignee))].filter(isValidObjectId);
-    const allUserIds = [...new Set([...userIds, ...assigneeIds])].filter(isValidObjectId);
-    let users: any[] = [];
-    if (allUserIds.length) {
-      try {
-        users = await User.find({ _id: { $in: allUserIds } }).select('name').lean();
-      } catch (e) {
-        console.error('folder-group: user lookup failed, continuing without assignee names', e);
-      }
-    }
-
     const taskMap = new Map(tasks.map((t: any) => [t._id.toString(), t]));
+    const allTaskMap = new Map(allReferencedTasks.map((t: any) => [t._id.toString(), t]));
     const taskFileCountMap = new Map(taskFileCounts.map((t: any) => [t._id.toString(), t.fileCount || 0]));
     const orderMap = new Map(orders.map((o: any) => [o._id.toString(), o]));
     const userMap = new Map(users.map((u: any) => [u._id.toString(), u]));
@@ -431,38 +422,40 @@ router.get(
       let isTask = false;
 
       if (file.taskId) {
-        const task = taskMap.get(file.taskId);
-        if (!task) continue;
-        if (!taskStatusFilter.includes(task.status)) continue;
-        groupKey = `task:${file.taskId}`;
-        folderName = task.title;
-        isTask = true;
-      } else {
-        if (file._shareFolderName) {
-          folderName = file._shareFolderName;
+        const task = allTaskMap.get(file.taskId) || taskMap.get(file.taskId);
+        if (task) {
+          if (!matchesStatus(task.status)) {
+            // Task status does not match requested queue filter — skip file
+            continue;
+          }
+          groupKey = `task:${file.taskId}`;
+          folderName = task.title;
+          isTask = true;
         } else {
-          const user = userMap.get(file.userId);
-          folderName = user?.name || file.userId || 'Unknown';
+          if (file.orderId) {
+            const order = orderMap.get(file.orderId);
+            if (order && !matchesStatus((order as any).orderStatus)) continue;
+          }
+          groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
+          folderName = file._shareFolderName || userMap.get(file.userId)?.name || file.userId || 'Unknown';
         }
+      } else {
         if (file.orderId) {
           const order = orderMap.get(file.orderId);
-          if (order && !taskStatusFilter.includes((order as any).orderStatus || '')) continue;
+          if (order && !matchesStatus((order as any).orderStatus)) continue;
         }
         groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
+        folderName = file._shareFolderName || userMap.get(file.userId)?.name || file.userId || 'Unknown';
       }
 
       if (!groups[groupKey]) {
-        const taskInfo = isTask ? taskMap.get(file.taskId) : null;
         groups[groupKey] = {
           folderName,
           orderId: file.orderId || '',
           taskId: file.taskId || '',
           userId: file.userId || '',
           isTask,
-          category: isTask ? (taskInfo as any)?.category : file.category,
-          description: isTask ? ((taskInfo as any)?.description || '') : '',
-          assigneeName: isTask && (taskInfo as any)?.assignee ? (userMap.get((taskInfo as any).assignee) as any)?.name || (taskInfo as any).assignee : '',
-          dueDate: isTask ? ((taskInfo as any)?.dueDate || null) : null,
+          category: isTask ? taskMap.get(file.taskId)?.category : file.category,
           files: [],
         };
       }
@@ -471,7 +464,7 @@ router.get(
 
     // 5. Add empty placeholders for tasks that have no files yet
     for (const task of tasks) {
-      if (!taskStatusFilter.includes((task as any).status)) continue;
+      if (!matchesStatus((task as any).status)) continue;
       const key = `task:${(task as any)._id}`;
       if (!groups[key]) {
         groups[key] = {
@@ -481,9 +474,6 @@ router.get(
           userId: '',
           isTask: true,
           category: (task as any).category,
-          description: (task as any).description || '',
-          assigneeName: (task as any).assignee ? (userMap.get((task as any).assignee) as any)?.name || (task as any).assignee : '',
-          dueDate: (task as any).dueDate || null,
           files: [],
         };
       }
@@ -494,17 +484,17 @@ router.get(
       let orderStatus: string | null = null;
       if (g.taskId) orderStatus = taskMap.get(g.taskId)?.status || null;
       else if (g.orderId) orderStatus = (orderMap.get(g.orderId) as any)?.orderStatus || null;
-      // New uploads are represented by FileUpload records; legacy/direct
-      // task uploads can exist only in task.files. Use the larger value to
-      // avoid showing a misleading zero or double-counting synced uploads.
       const taskFileCount = g.taskId ? (taskFileCountMap.get(g.taskId) || 0) : 0;
       return { ...g, orderStatus, fileCount: Math.max(g.files.length, taskFileCount) };
     });
 
-    // Cache for 2 minutes
-    await enrichedIndexCache.set(cacheKey, JSON.stringify(result), 120);
-
     res.json({ success: true, data: result });
+
+    // Cache in Redis + in-memory fallback only when non-empty
+    if (result.length > 0) {
+      enrichedIndexCache.set(cacheKey, JSON.stringify(result), ENRICHED_CACHE_TTL).catch(() => {});
+      memCache.set(cacheKey, { data: result, expiresAt: Date.now() + ENRICHED_CACHE_TTL * 1000 });
+    }
   })
 );
 
@@ -882,6 +872,12 @@ router.get(
 // pulling every file's full bytes into browser memory before assembling
 // the archive, which is what caused "array buffer allocation failed" on
 // folders with many or large files. This streams server-side instead.
+//
+// Concurrent download limiter — cap at 5 simultaneous ZIP jobs to prevent
+// Node.js from being overwhelmed when multiple folders are downloaded at once.
+let activeDownloads = 0;
+const MAX_CONCURRENT_DOWNLOADS = 5;
+
 router.post(
   '/download-batch',
   authMiddilware,
@@ -892,11 +888,21 @@ router.post(
       return;
     }
 
+    if (activeDownloads >= MAX_CONCURRENT_DOWNLOADS) {
+      res.status(429).json({ success: false, message: 'Terlalu banyak download serentak. Sila tunggu sebentar dan cuba semula.' });
+      return;
+    }
+
     const files = await FileUpload.find({ _id: { $in: fileIds } });
     if (!files.length) {
       res.status(404).json({ success: false, message: 'No files found' });
       return;
     }
+
+    activeDownloads++;
+    // Decrement counter when response finishes (whether success, error, or client abort)
+    res.on('close', () => { activeDownloads = Math.max(0, activeDownloads - 1); });
+    res.on('finish', () => { activeDownloads = Math.max(0, activeDownloads - 1); });
 
     const result = await streamFilesAsZip(
       res,
@@ -913,6 +919,7 @@ router.post(
     }
   })
 );
+
 
 // 🌐 Public: Upload files to a folder using a short slug
 const decodeSharedSlug = async (req: any, res: any, next: any) => {
