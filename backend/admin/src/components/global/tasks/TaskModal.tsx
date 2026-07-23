@@ -1312,41 +1312,41 @@ return (
             
           </div>
         </div>
-      </DialogContent>
-      {pendingDropFiles && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setPendingDropFiles(null)}>
-          <div className="bg-background border border-border rounded-xl shadow-2xl w-[90vw] max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-base mb-1">Upload {pendingDropFiles.length} file{pendingDropFiles.length > 1 ? 's' : ''}</h3>
-            <p className="text-sm text-muted-foreground mb-4">What type of file is this?</p>
-            <div className="flex flex-col gap-2">
-              <Button
-                variant="outline"
-                className="justify-start h-11"
-                onClick={() => { uploadDroppedFiles(pendingDropFiles, 'draft'); setPendingDropFiles(null); }}
-              >
-                <Badge className="bg-orange-500 mr-2 text-[10px]">Draft</Badge> Upload as Draft
-              </Button>
-              <Button
-                variant="outline"
-                className="justify-start h-11"
-                onClick={() => { uploadDroppedFiles(pendingDropFiles, 'attachment'); setPendingDropFiles(null); }}
-              >
-                <Badge className="bg-gray-500 mr-2 text-[10px]">Attachment</Badge> Upload as Attachment
-              </Button>
-              <Button
-                variant="outline"
-                className="justify-start h-11"
-                onClick={() => { uploadDroppedFiles(pendingDropFiles, 'for_print'); setPendingDropFiles(null); }}
-              >
-                <Badge className="bg-green-500 mr-2 text-[10px]">Artwork</Badge> Upload as Artwork (For Print)
+        {pendingDropFiles && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setPendingDropFiles(null)}>
+            <div className="bg-background border border-border rounded-xl shadow-2xl w-[90vw] max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
+              <h3 className="font-bold text-base mb-1">Upload {pendingDropFiles.length} file{pendingDropFiles.length > 1 ? 's' : ''}</h3>
+              <p className="text-sm text-muted-foreground mb-4">What type of file is this?</p>
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  className="justify-start h-11"
+                  onClick={() => { uploadDroppedFiles(pendingDropFiles, 'draft'); setPendingDropFiles(null); }}
+                >
+                  <Badge className="bg-orange-500 mr-2 text-[10px]">Draft</Badge> Upload as Draft
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start h-11"
+                  onClick={() => { uploadDroppedFiles(pendingDropFiles, 'attachment'); setPendingDropFiles(null); }}
+                >
+                  <Badge className="bg-gray-500 mr-2 text-[10px]">Attachment</Badge> Upload as Attachment
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start h-11"
+                  onClick={() => { uploadDroppedFiles(pendingDropFiles, 'for_print'); setPendingDropFiles(null); }}
+                >
+                  <Badge className="bg-green-500 mr-2 text-[10px]">Artwork</Badge> Upload as Artwork (For Print)
+                </Button>
+              </div>
+              <Button variant="ghost" className="w-full mt-3 text-muted-foreground" onClick={() => setPendingDropFiles(null)}>
+                Cancel
               </Button>
             </div>
-            <Button variant="ghost" className="w-full mt-3 text-muted-foreground" onClick={() => setPendingDropFiles(null)}>
-              Cancel
-            </Button>
           </div>
-        </div>
-      )}
+        )}
+      </DialogContent>
       <FilePreviewModal isOpen={!!previewFile} onClose={() => setPreviewFile(null)} file={previewFile} />
     </Dialog>
 
