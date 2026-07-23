@@ -31,6 +31,22 @@ export class FileUploadRepository {
     return result;
   }
 
+  // Self-healing lookup for share links: the FileUpload record for a given
+  // path is normally created at upload time, but if that sync step ever
+  // silently failed (network blip, validation error swallowed by a
+  // try/catch upstream), the file would have no matching _id and any share
+  // link generated for it would 404 forever. This resolves the existing
+  // record by path if one exists, or creates it on the spot — so a share
+  // link always has a real, working id regardless of what happened at
+  // upload time.
+  async findOrCreateByPath(data: Partial<IFileUpload> & { path: string }): Promise<IFileUpload> {
+    const existing = await FileUpload.findOne({ path: data.path });
+    if (existing) return existing;
+    const created = await FileUpload.create(data);
+    notifyFileClients();
+    return created;
+  }
+
   async createMany(data: Partial<IFileUpload>[]): Promise<IFileUpload[]> {
     const identities = data
       .filter((file) => file.userId && file.filename)
@@ -95,13 +111,7 @@ export class FileUploadRepository {
   // file records. Actual file details are fetched per-folder, on demand,
   // via findByFolderKey() below once a folder is opened.
   async findIndex(): Promise<Pick<IFileUpload, 'userId' | 'orderId' | 'taskId' | 'category' | 'tag' | 'shareSlug' | 'folderId' | 'uploadedAt' | 'originalName'>[]> {
-    // Raced against a short timeout — a slow/unhealthy Redis should never
-    // meaningfully delay this response, since it's on the hot path for
-    // every Artworks/Production/Packaging page load.
-    const cached = await Promise.race([
-      redisService.get(FILE_INDEX_CACHE_KEY),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 150)),
-    ]);
+    const cached = await redisService.get(FILE_INDEX_CACHE_KEY);
     if (cached) {
       try { return JSON.parse(cached); } catch { /* rebuild malformed cache */ }
     }
@@ -109,8 +119,7 @@ export class FileUploadRepository {
       .sort({ uploadedAt: -1 })
       .maxTimeMS(10_000)
       .lean() as unknown as any[];
-    // Fire-and-forget — don't make the caller wait on the cache write.
-    redisService.set(FILE_INDEX_CACHE_KEY, JSON.stringify(files), 300).catch(() => {});
+    await redisService.set(FILE_INDEX_CACHE_KEY, JSON.stringify(files), 300);
     return files;
   }
 
@@ -190,10 +199,7 @@ export class FileUploadRepository {
     pendingReview: number;
     totalSizeMB: string;
   }> {
-    const cached = await Promise.race([
-      redisService.get(FILE_STATS_CACHE_KEY),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 150)),
-    ]);
+    const cached = await redisService.get(FILE_STATS_CACHE_KEY);
     if (cached) {
       try { return JSON.parse(cached); } catch { /* rebuild malformed cache */ }
     }
@@ -217,7 +223,7 @@ export class FileUploadRepository {
       ...result,
       totalSizeMB: (result.totalSize / (1024 * 1024)).toFixed(2),
     };
-    redisService.set(FILE_STATS_CACHE_KEY, JSON.stringify(output), 60).catch(() => {});
+    await redisService.set(FILE_STATS_CACHE_KEY, JSON.stringify(output), 60);
     return output;
   }
 

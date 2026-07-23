@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Coded by Harith
  * Kampungcetak ®
  */
@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTask, useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
 import { useUploadStore } from '@/store/uploadStore';
 import { useUsers } from "@/hooks/useUsers";
-import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw, CheckCircle, Folder, Printer } from "lucide-react";
+import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw, CheckCircle, Folder } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -26,7 +26,7 @@ import { useOrders } from "@/hooks/useOrder";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import { Check, ChevronsUpDown, Download as DownloadIcon, Copy } from "lucide-react";
 import { cn, forceDownload } from "@/lib/utils";
-import { useAllFiles, useCreateShareLink } from "@/hooks/useAdminDashboard";
+import { useAllFiles, useCreateShareLink, useResolveFileByPath } from "@/hooks/useAdminDashboard";
 import { useRouter } from "next/navigation";
 import { AssigneeTag, AssigneeDot } from "@/lib/userColor";
 
@@ -56,11 +56,36 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
   
   const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(fileUrlStr)}&name=${encodeURIComponent(file.name)}&stream=true`;
 
-  const handleCopyLink = (e: React.MouseEvent) => {
+  const { mutateAsync: resolveFileByPath, isPending: isResolvingShareLink } = useResolveFileByPath();
+
+  const handleCopyLink = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const realFile = allFiles?.find((f: any) => f.path === file.url || (file.url && file.url.includes(f.filename)));
-    const realFileId = realFile?._id || realFile?.id || file._id || file.id;
+    let realFileId = realFile?._id || realFile?.id;
+
+    if (!realFileId) {
+      // The local lookup failed — usually because the upload-time sync to
+      // the FileUpload collection silently failed for this file. Rather
+      // than fall back to an id that doesn't exist in that collection
+      // (which just produces a dead "File Not Found" link), resolve or
+      // create the record on the spot so the link always works.
+      try {
+        const res = await resolveFileByPath({
+          path: file.url,
+          name: file.name,
+          mimetype: file.mimetype,
+          taskId: task._id,
+          orderId: task.orderId,
+          tag: file.tag,
+        });
+        realFileId = res?.data?._id;
+      } catch (err) {
+        toast.error("Cannot generate share link: failed to resolve file record.");
+        return;
+      }
+    }
+
     if (!realFileId) {
        toast.error("Cannot generate share link: File ID not found in database.");
        return;
@@ -248,7 +273,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [commentText, setCommentText] = useState("");
   const [activeTab, setActiveTab] = useState("comments");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [isDragOverModal, setIsDragOverModal] = useState(false);
+  const [isDragOverComment, setIsDragOverComment] = useState(false);
   const [pendingDropFiles, setPendingDropFiles] = useState<File[] | null>(null);
   const [previewFile, setPreviewFile] = useState<any>(null);
   const { uploads, addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
@@ -272,28 +297,22 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     // Add customer uploaded files from share link or public upload portal
     const allFiles = (allFilesData as any)?.data || [];
     const customerFiles = allFiles.filter((f: any) => {
-      if (!f) return false;
-      const fTaskId = f.taskId ? String(f.taskId) : null;
-      const fOrderId = f.orderId ? String(f.orderId) : null;
-      const tTaskId = task._id ? String(task._id) : null;
-      const tOrderId = task.orderId ? String(task.orderId) : null;
-
-      // Don't duplicate if already in task.files (check url/path or filename match)
-      if (files.some(tf => tf.url === f.path || (tf.name && f.originalName && tf.name === f.originalName))) return false;
+      // Don't duplicate if already in task.files (by some chance)
+      if (files.some(tf => tf.url === f.path)) return false;
       
       // Auto-sync files matching the task's Order ID and Customer Username
-      const matchesOrderAndUser = Boolean(tOrderId && task.customerUsername && fOrderId === tOrderId && (f.userId === task.customerUsername || f.customerUsername === task.customerUsername));
+      const matchesOrderAndUser = Boolean(task.orderId && task.customerUsername && f.orderId === task.orderId && f.userId === task.customerUsername);
       
-      return (fTaskId && tTaskId && fTaskId === tTaskId) ||
-             matchesOrderAndUser ||
+      return matchesOrderAndUser ||
              (f.shareSlug && (f.shareSlug === task.title || f.shareSlug === task.customerUsername || f.shareSlug === task.orderId)) ||
-             (tOrderId && fOrderId === tOrderId && f.category === 'artwork') ||
-             (task.customerUsername && (f.userId === task.customerUsername || f._shareFolderName === task.customerUsername));
+             (f.taskId === task._id) ||
+             (task.orderId && f.orderId === task.orderId && f.category === 'artwork') ||
+             (task.customerUsername && f._shareFolderName === task.customerUsername);
     }).map((f: any) => ({
       url: f.path,
-      name: f.originalName || f.filename,
+      name: f.originalName,
       notes: f.notes || f.adminNotes, // Make sure to sync notes
-      tag: f.tag || 'customer_upload',
+      tag: 'customer_upload',
       _id: f._id
     }));
     
@@ -301,7 +320,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       const fid = f._id || f.url?.split('/').pop();
       return !deletedFileIds.includes(fid);
     });
-  }, [fullTask, allFilesData, deletedFileIds, task._id, task.orderId, task.customerUsername, task.title]);
+  }, [fullTask, allFilesData, deletedFileIds]);
 
   const handleDownloadAllAttachments = () => {
     if (!combinedFiles || combinedFiles.length === 0) return;
@@ -375,33 +394,22 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     });
   };
 
-  const [shareTarget, setShareTarget] = useState<{
-    folderName: string;
-    taskId?: string;
-    orderId?: string;
-  } | null>(null);
-
-  const handleShareLink = () => {
-    setShareTarget({
-      folderName: fullTask.title || task.title,
-      taskId: task._id,
-      orderId: fullTask.orderId || task.orderId || undefined,
-    });
-  };
-
-  const handleAudienceShare = async (audience: "CUSTOMER" | "SUPPLIER") => {
-    if (!shareTarget) return;
+  const handleShareLink = async () => {
     try {
-      const res = await createShareLink({ ...shareTarget, audience });
+      const res = await createShareLink({
+        folderName: fullTask.title || task.title,
+        taskId: task._id,
+        orderId: fullTask.orderId || task.orderId || undefined,
+        audience: "CUSTOMER",
+      });
       const slug = res?.data?.slug;
       if (!slug) {
         toast.error("Failed to generate share link");
         return;
       }
       const link = `${window.location.origin}/share/${slug}`;
-      await navigator.clipboard.writeText(link);
-      setShareTarget(null);
-      toast.success(`${audience === "CUSTOMER" ? "Customer" : "Supplier"} share link copied`);
+      navigator.clipboard.writeText(link);
+      toast.success("Share link copied to clipboard");
     } catch (e) {
       toast.error("Failed to generate share link");
     }
@@ -518,41 +526,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   };
 
   return (
-    <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent
-        className="task-modal-content top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[85vh] flex flex-col"
-        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverModal(true); }}
-        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverModal(true); }}
-        onDragLeave={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          // relatedTarget is where the pointer is going. If it's still
-          // somewhere inside this dialog, ignore the leave — this only
-          // fires because the pointer crossed a child element boundary,
-          // not because it actually left the dialog.
-          if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-          setIsDragOverModal(false);
-        }}
-        onDrop={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setIsDragOverModal(false);
-          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            setPendingDropFiles(Array.from(e.dataTransfer.files));
-          }
-        }}
-      >
-        {isDragOverModal && (
-          <div
-            className="absolute inset-0 z-[70] flex items-center justify-center bg-background/85 backdrop-blur-sm border-2 border-primary border-dashed rounded-lg pointer-events-none"
-          >
-            <div className="flex flex-col items-center gap-3">
-              <DownloadIcon className="w-10 h-10 text-primary animate-bounce" />
-              <p className="text-lg font-bold text-primary">Drop files to attach to this task</p>
-            </div>
-          </div>
-        )}
+      <DialogContent className="task-modal-content top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[85vh] flex flex-col">
         <div className="flex flex-col md:flex-row h-full min-h-0 overflow-y-auto md:overflow-hidden">
           
           {/* Main Content (Left, 70% width) */}
@@ -613,184 +588,179 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               </div>
 
               <div className="space-y-4 pt-4 border-t border-border/50">
-                <div className="mb-6 space-y-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments {combinedFiles.length > 0 && <span className="text-xs text-muted-foreground font-normal">({combinedFiles.length})</span>}
-                    </label>
-                    {fullTask.status === "IN_PRODUCTION" ? (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <a href={`/admin/production?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors shadow-sm" title="Go to Production Folder">
-                          <Folder className="w-3.5 h-3.5" />
-                          Production Folder
-                        </a>
-                        <button
-                          type="button"
-                          onClick={handleDownloadAllAttachments}
-                          disabled={!combinedFiles || combinedFiles.length === 0}
-                          className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
-                          title="Download all attachments"
-                        >
-                          <DownloadIcon className="w-3.5 h-3.5" />
-                          Download All
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isGeneratingLink}
-                          onClick={() => handleShareLink()}
-                          className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
-                          title="Copy customer upload link"
-                        >
-                          <Share2 className="w-3.5 h-3.5" />
-                          {isGeneratingLink ? "Generating..." : "Share Link"}
-                        </button>
+                {(combinedFiles && combinedFiles.length > 0) || uploadingFiles.length > 0 ? (
+                    <div className="mb-6 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                          <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments
+                        </label>
+                        {fullTask.status === "IN_PRODUCTION" ? (
+                          <div className="flex items-center gap-2">
+                            <a href={`/admin/production?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Production Folder">
+                              <Folder className="w-3.5 h-3.5" />
+                              Production Folder
+                            </a>
+                            <button
+                              type="button"
+                              onClick={handleDownloadAllAttachments}
+                              disabled={!combinedFiles || combinedFiles.length === 0}
+                              className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
+                              title="Download all attachments"
+                            >
+                              <DownloadIcon className="w-3.5 h-3.5" />
+                              Download All
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isGeneratingLink}
+                              onClick={() => handleShareLink()}
+                              className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
+                              title="Copy customer upload link"
+                            >
+                              <Share2 className="w-3.5 h-3.5" />
+                              {isGeneratingLink ? "Generating..." : "Share Link"}
+                            </button>
+                          </div>
+                        ) : fullTask.status === "PACKAGING" || fullTask.status === "SHIPPED" || fullTask.status === "DELIVERED" ? (
+                          <div className="flex items-center gap-2">
+                            <a href={`/admin/packaging?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Packaging Folder">
+                              <Folder className="w-3.5 h-3.5" />
+                              Packaging Folder
+                            </a>
+                            <button
+                              type="button"
+                              onClick={handleDownloadAllAttachments}
+                              disabled={!combinedFiles || combinedFiles.length === 0}
+                              className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
+                              title="Download all attachments"
+                            >
+                              <DownloadIcon className="w-3.5 h-3.5" />
+                              Download All
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isGeneratingLink}
+                              onClick={() => handleShareLink()}
+                              className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
+                              title="Copy customer upload link"
+                            >
+                              <Share2 className="w-3.5 h-3.5" />
+                              {isGeneratingLink ? "Generating..." : "Share Link"}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <a href={`/admin/artworks?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors" title="Go to Artwork Folder">
+                              <Folder className="w-3.5 h-3.5" />
+                              Artwork Folder
+                            </a>
+                            <button
+                              type="button"
+                              onClick={handleDownloadAllAttachments}
+                              disabled={!combinedFiles || combinedFiles.length === 0}
+                              className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
+                              title="Download all attachments"
+                            >
+                              <DownloadIcon className="w-3.5 h-3.5" />
+                              Download All
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isGeneratingLink}
+                              onClick={() => handleShareLink()}
+                              className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
+                              title="Copy customer upload link"
+                            >
+                              <Share2 className="w-3.5 h-3.5" />
+                              {isGeneratingLink ? "Generating..." : "Share Link"}
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    ) : fullTask.status === "PACKAGING" || fullTask.status === "SHIPPED" || fullTask.status === "DELIVERED" ? (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <a href={`/admin/packaging?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors shadow-sm" title="Go to Packaging Folder">
-                          <Folder className="w-3.5 h-3.5" />
-                          Packaging Folder
-                        </a>
-                        <button
-                          type="button"
-                          onClick={handleDownloadAllAttachments}
-                          disabled={!combinedFiles || combinedFiles.length === 0}
-                          className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
-                          title="Download all attachments"
-                        >
-                          <DownloadIcon className="w-3.5 h-3.5" />
-                          Download All
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isGeneratingLink}
-                          onClick={() => handleShareLink()}
-                          className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
-                          title="Copy customer upload link"
-                        >
-                          <Share2 className="w-3.5 h-3.5" />
-                          {isGeneratingLink ? "Generating..." : "Share Link"}
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <a href={`/admin/artworks?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors shadow-sm" title="Go to Artwork Folder">
-                          <Folder className="w-3.5 h-3.5" />
-                          Artwork Folder
-                        </a>
-                        <button
-                          type="button"
-                          onClick={handleDownloadAllAttachments}
-                          disabled={!combinedFiles || combinedFiles.length === 0}
-                          className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
-                          title="Download all attachments"
-                        >
-                          <DownloadIcon className="w-3.5 h-3.5" />
-                          Download All
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isGeneratingLink}
-                          onClick={() => handleShareLink()}
-                          className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
-                          title="Copy customer upload link"
-                        >
-                          <Share2 className="w-3.5 h-3.5" />
-                          {isGeneratingLink ? "Generating..." : "Share Link"}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {combinedFiles.length === 0 && uploadingFiles.length === 0 ? (
-                    <div className="p-4 border border-dashed border-border/60 rounded-xl bg-muted/20 text-center text-xs text-muted-foreground">
-                      No files attached to this task yet. Upload files below or click Share Link to send an upload portal link to the customer.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
-                      {uploadingFiles.map(f => (
-                        <div key={f.id} className={`relative group w-fit max-w-full mb-6 mt-1 opacity-70 ${f.status === 'uploading' ? 'animate-pulse' : ''}`}>
-                          <div className={`flex items-center gap-1.5 p-1.5 pb-3 pr-1.5 rounded-[12px] w-full min-w-[140px] shadow-sm relative z-10 overflow-visible ${f.status === 'error' ? 'bg-[#ffcfcf]' : 'bg-[#5a5a5a]'}`}>
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${f.status === 'error' ? 'bg-[#ff9999]' : 'bg-[#666666]'}`}>
-                              {f.status === 'uploading' ? (
-                                <LoaderCircle className="w-4 h-4 text-white animate-spin" />
-                              ) : f.status === 'success' ? (
-                                <CheckCircle className="w-4 h-4 text-[#4ade80]" />
-                              ) : (
-                                <AlertCircle className="w-4 h-4 text-white" />
-                              )}
-                            </div>
-                            <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-0.5 gap-0.5 pt-3">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removeUpload(f.id);
-                                }}
-                                className="absolute top-1 left-1 p-0.5 bg-black/50 hover:bg-red-500 rounded-full text-white transition-colors z-20"
-                                title={f.status === 'error' ? 'Dismiss' : 'Cancel Upload'}
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                              {f.status === 'error' && f.file && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
+                        {uploadingFiles.map(f => (
+                          <div key={f.id} className={`relative group w-fit max-w-full mb-6 mt-1 opacity-70 ${f.status === 'uploading' ? 'animate-pulse' : ''}`}>
+                            <div className={`flex items-center gap-1.5 p-1.5 pb-3 pr-1.5 rounded-[12px] w-full min-w-[140px] shadow-sm relative z-10 overflow-visible ${f.status === 'error' ? 'bg-[#ffcfcf]' : 'bg-[#5a5a5a]'}`}>
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${f.status === 'error' ? 'bg-[#ff9999]' : 'bg-[#666666]'}`}>
+                                {f.status === 'uploading' ? (
+                                  <LoaderCircle className="w-4 h-4 text-white animate-spin" />
+                                ) : f.status === 'success' ? (
+                                  <CheckCircle className="w-4 h-4 text-[#4ade80]" />
+                                ) : (
+                                  <AlertCircle className="w-4 h-4 text-white" />
+                                )}
+                              </div>
+                              <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-0.5 gap-0.5 pt-3">
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleRetryUpload(f);
+                                    removeUpload(f.id);
                                   }}
-                                  className="absolute top-1 left-5 ml-1 p-0.5 bg-blue-500 hover:bg-blue-600 rounded-full text-white transition-colors z-20"
-                                  title="Retry Upload"
+                                  className="absolute top-1 left-1 p-0.5 bg-black/50 hover:bg-red-500 rounded-full text-white transition-colors z-20"
+                                  title={f.status === 'error' ? 'Dismiss' : 'Cancel Upload'}
                                 >
-                                  <RefreshCw className="w-3 h-3" />
+                                  <X className="w-3 h-3" />
                                 </button>
-                              )}
-                              {f.tag === 'draft' ? (
-                                <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Draft</div>
-                              ) : f.tag === 'for_print' ? (
-                                <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">For Print</div>
-                              ) : (
-                                <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Attachment</div>
-                              )}
-                              <div className="flex justify-between items-center w-full min-w-0 mt-1">
-                                <span className={`truncate font-medium text-[10px] tracking-wide pr-1 ${f.status === 'error' ? 'text-red-900' : 'text-white'}`}>
-                                  {f.name}
-                                </span>
+                                {f.status === 'error' && f.file && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRetryUpload(f);
+                                    }}
+                                    className="absolute top-1 left-5 ml-1 p-0.5 bg-blue-500 hover:bg-blue-600 rounded-full text-white transition-colors z-20"
+                                    title="Retry Upload"
+                                  >
+                                    <RefreshCw className="w-3 h-3" />
+                                  </button>
+                                )}
+                                {f.tag === 'draft' ? (
+                                  <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Draft</div>
+                                ) : f.tag === 'for_print' ? (
+                                  <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">For Print</div>
+                                ) : (
+                                  <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Attachment</div>
+                                )}
+                                <div className="flex justify-between items-center w-full min-w-0 mt-1">
+                                  <span className={`truncate font-medium text-[10px] tracking-wide pr-1 ${f.status === 'error' ? 'text-red-900' : 'text-white'}`}>
+                                    {f.name}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="absolute -bottom-4 left-[5%] right-[5%] z-0">
+                              <div className={`w-full text-[10px] font-medium p-1 px-3 rounded-b-[12px] shadow-sm text-center ${f.status === 'error' ? 'bg-red-500 text-white' : 'bg-[#fae863] text-black'}`}>
+                                {f.status === 'uploading' ? `Uploading... ${f.progress}%` : f.status === 'success' ? 'Uploaded!' : 'Failed'}
                               </div>
                             </div>
                           </div>
-                          <div className="absolute -bottom-4 left-[5%] right-[5%] z-0">
-                            <div className={`w-full text-[10px] font-medium p-1 px-3 rounded-b-[12px] shadow-sm text-center ${f.status === 'error' ? 'bg-red-500 text-white' : 'bg-[#fae863] text-black'}`}>
-                              {f.status === 'uploading' ? `Uploading... ${f.progress}%` : f.status === 'success' ? 'Uploaded!' : 'Failed'}
-                            </div>
-                          </div>
+                        ))}
+                        {combinedFiles.slice(0, 12).map((file: any) => (
+                          <FileAttachmentCard allFiles={allFiles} key={file.url} 
+                            task={fullTask}
+                            file={file} 
+                            deleteFile={deleteFile} 
+                            isDeletingFile={isDeletingFile} 
+                            onPreview={setPreviewFile}
+                            onDeleteLocal={(fid: string) => setDeletedFileIds(prev => [...prev, fid])}
+                          />
+                        ))}
+                      </div>
+                      {combinedFiles.length > 12 && (
+                        <div className="mt-4 flex justify-center">
+                          <Button 
+                            variant="secondary" 
+                            className="w-full shadow-sm hover:shadow-md transition-shadow"
+                            onClick={() => {
+                              onClose();
+                              router.push(`/admin/artworks?folder=${encodeURIComponent(task.title)}`);
+                            }}
+                          >
+                            View all {combinedFiles.length} files in Artworks Manager
+                          </Button>
                         </div>
-                      ))}
-                      {combinedFiles.slice(0, 12).map((file: any) => (
-                        <FileAttachmentCard allFiles={allFiles} key={file.url} 
-                          task={fullTask}
-                          file={file} 
-                          deleteFile={deleteFile} 
-                          isDeletingFile={isDeletingFile} 
-                          onPreview={setPreviewFile}
-                          onDeleteLocal={(fid: string) => setDeletedFileIds(prev => [...prev, fid])}
-                        />
-                      ))}
+                      )}
                     </div>
-                  )}
-                  {combinedFiles.length > 12 && (
-                    <div className="mt-4 flex justify-center">
-                      <Button 
-                        variant="secondary" 
-                        className="w-full shadow-sm hover:shadow-md transition-shadow"
-                        onClick={() => {
-                          onClose();
-                          router.push(`/admin/artworks?folder=${encodeURIComponent(task.title)}`);
-                        }}
-                      >
-                        View all {combinedFiles.length} files in Artworks Manager
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                ) : null}
                 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                   <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-4">
@@ -932,8 +902,28 @@ return (
             </div>
             
             <div 
-              className="p-4 border-y md:border-y-0 md:border-t border-border/50 shrink-0 bg-muted/10 dark:bg-transparent"
+              className={`p-4 border-y md:border-y-0 md:border-t border-border/50 shrink-0 transition-colors relative ${isDragOverComment ? 'bg-primary/10 border-primary border-dashed' : 'bg-muted/10 dark:bg-transparent'}`}
+              onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(true); }}
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(true); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragOverComment(false);
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                  setPendingDropFiles(Array.from(e.dataTransfer.files));
+                }
+              }}
             >
+              {isDragOverComment && (
+                <div 
+                  className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50 rounded-b-lg"
+                  onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(false); }}
+                >
+                  <p className="text-sm font-bold text-primary flex items-center gap-2 pointer-events-none">
+                    <DownloadIcon className="w-4 h-4 animate-bounce" /> Drop files to attach
+                  </p>
+                </div>
+              )}
               <div className="flex gap-2">
                 <input 
                   type="file" 
@@ -1312,83 +1302,42 @@ return (
             
           </div>
         </div>
-        {pendingDropFiles && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setPendingDropFiles(null)}>
-            <div className="bg-background border border-border rounded-xl shadow-2xl w-[90vw] max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
-              <h3 className="font-bold text-base mb-1">Upload {pendingDropFiles.length} file{pendingDropFiles.length > 1 ? 's' : ''}</h3>
-              <p className="text-sm text-muted-foreground mb-4">What type of file is this?</p>
-              <div className="flex flex-col gap-2">
-                <Button
-                  variant="outline"
-                  className="justify-start h-11"
-                  onClick={() => { uploadDroppedFiles(pendingDropFiles, 'draft'); setPendingDropFiles(null); }}
-                >
-                  <Badge className="bg-orange-500 mr-2 text-[10px]">Draft</Badge> Upload as Draft
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start h-11"
-                  onClick={() => { uploadDroppedFiles(pendingDropFiles, 'attachment'); setPendingDropFiles(null); }}
-                >
-                  <Badge className="bg-gray-500 mr-2 text-[10px]">Attachment</Badge> Upload as Attachment
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start h-11"
-                  onClick={() => { uploadDroppedFiles(pendingDropFiles, 'for_print'); setPendingDropFiles(null); }}
-                >
-                  <Badge className="bg-green-500 mr-2 text-[10px]">Artwork</Badge> Upload as Artwork (For Print)
-                </Button>
-              </div>
-              <Button variant="ghost" className="w-full mt-3 text-muted-foreground" onClick={() => setPendingDropFiles(null)}>
-                Cancel
+      </DialogContent>
+      {pendingDropFiles && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setPendingDropFiles(null)}>
+          <div className="bg-background border border-border rounded-xl shadow-2xl w-[90vw] max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-base mb-1">Upload {pendingDropFiles.length} file{pendingDropFiles.length > 1 ? 's' : ''}</h3>
+            <p className="text-sm text-muted-foreground mb-4">What type of file is this?</p>
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="outline"
+                className="justify-start h-11"
+                onClick={() => { uploadDroppedFiles(pendingDropFiles, 'draft'); setPendingDropFiles(null); }}
+              >
+                <Badge className="bg-orange-500 mr-2 text-[10px]">Draft</Badge> Upload as Draft
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-11"
+                onClick={() => { uploadDroppedFiles(pendingDropFiles, 'attachment'); setPendingDropFiles(null); }}
+              >
+                <Badge className="bg-gray-500 mr-2 text-[10px]">Attachment</Badge> Upload as Attachment
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-11"
+                onClick={() => { uploadDroppedFiles(pendingDropFiles, 'for_print'); setPendingDropFiles(null); }}
+              >
+                <Badge className="bg-green-500 mr-2 text-[10px]">Artwork</Badge> Upload as Artwork (For Print)
               </Button>
             </div>
+            <Button variant="ghost" className="w-full mt-3 text-muted-foreground" onClick={() => setPendingDropFiles(null)}>
+              Cancel
+            </Button>
           </div>
-        )}
-      </DialogContent>
+        </div>
+      )}
       <FilePreviewModal isOpen={!!previewFile} onClose={() => setPreviewFile(null)} file={previewFile} />
     </Dialog>
-
-    <Dialog open={Boolean(shareTarget)} onOpenChange={(open) => { if (!open) setShareTarget(null); }}>
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Choose Share Link Audience</DialogTitle>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground">
-          The selected audience controls which files and folders can be accessed through this link.
-        </p>
-        <div className="grid gap-3 py-3 sm:grid-cols-2">
-          <button
-            type="button"
-            className="rounded-2xl border border-blue-500/25 bg-blue-500/5 p-5 text-left transition hover:border-blue-500/60 hover:bg-blue-500/10 disabled:opacity-50"
-            disabled={isGeneratingLink}
-            onClick={() => handleAudienceShare("CUSTOMER")}
-          >
-            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-blue-500 text-white">
-              <User className="h-5 w-5" />
-            </div>
-            <p className="font-semibold text-foreground">Send to Customer</p>
-            <p className="mt-1 text-sm leading-5 text-muted-foreground">Shows root Draft and Attachment files only. Subfolders and For Print are hidden.</p>
-          </button>
-          <button
-            type="button"
-            className="rounded-2xl border border-lime-500/30 bg-lime-500/5 p-5 text-left transition hover:border-lime-500/70 hover:bg-lime-500/10 disabled:opacity-50"
-            disabled={isGeneratingLink}
-            onClick={() => handleAudienceShare("SUPPLIER")}
-          >
-            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-lime-400 text-black">
-              <Printer className="h-5 w-5" />
-            </div>
-            <p className="font-semibold text-foreground">Send to Supplier</p>
-            <p className="mt-1 text-sm leading-5 text-muted-foreground">Shows For Print files only, including files organised inside subfolders.</p>
-          </button>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setShareTarget(null)}>Cancel</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-    </>
   );
 }
