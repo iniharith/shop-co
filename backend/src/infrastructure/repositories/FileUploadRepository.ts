@@ -31,6 +31,22 @@ export class FileUploadRepository {
     return result;
   }
 
+  // Self-healing lookup for share links: the FileUpload record for a given
+  // path is normally created at upload time, but if that sync step ever
+  // silently failed (network blip, validation error swallowed by a
+  // try/catch upstream), the file would have no matching _id and any share
+  // link generated for it would 404 forever. This resolves the existing
+  // record by path if one exists, or creates it on the spot — so a share
+  // link always has a real, working id regardless of what happened at
+  // upload time.
+  async findOrCreateByPath(data: Partial<IFileUpload> & { path: string }): Promise<IFileUpload> {
+    const existing = await FileUpload.findOne({ path: data.path });
+    if (existing) return existing;
+    const created = await FileUpload.create(data);
+    notifyFileClients();
+    return created;
+  }
+
   async createMany(data: Partial<IFileUpload>[]): Promise<IFileUpload[]> {
     const identities = data
       .filter((file) => file.userId && file.filename)

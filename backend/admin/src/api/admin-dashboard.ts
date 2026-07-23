@@ -85,6 +85,14 @@ export const getFilesByFolder = async (token: string, params: { taskId?: string;
     return response.data;
 }
 
+// Self-healing lookup used by "Share" buttons: resolves (or creates) the
+// FileUpload record for a given path, so a share link always has a real
+// working id even if the upload-time sync silently failed for that file.
+export const resolveFileByPath = async (token: string, data: { path: string; name: string; mimetype?: string; size?: number; taskId?: string; orderId?: string; category?: string; tag?: string }) => {
+    const response = await AxiosInstance(token).post(`${FILES_URL}/resolve-by-path`, data);
+    return response.data;
+}
+
 export const reviewFile = async (token: string, id: string, reviewed: boolean, notes?: string) => {
     const response = await AxiosInstance(token).put(`${FILES_URL}/${id}/review`, { reviewed, notes });
     return response.data;

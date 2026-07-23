@@ -30,7 +30,8 @@ import {
     renameFolder,
     deleteFolder,
     moveFile,
-    getDashboardSummary
+    getDashboardSummary,
+    resolveFileByPath
 } from "@/api/admin-dashboard";
 
 export const useParcelStats = () => {
@@ -182,6 +183,19 @@ export const useCreateShareLink = () => {
         ['createShareLink'],
         (data: { folderName: string; taskId?: string; orderId?: string; userId?: string; folderId?: string; audience?: 'CUSTOMER' | 'SUPPLIER' }) =>
             createShareLink(session?.user?.token, data)
+    );
+    return { mutate, mutateAsync, isPending };
+}
+
+// Self-healing lookup for the per-file "Share" button: guarantees a real,
+// working FileUpload id even if the original upload-time sync silently
+// failed for that file.
+export const useResolveFileByPath = () => {
+    const { data: session } = useSession();
+    const { mutate, mutateAsync, isPending } = useMutationData(
+        ['resolveFileByPath'],
+        (data: { path: string; name: string; mimetype?: string; size?: number; taskId?: string; orderId?: string; category?: string; tag?: string }) =>
+            resolveFileByPath(session?.user?.token, data)
     );
     return { mutate, mutateAsync, isPending };
 }

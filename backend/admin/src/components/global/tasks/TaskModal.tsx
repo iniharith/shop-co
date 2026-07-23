@@ -26,7 +26,7 @@ import { useOrders } from "@/hooks/useOrder";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import { Check, ChevronsUpDown, Download as DownloadIcon, Copy } from "lucide-react";
 import { cn, forceDownload } from "@/lib/utils";
-import { useAllFiles, useCreateShareLink } from "@/hooks/useAdminDashboard";
+import { useAllFiles, useCreateShareLink, useResolveFileByPath } from "@/hooks/useAdminDashboard";
 import { useRouter } from "next/navigation";
 import { AssigneeTag, AssigneeDot } from "@/lib/userColor";
 
@@ -56,11 +56,36 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
   
   const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(fileUrlStr)}&name=${encodeURIComponent(file.name)}&stream=true`;
 
-  const handleCopyLink = (e: React.MouseEvent) => {
+  const { mutateAsync: resolveFileByPath, isPending: isResolvingShareLink } = useResolveFileByPath();
+
+  const handleCopyLink = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const realFile = allFiles?.find((f: any) => f.path === file.url || (file.url && file.url.includes(f.filename)));
-    const realFileId = realFile?._id || realFile?.id || file._id || file.id;
+    let realFileId = realFile?._id || realFile?.id;
+
+    if (!realFileId) {
+      // The local lookup failed — usually because the upload-time sync to
+      // the FileUpload collection silently failed for this file. Rather
+      // than fall back to an id that doesn't exist in that collection
+      // (which just produces a dead "File Not Found" link), resolve or
+      // create the record on the spot so the link always works.
+      try {
+        const res = await resolveFileByPath({
+          path: file.url,
+          name: file.name,
+          mimetype: file.mimetype,
+          taskId: task._id,
+          orderId: task.orderId,
+          tag: file.tag,
+        });
+        realFileId = res?.data?._id;
+      } catch (err) {
+        toast.error("Cannot generate share link: failed to resolve file record.");
+        return;
+      }
+    }
+
     if (!realFileId) {
        toast.error("Cannot generate share link: File ID not found in database.");
        return;

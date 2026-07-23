@@ -172,6 +172,42 @@ router.post(
   })
 );
 
+// ─── POST /api/files/resolve-by-path ──────────────────────
+// Used by the "Share" button on a file that doesn't have a locally-known
+// FileUpload id (e.g. because the sync at upload time silently failed).
+// Idempotent: returns the existing record for this path if one exists,
+// otherwise creates it — so share links always resolve to a real id.
+router.post(
+  '/resolve-by-path',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { path, name, mimetype, size, taskId, orderId, category, tag } = req.body;
+    const authReq = req as any;
+
+    if (!path || !name) {
+      res.status(400).json({ success: false, message: 'path and name are required' });
+      return;
+    }
+
+    const userId = authReq.userId || authReq.user?._id?.toString() || authReq.user?.id || 'admin';
+
+    const file = await fileUploadRepository.findOrCreateByPath({
+      userId,
+      taskId: taskId || undefined,
+      orderId: orderId || undefined,
+      category: category || (taskId ? 'TASK' : 'UNCATEGORIZED'),
+      tag: tag || 'attachment',
+      filename: name,
+      originalName: name,
+      mimetype: mimetype || 'application/octet-stream',
+      size: size || 0,
+      path,
+    });
+
+    res.json({ success: true, data: file });
+  })
+);
+
 // ─── POST /api/files/save-metadata ────────────────────────
 // Client calls this after direct S3 upload succeeds
 router.post(
