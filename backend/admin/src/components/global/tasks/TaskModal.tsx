@@ -521,7 +521,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="task-modal-content top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[85vh] flex flex-col relative"
+        className="task-modal-content top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[85vh] flex flex-col"
         onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverModal(true); }}
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverModal(true); }}
         onDragLeave={(e) => {
