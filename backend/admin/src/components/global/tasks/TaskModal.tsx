@@ -248,7 +248,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [commentText, setCommentText] = useState("");
   const [activeTab, setActiveTab] = useState("comments");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [isDragOverComment, setIsDragOverComment] = useState(false);
+  const [isDragOverModal, setIsDragOverModal] = useState(false);
   const [pendingDropFiles, setPendingDropFiles] = useState<File[] | null>(null);
   const [previewFile, setPreviewFile] = useState<any>(null);
   const { uploads, addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
@@ -520,7 +520,39 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   return (
     <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="task-modal-content max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[90vh] flex flex-col">
+      <DialogContent
+        className="task-modal-content max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[90vh] flex flex-col relative"
+        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverModal(true); }}
+        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverModal(true); }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsDragOverModal(false);
+          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            setPendingDropFiles(Array.from(e.dataTransfer.files));
+          }
+        }}
+      >
+        {isDragOverModal && (
+          <div
+            className="absolute inset-0 z-[70] flex items-center justify-center bg-background/85 backdrop-blur-sm border-2 border-primary border-dashed rounded-lg"
+            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverModal(false); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsDragOverModal(false);
+              if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                setPendingDropFiles(Array.from(e.dataTransfer.files));
+              }
+            }}
+          >
+            <div className="flex flex-col items-center gap-3 pointer-events-none">
+              <DownloadIcon className="w-10 h-10 text-primary animate-bounce" />
+              <p className="text-lg font-bold text-primary">Drop files to attach to this task</p>
+            </div>
+          </div>
+        )}
         <div className="flex flex-col md:flex-row h-full overflow-y-auto md:overflow-hidden">
           
           {/* Main Content (Left, 70% width) */}
@@ -900,28 +932,8 @@ return (
             </div>
             
             <div 
-              className={`p-4 border-y md:border-y-0 md:border-t border-border/50 shrink-0 transition-colors relative ${isDragOverComment ? 'bg-primary/10 border-primary border-dashed' : 'bg-muted/10 dark:bg-transparent'}`}
-              onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(true); }}
-              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(true); }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsDragOverComment(false);
-                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                  setPendingDropFiles(Array.from(e.dataTransfer.files));
-                }
-              }}
+              className="p-4 border-y md:border-y-0 md:border-t border-border/50 shrink-0 bg-muted/10 dark:bg-transparent"
             >
-              {isDragOverComment && (
-                <div 
-                  className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50 rounded-b-lg"
-                  onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverComment(false); }}
-                >
-                  <p className="text-sm font-bold text-primary flex items-center gap-2 pointer-events-none">
-                    <DownloadIcon className="w-4 h-4 animate-bounce" /> Drop files to attach
-                  </p>
-                </div>
-              )}
               <div className="flex gap-2">
                 <input 
                   type="file" 

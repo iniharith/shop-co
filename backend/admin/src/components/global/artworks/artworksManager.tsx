@@ -9,6 +9,7 @@ import { useOrders, useUpdateOrderStatus } from "@/hooks/useOrder";
 import { useUsers } from "@/hooks/useUsers";
 import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2, Upload, Pencil, User, Tag, Calendar, CheckSquare } from "lucide-react";
@@ -110,6 +111,7 @@ export default function ArtworksManager() {
   const [editingName, setEditingName] = useState<string>("");
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [isDragOverFolder, setIsDragOverFolder] = useState<boolean>(false);
+  const [pendingArtworkDrop, setPendingArtworkDrop] = useState<File[] | null>(null);
 
   // Sysadmin bulk folder status move
   const [bulkSelectMode, setBulkSelectMode] = useState<boolean>(false);
@@ -245,6 +247,92 @@ export default function ArtworksManager() {
       onSuccess: () => {
         toast.success("File deleted successfully!");
       },
+    });
+  };
+
+  // Uploads files dropped onto a folder, tagged as the user's choice
+  // (draft / attachment / for_print) from the picker shown after drop.
+  const uploadArtworkDroppedFiles = (files: File[], tag: string) => {
+    const activeGroup = groupedFromServer.find((g: any) => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
+    if (!activeGroup) return;
+
+    const token = (session as any)?.user?.token || localStorage.getItem('token') || "";
+
+    const uploadItems = files.map((file) => ({
+      file,
+      id: Date.now().toString() + Math.random().toString(36).substring(7),
+      abortController: new AbortController(),
+    }));
+
+    uploadItems.forEach(({ file, id, abortController }) => {
+      addUpload({
+        id,
+        name: file.name,
+        tag: "Artwork",
+        taskId: activeGroup.taskId,
+        file,
+        abortController
+      });
+    });
+
+    const uploadBatch = async () => {
+      const uploaded = new Array<{ id: string; data: Awaited<ReturnType<typeof uploadToS3Directly>> } | undefined>(uploadItems.length);
+      const errors: Error[] = [];
+      let cursor = 0;
+
+      async function worker() {
+        while (cursor < uploadItems.length) {
+          const index = cursor++;
+          const { file, id, abortController } = uploadItems[index];
+
+          try {
+            updateStatus(id, 'uploading');
+            const folderPath = activeGroup.userId || activeGroup.taskId || 'general';
+            const data = await uploadToS3Directly(token, file, folderPath, (percent) => updateProgress(id, percent), abortController);
+            uploaded[index] = { id, data };
+          } catch (err: any) {
+            const error = err instanceof Error ? err : new Error('Upload failed');
+            errors.push(error);
+            updateStatus(id, 'error', error.message);
+          }
+        }
+      }
+
+      await Promise.all(
+        Array.from({ length: Math.min(3, uploadItems.length) }, () => worker())
+      );
+
+      const successful = uploaded.filter((item): item is NonNullable<typeof item> => Boolean(item));
+      if (successful.length === 0) throw errors[0] || new Error('Upload failed');
+
+      try {
+        const shareSlug = activeGroup.files.find((file: any) => file.shareSlug)?.shareSlug;
+        await AxiosInstance(token).post("/api/files/save-metadata", {
+          userId: activeGroup.userId || undefined,
+          orderId: activeGroup.orderId || undefined,
+          taskId: activeGroup.taskId || undefined,
+          folderId: activeSubFolderId || undefined,
+          shareSlug: shareSlug || undefined,
+          category: activeGroup.taskId ? 'TASK' : (activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING"),
+          tag,
+          files: successful.map(({ data }) => data),
+        });
+        successful.forEach(({ id }) => updateStatus(id, 'success'));
+        await refetch();
+      } catch (err: any) {
+        successful.forEach(({ id }) => updateStatus(id, 'error', err.message || 'Failed to save metadata'));
+        throw err;
+      }
+
+      if (errors.length > 0) {
+        throw new Error(`${errors.length} file(s) failed; successful files were saved.`);
+      }
+    };
+
+    toast.promise(uploadBatch(), {
+      loading: `Uploading ${files.length} files...`,
+      success: 'Files uploaded successfully',
+      error: (error: any) => error.message || 'Failed to upload files'
     });
   };
 
@@ -826,84 +914,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                   e.stopPropagation();
                   setIsDragOverFolder(false);
                   if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                    const files = Array.from(e.dataTransfer.files);
-                    const token = (session as any)?.user?.token || localStorage.getItem('token') || "";
-
-                    const uploadItems = files.map((file) => ({
-                      file,
-                      id: Date.now().toString() + Math.random().toString(36).substring(7),
-                      abortController: new AbortController(),
-                    }));
-
-                    uploadItems.forEach(({ file, id, abortController }) => {
-                      addUpload({
-                        id,
-                        name: file.name,
-                        tag: "Artwork",
-                        taskId: activeGroup.taskId,
-                        file,
-                        abortController
-                      });
-                    });
-
-                    const uploadBatch = async () => {
-                      const uploaded = new Array<{ id: string; data: Awaited<ReturnType<typeof uploadToS3Directly>> } | undefined>(uploadItems.length);
-                      const errors: Error[] = [];
-                      let cursor = 0;
-
-                      async function worker() {
-                        while (cursor < uploadItems.length) {
-                          const index = cursor++;
-                          const { file, id, abortController } = uploadItems[index];
-
-                          try {
-                            updateStatus(id, 'uploading');
-                            const folderPath = activeGroup.userId || activeGroup.taskId || 'general';
-                            const data = await uploadToS3Directly(token, file, folderPath, (percent) => updateProgress(id, percent), abortController);
-                            uploaded[index] = { id, data };
-                          } catch (err: any) {
-                            const error = err instanceof Error ? err : new Error('Upload failed');
-                            errors.push(error);
-                            updateStatus(id, 'error', error.message);
-                          }
-                        }
-                      }
-
-                      await Promise.all(
-                        Array.from({ length: Math.min(3, uploadItems.length) }, () => worker())
-                      );
-
-                      const successful = uploaded.filter((item): item is NonNullable<typeof item> => Boolean(item));
-                      if (successful.length === 0) throw errors[0] || new Error('Upload failed');
-
-                      try {
-                        const shareSlug = activeGroup.files.find((file: any) => file.shareSlug)?.shareSlug;
-                        await AxiosInstance(token).post("/api/files/save-metadata", {
-                          userId: activeGroup.userId || undefined,
-                          orderId: activeGroup.orderId || undefined,
-                          taskId: activeGroup.taskId || undefined,
-                          folderId: activeSubFolderId || undefined,
-                          shareSlug: shareSlug || undefined,
-                          category: activeGroup.taskId ? 'TASK' : (activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING"),
-                          files: successful.map(({ data }) => data),
-                        });
-                        successful.forEach(({ id }) => updateStatus(id, 'success'));
-                        await refetch();
-                      } catch (err: any) {
-                        successful.forEach(({ id }) => updateStatus(id, 'error', err.message || 'Failed to save metadata'));
-                        throw err;
-                      }
-
-                      if (errors.length > 0) {
-                        throw new Error(`${errors.length} file(s) failed; successful files were saved.`);
-                      }
-                    };
-
-                    toast.promise(uploadBatch(), {
-                      loading: `Uploading ${files.length} files...`,
-                      success: 'Files uploaded successfully',
-                      error: (error) => error.message || 'Failed to upload files'
-                    });
+                    setPendingArtworkDrop(Array.from(e.dataTransfer.files));
                   }
                 }}
               >
@@ -1501,6 +1512,41 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
       </Dialog>
       
       <FilePreviewModal isOpen={!!previewFile} onClose={() => setPreviewFile(null)} file={previewFile} files={previewList} onNavigate={setPreviewFile} />
+
+      {pendingArtworkDrop && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setPendingArtworkDrop(null)}>
+          <div className="bg-background border border-border rounded-xl shadow-2xl w-[90vw] max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-base mb-1">Upload {pendingArtworkDrop.length} file{pendingArtworkDrop.length > 1 ? 's' : ''}</h3>
+            <p className="text-sm text-muted-foreground mb-4">What type of file is this?</p>
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="outline"
+                className="justify-start h-11"
+                onClick={() => { uploadArtworkDroppedFiles(pendingArtworkDrop, 'draft'); setPendingArtworkDrop(null); }}
+              >
+                <Badge className="bg-orange-500 mr-2 text-[10px]">Draft</Badge> Upload as Draft
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-11"
+                onClick={() => { uploadArtworkDroppedFiles(pendingArtworkDrop, 'attachment'); setPendingArtworkDrop(null); }}
+              >
+                <Badge className="bg-gray-500 mr-2 text-[10px]">Attachment</Badge> Upload as Attachment
+              </Button>
+              <Button
+                variant="outline"
+                className="justify-start h-11"
+                onClick={() => { uploadArtworkDroppedFiles(pendingArtworkDrop, 'for_print'); setPendingArtworkDrop(null); }}
+              >
+                <Badge className="bg-green-500 mr-2 text-[10px]">Artwork</Badge> Upload as Artwork (For Print)
+              </Button>
+            </div>
+            <Button variant="ghost" className="w-full mt-3 text-muted-foreground" onClick={() => setPendingArtworkDrop(null)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
