@@ -11,6 +11,7 @@ import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 import { authConfig } from "@/lib/auth.config";
 import { getServerSession } from "next-auth/next";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "Kampung Cetak Admin Console",
@@ -62,6 +63,7 @@ export default async function RootLayout({
             {children}
           </Providers>
         </NuqsAdapter>
+        <Analytics />
       </body>
     </html>
   );
