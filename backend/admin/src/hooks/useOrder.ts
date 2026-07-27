@@ -8,12 +8,12 @@ import { getOrders, updateOrderStatus } from "@/api/orders";
 import { useMutationData } from "./useMutation";
 import { IOrderApiResponse } from "@/types/api";
 
-export const useOrders = () => {
+export const useOrders = (enabled = true) => {
     const { data: session, status } = useSession();
     const { data, isPending, refetch, isFetching } = useQueryData(
         ['orders'],
         () => getOrders(session?.user?.token),
-        { enabled: status === "authenticated", refetchInterval: 60_000, staleTime: 30_000 }
+        { enabled: enabled && status === "authenticated", refetchInterval: 60_000, staleTime: 30_000 }
     )
     const response = data as IOrderApiResponse
     return { data: response, isPending, refetch, isFetching }

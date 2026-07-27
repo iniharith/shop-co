@@ -124,14 +124,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
             </>
           ) : isPdfFile ? (
             <div className="w-full h-full overflow-hidden flex items-center justify-center relative">
-              <iframe 
-                src={`${proxyUrl}&inline=true#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} 
-                className="absolute top-0 left-0 border-none overflow-hidden"
-                style={{ width: '400%', height: '400%', transform: 'scale(0.25)', transformOrigin: 'top left', pointerEvents: 'none' }}
-                tabIndex={-1}
-              />
-              {/* Optional overlay to prevent interaction with iframe inside a tag */}
-              <div className="absolute inset-0 z-10"></div>
+              <File className="w-4 h-4 text-primary/80" aria-label="PDF attachment" />
             </div>
           ) : (
             <File className="w-4 h-4 text-primary/80 relative z-10" />
@@ -247,8 +240,10 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { mutate: pinCommentApi, isPending: isPinningComment } = usePinTaskComment();
   const { mutateAsync: uploadFile, isPending: isUploading } = useUploadTaskFile();
   const { mutate: deleteFile, isPending: isDeletingFile } = useDeleteTaskFile();
+  const [openOrderBox, setOpenOrderBox] = useState(false);
+  const [openUserBox, setOpenUserBox] = useState(false);
   const { data: usersData } = useUsers();
-  const { data: ordersData } = useOrders();
+  const { data: ordersData } = useOrders(openOrderBox);
   // Loading every uploaded file when a task opens can exhaust mobile browser
   // memory. This endpoint returns only files attached to this task.
   const { data: taskFilesData } = useFilesByFolder({ taskId: task._id });
@@ -265,8 +260,6 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const allUsers = usersData?.users || [];
   const orders = ordersData?.orders || [];
   
-  const [openOrderBox, setOpenOrderBox] = useState(false);
-  const [openUserBox, setOpenUserBox] = useState(false);
   const uploadTagRef = React.useRef<string>('attachment');
   const [orderSearch, setOrderSearch] = useState("");
   const [userSearch, setUserSearch] = useState("");
