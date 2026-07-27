@@ -31,8 +31,6 @@ import { useRouter } from "next/navigation";
 import { AssigneeTag, AssigneeDot } from "@/lib/userColor";
 
 const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview, onDeleteLocal, allFiles }: any) => {
-  const isImageFile = file.mimetype?.includes("image") || (file.name || file.url).match(/\.(jpeg|jpg|gif|png|webp|heic)$/i);
-  const isPdfFile = file.mimetype?.includes("pdf") || (file.name || file.url).match(/\.pdf$/i);
   const [notes, setNotes] = useState(file.notes || "");
   const { mutate: updateNotes, isPending } = useUpdateTaskFileNotes();
 
@@ -107,28 +105,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
           rel="noopener noreferrer" 
           className="w-8 h-8 rounded-lg bg-[#666666] flex items-center justify-center shrink-0 hover:bg-[#777777] transition-colors overflow-hidden relative group/thumb"
         >
-          {isImageFile ? (
-            <>
-              <img 
-                src={`https://wsrv.nl/?url=${encodeURIComponent(fileUrlStr)}&w=200&h=200&fit=cover`}
-                alt="thumbnail" 
-                loading="lazy"
-                className="w-full h-full object-cover absolute inset-0 z-0" 
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  const nextEl = e.currentTarget.nextElementSibling;
-                  if (nextEl) (nextEl as HTMLElement).style.display = 'flex';
-                }}
-              />
-              <File className="w-4 h-4 text-primary/80 relative z-10" style={{ display: 'none' }} />
-            </>
-          ) : isPdfFile ? (
-            <div className="w-full h-full overflow-hidden flex items-center justify-center relative">
-              <File className="w-4 h-4 text-primary/80" aria-label="PDF attachment" />
-            </div>
-          ) : (
-            <File className="w-4 h-4 text-primary/80 relative z-10" />
-          )}
+          <File className="w-4 h-4 text-primary/80 relative z-10" aria-label="Attachment" />
         </a>
         
         {/* Right: Filename, Tag & Buttons */}
