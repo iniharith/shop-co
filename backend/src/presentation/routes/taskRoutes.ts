@@ -89,7 +89,7 @@ router.get(
   '/:id',
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
-    const task = await taskRepository.findById(req.params.id);
+    const task = await taskRepository.findDetailById(req.params.id);
     if (!task) {
       res.status(404).json({ success: false, message: 'Task not found' });
       return;

@@ -40,6 +40,17 @@ export class TaskRepository {
     return Task.findById(id);
   }
 
+  // Task history lives in embedded arrays and can grow without bound. Limit
+  // detail responses so opening one task cannot send an oversized document to
+  // a browser, especially on mobile devices.
+  async findDetailById(id: string): Promise<ITask | null> {
+    return Task.findById(id)
+      .slice('files', -50)
+      .slice('comments', -100)
+      .slice('activities', -100)
+      .maxTimeMS(10_000);
+  }
+
   async update(id: string, data: Partial<ITask>): Promise<ITask | null> {
     return Task.findByIdAndUpdate(id, { $set: data }, { new: true });
   }
