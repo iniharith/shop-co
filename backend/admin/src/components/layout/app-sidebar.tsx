@@ -28,6 +28,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuBadge,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
@@ -53,6 +54,7 @@ import * as React from "react";
 import { Icons } from "../global/icons";
 import { useTheme } from "next-themes";
 import { useNotifications } from "@/hooks/useNotification";
+import { useConversations } from "@/hooks/useChat";
 
 import { roleByNavItems } from "@/constants/navItems";
 import { DialogTitle } from "../ui/dialog";
@@ -70,6 +72,8 @@ export default function AppSidebar() {
   const { data: notificationsResponse } = useNotifications();
   const unreadCount = notificationsResponse?.notifications?.filter((n: any) => !n.read).length || 0;
   
+  const { data: conversationsResponse } = useConversations();
+  const unreadChatCount = (conversationsResponse as any)?.conversations?.reduce((total: number, conv: any) => total + (conv.unreadCount || 0), 0) || 0;
  
   const navItems = roleByNavItems(session?.user?.role)
 
@@ -166,6 +170,11 @@ export default function AppSidebar() {
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
+                  {item.title === 'Chat' && unreadChatCount > 0 && (
+                    <SidebarMenuBadge className="bg-red-500 text-white rounded-full px-1.5 min-w-5 flex items-center justify-center text-[10px]">
+                      {unreadChatCount}
+                    </SidebarMenuBadge>
+                  )}
                 </SidebarMenuItem>
               );
             })}
