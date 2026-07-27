@@ -82,9 +82,9 @@ export default async function RootLayout({
   const savedLocale = cookieStore.get("kc_locale")?.value;
   const locale: Locale = savedLocale === "ms" ? "ms" : "en";
   return (
-    <html lang={locale} suppressHydrationWarning>
+      <html lang={locale} suppressHydrationWarning className="overflow-x-hidden">
       <body
-        className={`${geistSans.variable} ${dmSans.variable} overflow-x-hidden w-screen ${geistMono.variable} ${fonarto.variable} ${provicaliAmpersand.variable} bg-background text-foreground antialiased`}
+        className={`${geistSans.variable} ${dmSans.variable} ${geistMono.variable} ${fonarto.variable} ${provicaliAmpersand.variable} bg-background text-foreground antialiased`}
       >
         <Provider session={session} initialLocale={locale}>
           <div className="site-header sticky z-50 top-0">
