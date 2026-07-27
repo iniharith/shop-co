@@ -47,7 +47,7 @@ export default function Header() {
   if (isDashboard) {
     return (
       <header className='flex h-20 shrink-0 items-center px-3 sm:px-4'>
-        <div className='flex min-w-0 flex-1 items-center gap-2 rounded-[28px] border border-white/50 bg-card/75 p-2 shadow-[0_18px_50px_-35px_rgba(15,23,42,0.55)] backdrop-blur-xl dark:border-white/10'>
+        <div className='flex min-w-0 flex-1 items-center gap-2 rounded-[28px] border border-white/50 bg-card p-2 shadow-[0_18px_50px_-35px_rgba(15,23,42,0.55)] dark:border-white/10'>
           <div className='flex shrink-0 items-center gap-2 pl-1 sm:pl-2'>
             <SidebarTrigger className='hidden h-10 w-10 rounded-full bg-background/80 md:flex' />
             <div className='hidden items-center gap-2 sm:flex'>

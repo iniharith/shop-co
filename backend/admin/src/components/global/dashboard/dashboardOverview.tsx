@@ -48,7 +48,7 @@ export default function DashboardOverview() {
     : 0;
 
   return (
-    <section className="relative isolate overflow-hidden rounded-[36px] border border-slate-200/70 bg-slate-100/65 p-3 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03] sm:p-5">
+    <section className="relative isolate overflow-hidden rounded-[36px] border border-slate-200/70 bg-slate-100 p-3 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-slate-950 sm:p-5">
       <div className="pointer-events-none absolute -left-20 top-20 -z-10 h-64 w-64 rounded-full bg-blue-400/10 blur-3xl" />
       <div className="pointer-events-none absolute -right-20 bottom-0 -z-10 h-72 w-72 rounded-full bg-lime-300/10 blur-3xl" />
 
@@ -122,7 +122,7 @@ export default function DashboardOverview() {
           </div>
         </article>
 
-        <article className="flex min-h-32 flex-col justify-between rounded-[28px] border border-slate-200/80 bg-white/75 p-5 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06] xl:col-span-3">
+        <article className="flex min-h-32 flex-col justify-between rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-slate-900 xl:col-span-3">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-semibold">Active Deliveries</span>
             <Truck className="h-4 w-4 text-blue-500" />
@@ -130,7 +130,7 @@ export default function DashboardOverview() {
           <div className="font-display text-3xl font-bold tracking-tight text-foreground">{activeDeliveries}</div>
         </article>
 
-        <article className="flex min-h-32 flex-col justify-between rounded-[28px] border border-slate-200/80 bg-white/75 p-5 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06] xl:col-span-3">
+        <article className="flex min-h-32 flex-col justify-between rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-slate-900 xl:col-span-3">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-semibold">Total Tasks</span>
             <ClipboardList className="h-4 w-4 text-violet-500" />
@@ -138,7 +138,7 @@ export default function DashboardOverview() {
           <div className="font-display text-3xl font-bold tracking-tight text-foreground">{totalTasks}</div>
         </article>
 
-        <article className="flex min-h-32 flex-col justify-between rounded-[28px] border border-slate-200/80 bg-white/75 p-5 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06] xl:col-span-3">
+        <article className="flex min-h-32 flex-col justify-between rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)] dark:border-white/10 dark:bg-slate-900 xl:col-span-3">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-semibold">Total Folders</span>
             <FolderOpen className="h-4 w-4 text-amber-500" />
@@ -146,7 +146,7 @@ export default function DashboardOverview() {
           <div className="font-display text-3xl font-bold tracking-tight text-foreground">{totalFolders}</div>
         </article>
 
-        <article className="relative flex min-h-32 flex-col justify-between overflow-hidden rounded-[28px] border border-emerald-200/80 bg-emerald-50/80 p-5 shadow-[0_18px_50px_-36px_rgba(16,185,129,0.45)] backdrop-blur-xl dark:border-emerald-400/20 dark:bg-emerald-400/10 xl:col-span-3">
+        <article className="relative flex min-h-32 flex-col justify-between overflow-hidden rounded-[28px] border border-emerald-200/80 bg-emerald-50 p-5 shadow-[0_18px_50px_-36px_rgba(16,185,129,0.45)] dark:border-emerald-400/20 dark:bg-emerald-950 xl:col-span-3">
           <div className="pointer-events-none absolute -right-4 -top-8 h-24 w-24 rounded-full bg-emerald-400/15 blur-xl" />
           <div className="relative flex items-center justify-between text-emerald-700 dark:text-emerald-300">
             <span className="text-xs font-semibold">Users Online</span>
@@ -158,7 +158,7 @@ export default function DashboardOverview() {
           <div className="relative font-display text-3xl font-bold tracking-tight text-foreground">{onlineUsers}</div>
         </article>
 
-        <article className="rounded-[32px] border border-slate-200/80 bg-white/75 p-5 shadow-[0_20px_60px_-38px_rgba(15,23,42,0.45)] backdrop-blur-xl sm:col-span-2 sm:p-7 dark:border-white/10 dark:bg-white/[0.06] xl:col-span-7">
+        <article className="rounded-[32px] border border-slate-200/80 bg-white p-5 shadow-[0_20px_60px_-38px_rgba(15,23,42,0.45)] sm:col-span-2 sm:p-7 dark:border-white/10 dark:bg-slate-900 xl:col-span-7">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Parcel flow</p>
@@ -190,7 +190,7 @@ export default function DashboardOverview() {
           </div>
         </article>
 
-        <article className="relative overflow-hidden rounded-[32px] border border-blue-200/70 bg-gradient-to-br from-blue-50/95 via-white/80 to-cyan-50/70 p-5 shadow-[0_20px_60px_-38px_rgba(37,99,235,0.5)] backdrop-blur-xl sm:col-span-2 sm:p-7 dark:border-blue-400/20 dark:from-blue-950/60 dark:via-slate-950/70 dark:to-cyan-950/40 xl:col-span-5">
+        <article className="relative overflow-hidden rounded-[32px] border border-blue-200/70 bg-gradient-to-br from-blue-50 via-white to-cyan-50 p-5 shadow-[0_20px_60px_-38px_rgba(37,99,235,0.5)] sm:col-span-2 sm:p-7 dark:border-blue-400/20 dark:from-blue-950 dark:via-slate-950 dark:to-cyan-950 xl:col-span-5">
           <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full border-[26px] border-blue-500/10" />
           <div className="relative z-10 flex items-center justify-between gap-4">
             <div>

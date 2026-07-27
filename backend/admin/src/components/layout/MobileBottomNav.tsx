@@ -36,7 +36,7 @@ export function MobileBottomNav() {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
-      <div className="flex items-center justify-around bg-background/90 backdrop-blur-xl border shadow-xl rounded-full p-2 ring-1 ring-border/50">
+      <div className="flex items-center justify-around bg-background border shadow-xl rounded-full p-2 ring-1 ring-border/50">
         {bottomNavItems.map((item) => {
           const isActive = pathname === item.url || pathname.startsWith(`${item.url}/`);
           const Icon = item.icon;
