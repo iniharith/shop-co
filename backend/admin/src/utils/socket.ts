@@ -12,7 +12,7 @@ export const getSocket = (session: Session) => {
   if (!socket) {
     socket = io(process.env.NEXT_PUBLIC_BACKEND_URL+"/admin", {
       withCredentials: true,
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
       autoConnect: false,
       auth: { token },
       reconnection: true,

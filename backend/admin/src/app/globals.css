@@ -113,20 +113,6 @@
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
-
-body{
-  width: 100vw;
-  overflow-x: hidden;
-}
-
 .errInput {
   border: 1px solid red !important;
   outline: 0px transparent;

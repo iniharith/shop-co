@@ -20,7 +20,7 @@ export const authConfig: AuthOptions = {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: credentials.email, password: credentials.password }),
-          signal: AbortSignal.timeout(15_000),
+          signal: typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(15_000) : (() => { const c = new AbortController(); setTimeout(() => c.abort(), 15_000); return c.signal; })(),
           cache: 'no-store',
         });
         if (!response.ok) return null;
