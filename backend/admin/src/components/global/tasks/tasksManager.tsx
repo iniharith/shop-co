@@ -76,7 +76,6 @@ export default function TasksManager() {
   const { data: usersData } = useUsers();
 
   const [viewMode, setViewMode]                     = useState<"board" | "list">("board");
-  const [isMobile, setIsMobile]                     = useState<boolean | null>(null);
   const [isCreateOpen, setIsCreateOpen]             = useState(false);
   const [selectedTask, setSelectedTask]             = useState<any>(null);
   const [hiddenColumns, setHiddenColumns]           = useState<string[]>([]);
@@ -95,22 +94,6 @@ export default function TasksManager() {
   const { mutate: createTask, isPending: isCreating } = useCreateTask();
   const { mutate: updateTask }  = useUpdateTask();
   const { mutate: deleteTask }  = useDeleteTask();
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 767px)");
-    let initialized = false;
-    const updateViewForViewport = () => {
-      setIsMobile(mediaQuery.matches);
-      if (!initialized || mediaQuery.matches) {
-        setViewMode(mediaQuery.matches ? "list" : "board");
-        initialized = true;
-      }
-    };
-
-    updateViewForViewport();
-    mediaQuery.addEventListener("change", updateViewForViewport);
-    return () => mediaQuery.removeEventListener("change", updateViewForViewport);
-  }, []);
 
   // ── Asana-style multi-select ──────────────────────────────────────────────
   // No checkboxes. Click a row to open it. Shift+click to add to selection.
@@ -263,9 +246,7 @@ export default function TasksManager() {
     sortedTasks.filter((t: any) => t.status === status).forEach((t: any) => listOrderedIds.push(t._id));
   });
 
-  // Do not mount the kanban cards until the viewport is known. Mounting every
-  // card and its controls at once can exhaust mobile browser memory.
-  if (isMobile === null || isPending) return <LoadingAnimation fullScreen={false} label="Loading tasks" />;
+  if (isPending) return <LoadingAnimation fullScreen={false} label="Loading tasks" />;
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-full min-w-0 overflow-hidden px-1">
@@ -278,11 +259,9 @@ export default function TasksManager() {
             <Button variant={viewMode === "list"  ? "secondary" : "ghost"} size="sm" className="h-8 px-3 rounded-md" onClick={() => { setViewMode("list");  clearSelection(); }}>
               <List className="w-4 h-4 mr-2" /> List View
             </Button>
-            {!isMobile && (
-              <Button variant={viewMode === "board" ? "secondary" : "ghost"} size="sm" className="h-8 px-3 rounded-md" onClick={() => { setViewMode("board"); clearSelection(); }}>
-                <LayoutGrid className="w-4 h-4 mr-2" /> Board View
-              </Button>
-            )}
+            <Button variant={viewMode === "board" ? "secondary" : "ghost"} size="sm" className="h-8 px-3 rounded-md" onClick={() => { setViewMode("board"); clearSelection(); }}>
+              <LayoutGrid className="w-4 h-4 mr-2" /> Board View
+            </Button>
           </div>
 
           {/* Column visibility (board + list) */}
@@ -406,7 +385,7 @@ export default function TasksManager() {
       </div>
 
       {/* ── Board View ──────────────────────────────────────────────────── */}
-      {!isMobile && viewMode === "board" && (
+      {viewMode === "board" && (
         <div className="relative w-full flex-1" style={{ minHeight: "calc(100vh - 200px)" }}>
           <div className="absolute inset-0 overflow-x-auto pb-4">
             <div className="flex gap-4 items-start w-max">
