@@ -57,6 +57,18 @@ class TaskRepository {
             return Task_1.Task.findById(id);
         });
     }
+    // Task history lives in embedded arrays and can grow without bound. Limit
+    // detail responses so opening one task cannot send an oversized document to
+    // a browser, especially on mobile devices.
+    findDetailById(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return Task_1.Task.findById(id)
+                .slice('files', -50)
+                .slice('comments', -100)
+                .slice('activities', -100)
+                .maxTimeMS(10000);
+        });
+    }
     update(id, data) {
         return __awaiter(this, void 0, void 0, function* () {
             return Task_1.Task.findByIdAndUpdate(id, { $set: data }, { new: true });

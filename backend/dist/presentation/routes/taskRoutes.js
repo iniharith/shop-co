@@ -118,7 +118,7 @@ router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)
 })));
 // GET /api/tasks/:id
 router.get('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const task = yield TaskRepository_1.taskRepository.findById(req.params.id);
+    const task = yield TaskRepository_1.taskRepository.findDetailById(req.params.id);
     if (!task) {
         res.status(404).json({ success: false, message: 'Task not found' });
         return;
