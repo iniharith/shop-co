@@ -10,9 +10,9 @@ import { item_variants } from "@/constants/framer-motion";
 import { useRouter } from "nextjs-toploader/app";
 
 const images = [
-  "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=1920&q=80",
-  "https://images.pexels.com/photos/1109541/pexels-photo-1109541.jpeg?auto=compress&cs=tinysrgb&w=1920&q=80",
-  "https://images.pexels.com/photos/6275/black-and-white-business-desk-computer.jpg?auto=compress&cs=tinysrgb&w=1920&q=80"
+  "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800&q=75",
+  "https://images.pexels.com/photos/1109541/pexels-photo-1109541.jpeg?auto=compress&cs=tinysrgb&w=800&q=75",
+  "https://images.pexels.com/photos/6275/black-and-white-business-desk-computer.jpg?auto=compress&cs=tinysrgb&w=800&q=75"
 ];
 
 const Hero = () => {
@@ -23,9 +23,15 @@ const Hero = () => {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentImage((prev) => (prev + 1) % images.length);
-    }, 5000);
+    }, 7000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const nextIdx = (currentImage + 1) % images.length;
+    const img = new Image();
+    img.src = images[nextIdx];
+  }, [currentImage]);
 
   return (
     <div className="relative w-full h-[80vh] min-h-[500px] flex items-center justify-center overflow-hidden bg-black">
