@@ -26,7 +26,7 @@ import { useOrders } from "@/hooks/useOrder";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import { Check, ChevronsUpDown, Download as DownloadIcon, Copy } from "lucide-react";
 import { cn, forceDownload } from "@/lib/utils";
-import { useAllFiles, useCreateShareLink, useResolveFileByPath } from "@/hooks/useAdminDashboard";
+import { useCreateShareLink, useFilesByFolder, useResolveFileByPath } from "@/hooks/useAdminDashboard";
 import { useRouter } from "next/navigation";
 import { AssigneeTag, AssigneeDot } from "@/lib/userColor";
 
@@ -249,7 +249,9 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { mutate: deleteFile, isPending: isDeletingFile } = useDeleteTaskFile();
   const { data: usersData } = useUsers();
   const { data: ordersData } = useOrders();
-  const { data: allFilesData } = useAllFiles();
+  // Loading every uploaded file when a task opens can exhaust mobile browser
+  // memory. This endpoint returns only files attached to this task.
+  const { data: taskFilesData } = useFilesByFolder({ taskId: task._id });
   const { data: fullTaskData } = useTask(task._id);
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
   const router = useRouter();
@@ -284,49 +286,28 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   );
   const [deletedFileIds, setDeletedFileIds] = useState<string[]>([]);
 
-  const allFiles = (allFilesData as any)?.data || [];
-  const customerUploadOrderIds = Array.from(new Set(allFiles.filter((f: any) => f.orderId).map((f: any) => f.orderId))) as string[];
-  const customOrderIds = customerUploadOrderIds.filter(id => !orders.some((o: any) => o._id === id || o.orderId === id));
-
-  const customerUploadUsernames = Array.from(new Set(allFiles.filter((f: any) => f.userId).map((f: any) => f.userId))) as string[];
-  const customUsernames = customerUploadUsernames.filter(name => !customers.some((c: any) => c.name === name || c.email === name));
+  const taskFiles = (taskFilesData as any)?.data || [];
 
   const combinedFiles = React.useMemo(() => {
     let files = [...(fullTask?.files || [])];
     
-    // Add customer uploaded files from share link or public upload portal
-    const allFiles = (allFilesData as any)?.data || [];
-    const customerFiles = allFiles.filter((f: any) => {
-      if (!f) return false;
-      const fTaskId = f.taskId ? String(f.taskId) : null;
-      const fOrderId = f.orderId ? String(f.orderId) : null;
-      const tTaskId = task._id ? String(task._id) : null;
-      const tOrderId = task.orderId ? String(task.orderId) : null;
-
-      // Don't duplicate if already in task.files (check url/path or filename match)
-      if (files.some(tf => tf.url === f.path || (tf.name && f.originalName && tf.name === f.originalName))) return false;
-      
-      // Auto-sync files matching the task's Order ID and Customer Username
-      const matchesOrderAndUser = Boolean(tOrderId && task.customerUsername && fOrderId === tOrderId && (f.userId === task.customerUsername || f.customerUsername === task.customerUsername));
-      
-      return (fTaskId && tTaskId && fTaskId === tTaskId) ||
-             matchesOrderAndUser ||
-             (f.shareSlug && (f.shareSlug === task.title || f.shareSlug === task.customerUsername || f.shareSlug === task.orderId)) ||
-             (tOrderId && fOrderId === tOrderId && f.category === 'artwork') ||
-             (task.customerUsername && (f.userId === task.customerUsername || f._shareFolderName === task.customerUsername));
+    const uploadedTaskFiles = taskFiles.filter((f: any) => {
+      // Don't duplicate files already included by the task API.
+      return !files.some(tf => tf.url === f.path || (tf.name && f.originalName && tf.name === f.originalName));
     }).map((f: any) => ({
       url: f.path,
       name: f.originalName || f.filename,
+      mimetype: f.mimetype,
       notes: f.notes || f.adminNotes, // Make sure to sync notes
       tag: f.tag || 'customer_upload',
       _id: f._id
     }));
     
-    return [...files, ...customerFiles].filter(f => {
+    return [...files, ...uploadedTaskFiles].filter(f => {
       const fid = f._id || f.url?.split('/').pop();
       return !deletedFileIds.includes(fid);
     });
-  }, [fullTask, allFilesData, deletedFileIds, task._id, task.orderId, task.customerUsername, task.title]);
+  }, [fullTask, taskFiles, deletedFileIds]);
 
   const handleDownloadAllAttachments = () => {
     if (!combinedFiles || combinedFiles.length === 0) return;
@@ -790,7 +771,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                         </div>
                       ))}
                       {combinedFiles.slice(0, 12).map((file: any) => (
-                        <FileAttachmentCard allFiles={allFiles} key={file.url} 
+                        <FileAttachmentCard allFiles={taskFiles} key={file.url}
                           task={fullTask}
                           file={file} 
                           deleteFile={deleteFile} 
@@ -1168,21 +1149,6 @@ return (
                               Order #{(o as any).orderId}
                             </CommandItem>
                           ))}
-                          {customOrderIds.map((id: string) => (
-                             <CommandItem
-                               key={`custom-${id}`}
-                               value={id}
-                               onSelect={() => {
-                                 setOrderId(id);
-                                 handleSaveDetails({ orderId: id });
-                                 setOpenOrderBox(false);
-                                 setOrderSearch("");
-                               }}
-                             >
-                               <Check className={cn("mr-2 h-4 w-4", orderId === id ? "opacity-100" : "opacity-0")} />
-                               <span className="text-muted-foreground italic truncate">Order #{id} (From Uploads)</span>
-                             </CommandItem>
-                           ))}
                         </CommandGroup>
                       </CommandList>
                     </Command>
@@ -1255,21 +1221,6 @@ return (
                               {c.name} ({c.email})
                             </CommandItem>
                           ))}
-                          {customUsernames.map((username: string) => (
-                             <CommandItem
-                               key={`custom-${username}`}
-                               value={username}
-                               onSelect={() => {
-                                 setCustomerUsername(username);
-                                 handleSaveDetails({ customerUsername: username });
-                                 setOpenUserBox(false);
-                                 setUserSearch("");
-                               }}
-                             >
-                               <Check className={cn("mr-2 h-4 w-4", customerUsername === username ? "opacity-100" : "opacity-0")} />
-                               <span className="text-muted-foreground italic truncate">{username} (From Uploads)</span>
-                             </CommandItem>
-                           ))}
                         </CommandGroup>
                       </CommandList>
                     </Command>
