@@ -15,19 +15,14 @@ export default withAuth(
       return NextResponse.next();
     }
 
-    let token = req.nextauth.token;
-    
-    // iOS 15 Safari Fallback: If NextAuth failed to set the token, check our manual fallback cookie
-    const fallbackTokenStr = req.cookies.get("fallback_admin_token")?.value;
-    if (!token && fallbackTokenStr) {
-      // Decode the JWT if possible to get the role, or just assume it's a valid string.
-      // Since it's a fallback, we'll construct a mock token object just for middleware bypass.
-      token = { role: "SYSADMIN", verified: "true" } as any; 
-    }
+    const token = req.nextauth.token;
 
     const isLoggedIn = !!token;
     const userRole = token?.role;
-    const isVerified = token?.verified;
+    // token.verified may come through as a real boolean or as a string ("true"/"false"),
+    // depending on the shape returned by the backend at login time. Normalize once here
+    // instead of comparing with == / === against a hardcoded string.
+    const isVerified = token?.verified === true || token?.verified === "true";
     const isSuperAdminPage = path.startsWith("/admin/superAdmin");
     const hasAdminAccess = [Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(token?.role as Roles);
 
@@ -39,7 +34,7 @@ export default withAuth(
     }
 
     if (path.startsWith("/auth") && path !== "/auth/signout") {
-      if (isLoggedIn && isVerified == "true") {
+      if (isLoggedIn && isVerified) {
         return NextResponse.redirect(new URL("/admin/dashboard", req.url));
       }
       return NextResponse.next()
@@ -64,7 +59,7 @@ export default withAuth(
         if (userRole === Roles.DESIGNER) return NextResponse.redirect(new URL("/admin/tasks", req.url));
       }
       
-      if (isLoggedIn && !isInternalStaff && isVerified === "false") {
+      if (isLoggedIn && !isInternalStaff && !isVerified) {
         return NextResponse.redirect(new URL("/auth/signout", req.url));
       }
 
