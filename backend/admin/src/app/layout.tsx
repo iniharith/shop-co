@@ -47,14 +47,14 @@ export default async function RootLayout({
 }) {
   const session = await getServerSession(authConfig);
   return (
-    <html lang="en" className={`${jakarta.variable} ${spaceGrotesk.variable} ${jakarta.className}`} suppressHydrationWarning>
+    <html lang="en" className={`${jakarta.variable} ${spaceGrotesk.variable} ${jakarta.className} overflow-x-hidden`} suppressHydrationWarning>
       <head>
         <link
           href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"
           rel="stylesheet"
         />
       </head>
-      <body suppressHydrationWarning className={"overflow-hidden"}>
+      <body suppressHydrationWarning>
         <NextTopLoader shadow="0 0 10px #10b981" color="#10b981" showSpinner={false} />
         <NuqsAdapter>
           <Providers session={session}>
