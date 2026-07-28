@@ -2,7 +2,7 @@
 
 import { DragEvent, use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Download, File, FileImage, Folder, FolderPlus, Loader2, Pencil, Save, Share2, Trash2, UploadCloud, Users } from "lucide-react";
+import { ArrowLeft, Download, File, FileImage, Folder, FolderPlus, Loader2, MoreVertical, Pencil, Save, Share2, Trash2, UploadCloud, Users } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import PageContainer from "@/components/layout/page-container";
@@ -17,6 +17,7 @@ import { useSession } from "next-auth/react";
 import { useUsers } from "@/hooks/useUsers";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { forceDownload } from "@/lib/utils";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
@@ -332,15 +333,22 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     <div className="relative flex h-32 items-center justify-center overflow-hidden bg-background/50">
                       {isImage ? <button type="button" className="h-full w-full" onClick={() => setPreviewFile(file)}><img src={file.previewUrl} alt={file.originalName} className="h-full w-full object-cover transition-transform group-hover:scale-105" /></button> : <File className="size-10 text-muted-foreground" />}
                     </div>
-                    <div className="p-4">
+                    <div className="relative p-4">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button type="button" size="icon" variant="ghost" className="absolute right-2 top-2 h-7 w-7" title="File options"><MoreVertical className="size-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                          <DropdownMenuLabel>File options</DropdownMenuLabel>
+                          {isImage && <DropdownMenuItem onClick={() => updateMutation.mutate({ coverFileId: file._id })}>{project.coverFileId === file._id ? "Project cover" : "Set as cover"}</DropdownMenuItem>}
+                          {isImage && <DropdownMenuSeparator />}
+                          <DropdownMenuItem onClick={() => moveFile(file, "")}>Project root{!file.folderId && " (current)"}</DropdownMenuItem>
+                          {project.folders.map(folder => <DropdownMenuItem key={folder._id} onClick={() => moveFile(file, folder._id)}>{folder.name}{file.folderId === folder._id && " (current)"}</DropdownMenuItem>)}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <p className="truncate text-sm font-semibold" title={file.originalName}>{file.originalName}</p>
                       <div className="mt-1 flex justify-between text-[11px] text-muted-foreground"><span>{formatBytes(file.size)}</span><span>{format(new Date(file.uploadedAt), "dd MMM yyyy")}</span></div>
                       {file.notes && <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{file.notes}</p>}
-                      {isImage && <Button type="button" size="sm" variant={project.coverFileId === file._id ? "default" : "outline"} className="mt-3 h-7 w-full" onClick={() => updateMutation.mutate({ coverFileId: file._id })}>{project.coverFileId === file._id ? "Project cover" : "Set as cover"}</Button>}
-                      <select value={file.folderId || ""} onChange={event => moveFile(file, event.target.value)} className="mt-3 h-8 w-full rounded-md border bg-background px-2 text-xs">
-                        <option value="">Project root</option>
-                        {project.folders.map(folder => <option key={folder._id} value={folder._id}>{folder.name}</option>)}
-                      </select>
                       <div className="mt-3 flex gap-2 border-t border-white/10 pt-3">
                         <Button size="icon" variant="outline" className="h-[30px] w-[30px]" title="Download" onClick={() => forceDownload(file.previewUrl, file.originalName)}><Download className="size-3.5" /></Button>
                         <Button size="icon" variant="outline" className="h-[30px] w-[30px] text-destructive hover:text-destructive" title="Delete" onClick={() => deleteFile(file)} disabled={deleteMutation.isPending}><Trash2 className="size-3.5" /></Button>
