@@ -2,7 +2,7 @@
 
 import { DragEvent, use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Download, File, FileImage, Loader2, Save, Share2, Trash2, UploadCloud } from "lucide-react";
+import { ArrowLeft, Download, File, FileImage, Folder, FolderPlus, Loader2, Pencil, Save, Share2, Trash2, UploadCloud, Users } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import PageContainer from "@/components/layout/page-container";
@@ -12,8 +12,11 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Project, ProjectFile } from "@/api/projects";
 import { createProjectShare } from "@/api/projects";
-import { useDeleteProjectFile, useProject, useUpdateProject, useUploadProjectFile } from "@/hooks/useProjects";
+import { useCreateProjectFolder, useDeleteProjectFile, useDeleteProjectFolder, useProject, useRenameProjectFolder, useUpdateProject, useUpdateProjectFile, useUploadProjectFile } from "@/hooks/useProjects";
 import { useSession } from "next-auth/react";
+import { useUsers } from "@/hooks/useUsers";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { forceDownload } from "@/lib/utils";
 
 const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
@@ -31,11 +34,19 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const updateMutation = useUpdateProject(id);
   const uploadMutation = useUploadProjectFile(id);
   const deleteMutation = useDeleteProjectFile(id);
+  const createFolderMutation = useCreateProjectFolder(id);
+  const renameFolderMutation = useRenameProjectFolder(id);
+  const deleteFolderMutation = useDeleteProjectFolder(id);
+  const updateFileMutation = useUpdateProjectFile(id);
+  const { data: usersData } = useUsers();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [sharing, setSharing] = useState(false);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [gridSize, setGridSize] = useState<4 | 6>(4);
+  const [previewFile, setPreviewFile] = useState<ProjectFile | null>(null);
 
   useEffect(() => {
     if (!project) return;
@@ -96,6 +107,60 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const createFolder = async () => {
+    const name = window.prompt("Folder name");
+    if (!name?.trim()) return;
+    try {
+      await createFolderMutation.mutateAsync(name.trim());
+      toast.success("Folder created");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to create folder");
+    }
+  };
+
+  const renameFolder = async (folder: { _id: string; name: string }) => {
+    const name = window.prompt("Folder name", folder.name);
+    if (!name?.trim() || name.trim() === folder.name) return;
+    try {
+      await renameFolderMutation.mutateAsync({ folderId: folder._id, name: name.trim() });
+      toast.success("Folder renamed");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to rename folder");
+    }
+  };
+
+  const removeFolder = async (folder: { _id: string; name: string }) => {
+    if (!confirm(`Delete ${folder.name}? Files will be kept in the project root.`)) return;
+    try {
+      await deleteFolderMutation.mutateAsync(folder._id);
+      if (selectedFolderId === folder._id) setSelectedFolderId(null);
+      toast.success("Folder deleted");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to delete folder");
+    }
+  };
+
+  const editFile = async (file: ProjectFile) => {
+    const originalName = window.prompt("File name", file.originalName);
+    if (originalName === null) return;
+    const notes = window.prompt("File notes", file.notes || "");
+    if (notes === null) return;
+    try {
+      await updateFileMutation.mutateAsync({ fileId: file._id, data: { originalName: originalName.trim() || file.originalName, notes } });
+      toast.success("File updated");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to update file");
+    }
+  };
+
+  const moveFile = async (file: ProjectFile, folderId: string) => {
+    try {
+      await updateFileMutation.mutateAsync({ fileId: file._id, data: { folderId: folderId || null } });
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to move file");
+    }
+  };
+
   const shareProject = async () => {
     setSharing(true);
     try {
@@ -123,8 +188,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const heroImage = project.files.find(file => file.mimetype.startsWith("image/"));
+  const heroImage = project.files.find(file => file._id === project.coverFileId) || project.files.find(file => file.mimetype.startsWith("image/"));
   const activeUploads = Object.entries(uploadProgress);
+  const users = usersData?.users || [];
+  const visibleFiles = selectedFolderId === null ? project.files.filter(file => !file.folderId) : project.files.filter(file => file.folderId === selectedFolderId);
 
   return (
     <PageContainer>
@@ -183,6 +250,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   Save Details
                 </Button>
               </div>
+              <div className="mt-5 border-t border-white/10 pt-4">
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"><Users className="size-3.5" /> Assigned users</div>
+                <div className="flex flex-wrap gap-2">
+                  {users.map((user: any) => {
+                    const assigned = project.assigneeIds?.includes(user._id);
+                    return <Button key={user._id} type="button" size="sm" variant={assigned ? "default" : "outline"} className="h-7" onClick={() => updateMutation.mutate({ assigneeIds: assigned ? project.assigneeIds.filter(userId => userId !== user._id) : [...(project.assigneeIds || []), user._id] })}>{user.name || user.email}</Button>;
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -193,7 +269,22 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Project Files</p>
               <h2 className="mt-1 text-2xl font-semibold">Artwork & attachments</h2>
             </div>
-            <span className="text-xs text-muted-foreground">Maximum 200MB per file</span>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={createFolder}><FolderPlus className="mr-1.5 size-3.5" /> Folder</Button>
+              <Button type="button" variant={gridSize === 4 ? "default" : "outline"} size="sm" onClick={() => setGridSize(4)}>4 x 4</Button>
+              <Button type="button" variant={gridSize === 6 ? "default" : "outline"} size="sm" onClick={() => setGridSize(6)}>6 x 6</Button>
+            </div>
+          </div>
+
+          <div className="mb-5 flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant={selectedFolderId === null ? "default" : "outline"} onClick={() => setSelectedFolderId(null)}>Root ({project.files.filter(file => !file.folderId).length})</Button>
+            {project.folders.map(folder => (
+              <div key={folder._id} className="flex items-center rounded-md border border-border/60">
+                <Button type="button" size="sm" variant={selectedFolderId === folder._id ? "default" : "ghost"} onClick={() => setSelectedFolderId(folder._id)}><Folder className="mr-1.5 size-3.5" />{folder.name}</Button>
+                <Button type="button" size="icon" variant="ghost" className="size-7" onClick={() => renameFolder(folder)}><Pencil className="size-3" /></Button>
+                <Button type="button" size="icon" variant="ghost" className="size-7 text-destructive" onClick={() => removeFolder(folder)}><Trash2 className="size-3" /></Button>
+              </div>
+            ))}
           </div>
 
           <div
@@ -232,25 +323,28 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
-          {project.files.length > 0 && (
-            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {project.files.map(file => {
+          {visibleFiles.length > 0 && (
+            <div className={`mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 ${gridSize === 4 ? "xl:grid-cols-4" : "xl:grid-cols-6"}`}>
+              {visibleFiles.map(file => {
                 const isImage = file.mimetype.startsWith("image/");
                 return (
                   <div key={file._id} className="group overflow-hidden rounded-2xl border border-white/10 bg-card/55">
-                    <div className="relative flex h-36 items-center justify-center overflow-hidden bg-background/50">
-                      {isImage ? <img src={file.previewUrl} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-105" /> : <File className="size-10 text-muted-foreground" />}
+                    <div className="relative flex h-32 items-center justify-center overflow-hidden bg-background/50">
+                      {isImage ? <button type="button" className="h-full w-full" onClick={() => setPreviewFile(file)}><img src={file.previewUrl} alt={file.originalName} className="h-full w-full object-cover transition-transform group-hover:scale-105" /></button> : <File className="size-10 text-muted-foreground" />}
                     </div>
                     <div className="p-4">
                       <p className="truncate text-sm font-semibold" title={file.originalName}>{file.originalName}</p>
                       <div className="mt-1 flex justify-between text-[11px] text-muted-foreground"><span>{formatBytes(file.size)}</span><span>{format(new Date(file.uploadedAt), "dd MMM yyyy")}</span></div>
-                      <div className="mt-4 flex gap-2 border-t border-white/10 pt-3">
-                        <Button asChild size="sm" variant="outline" className="flex-1">
-                          <a href={file.previewUrl} target="_blank" rel="noreferrer"><Download className="mr-1.5 size-3.5" /> Open</a>
-                        </Button>
-                        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive" onClick={() => deleteFile(file)} disabled={deleteMutation.isPending}>
-                          <Trash2 className="size-3.5" />
-                        </Button>
+                      {file.notes && <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{file.notes}</p>}
+                      {isImage && <Button type="button" size="sm" variant={project.coverFileId === file._id ? "default" : "outline"} className="mt-3 h-7 w-full" onClick={() => updateMutation.mutate({ coverFileId: file._id })}>{project.coverFileId === file._id ? "Project cover" : "Set as cover"}</Button>}
+                      <select value={file.folderId || ""} onChange={event => moveFile(file, event.target.value)} className="mt-3 h-8 w-full rounded-md border bg-background px-2 text-xs">
+                        <option value="">Project root</option>
+                        {project.folders.map(folder => <option key={folder._id} value={folder._id}>{folder.name}</option>)}
+                      </select>
+                      <div className="mt-3 flex gap-2 border-t border-white/10 pt-3">
+                        <Button size="icon" variant="outline" className="h-[30px] w-[30px]" title="Download" onClick={() => forceDownload(file.previewUrl, file.originalName)}><Download className="size-3.5" /></Button>
+                        <Button size="icon" variant="outline" className="h-[30px] w-[30px] text-destructive hover:text-destructive" title="Delete" onClick={() => deleteFile(file)} disabled={deleteMutation.isPending}><Trash2 className="size-3.5" /></Button>
+                        <Button size="icon" variant="outline" className="h-[30px] w-[30px]" title="Edit name and notes" onClick={() => editFile(file)}><Pencil className="size-3.5" /></Button>
                       </div>
                     </div>
                   </div>
@@ -260,6 +354,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           )}
         </div>
       </div>
+      <Dialog open={!!previewFile} onOpenChange={open => !open && setPreviewFile(null)}>
+        <DialogContent className="max-w-[95vw] bg-black p-2 sm:max-w-4xl">
+          <DialogTitle className="sr-only">Image preview</DialogTitle>
+          {previewFile && <img src={previewFile.previewUrl} alt={previewFile.originalName} className="max-h-[85vh] w-full rounded object-contain" />}
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }

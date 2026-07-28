@@ -74,7 +74,7 @@ export default function ProjectsPage() {
           )}
 
           {projects.map(project => {
-            const cover = project.files?.find(file => file.mimetype.startsWith("image/"));
+            const cover = project.files?.find(file => file._id === project.coverFileId) || project.files?.find(file => file.mimetype.startsWith("image/"));
             return (
               <Link
                 key={project._id}

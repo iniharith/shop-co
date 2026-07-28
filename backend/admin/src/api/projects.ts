@@ -9,6 +9,13 @@ export interface ProjectFile {
   mimetype: string;
   size: number;
   uploadedAt: string;
+  folderId?: string;
+  notes?: string;
+}
+
+export interface ProjectFolder {
+  _id: string;
+  name: string;
 }
 
 export interface Project {
@@ -16,6 +23,9 @@ export interface Project {
   title: string;
   description: string;
   files: ProjectFile[];
+  folders: ProjectFolder[];
+  assigneeIds: string[];
+  coverFileId?: string;
   createdBy: string;
   createdByName: string;
   createdAt: string;
@@ -37,8 +47,28 @@ export const createProject = async (token: string, data: { title: string; descri
   return response.data;
 };
 
-export const updateProject = async (token: string, id: string, data: { title?: string; description?: string }) => {
+export const updateProject = async (token: string, id: string, data: { title?: string; description?: string; assigneeIds?: string[]; coverFileId?: string | null }) => {
   const response = await AxiosInstance(token).patch(`/api/projects/${id}`, data);
+  return response.data;
+};
+
+export const createProjectFolder = async (token: string, projectId: string, name: string) => {
+  const response = await AxiosInstance(token).post(`/api/projects/${projectId}/folders`, { name });
+  return response.data;
+};
+
+export const renameProjectFolder = async (token: string, projectId: string, folderId: string, name: string) => {
+  const response = await AxiosInstance(token).patch(`/api/projects/${projectId}/folders/${folderId}`, { name });
+  return response.data;
+};
+
+export const deleteProjectFolder = async (token: string, projectId: string, folderId: string) => {
+  const response = await AxiosInstance(token).delete(`/api/projects/${projectId}/folders/${folderId}`);
+  return response.data;
+};
+
+export const updateProjectFile = async (token: string, projectId: string, fileId: string, data: { originalName?: string; notes?: string; folderId?: string | null }) => {
+  const response = await AxiosInstance(token).patch(`/api/projects/${projectId}/files/${fileId}`, data);
   return response.data;
 };
 

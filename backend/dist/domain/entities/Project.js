@@ -47,11 +47,19 @@ const ProjectFileSchema = new mongoose_1.Schema({
     size: { type: Number, required: true },
     uploadedBy: { type: String, required: true },
     uploadedAt: { type: Date, default: Date.now },
+    folderId: { type: String, default: null },
+    notes: { type: String, default: '', maxlength: 2000 },
+});
+const ProjectFolderSchema = new mongoose_1.Schema({
+    name: { type: String, required: true, trim: true, maxlength: 120 },
 });
 const ProjectSchema = new mongoose_1.Schema({
     title: { type: String, required: true, trim: true, maxlength: 160 },
     description: { type: String, default: '', trim: true, maxlength: 10000 },
     files: { type: [ProjectFileSchema], default: [] },
+    folders: { type: [ProjectFolderSchema], default: [] },
+    assigneeIds: { type: [String], default: [] },
+    coverFileId: { type: String, default: null },
     createdBy: { type: String, required: true, index: true, immutable: true },
     createdByName: { type: String, default: '' },
 }, { timestamps: true });

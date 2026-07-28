@@ -150,8 +150,17 @@ router.patch('/:id', (0, express_async_handler_1.default)((req, res) => __awaite
         update.title = req.body.title.trim();
     if (typeof req.body.description === 'string')
         update.description = req.body.description.trim();
+    if (Array.isArray(req.body.assigneeIds))
+        update.assigneeIds = req.body.assigneeIds.filter((id) => typeof id === 'string');
+    if (req.body.coverFileId === null || typeof req.body.coverFileId === 'string')
+        update.coverFileId = req.body.coverFileId;
     if ('title' in update && !update.title) {
         res.status(400).json({ success: false, message: 'Project title is required' });
+        return;
+    }
+    const existing = yield Project_1.Project.findById(req.params.id);
+    if (existing && update.coverFileId && !existing.files.some(file => { var _a; return ((_a = file._id) === null || _a === void 0 ? void 0 : _a.toString()) === update.coverFileId && file.mimetype.startsWith('image/'); })) {
+        res.status(400).json({ success: false, message: 'Project cover must be an image file in this project' });
         return;
     }
     const project = yield Project_1.Project.findByIdAndUpdate(req.params.id, { $set: update }, { new: true, runValidators: true });
@@ -159,6 +168,51 @@ router.patch('/:id', (0, express_async_handler_1.default)((req, res) => __awaite
         res.status(404).json({ success: false, message: 'Project not found' });
         return;
     }
+    res.json({ success: true, data: yield withSignedFileUrls(project) });
+})));
+router.post('/:id/folders', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+    if (!name) {
+        res.status(400).json({ success: false, message: 'Folder name is required' });
+        return;
+    }
+    const project = yield Project_1.Project.findById(req.params.id);
+    if (!project) {
+        res.status(404).json({ success: false, message: 'Project not found' });
+        return;
+    }
+    project.folders.push({ name });
+    yield project.save();
+    res.status(201).json({ success: true, data: yield withSignedFileUrls(project) });
+})));
+router.patch('/:id/folders/:folderId', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+    const project = yield Project_1.Project.findById(req.params.id);
+    const folder = project === null || project === void 0 ? void 0 : project.folders.find(item => { var _a; return ((_a = item._id) === null || _a === void 0 ? void 0 : _a.toString()) === req.params.folderId; });
+    if (!project || !folder) {
+        res.status(404).json({ success: false, message: 'Folder not found' });
+        return;
+    }
+    if (!name) {
+        res.status(400).json({ success: false, message: 'Folder name is required' });
+        return;
+    }
+    folder.name = name;
+    yield project.save();
+    res.json({ success: true, data: yield withSignedFileUrls(project) });
+})));
+router.delete('/:id/folders/:folderId', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const project = yield Project_1.Project.findById(req.params.id);
+    if (!project || !project.folders.some(item => { var _a; return ((_a = item._id) === null || _a === void 0 ? void 0 : _a.toString()) === req.params.folderId; })) {
+        res.status(404).json({ success: false, message: 'Folder not found' });
+        return;
+    }
+    project.folders = project.folders.filter(item => { var _a; return ((_a = item._id) === null || _a === void 0 ? void 0 : _a.toString()) !== req.params.folderId; });
+    project.files.forEach(file => {
+        if (file.folderId === req.params.folderId)
+            file.folderId = undefined;
+    });
+    yield project.save();
     res.json({ success: true, data: yield withSignedFileUrls(project) });
 })));
 router.post('/:id/share', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -244,6 +298,8 @@ router.delete('/:id/files/:fileId', (0, express_async_handler_1.default)((req, r
         return;
     }
     project.files = project.files.filter(item => { var _a; return ((_a = item._id) === null || _a === void 0 ? void 0 : _a.toString()) !== req.params.fileId; });
+    if (project.coverFileId === req.params.fileId)
+        project.coverFileId = undefined;
     yield project.save();
     try {
         yield s3_1.s3Client.send(new client_s3_1.DeleteObjectCommand({ Bucket: s3_1.S3_BUCKET_NAME, Key: file.key }));
@@ -251,6 +307,33 @@ router.delete('/:id/files/:fileId', (0, express_async_handler_1.default)((req, r
     catch (error) {
         console.warn('[ProjectFileDelete] S3 cleanup failed:', error);
     }
+    res.json({ success: true, data: yield withSignedFileUrls(project) });
+})));
+router.patch('/:id/files/:fileId', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const project = yield Project_1.Project.findById(req.params.id);
+    const file = project === null || project === void 0 ? void 0 : project.files.find(item => { var _a; return ((_a = item._id) === null || _a === void 0 ? void 0 : _a.toString()) === req.params.fileId; });
+    if (!project || !file) {
+        res.status(404).json({ success: false, message: 'File not found' });
+        return;
+    }
+    if (typeof req.body.originalName === 'string') {
+        const name = req.body.originalName.trim();
+        if (!name) {
+            res.status(400).json({ success: false, message: 'File name is required' });
+            return;
+        }
+        file.originalName = name.slice(0, 255);
+    }
+    if (typeof req.body.notes === 'string')
+        file.notes = req.body.notes.slice(0, 2000);
+    if (req.body.folderId === null || typeof req.body.folderId === 'string') {
+        if (req.body.folderId && !project.folders.some(folder => { var _a; return ((_a = folder._id) === null || _a === void 0 ? void 0 : _a.toString()) === req.body.folderId; })) {
+            res.status(400).json({ success: false, message: 'Folder not found in this project' });
+            return;
+        }
+        file.folderId = req.body.folderId || undefined;
+    }
+    yield project.save();
     res.json({ success: true, data: yield withSignedFileUrls(project) });
 })));
 exports.default = router;

@@ -125,11 +125,18 @@ router.get(
 router.patch(
   '/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    const update: Record<string, string> = {};
+    const update: Record<string, any> = {};
     if (typeof req.body.title === 'string') update.title = req.body.title.trim();
     if (typeof req.body.description === 'string') update.description = req.body.description.trim();
+    if (Array.isArray(req.body.assigneeIds)) update.assigneeIds = req.body.assigneeIds.filter((id: unknown) => typeof id === 'string');
+    if (req.body.coverFileId === null || typeof req.body.coverFileId === 'string') update.coverFileId = req.body.coverFileId;
     if ('title' in update && !update.title) {
       res.status(400).json({ success: false, message: 'Project title is required' });
+      return;
+    }
+    const existing = await Project.findById(req.params.id);
+    if (existing && update.coverFileId && !existing.files.some(file => file._id?.toString() === update.coverFileId && file.mimetype.startsWith('image/'))) {
+      res.status(400).json({ success: false, message: 'Project cover must be an image file in this project' });
       return;
     }
     const project = await Project.findByIdAndUpdate(req.params.id, { $set: update }, { new: true, runValidators: true });
@@ -137,6 +144,62 @@ router.patch(
       res.status(404).json({ success: false, message: 'Project not found' });
       return;
     }
+    res.json({ success: true, data: await withSignedFileUrls(project) });
+  })
+);
+
+router.post(
+  '/:id/folders',
+  asyncHandler(async (req: Request, res: Response) => {
+    const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+    if (!name) {
+      res.status(400).json({ success: false, message: 'Folder name is required' });
+      return;
+    }
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      res.status(404).json({ success: false, message: 'Project not found' });
+      return;
+    }
+    project.folders.push({ name });
+    await project.save();
+    res.status(201).json({ success: true, data: await withSignedFileUrls(project) });
+  })
+);
+
+router.patch(
+  '/:id/folders/:folderId',
+  asyncHandler(async (req: Request, res: Response) => {
+    const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+    const project = await Project.findById(req.params.id);
+    const folder = project?.folders.find(item => item._id?.toString() === req.params.folderId);
+    if (!project || !folder) {
+      res.status(404).json({ success: false, message: 'Folder not found' });
+      return;
+    }
+    if (!name) {
+      res.status(400).json({ success: false, message: 'Folder name is required' });
+      return;
+    }
+    folder.name = name;
+    await project.save();
+    res.json({ success: true, data: await withSignedFileUrls(project) });
+  })
+);
+
+router.delete(
+  '/:id/folders/:folderId',
+  asyncHandler(async (req: Request, res: Response) => {
+    const project = await Project.findById(req.params.id);
+    if (!project || !project.folders.some(item => item._id?.toString() === req.params.folderId)) {
+      res.status(404).json({ success: false, message: 'Folder not found' });
+      return;
+    }
+    project.folders = project.folders.filter(item => item._id?.toString() !== req.params.folderId);
+    project.files.forEach(file => {
+      if (file.folderId === req.params.folderId) file.folderId = undefined;
+    });
+    await project.save();
     res.json({ success: true, data: await withSignedFileUrls(project) });
   })
 );
@@ -241,12 +304,43 @@ router.delete(
       return;
     }
     project.files = project.files.filter(item => item._id?.toString() !== req.params.fileId);
+    if (project.coverFileId === req.params.fileId) project.coverFileId = undefined;
     await project.save();
     try {
       await s3Client.send(new DeleteObjectCommand({ Bucket: S3_BUCKET_NAME, Key: file.key }));
     } catch (error) {
       console.warn('[ProjectFileDelete] S3 cleanup failed:', error);
     }
+    res.json({ success: true, data: await withSignedFileUrls(project) });
+  })
+);
+
+router.patch(
+  '/:id/files/:fileId',
+  asyncHandler(async (req: Request, res: Response) => {
+    const project = await Project.findById(req.params.id);
+    const file = project?.files.find(item => item._id?.toString() === req.params.fileId);
+    if (!project || !file) {
+      res.status(404).json({ success: false, message: 'File not found' });
+      return;
+    }
+    if (typeof req.body.originalName === 'string') {
+      const name = req.body.originalName.trim();
+      if (!name) {
+        res.status(400).json({ success: false, message: 'File name is required' });
+        return;
+      }
+      file.originalName = name.slice(0, 255);
+    }
+    if (typeof req.body.notes === 'string') file.notes = req.body.notes.slice(0, 2000);
+    if (req.body.folderId === null || typeof req.body.folderId === 'string') {
+      if (req.body.folderId && !project.folders.some(folder => folder._id?.toString() === req.body.folderId)) {
+        res.status(400).json({ success: false, message: 'Folder not found in this project' });
+        return;
+      }
+      file.folderId = req.body.folderId || undefined;
+    }
+    await project.save();
     res.json({ success: true, data: await withSignedFileUrls(project) });
   })
 );

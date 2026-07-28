@@ -7,6 +7,10 @@ import {
   getProjects,
   updateProject,
   uploadProjectFile,
+  createProjectFolder,
+  renameProjectFolder,
+  deleteProjectFolder,
+  updateProjectFile,
 } from "@/api/projects";
 
 export const useProjects = (q = "") => {
@@ -72,3 +76,20 @@ export const useDeleteProjectFile = (id: string) => {
     },
   });
 };
+
+const useProjectMutation = (id: string, mutationFn: (token: string, variables: any) => Promise<any>) => {
+  const { data: session } = useSession();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (variables: any) => mutationFn(session?.user?.token || "", variables),
+    onSuccess: data => {
+      client.setQueryData(["project", id], data);
+      client.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+};
+
+export const useCreateProjectFolder = (id: string) => useProjectMutation(id, (token, name: string) => createProjectFolder(token, id, name));
+export const useRenameProjectFolder = (id: string) => useProjectMutation(id, (token, { folderId, name }) => renameProjectFolder(token, id, folderId, name));
+export const useDeleteProjectFolder = (id: string) => useProjectMutation(id, (token, folderId: string) => deleteProjectFolder(token, id, folderId));
+export const useUpdateProjectFile = (id: string) => useProjectMutation(id, (token, { fileId, data }) => updateProjectFile(token, id, fileId, data));
