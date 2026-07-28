@@ -50,6 +50,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [previewFile, setPreviewFile] = useState<ProjectFile | null>(null);
   const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(new Set());
   const [draggedFileIds, setDraggedFileIds] = useState<string[]>([]);
+  const lastSelectedFileIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!project) return;
@@ -170,6 +171,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         await updateFileMutation.mutateAsync({ fileId, data: { folderId } });
       }
       setSelectedFileIds(new Set());
+      lastSelectedFileIdRef.current = null;
       toast.success(`Moved ${fileIds.length} file${fileIds.length === 1 ? "" : "s"}`);
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Failed to move files");
@@ -181,18 +183,27 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     try {
       for (const fileId of fileIds) await deleteMutation.mutateAsync(fileId);
       setSelectedFileIds(new Set());
+      lastSelectedFileIdRef.current = null;
       toast.success(`Deleted ${fileIds.length} file${fileIds.length === 1 ? "" : "s"}`);
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Failed to delete files");
     }
   };
 
-  const toggleFileSelection = (fileId: string) => {
+  const selectFileRange = (fileId: string, orderedFileIds: string[]) => {
     setSelectedFileIds(current => {
       const next = new Set(current);
-      next.has(fileId) ? next.delete(fileId) : next.add(fileId);
+      const anchorId = lastSelectedFileIdRef.current;
+      if (anchorId && orderedFileIds.includes(anchorId)) {
+        const start = orderedFileIds.indexOf(anchorId);
+        const end = orderedFileIds.indexOf(fileId);
+        orderedFileIds.slice(Math.min(start, end), Math.max(start, end) + 1).forEach(id => next.add(id));
+      } else {
+        next.has(fileId) ? next.delete(fileId) : next.add(fileId);
+      }
       return next;
     });
+    lastSelectedFileIdRef.current = fileId;
   };
 
   const shareProject = async () => {
@@ -227,6 +238,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const users = usersData?.users || [];
   const visibleFiles = selectedFolderId === null ? project.files.filter(file => !file.folderId) : project.files.filter(file => file.folderId === selectedFolderId);
   const folders = [{ _id: "", name: "Project root", count: project.files.filter(file => !file.folderId).length }, ...project.folders.map(folder => ({ ...folder, count: project.files.filter(file => file.folderId === folder._id).length }))];
+  const allVisibleFilesSelected = visibleFiles.length > 0 && visibleFiles.every(file => selectedFileIds.has(file._id));
 
   return (
     <PageContainer>
@@ -306,6 +318,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
             <div className="flex items-center gap-2">
               <Button type="button" variant="outline" size="sm" onClick={createFolder}><FolderPlus className="mr-1.5 size-3.5" /> Folder</Button>
+              {visibleFiles.length > 0 && <Button type="button" variant="outline" size="sm" onClick={() => {
+                if (allVisibleFilesSelected) {
+                  setSelectedFileIds(new Set());
+                  lastSelectedFileIdRef.current = null;
+                } else {
+                  setSelectedFileIds(new Set(visibleFiles.map(file => file._id)));
+                  lastSelectedFileIdRef.current = visibleFiles[0]._id;
+                }
+              }}>{allVisibleFilesSelected ? "Clear all" : "Select all"}</Button>}
               <Button type="button" variant={gridSize === 4 ? "default" : "outline"} size="sm" onClick={() => setGridSize(4)}>4 x 4</Button>
               <Button type="button" variant={gridSize === 6 ? "default" : "outline"} size="sm" onClick={() => setGridSize(6)}>6 x 6</Button>
             </div>
@@ -350,7 +371,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               </select>
               {selectedFileIds.size === 1 && <Button type="button" size="sm" variant="outline" onClick={() => { const file = project.files.find(item => item._id === [...selectedFileIds][0]); if (file) void editFile(file); }}>Rename / notes</Button>}
               <Button type="button" size="sm" variant="destructive" onClick={() => void deleteFiles([...selectedFileIds])}>Delete</Button>
-              <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedFileIds(new Set())}>Clear</Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => { setSelectedFileIds(new Set()); lastSelectedFileIdRef.current = null; }}>Clear</Button>
             </div>
           )}
 
@@ -400,7 +421,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     draggable
                     onDragStart={() => setDraggedFileIds(selectedFileIds.has(file._id) ? [...selectedFileIds] : [file._id])}
                     onDragEnd={() => setDraggedFileIds([])}
-                    onClick={event => { if (event.shiftKey) toggleFileSelection(file._id); }}
+                    onClick={event => { if (event.shiftKey) selectFileRange(file._id, visibleFiles.map(item => item._id)); }}
                     className={`group overflow-hidden rounded-2xl border bg-card/55 ${selectedFileIds.has(file._id) ? "border-primary ring-2 ring-primary/40" : "border-white/10"}`}
                   >
                     <div className="relative flex h-32 items-center justify-center overflow-hidden bg-background/50">
