@@ -60,11 +60,12 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     const startFallbackPolling = () => {
       if (fallbackInterval) return;
-      // Initial queries already load the visible page. Avoid a second,
-      // expensive task/file burst while a mobile socket is still connecting.
+      refreshActiveTaskData();
+      refreshActiveFileData();
       fallbackInterval = setInterval(() => {
         refreshActiveTaskData();
-      }, 60_000);
+        refreshActiveFileData();
+      }, 20_000);
     };
 
     const handleConnect = () => {
@@ -73,6 +74,8 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         fallbackTimeout = null;
       }
       stopFallbackPolling();
+      refreshActiveTaskData();
+      refreshActiveFileData();
     };
 
     const handleDisconnect = () => startFallbackPolling();
