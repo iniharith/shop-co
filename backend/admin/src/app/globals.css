@@ -218,6 +218,16 @@ body.has-custom-bg .bg-destructive:hover {
   background-color: hsl(var(--destructive) / 0.8) !important;
 }
 
+/* Mobile browsers can terminate a tab when a custom background creates many
+   overlapping backdrop-filter layers. Keep the personalized background, but
+   render its surfaces as normal opaque elements on small screens. */
+@media (max-width: 767px) {
+  body.has-custom-bg * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
 /* Table overrides to ensure rows remain visible */
 body.has-custom-bg tr:hover,
 body.has-custom-bg .hover\:bg-muted:hover {
