@@ -56,8 +56,8 @@ export const useUploadProjectFile = (id: string) => {
   const { data: session } = useSession();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: ({ file, onProgress }: { file: File; onProgress?: (progress: number) => void }) =>
-      uploadProjectFile(session?.user?.token || "", id, file, onProgress),
+    mutationFn: ({ file, onProgress, folderId }: { file: File; onProgress?: (progress: number) => void; folderId?: string | null }) =>
+      uploadProjectFile(session?.user?.token || "", id, file, onProgress, folderId),
     onSuccess: data => {
       client.setQueryData(["project", id], data);
       client.invalidateQueries({ queryKey: ["projects"] });

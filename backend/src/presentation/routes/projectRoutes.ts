@@ -253,7 +253,7 @@ router.post(
 router.post(
   '/:id/files',
   asyncHandler(async (req: Request, res: Response) => {
-    const { key, originalName } = req.body;
+    const { key, originalName, folderId } = req.body;
     const expectedPrefix = `kampungcetak/projects/${req.params.id}/`;
     if (!key || !key.startsWith(expectedPrefix) || !originalName) {
       res.status(400).json({ success: false, message: 'Invalid project file metadata' });
@@ -267,6 +267,10 @@ router.post(
     }
     if (project.files.some(file => file.key === key)) {
       res.json({ success: true, data: await withSignedFileUrls(project) });
+      return;
+    }
+    if (folderId && !project.folders.some(folder => folder._id?.toString() === folderId)) {
+      res.status(400).json({ success: false, message: 'Folder not found in this project' });
       return;
     }
 
@@ -284,6 +288,7 @@ router.post(
       size,
       uploadedBy: (req as any).userId,
       uploadedAt: new Date(),
+      folderId: folderId || undefined,
     });
     await project.save();
     res.status(201).json({ success: true, data: await withSignedFileUrls(project) });

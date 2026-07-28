@@ -51,6 +51,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(new Set());
   const [draggedFileIds, setDraggedFileIds] = useState<string[]>([]);
   const lastSelectedFileIdRef = useRef<string | null>(null);
+  const [uploadFolderId, setUploadFolderId] = useState<string>("");
 
   useEffect(() => {
     if (!project) return;
@@ -81,6 +82,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         await uploadMutation.mutateAsync({
           file,
           onProgress: progress => setUploadProgress(current => ({ ...current, [progressKey]: progress })),
+          folderId: uploadFolderId || null,
         });
         toast.success(`${file.name} uploaded`);
       } catch (error: any) {
@@ -383,6 +385,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             onClick={() => inputRef.current?.click()}
             className={`flex min-h-48 cursor-pointer flex-col items-center justify-center rounded-[24px] border-2 border-dashed p-8 text-center transition-all ${dragActive ? "border-primary bg-primary/10" : "border-white/15 bg-card/35 hover:border-primary/50 hover:bg-card/55"}`}
           >
+            <div className="mb-4 flex items-center gap-2" onClick={event => event.stopPropagation()}>
+              <span className="text-sm text-muted-foreground">Upload to</span>
+              <select value={uploadFolderId} onChange={event => setUploadFolderId(event.target.value)} className="h-9 rounded-md border bg-background px-2 text-sm">
+                <option value="">Project root</option>
+                {project.folders.map(folder => <option key={folder._id} value={folder._id}>{folder.name}</option>)}
+              </select>
+            </div>
             <input
               ref={inputRef}
               type="file"

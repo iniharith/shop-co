@@ -76,7 +76,8 @@ export const uploadProjectFile = async (
   token: string,
   projectId: string,
   file: File,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  folderId?: string | null
 ) => {
   const mimetype = file.type || "application/octet-stream";
   const presign = await AxiosInstance(token).post(`/api/projects/${projectId}/upload-url`, {
@@ -105,6 +106,7 @@ export const uploadProjectFile = async (
   const response = await AxiosInstance(token).post(`/api/projects/${projectId}/files`, {
     key,
     originalName: file.name,
+    folderId: folderId || undefined,
   });
   return response.data;
 };

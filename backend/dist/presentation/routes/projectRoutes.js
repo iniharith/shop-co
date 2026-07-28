@@ -253,7 +253,7 @@ router.post('/:id/upload-url', (0, express_async_handler_1.default)((req, res) =
     });
 })));
 router.post('/:id/files', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { key, originalName } = req.body;
+    const { key, originalName, folderId } = req.body;
     const expectedPrefix = `kampungcetak/projects/${req.params.id}/`;
     if (!key || !key.startsWith(expectedPrefix) || !originalName) {
         res.status(400).json({ success: false, message: 'Invalid project file metadata' });
@@ -266,6 +266,10 @@ router.post('/:id/files', (0, express_async_handler_1.default)((req, res) => __a
     }
     if (project.files.some(file => file.key === key)) {
         res.json({ success: true, data: yield withSignedFileUrls(project) });
+        return;
+    }
+    if (folderId && !project.folders.some(folder => { var _a; return ((_a = folder._id) === null || _a === void 0 ? void 0 : _a.toString()) === folderId; })) {
+        res.status(400).json({ success: false, message: 'Folder not found in this project' });
         return;
     }
     const object = yield s3_1.s3Client.send(new client_s3_1.HeadObjectCommand({ Bucket: s3_1.S3_BUCKET_NAME, Key: key }));
@@ -282,6 +286,7 @@ router.post('/:id/files', (0, express_async_handler_1.default)((req, res) => __a
         size,
         uploadedBy: req.userId,
         uploadedAt: new Date(),
+        folderId: folderId || undefined,
     });
     yield project.save();
     res.status(201).json({ success: true, data: yield withSignedFileUrls(project) });
