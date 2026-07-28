@@ -251,7 +251,7 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
         if (task.orderId) {
             try {
                 const orderUsecase = new order_usecase_1.OrderUsecase();
-                yield orderUsecase.updateOrderStatus(task.orderId, task.status, false, req.params.id);
+                yield orderUsecase.updateOrderStatus(task.orderId, task.status === 'RETURN' ? 'RETURNED' : task.status, false, req.params.id);
             }
             catch (e) {
                 console.error('Failed to sync status to order:', e);

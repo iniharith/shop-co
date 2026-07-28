@@ -48,6 +48,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [gridSize, setGridSize] = useState<4 | 6>(4);
   const [previewFile, setPreviewFile] = useState<ProjectFile | null>(null);
+  const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(new Set());
+  const [draggedFileIds, setDraggedFileIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!project) return;
@@ -162,6 +164,37 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const moveFiles = async (fileIds: string[], folderId: string | null) => {
+    try {
+      for (const fileId of fileIds) {
+        await updateFileMutation.mutateAsync({ fileId, data: { folderId } });
+      }
+      setSelectedFileIds(new Set());
+      toast.success(`Moved ${fileIds.length} file${fileIds.length === 1 ? "" : "s"}`);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to move files");
+    }
+  };
+
+  const deleteFiles = async (fileIds: string[]) => {
+    if (!confirm(`Delete ${fileIds.length} selected file${fileIds.length === 1 ? "" : "s"}?`)) return;
+    try {
+      for (const fileId of fileIds) await deleteMutation.mutateAsync(fileId);
+      setSelectedFileIds(new Set());
+      toast.success(`Deleted ${fileIds.length} file${fileIds.length === 1 ? "" : "s"}`);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to delete files");
+    }
+  };
+
+  const toggleFileSelection = (fileId: string) => {
+    setSelectedFileIds(current => {
+      const next = new Set(current);
+      next.has(fileId) ? next.delete(fileId) : next.add(fileId);
+      return next;
+    });
+  };
+
   const shareProject = async () => {
     setSharing(true);
     try {
@@ -193,6 +226,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const activeUploads = Object.entries(uploadProgress);
   const users = usersData?.users || [];
   const visibleFiles = selectedFolderId === null ? project.files.filter(file => !file.folderId) : project.files.filter(file => file.folderId === selectedFolderId);
+  const folders = [{ _id: "", name: "Project root", count: project.files.filter(file => !file.folderId).length }, ...project.folders.map(folder => ({ ...folder, count: project.files.filter(file => file.folderId === folder._id).length }))];
 
   return (
     <PageContainer>
@@ -277,16 +311,48 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
-          <div className="mb-5 flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant={selectedFolderId === null ? "default" : "outline"} onClick={() => setSelectedFolderId(null)}>Root ({project.files.filter(file => !file.folderId).length})</Button>
-            {project.folders.map(folder => (
-              <div key={folder._id} className="flex items-center rounded-md border border-border/60">
-                <Button type="button" size="sm" variant={selectedFolderId === folder._id ? "default" : "ghost"} onClick={() => setSelectedFolderId(folder._id)}><Folder className="mr-1.5 size-3.5" />{folder.name}</Button>
-                <Button type="button" size="icon" variant="ghost" className="size-7" onClick={() => renameFolder(folder)}><Pencil className="size-3" /></Button>
-                <Button type="button" size="icon" variant="ghost" className="size-7 text-destructive" onClick={() => removeFolder(folder)}><Trash2 className="size-3" /></Button>
-              </div>
-            ))}
+          <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+            {folders.map(folder => {
+              const isRoot = !folder._id;
+              const isActive = selectedFolderId === (folder._id || null);
+              return (
+                <div
+                  key={folder._id || "root"}
+                  onDragOver={event => event.preventDefault()}
+                  onDrop={event => {
+                    event.preventDefault();
+                    void moveFiles(draggedFileIds, folder._id || null);
+                    setDraggedFileIds([]);
+                  }}
+                  className={`group relative rounded-2xl border p-3 transition-colors ${isActive ? "border-primary bg-primary/10" : "border-border/60 bg-card/50 hover:border-primary/50"}`}
+                >
+                  <button type="button" className="flex w-full flex-col items-start gap-2 text-left" onClick={() => setSelectedFolderId(folder._id || null)}>
+                    <Folder className="size-7 text-primary" />
+                    <span className="w-full truncate text-sm font-semibold">{folder.name}</span>
+                    <span className="text-xs text-muted-foreground">{folder.count} files</span>
+                  </button>
+                  {!isRoot && <div className="absolute right-2 top-2 flex opacity-0 transition-opacity group-hover:opacity-100">
+                    <Button type="button" size="icon" variant="ghost" className="size-6" onClick={() => renameFolder(folder)}><Pencil className="size-3" /></Button>
+                    <Button type="button" size="icon" variant="ghost" className="size-6 text-destructive" onClick={() => removeFolder(folder)}><Trash2 className="size-3" /></Button>
+                  </div>}
+                </div>
+              );
+            })}
           </div>
+
+          {selectedFileIds.size > 0 && (
+            <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 p-3">
+              <span className="mr-1 text-sm font-semibold">{selectedFileIds.size} selected</span>
+              <select defaultValue="" onChange={event => { if (event.target.value !== "") void moveFiles([...selectedFileIds], event.target.value === "root" ? null : event.target.value); event.target.value = ""; }} className="h-8 rounded-md border bg-background px-2 text-xs">
+                <option value="" disabled>Move to folder...</option>
+                <option value="root">Project root</option>
+                {project.folders.map(folder => <option key={folder._id} value={folder._id}>{folder.name}</option>)}
+              </select>
+              {selectedFileIds.size === 1 && <Button type="button" size="sm" variant="outline" onClick={() => { const file = project.files.find(item => item._id === [...selectedFileIds][0]); if (file) void editFile(file); }}>Rename / notes</Button>}
+              <Button type="button" size="sm" variant="destructive" onClick={() => void deleteFiles([...selectedFileIds])}>Delete</Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedFileIds(new Set())}>Clear</Button>
+            </div>
+          )}
 
           <div
             onDragEnter={event => { event.preventDefault(); setDragActive(true); }}
@@ -329,9 +395,16 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               {visibleFiles.map(file => {
                 const isImage = file.mimetype.startsWith("image/");
                 return (
-                  <div key={file._id} className="group overflow-hidden rounded-2xl border border-white/10 bg-card/55">
+                  <div
+                    key={file._id}
+                    draggable
+                    onDragStart={() => setDraggedFileIds(selectedFileIds.has(file._id) ? [...selectedFileIds] : [file._id])}
+                    onDragEnd={() => setDraggedFileIds([])}
+                    onClick={event => { if (event.shiftKey) toggleFileSelection(file._id); }}
+                    className={`group overflow-hidden rounded-2xl border bg-card/55 ${selectedFileIds.has(file._id) ? "border-primary ring-2 ring-primary/40" : "border-white/10"}`}
+                  >
                     <div className="relative flex h-32 items-center justify-center overflow-hidden bg-background/50">
-                      {isImage ? <button type="button" className="h-full w-full" onClick={() => setPreviewFile(file)}><img src={file.previewUrl} alt={file.originalName} className="h-full w-full object-cover transition-transform group-hover:scale-105" /></button> : <File className="size-10 text-muted-foreground" />}
+                      {isImage ? <button type="button" className="h-full w-full" onClick={event => { if (!event.shiftKey) setPreviewFile(file); }}><img src={file.previewUrl} alt={file.originalName} className="h-full w-full object-cover transition-transform group-hover:scale-105" /></button> : <File className="size-10 text-muted-foreground" />}
                     </div>
                     <div className="relative p-4">
                       <DropdownMenu>

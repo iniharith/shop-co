@@ -244,7 +244,7 @@ router.put(
         if (task.orderId) {
             try {
                 const orderUsecase = new OrderUsecase();
-                await orderUsecase.updateOrderStatus(task.orderId, task.status as any, false, req.params.id);
+                await orderUsecase.updateOrderStatus(task.orderId, task.status === 'RETURN' ? 'RETURNED' : task.status as any, false, req.params.id);
             } catch (e) {
                 console.error('Failed to sync status to order:', e);
             }
