@@ -73,6 +73,13 @@ export default function RsvpPage() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = coverState === "closed" ? "" : "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [coverState]);
+
   function submitRsvp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -106,6 +113,10 @@ export default function RsvpPage() {
     window.setTimeout(() => setCoverState("closed"), 1_000);
   }
 
+  function scrollToSection(id: string) {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   const countdown = [
     [remaining.days, "Hari"],
     [remaining.hours, "Jam"],
@@ -134,7 +145,7 @@ export default function RsvpPage() {
           {musicEnabled ? <Volume2 /> : <VolumeX />}<span>Muzik</span>
         </button>
         <button type="button" onClick={() => setActiveSheet("calendar")}><CalendarDays /><span>Kalendar</span></button>
-        <button type="button" onClick={() => setActiveSheet("calendar")}><Gift /><span>Salam Kasih</span></button>
+        <button type="button" onClick={() => scrollToSection("salam-kasih")}><Gift /><span>Salam Kasih</span></button>
         <button type="button" onClick={() => setActiveSheet("location")}><MapPin /><span>Lokasi</span></button>
         <button type="button" onClick={() => setActiveSheet("contact")}><PhoneCall /><span>Hubungi</span></button>
         <button type="button" onClick={() => setActiveSheet("rsvp")}><Check /><span>RSVP</span></button>
