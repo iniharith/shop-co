@@ -194,7 +194,7 @@
 .details h2, .rsvpPanel h2, .salamCard h2 { margin: 0; color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 1.9rem; font-weight: 400; }
 .detailsIntro { max-width: 20rem; margin: .6rem auto 1.7rem; color: #71463c; font-family: "Cormorant Garamond", serif; font-size: 1rem; line-height: 1.4; }
 .coupleDetails { display: grid; gap: .25rem; max-width: 20rem; margin: 0 auto 1.9rem; color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 1.2rem; letter-spacing: .03em; }
-.coupleDetails strong { font-weight: 400; }
+.coupleDetails strong { font-size: clamp(.9rem, 3.5vw, 1.15rem); font-weight: 400; white-space: nowrap; }
 .coupleDetails span { font-family: "Allura", cursive; font-size: 1.8rem; line-height: .7; }
 .detailGrid { display: grid; gap: 1.2rem; }
 .detailGrid article { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 .6rem; }

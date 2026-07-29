@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarDays, Check, ChevronDown, Clock3, Gift, MapPin, PhoneCall, Send, Users, Volume2, VolumeX } from "lucide-react";
-import { FormEvent, MouseEvent as ReactMouseEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, MouseEvent as ReactMouseEvent, useEffect, useState } from "react";
 import styles from "./rsvp.module.css";
 
 const wedding = {
@@ -43,7 +43,6 @@ export default function RsvpPage() {
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [activeSheet, setActiveSheet] = useState<Sheet>(null);
   const [wishes, setWishes] = useState<Wish[]>([]);
-  const autoScrollFrame = useRef<number | null>(null);
 
   useEffect(() => {
     setRemaining(getTimeRemaining());
@@ -94,31 +93,21 @@ export default function RsvpPage() {
     if (!autoScrolling || coverState !== "closed") return;
 
     const stopAutoScroll = () => setAutoScrolling(false);
-    const start = window.scrollY;
-    const destination = document.documentElement.scrollHeight - window.innerHeight;
-    const distance = Math.max(0, destination - start);
+    const advance = () => {
+      const nextSection = [...document.querySelectorAll<HTMLElement>("main.rsvp-page > section")]
+        .find((section) => section.getBoundingClientRect().top > 48);
 
-    if (distance < 2) {
-      stopAutoScroll();
-      return;
-    }
-
-    const duration = Math.max(12_000, distance * 6);
-    let startedAt = 0;
-    const advance = (now: number) => {
-      if (!startedAt) startedAt = now;
-      const progress = Math.min(1, (now - startedAt) / duration);
-      const cinematicProgress = .5 - Math.cos(progress * Math.PI) / 2;
-      window.scrollTo(0, start + distance * cinematicProgress);
-      if (progress < 1) {
-        autoScrollFrame.current = window.requestAnimationFrame(advance);
+      if (nextSection) {
+        nextSection.scrollIntoView({ behavior: "smooth", block: "start" });
       } else {
         stopAutoScroll();
       }
     };
 
+    let interval: number | undefined;
     const startDelay = window.setTimeout(() => {
-      autoScrollFrame.current = window.requestAnimationFrame(advance);
+      advance();
+      interval = window.setInterval(advance, 10_000);
     }, 3_000);
     window.addEventListener("wheel", stopAutoScroll, { passive: true });
     window.addEventListener("touchstart", stopAutoScroll, { passive: true });
@@ -126,8 +115,8 @@ export default function RsvpPage() {
     window.addEventListener("keydown", stopAutoScroll);
 
     return () => {
-      if (autoScrollFrame.current) window.cancelAnimationFrame(autoScrollFrame.current);
       window.clearTimeout(startDelay);
+      if (interval) window.clearInterval(interval);
       window.removeEventListener("wheel", stopAutoScroll);
       window.removeEventListener("touchstart", stopAutoScroll);
       window.removeEventListener("pointerdown", stopAutoScroll);
