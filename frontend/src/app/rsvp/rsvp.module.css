@@ -195,6 +195,7 @@
 
 .details { position: relative; isolation: isolate; padding: 2.6rem 1.2rem 2.4rem; overflow: hidden; background: var(--batik-pattern) center top / var(--batik-size) repeat-y, var(--paper); color: var(--wine); text-align: center; }
 .details::after, .salamSection::after { content: ""; position: absolute; z-index: -1; right: 0; bottom: 0; left: 0; height: 10rem; background: url("/images/wedding-floral-fh.png") center bottom / 100% auto no-repeat; opacity: .18; pointer-events: none; }
+.details::after { inset: -.8rem; height: auto; }
 .details h2, .rsvpPanel h2, .salamCard h2 { margin: 0; color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 1.9rem; font-weight: 400; }
 .detailsIntro { max-width: 22rem; margin: .6rem auto 1.7rem; color: #71463c; font-family: "Cormorant Garamond", serif; font-size: clamp(.72rem, 2.8vw, .95rem); line-height: 1.45; }
 .detailsIntro span { display: block; white-space: nowrap; }
