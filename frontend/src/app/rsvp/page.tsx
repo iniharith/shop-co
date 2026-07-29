@@ -330,7 +330,7 @@ function WeddingMonogram({ className = "" }: { className?: string }) {
 }
 
 function SheetHeading({ children }: { children: React.ReactNode }) {
-  return <><div className={styles.sheetOrnament}>F<span>&amp;</span>H</div><h2>{children}</h2></>;
+  return <><div className={styles.sheetOrnament}><b>F</b><span>&amp;</span><b>H</b></div><h2>{children}</h2></>;
 }
 
 function CalendarSheet() {
@@ -342,7 +342,13 @@ function LocationSheet() {
 }
 
 function ContactSheet() {
-  return <div className={styles.sheetContent}><SheetHeading>Hubungi</SheetHeading><p>Nombor telefon keluarga akan dikemas kini.</p></div>;
+  const contacts = [
+    ["En Nasir", "0177494346"],
+    ["En Asrul", "0177439869"],
+    ["Pn Wahida", "0133111946"],
+  ];
+
+  return <div className={styles.sheetContent}><SheetHeading>Hubungi</SheetHeading><p>Tekan nombor untuk membuat panggilan.</p><div className={styles.contactList}>{contacts.map(([name, phone]) => <a key={phone} href={`tel:${phone}`}><span>{name}</span><strong>{phone}</strong><PhoneCall /></a>)}</div></div>;
 }
 
 function GiftSheet() {

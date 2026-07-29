@@ -304,8 +304,14 @@
 .sheetContent p { margin: 0 0 .6rem; color: #72493d; font-family: "Cormorant Garamond", serif; font-size: 1rem; }
 .sheetContent strong { font-family: "Cormorant Garamond", serif; font-size: 1.2rem; font-weight: 700; }
 .sheetContent small { color: #8d6c5e; font-size: .58rem; }
-.sheetOrnament { color: var(--gold); font-family: "Cormorant Garamond", serif; font-size: .8rem; letter-spacing: .15em; }
-.sheetOrnament span { font-family: "Allura", cursive; font-size: 1.5em; }
+.sheetOrnament { display: inline-flex; align-items: center; gap: .45rem; color: var(--gold); font-family: "Cormorant Garamond", serif; }
+.sheetOrnament b { font-size: 1.35rem; font-weight: 700; letter-spacing: .18em; }
+.sheetOrnament span { font-family: "Allura", cursive; font-size: 1.8rem; }
+.contactList { display: grid; width: 100%; gap: .55rem; }
+.contactList a { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: .65rem; padding: .75rem; border: 1px solid rgba(89, 16, 25, .35); border-radius: .45rem; color: var(--wine); text-align: left; text-decoration: none; }
+.contactList span { font-size: .78rem; }
+.contactList strong { font-size: .9rem; }
+.contactList svg { width: 18px; height: 18px; }
 .sheetButton { display: inline-block; min-width: 12rem; margin-top: .25rem; border-color: var(--wine); background: transparent; color: var(--wine); }
 .quickRsvp { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: .7rem; }
 .quickRsvp button { display: flex; min-height: 4.2rem; flex-direction: column; align-items: center; justify-content: center; gap: .3rem; border: 1px solid var(--gold); background: transparent; color: var(--wine); cursor: pointer; font-family: "Cormorant Garamond", serif; font-size: .78rem; font-weight: 300; }
