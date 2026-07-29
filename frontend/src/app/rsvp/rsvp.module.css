@@ -30,12 +30,13 @@
   --gold-light: #ecd39a;
   --ivory: #f8efe0;
   --paper: #fffaf1;
+  --batik-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%239b7048' stroke-opacity='.18' stroke-width='1.2'%3E%3Cpath d='M28 5c3 10 13 10 18 18-5 8-15 8-18 18-3-10-13-10-18-18C15 15 25 15 28 5Z'/%3E%3Ccircle cx='28' cy='28' r='5'/%3E%3C/g%3E%3C/svg%3E");
   width: min(100%, 29rem);
   min-height: 100vh;
   margin: 0 auto;
   padding-bottom: 4.9rem;
   overflow: hidden;
-  background: var(--wine);
+  background: var(--batik-pattern), var(--wine);
   box-shadow: 0 0 34px rgba(44, 4, 10, .24);
   color: var(--ivory);
   font-family: "Cormorant Garamond", serif;
@@ -91,7 +92,8 @@
   justify-content: center;
   padding: 6.5rem 1.5rem 5rem;
   overflow: hidden;
-  background:
+  background-image:
+    var(--batik-pattern),
     radial-gradient(circle at 50% 38%, rgba(142, 54, 65, .62), transparent 44%),
     linear-gradient(145deg, #681722, #3b080f 72%);
   color: var(--ivory);
@@ -149,10 +151,11 @@
 .opened .dateRule { animation: coverTextFade 3s 1.6s both; }
 .opened .scrollCue { animation: coverTextFade 3s 1.75s both; }
 
-.floralCluster { position: absolute; z-index: 1; inset: 0; pointer-events: none; background: url("/images/wedding-floral.png") center / 100% 100% no-repeat; filter: drop-shadow(0 .6rem .8rem rgba(28, 2, 6, .2)); animation: floralFrame 6s ease-in-out infinite alternate; }
+.floralCluster { position: absolute; z-index: 1; inset: 0; pointer-events: none; background: url("/images/wedding-floral-fh.png") center / 100% 100% no-repeat; filter: drop-shadow(0 .6rem .8rem rgba(28, 2, 6, .2)); animation: floralFrame 6s ease-in-out infinite alternate; }
 .heroFloralFrame { inset: .2rem; }
 
-.countdownSection { display: flex; padding: 3.5rem 1.2rem; flex-direction: column; justify-content: center; background: var(--paper); color: var(--wine); text-align: center; }
+.countdownSection { position: relative; isolation: isolate; display: flex; padding: 3.5rem 1.2rem; flex-direction: column; justify-content: center; overflow: hidden; background: var(--batik-pattern), var(--paper); color: var(--wine); text-align: center; }
+.countdownSection > :not(.floralCluster), .rsvpSection > :not(.floralCluster) { position: relative; z-index: 2; }
 .countdownSection > p { margin: 0 0 1.4rem; font-family: "Cormorant Garamond", serif; font-size: 1.7rem; font-weight: 700; }
 .countdown { display: flex; justify-content: center; gap: clamp(.55rem, 4vw, 1.6rem); }
 .countdown div { display: flex; min-width: 3.6rem; flex-direction: column; }
@@ -166,7 +169,7 @@
 .wishList p { margin: 0 auto .25rem; max-width: 22rem; color: #74473d; font-family: "Cormorant Garamond", serif; font-size: .9rem; line-height: 1.35; }
 .wishList cite { color: #8c693d; font-family: "Cormorant Garamond", serif; font-size: .55rem; font-style: normal; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 
-.details { padding: 4.6rem 1.5rem; background: linear-gradient(150deg, #67141f, #3d080f); color: var(--ivory); text-align: center; }
+.details { padding: 4.6rem 1.5rem; background-image: var(--batik-pattern), linear-gradient(150deg, #67141f, #3d080f); color: var(--ivory); text-align: center; }
 .details h2, .rsvpPanel h2, .salamCard h2 { margin: 0; color: var(--gold-light); font-family: "Cormorant Garamond", serif; font-size: 2.7rem; font-weight: 700; }
 .detailsIntro { max-width: 22rem; margin: .7rem auto 2.4rem; color: #ead9c3; font-family: "Cormorant Garamond", serif; font-size: 1.08rem; line-height: 1.5; }
 .detailGrid { display: grid; border-top: 1px solid rgba(203, 165, 95, .5); border-bottom: 1px solid rgba(203, 165, 95, .5); }
@@ -177,32 +180,29 @@
 .detailGrid strong { max-width: 18rem; color: #fff3df; font-family: "Cormorant Garamond", serif; font-size: 1.2rem; font-weight: 700; }
 .detailGrid a { margin-top: .75rem; color: var(--gold-light); font-size: .8rem; font-weight: 700; letter-spacing: .1em; text-underline-offset: 4px; text-transform: uppercase; }
 
-.calendarSection, .contactSection { padding: 3.7rem 1.4rem; background: var(--paper); color: var(--wine); text-align: center; }
-.calendarSection > svg, .contactSection > svg { color: var(--gold); }
-.calendarSection h2, .contactSection h2 { margin: .1rem 0 .7rem; color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 2.5rem; font-weight: 700; }
-.calendarSection > p:not(.eyebrow), .contactSection > p:not(.eyebrow) { max-width: 20rem; margin: 0 auto 1.4rem; color: #74473d; font-family: "Cormorant Garamond", serif; font-size: 1rem; }
-.calendarSection > div { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
-.calendarSection a, .sheetButton { padding: .8rem .4rem; border: 1px solid var(--gold); background: var(--wine); color: var(--gold-light); font-size: .64rem; font-weight: 300; letter-spacing: .08em; text-decoration: none; text-transform: uppercase; transition: background .25s ease, color .25s ease; }
-.calendarSection a:hover, .sheetButton:hover { background: var(--gold); color: var(--wine-dark); }
+.contactSection { padding: 3.7rem 1.4rem; background: var(--batik-pattern), var(--paper); color: var(--wine); text-align: center; }
+.contactSection > svg { color: var(--gold); }
+.contactSection h2 { margin: .1rem 0 .7rem; color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 2.5rem; font-weight: 700; }
+.contactSection > p:not(.eyebrow) { max-width: 20rem; margin: 0 auto 1.4rem; color: #74473d; font-family: "Cormorant Garamond", serif; font-size: 1rem; }
+.sheetButton { padding: .8rem .4rem; border: 1px solid var(--gold); background: var(--wine); color: var(--gold-light); font-size: .64rem; font-weight: 300; letter-spacing: .08em; text-decoration: none; text-transform: uppercase; transition: background .25s ease, color .25s ease; }
+.sheetButton:hover { background: var(--gold); color: var(--wine-dark); }
 
-.salamSection { position: relative; overflow: hidden; padding: 4rem 1.2rem; background: #f2e5d2; }
+.salamSection { position: relative; isolation: isolate; overflow: hidden; padding: 4rem 1.2rem; background: var(--batik-pattern), #f2e5d2; }
 .salamCard { position: relative; z-index: 2; padding: 2.5rem 1.2rem; border: 1px solid var(--gold); outline: 1px solid rgba(203, 165, 95, .42); outline-offset: -8px; background: rgba(255, 250, 241, .92); color: var(--wine); text-align: center; }
 .salamCard > svg { color: var(--gold); }
 .salamCopy { margin: .7rem auto 1.7rem; color: #71463c; font-family: "Cormorant Garamond", serif; font-size: 1rem; line-height: 1.45; }
-.qrLayout { display: flex; align-items: center; justify-content: center; gap: 1.2rem; padding-top: 1.4rem; border-top: 1px solid #ddc5a3; text-align: left; }
-.qrPlaceholder { display: grid; grid-template-columns: repeat(13, 1fr); gap: 2px; flex: 0 0 8rem; width: 8rem; padding: .45rem; background: #fffdf7; box-shadow: 0 4px 18px rgba(72, 21, 20, .12); }
-.qrPlaceholder i { aspect-ratio: 1; }
-.qrPlaceholder .qrDark { background: var(--wine); }
-.bankDetails { display: flex; max-width: 13rem; flex-direction: column; }
-.bankDetails span { margin-bottom: .4rem; color: #9a7446; font-size: .6rem; font-weight: 300; letter-spacing: .14em; text-transform: uppercase; }
-.bankDetails strong { color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 1.15rem; font-weight: 700; line-height: 1.1; }
-.bankDetails p { margin: .6rem 0 0; color: #815d50; font-size: .62rem; line-height: 1.5; }
+.calendarAction { display: flex; align-items: center; flex-direction: column; gap: .45rem; padding-top: 1.4rem; border-top: 1px solid #ddc5a3; }
+.calendarAction .eyebrow { margin: 0; }
+.calendarAction strong { color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 1.25rem; font-weight: 700; }
+.calendarAction span { color: #815d50; font-size: .75rem; }
+.calendarAction .sheetButton { margin-top: .7rem; }
 .sectionFloralFrame { inset: -.8rem; opacity: .16; }
+.paperFloralFrame { inset: -.8rem; opacity: .16; }
 
-.contactSection { background: linear-gradient(145deg, #541018, #33070c); color: var(--ivory); }
+.contactSection { background-image: var(--batik-pattern), linear-gradient(145deg, #541018, #33070c); color: var(--ivory); }
 .contactSection h2, .contactSection > p:not(.eyebrow) { color: var(--ivory); }
 .contactPlaceholder { padding: .9rem; border: 1px solid rgba(203, 165, 95, .55); color: var(--gold-light); font-size: .65rem; }
-.rsvpSection { padding: 4.3rem 1.1rem; background: #f3e6d4; }
+.rsvpSection { position: relative; isolation: isolate; overflow: hidden; padding: 4.3rem 1.1rem; background: var(--batik-pattern), #f3e6d4; }
 .rsvpPanel { padding: 2.5rem 1.3rem; border: 1px solid var(--gold); outline: 1px solid rgba(203, 165, 95, .45); outline-offset: -8px; background: var(--wine); color: var(--ivory); text-align: center; }
 .rsvpPanel form { display: grid; gap: 1.15rem; margin-top: 2rem; text-align: left; }
 .rsvpPanel label, .rsvpPanel legend { color: var(--gold-light); font-size: .57rem; letter-spacing: .12em; text-transform: uppercase; }
@@ -222,7 +222,7 @@
 .confirmation p { margin: 0; font-family: "Cormorant Garamond", serif; font-size: 1rem; }
 .invitationFooter { display: flex; align-items: center; justify-content: center; gap: .6rem; padding: 1.5rem; background: var(--wine-dark); color: var(--gold-light); text-align: center; }
 .invitationFooter p { margin: 0; font-family: "Cormorant Garamond", serif; font-size: .92rem; }
-.hero, .countdownSection, .details, .calendarSection, .salamSection, .contactSection, .rsvpSection { box-sizing: border-box; min-height: 100svh; padding-bottom: calc(6.25rem + env(safe-area-inset-bottom)); scroll-snap-align: start; scroll-snap-stop: always; }
+.hero, .countdownSection, .details, .salamSection, .contactSection, .rsvpSection { box-sizing: border-box; min-height: 100svh; padding-bottom: calc(6.25rem + env(safe-area-inset-bottom)); scroll-snap-align: start; scroll-snap-stop: always; }
 
 .openingCover { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; overflow: hidden; background: #faf8f4; }
 .closing { background: transparent; pointer-events: none; }
@@ -280,8 +280,6 @@
   .hero { min-height: 100svh; }
   .hero::before { inset: .75rem; }
   .hero::after { inset: 1.2rem; }
-  .qrLayout { flex-direction: column; text-align: center; }
-  .bankDetails { align-items: center; }
   .attendanceOptions { grid-template-columns: 1fr; }
 }
 
