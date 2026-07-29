@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Check, ChevronDown, Clock3, Gift, MapPin, PhoneCall, Send, Users, Volume2, VolumeX } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, Clock3, MapPin, PhoneCall, Send, Users, Volume2, VolumeX } from "lucide-react";
 import { FormEvent, MouseEvent as ReactMouseEvent, useEffect, useRef, useState } from "react";
 import styles from "./rsvp.module.css";
 
@@ -9,6 +9,7 @@ const wedding = {
   bride: "NOR FATIN NABILA BINTI NASIR",
   groomDisplay: "Habri",
   brideDisplay: "Fatin",
+  day: "Sabtu",
   date: "5 September 2026",
   hijriDate: "23 Rabiulawal 1448 Hijriah",
   time: "11:00 AM - 4:00 PM",
@@ -19,7 +20,7 @@ const wedding = {
 };
 
 type Attendance = "hadir" | "tidak-hadir" | "";
-type Sheet = "calendar" | "location" | "contact" | "gift" | "music" | "rsvp" | null;
+type Sheet = "calendar" | "location" | "contact" | "music" | "rsvp" | null;
 type Wish = { id: string; name: string; message: string };
 
 const wishesStorageKey = "fatin-habri-wedding-wishes";
@@ -234,7 +235,6 @@ export default function RsvpPage() {
           {musicEnabled ? <Volume2 /> : <VolumeX />}<span>Muzik</span>
         </button>
         <button type="button" onClick={() => setActiveSheet("location")}><MapPin /><span>Lokasi</span></button>
-        <button type="button" onClick={() => setActiveSheet("gift")}><Gift /><span>Hadiah</span></button>
         <button type="button" onClick={() => setActiveSheet("rsvp")}><Check /><span>RSVP</span></button>
       </nav>
 
@@ -245,7 +245,6 @@ export default function RsvpPage() {
             {activeSheet === "calendar" && <CalendarSheet />}
             {activeSheet === "location" && <LocationSheet />}
             {activeSheet === "contact" && <ContactSheet />}
-            {activeSheet === "gift" && <GiftSheet />}
             {activeSheet === "music" && <MusicSheet musicEnabled={musicEnabled} setMusicEnabled={setMusicEnabled} />}
             {activeSheet === "rsvp" && <QuickRsvp attendance={attendance} setAttendance={setAttendance} close={() => setActiveSheet(null)} />}
           </section>
@@ -258,7 +257,7 @@ export default function RsvpPage() {
         <p className={`${styles.eyebrow} ${styles.heroEyebrow}`}>Walimatul Urus</p>
         <p className={styles.request}>Dengan penuh kesyukuran, kami menjemput</p>
         <h1><span>{wedding.brideDisplay}</span><em>&amp;</em><span>{wedding.groomDisplay}</span></h1>
-        <div className={styles.dateRule}><span /> <p>{wedding.date}<br />{wedding.hijriDate}</p> <span /></div>
+        <div className={styles.dateRule}><span /> <p>{wedding.day}<br />{wedding.date}<br />{wedding.hijriDate}</p> <span /></div>
         <a className={styles.scrollCue} href="#majlis" onClick={(event) => { event.preventDefault(); scrollToSection("majlis"); }}><ChevronDown size={18} /> Terokai undangan</a>
       </section>
 
@@ -270,7 +269,7 @@ export default function RsvpPage() {
         <p className={styles.hostInvitation}><span>Dengan penuh kesyukuran, kami menjemput</span><span>Dato&apos;/Datin/Tuan/Puan/Encik/Cik</span><span>ke majlis perkahwinan puteri kami yang dikasihi</span></p>
         <div className={styles.coupleDetails}><strong>{wedding.bride}</strong><span>&amp;</span><strong>{wedding.groom}</strong></div>
         <div className={styles.detailGrid}>
-          <article><CalendarDays /><p>Tarikh / Hari</p><strong>{wedding.date}<br />{wedding.hijriDate}</strong></article>
+          <article><CalendarDays /><p>Tarikh / Hari</p><strong>{wedding.day}<br />{wedding.date}<br />{wedding.hijriDate}</strong></article>
           <article><Clock3 /><p>Masa</p><strong>{wedding.time}</strong></article>
           <article><MapPin /><p>Lokasi</p><strong>{wedding.venue}</strong><a href={wedding.mapsUrl} target="_blank" rel="noreferrer">Buka Google Maps</a><a className={styles.locationQr} href={wedding.mapsUrl} target="_blank" rel="noreferrer"><img src={wedding.locationQrUrl} alt="Kod QR lokasi Kuasa Kaseh Event Space" /><span>Imbas QR untuk lokasi</span></a></article>
         </div>
@@ -347,7 +346,7 @@ function SheetHeading({ children }: { children: React.ReactNode }) {
 }
 
 function CalendarSheet() {
-  return <div className={styles.sheetContent}><SheetHeading>Salam Kasih</SheetHeading><p>Kehadiran dan doa restu anda sudah cukup bermakna.</p><strong>{wedding.date}<br />{wedding.hijriDate}</strong><p>11:00 pagi - 4:00 petang</p><a className={styles.sheetButton} href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Majlis+Perkahwinan+Muhammad+Habri+%26+Nor+Fatin+Nabila&dates=20260905T030000Z/20260905T080000Z&location=Kuasa+Kaseh+Event+Space" target="_blank" rel="noreferrer">Tambah ke Google Calendar</a></div>;
+  return <div className={styles.sheetContent}><SheetHeading>Kalendar</SheetHeading><p>Simpan tarikh majlis perkahwinan kami.</p><strong>{wedding.day}<br />{wedding.date}<br />{wedding.hijriDate}</strong><p>11:00 pagi - 4:00 petang</p><a className={styles.sheetButton} href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Majlis+Perkahwinan+Muhammad+Habri+%26+Nor+Fatin+Nabila&dates=20260905T030000Z/20260905T080000Z&location=Kuasa+Kaseh+Event+Space" target="_blank" rel="noreferrer">Tambah ke Google Calendar</a></div>;
 }
 
 function LocationSheet() {
@@ -362,10 +361,6 @@ function ContactSheet() {
   ];
 
   return <div className={styles.sheetContent}><SheetHeading>Hubungi</SheetHeading><p>Tekan nombor untuk membuat panggilan.</p><div className={styles.contactList}>{contacts.map(([name, phone]) => <a key={phone} href={`tel:${phone}`}><span>{name}</span><strong>{phone}</strong><PhoneCall /></a>)}</div></div>;
-}
-
-function GiftSheet() {
-  return <div className={styles.sheetContent}><SheetHeading>Salam Kasih</SheetHeading><Gift /><p>Kehadiran dan doa restu anda sudah cukup bermakna buat kami.</p><p>Maklumat hadiah akan dikemas kini oleh pihak keluarga.</p></div>;
 }
 
 function MusicSheet({ musicEnabled, setMusicEnabled }: { musicEnabled: boolean; setMusicEnabled: (enabled: boolean) => void }) {
