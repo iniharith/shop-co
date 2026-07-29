@@ -103,12 +103,12 @@
   position: relative;
   isolation: isolate;
   display: flex;
-  min-height: 31rem;
+  min-height: 27rem;
   box-sizing: border-box;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 3.2rem 1.5rem 5.8rem;
+  padding: 3.2rem 1.5rem 4.2rem;
   overflow: hidden;
   background-image: var(--batik-pattern), radial-gradient(circle at 50% 38%, rgba(142, 54, 65, .5), transparent 44%), linear-gradient(145deg, #561019, #33070d 72%);
   background-size: var(--batik-size), auto, auto;
@@ -173,7 +173,7 @@
 .opened .scrollCue { animation: coverTextFade 3s 1.75s both; }
 
 .floralCluster { position: absolute; z-index: 1; inset: 0; pointer-events: none; background: url("/images/wedding-floral-fh.png") center / 100% 100% no-repeat; filter: drop-shadow(0 .6rem .8rem rgba(28, 2, 6, .2)); animation: floralFrame 6s ease-in-out infinite alternate; }
-.heroFloralFrame { inset: .5rem 0 5.6rem; background-size: 100% auto; background-position: center bottom; animation: none; }
+.heroFloralFrame { inset: .5rem 0 3.8rem; background-size: 100% auto; background-position: center bottom; animation: none; }
 
 .countdownSection { position: relative; isolation: isolate; display: flex; padding: 2.2rem 1rem; flex-direction: column; justify-content: center; overflow: hidden; background: var(--batik-pattern) center top / var(--batik-size) repeat-y, var(--paper); color: var(--wine); text-align: center; }
 .countdownSection > :not(.floralCluster), .rsvpSection > :not(.floralCluster) { position: relative; z-index: 2; }
@@ -264,7 +264,7 @@
 .invitationFooter { display: flex; align-items: center; justify-content: center; gap: .6rem; padding: 1.5rem; background: var(--batik-pattern) center / var(--batik-size) repeat-y, var(--wine-dark); background-blend-mode: screen; color: var(--gold-light); text-align: center; }
 .invitationFooter p { margin: 0; font-family: "Cormorant Garamond", serif; font-size: .92rem; }
 .hero, .countdownSection, .details, .salamSection, .contactSection, .rsvpSection { box-sizing: border-box; padding-bottom: calc(5.8rem + env(safe-area-inset-bottom)); scroll-margin-top: .5rem; }
-.hero { min-height: 31rem; }
+.hero { min-height: 27rem; }
 
 .openingCover { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; overflow: hidden; background: #faf8f4; }
 .closing { background: transparent; pointer-events: none; }
