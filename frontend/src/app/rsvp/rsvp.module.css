@@ -190,6 +190,7 @@
 .wishList blockquote { margin: 0; }
 .wishList p { margin: 0 auto .25rem; max-width: 22rem; color: #74473d; font-family: "Cormorant Garamond", serif; font-size: .9rem; line-height: 1.35; }
 .wishList cite { color: #8c693d; font-family: "Cormorant Garamond", serif; font-size: .55rem; font-style: normal; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.animatedWish { min-height: 3.8rem; animation: wishScrollIn .7s cubic-bezier(.22, .61, .36, 1) both; }
 
 .details { padding: 2.6rem 1.2rem 2.4rem; background: var(--batik-pattern) center top / var(--batik-size) repeat-y, var(--paper); color: var(--wine); text-align: center; }
 .details h2, .rsvpPanel h2, .salamCard h2 { margin: 0; color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 1.9rem; font-weight: 400; }
@@ -333,6 +334,7 @@
 @keyframes sealPulse { 50% { filter: drop-shadow(0 8px 15px rgba(20, 1, 4, .8)) brightness(1.06); } }
 @keyframes fadeIn { from { opacity: 0; } }
 @keyframes sheetUp { from { translate: 0 100%; } to { translate: 0; } }
+@keyframes wishScrollIn { from { opacity: 0; translate: 0 1.2rem; } to { opacity: 1; translate: 0; } }
 
 @media (max-width: 520px) {
   .hero { min-height: 100svh; }

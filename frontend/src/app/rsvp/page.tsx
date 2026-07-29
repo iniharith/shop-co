@@ -44,6 +44,7 @@ export default function RsvpPage() {
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [activeSheet, setActiveSheet] = useState<Sheet>(null);
   const [wishes, setWishes] = useState<Wish[]>([]);
+  const [activeWishIndex, setActiveWishIndex] = useState(0);
   const autoScrollFrame = useRef<number | null>(null);
 
   useEffect(() => {
@@ -51,6 +52,16 @@ export default function RsvpPage() {
     const timer = window.setInterval(() => setRemaining(getTimeRemaining()), 1_000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    setActiveWishIndex(0);
+    if (wishes.length < 2) return;
+
+    const timer = window.setInterval(() => {
+      setActiveWishIndex((index) => (index + 1) % wishes.length);
+    }, 5_000);
+    return () => window.clearInterval(timer);
+  }, [wishes.length]);
 
   useEffect(() => {
     try {
@@ -150,6 +161,7 @@ export default function RsvpPage() {
     }
 
     if (message) {
+      setActiveWishIndex(0);
       setWishes((current) => {
         const next = [{ id: `${Date.now()}-${guestName}`, name: guestName, message }, ...current].slice(0, 12);
         try {
@@ -198,6 +210,7 @@ export default function RsvpPage() {
     [remaining.minutes, "Minit"],
     [remaining.seconds, "Saat"],
   ];
+  const activeWish = wishes[activeWishIndex];
 
   return (
     <main className={`${styles.invitation} ${coverState !== "open" ? styles.opened : ""} rsvp-page`} onClick={handleContentClick}>
@@ -283,7 +296,7 @@ export default function RsvpPage() {
         <div className={styles.wishes}>
           <h2>Wishes</h2>
           <div className={styles.wishList} aria-live="polite">
-            {wishes.length > 0 ? wishes.slice(0, 5).map((wish) => <blockquote key={wish.id}><p>&ldquo;{wish.message}&rdquo;</p><cite>{wish.name}</cite></blockquote>) : <p className={styles.emptyWish}>Semoga majlis ini dipermudahkan dan diberkati.</p>}
+            {activeWish ? <blockquote className={styles.animatedWish} key={activeWish.id}><p>&ldquo;{activeWish.message}&rdquo;</p><cite>{activeWish.name}</cite></blockquote> : <p className={styles.emptyWish}>Semoga majlis ini dipermudahkan dan diberkati.</p>}
           </div>
           <div className={styles.wishActions}><button type="button" onClick={() => setActiveSheet("rsvp")}>RSVP Now</button><button type="button" onClick={() => scrollToSection("rsvp")}>Write a Message</button></div>
         </div>
