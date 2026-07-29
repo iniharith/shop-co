@@ -69,6 +69,62 @@ const TASK_COLUMNS = [
   'DONE_PRINTING','PACKAGING','SHIPPED','IN_TRANSIT','DELIVERED','CANCELLED','FAILED','RETURN',
 ];
 
+// Keep form state outside the board so typing does not re-render every task card.
+const CreateTaskDialog = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [newTask, setNewTask] = useState({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
+  const { mutate: createTask, isPending: isCreating } = useCreateTask();
+
+  const handleCreateTask = () => {
+    if (!newTask.title.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+    createTask(newTask, {
+      onSuccess: () => {
+        toast.success("Task created!");
+        setIsOpen(false);
+        setNewTask({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
+      },
+    });
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button className="rounded-full px-6 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md">
+          <Plus className="w-4 h-4 mr-2" /> New Task
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Create New Task</DialogTitle></DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Task Title</label>
+            <Input placeholder="E.g., Review artwork for Order #123" value={newTask.title} onChange={e => setNewTask({ ...newTask, title: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Description</label>
+            <Textarea placeholder="Task details…" value={newTask.description} onChange={e => setNewTask({ ...newTask, description: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Category</label>
+            <Select value={newTask.category} onValueChange={category => setNewTask({ ...newTask, category })}>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Select Category" /></SelectTrigger>
+              <SelectContent>
+                {["UNASSIGNED","DIGITAL PRINTING","DISPLAY ITEM","DIGITAL OFFSET","PREMIUM GIFT","APPAREL","FRAME","WEDDING PRODUCT","FOOD PACKAGING"].map(category => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={handleCreateTask} disabled={isCreating} className="w-full">Create Task</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function TasksManager() {
   const { data: response, isPending, refetch, isFetching } = useTasks();
@@ -76,7 +132,6 @@ export default function TasksManager() {
   const { data: usersData } = useUsers();
 
   const [viewMode, setViewMode]                     = useState<"board" | "list">("board");
-  const [isCreateOpen, setIsCreateOpen]             = useState(false);
   const [selectedTask, setSelectedTask]             = useState<any>(null);
   const [hiddenColumns, setHiddenColumns]           = useState<string[]>([]);
   // Sections start closed (all statuses "collapsed") — matches the previous
@@ -89,9 +144,7 @@ export default function TasksManager() {
   const [assigneeFilter, setAssigneeFilter]         = useState<string>("all");
   const [deletedTaskIds, setDeletedTaskIds]         = useState<string[]>([]);
   const [searchQuery, setSearchQuery]               = useState("");
-  const [newTask, setNewTask]                       = useState({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
 
-  const { mutate: createTask, isPending: isCreating } = useCreateTask();
   const { mutate: updateTask }  = useUpdateTask();
   const { mutate: deleteTask }  = useDeleteTask();
 
@@ -171,17 +224,6 @@ export default function TasksManager() {
   const [bulkDateOpen,   setBulkDateOpen]   = useState(false);
 
   // ── Standard handlers ─────────────────────────────────────────────────────
-  const handleCreateTask = () => {
-    if (!newTask.title) { toast.error("Title is required"); return; }
-    createTask(newTask, {
-      onSuccess: () => {
-        toast.success("Task created!");
-        setIsCreateOpen(false);
-        setNewTask({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
-      },
-    });
-  };
-
   const handleStatusChange = (taskId: string, newStatus: string) => {
     const old = tasks.find((t: any) => t._id === taskId)?.status;
     updateTask({ id: taskId, data: { status: newStatus } }, {
@@ -349,38 +391,7 @@ export default function TasksManager() {
           }}>
             Run Migration Fix
           </Button>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button className="rounded-full px-6 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md">
-                <Plus className="w-4 h-4 mr-2" /> New Task
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Create New Task</DialogTitle></DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Task Title</label>
-                  <Input placeholder="E.g., Review artwork for Order #123" value={newTask.title} onChange={e => setNewTask({ ...newTask, title: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Description</label>
-                  <Textarea placeholder="Task details…" value={newTask.description} onChange={e => setNewTask({ ...newTask, description: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Category</label>
-                  <Select value={newTask.category} onValueChange={v => setNewTask({ ...newTask, category: v })}>
-                    <SelectTrigger className="w-full"><SelectValue placeholder="Select Category" /></SelectTrigger>
-                    <SelectContent>
-                      {["UNASSIGNED","DIGITAL PRINTING","DISPLAY ITEM","DIGITAL OFFSET","PREMIUM GIFT","APPAREL","FRAME","WEDDING PRODUCT","FOOD PACKAGING"].map(c => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleCreateTask} disabled={isCreating} className="w-full">Create Task</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <CreateTaskDialog />
         </div>
       </div>
 
