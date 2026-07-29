@@ -199,7 +199,6 @@ export default function RsvpPage() {
       )}
       {musicEnabled && <iframe className={styles.musicFrame} src="https://www.youtube.com/embed/JGz2aGs0MU4?autoplay=1&loop=1&playlist=JGz2aGs0MU4" title="Muzik latar majlis" allow="autoplay" />}
       <nav className={styles.navigation} aria-label="Navigation invitation">
-        <button type="button" onClick={() => setActiveSheet("calendar")}><CalendarDays /><span>Kalendar</span></button>
         <button type="button" onClick={() => setActiveSheet("contact")}><PhoneCall /><span>Hubungi</span></button>
         <button type="button" onClick={() => setActiveSheet("music")} aria-label={musicEnabled ? "Kawalan muzik" : "Mainkan muzik"}>
           {musicEnabled ? <Volume2 /> : <VolumeX />}<span>Muzik</span>
@@ -233,23 +232,6 @@ export default function RsvpPage() {
         <a className={styles.scrollCue} href="#majlis"><ChevronDown size={18} /> Terokai undangan</a>
       </section>
 
-      <section className={`${styles.countdownSection} ${styles.reveal}`} data-reveal aria-label="Countdown to wedding">
-        <FloralCluster className={styles.paperFloralFrame} />
-        <p>Menanti hari bahagia</p>
-        <div className={styles.countdown}>
-          {countdown.map(([value, label]) => <div key={label as string}><strong>{String(value).padStart(2, "0")}</strong><span>{label}</span></div>)}
-        </div>
-        {wishes.length > 0 && (
-          <div className={styles.wishes}>
-            <span className={styles.wishOrnament} aria-hidden="true">H &amp; F</span>
-            <h2>Ucapan Untuk Pengantin</h2>
-            <div className={styles.wishList} aria-live="polite">
-              {wishes.slice(0, 4).map((wish) => <blockquote key={wish.id}><p>&ldquo;{wish.message}&rdquo;</p><cite>{wish.name}</cite></blockquote>)}
-            </div>
-          </div>
-        )}
-      </section>
-
       <section className={`${styles.details} ${styles.reveal}`} data-reveal id="majlis">
         <p className={styles.eyebrow}>Save the date</p>
         <h2>Majlis Perkahwinan</h2>
@@ -264,16 +246,32 @@ export default function RsvpPage() {
       <section className={`${styles.salamSection} ${styles.reveal}`} data-reveal id="salam-kasih">
         <FloralCluster className={styles.sectionFloralFrame} />
         <div className={styles.salamCard}>
-          <Gift size={21} />
-          <p className={styles.eyebrow}>Tanda kasih</p>
-          <h2>Salam Kasih</h2>
-          <p className={styles.salamCopy}>Kehadiran dan doa restu anda sudah cukup bermakna.</p>
-          <div className={styles.calendarAction}>
-            <p className={styles.eyebrow}>Simpan tarikh</p>
-            <strong>Sabtu, 5 September 2026</strong>
-            <span>11:00 pagi hingga 4:00 petang</span>
-            <a className={styles.sheetButton} href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Majlis+Perkahwinan+Muhammad+Habri+%26+Nor+Fatin+Nabila&dates=20260905T030000Z/20260905T080000Z&location=Kuasa+Kaseh+Event+Space" target="_blank" rel="noreferrer">Tambah ke Google Calendar</a>
+          <p className={styles.eyebrow}>Atur cara majlis</p>
+          <h2>Programme</h2>
+          <div className={styles.programmeList}>
+            <p><strong>Jamuan</strong><span>11:00 pagi - 4:00 petang</span></p>
+            <p><strong>Ketibaan Pengantin</strong><span>12:30 tengah hari</span></p>
           </div>
+          <span className={styles.hashtag}>#FatinHabri</span>
+        </div>
+      </section>
+
+      <section className={`${styles.countdownSection} ${styles.reveal}`} data-reveal aria-label="Countdown to wedding">
+        <FloralCluster className={styles.paperFloralFrame} />
+        <p>Counting Days</p>
+        <div className={styles.countdown}>
+          {countdown.map(([value, label]) => <div key={label as string}><strong>{String(value).padStart(2, "0")}</strong><span>{label}</span></div>)}
+        </div>
+        <div className={styles.attendanceSummary}>
+          <h2>Attendance</h2>
+          <div><p><strong>{attendance === "hadir" ? 1 : 0}</strong><span>Attending</span></p><p><strong>{attendance === "tidak-hadir" ? 1 : 0}</strong><span>Not Attending</span></p></div>
+        </div>
+        <div className={styles.wishes}>
+          <h2>Wishes</h2>
+          <div className={styles.wishList} aria-live="polite">
+            {wishes.length > 0 ? wishes.slice(0, 5).map((wish) => <blockquote key={wish.id}><p>&ldquo;{wish.message}&rdquo;</p><cite>{wish.name}</cite></blockquote>) : <p className={styles.emptyWish}>Semoga majlis ini dipermudahkan dan diberkati.</p>}
+          </div>
+          <div className={styles.wishActions}><button type="button" onClick={() => setActiveSheet("rsvp")}>RSVP Now</button><button type="button" onClick={() => scrollToSection("rsvp")}>Write a Message</button></div>
         </div>
       </section>
 
