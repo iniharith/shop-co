@@ -253,6 +253,7 @@ export default function RsvpPage() {
         <p className={styles.eyebrow}>Save the date</p>
         <h2>Walimatul Urus</h2>
         <p className={styles.detailsIntro}><span>Assalamualaikum wbr &amp; Salam Sejahtera</span><span>dengan penuh kesyukuran dan keredaan-Nya,</span><span>Dengan penuh kesyukuran, kami menjemput</span></p>
+        <p className={styles.hostInvitation}><span>Dengan penuh kesyukuran, kami menjemput</span><span>Dato&apos;/Datin/Tuan/Puan/Encik/Cik</span><span>ke majlis perkahwinan puteri kami yang dikasihi</span></p>
         <div className={styles.coupleDetails}><strong>{wedding.bride}</strong><span>&amp;</span><strong>{wedding.groom}</strong></div>
         <div className={styles.detailGrid}>
           <article><CalendarDays /><p>Tarikh / Hari</p><strong>{wedding.date}<br />{wedding.hijriDate}</strong></article>
@@ -328,7 +329,7 @@ function WeddingMonogram({ className = "" }: { className?: string }) {
 }
 
 function SheetHeading({ children }: { children: React.ReactNode }) {
-  return <><div className={styles.sheetOrnament}>H <span>&amp;</span> F</div><h2>{children}</h2></>;
+  return <><div className={styles.sheetOrnament}>F<span>&amp;</span>H</div><h2>{children}</h2></>;
 }
 
 function CalendarSheet() {
@@ -348,7 +349,7 @@ function GiftSheet() {
 }
 
 function MusicSheet({ musicEnabled, setMusicEnabled }: { musicEnabled: boolean; setMusicEnabled: (enabled: boolean) => void }) {
-  return <div className={styles.sheetContent}><SheetHeading>Muzik</SheetHeading><p>{musicEnabled ? "Muzik latar sedang dimainkan." : "Mainkan muzik latar untuk menemani undangan ini."}</p><button className={styles.sheetButton} type="button" onClick={() => setMusicEnabled(!musicEnabled)}>{musicEnabled ? "Matikan Muzik" : "Mainkan Muzik"}</button></div>;
+  return <div className={styles.sheetContent}><SheetHeading>Muzik</SheetHeading><p>{musicEnabled ? "Muzik latar sedang dimainkan." : "Muzik latar dimatikan."}</p><div className={styles.musicOptions}><button type="button" className={musicEnabled ? styles.selected : ""} onClick={() => setMusicEnabled(true)}>Muzik On</button><button type="button" className={!musicEnabled ? styles.selected : ""} onClick={() => setMusicEnabled(false)}>Muzik Off</button></div></div>;
 }
 
 function QuickRsvp({ attendance, setAttendance, close }: { attendance: Attendance; setAttendance: (value: Attendance) => void; close: () => void }) {

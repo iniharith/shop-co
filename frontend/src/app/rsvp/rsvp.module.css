@@ -195,6 +195,8 @@
 .details h2, .rsvpPanel h2, .salamCard h2 { margin: 0; color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 1.9rem; font-weight: 400; }
 .detailsIntro { max-width: 22rem; margin: .6rem auto 1.7rem; color: #71463c; font-family: "Cormorant Garamond", serif; font-size: clamp(.72rem, 2.8vw, .95rem); line-height: 1.45; }
 .detailsIntro span { display: block; white-space: nowrap; }
+.hostInvitation { display: grid; gap: .2rem; max-width: 22rem; margin: 0 auto 1.8rem; color: #71463c; font-size: clamp(.72rem, 2.8vw, .95rem); line-height: 1.45; }
+.hostInvitation span { white-space: nowrap; }
 .coupleDetails { display: grid; gap: .25rem; max-width: 20rem; margin: 0 auto 1.9rem; color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 1.2rem; letter-spacing: .03em; }
 .coupleDetails strong { display: block; width: 100%; font-size: clamp(.82rem, 3.2vw, 1.05rem); font-weight: 400; letter-spacing: -.02em; white-space: nowrap; }
 .coupleDetails span { font-family: "Allura", cursive; font-size: 1.8rem; line-height: .7; }
@@ -306,6 +308,9 @@
 .quickRsvp button { display: flex; min-height: 4.2rem; flex-direction: column; align-items: center; justify-content: center; gap: .3rem; border: 1px solid var(--gold); background: transparent; color: var(--wine); cursor: pointer; font-family: "Cormorant Garamond", serif; font-size: .78rem; font-weight: 300; }
 .quickRsvp button.selected { background: var(--wine); color: var(--gold-light); }
 .quickRsvp svg, .quickRsvp button > span { width: 20px; height: 20px; font-size: 1.3rem; }
+.musicOptions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: .7rem; }
+.musicOptions button { min-height: 2.8rem; border: 1px solid var(--wine); border-radius: .45rem; background: transparent; color: var(--wine); cursor: pointer; font-size: .8rem; }
+.musicOptions button.selected { background: var(--wine); color: var(--gold-light); }
 
 .reveal { opacity: 0; transform: translate3d(0, 2rem, 0); transition: opacity .7s ease-out, transform .7s cubic-bezier(.22, .61, .36, 1); }
 .isVisible { opacity: 1; transform: translateZ(0) scale(1); }
