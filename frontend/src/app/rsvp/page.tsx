@@ -104,7 +104,7 @@ export default function RsvpPage() {
     }
 
     // A fixed low speed keeps the invitation gliding consistently on every screen size.
-    const duration = distance / 24 * 1_000;
+    const duration = distance / 34 * 1_000;
     let startedAt = 0;
     const advance = (now: number) => {
       if (!startedAt) startedAt = now;
