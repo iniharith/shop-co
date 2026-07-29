@@ -39,16 +39,17 @@
   --ivory: #f8efe0;
   --paper: #fffaf1;
   --batik-pattern: url("/images/batik-pattern.svg");
-  --frame-width: 26.875rem;
-  --batik-size: var(--frame-width) auto;
-  width: min(100%, var(--frame-width));
+  --content-width: 26.875rem;
+  --frame-width: 100vw;
+  --batik-size: var(--content-width) auto;
+  width: 100%;
   min-height: 100vh;
   margin: 0 auto;
   padding-bottom: 4.9rem;
   overflow: hidden;
   background: var(--batik-pattern) center top / var(--batik-size) repeat-y, var(--wine);
   background-blend-mode: screen;
-  box-shadow: 0 0 34px rgba(44, 4, 10, .24);
+  box-shadow: none;
   color: var(--ivory);
   font-family: Cambria, "Times New Roman", serif;
   font-weight: 300;
@@ -287,7 +288,7 @@
 .coverFloralFrame { inset: .2rem; }
 
 .sheetLayer { position: fixed; z-index: 60; inset: 0; display: flex; align-items: flex-end; justify-content: center; background: rgba(30, 2, 6, .24); animation: fadeIn .25s ease both; }
-.actionSheet { position: relative; width: min(calc(100% - 1rem), var(--frame-width)); max-height: min(76svh, 42rem); box-sizing: border-box; margin-bottom: calc(5rem + env(safe-area-inset-bottom)); padding: 2.6rem 1.3rem 1.1rem; overflow-y: auto; border: 1px solid rgba(89, 16, 25, .22); border-radius: 1rem; background: var(--batik-pattern) center top / var(--batik-size) repeat-y, var(--paper); color: var(--wine); text-align: center; box-shadow: 0 .8rem 2rem rgba(33, 3, 8, .28); animation: sheetUp .48s cubic-bezier(.2, .75, .2, 1) both; }
+.actionSheet { position: relative; width: min(calc(100% - 1rem), var(--content-width)); max-height: min(76svh, 42rem); box-sizing: border-box; margin-bottom: calc(5rem + env(safe-area-inset-bottom)); padding: 2.6rem 1.3rem 1.1rem; overflow-y: auto; border: 1px solid rgba(89, 16, 25, .22); border-radius: 1rem; background: var(--batik-pattern) center top / var(--batik-size) repeat-y, var(--paper); color: var(--wine); text-align: center; box-shadow: 0 .8rem 2rem rgba(33, 3, 8, .28); animation: sheetUp .48s cubic-bezier(.2, .75, .2, 1) both; }
 .sheetClose { position: absolute; right: .8rem; top: .65rem; width: 2rem; height: 2rem; border: 0; background: transparent; color: var(--wine); cursor: pointer; font-size: 1.5rem; }
 .sheetContent { display: flex; flex-direction: column; align-items: center; gap: .75rem; }
 .sheetContent h2 { margin: 0; font-family: "Cormorant Garamond", serif; font-size: 2.4rem; font-weight: 700; }
@@ -329,6 +330,7 @@
 
 :global(html) { scroll-behavior: smooth; }
 :global(html:has(.rsvp-page)) { scroll-padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
+:global(body:has(.rsvp-page)) { background: #591019; }
 
 .invitation, .invitation * { font-family: Cambria, "Times New Roman", serif !important; font-weight: 700; }
-.hero h1, .details h2, .salamCard h2, .rsvpPanel h2, .countdownSection > p, .attendanceSummary h2, .wishes h2 { font-family: "Miracle History", Cambria, serif !important; font-weight: 400 !important; }
+.hero h1 { font-family: "Miracle History", Cambria, serif !important; font-weight: 400 !important; }
