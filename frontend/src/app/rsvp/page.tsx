@@ -252,7 +252,7 @@ export default function RsvpPage() {
         <p className={styles.eyebrow}>Save the date</p>
         <h2>Majlis Perkahwinan</h2>
         <p className={styles.detailsIntro}>Merafak sembah dan setinggi-tinggi penghargaan atas kesudian tuan/puan untuk bersama kami meraikan hari istimewa ini.</p>
-        <div className={styles.coupleDetails}><strong>{wedding.groom}</strong><span>&amp;</span><strong>{wedding.bride}</strong></div>
+        <div className={styles.coupleDetails}><strong>{wedding.bride}</strong><span>&amp;</span><strong>{wedding.groom}</strong></div>
         <div className={styles.detailGrid}>
           <article><CalendarDays /><p>Tarikh / Hari</p><strong>{wedding.date}</strong></article>
           <article><Clock3 /><p>Masa</p><strong>{wedding.time}</strong></article>
@@ -276,10 +276,6 @@ export default function RsvpPage() {
         <p>Counting Days</p>
         <div className={styles.countdown}>
           {countdown.map(([value, label]) => <div key={label as string}><strong>{String(value).padStart(2, "0")}</strong><span>{label}</span></div>)}
-        </div>
-        <div className={styles.attendanceSummary}>
-          <h2>Attendance</h2>
-          <div><p><strong>{attendance === "hadir" ? 1 : 0}</strong><span>Attending</span></p></div>
         </div>
         <div className={styles.wishes}>
           <h2>Wishes</h2>
