@@ -38,6 +38,7 @@ export default function RsvpPage() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [coverState, setCoverState] = useState<"open" | "closing" | "closed">("open");
+  const [autoScrolling, setAutoScrolling] = useState(false);
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [activeSheet, setActiveSheet] = useState<Sheet>(null);
   const [wishes, setWishes] = useState<Wish[]>([]);
@@ -80,6 +81,36 @@ export default function RsvpPage() {
     };
   }, [coverState]);
 
+  useEffect(() => {
+    if (!autoScrolling || coverState !== "closed") return;
+
+    const stopAutoScroll = () => setAutoScrolling(false);
+    const advance = () => {
+      const nextSection = [...document.querySelectorAll<HTMLElement>("main.rsvp-page > section[id], main.rsvp-page > section[data-reveal]")]
+        .find((section) => section.getBoundingClientRect().top > 48);
+
+      if (nextSection) {
+        nextSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        stopAutoScroll();
+      }
+    };
+
+    const timer = window.setInterval(advance, 6_500);
+    window.addEventListener("wheel", stopAutoScroll, { passive: true });
+    window.addEventListener("touchstart", stopAutoScroll, { passive: true });
+    window.addEventListener("pointerdown", stopAutoScroll, { passive: true });
+    window.addEventListener("keydown", stopAutoScroll);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("wheel", stopAutoScroll);
+      window.removeEventListener("touchstart", stopAutoScroll);
+      window.removeEventListener("pointerdown", stopAutoScroll);
+      window.removeEventListener("keydown", stopAutoScroll);
+    };
+  }, [autoScrolling, coverState]);
+
   function submitRsvp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -109,11 +140,13 @@ export default function RsvpPage() {
 
   function openInvitation() {
     setMusicEnabled(true);
+    setAutoScrolling(true);
     setCoverState("closing");
     window.setTimeout(() => setCoverState("closed"), 1_000);
   }
 
   function scrollToSection(id: string) {
+    setAutoScrolling(false);
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
