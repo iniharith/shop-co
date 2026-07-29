@@ -264,7 +264,6 @@ export default function RsvpPage() {
         <FloralCluster className={styles.sectionFloralFrame} />
         <div className={styles.salamCard}>
           <p className={styles.eyebrow}>Atur cara majlis</p>
-          <h2>Programme</h2>
           <div className={styles.programmeList}>
             <p><strong>Jamuan</strong><span>11:00 pagi - 4:00 petang</span></p>
           </div>
