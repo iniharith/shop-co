@@ -59,7 +59,7 @@ export default function RsvpPage() {
 
     const timer = window.setInterval(() => {
       setActiveWishIndex((index) => (index + 1) % wishes.length);
-    }, 5_000);
+    }, 2_500);
     return () => window.clearInterval(timer);
   }, [wishes.length]);
 
