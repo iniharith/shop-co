@@ -193,7 +193,8 @@
 .wishList cite { color: #8c693d; font-family: "Cormorant Garamond", serif; font-size: .55rem; font-style: normal; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .animatedWish { min-height: 3.8rem; animation: wishScrollIn .7s cubic-bezier(.22, .61, .36, 1) both; }
 
-.details { padding: 2.6rem 1.2rem 2.4rem; background: var(--batik-pattern) center top / var(--batik-size) repeat-y, var(--paper); color: var(--wine); text-align: center; }
+.details { position: relative; isolation: isolate; padding: 2.6rem 1.2rem 2.4rem; overflow: hidden; background: var(--batik-pattern) center top / var(--batik-size) repeat-y, var(--paper); color: var(--wine); text-align: center; }
+.details::after, .salamSection::after { content: ""; position: absolute; z-index: -1; right: 0; bottom: 0; left: 0; height: 10rem; background: url("/images/wedding-floral-fh.png") center bottom / 100% auto no-repeat; opacity: .18; pointer-events: none; }
 .details h2, .rsvpPanel h2, .salamCard h2 { margin: 0; color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 1.9rem; font-weight: 400; }
 .detailsIntro { max-width: 22rem; margin: .6rem auto 1.7rem; color: #71463c; font-family: "Cormorant Garamond", serif; font-size: clamp(.72rem, 2.8vw, .95rem); line-height: 1.45; }
 .detailsIntro span { display: block; white-space: nowrap; }
@@ -222,7 +223,7 @@
 .sheetButton:hover { background: var(--gold); color: var(--wine-dark); }
 
 .salamSection { position: relative; isolation: isolate; overflow: hidden; padding: 1.5rem 1rem; background: var(--batik-pattern) center top / var(--batik-size) repeat-y, #f2e5d2; }
-.salamCard { position: relative; z-index: 2; padding: 1.55rem 1rem; border: 1px solid rgba(89, 16, 25, .14); border-radius: 1rem; background: rgba(255, 250, 241, .94); box-shadow: 0 .7rem 1.6rem rgba(89, 16, 25, .12); color: var(--wine); text-align: center; }
+.salamCard { position: relative; z-index: 2; width: min(100%, 24rem); box-sizing: border-box; margin: 0 auto; padding: 1.55rem 1rem; border: 1px solid rgba(89, 16, 25, .14); border-radius: 1rem; background: rgba(255, 250, 241, .94); box-shadow: 0 .7rem 1.6rem rgba(89, 16, 25, .12); color: var(--wine); text-align: center; }
 .salamCard > svg { color: var(--gold); }
 .salamCopy { margin: .7rem auto 1.7rem; color: #71463c; font-family: "Cormorant Garamond", serif; font-size: 1rem; line-height: 1.45; }
 .programmeList { display: grid; gap: .8rem; margin: 1.15rem 0; }
