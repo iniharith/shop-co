@@ -103,12 +103,13 @@ export default function RsvpPage() {
       return;
     }
 
-    const duration = Math.max(8_000, distance * 4);
+    const duration = Math.max(12_000, distance * 6);
     let startedAt = 0;
     const advance = (now: number) => {
       if (!startedAt) startedAt = now;
       const progress = Math.min(1, (now - startedAt) / duration);
-      window.scrollTo(0, start + distance * progress);
+      const cinematicProgress = .5 - Math.cos(progress * Math.PI) / 2;
+      window.scrollTo(0, start + distance * cinematicProgress);
       if (progress < 1) {
         autoScrollFrame.current = window.requestAnimationFrame(advance);
       } else {
