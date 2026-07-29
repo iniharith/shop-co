@@ -95,7 +95,7 @@ export default function RsvpPage() {
       return;
     }
 
-    const duration = Math.max(4_000, distance * 3);
+    const duration = Math.max(8_000, distance * 4);
     const startedAt = performance.now();
     const advance = (now: number) => {
       const progress = Math.min(1, (now - startedAt) / duration);
@@ -151,6 +151,7 @@ export default function RsvpPage() {
 
   function openInvitation() {
     setMusicEnabled(true);
+    setAutoScrolling(true);
     setCoverState("closing");
     window.setTimeout(() => setCoverState("closed"), 1_000);
   }
@@ -318,8 +319,7 @@ function FloralCluster({ className }: { className: string }) {
 function WeddingMonogram({ className = "" }: { className?: string }) {
   return (
     <div className={`${styles.weddingMonogram} ${className}`} role="img" aria-label="Monogram Habri dan Fatin">
-      <img className={styles.monogramArtwork} src="/images/wedding-monogram.svg" alt="" aria-hidden="true" />
-      <span className={styles.monogramInitials} aria-hidden="true"><b>H</b><i>/</i><b>F</b></span>
+      <img className={styles.monogramArtwork} src="/images/wedding-logo.svg" alt="" aria-hidden="true" />
     </div>
   );
 }
