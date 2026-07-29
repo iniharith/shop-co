@@ -5,14 +5,15 @@ import { FormEvent, MouseEvent as ReactMouseEvent, useEffect, useRef, useState }
 import styles from "./rsvp.module.css";
 
 const wedding = {
-  groom: "Muhammad Habri Bin Marzuki",
-  bride: "Nor Fatin Nabila Binti Nasir",
+  groom: "MUHAMMAD HABRI BIN MARZUKI",
+  bride: "NOR FATIN NABILA BINTI NASIR",
   groomDisplay: "Habri",
   brideDisplay: "Fatin",
-  date: "Saturday, 5 September 2026",
+  date: "05/09/2026 (SABTU)",
   time: "11:00 AM - 4:00 PM",
   venue: "Kuasa Kaseh Event Space",
   mapsUrl: "https://maps.app.goo.gl/oG8vJLNdpdmtfhqT6?g_st=aw",
+  locationQrUrl: "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https%3A%2F%2Fmaps.app.goo.gl%2FoG8vJLNdpdmtfhqT6%3Fg_st%3Daw",
   startsAt: new Date("2026-09-05T11:00:00+08:00").getTime(),
 };
 
@@ -60,6 +61,13 @@ export default function RsvpPage() {
   }, []);
 
   useEffect(() => {
+    if (!window.location.hash) return;
+
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    window.requestAnimationFrame(() => window.scrollTo(0, 0));
+  }, []);
+
+  useEffect(() => {
     const sections = document.querySelectorAll<HTMLElement>("[data-reveal]");
     const observer = new IntersectionObserver(
       (entries) => entries.forEach((entry) => {
@@ -96,8 +104,9 @@ export default function RsvpPage() {
     }
 
     const duration = Math.max(8_000, distance * 4);
-    const startedAt = performance.now();
+    let startedAt = 0;
     const advance = (now: number) => {
+      if (!startedAt) startedAt = now;
       const progress = Math.min(1, (now - startedAt) / duration);
       window.scrollTo(0, start + distance * progress);
       if (progress < 1) {
@@ -107,7 +116,9 @@ export default function RsvpPage() {
       }
     };
 
-    autoScrollFrame.current = window.requestAnimationFrame(advance);
+    const startDelay = window.setTimeout(() => {
+      autoScrollFrame.current = window.requestAnimationFrame(advance);
+    }, 6_000);
     window.addEventListener("wheel", stopAutoScroll, { passive: true });
     window.addEventListener("touchstart", stopAutoScroll, { passive: true });
     window.addEventListener("pointerdown", stopAutoScroll, { passive: true });
@@ -115,6 +126,7 @@ export default function RsvpPage() {
 
     return () => {
       if (autoScrollFrame.current) window.cancelAnimationFrame(autoScrollFrame.current);
+      window.clearTimeout(startDelay);
       window.removeEventListener("wheel", stopAutoScroll);
       window.removeEventListener("touchstart", stopAutoScroll);
       window.removeEventListener("pointerdown", stopAutoScroll);
@@ -229,18 +241,19 @@ export default function RsvpPage() {
         <p className={`${styles.eyebrow} ${styles.heroEyebrow}`}>Walimatul Urus</p>
         <p className={styles.request}>Dengan penuh kesyukuran, kami menjemput</p>
         <h1><span>{wedding.brideDisplay}</span><em>&amp;</em><span>{wedding.groomDisplay}</span></h1>
-        <div className={styles.dateRule}><span /> <p>Sabtu &nbsp; 05 . 09 . 2026</p> <span /></div>
-        <a className={styles.scrollCue} href="#majlis"><ChevronDown size={18} /> Terokai undangan</a>
+        <div className={styles.dateRule}><span /> <p>05/09/2026 (SABTU)</p> <span /></div>
+        <a className={styles.scrollCue} href="#majlis" onClick={(event) => { event.preventDefault(); scrollToSection("majlis"); }}><ChevronDown size={18} /> Terokai undangan</a>
       </section>
 
       <section className={`${styles.details} ${styles.reveal}`} data-reveal id="majlis">
         <p className={styles.eyebrow}>Save the date</p>
         <h2>Majlis Perkahwinan</h2>
         <p className={styles.detailsIntro}>Merafak sembah dan setinggi-tinggi penghargaan atas kesudian tuan/puan untuk bersama kami meraikan hari istimewa ini.</p>
+        <div className={styles.coupleDetails}><strong>{wedding.groom}</strong><span>&amp;</span><strong>{wedding.bride}</strong></div>
         <div className={styles.detailGrid}>
-          <article><CalendarDays /><p>Tarikh</p><strong>5 September 2026<br />Sabtu<br />23 Rabiulawal 1448H</strong></article>
+          <article><CalendarDays /><p>Tarikh / Hari</p><strong>{wedding.date}</strong></article>
           <article><Clock3 /><p>Masa</p><strong>{wedding.time}</strong></article>
-          <article><MapPin /><p>Lokasi</p><strong>{wedding.venue}</strong><a href={wedding.mapsUrl} target="_blank" rel="noreferrer">Buka Google Maps</a></article>
+          <article><MapPin /><p>Lokasi</p><strong>{wedding.venue}</strong><a href={wedding.mapsUrl} target="_blank" rel="noreferrer">Buka Google Maps</a><a className={styles.locationQr} href={wedding.mapsUrl} target="_blank" rel="noreferrer"><img src={wedding.locationQrUrl} alt="Kod QR lokasi Kuasa Kaseh Event Space" /><span>Imbas QR untuk lokasi</span></a></article>
         </div>
       </section>
 
@@ -251,7 +264,6 @@ export default function RsvpPage() {
           <h2>Programme</h2>
           <div className={styles.programmeList}>
             <p><strong>Jamuan</strong><span>11:00 pagi - 4:00 petang</span></p>
-            <p><strong>Ketibaan Pengantin</strong><span>12:30 tengah hari</span></p>
           </div>
           <span className={styles.hashtag}>#FatinHabri</span>
         </div>
@@ -265,7 +277,7 @@ export default function RsvpPage() {
         </div>
         <div className={styles.attendanceSummary}>
           <h2>Attendance</h2>
-          <div><p><strong>{attendance === "hadir" ? 1 : 0}</strong><span>Attending</span></p><p><strong>{attendance === "tidak-hadir" ? 1 : 0}</strong><span>Not Attending</span></p></div>
+          <div><p><strong>{attendance === "hadir" ? 1 : 0}</strong><span>Attending</span></p></div>
         </div>
         <div className={styles.wishes}>
           <h2>Wishes</h2>
@@ -274,14 +286,6 @@ export default function RsvpPage() {
           </div>
           <div className={styles.wishActions}><button type="button" onClick={() => setActiveSheet("rsvp")}>RSVP Now</button><button type="button" onClick={() => scrollToSection("rsvp")}>Write a Message</button></div>
         </div>
-      </section>
-
-      <section className={`${styles.contactSection} ${styles.reveal}`} data-reveal id="hubungi">
-        <PhoneCall size={21} />
-        <p className={styles.eyebrow}>Sebarang pertanyaan</p>
-        <h2>Hubungi Kami</h2>
-        <p>Sila hubungi pihak keluarga untuk pertanyaan berkaitan majlis.</p>
-        <div className={styles.contactPlaceholder}>Nombor telefon akan dikemas kini</div>
       </section>
 
       <section className={`${styles.rsvpSection} ${styles.reveal}`} data-reveal id="rsvp">
@@ -298,7 +302,7 @@ export default function RsvpPage() {
                 <button type="button" className={attendance === "hadir" ? styles.active : ""} onClick={() => setAttendance("hadir")}>Hadir</button>
                 <button type="button" className={attendance === "tidak-hadir" ? styles.active : ""} onClick={() => setAttendance("tidak-hadir")}>Tidak dapat hadir</button>
               </div></fieldset>
-              <label>Bilangan tetamu<select name="guests" defaultValue="1"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="lain-lain">Dan lain-lain</option></select></label>
+              <label>Bilangan tetamu<input name="guests" type="number" min="1" max="99" inputMode="numeric" defaultValue="1" placeholder="Masukkan bilangan tetamu" /></label>
               <label>Ucapan untuk pengantin <textarea name="message" rows={3} maxLength={180} placeholder="Tulis ucapan anda di sini..." /></label>
               {error && <p className={styles.error} role="alert">{error}</p>}
               <button className={styles.submit} type="submit">Hantar RSVP <Send size={16} /></button>
@@ -329,7 +333,7 @@ function SheetHeading({ children }: { children: React.ReactNode }) {
 }
 
 function CalendarSheet() {
-  return <div className={styles.sheetContent}><SheetHeading>Salam Kasih</SheetHeading><p>Kehadiran dan doa restu anda sudah cukup bermakna.</p><strong>Sabtu, 5 September 2026</strong><p>11:00 pagi - 4:00 petang</p><a className={styles.sheetButton} href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Majlis+Perkahwinan+Muhammad+Habri+%26+Nor+Fatin+Nabila&dates=20260905T030000Z/20260905T080000Z&location=Kuasa+Kaseh+Event+Space" target="_blank" rel="noreferrer">Tambah ke Google Calendar</a></div>;
+  return <div className={styles.sheetContent}><SheetHeading>Salam Kasih</SheetHeading><p>Kehadiran dan doa restu anda sudah cukup bermakna.</p><strong>05/09/2026 (SABTU)</strong><p>11:00 pagi - 4:00 petang</p><a className={styles.sheetButton} href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Majlis+Perkahwinan+Muhammad+Habri+%26+Nor+Fatin+Nabila&dates=20260905T030000Z/20260905T080000Z&location=Kuasa+Kaseh+Event+Space" target="_blank" rel="noreferrer">Tambah ke Google Calendar</a></div>;
 }
 
 function LocationSheet() {
