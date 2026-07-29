@@ -119,7 +119,7 @@ export default function RsvpPage() {
 
     const startDelay = window.setTimeout(() => {
       autoScrollFrame.current = window.requestAnimationFrame(advance);
-    }, 6_000);
+    }, 3_000);
     window.addEventListener("wheel", stopAutoScroll, { passive: true });
     window.addEventListener("touchstart", stopAutoScroll, { passive: true });
     window.addEventListener("pointerdown", stopAutoScroll, { passive: true });
@@ -164,8 +164,8 @@ export default function RsvpPage() {
 
   function openInvitation() {
     setMusicEnabled(true);
-    setAutoScrolling(true);
     setCoverState("closing");
+    window.setTimeout(() => setAutoScrolling(true), 0);
     window.setTimeout(() => setCoverState("closed"), 1_000);
   }
 
