@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarDays, Check, ChevronDown, Clock3, Gift, MapPin, PhoneCall, Send, Users, Volume2, VolumeX } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, MouseEvent as ReactMouseEvent, useEffect, useRef, useState } from "react";
 import styles from "./rsvp.module.css";
 
 const wedding = {
@@ -17,7 +17,7 @@ const wedding = {
 };
 
 type Attendance = "hadir" | "tidak-hadir" | "";
-type Sheet = "calendar" | "location" | "contact" | "rsvp" | null;
+type Sheet = "calendar" | "location" | "contact" | "gift" | "music" | "rsvp" | null;
 type Wish = { id: string; name: string; message: string };
 
 const wishesStorageKey = "fatin-habri-wedding-wishes";
@@ -42,6 +42,7 @@ export default function RsvpPage() {
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [activeSheet, setActiveSheet] = useState<Sheet>(null);
   const [wishes, setWishes] = useState<Wish[]>([]);
+  const autoScrollFrame = useRef<number | null>(null);
 
   useEffect(() => {
     setRemaining(getTimeRemaining());
@@ -85,25 +86,35 @@ export default function RsvpPage() {
     if (!autoScrolling || coverState !== "closed") return;
 
     const stopAutoScroll = () => setAutoScrolling(false);
-    const advance = () => {
-      const nextSection = [...document.querySelectorAll<HTMLElement>("main.rsvp-page > section[id], main.rsvp-page > section[data-reveal]")]
-        .find((section) => section.getBoundingClientRect().top > 48);
+    const start = window.scrollY;
+    const destination = document.documentElement.scrollHeight - window.innerHeight;
+    const distance = Math.max(0, destination - start);
 
-      if (nextSection) {
-        nextSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (distance < 2) {
+      stopAutoScroll();
+      return;
+    }
+
+    const duration = Math.max(4_000, distance * 3);
+    const startedAt = performance.now();
+    const advance = (now: number) => {
+      const progress = Math.min(1, (now - startedAt) / duration);
+      window.scrollTo(0, start + distance * progress);
+      if (progress < 1) {
+        autoScrollFrame.current = window.requestAnimationFrame(advance);
       } else {
         stopAutoScroll();
       }
     };
 
-    const timer = window.setInterval(advance, 6_500);
+    autoScrollFrame.current = window.requestAnimationFrame(advance);
     window.addEventListener("wheel", stopAutoScroll, { passive: true });
     window.addEventListener("touchstart", stopAutoScroll, { passive: true });
     window.addEventListener("pointerdown", stopAutoScroll, { passive: true });
     window.addEventListener("keydown", stopAutoScroll);
 
     return () => {
-      window.clearInterval(timer);
+      if (autoScrollFrame.current) window.cancelAnimationFrame(autoScrollFrame.current);
       window.removeEventListener("wheel", stopAutoScroll);
       window.removeEventListener("touchstart", stopAutoScroll);
       window.removeEventListener("pointerdown", stopAutoScroll);
@@ -140,7 +151,6 @@ export default function RsvpPage() {
 
   function openInvitation() {
     setMusicEnabled(true);
-    setAutoScrolling(true);
     setCoverState("closing");
     window.setTimeout(() => setCoverState("closed"), 1_000);
   }
@@ -148,6 +158,21 @@ export default function RsvpPage() {
   function scrollToSection(id: string) {
     setAutoScrolling(false);
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function handleContentClick(event: ReactMouseEvent<HTMLElement>) {
+    if ((event.target as HTMLElement).closest("button, a, input, select, textarea")) {
+      setAutoScrolling(false);
+      return;
+    }
+
+    if (event.detail === 2) {
+      setAutoScrolling((enabled) => !enabled);
+    } else if (event.detail >= 3) {
+      setAutoScrolling(true);
+    } else {
+      setAutoScrolling(false);
+    }
   }
 
   const countdown = [
@@ -158,7 +183,7 @@ export default function RsvpPage() {
   ];
 
   return (
-    <main className={`${styles.invitation} ${coverState !== "open" ? styles.opened : ""} rsvp-page`}>
+    <main className={`${styles.invitation} ${coverState !== "open" ? styles.opened : ""} rsvp-page`} onClick={handleContentClick}>
       {coverState !== "closed" && (
         <section className={`${styles.openingCover} ${coverState === "closing" ? styles.closing : ""}`} aria-label="Buka jemputan">
           <div className={styles.coverInvitation}>
@@ -174,13 +199,13 @@ export default function RsvpPage() {
       )}
       {musicEnabled && <iframe className={styles.musicFrame} src="https://www.youtube.com/embed/JGz2aGs0MU4?autoplay=1&loop=1&playlist=JGz2aGs0MU4" title="Muzik latar majlis" allow="autoplay" />}
       <nav className={styles.navigation} aria-label="Navigation invitation">
-        <button type="button" onClick={() => setMusicEnabled((enabled) => !enabled)} aria-label={musicEnabled ? "Matikan muzik" : "Mainkan muzik"}>
+        <button type="button" onClick={() => setActiveSheet("calendar")}><CalendarDays /><span>Kalendar</span></button>
+        <button type="button" onClick={() => setActiveSheet("contact")}><PhoneCall /><span>Hubungi</span></button>
+        <button type="button" onClick={() => setActiveSheet("music")} aria-label={musicEnabled ? "Kawalan muzik" : "Mainkan muzik"}>
           {musicEnabled ? <Volume2 /> : <VolumeX />}<span>Muzik</span>
         </button>
-        <button type="button" onClick={() => setActiveSheet("calendar")}><CalendarDays /><span>Kalendar</span></button>
-        <button type="button" onClick={() => scrollToSection("salam-kasih")}><Gift /><span>Salam Kasih</span></button>
         <button type="button" onClick={() => setActiveSheet("location")}><MapPin /><span>Lokasi</span></button>
-        <button type="button" onClick={() => setActiveSheet("contact")}><PhoneCall /><span>Hubungi</span></button>
+        <button type="button" onClick={() => setActiveSheet("gift")}><Gift /><span>Hadiah</span></button>
         <button type="button" onClick={() => setActiveSheet("rsvp")}><Check /><span>RSVP</span></button>
       </nav>
 
@@ -191,6 +216,8 @@ export default function RsvpPage() {
             {activeSheet === "calendar" && <CalendarSheet />}
             {activeSheet === "location" && <LocationSheet />}
             {activeSheet === "contact" && <ContactSheet />}
+            {activeSheet === "gift" && <GiftSheet />}
+            {activeSheet === "music" && <MusicSheet musicEnabled={musicEnabled} setMusicEnabled={setMusicEnabled} />}
             {activeSheet === "rsvp" && <QuickRsvp attendance={attendance} setAttendance={setAttendance} close={() => setActiveSheet(null)} />}
           </section>
         </div>
@@ -308,11 +335,19 @@ function CalendarSheet() {
 }
 
 function LocationSheet() {
-  return <div className={styles.sheetContent}><SheetHeading>Lokasi</SheetHeading><MapPin /><strong>Kuasa Kaseh Event Space</strong><a className={styles.sheetButton} href="https://maps.app.goo.gl/oG8vJLNdpdmtfhqT6?g_st=aw" target="_blank" rel="noreferrer">Buka Google Maps</a></div>;
+  return <div className={styles.sheetContent}><SheetHeading>Lokasi</SheetHeading><MapPin /><strong>Kuasa Kaseh Event Space</strong><a className={styles.sheetButton} href="https://maps.app.goo.gl/oG8vJLNdpdmtfhqT6?g_st=aw" target="_blank" rel="noreferrer">Google Maps</a><a className={styles.sheetButton} href="https://www.waze.com/live-map/directions?to=place.Kuasa%20Kaseh%20Event%20Space" target="_blank" rel="noreferrer">Buka Waze</a></div>;
 }
 
 function ContactSheet() {
   return <div className={styles.sheetContent}><SheetHeading>Hubungi</SheetHeading><p>Nombor telefon keluarga akan dikemas kini.</p></div>;
+}
+
+function GiftSheet() {
+  return <div className={styles.sheetContent}><SheetHeading>Salam Kasih</SheetHeading><Gift /><p>Kehadiran dan doa restu anda sudah cukup bermakna buat kami.</p><p>Maklumat hadiah akan dikemas kini oleh pihak keluarga.</p></div>;
+}
+
+function MusicSheet({ musicEnabled, setMusicEnabled }: { musicEnabled: boolean; setMusicEnabled: (enabled: boolean) => void }) {
+  return <div className={styles.sheetContent}><SheetHeading>Muzik</SheetHeading><p>{musicEnabled ? "Muzik latar sedang dimainkan." : "Mainkan muzik latar untuk menemani undangan ini."}</p><button className={styles.sheetButton} type="button" onClick={() => setMusicEnabled(!musicEnabled)}>{musicEnabled ? "Matikan Muzik" : "Mainkan Muzik"}</button></div>;
 }
 
 function QuickRsvp({ attendance, setAttendance, close }: { attendance: Attendance; setAttendance: (value: Attendance) => void; close: () => void }) {

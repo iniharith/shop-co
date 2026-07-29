@@ -31,8 +31,9 @@
   --ivory: #f8efe0;
   --paper: #fffaf1;
   --batik-pattern: url("/images/batik-pattern.svg");
-  --batik-size: 34rem auto;
-  width: min(100%, 34rem);
+  --frame-width: 26.875rem;
+  --batik-size: var(--frame-width) auto;
+  width: min(100%, var(--frame-width));
   min-height: 100vh;
   margin: 0 auto;
   padding-bottom: 4.9rem;
@@ -52,14 +53,19 @@
   bottom: 0;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  width: min(100%, 34rem);
+  width: min(100%, var(--frame-width));
   padding: .7rem .35rem calc(.8rem + env(safe-area-inset-bottom));
   translate: -50% 0;
   border-top: 1px solid rgba(236, 211, 154, .55);
   background: rgba(61, 7, 14, .96);
   box-shadow: 0 -8px 24px rgba(32, 2, 7, .35);
   backdrop-filter: blur(12px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .5s ease;
 }
+
+.opened .navigation { opacity: 1; pointer-events: auto; }
 
 .navigation button {
   display: flex;
@@ -190,7 +196,7 @@
 .contactSection > svg { color: var(--gold); }
 .contactSection h2 { margin: .1rem 0 .7rem; color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 2.5rem; font-weight: 700; }
 .contactSection > p:not(.eyebrow) { max-width: 20rem; margin: 0 auto 1.4rem; color: #74473d; font-family: "Cormorant Garamond", serif; font-size: 1rem; }
-.sheetButton { padding: .95rem .7rem; border: 1px solid var(--gold); background: var(--wine); color: var(--gold-light); font-size: .75rem; font-weight: 300; letter-spacing: .08em; text-decoration: none; text-transform: uppercase; transition: background .25s ease, color .25s ease; }
+.sheetButton { padding: .95rem .7rem; border: 1px solid var(--gold); background: var(--wine); color: var(--gold-light); cursor: pointer; font-family: "Cormorant Garamond", serif; font-size: .75rem; font-weight: 300; letter-spacing: .08em; text-decoration: none; text-transform: uppercase; transition: background .25s ease, color .25s ease; }
 .sheetButton:hover { background: var(--gold); color: var(--wine-dark); }
 
 .salamSection { position: relative; isolation: isolate; overflow: hidden; padding: 4rem 1.2rem; background: var(--batik-pattern) center top / var(--batik-size) repeat-y, #f2e5d2; }
@@ -232,7 +238,7 @@
 
 .openingCover { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; overflow: hidden; background: #faf8f4; }
 .closing { background: transparent; pointer-events: none; }
-.coverInvitation { position: relative; width: min(100vw, 34rem); height: 100svh; min-height: 42rem; overflow: hidden; background: var(--batik-pattern) center top / var(--batik-size) repeat-y, radial-gradient(circle at 50% 40%, #7b2934, #3a070e 75%); background-blend-mode: multiply; box-shadow: 0 0 30px rgba(43, 4, 9, .3); animation: coverAppear .75s ease-out both; transition: background .25s ease, box-shadow .25s ease; }
+.coverInvitation { position: relative; width: min(100vw, var(--frame-width)); height: 100svh; min-height: 42rem; overflow: hidden; background: var(--batik-pattern) center top / var(--batik-size) repeat-y, radial-gradient(circle at 50% 40%, #7b2934, #3a070e 75%); background-blend-mode: multiply; box-shadow: 0 0 30px rgba(43, 4, 9, .3); animation: coverAppear .75s ease-out both; transition: background .25s ease, box-shadow .25s ease; }
 .coverInvitation::before, .coverInvitation::after { content: ""; position: absolute; z-index: 5; top: 0; bottom: 0; width: 50%; border-block: 1px solid rgba(203, 165, 95, .8); background: rgba(91, 16, 25, .24); backdrop-filter: blur(5px); transition: translate 1s ease; }
 .coverInvitation::before { left: 0; border-left: 1px solid rgba(203, 165, 95, .8); }
 .coverInvitation::after { right: 0; border-right: 1px solid rgba(203, 165, 95, .8); }
@@ -254,7 +260,7 @@
 .coverFloralFrame { inset: .2rem; }
 
 .sheetLayer { position: fixed; z-index: 60; inset: 0; display: flex; align-items: flex-end; justify-content: center; background: rgba(30, 2, 6, .34); animation: fadeIn .25s ease both; }
-.actionSheet { position: relative; width: min(100%, 34rem); box-sizing: border-box; padding: 2.8rem 1.8rem 6.5rem; border-top: 1px solid var(--gold); background: var(--batik-pattern) center top / var(--batik-size) repeat-y, var(--paper); color: var(--wine); text-align: center; box-shadow: 0 -16px 40px rgba(33, 3, 8, .3); animation: sheetUp .48s cubic-bezier(.2, .75, .2, 1) both; }
+.actionSheet { position: relative; width: min(100%, var(--frame-width)); box-sizing: border-box; padding: 2.8rem 1.8rem 6.5rem; border-top: 1px solid var(--gold); background: var(--batik-pattern) center top / var(--batik-size) repeat-y, var(--paper); color: var(--wine); text-align: center; box-shadow: 0 -16px 40px rgba(33, 3, 8, .3); animation: sheetUp .48s cubic-bezier(.2, .75, .2, 1) both; }
 .sheetClose { position: absolute; right: .8rem; top: .65rem; width: 2rem; height: 2rem; border: 0; background: transparent; color: var(--wine); cursor: pointer; font-size: 1.5rem; }
 .sheetContent { display: flex; flex-direction: column; align-items: center; gap: .75rem; }
 .sheetContent h2 { margin: 0; font-family: "Cormorant Garamond", serif; font-size: 2.4rem; font-weight: 700; }
