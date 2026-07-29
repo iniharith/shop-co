@@ -195,6 +195,9 @@
 .details h2, .rsvpPanel h2, .salamCard h2 { margin: 0; color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 1.9rem; font-weight: 400; }
 .detailsIntro { max-width: 22rem; margin: .6rem auto 1.7rem; color: #71463c; font-family: "Cormorant Garamond", serif; font-size: clamp(.72rem, 2.8vw, .95rem); line-height: 1.45; }
 .detailsIntro span { display: block; white-space: nowrap; }
+.hostNames { display: grid; gap: .3rem; margin: 0 auto 1.5rem; color: var(--wine); font-size: clamp(.82rem, 3vw, 1rem); line-height: 1.35; }
+.hostNames strong { font-weight: 700; }
+.hostNames span { font-family: "Miracle History", Cambria, serif !important; font-size: 1.35rem; font-weight: 400 !important; line-height: .7; }
 .hostInvitation { display: grid; gap: .2rem; max-width: 22rem; margin: 0 auto 1.8rem; color: #71463c; font-size: clamp(.72rem, 2.8vw, .95rem); line-height: 1.45; }
 .hostInvitation span { white-space: nowrap; }
 .coupleDetails { display: grid; gap: .25rem; max-width: 20rem; margin: 0 auto 1.9rem; color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 1.2rem; letter-spacing: .03em; }
