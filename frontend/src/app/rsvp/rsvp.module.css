@@ -200,9 +200,9 @@
 .hostNames span { font-family: "Miracle History", Cambria, serif !important; font-size: 1.35rem; font-weight: 400 !important; line-height: .7; }
 .hostInvitation { display: grid; gap: .2rem; max-width: 22rem; margin: 0 auto 1.8rem; color: #71463c; font-size: clamp(.72rem, 2.8vw, .95rem); line-height: 1.45; }
 .hostInvitation span { white-space: nowrap; }
-.coupleDetails { display: grid; gap: .25rem; max-width: 20rem; margin: 0 auto 1.9rem; color: var(--wine); font-family: "Cormorant Garamond", serif; font-size: 1.2rem; letter-spacing: .03em; }
-.coupleDetails strong { display: block; width: 100%; font-size: clamp(.82rem, 3.2vw, 1.05rem); font-weight: 400; letter-spacing: -.02em; white-space: nowrap; }
-.coupleDetails span { font-family: "Allura", cursive; font-size: 1.8rem; line-height: .7; }
+.coupleDetails { display: grid; gap: .35rem; max-width: 22rem; margin: 0 auto 2rem; color: var(--wine); font-family: "Cormorant Garamond", serif; line-height: 1.35; }
+.coupleDetails strong { display: block; width: 100%; font-size: clamp(.98rem, 3.8vw, 1.2rem); font-weight: 700; letter-spacing: -.02em; white-space: nowrap; }
+.coupleDetails span { font-family: "Miracle History", Cambria, serif !important; font-size: 1.65rem; font-weight: 400 !important; line-height: .7; }
 .detailGrid { display: grid; gap: 1.2rem; }
 .detailGrid article { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 .6rem; }
 .detailGrid svg { display: none; }
