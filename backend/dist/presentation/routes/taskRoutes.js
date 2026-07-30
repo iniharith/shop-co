@@ -260,7 +260,7 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
     }
     // Clear the folder-group cache so Production/Packaging pages see the updated status
     if (req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status)) {
-        void (0, fileUploadRoutes_1.clearFolderGroupCache)().catch(() => { });
+        yield (0, fileUploadRoutes_1.clearFolderGroupCache)().catch(() => { });
     }
     // Refetch to include newly added activities in the response and broadcast
     const freshTask = yield TaskRepository_1.taskRepository.findById(req.params.id);

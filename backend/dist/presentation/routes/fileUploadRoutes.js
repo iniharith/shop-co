@@ -192,6 +192,34 @@ router.post('/presigned-url', auth_middileware_1.default, (0, express_async_hand
     const fileUrl = `https://${s3_1.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-southeast-5'}.amazonaws.com/${key}`;
     res.json({ success: true, signedUrl, fileUrl, key });
 })));
+// ─── POST /api/files/resolve-by-path ──────────────────────
+// Used by the "Share" button on a file that doesn't have a locally-known
+// FileUpload id (e.g. because the sync at upload time silently failed).
+// Idempotent: returns the existing record for this path if one exists,
+// otherwise creates it — so share links always resolve to a real id.
+router.post('/resolve-by-path', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c;
+    const { path, name, mimetype, size, taskId, orderId, category, tag } = req.body;
+    const authReq = req;
+    if (!path || !name) {
+        res.status(400).json({ success: false, message: 'path and name are required' });
+        return;
+    }
+    const userId = authReq.userId || ((_b = (_a = authReq.user) === null || _a === void 0 ? void 0 : _a._id) === null || _b === void 0 ? void 0 : _b.toString()) || ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.id) || 'admin';
+    const file = yield FileUploadRepository_1.fileUploadRepository.findOrCreateByPath({
+        userId,
+        taskId: taskId || undefined,
+        orderId: orderId || undefined,
+        category: category || (taskId ? 'TASK' : 'UNCATEGORIZED'),
+        tag: tag || 'attachment',
+        filename: name,
+        originalName: name,
+        mimetype: mimetype || 'application/octet-stream',
+        size: size || 0,
+        path,
+    });
+    res.json({ success: true, data: file });
+})));
 // ─── POST /api/files/save-metadata ────────────────────────
 // Client calls this after direct S3 upload succeeds
 router.post('/save-metadata', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -775,10 +803,19 @@ router.get('/s/:slug/download-all', (0, express_async_handler_1.default)((req, r
 // pulling every file's full bytes into browser memory before assembling
 // the archive, which is what caused "array buffer allocation failed" on
 // folders with many or large files. This streams server-side instead.
+//
+// Concurrent download limiter — cap at 5 simultaneous ZIP jobs to prevent
+// Node.js from being overwhelmed when multiple folders are downloaded at once.
+let activeDownloads = 0;
+const MAX_CONCURRENT_DOWNLOADS = 5;
 router.post('/download-batch', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { fileIds, zipName, downloadId } = req.body;
     if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
         res.status(400).json({ success: false, message: 'fileIds array is required' });
+        return;
+    }
+    if (activeDownloads >= MAX_CONCURRENT_DOWNLOADS) {
+        res.status(429).json({ success: false, message: 'Terlalu banyak download serentak. Sila tunggu sebentar dan cuba semula.' });
         return;
     }
     const files = yield FileUpload_1.FileUpload.find({ _id: { $in: fileIds } });
@@ -786,6 +823,10 @@ router.post('/download-batch', auth_middileware_1.default, (0, express_async_han
         res.status(404).json({ success: false, message: 'No files found' });
         return;
     }
+    activeDownloads++;
+    // Decrement counter when response finishes (whether success, error, or client abort)
+    res.on('close', () => { activeDownloads = Math.max(0, activeDownloads - 1); });
+    res.on('finish', () => { activeDownloads = Math.max(0, activeDownloads - 1); });
     const result = yield (0, streamFilesAsZip_1.streamFilesAsZip)(res, files.map((f) => ({ originalName: f.originalName, path: f.path })), zipName || 'files', downloadId);
     if (!result.success) {
         res.status(502).json({

@@ -219,7 +219,7 @@ class OrderUsecase {
                 yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + order.userId.toString());
             }
             // Clear folder-group cache so Production/Packaging pages see updated status immediately
-            void (0, fileUploadRoutes_1.clearFolderGroupCache)().catch(() => { });
+            yield (0, fileUploadRoutes_1.clearFolderGroupCache)().catch(() => { });
             // Sync Order status back to Task
             try {
                 if (syncTasks) {
