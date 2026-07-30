@@ -24,9 +24,9 @@ import * as React from "react";
 function detectTouchDevice(): boolean {
   if (typeof window === "undefined") return false;
 
-  // Primary signal: the device's main input is touch (covers iPad even
-  // in landscape/Pro sizes, and Android tablets/phones).
-  const coarsePointer = window.matchMedia?.("(pointer: coarse)").matches;
+  // Touch-only devices use the lite animation. Touch-capable desktops keep
+  // their original animation when a mouse or trackpad can hover.
+  const touchOnly = window.matchMedia?.("(pointer: coarse) and (hover: none)").matches;
 
   // iPadOS reports as "MacIntel" in Safari's desktop-class UA, but real
   // Macs never report multi-touch points — this catches that case even
@@ -36,7 +36,7 @@ function detectTouchDevice(): boolean {
     navigator.platform === "MacIntel" &&
     (navigator as any).maxTouchPoints > 1;
 
-  return !!coarsePointer || isIPadDesktopMode;
+  return !!touchOnly || isIPadDesktopMode;
 }
 
 export function useLowPowerAnimations(): boolean {
@@ -45,7 +45,7 @@ export function useLowPowerAnimations(): boolean {
   React.useEffect(() => {
     setLowPower(detectTouchDevice());
 
-    const mql = window.matchMedia?.("(pointer: coarse)");
+    const mql = window.matchMedia?.("(pointer: coarse) and (hover: none)");
     if (!mql) return;
     const onChange = () => setLowPower(detectTouchDevice());
     mql.addEventListener("change", onChange);
