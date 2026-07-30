@@ -31,6 +31,7 @@ export interface IProject extends Document {
   coverFileId?: string;
   createdBy: string;
   createdByName: string;
+  deletingAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,6 +62,7 @@ const ProjectSchema = new Schema<IProject>(
     coverFileId: { type: String, default: null },
     createdBy: { type: String, required: true, index: true, immutable: true },
     createdByName: { type: String, default: '' },
+    deletingAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

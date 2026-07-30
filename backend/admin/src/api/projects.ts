@@ -28,6 +28,7 @@ export interface Project {
   coverFileId?: string;
   createdBy: string;
   createdByName: string;
+  deletingAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,6 +50,11 @@ export const createProject = async (token: string, data: { title: string; descri
 
 export const updateProject = async (token: string, id: string, data: { title?: string; description?: string; assigneeIds?: string[]; coverFileId?: string | null }) => {
   const response = await AxiosInstance(token).patch(`/api/projects/${id}`, data);
+  return response.data;
+};
+
+export const deleteProject = async (token: string, id: string) => {
+  const response = await AxiosInstance(token).delete(`/api/projects/${id}`);
   return response.data;
 };
 

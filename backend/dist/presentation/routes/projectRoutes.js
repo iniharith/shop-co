@@ -83,6 +83,7 @@ router.get('/shared/:token', (0, express_async_handler_1.default)((req, res) => 
     }
     const project = yield Project_1.Project.findById(share.projectId);
     if (!project) {
+        yield share.deleteOne();
         res.status(404).json({ success: false, message: 'Project not found' });
         return;
     }
@@ -158,17 +159,62 @@ router.patch('/:id', (0, express_async_handler_1.default)((req, res) => __awaite
         res.status(400).json({ success: false, message: 'Project title is required' });
         return;
     }
-    const existing = yield Project_1.Project.findById(req.params.id);
+    const existing = yield Project_1.Project.findOne({ _id: req.params.id, deletingAt: null });
     if (existing && update.coverFileId && !existing.files.some(file => { var _a; return ((_a = file._id) === null || _a === void 0 ? void 0 : _a.toString()) === update.coverFileId && file.mimetype.startsWith('image/'); })) {
         res.status(400).json({ success: false, message: 'Project cover must be an image file in this project' });
         return;
     }
-    const project = yield Project_1.Project.findByIdAndUpdate(req.params.id, { $set: update }, { new: true, runValidators: true });
+    const project = yield Project_1.Project.findOneAndUpdate({ _id: req.params.id, deletingAt: null }, { $set: update }, { new: true, runValidators: true });
     if (!project) {
         res.status(404).json({ success: false, message: 'Project not found' });
         return;
     }
     res.json({ success: true, data: yield withSignedFileUrls(project) });
+})));
+router.delete('/:id', (0, auth_middileware_1.authorizeRoles)('sysadmin', 'admin', 'boss'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    if (!mongoose_1.default.isValidObjectId(req.params.id)) {
+        res.status(404).json({ success: false, message: 'Project not found' });
+        return;
+    }
+    const project = yield Project_1.Project.findOneAndUpdate({ _id: req.params.id }, { $set: { deletingAt: new Date() } }, { new: true });
+    if (!project) {
+        res.status(404).json({ success: false, message: 'Project not found' });
+        return;
+    }
+    let failedFileDeletes = 0;
+    const keys = project.files.map(file => file.key).filter(Boolean);
+    for (let index = 0; index < keys.length; index += 1000) {
+        const batch = keys.slice(index, index + 1000);
+        try {
+            const result = yield s3_1.s3Client.send(new client_s3_1.DeleteObjectsCommand({
+                Bucket: s3_1.S3_BUCKET_NAME,
+                Delete: { Objects: batch.map(Key => ({ Key })), Quiet: true },
+            }));
+            failedFileDeletes += ((_a = result.Errors) === null || _a === void 0 ? void 0 : _a.length) || 0;
+        }
+        catch (error) {
+            failedFileDeletes += batch.length;
+            console.warn('[ProjectDelete] S3 cleanup failed:', error);
+        }
+    }
+    if (failedFileDeletes > 0) {
+        res.status(502).json({
+            success: false,
+            message: `Could not remove ${failedFileDeletes} project file${failedFileDeletes === 1 ? '' : 's'} from storage. The project was not deleted; please retry.`,
+        });
+        return;
+    }
+    yield Project_1.Project.findOneAndDelete({ _id: project._id, deletingAt: { $ne: null } });
+    let shareCleanupFailed = false;
+    yield ProjectShare_1.ProjectShare.deleteMany({ projectId: project._id }).catch(error => {
+        shareCleanupFailed = true;
+        console.warn('[ProjectDelete] Share-link cleanup failed:', error);
+    });
+    res.json({
+        success: true,
+        data: { deletedFiles: keys.length, shareCleanupFailed },
+    });
 })));
 router.post('/:id/folders', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
@@ -176,7 +222,7 @@ router.post('/:id/folders', (0, express_async_handler_1.default)((req, res) => _
         res.status(400).json({ success: false, message: 'Folder name is required' });
         return;
     }
-    const project = yield Project_1.Project.findById(req.params.id);
+    const project = yield Project_1.Project.findOne({ _id: req.params.id, deletingAt: null });
     if (!project) {
         res.status(404).json({ success: false, message: 'Project not found' });
         return;
@@ -187,7 +233,7 @@ router.post('/:id/folders', (0, express_async_handler_1.default)((req, res) => _
 })));
 router.patch('/:id/folders/:folderId', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
-    const project = yield Project_1.Project.findById(req.params.id);
+    const project = yield Project_1.Project.findOne({ _id: req.params.id, deletingAt: null });
     const folder = project === null || project === void 0 ? void 0 : project.folders.find(item => { var _a; return ((_a = item._id) === null || _a === void 0 ? void 0 : _a.toString()) === req.params.folderId; });
     if (!project || !folder) {
         res.status(404).json({ success: false, message: 'Folder not found' });
@@ -202,7 +248,7 @@ router.patch('/:id/folders/:folderId', (0, express_async_handler_1.default)((req
     res.json({ success: true, data: yield withSignedFileUrls(project) });
 })));
 router.delete('/:id/folders/:folderId', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const project = yield Project_1.Project.findById(req.params.id);
+    const project = yield Project_1.Project.findOne({ _id: req.params.id, deletingAt: null });
     if (!project || !project.folders.some(item => { var _a; return ((_a = item._id) === null || _a === void 0 ? void 0 : _a.toString()) === req.params.folderId; })) {
         res.status(404).json({ success: false, message: 'Folder not found' });
         return;
@@ -216,18 +262,23 @@ router.delete('/:id/folders/:folderId', (0, express_async_handler_1.default)((re
     res.json({ success: true, data: yield withSignedFileUrls(project) });
 })));
 router.post('/:id/share', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    if (!(yield Project_1.Project.exists({ _id: req.params.id }))) {
+    if (!(yield Project_1.Project.exists({ _id: req.params.id, deletingAt: null }))) {
         res.status(404).json({ success: false, message: 'Project not found' });
         return;
     }
     const token = (0, crypto_1.randomBytes)(32).toString('base64url');
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    yield ProjectShare_1.ProjectShare.create({
+    const share = yield ProjectShare_1.ProjectShare.create({
         projectId: req.params.id,
         tokenHash: hashShareToken(token),
         createdBy: req.userId,
         expiresAt,
     });
+    if (!(yield Project_1.Project.exists({ _id: req.params.id, deletingAt: null }))) {
+        yield share.deleteOne();
+        res.status(409).json({ success: false, message: 'Project is being deleted' });
+        return;
+    }
     res.status(201).json({ success: true, data: { token, expiresAt } });
 })));
 router.post('/:id/upload-url', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -236,7 +287,7 @@ router.post('/:id/upload-url', (0, express_async_handler_1.default)((req, res) =
         res.status(400).json({ success: false, message: 'A valid file up to 200MB is required' });
         return;
     }
-    if (!(yield Project_1.Project.exists({ _id: req.params.id }))) {
+    if (!(yield Project_1.Project.exists({ _id: req.params.id, deletingAt: null }))) {
         res.status(404).json({ success: false, message: 'Project not found' });
         return;
     }
@@ -259,8 +310,11 @@ router.post('/:id/files', (0, express_async_handler_1.default)((req, res) => __a
         res.status(400).json({ success: false, message: 'Invalid project file metadata' });
         return;
     }
-    const project = yield Project_1.Project.findById(req.params.id);
+    const project = yield Project_1.Project.findOne({ _id: req.params.id, deletingAt: null });
     if (!project) {
+        yield s3_1.s3Client.send(new client_s3_1.DeleteObjectCommand({ Bucket: s3_1.S3_BUCKET_NAME, Key: key })).catch(error => {
+            console.warn('[ProjectFileRegister] Orphan cleanup failed:', error);
+        });
         res.status(404).json({ success: false, message: 'Project not found' });
         return;
     }
@@ -278,7 +332,7 @@ router.post('/:id/files', (0, express_async_handler_1.default)((req, res) => __a
         res.status(400).json({ success: false, message: 'Uploaded file is empty or exceeds 200MB' });
         return;
     }
-    project.files.push({
+    const newFile = {
         key,
         url: `https://${s3_1.S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/${key}`,
         originalName: originalName.toString().slice(0, 255),
@@ -287,12 +341,31 @@ router.post('/:id/files', (0, express_async_handler_1.default)((req, res) => __a
         uploadedBy: req.userId,
         uploadedAt: new Date(),
         folderId: folderId || undefined,
-    });
-    yield project.save();
-    res.status(201).json({ success: true, data: yield withSignedFileUrls(project) });
+    };
+    const updateFilter = {
+        _id: req.params.id,
+        deletingAt: null,
+        'files.key': { $ne: key },
+    };
+    if (folderId)
+        updateFilter['folders._id'] = folderId;
+    const updatedProject = yield Project_1.Project.findOneAndUpdate(updateFilter, { $push: { files: newFile } }, { new: true, runValidators: true });
+    if (!updatedProject) {
+        const currentProject = yield Project_1.Project.findOne({ _id: req.params.id, deletingAt: null });
+        if (currentProject === null || currentProject === void 0 ? void 0 : currentProject.files.some(file => file.key === key)) {
+            res.json({ success: true, data: yield withSignedFileUrls(currentProject) });
+            return;
+        }
+        yield s3_1.s3Client.send(new client_s3_1.DeleteObjectCommand({ Bucket: s3_1.S3_BUCKET_NAME, Key: key })).catch(error => {
+            console.warn('[ProjectFileRegister] Rejected-upload cleanup failed:', error);
+        });
+        res.status(409).json({ success: false, message: 'Project is being deleted or the selected folder no longer exists' });
+        return;
+    }
+    res.status(201).json({ success: true, data: yield withSignedFileUrls(updatedProject) });
 })));
 router.delete('/:id/files/:fileId', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const project = yield Project_1.Project.findById(req.params.id);
+    const project = yield Project_1.Project.findOne({ _id: req.params.id, deletingAt: null });
     if (!project) {
         res.status(404).json({ success: false, message: 'Project not found' });
         return;
@@ -302,20 +375,26 @@ router.delete('/:id/files/:fileId', (0, express_async_handler_1.default)((req, r
         res.status(404).json({ success: false, message: 'File not found' });
         return;
     }
-    project.files = project.files.filter(item => { var _a; return ((_a = item._id) === null || _a === void 0 ? void 0 : _a.toString()) !== req.params.fileId; });
-    if (project.coverFileId === req.params.fileId)
-        project.coverFileId = undefined;
-    yield project.save();
     try {
         yield s3_1.s3Client.send(new client_s3_1.DeleteObjectCommand({ Bucket: s3_1.S3_BUCKET_NAME, Key: file.key }));
     }
     catch (error) {
         console.warn('[ProjectFileDelete] S3 cleanup failed:', error);
+        res.status(502).json({ success: false, message: 'File could not be removed from storage; please retry' });
+        return;
     }
-    res.json({ success: true, data: yield withSignedFileUrls(project) });
+    const update = { $pull: { files: { _id: req.params.fileId } } };
+    if (project.coverFileId === req.params.fileId)
+        update.$unset = { coverFileId: 1 };
+    const updatedProject = yield Project_1.Project.findOneAndUpdate({ _id: req.params.id, deletingAt: null, 'files._id': req.params.fileId }, update, { new: true });
+    if (!updatedProject) {
+        res.status(409).json({ success: false, message: 'Project is being deleted' });
+        return;
+    }
+    res.json({ success: true, data: yield withSignedFileUrls(updatedProject) });
 })));
 router.patch('/:id/files/:fileId', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const project = yield Project_1.Project.findById(req.params.id);
+    const project = yield Project_1.Project.findOne({ _id: req.params.id, deletingAt: null });
     const file = project === null || project === void 0 ? void 0 : project.files.find(item => { var _a; return ((_a = item._id) === null || _a === void 0 ? void 0 : _a.toString()) === req.params.fileId; });
     if (!project || !file) {
         res.status(404).json({ success: false, message: 'File not found' });

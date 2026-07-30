@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import {
   createProject,
+  deleteProject,
   deleteProjectFile,
   getProject,
   getProjects,
@@ -44,11 +45,24 @@ export const useUpdateProject = (id: string) => {
   const { data: session } = useSession();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (data: { title?: string; description?: string }) => updateProject(session?.user?.token || "", id, data),
+    mutationFn: (data: { title?: string; description?: string; assigneeIds?: string[]; coverFileId?: string | null }) => updateProject(session?.user?.token || "", id, data),
     onSuccess: data => {
       client.setQueryData(["project", id], data);
       client.invalidateQueries({ queryKey: ["projects"] });
     },
+  });
+};
+
+export const useDeleteProject = (id: string) => {
+  const { data: session } = useSession();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => deleteProject(session?.user?.token || "", id),
+    onSuccess: () => {
+      client.removeQueries({ queryKey: ["project", id] });
+      client.invalidateQueries({ queryKey: ["projects"] });
+    },
+    onError: () => client.invalidateQueries({ queryKey: ["project", id] }),
   });
 };
 

@@ -2,6 +2,7 @@
 
 import { DragEvent, use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Download, File, FileImage, Folder, FolderPlus, Loader2, MoreVertical, Pencil, Save, Share2, Trash2, UploadCloud, Users } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -12,12 +13,13 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Project, ProjectFile } from "@/api/projects";
 import { createProjectShare } from "@/api/projects";
-import { useCreateProjectFolder, useDeleteProjectFile, useDeleteProjectFolder, useProject, useRenameProjectFolder, useUpdateProject, useUpdateProjectFile, useUploadProjectFile } from "@/hooks/useProjects";
+import { useCreateProjectFolder, useDeleteProject, useDeleteProjectFile, useDeleteProjectFolder, useProject, useRenameProjectFolder, useUpdateProject, useUpdateProjectFile, useUploadProjectFile } from "@/hooks/useProjects";
 import { useSession } from "next-auth/react";
 import { useUsers } from "@/hooks/useUsers";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { forceDownload } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
@@ -28,11 +30,13 @@ const formatBytes = (bytes: number) => {
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const { data: session } = useSession();
   const inputRef = useRef<HTMLInputElement>(null);
   const { data, isLoading, isError } = useProject(id);
   const project: Project | undefined = data?.data;
   const updateMutation = useUpdateProject(id);
+  const deleteProjectMutation = useDeleteProject(id);
   const uploadMutation = useUploadProjectFile(id);
   const deleteMutation = useDeleteProjectFile(id);
   const createFolderMutation = useCreateProjectFolder(id);
@@ -222,6 +226,20 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const removeProject = async () => {
+    try {
+      const response = await deleteProjectMutation.mutateAsync();
+      if (response.data?.shareCleanupFailed) {
+        toast.warning("Project deleted, but obsolete share-link records need server cleanup");
+      } else {
+        toast.success("Project deleted");
+      }
+      router.push("/admin/projects");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to delete project");
+    }
+  };
+
   if (isLoading) {
     return <div className="flex h-full items-center justify-center"><Loader2 className="size-7 animate-spin text-primary" /></div>;
   }
@@ -238,27 +256,50 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const heroImage = project.files.find(file => file._id === project.coverFileId) || project.files.find(file => file.mimetype.startsWith("image/"));
   const activeUploads = Object.entries(uploadProgress);
   const users = usersData?.users || [];
+  const canDeleteProject = ["sysadmin", "admin", "boss"].includes(session?.user?.role || "");
+  const hasActiveUploads = Object.keys(uploadProgress).length > 0 || uploadMutation.isPending;
   const visibleFiles = selectedFolderId === null ? project.files.filter(file => !file.folderId) : project.files.filter(file => file.folderId === selectedFolderId);
   const folders = [{ _id: "", name: "Project root", count: project.files.filter(file => !file.folderId).length }, ...project.folders.map(folder => ({ ...folder, count: project.files.filter(file => file.folderId === folder._id).length }))];
   const allVisibleFilesSelected = visibleFiles.length > 0 && visibleFiles.every(file => selectedFileIds.has(file._id));
 
   return (
     <PageContainer>
-      <div className="w-full space-y-6">
+      <div className={`w-full space-y-6 ${deleteProjectMutation.isPending ? "pointer-events-none opacity-70" : ""}`}>
         <div className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-background/40 p-4 shadow-xl backdrop-blur-md md:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Button asChild variant="ghost" className="rounded-xl">
               <Link href="/admin/projects"><ArrowLeft className="mr-2 size-4" /> Projects</Link>
             </Button>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <div className="hidden text-xs text-muted-foreground sm:block">Updated {format(new Date(project.updatedAt), "dd MMM yyyy, HH:mm")}</div>
-              <Button variant="outline" onClick={shareProject} disabled={sharing}>
+              {canDeleteProject && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={deleteProjectMutation.isPending || hasActiveUploads} title={hasActiveUploads ? "Wait for uploads to finish before deleting this project" : undefined}>
+                      {deleteProjectMutation.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Trash2 className="mr-2 size-4" />} Delete Project
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="rounded-3xl border-white/10 bg-card/95">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete “{project.title}”?</AlertDialogTitle>
+                      <AlertDialogDescription>This permanently deletes the project, its folders, all files recorded in this project, and every active share link. This action cannot be undone.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => void removeProject()}>Delete Project</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              <Button variant="outline" onClick={shareProject} disabled={sharing || Boolean(project.deletingAt)}>
                 {sharing ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Share2 className="mr-2 size-4" />} Share Project
               </Button>
             </div>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
+          {project.deletingAt && <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">A previous deletion attempt did not finish. Project editing is locked; use Delete Project again to retry cleanup.</div>}
+
+          <div className={`grid gap-6 xl:grid-cols-[1.35fr_1fr] ${project.deletingAt ? "pointer-events-none opacity-60" : ""}`}>
             <div className="relative min-h-[280px] overflow-hidden rounded-[26px] border border-white/10 bg-gradient-to-br from-primary/20 via-card to-card md:min-h-[390px]">
               {heroImage ? (
                 <img src={heroImage.previewUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
@@ -312,7 +353,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-background/40 p-5 shadow-xl backdrop-blur-md md:p-7">
+        <div className={`rounded-3xl border border-white/10 bg-background/40 p-5 shadow-xl backdrop-blur-md md:p-7 ${project.deletingAt ? "pointer-events-none opacity-60" : ""}`}>
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Project Files</p>

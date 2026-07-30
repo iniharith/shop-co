@@ -62,6 +62,7 @@ const ProjectSchema = new mongoose_1.Schema({
     coverFileId: { type: String, default: null },
     createdBy: { type: String, required: true, index: true, immutable: true },
     createdByName: { type: String, default: '' },
+    deletingAt: { type: Date, default: null },
 }, { timestamps: true });
 ProjectSchema.index({ updatedAt: -1 });
 ProjectSchema.index({ title: 'text', description: 'text' });
