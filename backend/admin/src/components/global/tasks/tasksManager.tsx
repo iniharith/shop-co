@@ -1,7 +1,8 @@
 "use client";
-import React, { useState, useRef, useCallback, useEffect, useMemo, useTransition } from "react";
+import React, { useState, useRef, useCallback, useDeferredValue, useEffect, useMemo, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
+import { useTasks, useTask, useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
+import { useSearchParams } from "next/navigation";
 import { useUsers } from "@/hooks/useUsers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -127,7 +128,18 @@ const CreateTaskDialog = () => {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function TasksManager() {
-  const { data: response, isPending: isTasksPending, refetch, isFetching } = useTasks();
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const deferredSearch = useDeferredValue(searchQuery.trim());
+  const taskFilters = assigneeFilter !== "all" || deferredSearch
+    ? {
+        ...(assigneeFilter !== "all" ? { assignee: assigneeFilter } : {}),
+        ...(deferredSearch ? { search: deferredSearch } : {}),
+      }
+    : undefined;
+  const { data: response, isPending: isTasksPending, refetch, isFetching } = useTasks(taskFilters);
+  const linkedTaskId = useSearchParams().get("taskId") || undefined;
+  const { data: linkedTaskResponse } = useTask(linkedTaskId);
   const tasks = (response as any)?.tasks || [];
   const { data: usersData } = useUsers();
 
@@ -142,9 +154,14 @@ export default function TasksManager() {
   const [collapsedColumns, setCollapsedColumns]     = useState<string[]>([]);
   const [columnsPopoverOpen, setColumnsPopoverOpen] = useState(false);
   const [sortOption, setSortOption]                 = useState<"dateDesc"|"dateAsc"|"nameAsc"|"nameDesc">("dateDesc");
-  const [assigneeFilter, setAssigneeFilter]         = useState<string>("all");
   const [deletedTaskIds, setDeletedTaskIds]         = useState<string[]>([]);
-  const [searchQuery, setSearchQuery]               = useState("");
+
+  useEffect(() => {
+    const linkedTask = (linkedTaskResponse as any)?.task;
+    if (linkedTask?._id) {
+      setSelectedTask(current => current?._id === linkedTask._id ? current : linkedTask);
+    }
+  }, [linkedTaskResponse]);
 
   const { mutate: updateTask }  = useUpdateTask();
   const { mutate: deleteTask }  = useDeleteTask();

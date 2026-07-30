@@ -19,7 +19,7 @@ export default function SearchResultsPage() {
   const q = searchParams.get("q") || "";
   const queryLower = q.toLowerCase();
 
-  const { data: tasksData, isPending: isLoadingTasks } = useTasks({ statuses: "PLACED,IN_PROGRESS,PENDING_ARTWORK,ARTWORK_REVIEWED,ARTWORK_REJECTED,IN_DESIGN,PEMBETULAN,DONE_DESIGN,IN_PRODUCTION,HOLD_PRINTING,DONE_PRINTING,PACKAGING,SHIPPED,IN_TRANSIT,DELIVERED,CANCELLED,FAILED,RETURN" });
+  const { data: tasksData, isPending: isLoadingTasks } = useTasks({ search: q });
   const { data: filesData, isPending: isLoadingFiles } = useAllFiles();
   const { data: usersData } = useUsers();
   const { data: ordersData } = useOrders();

@@ -94,6 +94,7 @@ router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)
         status: req.query.status,
         assignee: req.query.assignee,
         orderId: req.query.orderId,
+        search: req.query.search,
     };
     // 'statuses' (plural, comma-separated) was being silently dropped here —
     // the admin manager pages (Production/Packaging) rely on it to scope
@@ -112,6 +113,11 @@ router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)
     // If not admin, only show tasks linked to their username or orders (for simplicity, we'll just match their username)
     if (!['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(role)) {
         filters.customerUsername = ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.name) || ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.email); // or however user is identified
+    }
+    if (req.query.limit) {
+        const parsed = parseInt(req.query.limit, 10);
+        if (!Number.isNaN(parsed))
+            filters.limit = parsed;
     }
     const tasks = yield TaskRepository_1.taskRepository.findAll(filters);
     res.json({ success: true, tasks });

@@ -23,31 +23,65 @@ class TaskRepository {
     }
     findAll(filters) {
         return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b, _c;
             const query = {};
             if (filters === null || filters === void 0 ? void 0 : filters.status)
                 query.status = filters.status;
             if ((filters === null || filters === void 0 ? void 0 : filters.statuses) && filters.statuses.length > 0)
                 query.status = { $in: filters.statuses };
-            if (filters === null || filters === void 0 ? void 0 : filters.assignee)
+            if ((filters === null || filters === void 0 ? void 0 : filters.assignee) === 'unassigned') {
+                query.assignee = { $in: [null, ''] };
+            }
+            else if (filters === null || filters === void 0 ? void 0 : filters.assignee) {
                 query.assignee = filters.assignee;
+            }
             if (filters === null || filters === void 0 ? void 0 : filters.orderId)
                 query.orderId = filters.orderId;
             if (filters === null || filters === void 0 ? void 0 : filters.customerUsername)
                 query.customerUsername = filters.customerUsername;
+            const search = (_a = filters === null || filters === void 0 ? void 0 : filters.search) === null || _a === void 0 ? void 0 : _a.trim();
+            if (search) {
+                const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const searchRegex = new RegExp(escapedSearch, 'i');
+                query.$or = [
+                    { title: searchRegex },
+                    { description: searchRegex },
+                    { orderId: searchRegex },
+                    { customerUsername: searchRegex },
+                    { category: searchRegex },
+                ];
+                if (/^[a-f\d]{24}$/i.test(search))
+                    query.$or.push({ _id: search });
+            }
             if ((filters === null || filters === void 0 ? void 0 : filters.isDeleted) === true) {
                 query.isDeleted = true;
             }
             else {
                 query.isDeleted = { $ne: true };
             }
+            // Fully unfiltered requests (no status/statuses/assignee/orderId/deleted
+            // at all — e.g. the main Tasks board, print-drafts) previously had NO
+            // date bound and NO limit, so they fetched every task ever created.
+            // Restore a sane default window here, same 180-day precedent already
+            // used for the `statuses` filter case below.
+            const isFullyUnfiltered = !(filters === null || filters === void 0 ? void 0 : filters.status) && !((_b = filters === null || filters === void 0 ? void 0 : filters.statuses) === null || _b === void 0 ? void 0 : _b.length) && !(filters === null || filters === void 0 ? void 0 : filters.assignee) &&
+                !(filters === null || filters === void 0 ? void 0 : filters.orderId) && !(filters === null || filters === void 0 ? void 0 : filters.customerUsername) && !search && (filters === null || filters === void 0 ? void 0 : filters.isDeleted) !== true;
             if ((filters === null || filters === void 0 ? void 0 : filters.days) !== undefined) {
                 const daysAgo = new Date();
                 daysAgo.setDate(daysAgo.getDate() - filters.days);
                 query.createdAt = { $gte: daysAgo };
             }
+            else if (isFullyUnfiltered) {
+                const daysAgo = new Date();
+                daysAgo.setDate(daysAgo.getDate() - 180);
+                query.createdAt = { $gte: daysAgo };
+            }
+            const requestedLimit = (_c = filters === null || filters === void 0 ? void 0 : filters.limit) !== null && _c !== void 0 ? _c : TaskRepository.DEFAULT_LIMIT;
+            const limit = Math.min(Math.max(requestedLimit, 1), TaskRepository.MAX_LIMIT);
             return Task_1.Task.find(query)
                 .select('-comments -activities -files')
-                .sort({ createdAt: -1 })
+                .sort({ updatedAt: -1 })
+                .limit(limit)
                 .maxTimeMS(10000)
                 .lean();
         });
@@ -148,4 +182,11 @@ class TaskRepository {
     }
 }
 exports.TaskRepository = TaskRepository;
+// Hard ceiling — no caller, present or future, can ever pull more than
+// this many tasks in one request. This is what actually stops the
+// Tasks board / print-drafts pages from silently growing an unbounded
+// payload as the DB grows, which was causing very slow loads that led
+// to memory pressure and crashes on iPad (July 2026).
+TaskRepository.MAX_LIMIT = 1000;
+TaskRepository.DEFAULT_LIMIT = 500;
 exports.taskRepository = new TaskRepository();

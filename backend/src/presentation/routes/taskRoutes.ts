@@ -56,6 +56,7 @@ router.get(
       status: req.query.status as string,
       assignee: req.query.assignee as string,
       orderId: req.query.orderId as string,
+      search: req.query.search as string,
     };
 
     // 'statuses' (plural, comma-separated) was being silently dropped here —

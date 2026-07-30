@@ -17,13 +17,31 @@ export class TaskRepository {
     return Task.create(data);
   }
 
-  async findAll(filters?: { status?: string; statuses?: string[]; assignee?: string; orderId?: string; customerUsername?: string; isDeleted?: boolean; days?: number; limit?: number; }): Promise<ITask[]> {
+  async findAll(filters?: { status?: string; statuses?: string[]; assignee?: string; orderId?: string; customerUsername?: string; search?: string; isDeleted?: boolean; days?: number; limit?: number; }): Promise<ITask[]> {
     const query: any = {};
     if (filters?.status) query.status = filters.status;
     if (filters?.statuses && filters.statuses.length > 0) query.status = { $in: filters.statuses };
-    if (filters?.assignee) query.assignee = filters.assignee;
+    if (filters?.assignee === 'unassigned') {
+      query.assignee = { $in: [null, ''] };
+    } else if (filters?.assignee) {
+      query.assignee = filters.assignee;
+    }
     if (filters?.orderId) query.orderId = filters.orderId;
     if (filters?.customerUsername) query.customerUsername = filters.customerUsername;
+
+    const search = filters?.search?.trim();
+    if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(escapedSearch, 'i');
+      query.$or = [
+        { title: searchRegex },
+        { description: searchRegex },
+        { orderId: searchRegex },
+        { customerUsername: searchRegex },
+        { category: searchRegex },
+      ];
+      if (/^[a-f\d]{24}$/i.test(search)) query.$or.push({ _id: search });
+    }
     
     if (filters?.isDeleted === true) {
       query.isDeleted = true;
@@ -38,7 +56,7 @@ export class TaskRepository {
     // used for the `statuses` filter case below.
     const isFullyUnfiltered =
       !filters?.status && !filters?.statuses?.length && !filters?.assignee &&
-      !filters?.orderId && !filters?.customerUsername && filters?.isDeleted !== true;
+      !filters?.orderId && !filters?.customerUsername && !search && filters?.isDeleted !== true;
 
     if (filters?.days !== undefined) {
       const daysAgo = new Date();
@@ -55,7 +73,7 @@ export class TaskRepository {
 
     return Task.find(query)
       .select('-comments -activities -files')
-      .sort({ createdAt: -1 })
+      .sort({ updatedAt: -1 })
       .limit(limit)
       .maxTimeMS(10_000)
       .lean() as unknown as Promise<ITask[]>;
