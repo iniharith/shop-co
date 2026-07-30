@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shop-Co Frontend and Backend System Report</title>
+  <style>
+    :root {
+      --ink: #17221d;
+      --muted: #59665f;
+      --paper: #fffdf8;
+      --forest: #164c3b;
+      --forest-dark: #0c3328;
+      --mint: #dcece4;
+      --gold: #c9973d;
+      --cream: #f4eee0;
+      --red: #9d2f2f;
+      --amber: #8b5b08;
+      --line: #cfd8d2;
+    }
+
+    * { box-sizing: border-box; }
+
+    @page {
+      size: A4 portrait;
+      margin: 13mm 14mm 14mm;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #e8ece9;
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 9.5pt;
+      line-height: 1.42;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    .sheet {
+      width: 182mm;
+      min-height: 270mm;
+      margin: 8mm auto;
+      padding: 0;
+      position: relative;
+      background: var(--paper);
+      break-after: page;
+      page-break-after: always;
+    }
+
+    .sheet:last-child {
+      break-after: auto;
+      page-break-after: auto;
+    }
+
+    .content { padding-bottom: 11mm; }
+
+    .footer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      justify-content: space-between;
+      padding-top: 3mm;
+      border-top: 0.3mm solid var(--line);
+      color: var(--muted);
+      font-size: 7.7pt;
+    }
+
+    .cover {
+      min-height: 270mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background:
+        linear-gradient(145deg, rgba(22, 76, 59, 0.96), rgba(12, 51, 40, 0.98)),
+        repeating-linear-gradient(45deg, transparent, transparent 7mm, rgba(255,255,255,.04) 7mm, rgba(255,255,255,.04) 8mm);
+      color: white;
+      padding: 20mm;
+      border-radius: 2mm;
+    }
+
+    .brand {
+      font-size: 12pt;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: #e9d6ae;
+    }
+
+    .cover h1 {
+      margin: 0 0 7mm;
+      max-width: 135mm;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 33pt;
+      line-height: 1.05;
+      font-weight: 600;
+    }
+
+    .cover .lead {
+      max-width: 128mm;
+      font-size: 13pt;
+      color: #e4eee9;
+    }
+
+    .cover-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4mm;
+      margin-top: 14mm;
+    }
+
+    .cover-card {
+      padding: 5mm;
+      border: 0.3mm solid rgba(255,255,255,.28);
+      background: rgba(255,255,255,.08);
+      border-radius: 1.5mm;
+    }
+
+    .cover-card strong {
+      display: block;
+      margin-bottom: 1mm;
+      color: #f1ddb3;
+      font-size: 10.5pt;
+    }
+
+    h2 {
+      margin: 0 0 5mm;
+      color: var(--forest-dark);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 22pt;
+      line-height: 1.1;
+    }
+
+    h3 {
+      margin: 5mm 0 2mm;
+      color: var(--forest);
+      font-size: 12.5pt;
+      line-height: 1.2;
+    }
+
+    h4 {
+      margin: 3mm 0 1.5mm;
+      color: var(--ink);
+      font-size: 10pt;
+    }
+
+    p { margin: 0 0 2.6mm; }
+    ul, ol { margin: 1.5mm 0 3mm; padding-left: 5.5mm; }
+    li { margin-bottom: 1.3mm; }
+    code { font-family: Consolas, monospace; font-size: 8.2pt; }
+
+    .eyebrow {
+      margin-bottom: 2mm;
+      color: var(--gold);
+      font-size: 8.3pt;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    .rule {
+      height: 1mm;
+      width: 28mm;
+      margin: 0 0 6mm;
+      background: var(--gold);
+    }
+
+    .summary-grid, .two-col, .three-col {
+      display: grid;
+      gap: 4mm;
+    }
+
+    .summary-grid, .two-col { grid-template-columns: 1fr 1fr; }
+    .three-col { grid-template-columns: repeat(3, 1fr); }
+
+    .card {
+      padding: 4mm;
+      border: 0.3mm solid var(--line);
+      border-radius: 1.5mm;
+      background: #fff;
+      break-inside: avoid;
+    }
+
+    .card h3, .card h4 { margin-top: 0; }
+
+    .metric {
+      padding: 4mm;
+      background: var(--forest);
+      color: white;
+      border-radius: 1.5mm;
+    }
+
+    .metric strong {
+      display: block;
+      color: #f2dcae;
+      font-size: 18pt;
+      line-height: 1;
+      margin-bottom: 2mm;
+    }
+
+    .callout {
+      margin: 4mm 0;
+      padding: 4mm 5mm;
+      border-left: 1.3mm solid var(--gold);
+      background: var(--cream);
+      break-inside: avoid;
+    }
+
+    .callout.danger {
+      border-color: var(--red);
+      background: #f8e8e5;
+    }
+
+    .callout strong { color: var(--forest-dark); }
+    .callout.danger strong { color: var(--red); }
+
+    .stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5mm;
+      margin: 2mm 0 5mm;
+    }
+
+    .tag {
+      padding: 1mm 2.2mm;
+      border-radius: 10mm;
+      background: var(--mint);
+      color: var(--forest-dark);
+      font-size: 8pt;
+      font-weight: 600;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2mm;
+      margin: 4mm 0;
+    }
+
+    .step {
+      min-height: 24mm;
+      padding: 3mm;
+      border-top: 1mm solid var(--gold);
+      background: #fff;
+      box-shadow: 0 0.5mm 2mm rgba(23,34,29,.08);
+      break-inside: avoid;
+    }
+
+    .step b {
+      display: block;
+      margin-bottom: 1mm;
+      color: var(--forest);
+    }
+
+    .status-line {
+      margin: 3mm 0 5mm;
+      padding: 3mm;
+      background: var(--forest-dark);
+      color: #fff;
+      border-radius: 1mm;
+      font-family: Consolas, monospace;
+      font-size: 8pt;
+      line-height: 1.6;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 2mm 0 4mm;
+      font-size: 8.4pt;
+      break-inside: avoid;
+    }
+
+    th, td {
+      padding: 2.1mm 2.3mm;
+      border: 0.25mm solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--forest);
+      color: white;
+      font-weight: 650;
+    }
+
+    tbody tr:nth-child(even) { background: #f5f8f6; }
+
+    .severity {
+      white-space: nowrap;
+      font-weight: 700;
+      color: var(--red);
+    }
+
+    .severity.medium { color: var(--amber); }
+
+    .commit {
+      display: grid;
+      grid-template-columns: 23mm 26mm 1fr;
+      gap: 3mm;
+      padding: 2.5mm 0;
+      border-bottom: 0.25mm solid var(--line);
+      break-inside: avoid;
+    }
+
+    .commit code { color: var(--forest); font-weight: 700; }
+    .commit .date { color: var(--muted); }
+
+    .small { color: var(--muted); font-size: 8.2pt; }
+    .tight li { margin-bottom: 0.8mm; }
+
+    .evidence {
+      margin-top: 3mm;
+      color: var(--muted);
+      font-size: 7.7pt;
+    }
+
+    @media print {
+      html, body { background: white; }
+      .sheet { width: auto; min-height: 270mm; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+  <section class="sheet">
+    <div class="cover">
+      <div>
+        <div class="brand">Shop-Co / KampungCetak</div>
+      </div>
+      <div>
+        <div class="eyebrow" style="color:#f1ddb3">System Review</div>
+        <h1>Frontend &amp; Backend Report</h1>
+        <p class="lead">Features, known bugs, order progress, operating steps, system mechanics, and a simple record of fixes committed to GitHub.</p>
+        <div class="cover-grid">
+          <div class="cover-card"><strong>Prepared</strong>30 July 2026</div>
+          <div class="cover-card"><strong>Format</strong>A4 portrait, print ready</div>
+          <div class="cover-card"><strong>Repository</strong>github.com/iniharith/shop-co</div>
+          <div class="cover-card"><strong>Reviewed revision</strong><code>4c997f5c</code> on <code>main</code></div>
+        </div>
+      </div>
+      <div class="small" style="color:#d7e4dd">Prepared from a source-code and Git-history review. Findings describe the repository state at the reviewed revision and are not a production penetration test.</div>
+    </div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Overview</div>
+      <h2>Executive Summary</h2>
+      <div class="rule"></div>
+
+      <div class="summary-grid">
+        <div class="metric"><strong>4</strong>User interfaces: customer web, admin web, admin mobile, and admin desktop wrapper.</div>
+        <div class="metric"><strong>1</strong>Express API backed by MongoDB, Redis, Socket.IO, S3, EasyParcel, and messaging services.</div>
+      </div>
+
+      <div class="callout danger">
+        <strong>Main order-flow finding:</strong> the storefront currently displays products from a local dummy catalog and stores those items in browser <code>localStorage</code>. Backend order creation reads only the authenticated user's MongoDB cart. As a result, a normal checkout using the displayed catalog can reach an empty-cart error instead of creating an order.
+      </div>
+
+      <h3>Current system position</h3>
+      <table>
+        <thead><tr><th>Area</th><th>What is working</th><th>Current limitation</th></tr></thead>
+        <tbody>
+          <tr><td>Storefront</td><td>Responsive product discovery, rich print configuration, authentication, cart UI, profile, artwork upload, orders, chat, and tracking screens.</td><td>The active catalog/cart path is partly mocked and does not reliably feed backend order creation.</td></tr>
+          <tr><td>Admin workflow</td><td>Order, task, artwork, production, packaging, shipping, user, chat, and system-status tools across web and mobile.</td><td>Some endpoints need stronger authorization and several mobile performance fixes are still being refined.</td></tr>
+          <tr><td>Backend</td><td>Persistent data, token authentication, cache/pub-sub, task synchronization, file handling, shipment booking, and notification integrations.</td><td>Security hardening, transactional stock handling, cache invalidation, and test coverage need priority.</td></tr>
+          <tr><td>Delivery</td><td>EasyParcel quotation, booking, AWB, webhook/cron tracking, and customer tracking timeline are implemented.</td><td>Web COD orders remain <code>PENDING</code> while shipment creation requires <code>PAID</code>.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Recommended priority</h3>
+      <ol>
+        <li>Connect the visible product configurator and cart to one authoritative backend product/order model.</li>
+        <li>Protect order, task, chat, folder, seed, and migration endpoints with ownership or staff-role checks.</li>
+        <li>Fix payment-to-shipping progression and make stock/order writes transactional.</li>
+        <li>Correct customer progress mapping and expose the real production statuses.</li>
+        <li>Add integration tests for browse-to-order, artwork review, production, shipment, and delivery.</li>
+      </ol>
+    </div>
+    <div class="footer"><span>Shop-Co System Report</span><span>2 / 10</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Frontend / 1 and 5</div>
+      <h2>Features &amp; Mechanics</h2>
+      <div class="rule"></div>
+
+      <h3>1. Frontend features</h3>
+      <div class="two-col">
+        <div class="card">
+          <h4>Customer shopping</h4>
+          <ul class="tight">
+            <li>Homepage, categories, featured items, search, pagination, and responsive filters.</li>
+            <li>Configurable print products with material, format, finishing, add-ons, turnaround, quantity, and matrix pricing.</li>
+            <li>Authenticated cart, address checkout, order history, profile editing, and delivery tracking.</li>
+            <li>Artwork upload through S3 presigned URLs with validation, notes, history, and deletion.</li>
+            <li>Customer support chat, English/Malay localization, dark mode, and responsive layouts.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Staff interfaces</h4>
+          <ul class="tight">
+            <li>Next.js admin dashboard for orders, tasks, artwork, production, packaging, files, users, and shipping.</li>
+            <li>Expo mobile admin app covering orders, tasks, production, packaging, tracking, chat, files, and server health.</li>
+            <li>Electron desktop wrapper for the deployed administration site.</li>
+            <li>RSVP invitation experience with countdown, music, maps, wishes, and attendance controls.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>5. How the frontend works</h3>
+      <div class="flow">
+        <div class="step"><b>1. Render</b>Next.js App Router renders public and protected pages with React 19 components.</div>
+        <div class="step"><b>2. Session</b>NextAuth stores the backend JWT in the user session and protects cart/profile routes.</div>
+        <div class="step"><b>3. Data</b>Axios calls the API; TanStack Query caches server responses and refreshes UI state.</div>
+        <div class="step"><b>4. Updates</b>Socket.IO and polling support task, notification, file, chat, and shipment updates.</div>
+      </div>
+
+      <div class="stack">
+        <span class="tag">Next.js 16</span><span class="tag">React 19</span><span class="tag">TypeScript</span>
+        <span class="tag">Tailwind CSS 4</span><span class="tag">React Query</span><span class="tag">NextAuth</span>
+        <span class="tag">Zustand</span><span class="tag">Socket.IO</span><span class="tag">S3 direct upload</span>
+      </div>
+
+      <div class="callout">
+        <strong>Important implementation detail:</strong> products whose IDs start with <code>prod-</code> use the local dummy catalog and browser cart. Other products use the backend API. This split behavior is the source of several checkout inconsistencies.
+      </div>
+
+      <p class="evidence">Primary evidence: <code>frontend/src/app/page.tsx</code>, <code>frontend/src/hooks/useProducts.ts</code>, <code>frontend/src/api/cart.ts</code>, <code>frontend/src/components/page-sections/shop/product-details.tsx</code>, <code>frontend/src/config/auth.config.ts</code>, and <code>frontend/src/utils/s3Upload.ts</code>.</p>
+    </div>
+    <div class="footer"><span>Frontend: Features and Mechanics</span><span>3 / 10</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Frontend / 3 and 4</div>
+      <h2>Order Progress &amp; How to Use</h2>
+      <div class="rule"></div>
+
+      <h3>3. Frontend order progress</h3>
+      <p>The intended customer journey is:</p>
+      <div class="flow">
+        <div class="step"><b>Browse</b>Search, filter, and open a print product.</div>
+        <div class="step"><b>Configure</b>Select design, material, size, finishing, quantity, and turnaround.</div>
+        <div class="step"><b>Order</b>Log in, add to cart, provide an address, and submit COD checkout.</div>
+        <div class="step"><b>Follow</b>Upload artwork, review comments, and track production and delivery.</div>
+      </div>
+
+      <p>The customer UI currently summarizes progress as:</p>
+      <div class="status-line">ORDER PLACED  ->  PROCESSING  ->  SHIPPED  ->  DELIVERED</div>
+      <p>The delivery tracker adds:</p>
+      <div class="status-line">PENDING  ->  PICKED UP  ->  IN TRANSIT  ->  OUT FOR DELIVERY  ->  DELIVERED</div>
+      <p>The backend has many more artwork, design, printing, and packaging states. The customer progress component does not yet represent them correctly.</p>
+
+      <h3>4. Frontend steps: how to use</h3>
+      <ol>
+        <li>Open <code>https://studioivory.art/</code> and choose <strong>Shop</strong>.</li>
+        <li>Use search or filters to locate a product, then open its detail page.</li>
+        <li>Select all printing options. Choose whether to upload artwork or request design service.</li>
+        <li>Sign in or register, then select <strong>Add to cart</strong>.</li>
+        <li>Open the cart, review items and quantities, and continue to checkout.</li>
+        <li>Enter customer and Malaysian delivery details, or use the saved profile address.</li>
+        <li>Submit the order. Current web checkout records the payment method as COD.</li>
+        <li>Open <strong>Profile &gt; Upload</strong>, choose the order, request an upload URL, and send the artwork.</li>
+        <li>Use <strong>Profile &gt; Orders</strong> to read task comments and view tracking updates.</li>
+      </ol>
+
+      <div class="callout danger">
+        <strong>Current user warning:</strong> checkout with the displayed <code>prod-</code> catalog may fail because those cart items remain in the browser instead of the backend cart. Do not treat the success of the cart screen as confirmation that the server can create the order.
+      </div>
+
+      <p class="evidence">Primary evidence: <code>frontend/src/app/home/shop</code>, <code>frontend/src/app/home/cart</code>, <code>frontend/src/app/home/profile/upload/page.tsx</code>, <code>frontend/src/components/page-sections/profile/orderTracker.tsx</code>, and <code>frontend/src/app/home/profile/orders/[id]/page.tsx</code>.</p>
+    </div>
+    <div class="footer"><span>Frontend: Order Progress and Usage</span><span>4 / 10</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Frontend / 2</div>
+      <h2>Known Frontend Bugs</h2>
+      <div class="rule"></div>
+      <p>These findings are based on source inspection. “Critical” means the issue can block the main purchase path; “High” means security or major business behavior is affected.</p>
+
+      <table>
+        <thead><tr><th style="width:17mm">Level</th><th style="width:45mm">Issue</th><th>Simple explanation</th></tr></thead>
+        <tbody>
+          <tr><td class="severity">Critical</td><td>Catalog/cart disconnect</td><td>Displayed products are local dummy records. Their cart items are saved in the browser, while order creation reads the database cart, so checkout can fail as empty.</td></tr>
+          <tr><td class="severity">Critical</td><td>Configuration not preserved</td><td>The configurator calculates detailed prices, but selected print options and calculated totals are not sent as structured order data. A fake artwork URL is used.</td></tr>
+          <tr><td class="severity">High</td><td>Incorrect progress mapping</td><td>At <code>SHIPPED</code> and <code>DELIVERED</code>, the completion logic is off by one; cancellation can appear as all positive steps completed.</td></tr>
+          <tr><td class="severity">High</td><td>Size string mismatch</td><td>The UI appends design text to the size. The backend looks for that exact value in inventory sizes and can reject a valid product as out of stock.</td></tr>
+          <tr><td class="severity medium">Medium</td><td>Payment claims exceed behavior</td><td>A public page advertises cards, FPX, and e-wallets, but checkout creates COD orders only.</td></tr>
+          <tr><td class="severity medium">Medium</td><td>Silent cart failures</td><td>API errors fall back to local cart data, and clear-cart can report success even when the backend request failed.</td></tr>
+          <tr><td class="severity medium">Medium</td><td>Missing real-time provider</td><td>The customer Socket provider exists but is not mounted in the root provider tree.</td></tr>
+          <tr><td class="severity medium">Medium</td><td>Incomplete controls</td><td>Material and turnaround filters are displayed but not applied; several footer/dashboard links have no page.</td></tr>
+          <tr><td class="severity medium">Medium</td><td>Checkout and address UX</td><td>The submit spinner watches cart loading rather than order creation; profile address mapping can replace the address with the state value.</td></tr>
+          <tr><td class="severity medium">Medium</td><td>Build/type risk</td><td>Production builds ignore TypeScript errors, allowing integration mistakes to ship.</td></tr>
+        </tbody>
+      </table>
+
+      <p class="evidence">Evidence includes <code>frontend/src/hooks/useProducts.ts:39-68</code>, <code>frontend/src/api/cart.ts:23-77</code>, <code>frontend/src/components/page-sections/shop/product-details.tsx:69-80</code>, <code>frontend/src/app/home/profile/orders/[id]/page.tsx:44-69</code>, <code>frontend/src/components/provider/index.tsx</code>, <code>frontend/src/components/forms/addressForm.tsx:73-89</code>, and <code>frontend/next.config.ts:39-41</code>.</p>
+    </div>
+    <div class="footer"><span>Frontend: Known Bugs</span><span>5 / 10</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Frontend / 6</div>
+      <h2>Fixes Committed to GitHub</h2>
+      <div class="rule"></div>
+      <p>Recent frontend and admin-interface fixes, rewritten in simple language. Commit IDs link the report back to Git history.</p>
+
+      <div class="commit"><code>4c997f5c</code><span class="date">30 Jul 2026</span><span><strong>Mobile task list:</strong> reduced the amount of work needed to display tasks on phones.</span></div>
+      <div class="commit"><code>d427a3a7</code><span class="date">30 Jul 2026</span><span><strong>iPad stability:</strong> limited task queries and used lighter animations on touch devices to reduce crashes.</span></div>
+      <div class="commit"><code>3efb0a6f</code><span class="date">29 Jul 2026</span><span><strong>Task form typing:</strong> removed performance work that caused lag while users typed.</span></div>
+      <div class="commit"><code>5fa0cf89</code><span class="date">28 Jul 2026</span><span><strong>Project files:</strong> added reliable range selection for choosing multiple files.</span></div>
+      <div class="commit"><code>40555066</code><span class="date">27 Jul 2026</span><span><strong>Mobile memory:</strong> reduced hero image size and adjusted loading to lower memory use.</span></div>
+      <div class="commit"><code>53ccc2d5</code><span class="date">27 Jul 2026</span><span><strong>Admin mobile layout:</strong> corrected page overflow, improved Safari compatibility, and added a socket polling fallback.</span></div>
+      <div class="commit"><code>6b28e10d</code><span class="date">27 Jul 2026</span><span><strong>Authentication:</strong> removed an unsafe fallback cookie and corrected middleware type handling.</span></div>
+      <div class="commit"><code>f4cd4927</code><span class="date">24 Jul 2026</span><span><strong>Share previews:</strong> public file links now show the shared file instead of the admin console.</span></div>
+      <div class="commit"><code>785de2ab</code><span class="date">22 Jul 2026</span><span><strong>Production navigation:</strong> corrected movement from Production to Packaging and from Packaging to Shipped.</span></div>
+      <div class="commit"><code>10110dd1</code><span class="date">22 Jul 2026</span><span><strong>Expired sessions:</strong> forced logout and prevented an endless token-refresh loop.</span></div>
+
+      <div class="callout">
+        <strong>Interpretation:</strong> recent work has focused heavily on admin/mobile stability, artwork management, authentication, and workflow navigation. The customer storefront cart/backend integration remains the most important unfinished frontend item found in this review.
+      </div>
+
+      <p class="evidence">Repository: <code>https://github.com/iniharith/shop-co</code>. Commit list inspected through <code>4c997f5c</code> on 30 July 2026.</p>
+    </div>
+    <div class="footer"><span>Frontend: Committed Fixes</span><span>6 / 10</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Backend / 1 and 5</div>
+      <h2>Features &amp; Mechanics</h2>
+      <div class="rule"></div>
+
+      <h3>1. Backend features</h3>
+      <div class="two-col">
+        <div class="card">
+          <h4>Commerce and workflow</h4>
+          <ul class="tight">
+            <li>Registration, login, refresh tokens, profiles, roles, products, carts, and orders.</li>
+            <li>Order-linked staff tasks, assignment, comments, activities, status synchronization, and notifications.</li>
+            <li>Manual Shopee, TikTok, and web orders plus production and packaging queues.</li>
+            <li>EasyParcel quotation, shipment booking, AWB storage, tracking webhooks, and scheduled reconciliation.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Files and communication</h4>
+          <ul class="tight">
+            <li>S3 presigned uploads, artwork review, virtual folders, share links, ZIP streaming, and download progress.</li>
+            <li>Redis caching and pub/sub with Socket.IO client/admin namespaces.</li>
+            <li>WhatsApp Cloud API, incoming support messages, customer status updates, and Expo push notifications.</li>
+            <li>Audit logs, server status, project files, and local image-upscaling tools.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>5. How the backend works</h3>
+      <div class="flow">
+        <div class="step"><b>Request</b>Express routes validate JWTs and pass work to controllers/use cases.</div>
+        <div class="step"><b>Business logic</b>Use cases calculate orders, synchronize tasks, and coordinate external services.</div>
+        <div class="step"><b>Persistence</b>Mongoose repositories save users, carts, products, orders, tasks, files, and parcels.</div>
+        <div class="step"><b>Distribution</b>Redis, Socket.IO, WhatsApp, Expo, and cron jobs distribute changes and reconcile state.</div>
+      </div>
+
+      <div class="stack">
+        <span class="tag">Node.js</span><span class="tag">Express 4</span><span class="tag">TypeScript</span>
+        <span class="tag">MongoDB</span><span class="tag">Redis</span><span class="tag">Socket.IO</span>
+        <span class="tag">AWS S3</span><span class="tag">EasyParcel</span><span class="tag">WhatsApp</span>
+      </div>
+
+      <div class="callout">
+        <strong>Architecture:</strong> routes and controllers form the HTTP layer; application use cases hold business rules; repositories/models persist data; infrastructure services integrate storage, shipping, messaging, sockets, caching, and jobs.
+      </div>
+
+      <p class="evidence">Primary evidence: <code>backend/src/settings/app.ts</code>, <code>backend/src/settings/server.ts</code>, <code>backend/src/application/usecases</code>, <code>backend/src/infrastructure</code>, and <code>backend/src/presentation/routes</code>.</p>
+    </div>
+    <div class="footer"><span>Backend: Features and Mechanics</span><span>7 / 10</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Backend / 3 and 4</div>
+      <h2>Order Progress &amp; How to Use</h2>
+      <div class="rule"></div>
+
+      <h3>3. Backend order progress</h3>
+      <div class="status-line">PLACED -> IN_PROGRESS -> PENDING_ARTWORK -> ARTWORK_REVIEWED / ARTWORK_REJECTED -> IN_DESIGN -> PEMBETULAN -> DONE_DESIGN -> IN_PRODUCTION -> HOLD_PRINTING / DONE_PRINTING -> PACKAGING -> SHIPPED -> IN_TRANSIT -> DELIVERED</div>
+      <p>Alternative terminal states include <code>RETURNED</code>, <code>CANCELLED</code>, and <code>FAILED</code>.</p>
+
+      <ol>
+        <li><code>POST /api/orders</code> loads the authenticated user's MongoDB cart and validates products, sizes, and stock.</li>
+        <li>The backend recalculates price, decreases stock, creates a COD order, sends a notification, clears caches/cart, and creates a linked task.</li>
+        <li>Staff move the task through artwork, design, printing, and packaging. Task and order status are synchronized.</li>
+        <li>For a paid order in <code>DONE_PRINTING</code> or <code>PACKAGING</code>, staff request an EasyParcel quotation and book shipment.</li>
+        <li>Shipment and AWB details are saved. Webhook and 15-minute cron updates move the parcel through transit to delivery.</li>
+        <li>On delivery, the current code removes linked task artwork from S3 and file records.</li>
+      </ol>
+
+      <h3>4. Backend steps: how to use the API</h3>
+      <table>
+        <thead><tr><th>Purpose</th><th>Request</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Health</td><td><code>GET /health</code></td><td>Confirms the API process is available.</td></tr>
+          <tr><td>Session</td><td><code>POST /api/auth/register</code><br><code>POST /api/auth/login</code></td><td>Send protected calls with <code>Authorization: Bearer &lt;token&gt;</code>.</td></tr>
+          <tr><td>Products</td><td><code>GET /api/products</code></td><td>Also supports search, category, filtering, and product detail.</td></tr>
+          <tr><td>Cart</td><td><code>POST /api/cart/add</code><br><code>GET /api/cart</code></td><td>Add <code>productId</code>, <code>size</code>, <code>quantity</code>, and optional artwork URL.</td></tr>
+          <tr><td>Order</td><td><code>POST /api/orders</code><br><code>GET /api/orders/user</code></td><td>Create from the server cart; list the signed-in user's orders.</td></tr>
+          <tr><td>Artwork</td><td><code>POST /api/files/presigned-url</code><br><code>POST /api/files/save-metadata</code></td><td>Upload bytes directly to S3 between these calls.</td></tr>
+          <tr><td>Shipping</td><td><code>POST /api/orders/:id/shipping/quotations</code><br><code>POST /api/orders/:id/ship</code></td><td>Staff only; requires payment and a shippable production status.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="footer"><span>Backend: Order Progress and Usage</span><span>8 / 10</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Backend / 2</div>
+      <h2>Known Backend Bugs &amp; Risks</h2>
+      <div class="rule"></div>
+
+      <table>
+        <thead><tr><th style="width:17mm">Level</th><th style="width:48mm">Issue</th><th>Simple explanation</th></tr></thead>
+        <tbody>
+          <tr><td class="severity">Critical</td><td>Missing authorization</td><td>Authenticated users can reach several order, task, chat, and folder operations without consistent ownership or staff-role checks.</td></tr>
+          <tr><td class="severity">Critical</td><td>Public data-changing routes</td><td>Product reseeding and status migration routes can modify database data without authentication.</td></tr>
+          <tr><td class="severity">Critical</td><td>Tracked credentials</td><td>Compose/environment artifacts contain secrets or credential-like values. Secrets should be rotated and removed from Git history.</td></tr>
+          <tr><td class="severity">High</td><td>Non-transactional stock</td><td>Stock only checks for greater than zero, not requested quantity, and is reduced before order creation without a database transaction.</td></tr>
+          <tr><td class="severity">High</td><td>Payment blocks shipment</td><td>Web orders are COD/PENDING, while EasyParcel shipment creation requires PAID. No normal payment-completion path was found.</td></tr>
+          <tr><td class="severity">High</td><td>Wrong status query field</td><td>The repository searches <code>status</code>, but the schema stores <code>orderStatus</code>, so status queues can return no results.</td></tr>
+          <tr><td class="severity">High</td><td>Socket impersonation risk</td><td>The customer socket trusts a query-string user ID and does not use the JWT middleware applied to admin sockets.</td></tr>
+          <tr><td class="severity">High</td><td>Open CORS and webhook trust</td><td>CORS accepts every origin with credentials, and incoming WhatsApp webhooks are not signature verified.</td></tr>
+          <tr><td class="severity medium">Medium</td><td>Stale status caches</td><td>Status-specific order lists can remain cached for up to 24 hours after an order moves.</td></tr>
+          <tr><td class="severity medium">Medium</td><td>Destructive delivery cleanup</td><td>Marking an order delivered permanently deletes linked artwork rather than applying a retention/archive policy.</td></tr>
+          <tr><td class="severity medium">Medium</td><td>Error handling and tests</td><td>Some authentication failures become HTTP 500; process-level exceptions are ignored; no automated test suite is configured.</td></tr>
+        </tbody>
+      </table>
+
+      <p class="evidence">Evidence includes <code>backend/src/presentation/routes/order.route.ts</code>, <code>taskRoutes.ts</code>, <code>chatRoutes.ts</code>, <code>admin.route.ts</code>, <code>product.route.ts</code>, <code>backend/src/application/usecases/orders/order.usecase.ts</code>, <code>backend/src/infrastructure/db/repositories/order.repository.ts:63-65</code>, <code>backend/src/infrastructure/socket/socketHandler.ts</code>, and <code>docker-compose.yml</code>.</p>
+    </div>
+    <div class="footer"><span>Backend: Known Bugs and Risks</span><span>9 / 10</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Backend / 6</div>
+      <h2>Committed Fixes &amp; Next Actions</h2>
+      <div class="rule"></div>
+
+      <h3>6. Backend fixes committed to GitHub</h3>
+      <div class="commit"><code>e6df6c9a</code><span class="date">22 Jul 2026</span><span><strong>MongoDB grouping:</strong> corrected regular-expression and ObjectId handling in artwork folder queries.</span></div>
+      <div class="commit"><code>f744162d</code><span class="date">22 Jul 2026</span><span><strong>Admin CORS:</strong> corrected the production admin origin problem.</span></div>
+      <div class="commit"><code>5c0f2bda</code><span class="date">22 Jul 2026</span><span><strong>Cache resilience:</strong> added an in-memory fallback when Redis folder caching is unavailable.</span></div>
+      <div class="commit"><code>eff074ca</code><span class="date">22 Jul 2026</span><span><strong>Redis stability:</strong> reduced reconnect storms and made cache reads non-blocking.</span></div>
+      <div class="commit"><code>ac1a512a</code><span class="date">22 Jul 2026</span><span><strong>File-query speed:</strong> reduced repeated database work with projections, batching, and caching.</span></div>
+      <div class="commit"><code>3cb1599a</code><span class="date">22 Jul 2026</span><span><strong>Shipping tracking:</strong> completed the EasyParcel tracking workflow.</span></div>
+      <div class="commit"><code>d1ff1bab</code><span class="date">21 Jul 2026</span><span><strong>Customer shipping updates:</strong> made shipment notifications safer and more reliable.</span></div>
+      <div class="commit"><code>773b1d24</code><span class="date">21 Jul 2026</span><span><strong>Artwork uploads:</strong> stabilized public artwork upload behavior.</span></div>
+
+      <h3>Recommended action plan</h3>
+      <table>
+        <thead><tr><th>Priority</th><th>Action</th><th>Expected result</th></tr></thead>
+        <tbody>
+          <tr><td>P0</td><td>Rotate exposed secrets; remove public mutation routes; enforce role/ownership authorization.</td><td>Immediate reduction in data and account risk.</td></tr>
+          <tr><td>P0</td><td>Replace the split mock/API cart with one backend-backed product configuration and order payload.</td><td>A reliable customer checkout path.</td></tr>
+          <tr><td>P1</td><td>Use MongoDB transactions and atomic quantity checks for stock and order creation.</td><td>No partial stock reduction or overselling.</td></tr>
+          <tr><td>P1</td><td>Define COD/payment completion and shipping eligibility rules.</td><td>Orders can progress into EasyParcel without manual database changes.</td></tr>
+          <tr><td>P1</td><td>Add API and browser integration tests for the complete order lifecycle.</td><td>Future commits detect regressions before deployment.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <strong>Report conclusion:</strong> Shop-Co has broad operational capability and a mature staff workflow, especially around artwork, production, files, and shipping. The next engineering milestone should be making the customer purchase path authoritative end to end, followed immediately by authorization and secret-management hardening.
+      </div>
+
+      <p class="evidence">Prepared from repository source and Git history at <code>github.com/iniharith/shop-co</code>. Report source: <code>reports/shop-co-system-report.html</code>.</p>
+    </div>
+    <div class="footer"><span>Backend: Committed Fixes and Actions</span><span>10 / 10</span></div>
+  </section>
+</body>
+</html>

@@ -3,9 +3,11 @@
 **Shop-Co** is a modern, full-stack e-commerce platform featuring real-time order tracking, role-based authentication (Client, Delivery Boy, Admin), and a clean scalable architecture. Built with **Next.js**, **Node.js**, **Express**, **TypeScript**, **MongoDB**, **Redis**, and **WebSockets**, it offers a powerful and responsive shopping experience.
 
 ## 🔗Links
-- [Frontned](https://studioivory.art/) 
+- [Frontend](https://studioivory.art/)
 - [Backend](https://api.studioivory.art/health) 
-- [Admin](https://admin.studioivory.art/)     
+- [Admin](https://admin.studioivory.art/)
+- [A4 Frontend & Backend System Report](reports/shop-co-system-report.pdf)
+
 ---
 
 
@@ -91,7 +93,7 @@ ssh -i "shop-co3.pem" ubuntu@ec2-3-109-142-4.ap-south-1.compute.amazonaws.com
 ### 📥 Clone Repository
 
 ```bash
-git clone https://github.com/Abshar777/shop-co.git
+git clone https://github.com/iniharith/shop-co.git
 cd shop-co
 ```
 
@@ -153,7 +155,7 @@ NEXT_PUBLIC_FRONTEND_URL=https://studioivory.art
    - `sudo apt install docker.io docker-compose -y`
 
 3. Clone the repository:
-   - `git clone https://github.com/Abshar777/shop-co.git`
+   - `git clone https://github.com/iniharith/shop-co.git`
    - `cd shop-co`
 
 4. Add your `.env` files in `frontend/` and `backend/`.
