@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
@@ -127,11 +127,12 @@ const CreateTaskDialog = () => {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function TasksManager() {
-  const { data: response, isPending, refetch, isFetching } = useTasks();
+  const { data: response, isPending: isTasksPending, refetch, isFetching } = useTasks();
   const tasks = (response as any)?.tasks || [];
   const { data: usersData } = useUsers();
 
-  const [viewMode, setViewMode]                     = useState<"board" | "list">("board");
+  const [viewMode, setViewMode]                     = useState<"board" | "list">("list");
+  const [, startViewTransition]                     = useTransition();
   const [selectedTask, setSelectedTask]             = useState<any>(null);
   const [hiddenColumns, setHiddenColumns]           = useState<string[]>([]);
   // Sections start closed (all statuses "collapsed") — matches the previous
@@ -254,41 +255,53 @@ export default function TasksManager() {
 
   // ── Columns / visibility ──────────────────────────────────────────────────
   const columns = TASK_COLUMNS;
-  const visibleColumns = columns.filter(s => !hiddenColumns.includes(s));
+  const visibleColumns = useMemo(
+    () => columns.filter(s => !hiddenColumns.includes(s)),
+    [hiddenColumns]
+  );
 
   const toggleColumnVisibility = (s: string) => setHiddenColumns(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
   const toggleSectionCollapse  = (s: string) => setCollapsedSections(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
   const toggleColumnCollapse   = (s: string) => setCollapsedColumns(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
   // ── Sorted / filtered task list ───────────────────────────────────────────
-  const sortedTasks = [...tasks]
-    .filter((t: any) => !deletedTaskIds.includes(t._id))
-    .filter((t: any) =>
-      t.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.orderId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.customerUsername?.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .filter((t: any) => {
-      if (assigneeFilter === "all") return true;
-      if (assigneeFilter === "unassigned") return !t.assignee;
-      return t.assignee === assigneeFilter;
-    })
-    .sort((a: any, b: any) => {
-      if (sortOption === "dateDesc") return new Date(b.statusUpdatedAt || b.createdAt).getTime() - new Date(a.statusUpdatedAt || a.createdAt).getTime();
-      if (sortOption === "dateAsc")  return new Date(a.statusUpdatedAt || a.createdAt).getTime() - new Date(b.statusUpdatedAt || b.createdAt).getTime();
-      if (sortOption === "nameAsc")  return (a.title || "").localeCompare(b.title || "");
-      if (sortOption === "nameDesc") return (b.title || "").localeCompare(a.title || "");
-      return 0;
-    });
+  const sortedTasks = useMemo(() => {
+    const normalizedQuery = searchQuery.toLowerCase();
+    return [...tasks]
+      .filter((t: any) => !deletedTaskIds.includes(t._id))
+      .filter((t: any) =>
+        t.title?.toLowerCase().includes(normalizedQuery) ||
+        t.orderId?.toLowerCase().includes(normalizedQuery) ||
+        t.customerUsername?.toLowerCase().includes(normalizedQuery)
+      )
+      .filter((t: any) => {
+        if (assigneeFilter === "all") return true;
+        if (assigneeFilter === "unassigned") return !t.assignee;
+        return t.assignee === assigneeFilter;
+      })
+      .sort((a: any, b: any) => {
+        if (sortOption === "dateDesc") return new Date(b.statusUpdatedAt || b.createdAt).getTime() - new Date(a.statusUpdatedAt || a.createdAt).getTime();
+        if (sortOption === "dateAsc") return new Date(a.statusUpdatedAt || a.createdAt).getTime() - new Date(b.statusUpdatedAt || b.createdAt).getTime();
+        if (sortOption === "nameAsc") return (a.title || "").localeCompare(b.title || "");
+        if (sortOption === "nameDesc") return (b.title || "").localeCompare(a.title || "");
+        return 0;
+      });
+  }, [tasks, deletedTaskIds, searchQuery, assigneeFilter, sortOption]);
+
+  const tasksByStatus = useMemo(() => {
+    const grouped = Object.fromEntries(columns.map(status => [status, [] as any[]]));
+    sortedTasks.forEach((task: any) => grouped[task.status]?.push(task));
+    return grouped as Record<string, any[]>;
+  }, [sortedTasks]);
 
   // Build a flat ordered list of all list-view task IDs (for shift-click range)
   // This runs during render so it always reflects the current sort/filter order.
-  const listOrderedIds: string[] = [];
-  columns.forEach(status => {
-    sortedTasks.filter((t: any) => t.status === status).forEach((t: any) => listOrderedIds.push(t._id));
-  });
+  const listOrderedIds = useMemo(
+    () => columns.flatMap(status => tasksByStatus[status].map(task => task._id)),
+    [tasksByStatus]
+  );
 
-  if (isPending) return <LoadingAnimation fullScreen={false} label="Loading tasks" />;
+  if (isTasksPending) return <LoadingAnimation fullScreen={false} label="Loading tasks" />;
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-full min-w-0 overflow-hidden px-1">
@@ -298,10 +311,10 @@ export default function TasksManager() {
         <div className="flex items-center gap-4 flex-wrap">
           {/* View toggle */}
           <div className="flex items-center bg-muted/50 p-1 rounded-lg border border-border/50">
-            <Button variant={viewMode === "list"  ? "secondary" : "ghost"} size="sm" className="h-8 px-3 rounded-md" onClick={() => { setViewMode("list");  clearSelection(); }}>
+            <Button variant={viewMode === "list"  ? "secondary" : "ghost"} size="sm" className="h-8 px-3 rounded-md" onClick={() => { startViewTransition(() => setViewMode("list")); clearSelection(); }}>
               <List className="w-4 h-4 mr-2" /> List View
             </Button>
-            <Button variant={viewMode === "board" ? "secondary" : "ghost"} size="sm" className="h-8 px-3 rounded-md" onClick={() => { setViewMode("board"); clearSelection(); }}>
+            <Button variant={viewMode === "board" ? "secondary" : "ghost"} size="sm" className="h-8 px-3 rounded-md" onClick={() => { startViewTransition(() => setViewMode("board")); clearSelection(); }}>
               <LayoutGrid className="w-4 h-4 mr-2" /> Board View
             </Button>
           </div>
@@ -401,7 +414,7 @@ export default function TasksManager() {
           <div className="absolute inset-0 overflow-x-auto pb-4">
             <div className="flex gap-4 items-start w-max">
               {visibleColumns.map(status => {
-                const columnTasks = sortedTasks.filter((t: any) => t.status === status);
+                const columnTasks = tasksByStatus[status];
                 const isCollapsed = collapsedColumns.includes(status);
                 return (
                   <div key={status} className="bg-muted/30 rounded-2xl p-3 border border-border/50 flex flex-col gap-3 min-w-[270px] w-[270px] shrink-0">
@@ -485,7 +498,7 @@ export default function TasksManager() {
             <div className="bg-card rounded-xl border border-border/50 shadow-sm p-8 text-center text-muted-foreground">No tasks found</div>
           )}
           {visibleColumns.map(status => {
-            const sectionTasks = sortedTasks.filter((t: any) => t.status === status);
+            const sectionTasks = tasksByStatus[status];
             if (sectionTasks.length === 0) return null;
             const isCollapsed = collapsedSections.includes(status);
             return (
@@ -501,7 +514,7 @@ export default function TasksManager() {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   {/* Header row */}
-                  <div className="grid grid-cols-12 gap-4 px-4 py-2 border-b border-border/50 bg-muted/10 font-medium text-xs text-muted-foreground select-none">
+                  <div className="hidden sm:grid sm:grid-cols-12 gap-4 px-4 py-2 border-b border-border/50 bg-muted/10 font-medium text-xs text-muted-foreground select-none">
                     <div className="col-span-6 px-2">Task Name</div>
                     <div className="col-span-2">Assignee</div>
                     <div className="col-span-2">Status</div>
@@ -516,7 +529,7 @@ export default function TasksManager() {
                           key={task._id}
                           data-task-row="true"
                           className={`
-                            group grid grid-cols-12 gap-2 items-center py-2 px-2 rounded-lg
+                            group grid grid-cols-1 sm:grid-cols-12 gap-2 items-center py-2 px-2 rounded-lg min-w-0
                             transition-all cursor-pointer select-none
                             ${isSelected
                               ? "bg-blue-50 dark:bg-blue-950/40 ring-2 ring-blue-500 ring-inset"
@@ -526,7 +539,7 @@ export default function TasksManager() {
                           onClick={e => handleRowClick(task, e, listOrderedIds)}
                         >
                           {/* Left accent bar when selected */}
-                          <div className={`col-span-6 font-medium text-sm flex items-center gap-2 px-2 relative`}>
+                          <div className={`sm:col-span-6 font-medium text-sm flex items-center gap-2 px-2 relative min-w-0`}>
                             {isSelected && (
                               <span className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-5 bg-blue-500 rounded-full" />
                             )}
@@ -545,7 +558,7 @@ export default function TasksManager() {
                             </span>
                           </div>
 
-                          <div className="col-span-2 text-sm" onClick={e => e.stopPropagation()}>
+                          <div className="sm:col-span-2 text-sm min-w-0" onClick={e => e.stopPropagation()}>
                             <Select value={task.assignee || "unassigned"} onValueChange={v => updateTask({ id: task._id, data: { assignee: v === "unassigned" ? null : v } })}>
                               <SelectTrigger className="h-8 text-xs bg-transparent border-0 shadow-none focus:ring-0">
                                 <AssigneeTag user={usersData?.users?.find((u: any) => u._id === task.assignee)} />
@@ -561,14 +574,14 @@ export default function TasksManager() {
                             </Select>
                           </div>
 
-                          <div className="col-span-2" onClick={e => e.stopPropagation()}>
+                          <div className="sm:col-span-2 min-w-0" onClick={e => e.stopPropagation()}>
                             <Select value={task.status} onValueChange={v => handleStatusChange(task._id, v)}>
                               <SelectTrigger className="h-8 text-xs bg-transparent border-0 shadow-none focus:ring-0"><SelectValue /></SelectTrigger>
                               <SelectContent>{columns.map(s => <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
                             </Select>
                           </div>
 
-                          <div className="col-span-2 flex items-center justify-between gap-1" onClick={e => e.stopPropagation()}>
+                          <div className="sm:col-span-2 flex items-center justify-between gap-1 min-w-0" onClick={e => e.stopPropagation()}>
                             <DueDateDisplay task={task} updateTask={updateTask} className="w-fit" />
                             <div className="flex items-center gap-1">
                               <a

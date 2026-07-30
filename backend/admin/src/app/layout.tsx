@@ -4,7 +4,7 @@
  */
 import Providers from "@/components/layout/providers";
 import { Toaster } from "@/components/ui/sonner";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
@@ -24,6 +24,12 @@ export const metadata: Metadata = {
     shortcut: "/favicon-16x16.png",
     apple: "/apple-touch-icon.png",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 const jakarta = Plus_Jakarta_Sans({

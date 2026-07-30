@@ -56,8 +56,8 @@ export default function LoadingAnimation({
           gap: 32px;
         }
         .la-animation {
-          width: 240px;
-          height: 135px;
+          width: 336px;
+          height: 189px;
         }
         .la-label {
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
