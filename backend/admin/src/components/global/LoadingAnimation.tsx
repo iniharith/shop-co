@@ -16,6 +16,19 @@
  * style — bg-background/40, backdrop-blur, subtle border — so it blends
  * into the page instead of punching a black hole in it.
  *
+ * ---------------------------------------------------------------------
+ * iOS/iPadOS Safari crash fix (July 2026), part 1:
+ * Runtime `filter: blur()` + `mix-blend-mode` layers were replaced with
+ * pre-blurred gradients — see git history / previous patch notes.
+ *
+ * iPad/mobile "lite mode" (part 2):
+ * On touch devices (`useLowPowerAnimations`), we now render a single,
+ * simple pulsing gradient circle instead of the full multi-layer sphere
+ * (ambient glow + two swirls + spinning rim + drifting specular, each
+ * with its own continuous animation). Desktop is unaffected — this only
+ * kicks in for iPad/tablet/phone, and only changes decoration, not the
+ * loading behavior itself.
+ *
  * Usage:
  *   <LoadingAnimation />                              // full-screen overlay, solid black
  *   <LoadingAnimation fullScreen={false} />            // inline, frosted glass card
@@ -24,6 +37,8 @@
  *   <LoadingAnimation fullScreen={false} glass={false} /> // inline, transparent (no card bg at all)
  */
 "use client";
+
+import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
 
 interface LoadingAnimationProps {
   fullScreen?: boolean;
@@ -40,6 +55,8 @@ export default function LoadingAnimation({
   scale = 1,
   glass = true,
 }: LoadingAnimationProps) {
+  const lowPower = useLowPowerAnimations();
+
   const wrapClass = fullScreen
     ? "la-wrap la-wrap--full"
     : glass
@@ -49,17 +66,23 @@ export default function LoadingAnimation({
   return (
     <div className={wrapClass}>
       <div className="la-scaler" style={{ transform: `scale(${scale})` }}>
-        <div className="la-stage">
-          <div className="la-ambient" />
-          <div className="la-sphere">
-            <div className="la-base" />
-            <div className="la-swirl la-swirl--a" />
-            <div className="la-swirl la-swirl--b" />
-            <div className="la-shading" />
-            <div className="la-rim" />
-            <div className="la-specular" />
+        {lowPower ? (
+          <div className="la-stage la-stage--lite">
+            <div className="la-lite-pulse" />
           </div>
-        </div>
+        ) : (
+          <div className="la-stage">
+            <div className="la-ambient" />
+            <div className="la-sphere">
+              <div className="la-base" />
+              <div className="la-swirl la-swirl--a" />
+              <div className="la-swirl la-swirl--b" />
+              <div className="la-shading" />
+              <div className="la-rim" />
+              <div className="la-specular" />
+            </div>
+          </div>
+        )}
 
         {label && <p className="la-label">{label}</p>}
       </div>
@@ -95,17 +118,53 @@ export default function LoadingAnimation({
           display: flex;
           align-items: center;
           justify-content: center;
+          contain: layout paint style;
         }
 
+        /* ---------- LITE MODE (iPad / touch devices) ----------
+           One element, one opacity+scale animation. No blur, no
+           conic-gradient rotation, no morphing border-radius. This is
+           about as cheap as a "loading" indicator can be while still
+           looking intentional rather than a plain spinner. */
+        .la-stage--lite {
+          width: 96px;
+          height: 96px;
+        }
+        .la-lite-pulse {
+          width: 72px;
+          height: 72px;
+          border-radius: 50%;
+          background: radial-gradient(
+            circle at 42% 38%,
+            #4f7bff 0%,
+            #7a5cff 45%,
+            #33e0c0 80%,
+            transparent 100%
+          );
+          box-shadow: 0 0 24px 4px rgba(80, 90, 220, 0.35);
+          animation: la-lite-pulse 1.4s ease-in-out infinite;
+        }
+        @keyframes la-lite-pulse {
+          0%, 100% { transform: scale(0.85); opacity: 0.55; }
+          50% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ---------- FULL MODE (desktop) ---------- */
         .la-ambient {
           position: absolute;
-          width: 190px;
-          height: 190px;
+          width: 210px;
+          height: 210px;
           border-radius: 50%;
-          background: radial-gradient(circle, #2f4fd6 0%, rgba(47, 79, 214, 0) 70%);
-          filter: blur(28px);
+          background: radial-gradient(
+            circle,
+            rgba(47, 79, 214, 0.42) 0%,
+            rgba(47, 79, 214, 0.24) 30%,
+            rgba(47, 79, 214, 0.08) 55%,
+            rgba(47, 79, 214, 0) 72%
+          );
           opacity: 0.5;
           animation: la-ambient-pulse 5s ease-in-out infinite;
+          will-change: transform;
         }
 
         .la-sphere {
@@ -131,49 +190,47 @@ export default function LoadingAnimation({
           );
         }
 
-        /* the two swirling ribbon streaks that slowly rotate/drift */
         .la-swirl {
           position: absolute;
           width: 180%;
-          height: 26%;
+          height: 30%;
           left: -40%;
-          mix-blend-mode: screen;
-          filter: blur(10px);
-          opacity: 0.5;
+          opacity: 0.4;
         }
         .la-swirl--a {
-          top: 30%;
+          top: 28%;
           background: linear-gradient(
             100deg,
             transparent 0%,
-            #3b6bff 22%,
-            #7a5cff 38%,
-            #33e0c0 52%,
-            #ff6ec7 66%,
+            rgba(59, 107, 255, 0.55) 22%,
+            rgba(122, 92, 255, 0.55) 38%,
+            rgba(51, 224, 192, 0.55) 52%,
+            rgba(255, 110, 199, 0.55) 66%,
             transparent 100%
           );
           border-radius: 50%;
           transform: rotate(-18deg);
           animation: la-swirl-a 10s ease-in-out infinite;
+          will-change: transform;
         }
         .la-swirl--b {
-          top: 54%;
-          height: 20%;
+          top: 52%;
+          height: 24%;
           background: linear-gradient(
             100deg,
             transparent 0%,
-            #6a4bff 25%,
-            #33e0c0 50%,
-            #4f7bff 75%,
+            rgba(106, 75, 255, 0.5) 25%,
+            rgba(51, 224, 192, 0.5) 50%,
+            rgba(79, 123, 255, 0.5) 75%,
             transparent 100%
           );
           border-radius: 50%;
-          opacity: 0.7;
+          opacity: 0.55;
           transform: rotate(14deg);
           animation: la-swirl-b 12s ease-in-out infinite;
+          will-change: transform;
         }
 
-        /* spherical falloff — this is what actually sells the 3D ball shape */
         .la-shading {
           position: absolute;
           inset: 0;
@@ -185,10 +242,8 @@ export default function LoadingAnimation({
             rgba(0, 4, 20, 0.55) 72%,
             rgba(0, 2, 10, 0.9) 100%
           );
-          mix-blend-mode: multiply;
         }
 
-        /* Fresnel-style iridescent rim: conic gradient masked to a ring */
         .la-rim {
           position: absolute;
           inset: 0;
@@ -201,23 +256,21 @@ export default function LoadingAnimation({
             #ff6ec7,
             #4f7bff
           );
-          mix-blend-mode: screen;
-          opacity: 0.7;
+          opacity: 0.55;
           -webkit-mask: radial-gradient(circle, transparent 66%, #000 72%, #000 90%, transparent 100%);
           mask: radial-gradient(circle, transparent 66%, #000 72%, #000 90%, transparent 100%);
           animation: la-rim-spin 8s linear infinite;
+          will-change: transform;
         }
 
-        /* soft glassy specular highlight, upper-left */
         .la-specular {
           position: absolute;
           top: 8%;
           left: 12%;
           width: 30%;
           height: 18%;
-          background: radial-gradient(ellipse, rgba(255, 255, 255, 0.75), transparent 70%);
+          background: radial-gradient(ellipse, rgba(255, 255, 255, 0.7), transparent 70%);
           border-radius: 50%;
-          filter: blur(1px);
           animation: la-specular-drift 6s ease-in-out infinite;
         }
 
@@ -252,7 +305,7 @@ export default function LoadingAnimation({
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .la-ambient, .la-swirl, .la-rim, .la-specular {
+          .la-ambient, .la-swirl, .la-rim, .la-specular, .la-lite-pulse {
             animation: none !important;
           }
         }

@@ -5,11 +5,19 @@
 import { Task, ITask } from '../../domain/entities/Task';
 
 export class TaskRepository {
+  // Hard ceiling — no caller, present or future, can ever pull more than
+  // this many tasks in one request. This is what actually stops the
+  // Tasks board / print-drafts pages from silently growing an unbounded
+  // payload as the DB grows, which was causing very slow loads that led
+  // to memory pressure and crashes on iPad (July 2026).
+  private static readonly MAX_LIMIT = 1000;
+  private static readonly DEFAULT_LIMIT = 500;
+
   async create(data: Partial<ITask>): Promise<ITask> {
     return Task.create(data);
   }
 
-  async findAll(filters?: { status?: string; statuses?: string[]; assignee?: string; orderId?: string; customerUsername?: string; isDeleted?: boolean; days?: number; }): Promise<ITask[]> {
+  async findAll(filters?: { status?: string; statuses?: string[]; assignee?: string; orderId?: string; customerUsername?: string; isDeleted?: boolean; days?: number; limit?: number; }): Promise<ITask[]> {
     const query: any = {};
     if (filters?.status) query.status = filters.status;
     if (filters?.statuses && filters.statuses.length > 0) query.status = { $in: filters.statuses };
@@ -23,15 +31,32 @@ export class TaskRepository {
       query.isDeleted = { $ne: true };
     }
 
+    // Fully unfiltered requests (no status/statuses/assignee/orderId/deleted
+    // at all — e.g. the main Tasks board, print-drafts) previously had NO
+    // date bound and NO limit, so they fetched every task ever created.
+    // Restore a sane default window here, same 180-day precedent already
+    // used for the `statuses` filter case below.
+    const isFullyUnfiltered =
+      !filters?.status && !filters?.statuses?.length && !filters?.assignee &&
+      !filters?.orderId && !filters?.customerUsername && filters?.isDeleted !== true;
+
     if (filters?.days !== undefined) {
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - filters.days);
       query.createdAt = { $gte: daysAgo };
+    } else if (isFullyUnfiltered) {
+      const daysAgo = new Date();
+      daysAgo.setDate(daysAgo.getDate() - 180);
+      query.createdAt = { $gte: daysAgo };
     }
+
+    const requestedLimit = filters?.limit ?? TaskRepository.DEFAULT_LIMIT;
+    const limit = Math.min(Math.max(requestedLimit, 1), TaskRepository.MAX_LIMIT);
 
     return Task.find(query)
       .select('-comments -activities -files')
       .sort({ createdAt: -1 })
+      .limit(limit)
       .maxTimeMS(10_000)
       .lean() as unknown as Promise<ITask[]>;
   }

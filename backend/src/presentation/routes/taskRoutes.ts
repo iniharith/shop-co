@@ -79,6 +79,11 @@ router.get(
       filters.customerUsername = authReq.user?.name || authReq.user?.email; // or however user is identified
     }
     
+    if (req.query.limit) {
+      const parsed = parseInt(req.query.limit as string, 10);
+      if (!Number.isNaN(parsed)) filters.limit = parsed;
+    }
+
     const tasks = await taskRepository.findAll(filters);
     res.json({ success: true, tasks });
   })

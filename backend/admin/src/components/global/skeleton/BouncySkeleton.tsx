@@ -8,22 +8,41 @@
  * is the full-screen route-transition loader in app/loading.tsx).
  *
  * Same visual language as LoadingAnimation, sized for inline use.
+ *
+ * ---------------------------------------------------------------------
+ * iOS/iPadOS Safari crash fix (July 2026), part 1: animated filter:blur()
+ * / hue-rotate() replaced with pre-blurred gradients + static rotating
+ * conic-gradient ring — see previous patch notes.
+ *
+ * iPad/mobile "lite mode" (part 2): on touch devices, skip the ring,
+ * blob-morph, and flares entirely and render one simple pulsing circle
+ * — same reasoning as LoadingAnimation's lite mode.
  */
 import React from "react";
+import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
 
 interface BouncySkeletonProps {
   text?: string;
 }
 
 export function BouncySkeleton({ text = "Loading..." }: BouncySkeletonProps) {
+  const lowPower = useLowPowerAnimations();
+
   return (
     <div className="flex flex-col items-center justify-center w-full h-full min-h-[400px] p-8 relative overflow-hidden">
-      <div className="bsk-stage">
-        <div className="bsk-flare bsk-flare--a" />
-        <div className="bsk-flare bsk-flare--b" />
-        <div className="bsk-glow" />
-        <div className="bsk-blob" />
-      </div>
+      {lowPower ? (
+        <div className="bsk-stage bsk-stage--lite">
+          <div className="bsk-lite-pulse" />
+        </div>
+      ) : (
+        <div className="bsk-stage">
+          <div className="bsk-flare bsk-flare--a" />
+          <div className="bsk-flare bsk-flare--b" />
+          <div className="bsk-glow" />
+          <div className="bsk-ring" />
+          <div className="bsk-blob" />
+        </div>
+      )}
 
       <h3 className="bsk-label">{text}</h3>
 
@@ -36,17 +55,61 @@ export function BouncySkeleton({ text = "Loading..." }: BouncySkeletonProps) {
           align-items: center;
           justify-content: center;
           margin-bottom: 2rem;
+          contain: layout paint style;
         }
+
+        /* ---------- LITE MODE (iPad / touch devices) ---------- */
+        .bsk-stage--lite {
+          width: 90px;
+          height: 90px;
+        }
+        .bsk-lite-pulse {
+          width: 64px;
+          height: 64px;
+          border-radius: 50%;
+          background: radial-gradient(circle at 32% 28%, rgba(255,255,255,0.3), #33bfe0 75%);
+          box-shadow: 0 0 20px 4px rgba(51,191,224,0.4);
+          animation: bsk-lite-pulse 1.4s ease-in-out infinite;
+        }
+        @keyframes bsk-lite-pulse {
+          0%, 100% { transform: scale(0.85); opacity: 0.55; }
+          50% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ---------- FULL MODE (desktop) ---------- */
         .bsk-glow {
           position: absolute;
-          width: 130px;
-          height: 130px;
+          width: 150px;
+          height: 150px;
           border-radius: 50%;
-          background: radial-gradient(circle, #33bfe0 0%, rgba(51,191,224,0) 70%);
-          filter: blur(24px);
+          background: radial-gradient(
+            circle,
+            rgba(51, 191, 224, 0.5) 0%,
+            rgba(51, 191, 224, 0.28) 35%,
+            rgba(51, 191, 224, 0.1) 60%,
+            rgba(51, 191, 224, 0) 75%
+          );
           opacity: 0.55;
-          animation: bsk-hue 9s linear infinite, bsk-pulse 4.5s ease-in-out infinite;
+          animation: bsk-pulse 4.5s ease-in-out infinite;
+          will-change: transform;
         }
+
+        .bsk-ring {
+          position: absolute;
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          background: conic-gradient(
+            from 0deg,
+            #33bfe0, #33e0a8, #bfe033, #e0a833, #e03370, #a833e0, #3346e0, #33bfe0
+          );
+          opacity: 0.5;
+          -webkit-mask: radial-gradient(circle, transparent 62%, #000 68%, #000 92%, transparent 100%);
+          mask: radial-gradient(circle, transparent 62%, #000 68%, #000 92%, transparent 100%);
+          animation: bsk-rotate 9s linear infinite;
+          will-change: transform;
+        }
+
         .bsk-blob {
           position: relative;
           width: 96px;
@@ -57,13 +120,14 @@ export function BouncySkeleton({ text = "Loading..." }: BouncySkeletonProps) {
             0 0 18px 3px #33bfe0,
             0 0 36px 8px rgba(51,191,224,0.35),
             inset 0 0 18px rgba(51,191,224,0.3);
-          animation: bsk-morph 7s ease-in-out infinite, bsk-hue 9s linear infinite, bsk-rotate 14s linear infinite;
+          animation: bsk-morph 7s ease-in-out infinite;
+          will-change: border-radius;
         }
         .bsk-flare {
           position: absolute;
           background: linear-gradient(90deg, transparent, #33bfe0, transparent);
           opacity: 0.35;
-          animation: bsk-hue 9s linear infinite, bsk-flare-fade 4.5s ease-in-out infinite;
+          animation: bsk-flare-fade 4.5s ease-in-out infinite;
         }
         .bsk-flare--a { width: 190px; height: 1px; transform: rotate(45deg); }
         .bsk-flare--b { width: 190px; height: 1px; transform: rotate(-45deg); }
@@ -73,7 +137,6 @@ export function BouncySkeleton({ text = "Loading..." }: BouncySkeletonProps) {
           letter-spacing: 0.02em;
           color: #6b6f76;
         }
-        @keyframes bsk-hue { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
         @keyframes bsk-morph {
           0% { border-radius: 42% 58% 65% 35% / 45% 45% 55% 55%; }
           25% { border-radius: 62% 38% 30% 70% / 55% 65% 35% 45%; }
@@ -91,7 +154,7 @@ export function BouncySkeleton({ text = "Loading..." }: BouncySkeletonProps) {
           50% { opacity: 0.45; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .bsk-glow, .bsk-blob, .bsk-flare { animation: none !important; }
+          .bsk-glow, .bsk-ring, .bsk-blob, .bsk-flare, .bsk-lite-pulse { animation: none !important; }
           .bsk-blob { border-radius: 50%; }
         }
       `}} />
