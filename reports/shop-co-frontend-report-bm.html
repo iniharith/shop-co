@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Laporan Frontend Shop-Co - Bahasa Melayu</title>
+  <link rel="stylesheet" href="report-bm.css">
+</head>
+<body>
+  <section class="sheet">
+    <div class="cover">
+      <div class="brand">Shop-Co / KampungCetak</div>
+      <div>
+        <div class="eyebrow" style="color:#f1ddb3">Laporan Bahasa Melayu</div>
+        <h1>Laporan Frontend</h1>
+        <p class="lead">Penerangan sangat mudah tentang apa yang pelanggan nampak, cara sistem bergerak, aliran pesanan, masalah yang diketahui, dan pembaikan di GitHub.</p>
+        <div class="cover-grid">
+          <div class="cover-card"><strong>Bahagian</strong>Frontend pelanggan dan paparan admin</div>
+          <div class="cover-card"><strong>Format</strong>A4, 7 halaman, sedia dicetak</div>
+          <div class="cover-card"><strong>Bahasa</strong>Bahasa Melayu mudah</div>
+          <div class="cover-card"><strong>Semakan kod</strong>30 Julai 2026</div>
+        </div>
+      </div>
+      <div class="small" style="color:#d7e4dd">Frontend ialah semua skrin, butang, borang, gambar, dan maklumat yang dilihat atau disentuh oleh pengguna.</div>
+    </div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Mula Di Sini</div>
+      <h2>Frontend Itu Apa?</h2>
+      <div class="rule"></div>
+
+      <div class="simple"><strong>Jawapan paling mudah:</strong> frontend ialah bahagian kedai yang pelanggan nampak. Ia seperti rak produk, papan harga, troli, kaunter, dan resit. Backend pula ialah bilik pekerja di belakang kedai.</div>
+
+      <h3>Ringkasan satu pandangan</h3>
+      <div class="three-col">
+        <div class="card"><h4>Pelanggan nampak</h4>Produk, harga, pilihan cetakan, troli, checkout, profil, pesanan, fail artwork, chat, dan tracking.</div>
+        <div class="card"><h4>Frontend buat</h4>Ambil klik pengguna, simpan pilihan sementara, panggil API backend, dan tunjuk jawapan kepada pengguna.</div>
+        <div class="card"><h4>Masalah utama</h4>Produk yang dipaparkan dan troli utama belum bersambung dengan sempurna kepada proses pesanan backend.</div>
+      </div>
+
+      <h3>Graf status semakan frontend</h3>
+      <div class="chart">
+        <div class="bar-row"><span class="bar-label">Paparan dan navigasi</span><div class="bar-track"><div class="bar-fill" style="width:90%"></div></div><span class="bar-value">Kuat</span></div>
+        <div class="bar-row"><span class="bar-label">Pilihan produk cetakan</span><div class="bar-track"><div class="bar-fill" style="width:82%"></div></div><span class="bar-value">Kuat</span></div>
+        <div class="bar-row"><span class="bar-label">Upload artwork</span><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><span class="bar-value">Baik</span></div>
+        <div class="bar-row"><span class="bar-label">Paparan progress pesanan</span><div class="bar-track"><div class="bar-fill warn" style="width:48%"></div></div><span class="bar-value">Separa</span></div>
+        <div class="bar-row"><span class="bar-label">Sambungan troli ke pesanan</span><div class="bar-track"><div class="bar-fill bad" style="width:25%"></div></div><span class="bar-value">Kritikal</span></div>
+        <div class="legend"><span><i class="dot"></i>berfungsi dengan baik</span><span><i class="dot warn"></i>berfungsi sebahagian</span><span><i class="dot bad"></i>perlu dibaiki dahulu</span></div>
+      </div>
+      <p class="small">Graf ini ialah gambaran mudah berdasarkan semakan kod, bukan ukuran prestasi pengguna secara langsung.</p>
+
+      <div class="callout danger"><strong>Perkara paling penting:</strong> pelanggan boleh nampak produk dan memasukkannya ke troli, tetapi produk <code>prod-</code> disimpan dalam pelayar sahaja. Backend membaca troli pangkalan data. Jadi pesanan boleh gagal walaupun troli nampak berisi.</div>
+    </div>
+    <div class="footer"><span>Laporan Frontend BM</span><span>2 / 7</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Ciri Dan Mekanik</div>
+      <h2>Apa Yang Frontend Boleh Buat?</h2>
+      <div class="rule"></div>
+
+      <div class="two-col">
+        <div class="card">
+          <h3>Ciri pelanggan</h3>
+          <ul class="tight">
+            <li>Lihat halaman utama, kategori, dan produk.</li>
+            <li>Cari dan tapis produk.</li>
+            <li>Pilih bahan, saiz, finishing, kuantiti, dan tempoh siap.</li>
+            <li>Daftar, log masuk, dan urus profil.</li>
+            <li>Tambah produk ke troli dan buka checkout.</li>
+            <li>Upload artwork terus ke S3.</li>
+            <li>Lihat sejarah pesanan, komen, chat, dan tracking.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Ciri pekerja</h3>
+          <ul class="tight">
+            <li>Dashboard admin untuk pesanan dan tugasan.</li>
+            <li>Urus artwork, design, production, dan packaging.</li>
+            <li>Lihat pengguna, chat, penghantaran, dan status server.</li>
+            <li>Aplikasi admin mudah alih menggunakan Expo.</li>
+            <li>Versi desktop menggunakan Electron.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Mekanik frontend dalam 4 langkah</h3>
+      <div class="flow">
+        <div class="step"><span class="num">1</span><b>Pengguna klik</b>Contoh: tekan “Tambah ke troli”.</div>
+        <div class="step"><span class="num">2</span><b>React bertindak</b>Skrin membaca pilihan dan menjalankan fungsi.</div>
+        <div class="step"><span class="num">3</span><b>Frontend minta data</b>Axios menghantar permintaan kepada API backend.</div>
+        <div class="step"><span class="num">4</span><b>Skrin dikemas kini</b>React Query menyimpan jawapan dan memaparkannya.</div>
+      </div>
+
+      <h3>Graf komunikasi</h3>
+      <div class="arrow-row">
+        <div class="node">Pengguna<br><span class="small">klik / taip</span></div><span class="arrow">&rarr;</span>
+        <div class="node">Frontend<br><span class="small">React + Next.js</span></div><span class="arrow">&rarr;</span>
+        <div class="node">API Backend<br><span class="small">minta / hantar data</span></div><span class="arrow">&rarr;</span>
+        <div class="node">Skrin Baru<br><span class="small">jawapan dipaparkan</span></div>
+      </div>
+
+      <div class="callout"><strong>Contoh mudah:</strong> pelanggan tekan Log Masuk. Frontend menghantar e-mel dan kata laluan ke backend. Backend memeriksa akaun dan memberi token. Frontend menyimpan token dalam sesi, kemudian membuka halaman yang dilindungi.</div>
+
+      <p class="evidence">Teknologi utama: Next.js 16, React 19, TypeScript, Tailwind CSS 4, TanStack Query, NextAuth, Zustand, Axios, dan Socket.IO.</p>
+    </div>
+    <div class="footer"><span>Frontend: Ciri dan Mekanik</span><span>3 / 7</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Worktree / Pokok Sistem</div>
+      <h2>Fail Frontend Duduk Di Mana?</h2>
+      <div class="rule"></div>
+      <p>Rajah pokok ini menunjukkan tempat utama dalam projek. Fikirkan setiap folder sebagai sebuah laci yang menyimpan jenis barang tertentu.</p>
+
+      <div class="tree"><span class="folder">frontend/</span>
+|-- <span class="folder">src/app/</span>                 <span class="note"># halaman yang pengguna buka</span>
+|   |-- page.tsx                 <span class="note"># halaman utama</span>
+|   |-- home/shop/               <span class="note"># senarai dan detail produk</span>
+|   |-- home/cart/               <span class="note"># troli dan checkout</span>
+|   |-- home/profile/            <span class="note"># profil, pesanan, upload</span>
+|   `-- rsvp/                    <span class="note"># jemputan RSVP</span>
+|-- <span class="folder">src/components/</span>          <span class="note"># bahagian kecil skrin</span>
+|   |-- global/                  <span class="note"># nav, footer, chat, progress</span>
+|   |-- forms/                   <span class="note"># borang login dan alamat</span>
+|   `-- page-sections/           <span class="note"># blok untuk setiap halaman</span>
+|-- <span class="folder">src/hooks/</span>               <span class="note"># logik ambil dan ubah data</span>
+|-- <span class="folder">src/api/</span>                 <span class="note"># alamat panggilan ke backend</span>
+|-- <span class="folder">src/store/</span>               <span class="note"># keadaan UI sementara</span>
+|-- <span class="folder">src/constants/</span>           <span class="note"># data tetap dan produk dummy</span>
+|-- <span class="folder">src/types/</span>               <span class="note"># bentuk data TypeScript</span>
+`-- package.json                 <span class="note"># senarai teknologi dan arahan</span></div>
+
+      <h3>Bagaimana satu halaman dibina?</h3>
+      <div class="arrow-row">
+        <div class="node"><code>app/</code><br><span class="small">pilih halaman</span></div><span class="arrow">&rarr;</span>
+        <div class="node"><code>components/</code><br><span class="small">susun paparan</span></div><span class="arrow">&rarr;</span>
+        <div class="node"><code>hooks/</code><br><span class="small">jalankan logik</span></div><span class="arrow">&rarr;</span>
+        <div class="node"><code>api/</code><br><span class="small">hubungi backend</span></div>
+      </div>
+
+      <h3>Contoh: halaman produk</h3>
+      <ol>
+        <li>Fail dalam <code>app/home/shop/[id]</code> membuka halaman.</li>
+        <li>Komponen <code>product-details.tsx</code> melukis pilihan produk.</li>
+        <li>Hook <code>useProducts.ts</code> mencari data produk.</li>
+        <li>Apabila troli digunakan, <code>api/cart.ts</code> menentukan sama ada data pergi ke backend atau <code>localStorage</code>.</li>
+      </ol>
+
+      <div class="callout danger"><strong>Di sinilah masalah berlaku:</strong> <code>useProducts.ts</code> memaksa katalog dummy untuk dipaparkan. <code>api/cart.ts</code> menyimpan produk dummy dalam pelayar. Proses checkout backend tidak membaca tempat simpanan itu.</div>
+    </div>
+    <div class="footer"><span>Frontend: Worktree</span><span>4 / 7</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Progress Dan Cara Guna</div>
+      <h2>Bagaimana Pesanan Sepatutnya Bergerak?</h2>
+      <div class="rule"></div>
+
+      <h3>Rajah aliran pelanggan</h3>
+      <div class="arrow-row">
+        <div class="node">1. Cari<br>produk</div><span class="arrow">&rarr;</span>
+        <div class="node">2. Pilih<br>spesifikasi</div><span class="arrow">&rarr;</span>
+        <div class="node">3. Masuk<br>troli</div><span class="arrow">&rarr;</span>
+        <div class="node">4. Isi<br>alamat</div><span class="arrow">&rarr;</span>
+        <div class="node">5. Hantar<br>pesanan</div>
+      </div>
+      <div class="arrow-row">
+        <div class="node">6. Upload<br>artwork</div><span class="arrow">&rarr;</span>
+        <div class="node">7. Semak<br>komen</div><span class="arrow">&rarr;</span>
+        <div class="node">8. Pantau<br>production</div><span class="arrow">&rarr;</span>
+        <div class="node">9. Track<br>parcel</div>
+      </div>
+
+      <h3>Progress yang pelanggan nampak sekarang</h3>
+      <div class="arrow-row">
+        <div class="node">Pesanan<br>Dibuat</div><span class="arrow">&rarr;</span>
+        <div class="node">Sedang<br>Diproses</div><span class="arrow">&rarr;</span>
+        <div class="node">Sudah<br>Dihantar</div><span class="arrow">&rarr;</span>
+        <div class="node">Sudah<br>Sampai</div>
+      </div>
+      <p>Masalahnya: backend mempunyai lebih banyak status seperti artwork, design, pembetulan, printing, dan packaging. Frontend belum menunjukkan semua status ini dengan betul.</p>
+
+      <h3>Cara guna, langkah demi langkah</h3>
+      <ol>
+        <li>Buka <code>https://studioivory.art/</code>.</li>
+        <li>Tekan Shop. Cari produk yang diperlukan.</li>
+        <li>Buka produk. Pilih bahan, saiz, pilihan tambahan, dan kuantiti.</li>
+        <li>Log masuk. Tekan Add to cart.</li>
+        <li>Buka troli. Pastikan produk dan kuantiti betul.</li>
+        <li>Tekan checkout. Isi nama dan alamat penghantaran Malaysia.</li>
+        <li>Hantar pesanan. Kaedah web sekarang ialah COD.</li>
+        <li>Buka Profile &gt; Upload. Pilih pesanan dan upload artwork.</li>
+        <li>Buka Profile &gt; Orders untuk melihat komen dan tracking.</li>
+      </ol>
+
+      <div class="callout danger"><strong>Amaran sekarang:</strong> langkah 7 mungkin gagal untuk produk katalog dummy. Troli yang kelihatan berisi pada skrin tidak semestinya berisi dalam backend.</div>
+    </div>
+    <div class="footer"><span>Frontend: Progress dan Langkah</span><span>5 / 7</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Pepijat Diketahui</div>
+      <h2>Apa Yang Rosak Atau Belum Siap?</h2>
+      <div class="rule"></div>
+
+      <table>
+        <thead><tr><th style="width:18mm">Tahap</th><th style="width:48mm">Masalah</th><th>Penerangan paling mudah</th></tr></thead>
+        <tbody>
+          <tr><td class="severity">Kritikal</td><td>Troli tidak sampai ke backend</td><td>Produk dummy duduk dalam pelayar. Backend mencari produk dalam pangkalan data. Kedua-duanya melihat tempat yang berbeza.</td></tr>
+          <tr><td class="severity">Kritikal</td><td>Pilihan dan harga hilang</td><td>Harga terperinci dikira pada skrin, tetapi semua pilihan cetakan tidak dihantar sebagai data pesanan yang lengkap.</td></tr>
+          <tr><td class="severity">Tinggi</td><td>Progress salah</td><td>Status SHIPPED dan DELIVERED ditanda lambat satu langkah. CANCELLED juga boleh kelihatan seperti semua langkah berjaya.</td></tr>
+          <tr><td class="severity">Tinggi</td><td>Saiz menjadi teks pelik</td><td>Frontend mencantumkan pilihan design ke dalam saiz. Backend kemudian gagal mencari saiz itu dalam stok.</td></tr>
+          <tr><td class="severity medium">Sederhana</td><td>Bayaran mengelirukan</td><td>Halaman bayaran menyebut kad, FPX, dan e-wallet, tetapi checkout sebenar menggunakan COD.</td></tr>
+          <tr><td class="severity medium">Sederhana</td><td>Kesalahan troli disembunyikan</td><td>Jika API gagal, skrin masih boleh menunjukkan data lokal dan melaporkan tindakan berjaya.</td></tr>
+          <tr><td class="severity medium">Sederhana</td><td>Socket pelanggan tidak dipasang</td><td>Kod kemas kini masa nyata ada, tetapi providernya tidak digunakan pada akar aplikasi.</td></tr>
+          <tr><td class="severity medium">Sederhana</td><td>Filter dan pautan tidak lengkap</td><td>Filter material/turnaround tidak digunakan. Beberapa pautan menuju halaman yang tiada.</td></tr>
+          <tr><td class="severity medium">Sederhana</td><td>Alamat boleh salah</td><td>Pilihan guna alamat profil boleh meletakkan nama negeri di ruang alamat penuh.</td></tr>
+          <tr><td class="severity medium">Sederhana</td><td>Ralat TypeScript diabaikan</td><td>Build production dibenarkan walaupun TypeScript menemui ralat.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Urutan membaiki</h3>
+      <div class="arrow-row">
+        <div class="node">1. Satukan<br>produk</div><span class="arrow">&rarr;</span>
+        <div class="node">2. Satukan<br>troli</div><span class="arrow">&rarr;</span>
+        <div class="node">3. Simpan<br>semua pilihan</div><span class="arrow">&rarr;</span>
+        <div class="node">4. Betulkan<br>progress</div>
+      </div>
+      <p class="evidence">Bukti utama: <code>frontend/src/hooks/useProducts.ts</code>, <code>frontend/src/api/cart.ts</code>, <code>product-details.tsx</code>, halaman checkout, halaman detail pesanan, dan <code>next.config.ts</code>.</p>
+    </div>
+    <div class="footer"><span>Frontend: Pepijat</span><span>6 / 7</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">GitHub Dan Tindakan</div>
+      <h2>Pembaikan Yang Sudah Dibuat</h2>
+      <div class="rule"></div>
+      <p>Ini ialah commit sebenar yang sudah berada dalam sejarah GitHub. Ayat di bawah dipermudahkan.</p>
+
+      <div class="commit"><code>4c997f5c</code><span class="date">30 Jul 2026</span><span><strong>Senarai tugasan telefon:</strong> mengurangkan beban paparan pada telefon.</span></div>
+      <div class="commit"><code>d427a3a7</code><span class="date">30 Jul 2026</span><span><strong>iPad:</strong> mengehadkan query dan menggunakan animasi lebih ringan untuk mengurangkan crash.</span></div>
+      <div class="commit"><code>3efb0a6f</code><span class="date">29 Jul 2026</span><span><strong>Borang tugasan:</strong> membuang punca lag ketika pengguna menaip.</span></div>
+      <div class="commit"><code>5fa0cf89</code><span class="date">28 Jul 2026</span><span><strong>Fail projek:</strong> membolehkan beberapa fail dipilih sebagai satu julat.</span></div>
+      <div class="commit"><code>40555066</code><span class="date">27 Jul 2026</span><span><strong>Memori telefon:</strong> mengecilkan imej hero dan memperbaiki cara imej dimuatkan.</span></div>
+      <div class="commit"><code>53ccc2d5</code><span class="date">27 Jul 2026</span><span><strong>Layout admin:</strong> membaiki overflow, Safari, dan fallback polling.</span></div>
+      <div class="commit"><code>6b28e10d</code><span class="date">27 Jul 2026</span><span><strong>Login:</strong> membuang cookie fallback yang tidak selamat.</span></div>
+      <div class="commit"><code>10110dd1</code><span class="date">22 Jul 2026</span><span><strong>Sesi tamat:</strong> mengelakkan refresh token berulang tanpa henti.</span></div>
+
+      <h3>Apa perlu dibuat selepas ini?</h3>
+      <ol>
+        <li><strong>Paling awal:</strong> pindahkan katalog aktif ke backend atau hantar data konfigurasi yang lengkap kepada backend.</li>
+        <li>Gunakan satu troli sahaja. Jangan campurkan <code>localStorage</code> dan troli pangkalan data.</li>
+        <li>Simpan pilihan material, saiz, design, finishing, turnaround, kuantiti, dan harga sebagai medan berasingan.</li>
+        <li>Tunjukkan semua status artwork, design, printing, packaging, dan delivery kepada pelanggan.</li>
+        <li>Tambah ujian automatik dari pilih produk sehingga pesanan berjaya dibuat.</li>
+      </ol>
+
+      <div class="callout"><strong>Kesimpulan mudah:</strong> rupa dan ciri frontend sudah banyak. Masalah terbesar bukan pada kecantikan skrin. Masalah terbesar ialah data produk dan troli belum mengalir dengan betul ke backend.</div>
+      <p class="evidence">Repositori: <code>github.com/iniharith/shop-co</code>. Laporan ini berdasarkan semakan kod dan sejarah Git pada 30 Julai 2026.</p>
+    </div>
+    <div class="footer"><span>Frontend: Pembaikan GitHub</span><span>7 / 7</span></div>
+  </section>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Laporan Backend Shop-Co - Bahasa Melayu</title>
+  <link rel="stylesheet" href="report-bm.css">
+</head>
+<body>
+  <section class="sheet">
+    <div class="cover">
+      <div class="brand">Shop-Co / KampungCetak</div>
+      <div>
+        <div class="eyebrow" style="color:#f1ddb3">Laporan Bahasa Melayu</div>
+        <h1>Laporan Backend</h1>
+        <p class="lead">Penerangan sangat mudah tentang enjin di belakang sistem: API, data, pesanan, artwork, production, penghantaran, masalah, dan pembaikan GitHub.</p>
+        <div class="cover-grid">
+          <div class="cover-card"><strong>Bahagian</strong>API, data, fail, pesanan, dan integrasi</div>
+          <div class="cover-card"><strong>Format</strong>A4, 7 halaman, sedia dicetak</div>
+          <div class="cover-card"><strong>Bahasa</strong>Bahasa Melayu mudah</div>
+          <div class="cover-card"><strong>Semakan kod</strong>30 Julai 2026</div>
+        </div>
+      </div>
+      <div class="small" style="color:#d7e4dd">Backend ialah bahagian yang pengguna tidak nampak. Ia memeriksa arahan, menyimpan data, dan menggerakkan kerja.</div>
+    </div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Mula Di Sini</div>
+      <h2>Backend Itu Apa?</h2>
+      <div class="rule"></div>
+
+      <div class="simple"><strong>Jawapan paling mudah:</strong> backend ialah bilik operasi di belakang kedai. Pelanggan tidak nampak bilik ini. Di sinilah pekerja menyemak akaun, membaca troli, menyimpan pesanan, mengurus fail, dan menghubungi syarikat penghantaran.</div>
+
+      <h3>Ringkasan satu pandangan</h3>
+      <div class="three-col">
+        <div class="card"><h4>Backend terima</h4>Permintaan daripada frontend seperti login, tambah troli, buat pesanan, upload fail, atau lihat tracking.</div>
+        <div class="card"><h4>Backend buat</h4>Semak kebenaran, jalankan peraturan, simpan data, hantar notifikasi, dan pulangkan jawapan.</div>
+        <div class="card"><h4>Backend simpan</h4>Pengguna, produk, troli, pesanan, tugasan, fail, parcel, chat, dan log audit.</div>
+      </div>
+
+      <h3>Graf status semakan backend</h3>
+      <div class="chart">
+        <div class="bar-row"><span class="bar-label">Ciri operasi</span><div class="bar-track"><div class="bar-fill" style="width:90%"></div></div><span class="bar-value">Kuat</span></div>
+        <div class="bar-row"><span class="bar-label">Artwork dan fail</span><div class="bar-track"><div class="bar-fill" style="width:86%"></div></div><span class="bar-value">Kuat</span></div>
+        <div class="bar-row"><span class="bar-label">Production dan shipping</span><div class="bar-track"><div class="bar-fill" style="width:78%"></div></div><span class="bar-value">Baik</span></div>
+        <div class="bar-row"><span class="bar-label">Ketepatan transaksi pesanan</span><div class="bar-track"><div class="bar-fill warn" style="width:50%"></div></div><span class="bar-value">Separa</span></div>
+        <div class="bar-row"><span class="bar-label">Kawalan keselamatan route</span><div class="bar-track"><div class="bar-fill bad" style="width:30%"></div></div><span class="bar-value">Kritikal</span></div>
+        <div class="legend"><span><i class="dot"></i>berfungsi dengan baik</span><span><i class="dot warn"></i>perlu diperkukuh</span><span><i class="dot bad"></i>perlu dibaiki dahulu</span></div>
+      </div>
+      <p class="small">Graf ini ialah gambaran mudah berdasarkan semakan kod, bukan keputusan penetration test atau ukuran server secara langsung.</p>
+
+      <div class="callout danger"><strong>Perkara paling penting:</strong> backend mempunyai banyak ciri, tetapi beberapa route pesanan, tugasan, chat, folder, seed, dan migration tidak mempunyai pemeriksaan pemilik atau peranan yang cukup kuat.</div>
+    </div>
+    <div class="footer"><span>Laporan Backend BM</span><span>2 / 7</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Ciri Dan Mekanik</div>
+      <h2>Apa Yang Backend Boleh Buat?</h2>
+      <div class="rule"></div>
+
+      <div class="two-col">
+        <div class="card">
+          <h3>Operasi kedai</h3>
+          <ul class="tight">
+            <li>Daftar, login, token, profil, dan peranan pengguna.</li>
+            <li>Produk, carian, kategori, stok, troli, dan pesanan.</li>
+            <li>Tugasan pekerja, komen, aktiviti, dan pertukaran status.</li>
+            <li>Pesanan manual daripada Shopee, TikTok, dan web.</li>
+            <li>Production, packaging, shipping, dan tracking.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Fail dan komunikasi</h3>
+          <ul class="tight">
+            <li>Upload artwork ke S3 melalui presigned URL.</li>
+            <li>Folder, share link, ZIP download, dan review artwork.</li>
+            <li>Redis cache dan Pub/Sub untuk kemas kini.</li>
+            <li>Socket.IO untuk maklumat masa nyata.</li>
+            <li>WhatsApp, Expo notification, chat, dan audit log.</li>
+            <li>EasyParcel quotation, AWB, webhook, dan cron tracking.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Mekanik backend dalam 5 langkah</h3>
+      <div class="flow five">
+        <div class="step"><span class="num">1</span><b>Terima</b>Express menerima permintaan.</div>
+        <div class="step"><span class="num">2</span><b>Semak</b>Token dan data diperiksa.</div>
+        <div class="step"><span class="num">3</span><b>Proses</b>Use case menjalankan peraturan.</div>
+        <div class="step"><span class="num">4</span><b>Simpan</b>MongoDB menyimpan hasil.</div>
+        <div class="step"><span class="num">5</span><b>Beritahu</b>Jawapan dan notifikasi dihantar.</div>
+      </div>
+
+      <h3>Graf perjalanan satu permintaan</h3>
+      <div class="arrow-row">
+        <div class="node">Route<br><span class="small">pintu masuk</span></div><span class="arrow">&rarr;</span>
+        <div class="node">Controller<br><span class="small">terima arahan</span></div><span class="arrow">&rarr;</span>
+        <div class="node">Use Case<br><span class="small">buat keputusan</span></div><span class="arrow">&rarr;</span>
+        <div class="node">Repository<br><span class="small">baca / simpan</span></div><span class="arrow">&rarr;</span>
+        <div class="node">MongoDB<br><span class="small">data kekal</span></div>
+      </div>
+
+      <div class="callout"><strong>Contoh mudah:</strong> apabila pelanggan membuat pesanan, route menerima arahan, controller memanggil use case, use case membaca troli melalui repository, kemudian MongoDB menyimpan pesanan baru.</div>
+      <p class="evidence">Teknologi utama: Node.js, Express 4, TypeScript, MongoDB, Mongoose, Redis, Socket.IO, AWS S3, EasyParcel, WhatsApp Cloud API, dan Expo.</p>
+    </div>
+    <div class="footer"><span>Backend: Ciri dan Mekanik</span><span>3 / 7</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Worktree / Pokok Sistem</div>
+      <h2>Fail Backend Duduk Di Mana?</h2>
+      <div class="rule"></div>
+      <p>Rajah ini ialah peta folder backend. Setiap folder mempunyai tugas yang berbeza.</p>
+
+      <div class="tree"><span class="folder">backend/src/</span>
+|-- <span class="folder">settings/</span>                <span class="note"># hidupkan aplikasi dan server</span>
+|-- <span class="folder">presentation/</span>            <span class="note"># pintu HTTP</span>
+|   |-- routes/                  <span class="note"># senarai alamat API</span>
+|   |-- controllers/             <span class="note"># terima dan jawab request</span>
+|   `-- middlewares/             <span class="note"># auth, error, audit</span>
+|-- <span class="folder">application/</span>             <span class="note"># peraturan perniagaan</span>
+|   |-- usecases/orders/         <span class="note"># cipta dan gerak pesanan</span>
+|   |-- usecases/cart/           <span class="note"># operasi troli</span>
+|   `-- usecases/user/           <span class="note"># login dan pengguna</span>
+|-- <span class="folder">domain/</span>                  <span class="note"># bentuk entiti sistem</span>
+|-- <span class="folder">infrastructure/</span>          <span class="note"># sambungan dunia luar</span>
+|   |-- db/models/               <span class="note"># bentuk dokumen MongoDB</span>
+|   |-- db/repositories/         <span class="note"># baca dan simpan data</span>
+|   |-- services/                <span class="note"># EasyParcel, WhatsApp</span>
+|   |-- socket/                  <span class="note"># kemas kini masa nyata</span>
+|   `-- jobs/                    <span class="note"># kerja automatik cron</span>
+`-- <span class="folder">shared/</span>                  <span class="note"># utiliti yang dikongsi</span></div>
+
+      <h3>Siapa bercakap dengan siapa?</h3>
+      <div class="arrow-row">
+        <div class="node">Frontend</div><span class="arrow">&rarr;</span>
+        <div class="node">Express API</div><span class="arrow">&rarr;</span>
+        <div class="node">Use Case</div><span class="arrow">&rarr;</span>
+        <div class="node">MongoDB</div>
+      </div>
+      <div class="arrow-row">
+        <div class="node">Use Case</div><span class="arrow">&rarr;</span>
+        <div class="node">Redis / Socket</div><span class="arrow">&rarr;</span>
+        <div class="node">Admin / Pelanggan</div>
+      </div>
+      <div class="arrow-row">
+        <div class="node">Use Case</div><span class="arrow">&rarr;</span>
+        <div class="node">S3 / EasyParcel / WhatsApp</div><span class="arrow">&rarr;</span>
+        <div class="node">Fail / Parcel / Mesej</div>
+      </div>
+
+      <div class="callout"><strong>Cara membaca pokok:</strong> jika mahu mencari alamat API, buka <code>presentation/routes</code>. Jika mahu mencari peraturan pesanan, buka <code>application/usecases/orders</code>. Jika mahu mencari bentuk data pesanan, buka <code>infrastructure/db/models</code>.</div>
+    </div>
+    <div class="footer"><span>Backend: Worktree</span><span>4 / 7</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Progress Dan Cara Guna</div>
+      <h2>Bagaimana Pesanan Bergerak?</h2>
+      <div class="rule"></div>
+
+      <h3>Graf progress penuh</h3>
+      <div class="arrow-row">
+        <div class="node">PLACED<br><span class="small">pesanan baru</span></div><span class="arrow">&rarr;</span>
+        <div class="node">ARTWORK<br><span class="small">tunggu / semak</span></div><span class="arrow">&rarr;</span>
+        <div class="node">DESIGN<br><span class="small">buat / betulkan</span></div><span class="arrow">&rarr;</span>
+        <div class="node">PRODUCTION<br><span class="small">cetak</span></div>
+      </div>
+      <div class="arrow-row">
+        <div class="node">PACKAGING<br><span class="small">bungkus</span></div><span class="arrow">&rarr;</span>
+        <div class="node">SHIPPED<br><span class="small">serah kurier</span></div><span class="arrow">&rarr;</span>
+        <div class="node">IN_TRANSIT<br><span class="small">dalam perjalanan</span></div><span class="arrow">&rarr;</span>
+        <div class="node">DELIVERED<br><span class="small">sudah sampai</span></div>
+      </div>
+
+      <h3>Apa berlaku ketika pesanan dibuat?</h3>
+      <ol>
+        <li>Backend membaca troli MongoDB pengguna.</li>
+        <li>Backend mencari setiap produk dan saiz.</li>
+        <li>Backend memeriksa stok dan mengurangkan stok.</li>
+        <li>Backend mengira semula harga.</li>
+        <li>Backend mencipta pesanan COD dengan status <code>PLACED</code>.</li>
+        <li>Backend mencipta notifikasi dan tugasan pekerja.</li>
+        <li>Backend mengosongkan troli dan cache berkaitan.</li>
+        <li>Pekerja menggerakkan tugasan melalui artwork, design, printing, dan packaging.</li>
+        <li>EasyParcel membuat shipment apabila syarat bayaran dan production dipenuhi.</li>
+        <li>Webhook dan cron mengemas kini tracking sehingga <code>DELIVERED</code>.</li>
+      </ol>
+
+      <h3>Cara guna API asas</h3>
+      <table>
+        <thead><tr><th>Tujuan</th><th>Permintaan</th><th>Apa perlu dibuat</th></tr></thead>
+        <tbody>
+          <tr><td>Semak server</td><td><code>GET /health</code></td><td>Pastikan jawapan status ialah ok.</td></tr>
+          <tr><td>Login</td><td><code>POST /api/auth/login</code></td><td>Simpan access token yang diterima.</td></tr>
+          <tr><td>Tambah troli</td><td><code>POST /api/cart/add</code></td><td>Hantar ID produk, saiz, dan kuantiti.</td></tr>
+          <tr><td>Buat pesanan</td><td><code>POST /api/orders</code></td><td>Hantar nama, alamat, dan nota. Backend membaca troli.</td></tr>
+          <tr><td>Lihat pesanan</td><td><code>GET /api/orders/user</code></td><td>Hantar token pengguna dalam header Bearer.</td></tr>
+          <tr><td>Upload artwork</td><td><code>POST /api/files/presigned-url</code></td><td>Dapatkan URL, upload ke S3, kemudian simpan metadata.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="footer"><span>Backend: Progress dan Langkah</span><span>5 / 7</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">Pepijat Dan Risiko</div>
+      <h2>Apa Yang Rosak Atau Berbahaya?</h2>
+      <div class="rule"></div>
+
+      <table>
+        <thead><tr><th style="width:18mm">Tahap</th><th style="width:49mm">Masalah</th><th>Penerangan paling mudah</th></tr></thead>
+        <tbody>
+          <tr><td class="severity">Kritikal</td><td>Kebenaran route tidak cukup</td><td>Pengguna yang sudah login boleh mencapai beberapa operasi pesanan, tugasan, chat, dan folder tanpa semakan pemilik atau peranan yang konsisten.</td></tr>
+          <tr><td class="severity">Kritikal</td><td>Route ubah data terbuka</td><td>Route seed produk dan migration status boleh mengubah data tanpa authentication.</td></tr>
+          <tr><td class="severity">Kritikal</td><td>Rahsia dalam Git</td><td>Fail deployment dan arkib environment mengandungi nilai sensitif. Rahsia perlu ditukar dan dibuang daripada sejarah.</td></tr>
+          <tr><td class="severity">Tinggi</td><td>Stok tidak transactional</td><td>Stok dikurangkan sebelum pesanan selesai. Jika langkah seterusnya gagal, stok boleh berkurang tanpa pesanan.</td></tr>
+          <tr><td class="severity">Tinggi</td><td>COD menghalang shipping</td><td>Pesanan web bermula sebagai PENDING, tetapi shipment memerlukan PAID. Laluan biasa untuk menandakan bayaran tidak jelas.</td></tr>
+          <tr><td class="severity">Tinggi</td><td>Query status guna medan salah</td><td>Kod mencari <code>status</code>, tetapi model menyimpan <code>orderStatus</code>.</td></tr>
+          <tr><td class="severity">Tinggi</td><td>Socket boleh menyamar</td><td>Socket pelanggan mempercayai ID pengguna dalam query tanpa pengesahan JWT seperti socket admin.</td></tr>
+          <tr><td class="severity">Tinggi</td><td>CORS terlalu terbuka</td><td>Semua origin diterima walaupun credentials digunakan. Webhook WhatsApp juga tidak memeriksa tandatangan.</td></tr>
+          <tr><td class="severity medium">Sederhana</td><td>Cache status lama</td><td>Senarai status boleh menunjukkan data lama sehingga 24 jam.</td></tr>
+          <tr><td class="severity medium">Sederhana</td><td>Artwork dipadam ketika delivered</td><td>Menukar status kepada DELIVERED memadam fail berkaitan secara kekal.</td></tr>
+          <tr><td class="severity medium">Sederhana</td><td>Tiada test automatik</td><td>Frontend dan backend tidak mempunyai suite ujian penuh untuk mengesan kerosakan.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Urutan membaiki</h3>
+      <div class="arrow-row">
+        <div class="node">1. Tukar<br>semua rahsia</div><span class="arrow">&rarr;</span>
+        <div class="node">2. Kunci<br>semua route</div><span class="arrow">&rarr;</span>
+        <div class="node">3. Baiki<br>transaksi stok</div><span class="arrow">&rarr;</span>
+        <div class="node">4. Tambah<br>ujian</div>
+      </div>
+      <p class="evidence">Bukti utama: route order, task, chat, admin, product, model/repository order, <code>order.usecase.ts</code>, socket handler, CORS settings, dan <code>docker-compose.yml</code>.</p>
+    </div>
+    <div class="footer"><span>Backend: Pepijat dan Risiko</span><span>6 / 7</span></div>
+  </section>
+
+  <section class="sheet">
+    <div class="content">
+      <div class="eyebrow">GitHub Dan Tindakan</div>
+      <h2>Pembaikan Yang Sudah Dibuat</h2>
+      <div class="rule"></div>
+      <p>Ini ialah commit sebenar yang sudah berada dalam sejarah GitHub. Ayat di bawah dipermudahkan.</p>
+
+      <div class="commit"><code>e6df6c9a</code><span class="date">22 Jul 2026</span><span><strong>MongoDB:</strong> membaiki regex dan ObjectId dalam pengumpulan folder artwork.</span></div>
+      <div class="commit"><code>f744162d</code><span class="date">22 Jul 2026</span><span><strong>CORS admin:</strong> membaiki masalah origin untuk admin production.</span></div>
+      <div class="commit"><code>5c0f2bda</code><span class="date">22 Jul 2026</span><span><strong>Cache:</strong> menggunakan memori sementara jika Redis tidak tersedia.</span></div>
+      <div class="commit"><code>eff074ca</code><span class="date">22 Jul 2026</span><span><strong>Redis:</strong> mengurangkan sambungan semula berulang dan bacaan yang menghalang proses.</span></div>
+      <div class="commit"><code>ac1a512a</code><span class="date">22 Jul 2026</span><span><strong>Query fail:</strong> mengurangkan kerja pangkalan data melalui projection, batch, dan cache.</span></div>
+      <div class="commit"><code>3cb1599a</code><span class="date">22 Jul 2026</span><span><strong>EasyParcel:</strong> melengkapkan aliran tracking penghantaran.</span></div>
+      <div class="commit"><code>d1ff1bab</code><span class="date">21 Jul 2026</span><span><strong>Notifikasi shipping:</strong> menjadikan kemas kini pelanggan lebih selamat.</span></div>
+      <div class="commit"><code>773b1d24</code><span class="date">21 Jul 2026</span><span><strong>Upload artwork:</strong> menstabilkan proses upload awam.</span></div>
+
+      <h3>Apa perlu dibuat selepas ini?</h3>
+      <ol>
+        <li><strong>Paling awal:</strong> tukar semua rahsia yang pernah dimasukkan ke Git.</li>
+        <li>Gunakan pemeriksaan peranan untuk admin dan pemeriksaan pemilik untuk pelanggan pada setiap route.</li>
+        <li>Jadikan semakan stok, pengurangan stok, dan penciptaan pesanan sebagai satu transaksi MongoDB.</li>
+        <li>Tetapkan peraturan jelas untuk COD, PAID, dan bila EasyParcel boleh digunakan.</li>
+        <li>Betulkan query <code>status</code> kepada <code>orderStatus</code> dan invalidasi cache status lama.</li>
+        <li>Tambah ujian API dari login, troli, order, artwork, production, shipping, sehingga delivered.</li>
+      </ol>
+
+      <div class="callout"><strong>Kesimpulan mudah:</strong> backend mempunyai banyak kuasa dan ciri operasi. Oleh sebab itu, kawalan keselamatan dan ketepatan transaksi perlu dibaiki sebelum menambah lebih banyak ciri baru.</div>
+      <p class="evidence">Repositori: <code>github.com/iniharith/shop-co</code>. Laporan ini berdasarkan semakan kod dan sejarah Git pada 30 Julai 2026.</p>
+    </div>
+    <div class="footer"><span>Backend: Pembaikan GitHub</span><span>7 / 7</span></div>
+  </section>
+</body>
+</html>

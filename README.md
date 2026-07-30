@@ -7,6 +7,8 @@
 - [Backend](https://api.studioivory.art/health) 
 - [Admin](https://admin.studioivory.art/)
 - [A4 Frontend & Backend System Report](reports/shop-co-system-report.pdf)
+- [Laporan Frontend Bahasa Melayu (A4)](reports/shop-co-frontend-report-bm.pdf)
+- [Laporan Backend Bahasa Melayu (A4)](reports/shop-co-backend-report-bm.pdf)
 
 ---
 
