@@ -113,37 +113,8 @@ This command builds and starts the following services:
 
 ### 🌍 Environment Variables
 
-Ensure the following `.env` files are created for proper configuration.
-
-#### Backend (`/backend/.env`)
-
-```env
-PORT=5000
-MONGO_URI=mongodb://mongo:27017/shopco
-JWT_SECRET=_jwt_secret
-REDIS_HOST=redis
-REDIS_PORT=6379
-```
-#### Frontend (/frontend/.env)
-
-```env
-NEXT_PUBLIC_BACKEND_URL=https://api.studioivory.art
-
-NEXTAUTH_SECRET= _next_auth_SCRETE
-
-NEXT_PUBLIC_FRONTEND_URL=https://studioivory.art
-```
-
-
-#### Admin (/admin/.env)
-
-```env
-NEXT_PUBLIC_BACKEND_URL=https://api.studioivory.art
-
-NEXTAUTH_SECRET= _next_auth_SCRETE
-
-NEXT_PUBLIC_FRONTEND_URL=https://studioivory.art
-```
+Create the required `.env` files locally. Do not commit environment values,
+credentials, tokens, or deployment URLs to the repository.
 
 ## 🌐 Hosting & Deployment Steps (on EC2)
 
