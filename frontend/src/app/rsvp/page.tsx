@@ -264,7 +264,7 @@ export default function RsvpPage() {
       <section className={`${styles.details} ${styles.reveal}`} data-reveal id="majlis">
         <p className={styles.eyebrow}>Save the date</p>
         <h2>Walimatul Urus</h2>
-        <p className={styles.detailsIntro}><span>Assalamualaikum wbr &amp; Salam Sejahtera</span><span>dengan penuh kesyukuran dan keredaan-Nya, Saya</span></p>
+        <p className={styles.detailsIntro}><span>Assalamualaikum wbr &amp; Salam Sejahtera</span><span>dengan penuh kesyukuran dan keredhaan-Nya, Saya</span></p>
         <div className={styles.hostNames}><strong>NASIR BIN IBRAHIM</strong><span>&amp;</span><strong>FATAHIAH BINTI MAT DRIS</strong></div>
         <p className={styles.hostInvitation}><span>Dengan penuh kesyukuran, kami menjemput</span><span>Dato&apos;/Datin/Tuan/Puan/Encik/Cik</span><span>ke majlis perkahwinan puteri kami yang dikasihi</span></p>
         <div className={styles.coupleDetails}><strong>{wedding.bride}</strong><span>&amp;</span><strong>{wedding.groom}</strong></div>
