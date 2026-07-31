@@ -241,12 +241,12 @@ export const useDeleteFolder = () => {
 
 export const useMoveFile = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(
+    const { mutate, mutateAsync, isPending } = useMutationData(
         ['moveFile'],
         ({ fileId, folderId }: { fileId: string; folderId: string | null }) => moveFile(session?.user?.token, fileId, folderId),
         ['allFiles', 'groupedFiles', 'fileIndex', 'folderGroup', 'filesByFolder']
     );
-    return { mutate, isPending };
+    return { mutate, mutateAsync, isPending };
 }
 
 export const useOnlineUsers = () => {

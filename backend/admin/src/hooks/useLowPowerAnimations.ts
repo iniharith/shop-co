@@ -40,7 +40,9 @@ export function isLowPowerDevice(): boolean {
 }
 
 export function useLowPowerAnimations(): boolean {
-  const [lowPower, setLowPower] = React.useState(false);
+  // Start safe so mobile never mounts desktop-only animation or large batches
+  // before capability detection runs. Desktop upgrades after the first effect.
+  const [lowPower, setLowPower] = React.useState(true);
 
   React.useEffect(() => {
     setLowPower(isLowPowerDevice());

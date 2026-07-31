@@ -104,7 +104,7 @@ export default function ArtworksManager() {
   const { mutate: createFolderMutate, isPending: isCreatingFolder } = useCreateFolder();
   const { mutate: renameFolderMutate, isPending: isRenamingFolder } = useRenameFolder();
   const { mutate: deleteFolderMutate, isPending: isDeletingFolder } = useDeleteFolder();
-  const { mutate: moveFileMutate, isPending: isMovingFile } = useMoveFile();
+  const { mutate: moveFileMutate, mutateAsync: moveFileMutateAsync, isPending: isMovingFile } = useMoveFile();
 
   const { mutate: reviewFileMutate, isPending: isReviewing } = useReviewFile();
   const { mutate: deleteFileMutate, isPending: isDeleting } = useDeleteFile();
@@ -116,6 +116,8 @@ export default function ArtworksManager() {
   const [editingFileId, setEditingFileId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string>("");
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [draggedArtworkFileIds, setDraggedArtworkFileIds] = useState<string[]>([]);
+  const [dragOverSubFolderId, setDragOverSubFolderId] = useState<string | null>(null);
   const [isDragOverFolder, setIsDragOverFolder] = useState<boolean>(false);
   const [pendingArtworkDrop, setPendingArtworkDrop] = useState<File[] | null>(null);
 
@@ -207,6 +209,32 @@ export default function ArtworksManager() {
     setSelectedFiles(prev => 
       prev.includes(fileId) ? prev.filter(id => id !== fileId) : [...prev, fileId]
     );
+  };
+
+  const handleArtworkDragStart = (event: React.DragEvent, fileId: string) => {
+    const fileIds = selectedFiles.includes(fileId) ? selectedFiles : [fileId];
+    setDraggedArtworkFileIds(fileIds);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", fileIds.join(","));
+  };
+
+  const handleArtworkDrop = async (event: React.DragEvent, folderId: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const transferredIds = event.dataTransfer.getData("text/plain").split(",").filter(Boolean);
+    const fileIds = draggedArtworkFileIds.length > 0 ? draggedArtworkFileIds : transferredIds;
+    if (fileIds.length === 0) return;
+
+    try {
+      await Promise.all(fileIds.map(fileId => moveFileMutateAsync({ fileId, folderId })));
+      toast.success(`${fileIds.length} file${fileIds.length === 1 ? "" : "s"} moved to subfolder`);
+      setSelectedFiles([]);
+    } catch {
+      toast.error("Failed to move file to subfolder");
+    } finally {
+      setDraggedArtworkFileIds([]);
+      setDragOverSubFolderId(null);
+    }
   };
 
   const handleBulkDelete = () => {
@@ -910,8 +938,14 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
             return (
               <div 
                 className={`relative transition-colors rounded-xl ${isDragOverFolder ? 'bg-primary/5 border border-primary border-dashed p-4' : ''}`}
-                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverFolder(true); }}
-                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverFolder(true); }}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  if (Array.from(e.dataTransfer.types).includes("Files")) setIsDragOverFolder(true);
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (Array.from(e.dataTransfer.types).includes("Files")) setIsDragOverFolder(true);
+                }}
                 onDrop={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -1109,7 +1143,15 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                           <div className={viewMode === "grid" ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3" : "flex flex-col gap-3"}>
                             {visibleFolders.map((folder: any) => (
                               viewMode === "grid" ? (
-                                <Card key={folder._id} className="overflow-hidden shadow-sm hover:shadow-md cursor-pointer relative bg-card hover:bg-accent/50 border-primary/20 flex flex-col h-full min-h-[250px]" onClick={() => setActiveSubFolderId(folder._id)}>
+                                <Card
+                                  key={folder._id}
+                                  onDragEnter={(event) => { event.preventDefault(); event.stopPropagation(); setDragOverSubFolderId(folder._id); }}
+                                  onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = "move"; }}
+                                  onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragOverSubFolderId(null); }}
+                                  onDrop={(event) => void handleArtworkDrop(event, folder._id)}
+                                  className={`overflow-hidden shadow-sm hover:shadow-md cursor-pointer relative bg-card hover:bg-accent/50 border-primary/20 flex flex-col h-full min-h-[250px] ${dragOverSubFolderId === folder._id ? "ring-2 ring-primary bg-primary/10" : ""}`}
+                                  onClick={() => setActiveSubFolderId(folder._id)}
+                                >
                                   <div className="absolute top-2 right-10 z-20">
                                     <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-blue-50 hover:text-blue-600 bg-white/50" onClick={(e) => { e.stopPropagation(); setRenameFolderTarget({ id: folder._id, name: folder.name, type: "subfolder" }); setRenamedFolderName(folder.name); }} title="Rename Folder">
                                       <Pencil className="w-3 h-3" />
@@ -1126,7 +1168,15 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                                   </div>
                                 </Card>
                               ) : (
-                                <div key={folder._id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 cursor-pointer" onClick={() => setActiveSubFolderId(folder._id)}>
+                                <div
+                                  key={folder._id}
+                                  onDragEnter={(event) => { event.preventDefault(); event.stopPropagation(); setDragOverSubFolderId(folder._id); }}
+                                  onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = "move"; }}
+                                  onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragOverSubFolderId(null); }}
+                                  onDrop={(event) => void handleArtworkDrop(event, folder._id)}
+                                  className={`flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 cursor-pointer ${dragOverSubFolderId === folder._id ? "ring-2 ring-primary bg-primary/10" : ""}`}
+                                  onClick={() => setActiveSubFolderId(folder._id)}
+                                >
                                    <div className="flex items-center gap-4 min-w-0 flex-1">
                                      <Folder className="w-8 h-8 text-primary/70" fill="currentColor" />
                                      <span className="text-sm font-medium">{folder.name}</span>
@@ -1142,7 +1192,13 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                             ))}
                             {visibleFiles.map((file: any) => (
                     viewMode === "grid" ? (
-                      <Card key={file._id} className={`overflow-hidden shadow-sm hover:shadow-md transition-shadow relative ${selectedFiles.includes(file._id) ? 'ring-2 ring-primary ring-offset-1' : ''}`}>
+                      <Card
+                        key={file._id}
+                        draggable
+                        onDragStart={(event) => handleArtworkDragStart(event, file._id)}
+                        onDragEnd={() => { setDraggedArtworkFileIds([]); setDragOverSubFolderId(null); }}
+                        className={`overflow-hidden shadow-sm hover:shadow-md transition-shadow relative cursor-grab active:cursor-grabbing ${selectedFiles.includes(file._id) ? 'ring-2 ring-primary ring-offset-1' : ''}`}
+                      >
                         <div className="absolute top-2 left-2 z-30">
                           <Checkbox 
                             checked={selectedFiles.includes(file._id)} 
@@ -1226,7 +1282,13 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                         </CardContent>
                       </Card>
                     ) : (
-                      <div key={file._id} className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${selectedFiles.includes(file._id) ? 'bg-primary/5 border-primary/40' : 'hover:bg-muted/30'}`}>
+                      <div
+                        key={file._id}
+                        draggable
+                        onDragStart={(event) => handleArtworkDragStart(event, file._id)}
+                        onDragEnd={() => { setDraggedArtworkFileIds([]); setDragOverSubFolderId(null); }}
+                        className={`flex items-center justify-between p-3 border rounded-lg transition-colors cursor-grab active:cursor-grabbing ${selectedFiles.includes(file._id) ? 'bg-primary/5 border-primary/40' : 'hover:bg-muted/30'}`}
+                      >
                         <div className="flex items-center gap-4 min-w-0 flex-1">
                           <Checkbox 
                             checked={selectedFiles.includes(file._id)} 

@@ -1,5 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import loadingAnimation from "../../../public/lottie/loading.json";
+import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
+
+const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
+
 interface LoadingAnimationProps {
   fullScreen?: boolean;
   label?: string;
@@ -13,6 +19,7 @@ export default function LoadingAnimation({
   scale = 1,
   glass = true,
 }: LoadingAnimationProps) {
+  const lowPower = useLowPowerAnimations();
   const wrapClass = fullScreen
     ? "la-wrap la-wrap--full"
     : glass
@@ -22,8 +29,8 @@ export default function LoadingAnimation({
   return (
     <div className={wrapClass}>
       <div className="la-scaler" style={{ transform: `scale(${scale})` }}>
-        <div className="la-animation" role="status" aria-label={label || "Loading"}>
-          <span className="la-spinner" />
+        <div className={`la-animation ${lowPower ? "la-animation--mobile" : "la-animation--desktop"}`} role="status" aria-label={label || "Loading"}>
+          {lowPower ? <span className="la-spinner" /> : <Lottie animationData={loadingAnimation} loop autoplay />}
         </div>
         {label && <p className="la-label">{label}</p>}
       </div>
@@ -53,11 +60,11 @@ export default function LoadingAnimation({
           gap: 32px;
         }
         .la-animation {
-          width: 64px;
-          height: 64px;
           display: grid;
           place-items: center;
         }
+        .la-animation--mobile { width: 64px; height: 64px; }
+        .la-animation--desktop { width: 504px; height: 284px; }
         .la-spinner {
           width: 42px;
           height: 42px;

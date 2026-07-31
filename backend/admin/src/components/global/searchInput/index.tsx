@@ -112,7 +112,7 @@ export default function SearchInput({
         </kbd>
       )}
       {isOpen && (
-        <div className='absolute right-0 top-full z-[100] mt-2 w-[min(28rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-2xl'>
+        <div className='fixed left-1/2 top-20 z-[100] mt-2 max-h-[calc(100svh-6rem)] w-[calc(100vw-1.5rem)] -translate-x-1/2 overflow-y-auto rounded-xl border border-border bg-popover text-popover-foreground shadow-2xl md:absolute md:left-auto md:right-0 md:top-full md:w-[min(28rem,calc(100vw-2rem))] md:translate-x-0'>
           {isSearching ? (
             <div className='flex items-center gap-2 p-4 text-sm text-muted-foreground'>
               <LoaderCircle className='h-4 w-4 animate-spin' /> Searching...
