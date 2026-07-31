@@ -8,14 +8,14 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useRouter } from 'expo-router';
-import { Box, Truck, FileText, CircleCheckBig, CircleAlert, Wifi, WifiOff, Server, HardDrive, Cpu, Clock, Package, ClipboardList, FolderOpen, Users } from 'lucide-react-native';
+import { Box, Truck, FileText, CircleCheckBig, CircleAlert, Wifi, WifiOff, Server, HardDrive, Cpu, Clock, Package, ClipboardList, FolderOpen, Users, Sun, Moon } from 'lucide-react-native';
 import api from '../../services/api';
 import socketService from '../../services/socket';
 import { useTheme } from '../../context/ThemeContext';
 import { THEME } from '../../constants/theme';
 
 export default function DashboardScreen() {
-  const { theme, colors } = useTheme();
+  const { theme, colors, toggleTheme } = useTheme();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuthStore();
   const router = useRouter();
@@ -93,9 +93,14 @@ export default function DashboardScreen() {
             </Text>
           </View>
         </View>
-        <TouchableOpacity onPress={async () => { await logout(); router.replace('/login'); }} style={s.logoutBtn}>
-          <Text style={s.logoutText}>Logout</Text>
-        </TouchableOpacity>
+        <View style={s.headerActions}>
+          <TouchableOpacity onPress={toggleTheme} style={s.themeBtn}>
+            {theme === 'dark' ? <Sun size={18} color={colors.foreground} /> : <Moon size={18} color={colors.foreground} />}
+          </TouchableOpacity>
+          <TouchableOpacity onPress={async () => { await logout(); router.replace('/login'); }} style={s.logoutBtn}>
+            <Text style={s.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </BlurView>
 
       <ScrollView
@@ -242,6 +247,8 @@ const s = StyleSheet.create({
   liveText: { color: THEME.mutedForeground, fontSize: 13 },
   logoutBtn: { borderWidth: 1, borderColor: THEME.glassBorder, backgroundColor: THEME.glass, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
   logoutText: { color: THEME.foreground, fontSize: 13, fontWeight: '500' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  themeBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, borderColor: THEME.glassBorder, backgroundColor: THEME.glass, alignItems: 'center', justifyContent: 'center' },
   row: { flexDirection: 'row', gap: 10 },
   glassCard: { borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 16 },
   statCard: { flex: 1, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 14 },
