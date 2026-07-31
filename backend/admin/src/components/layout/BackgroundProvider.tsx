@@ -21,17 +21,21 @@ export default function BackgroundProvider({ children }: { children: React.React
   const [pointColor, setPointColor] = useState<string | null>(null);
 
   useEffect(() => {
-    document.body.classList.toggle("low-power-ui", isLowPowerDevice());
-    return () => document.body.classList.remove("low-power-ui");
+    document.documentElement.classList.toggle("low-power-ui", isLowPowerDevice());
+    return () => document.documentElement.classList.remove("low-power-ui");
   }, []);
 
   useEffect(() => {
     if (session?.user?.id) {
-      const savedBackground = localStorage.getItem(`theme-bg-${session.user.id}`);
-      setBackgroundStr(mobileSafeBackground(savedBackground));
-      setFontColor(localStorage.getItem(`theme-font-${session.user.id}`));
-      setButtonColor(localStorage.getItem(`theme-button-${session.user.id}`));
-      setPointColor(localStorage.getItem(`theme-point-${session.user.id}`));
+      try {
+        const savedBackground = localStorage.getItem(`theme-bg-${session.user.id}`);
+        setBackgroundStr(mobileSafeBackground(savedBackground));
+        setFontColor(localStorage.getItem(`theme-font-${session.user.id}`));
+        setButtonColor(localStorage.getItem(`theme-button-${session.user.id}`));
+        setPointColor(localStorage.getItem(`theme-point-${session.user.id}`));
+      } catch {
+        setBackgroundStr(null);
+      }
     }
   }, [session?.user?.id]);
 

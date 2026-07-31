@@ -5,8 +5,8 @@
 "use client";
 import React, { useState, useMemo } from "react";
 import { useFolderGroup, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles, useCreateShareLink, useFolders } from "@/hooks/useAdminDashboard";
-import { useOrders, useUpdateOrderStatus } from "@/hooks/useOrder";
-import { useTasks, useUpdateTask } from "@/hooks/useTasks";
+import { useOrder, useUpdateOrderStatus } from "@/hooks/useOrder";
+import { useTask, useUpdateTask } from "@/hooks/useTasks";
 import { useUsers } from "@/hooks/useUsers";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import AxiosInstance from "@/utils/axios";
 import { uploadFilesToS3Directly } from "@/utils/s3Upload";
 import { useSearchParams, useRouter } from "next/navigation";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
+import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
 
 const categories = [
   "ALL",
@@ -40,21 +41,28 @@ const categories = [
   "FOOD PACKAGING"
 ];
 
-const ALL_STATUSES = ["IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING"];
+const ALL_STATUSES = ["IN_PRODUCTION", "HOLD_PRINTING"];
 
 export default function ProductionManager() {
+  const lowPower = useLowPowerAnimations();
+  const folderBatchSize = lowPower ? 10 : 40;
+  const [folderBatches, setFolderBatches] = useState(1);
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching } = useFolderGroup(ALL_STATUSES);
   const groupedFromServer: any[] = (folderGroupResponse as any)?.data || [];
-  const { data: ordersResponse } = useOrders();
-  const { data: tasksResponse } = useTasks({ statuses: ALL_STATUSES.join(',') });
+  const selectedGroup = useMemo(() => groupedFromServer.find(
+    group => `${group.folderName}-${group.orderId}-${group.taskId || ""}` === selectedFolder
+  ), [groupedFromServer, selectedFolder]);
+  const { data: orderDetailResponse } = useOrder(!selectedGroup?.taskId ? selectedGroup?.orderId : undefined);
+  const { data: taskDetailResponse } = useTask(selectedGroup?.taskId);
   const { mutate: updateTask } = useUpdateTask();
-  const { data: usersResponse } = useUsers();
+  const { data: usersResponse } = useUsers(!!selectedFolder);
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
   
-  const { data: virtualFoldersResponse } = useFolders();
+  const { data: virtualFoldersResponse } = useFolders(!!selectedFolder);
   const virtualFolders = (virtualFoldersResponse as any)?.data || [];
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,7 +71,6 @@ export default function ProductionManager() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [activeSubFolderId, setActiveSubFolderId] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<any>(null);
   const [commentText, setCommentText] = useState("");
@@ -440,13 +447,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
     if (isPdf) {
       return (
         <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center relative group">
-          <iframe 
-            src={`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName || "file")}&inline=true#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} 
-            className="absolute top-0 left-0 border-none overflow-hidden"
-            style={{ width: '400%', height: '400%', transform: 'scale(0.25)', transformOrigin: 'top left', pointerEvents: 'none' }}
-            tabIndex={-1}
-          />
-          <div className="absolute inset-0 z-10 bg-transparent"></div>
+          <FileText className="w-10 h-10 text-red-500" />
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
             <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewFile(file); }} className="gap-1 shadow-sm">
               <Eye className="w-4 h-4" /> View
@@ -624,7 +625,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
               </div>
             )}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {groupedFiles.map((group) => {
+              {groupedFiles.slice(0, folderBatchSize * folderBatches).map((group) => {
                 const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
                 const isSelected = selectedFolder === folderId;
                 const isBulkChecked = selectedFolderIds.includes(folderId);
@@ -662,6 +663,11 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                   </div>
                 );
               })}
+              {groupedFiles.length > folderBatchSize * folderBatches && (
+                <Button variant="outline" size="sm" className="w-full" onClick={() => setFolderBatches(value => value + 1)}>
+                  Show more folders
+                </Button>
+              )}
             </div>
           </div>
 
@@ -679,7 +685,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                 if (activeGroup.orderId) return f.orderId === activeGroup.orderId;
                 return f.userId === activeGroup.userId && !f.taskId && !f.orderId;
               });
-              const allGroupFiles = activeFolderFiles.length > 0 ? activeFolderFiles : (activeGroup.files || []);
+              const allGroupFiles = activeFolderFiles;
               const visibleFiles = allGroupFiles.filter((f: any) => 
                 activeSubFolderId ? f.folderId === activeSubFolderId : (!f.folderId || f.folderId === 'null')
               );
@@ -692,11 +698,9 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                 );
               }
               
-              const tasks = (tasksResponse as any)?.tasks || [];
-              const orders = (ordersResponse as any)?.orders || [];
-              const users = (usersResponse as any)?.data || [];
-              const activeTask = activeGroup.isTask && activeGroup.taskId ? tasks.find((t: any) => t._id === activeGroup.taskId) : null;
-              const activeOrder = (!activeGroup.isTask && activeGroup.orderId) ? orders.find((o: any) => o._id === activeGroup.orderId || o.orderId === activeGroup.orderId) : null;
+              const users = (usersResponse as any)?.users || [];
+              const activeTask = (taskDetailResponse as any)?.task || null;
+              const activeOrder = (orderDetailResponse as any)?.order || null;
               const activeUser = activeTask?.assignee ? users.find((u: any) => u._id === activeTask.assignee) : null;
               
               const descriptionText = activeTask?.description ? activeTask.description : (activeOrder?.items ? activeOrder.items.map((item: any) => `${item.name} (${item.quantity}x)`).join('\n') : "No description provided.");

@@ -3,7 +3,6 @@
  * Kampungcetak ®
  */
 import React from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function PageContainer({
   children,
@@ -15,9 +14,9 @@ export default function PageContainer({
   return (
     <>
       {scrollable ? (
-        <ScrollArea className='h-[calc(100svh-64px)] w-full max-w-full'>
+        <div className='h-[calc(100svh-80px)] w-full max-w-full overflow-y-auto overscroll-contain'>
           <div className='flex flex-1 p-4 md:px-6 w-full max-w-full min-w-0'>{children}</div>
-        </ScrollArea>
+        </div>
       ) : (
         <div className='flex flex-1 p-4 md:px-6 w-full max-w-full min-w-0'>{children}</div>
       )}

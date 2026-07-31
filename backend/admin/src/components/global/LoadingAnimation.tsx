@@ -1,8 +1,5 @@
 "use client";
 
-import Lottie from "lottie-react";
-import loadingAnimation from "../../../public/lottie/loading.json";
-
 interface LoadingAnimationProps {
   fullScreen?: boolean;
   label?: string;
@@ -26,7 +23,7 @@ export default function LoadingAnimation({
     <div className={wrapClass}>
       <div className="la-scaler" style={{ transform: `scale(${scale})` }}>
         <div className="la-animation" role="status" aria-label={label || "Loading"}>
-          <Lottie animationData={loadingAnimation} loop autoplay />
+          <span className="la-spinner" />
         </div>
         {label && <p className="la-label">{label}</p>}
       </div>
@@ -56,8 +53,18 @@ export default function LoadingAnimation({
           gap: 32px;
         }
         .la-animation {
-          width: 336px;
-          height: 189px;
+          width: 64px;
+          height: 64px;
+          display: grid;
+          place-items: center;
+        }
+        .la-spinner {
+          width: 42px;
+          height: 42px;
+          border: 3px solid rgba(107, 111, 118, 0.25);
+          border-top-color: #10b981;
+          border-radius: 9999px;
+          animation: la-spin 0.8s linear infinite;
         }
         .la-label {
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -65,8 +72,9 @@ export default function LoadingAnimation({
           letter-spacing: 0.02em;
           color: #6b6f76;
         }
+        @keyframes la-spin { to { transform: rotate(360deg); } }
         @media (prefers-reduced-motion: reduce) {
-          .la-animation { opacity: 0.8; }
+          .la-spinner { animation-duration: 1.6s; }
         }
       ` }} />
     </div>

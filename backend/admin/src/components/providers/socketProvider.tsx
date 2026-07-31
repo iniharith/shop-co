@@ -9,6 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { removeTaskFromCaches, updateTaskCaches } from "@/utils/taskCache";
+import { isLowPowerDevice } from "@/hooks/useLowPowerAnimations";
 
 const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const { data: session } = useSession();
@@ -17,6 +18,7 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const client = useQueryClient();
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const hasConnectedRef = useRef(false);
 
   useEffect(() => {
     audioRef.current = new Audio("/notification.mp3");
@@ -60,12 +62,11 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     const startFallbackPolling = () => {
       if (fallbackInterval) return;
-      refreshActiveTaskData();
-      refreshActiveFileData();
+      const interval = isLowPowerDevice() ? 120_000 : 60_000;
       fallbackInterval = setInterval(() => {
         refreshActiveTaskData();
         refreshActiveFileData();
-      }, 20_000);
+      }, interval);
     };
 
     const handleConnect = () => {
@@ -74,8 +75,11 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         fallbackTimeout = null;
       }
       stopFallbackPolling();
-      refreshActiveTaskData();
-      refreshActiveFileData();
+      if (hasConnectedRef.current) {
+        refreshActiveTaskData();
+        refreshActiveFileData();
+      }
+      hasConnectedRef.current = true;
     };
 
     const handleDisconnect = () => startFallbackPolling();
@@ -119,7 +123,7 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     const handleFilesUpdated = () => refreshActiveFileData();
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible" && !socket.connected) refreshActiveTaskData();
+      if (document.visibilityState === "visible" && !socket.connected && !isLowPowerDevice()) startFallbackPolling();
     };
 
     socket.on("connect", handleConnect);

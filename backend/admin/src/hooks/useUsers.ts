@@ -8,12 +8,12 @@ import { useQueryData } from "./useQueryData"
 import { getUsers } from "@/api/users"
 import { IUserApiResponse } from "@/types/api";
 import { useMutationData } from "./useMutation";
-export const useUsers = () => {
+export const useUsers = (enabled = true) => {
     const { data: session, status } = useSession();
     const { data, isPending, refetch, isFetching } = useQueryData(
         ['users'],
         () => getUsers(session?.user?.token),
-        { enabled: status === "authenticated", staleTime: 5 * 60_000 }
+        { enabled: enabled && status === "authenticated", staleTime: 5 * 60_000 }
     )
     const response = data as IUserApiResponse
     return { data: response, isPending, refetch, isFetching }

@@ -33,6 +33,27 @@ const withSignedFileUrls = async (project: any) => {
 const hashShareToken = (token: string) => createHash('sha256').update(token).digest('hex');
 
 router.get(
+  '/shared/:token/meta',
+  asyncHandler(async (req: Request, res: Response) => {
+    const share = await ProjectShare.findOne({
+      tokenHash: hashShareToken(req.params.token),
+      revokedAt: null,
+      expiresAt: { $gt: new Date() },
+    }).select('projectId').lean();
+    if (!share) {
+      res.status(404).json({ success: false, message: 'Project share link not found or expired' });
+      return;
+    }
+    const project = await Project.findById(share.projectId).select('title').lean();
+    if (!project) {
+      res.status(404).json({ success: false, message: 'Project not found' });
+      return;
+    }
+    res.json({ success: true, data: { title: project.title } });
+  })
+);
+
+router.get(
   '/shared/:token',
   asyncHandler(async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');

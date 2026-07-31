@@ -75,7 +75,7 @@ const streamFilesAsZip_1 = require("../../shared/utils/streamFilesAsZip");
 const downloadProgress_1 = require("../../shared/utils/downloadProgress");
 // Tiered cache: Redis primary, in-memory fallback when Redis connection drops
 const enrichedIndexCache = new redis_1.RedisService();
-const ENRICHED_CACHE_KEY_PREFIX = 'files:enrichedIndex:';
+const ENRICHED_CACHE_KEY_PREFIX = 'files:enrichedIndex:v2:';
 const ENRICHED_CACHE_TTL = 120; // seconds
 const memCache = new Map();
 const clearFolderGroupCache = () => __awaiter(void 0, void 0, void 0, function* () {
@@ -388,7 +388,6 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
         ...filterUpper.map(s => s.toLowerCase()),
         ...filterUpper.map(s => s.replace(/_/g, ' ')),
         ...filterUpper.map(s => s.replace(/_/g, '-')),
-        "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "REVIEWED", "PENDING_ARTWORK_APPROVAL"
     ]));
     const matchesStatus = (status) => {
         if (!status)
@@ -490,7 +489,13 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
                 files: [],
             };
         }
-        groups[groupKey].files.push(file);
+        groups[groupKey].files.push({
+            _id: file._id,
+            originalName: file.originalName,
+            folderId: file.folderId,
+            shareSlug: file.shareSlug,
+            category: file.category,
+        });
     }
     // 5. Add empty placeholders for tasks that have no files yet
     for (const task of tasks) {
@@ -521,7 +526,6 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
         return Object.assign(Object.assign({}, g), { orderStatus, fileCount: Math.max(g.files.length, taskFileCount) });
     });
     res.json({ success: true, data: result });
-    // Cache in Redis + in-memory fallback only when non-empty
     if (result.length > 0) {
         enrichedIndexCache.set(cacheKey, JSON.stringify(result), ENRICHED_CACHE_TTL).catch(() => { });
         memCache.set(cacheKey, { data: result, expiresAt: Date.now() + ENRICHED_CACHE_TTL * 1000 });
@@ -536,7 +540,14 @@ router.get('/by-folder', auth_middileware_1.default, (0, auth_middileware_1.auth
         res.status(400).json({ success: false, message: 'taskId, orderId, or userId is required' });
         return;
     }
-    const files = yield FileUploadRepository_1.fileUploadRepository.findByFolderKey({ taskId, orderId, userId });
+    const linkFilter = taskId ? { taskId } : orderId ? { orderId } : { userId };
+    const links = yield ShareLink_1.ShareLink.find(linkFilter).select('slug').lean();
+    const files = yield FileUploadRepository_1.fileUploadRepository.findByFolderKey({
+        taskId,
+        orderId,
+        userId,
+        shareSlugs: links.map(link => link.slug),
+    });
     const enriched = yield enrichWithShareLinks(files);
     res.json({ success: true, data: enriched });
 })));
@@ -762,6 +773,14 @@ const getShareFileQuery = (link, slug) => {
     }
     return { $and: filters };
 };
+router.get('/s/:slug/meta', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
+    if (!link) {
+        res.status(404).json({ success: false, message: 'Share link not found' });
+        return;
+    }
+    res.json({ success: true, folderName: link.folderName });
+})));
 router.get('/s/:slug', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.setHeader('Cache-Control', 'no-store');
     const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
@@ -926,9 +945,12 @@ router.post('/customer/save-metadata', (0, express_async_handler_1.default)((req
         res.status(400).json({ success: false, message: 'Files, orderId, and username required' });
         return;
     }
+    const uploadName = typeof item === 'string' && item.trim()
+        ? `${item.trim()} (#${orderId})`
+        : `Artwork Upload: #${orderId}`;
     // 1. Create a Task for this upload
     const savedTask = yield TaskRepository_1.taskRepository.create({
-        title: `Artwork Upload: #${orderId}`,
+        title: uploadName,
         description: `Phone Number: ${phoneNumber || 'N/A'}\nItem: ${item || 'N/A'}`,
         orderId: orderId,
         customerUsername: username,
@@ -959,7 +981,7 @@ router.post('/customer/save-metadata', (0, express_async_handler_1.default)((req
     (0, taskBroadcast_1.emitTaskUpdated)('task_created', { task: savedTask }).catch(console.error);
     // 3. Create a ShareLink for the customer to view their uploaded files
     const shareLink = yield ShareLinkRepository_1.shareLinkRepository.findOrCreate({
-        folderName: `Artwork Upload: #${orderId}`,
+        folderName: uploadName,
         taskId: savedTask._id.toString(),
         orderId: orderId,
         userId: username,

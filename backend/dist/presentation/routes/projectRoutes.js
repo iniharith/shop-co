@@ -70,6 +70,23 @@ const withSignedFileUrls = (project) => __awaiter(void 0, void 0, void 0, functi
     return data;
 });
 const hashShareToken = (token) => (0, crypto_1.createHash)('sha256').update(token).digest('hex');
+router.get('/shared/:token/meta', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const share = yield ProjectShare_1.ProjectShare.findOne({
+        tokenHash: hashShareToken(req.params.token),
+        revokedAt: null,
+        expiresAt: { $gt: new Date() },
+    }).select('projectId').lean();
+    if (!share) {
+        res.status(404).json({ success: false, message: 'Project share link not found or expired' });
+        return;
+    }
+    const project = yield Project_1.Project.findById(share.projectId).select('title').lean();
+    if (!project) {
+        res.status(404).json({ success: false, message: 'Project not found' });
+        return;
+    }
+    res.json({ success: true, data: { title: project.title } });
+})));
 router.get('/shared/:token', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.setHeader('Cache-Control', 'no-store');
     const share = yield ProjectShare_1.ProjectShare.findOne({

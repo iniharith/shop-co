@@ -11,6 +11,11 @@ export const getOrders = async (token: string) => {
     return response.data;
 }
 
+export const getOrder = async (token: string, orderId: string) => {
+    const response = await AxiosInstance(token).get(`${ORDER_URL}/${orderId}`);
+    return response.data;
+}
+
 
 
 

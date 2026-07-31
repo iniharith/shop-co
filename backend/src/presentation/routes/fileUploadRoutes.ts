@@ -28,7 +28,7 @@ import { getDownloadProgress } from '../../shared/utils/downloadProgress';
 
 // Tiered cache: Redis primary, in-memory fallback when Redis connection drops
 const enrichedIndexCache = new RedisService();
-const ENRICHED_CACHE_KEY_PREFIX = 'files:enrichedIndex:';
+const ENRICHED_CACHE_KEY_PREFIX = 'files:enrichedIndex:v2:';
 const ENRICHED_CACHE_TTL = 120; // seconds
 const memCache = new Map<string, { data: any; expiresAt: number }>();
 
@@ -411,7 +411,6 @@ router.get(
       ...filterUpper.map(s => s.toLowerCase()),
       ...filterUpper.map(s => s.replace(/_/g, ' ')),
       ...filterUpper.map(s => s.replace(/_/g, '-')),
-      "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "REVIEWED", "PENDING_ARTWORK_APPROVAL"
     ]));
 
     const matchesStatus = (status?: string) => {
@@ -513,7 +512,13 @@ router.get(
           files: [],
         };
       }
-      groups[groupKey].files.push(file);
+      groups[groupKey].files.push({
+        _id: file._id,
+        originalName: file.originalName,
+        folderId: file.folderId,
+        shareSlug: file.shareSlug,
+        category: file.category,
+      });
     }
 
     // 5. Add empty placeholders for tasks that have no files yet
@@ -544,7 +549,6 @@ router.get(
 
     res.json({ success: true, data: result });
 
-    // Cache in Redis + in-memory fallback only when non-empty
     if (result.length > 0) {
       enrichedIndexCache.set(cacheKey, JSON.stringify(result), ENRICHED_CACHE_TTL).catch(() => {});
       memCache.set(cacheKey, { data: result, expiresAt: Date.now() + ENRICHED_CACHE_TTL * 1000 });
@@ -565,7 +569,14 @@ router.get(
       res.status(400).json({ success: false, message: 'taskId, orderId, or userId is required' });
       return;
     }
-    const files = await fileUploadRepository.findByFolderKey({ taskId, orderId, userId });
+    const linkFilter = taskId ? { taskId } : orderId ? { orderId } : { userId };
+    const links = await ShareLink.find(linkFilter).select('slug').lean();
+    const files = await fileUploadRepository.findByFolderKey({
+      taskId,
+      orderId,
+      userId,
+      shareSlugs: links.map(link => link.slug),
+    });
     const enriched = await enrichWithShareLinks(files);
     res.json({ success: true, data: enriched });
   })
@@ -846,6 +857,18 @@ const getShareFileQuery = (link: any, slug: string): any => {
 };
 
 router.get(
+  '/s/:slug/meta',
+  asyncHandler(async (req: Request, res: Response) => {
+    const link = await shareLinkRepository.findBySlug(req.params.slug);
+    if (!link) {
+      res.status(404).json({ success: false, message: 'Share link not found' });
+      return;
+    }
+    res.json({ success: true, folderName: link.folderName });
+  })
+);
+
+router.get(
   '/s/:slug',
   asyncHandler(async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
@@ -1059,9 +1082,13 @@ router.post(
       return;
     }
 
+    const uploadName = typeof item === 'string' && item.trim()
+      ? `${item.trim()} (#${orderId})`
+      : `Artwork Upload: #${orderId}`;
+
     // 1. Create a Task for this upload
     const savedTask = await taskRepository.create({
-      title: `Artwork Upload: #${orderId}`,
+      title: uploadName,
       description: `Phone Number: ${phoneNumber || 'N/A'}\nItem: ${item || 'N/A'}`,
       orderId: orderId,
       customerUsername: username,
@@ -1100,7 +1127,7 @@ router.post(
 
     // 3. Create a ShareLink for the customer to view their uploaded files
     const shareLink = await shareLinkRepository.findOrCreate({
-      folderName: `Artwork Upload: #${orderId}`,
+      folderName: uploadName,
       taskId: savedTask._id.toString(),
       orderId: orderId,
       userId: username,

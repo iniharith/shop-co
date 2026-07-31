@@ -153,7 +153,7 @@ export default function TasksManager() {
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const taskFilters = {
-        limit: lowPower ? "100" : "200",
+        limit: "200",
         ...(assigneeFilter !== "all" ? { assignee: assigneeFilter } : {}),
         ...(searchQuery ? { search: searchQuery } : {}),
       };

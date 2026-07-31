@@ -160,20 +160,28 @@ class FileUploadRepository {
     findByFolderKey(params) {
         return __awaiter(this, void 0, void 0, function* () {
             let query = {};
+            const shareSlugMatch = (identityField) => {
+                var _a;
+                return ((_a = params.shareSlugs) === null || _a === void 0 ? void 0 : _a.length) ? {
+                    shareSlug: { $in: params.shareSlugs },
+                    $or: [
+                        { [identityField]: { $exists: false } },
+                        { [identityField]: null },
+                        { [identityField]: '' },
+                    ],
+                } : null;
+            };
             if (params.taskId) {
-                query.taskId = params.taskId;
-            }
-            else if (params.orderId && params.userId) {
-                // Files end up grouped together if they match on EITHER field (the
-                // order lookup sometimes falls back from userId to a resolved
-                // orderId, or vice versa) — so match either, not both at once.
-                query.$or = [{ orderId: params.orderId }, { userId: params.userId }];
+                const fallback = shareSlugMatch('taskId');
+                query = fallback ? { $or: [{ taskId: params.taskId }, fallback] } : { taskId: params.taskId };
             }
             else if (params.orderId) {
-                query.orderId = params.orderId;
+                const fallback = shareSlugMatch('orderId');
+                query = fallback ? { $or: [{ orderId: params.orderId }, fallback] } : { orderId: params.orderId };
             }
             else if (params.userId) {
-                query.userId = params.userId;
+                const fallback = shareSlugMatch('userId');
+                query = fallback ? { $or: [{ userId: params.userId }, fallback] } : { userId: params.userId };
             }
             if (Object.keys(query).length === 0)
                 return [];

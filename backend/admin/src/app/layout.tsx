@@ -55,6 +55,11 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${jakarta.variable} ${spaceGrotesk.variable} ${jakarta.className} overflow-x-hidden`} suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var low=matchMedia('(pointer: coarse) and (hover: none)').matches||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);if(low)document.documentElement.classList.add('low-power-ui')}catch(e){}`,
+          }}
+        />
         <link
           href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css"
           rel="stylesheet"

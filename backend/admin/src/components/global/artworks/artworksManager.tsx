@@ -5,9 +5,9 @@
 "use client";
 import React, { useState, useMemo } from "react";
 import { useFolderGroup, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile, useCreateShareLink, useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, useMoveFile } from "@/hooks/useAdminDashboard";
-import { useOrders, useUpdateOrderStatus } from "@/hooks/useOrder";
+import { useOrder, useUpdateOrderStatus } from "@/hooks/useOrder";
 import { useUsers } from "@/hooks/useUsers";
-import { useTasks, useUpdateTask } from "@/hooks/useTasks";
+import { useTask, useUpdateTask } from "@/hooks/useTasks";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import { useSearchParams } from "next/navigation";
 import AxiosInstance from "@/utils/axios";
 import { uploadFilesToS3Directly, uploadToS3Directly } from "@/utils/s3Upload";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
+import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
 
 const categories = [
   "ALL",
@@ -42,24 +43,30 @@ const categories = [
   "FOOD PACKAGING"
 ];
 
-const ALL_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN", "IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING", "PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "FAILED", "RETURN"];
-
 // Artwork Manager only owns the pre-production stages. Once a job hits
 // IN_PRODUCTION/HOLD_PRINTING/DONE_PRINTING it belongs to the Production
 // page; PACKAGING belongs to the Packaging page; everything after that
 // (shipped/delivered/cancelled/failed) belongs to History.
 const ARTWORK_VISIBLE_STATUSES = ["PLACED", "IN_DESIGN", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "PEMBETULAN", "DONE_DESIGN"];
 const ARTWORK_STATUSES = ARTWORK_VISIBLE_STATUSES;
+const ALL_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN", "IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING", "PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "FAILED", "RETURN"];
 
 export default function ArtworksManager() {
+  const lowPower = useLowPowerAnimations();
+  const folderBatchSize = lowPower ? 10 : 40;
+  const [folderBatches, setFolderBatches] = useState(1);
   const { addUpload, updateProgress, updateStatus } = useUploadStore();
   const { data: session } = useSession();
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   // Folder list from server-side grouped endpoint — fast, single query
   const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching } = useFolderGroup(ARTWORK_STATUSES);
   const groupedFromServer: any[] = (folderGroupResponse as any)?.data || [];
-  const { data: ordersResponse } = useOrders();
-  const { data: usersResponse } = useUsers();
-  const { data: tasksResponse } = useTasks({ statuses: ALL_STATUSES.join(',') });
+  const selectedGroup = useMemo(() => groupedFromServer.find(
+    group => `${group.folderName}-${group.orderId}-${group.taskId}` === selectedFolder
+  ), [groupedFromServer, selectedFolder]);
+  const { data: orderDetailResponse } = useOrder(!selectedGroup?.taskId ? selectedGroup?.orderId : undefined);
+  const { data: taskDetailResponse } = useTask(selectedGroup?.taskId);
+  const { data: usersResponse } = useUsers(!!selectedFolder);
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
   const searchParams = useSearchParams();
 
@@ -68,7 +75,6 @@ export default function ArtworksManager() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
 
   // Upload Modal State
@@ -93,7 +99,7 @@ export default function ArtworksManager() {
     userId?: string;
   } | null>(null);
 
-  const { data: virtualFoldersResponse, isPending: foldersPending } = useFolders();
+  const { data: virtualFoldersResponse } = useFolders(!!selectedFolder);
   const virtualFolders = (virtualFoldersResponse as any)?.data || [];
   const { mutate: createFolderMutate, isPending: isCreatingFolder } = useCreateFolder();
   const { mutate: renameFolderMutate, isPending: isRenamingFolder } = useRenameFolder();
@@ -124,8 +130,6 @@ export default function ArtworksManager() {
   // staff who want to temporarily hide clutter once a queue gets long.
   const [showEmptyFolders, setShowEmptyFolders] = useState<boolean>(true);
   const [folderScope, setFolderScope] = useState<"all" | "tasks">("all");
-
-  const allFiles: any[] = groupedFromServer.flatMap((g: any) => g.files);
 
   // Server-side grouping already handles status filtering and ordering.
   // Client just filters by category tab and search query.
@@ -562,14 +566,8 @@ export default function ArtworksManager() {
 
     if (isPdf) {
       return (
-        <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center relative group">
-          <iframe 
-            src={`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/files/proxy-download?url=${encodeURIComponent(getFileUrl(file.path))}&name=${encodeURIComponent(file.originalName || "file")}&inline=true#toolbar=0&navpanes=0&scrollbar=0&view=FitH`} 
-            className="absolute top-0 left-0 border-none overflow-hidden"
-            style={{ width: '400%', height: '400%', transform: 'scale(0.25)', transformOrigin: 'top left', pointerEvents: 'none' }}
-            tabIndex={-1}
-          />
-          <div className="absolute inset-0 z-10 bg-transparent"></div>
+        <div className="w-full h-24 bg-muted rounded-t-lg overflow-hidden flex items-center justify-center relative group/thumb">
+          <FileText className="w-10 h-10 text-red-500" />
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center z-20">
             <Button variant="secondary" size="sm" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPreviewFile(file); setPreviewList(contextFiles); }} className="gap-1 shadow-sm">
               <Eye className="w-4 h-4" /> View
@@ -821,7 +819,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                   No folders match this filter.
                 </div>
               )}
-              {visibleGroupedFiles.map((group) => {
+              {visibleGroupedFiles.slice(0, folderBatchSize * folderBatches).map((group) => {
                 const folderId = `${group.folderName}-${group.orderId}-${group.taskId}`;
                 const isSelected = selectedFolder === folderId;
                 const isBulkChecked = selectedFolderIds.includes(folderId);
@@ -873,6 +871,11 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                   </div>
                 );
               })}
+              {visibleGroupedFiles.length > folderBatchSize * folderBatches && (
+                <Button variant="outline" size="sm" onClick={() => setFolderBatches(value => value + 1)}>
+                  Show more folders
+                </Button>
+              )}
             </div>
           </div>
 
@@ -1032,11 +1035,9 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                   </div>
 
                   {!activeSubFolderId && (() => {
-                    const tasks = (tasksResponse as any)?.tasks || [];
-                    const orders = (ordersResponse as any)?.orders || [];
                     const users = (usersResponse as any)?.data || (usersResponse as any)?.users || [];
-                    const activeTask = activeGroup.taskId ? tasks.find((t: any) => t._id === activeGroup.taskId) : null;
-                    const activeOrder = (!activeGroup.taskId && activeGroup.orderId) ? orders.find((o: any) => o._id === activeGroup.orderId || o.orderId === activeGroup.orderId) : null;
+                    const activeTask = (taskDetailResponse as any)?.task || null;
+                    const activeOrder = (orderDetailResponse as any)?.order || null;
                     const activeUser = activeTask?.assignee ? users.find((u: any) => u._id === activeTask.assignee) : null;
 
                     const descriptionText = activeTask?.description ? activeTask.description : (activeOrder?.items ? activeOrder.items.map((item: any) => `${item.name} (${item.quantity}x)`).join('\n') : "No description provided.");

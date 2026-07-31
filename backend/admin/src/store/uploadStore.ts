@@ -66,7 +66,9 @@ export const useUploadStore = create<UploadStore>((set) => ({
         [id]: {
           ...state.uploads[id],
           status,
-          errorMessage
+          errorMessage,
+          file: status === 'success' ? undefined : state.uploads[id].file,
+          abortController: status === 'success' ? undefined : state.uploads[id].abortController,
         }
       }
     };

@@ -229,9 +229,15 @@ body.has-custom-bg .bg-destructive:hover {
   }
 }
 
-body.low-power-ui * {
+html.low-power-ui * {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+}
+
+html.low-power-ui .blur-2xl,
+html.low-power-ui .blur-3xl,
+html.low-power-ui [class*="blur-["] {
+  filter: none !important;
 }
 
 /* Table overrides to ensure rows remain visible */

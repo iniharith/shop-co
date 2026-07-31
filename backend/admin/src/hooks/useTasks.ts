@@ -9,12 +9,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getTasks, getTask, createTask, updateTask, deleteTask, addTaskComment, deleteTaskComment } from "@/api/tasks";
 import { updateTaskCaches } from "@/utils/taskCache";
 
-export const useTasks = (filters?: any) => {
+export const useTasks = (filters?: any, enabled = true) => {
     const { data: session, status } = useSession();
     return useQueryData(
         ['tasks', filters],
         () => getTasks(session?.user?.token, filters),
-        { enabled: status === "authenticated", staleTime: 30_000 }
+        { enabled: enabled && status === "authenticated", staleTime: 30_000 }
     );
 }
 

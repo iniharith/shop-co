@@ -128,7 +128,7 @@ export const useFolderGroup = (taskStatuses?: string[]) => {
         () => getFolderGroup(session?.user?.token, taskStatuses),
         {
             enabled: status === "authenticated",
-            staleTime: 0,           // always refetch — ensures moved folders don't re-appear on navigation
+            staleTime: 60_000,
             refetchOnWindowFocus: true,
             refetchOnMount: true,
         }
@@ -145,7 +145,7 @@ export const useFilesByFolder = (params: { taskId?: string | null; orderId?: str
             orderId: params?.orderId || undefined,
             userId: params?.userId || undefined,
         }),
-        { enabled: status === "authenticated" && !!params && !!key, staleTime: 0 }
+        { enabled: status === "authenticated" && !!params && !!key, staleTime: 30_000 }
     );
 }
 
@@ -200,12 +200,12 @@ export const useResolveFileByPath = () => {
     return { mutate, mutateAsync, isPending };
 }
 
-export const useFolders = () => {
+export const useFolders = (enabled = true) => {
     const { data: session, status } = useSession();
     return useQueryData(
         ['virtualFolders'],
         () => getFolders(session?.user?.token),
-        { enabled: status === "authenticated", staleTime: 60_000 }
+        { enabled: enabled && status === "authenticated", staleTime: 60_000 }
     );
 }
 

@@ -137,19 +137,25 @@ export class FileUploadRepository {
   // Full file details for a single folder, fetched only when that folder is
   // opened. Already scoped tightly by taskId (or orderId/userId), so there's
   // no need for a date window here — the result set is naturally small.
-  async findByFolderKey(params: { taskId?: string; orderId?: string; userId?: string }): Promise<IFileUpload[]> {
+  async findByFolderKey(params: { taskId?: string; orderId?: string; userId?: string; shareSlugs?: string[] }): Promise<IFileUpload[]> {
     let query: any = {};
+    const shareSlugMatch = (identityField: 'taskId' | 'orderId' | 'userId') => params.shareSlugs?.length ? {
+      shareSlug: { $in: params.shareSlugs },
+      $or: [
+        { [identityField]: { $exists: false } },
+        { [identityField]: null },
+        { [identityField]: '' },
+      ],
+    } : null;
     if (params.taskId) {
-      query.taskId = params.taskId;
-    } else if (params.orderId && params.userId) {
-      // Files end up grouped together if they match on EITHER field (the
-      // order lookup sometimes falls back from userId to a resolved
-      // orderId, or vice versa) — so match either, not both at once.
-      query.$or = [{ orderId: params.orderId }, { userId: params.userId }];
+      const fallback = shareSlugMatch('taskId');
+      query = fallback ? { $or: [{ taskId: params.taskId }, fallback] } : { taskId: params.taskId };
     } else if (params.orderId) {
-      query.orderId = params.orderId;
+      const fallback = shareSlugMatch('orderId');
+      query = fallback ? { $or: [{ orderId: params.orderId }, fallback] } : { orderId: params.orderId };
     } else if (params.userId) {
-      query.userId = params.userId;
+      const fallback = shareSlugMatch('userId');
+      query = fallback ? { $or: [{ userId: params.userId }, fallback] } : { userId: params.userId };
     }
     if (Object.keys(query).length === 0) return [];
     return FileUpload.find(query).sort({ uploadedAt: -1 }).maxTimeMS(10_000).lean() as unknown as Promise<IFileUpload[]>;

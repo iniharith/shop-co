@@ -119,7 +119,7 @@ export default function AppSidebar() {
                         className="text-base font-bold py-6"
                       >
                         <div className="inherit flex items-center gap-2">
-                          {item.icon && <Icon />}
+                          {item.icon && <Icon className="size-4 shrink-0" />}
                           <span>{item.title}</span>
                         </div>
                         <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />

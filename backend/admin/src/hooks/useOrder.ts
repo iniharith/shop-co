@@ -4,7 +4,7 @@
  */
 import { useSession } from "next-auth/react";
 import { useQueryData } from "./useQueryData";
-import { getOrders, updateOrderStatus } from "@/api/orders";
+import { getOrder, getOrders, updateOrderStatus } from "@/api/orders";
 import { useMutationData } from "./useMutation";
 import { IOrderApiResponse } from "@/types/api";
 
@@ -17,6 +17,15 @@ export const useOrders = (enabled = true) => {
     )
     const response = data as IOrderApiResponse
     return { data: response, isPending, refetch, isFetching }
+}
+
+export const useOrder = (orderId?: string) => {
+    const { data: session, status } = useSession();
+    return useQueryData(
+        ['order', orderId],
+        () => getOrder(session?.user?.token, orderId!),
+        { enabled: status === "authenticated" && !!orderId, staleTime: 60_000 }
+    );
 }
 
 export const useUpdateOrderStatus = () => {
