@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, FlatList, SectionList, TouchableOpacity, ActivityIndicator, StyleSheet, StatusBar, ScrollView, TextInput, Modal, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppBackground from '../../components/AppBackground';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../services/api';
 import socketService from '../../services/socket';
 import { useTheme } from '../../context/ThemeContext';
@@ -12,19 +13,24 @@ const COLUMNS = [
   'PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 
   'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 
   'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 
-  'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED'
+  'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED', 'RETURN'
 ];
 
 export default function TasksScreen() {
   const { theme, colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [tasks, setTasks] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefresh] = useState(false);
-  const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
+  const [viewMode, setViewMode] = useState<'board' | 'list'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsedColumns, setCollapsedColumns] = useState<string[]>([]);
-  const [collapsedListSections, setCollapsedListSections] = useState<string[]>([]);
+  const [collapsedListSections, setCollapsedListSections] = useState<string[]>(COLUMNS);
+  const [sortOption, setSortOption] = useState<'dateDesc' | 'dateAsc' | 'nameAsc' | 'nameDesc'>('dateDesc');
+  const [assigneeFilter, setAssigneeFilter] = useState('all');
+  const [sortPickerVisible, setSortPickerVisible] = useState(false);
+  const [assigneeFilterVisible, setAssigneeFilterVisible] = useState(false);
 
   // Multi-select state
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
@@ -40,10 +46,10 @@ export default function TasksScreen() {
     try {
       const [tasksRes, usersRes] = await Promise.all([
         api.get('/tasks').catch(e => ({ data: [] })),
-        api.get('/users').catch(e => ({ data: [] }))
+        api.get('/admin/users').catch(e => ({ data: [] }))
       ]);
       const allTasks = tasksRes.data?.data || tasksRes.data?.tasks || tasksRes.data || [];
-      const allUsers = usersRes.data?.data || usersRes.data?.users || usersRes.data || [];
+        const allUsers = usersRes.data?.users || [];
       if (requestId === fetchRequestRef.current) {
         setTasks(Array.isArray(allTasks) ? allTasks : []);
         setUsers(Array.isArray(allUsers) ? allUsers : []);
@@ -171,14 +177,44 @@ export default function TasksScreen() {
     setUserPickerVisible(false);
   };
 
-  const query = searchQuery.toLowerCase();
-  const sortedTasks = tasks.filter(t => {
-    const titleMatch = t.title?.toLowerCase().includes(query);
-    const orderIdStr = typeof t.orderId === 'string' ? t.orderId : (t.orderId?._id || String(t.orderId || ''));
-    const orderMatch = orderIdStr.toLowerCase().includes(query);
-    const customerMatch = t.customerUsername?.toLowerCase().includes(query);
-    return titleMatch || orderMatch || customerMatch;
-  });
+  const sortedTasks = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    return [...tasks]
+      .filter(t => {
+        const titleMatch = t.title?.toLowerCase().includes(query);
+        const orderIdStr = typeof t.orderId === 'string' ? t.orderId : (t.orderId?._id || String(t.orderId || ''));
+        const orderMatch = orderIdStr.toLowerCase().includes(query);
+        const customerMatch = t.customerUsername?.toLowerCase().includes(query);
+        return titleMatch || orderMatch || customerMatch;
+      })
+      .filter(t => {
+        if (assigneeFilter === 'all') return true;
+        if (assigneeFilter === 'unassigned') return !t.assignee;
+        return t.assignee === assigneeFilter || t.assignee?._id === assigneeFilter;
+      })
+      .sort((a, b) => {
+        if (sortOption === 'dateDesc') return new Date(b.statusUpdatedAt || b.createdAt).getTime() - new Date(a.statusUpdatedAt || a.createdAt).getTime();
+        if (sortOption === 'dateAsc') return new Date(a.statusUpdatedAt || a.createdAt).getTime() - new Date(b.statusUpdatedAt || b.createdAt).getTime();
+        if (sortOption === 'nameAsc') return (a.title || '').localeCompare(b.title || '');
+        return (b.title || '').localeCompare(a.title || '');
+      });
+  }, [tasks, searchQuery, assigneeFilter, sortOption]);
+
+  const tasksByStatus = useMemo(() => {
+    const grouped = Object.fromEntries(COLUMNS.map(status => [status, [] as any[]]));
+    sortedTasks.forEach(task => grouped[task.status]?.push(task));
+    return grouped as Record<string, any[]>;
+  }, [sortedTasks]);
+
+  const taskSections = useMemo(
+    () => COLUMNS.filter(status => tasksByStatus[status].length > 0).map(status => ({
+      title: status.replace(/_/g, ' '),
+      statusId: status,
+      data: collapsedListSections.includes(status) ? [] : tasksByStatus[status],
+      count: tasksByStatus[status].length,
+    })),
+    [tasksByStatus, collapsedListSections]
+  );
 
   if (loading) return (
     <AppBackground style={s.center}>
@@ -188,8 +224,12 @@ export default function TasksScreen() {
 
   const renderTaskCard = (task: any) => {
     const isSelected = selectedTaskIds.includes(task._id);
+    const assigneeId = typeof task.assignee === 'string' ? task.assignee : task.assignee?._id;
+    const assignee = users.find(user => user._id === assigneeId);
+    const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+    const dueDateLabel = dueDate ? dueDate.toLocaleDateString('en-MY', { day: '2-digit', month: 'short' }) : 'Set Due Date';
     return (
-      <BlurView experimentalBlurMethod="dimezisBlurView" intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.taskCard, { borderColor: isSelected ? colors.primary : colors.glassBorder }, task.isDone && { opacity: 0.6 }]} key={task._id}>
+      <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.taskCard, { borderColor: isSelected ? colors.primary : colors.glassBorder, backgroundColor: colors.glass }, task.isDone && { opacity: 0.6 }]} key={task._id}>
         
         {/* 1. Header: Checkbox (Multi-select), Done Circle, Title, Trash */}
         <View style={s.taskHeader}>
@@ -223,12 +263,12 @@ export default function TasksScreen() {
         <View style={s.taskFooter}>
           <View style={[s.footerPill, { backgroundColor: colors.secondary }]}>
             <Calendar size={10} color={colors.foreground} />
-            <Text style={[s.taskMeta, { color: colors.foreground }]}>{new Date(task.createdAt).toLocaleDateString('en-MY')}</Text>
+            <Text style={[s.taskMeta, { color: dueDate ? colors.foreground : colors.mutedForeground }]}>{dueDateLabel}</Text>
           </View>
           
           <TouchableOpacity style={[s.footerPill, { backgroundColor: colors.secondary }]} onPress={() => openUserPicker(task._id)}>
             <UserCircle2 size={12} color={colors.foreground} />
-            <Text style={[s.taskMeta, { color: colors.foreground }]}>{task.assignee?.name || 'Unassigned'}</Text>
+            <Text style={[s.taskMeta, { color: colors.foreground }]}>{assignee?.name || task.assignee?.name || 'Unassigned'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -248,7 +288,7 @@ export default function TasksScreen() {
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
       {/* Header */}
-      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { borderBottomColor: colors.glassBorder }]}>
+      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { borderBottomColor: colors.glassBorder, paddingTop: insets.top + 10 }]}>
         <View style={s.headerTop}>
           <View>
             <Text style={[s.pageTitle, { color: colors.foreground }]}>Task Management 📋</Text>
@@ -292,13 +332,27 @@ export default function TasksScreen() {
             <RefreshCw size={14} color={colors.mutedForeground} />
           </TouchableOpacity>
         </View>
+        <View style={s.filterBar}>
+          <TouchableOpacity onPress={() => setSortPickerVisible(true)} style={[s.filterButton, { backgroundColor: colors.secondary, borderColor: colors.glassBorder }]}>
+            <ArrowDownUp size={13} color={colors.mutedForeground} />
+            <Text style={[s.filterText, { color: colors.foreground }]}>{sortOption === 'dateDesc' ? 'Newest' : sortOption === 'dateAsc' ? 'Oldest' : sortOption === 'nameAsc' ? 'Name A-Z' : 'Name Z-A'}</Text>
+            <ChevronDown size={12} color={colors.mutedForeground} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setAssigneeFilterVisible(true)} style={[s.filterButton, { backgroundColor: colors.secondary, borderColor: colors.glassBorder }]}>
+            <UserCircle2 size={13} color={colors.mutedForeground} />
+            <Text style={[s.filterText, { color: colors.foreground }]} numberOfLines={1}>
+              {assigneeFilter === 'all' ? 'All Users' : assigneeFilter === 'unassigned' ? 'Unassigned' : users.find(user => user._id === assigneeFilter)?.name || 'Assignee'}
+            </Text>
+            <ChevronDown size={12} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        </View>
       </BlurView>
 
       {/* Board View */}
       {viewMode === 'board' && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.boardScroll}>
           {COLUMNS.map(status => {
-            const columnTasks = sortedTasks.filter(t => t.status === status);
+            const columnTasks = tasksByStatus[status];
             const isCollapsed = collapsedColumns.includes(status);
             
             return (
@@ -329,12 +383,7 @@ export default function TasksScreen() {
       {/* List View */}
       {viewMode === 'list' && (
         <SectionList
-          sections={COLUMNS.filter(status => sortedTasks.some(t => t.status === status)).map(status => ({
-            title: status.replace(/_/g, ' '),
-            statusId: status,
-            data: collapsedListSections.includes(status) ? [] : sortedTasks.filter(t => t.status === status),
-            count: sortedTasks.filter(t => t.status === status).length
-          }))}
+          sections={taskSections}
           keyExtractor={t => t._id}
           renderItem={({ item }) => renderTaskCard(item)}
           renderSectionHeader={({ section }) => (
@@ -358,6 +407,7 @@ export default function TasksScreen() {
           contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
           showsVerticalScrollIndicator={false}
           stickySectionHeadersEnabled={false}
+          ListEmptyComponent={<Text style={[s.emptyText, { color: colors.mutedForeground }]}>No tasks found</Text>}
         />
       )}
 
@@ -433,6 +483,28 @@ export default function TasksScreen() {
         </TouchableOpacity>
       </Modal>
 
+      <Modal visible={sortPickerVisible} transparent animationType="slide" onRequestClose={() => setSortPickerVisible(false)}>
+        <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={() => setSortPickerVisible(false)}>
+          <BlurView intensity={theme === 'dark' ? 40 : 80} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.modalContent, { backgroundColor: theme === 'dark' ? 'rgba(10,10,14,0.9)' : 'rgba(255,255,255,0.9)' }]}>
+            <View style={s.modalHeader}><Text style={[s.modalTitle, { color: colors.foreground }]}>Sort Tasks</Text><TouchableOpacity onPress={() => setSortPickerVisible(false)}><X color={colors.foreground} size={20}/></TouchableOpacity></View>
+            {[['dateDesc', 'Newest First'], ['dateAsc', 'Oldest First'], ['nameAsc', 'Name (A-Z)'], ['nameDesc', 'Name (Z-A)']].map(([value, label]) => (
+              <TouchableOpacity key={value} style={[s.modalOption, { borderBottomColor: colors.glassBorder }]} onPress={() => { setSortOption(value as typeof sortOption); setSortPickerVisible(false); }}><Text style={[s.modalOptionText, { color: colors.foreground }]}>{label}</Text></TouchableOpacity>
+            ))}
+          </BlurView>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal visible={assigneeFilterVisible} transparent animationType="slide" onRequestClose={() => setAssigneeFilterVisible(false)}>
+        <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={() => setAssigneeFilterVisible(false)}>
+          <BlurView intensity={theme === 'dark' ? 40 : 80} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.modalContent, { backgroundColor: theme === 'dark' ? 'rgba(10,10,14,0.9)' : 'rgba(255,255,255,0.9)' }]}>
+            <View style={s.modalHeader}><Text style={[s.modalTitle, { color: colors.foreground }]}>Filter by Assignee</Text><TouchableOpacity onPress={() => setAssigneeFilterVisible(false)}><X color={colors.foreground} size={20}/></TouchableOpacity></View>
+            {[['all', 'All Users'], ['unassigned', 'Unassigned'], ...users.map(user => [user._id, user.name || user.email])].map(([value, label]) => (
+              <TouchableOpacity key={value} style={[s.modalOption, { borderBottomColor: colors.glassBorder }]} onPress={() => { setAssigneeFilter(value); setAssigneeFilterVisible(false); }}><Text style={[s.modalOptionText, { color: colors.foreground }]}>{label}</Text></TouchableOpacity>
+            ))}
+          </BlurView>
+        </TouchableOpacity>
+      </Modal>
+
     </AppBackground>
   );
 }
@@ -448,6 +520,9 @@ const s = StyleSheet.create({
   newBtnText: { color: '#000', fontWeight: '700', fontSize: 12 },
   
   toolbar: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  filterBar: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  filterButton: { flex: 1, minWidth: 0, height: 34, borderRadius: 8, borderWidth: 1, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  filterText: { flex: 1, fontSize: 11, fontWeight: '600' },
   viewToggle: { flexDirection: 'row', borderRadius: 8, padding: 2, borderWidth: 1 },
   toggleBtn: { padding: 8, borderRadius: 6 },
   searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: 8, paddingHorizontal: 10, borderWidth: 1, height: 36, gap: 6 },
@@ -486,4 +561,5 @@ const s = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: '700' },
   modalOption: { paddingVertical: 14, borderBottomWidth: 1 },
   modalOptionText: { fontSize: 15, fontWeight: '500' },
+  emptyText: { textAlign: 'center', marginTop: 48, fontSize: 14 },
 });

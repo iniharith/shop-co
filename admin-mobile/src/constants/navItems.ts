@@ -3,8 +3,8 @@
  * Drives the "More" hub screen + which hidden tabs a role can open.
  */
 import {
-  Users2, ShoppingBag, ImageIcon, Printer, Truck, ListTodo,
-  MessageSquare, PackageCheck, History, Server, UserCircle,
+  Users2, ShoppingBag, ImageIcon, Printer, Truck, ListTodo, LayoutDashboard,
+  MessageSquare, PackageCheck, History, Server, UserCircle, PenTool,
 } from 'lucide-react-native';
 
 export interface HubItem {
@@ -40,4 +40,33 @@ export const hubItemsForRole = (role?: string): HubItem[] => {
   }
 
   return HubItems.filter((i) => allowedTitles.includes(i.title));
+};
+
+export const mobileNavGroups = (role?: string) => {
+  const groups = [
+    { title: 'Overview', items: [{ title: 'Dashboard', route: '/', icon: LayoutDashboard }] },
+    { title: 'Operations', items: [
+      { title: 'Orders', route: '/orders', icon: ShoppingBag },
+      { title: 'Artworks', route: '/artworks', icon: ImageIcon },
+      { title: 'Print Drafts', route: '/print-drafts', icon: Printer },
+      { title: 'Tracking', route: '/tracking', icon: Truck },
+      { title: 'Tasks', route: '/tasks', icon: ListTodo },
+      { title: 'Chat', route: '/chat', icon: MessageSquare },
+      { title: 'Production', route: '/production', icon: PenTool },
+      { title: 'Packaging', route: '/packaging', icon: PackageCheck },
+      { title: 'History', route: '/history', icon: History },
+    ] },
+    { title: 'Administration', items: [
+      { title: 'Users', route: '/users', icon: Users2 },
+      { title: 'Server Status', route: '/server-status', icon: Server },
+    ] },
+    { title: 'Account', items: [{ title: 'Profile', route: '/profile', icon: UserCircle }] },
+  ];
+
+  if (role === 'production') groups[1].items = groups[1].items.filter(item => ['Orders', 'Tracking', 'Chat', 'Production', 'Packaging', 'History'].includes(item.title));
+  if (role === 'packaging') groups[1].items = groups[1].items.filter(item => ['Orders', 'Tracking', 'Chat', 'Packaging', 'History'].includes(item.title));
+  if (role === 'designer') groups[1].items = groups[1].items.filter(item => ['Artworks', 'Print Drafts', 'Tasks', 'Chat'].includes(item.title));
+  if (!['sysadmin', 'admin', 'boss'].includes(role || '')) groups[2].items = groups[2].items.filter(item => item.title !== 'Server Status');
+
+  return groups.filter(group => group.items.length > 0);
 };

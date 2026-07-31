@@ -3,6 +3,7 @@ import { View, Text, FlatList, ActivityIndicator, StyleSheet, StatusBar, Touchab
 import { LinearGradient } from 'expo-linear-gradient';
 import AppBackground from '../../components/AppBackground';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { THEME } from '../../constants/theme';
@@ -11,6 +12,7 @@ import { useRouter } from 'expo-router';
 
 export default function UsersScreen() {
   const { theme, colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +21,7 @@ export default function UsersScreen() {
     const fetchData = async () => {
       try {
         const res = await api.get('/admin/users');
-        setData(res.data?.data || res.data || []);
+        setData(res.data?.users || []);
       } catch (e) {
         console.error(e);
       } finally {
@@ -39,7 +41,7 @@ export default function UsersScreen() {
     <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
-      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
+      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { paddingTop: insets.top + 10 }]}>
         <View style={s.headerTop}>
           <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
             <ArrowLeft size={20} color={colors.foreground} />
@@ -68,6 +70,7 @@ export default function UsersScreen() {
         renderItem={({ item }) => (
           <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.card}>
             <Text style={s.cardTitle}>{item.name || item.username || 'System User'}</Text>
+            <Text style={s.cardDesc}>{item.email || item.role || 'Staff'}</Text>
             <Text style={s.cardDesc}>{item.role || 'Staff'}</Text>
           </BlurView>
         )}

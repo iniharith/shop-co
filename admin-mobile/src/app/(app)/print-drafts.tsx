@@ -3,6 +3,7 @@ import { View, Text, FlatList, ActivityIndicator, StyleSheet, StatusBar, Touchab
 import { LinearGradient } from 'expo-linear-gradient';
 import AppBackground from '../../components/AppBackground';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { THEME } from '../../constants/theme';
@@ -11,6 +12,7 @@ import { useRouter } from 'expo-router';
 
 export default function PrintDraftsScreen() {
   const { theme, colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +41,7 @@ export default function PrintDraftsScreen() {
     <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
-      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
+      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { paddingTop: insets.top + 10 }]}>
         <View style={s.headerTop}>
           <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
             <ArrowLeft size={20} color={colors.foreground} />

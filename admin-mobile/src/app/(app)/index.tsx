@@ -3,12 +3,12 @@ import {
   View, Text, TouchableOpacity, ScrollView,
   ActivityIndicator, RefreshControl, StyleSheet, StatusBar
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import AppBackground from '../../components/AppBackground';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useRouter } from 'expo-router';
-import { Box, Truck, FileText, CircleCheckBig, CircleAlert, Wifi, WifiOff, Server, HardDrive, Cpu, Clock, Package } from 'lucide-react-native';
+import { Box, Truck, FileText, CircleCheckBig, CircleAlert, Wifi, WifiOff, Server, HardDrive, Cpu, Clock, Package, ClipboardList, FolderOpen, Users } from 'lucide-react-native';
 import api from '../../services/api';
 import socketService from '../../services/socket';
 import { useTheme } from '../../context/ThemeContext';
@@ -16,6 +16,7 @@ import { THEME } from '../../constants/theme';
 
 export default function DashboardScreen() {
   const { theme, colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const { user, logout } = useAuthStore();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -23,7 +24,7 @@ export default function DashboardScreen() {
   const [live, setLive] = useState(false);
   
   // Dashboard state
-  const [orders, setOrders] = useState<any[]>([]);
+  const [summary, setSummary] = useState<any>(null);
   const [parcelStats, setParcelStats] = useState({ total: 0, pending: 0, in_transit: 0, delivered: 0, failed: 0 });
   
   // New System Health state
@@ -31,16 +32,17 @@ export default function DashboardScreen() {
 
   const fetchData = async () => {
     try {
-      const [orderRes, parcelRes, healthRes] = await Promise.all([
-        api.get('/orders').catch(() => ({ data: [] })),
-        api.get('/parcels/stats').catch(() => ({ data: {} })),
+      const [summaryRes, healthRes] = await Promise.all([
+        api.get('/sysadmin/dashboard-summary').catch(() => ({ data: { data: null } })),
         api.get('/sysadmin/health').catch(() => ({ data: { data: null } }))
       ]);
-      
-      setOrders(orderRes.data?.orders || orderRes.data || []);
-      setParcelStats({ total: 0, pending: 0, in_transit: 0, delivered: 0, failed: 0, ...parcelRes.data });
+      const dashboardSummary = summaryRes.data?.data;
+      setSummary(dashboardSummary);
+      setParcelStats({ total: 0, pending: 0, in_transit: 0, delivered: 0, failed: 0, ...(dashboardSummary?.parcels || {}) });
       if (healthRes.data?.data) {
         setHealthData(healthRes.data.data);
+      } else if (dashboardSummary) {
+        setHealthData({ application: { artworkTotal: dashboardSummary.files?.totalFiles, storageUsed: dashboardSummary.files?.totalSize } });
       }
     } catch (e) { console.error(e); }
     finally { setLoading(false); setRefreshing(false); }
@@ -72,13 +74,15 @@ export default function DashboardScreen() {
   };
 
   const showServerHealth = ['sysadmin', 'admin', 'boss'].includes(user?.role || '');
+  const deliveryProgress = parcelStats.total ? Math.round((parcelStats.delivered / parcelStats.total) * 100) : 0;
+  const activeDeliveries = (parcelStats.pending || 0) + (parcelStats.in_transit || 0);
 
   return (
     <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
       {/* Header */}
-      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
+      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { paddingTop: insets.top + 10 }]}>
         <View>
           <Text style={s.greeting}>Hi, Welcome back 👋</Text>
           <View style={s.liveRow}>
@@ -106,22 +110,29 @@ export default function DashboardScreen() {
           </View>
         ) : (
           <>
-            {/* Delivery Status Overview */}
-            <Text style={[s.sectionTitle, { color: colors.foreground, marginTop: 10 }]}>Delivery Status Overview</Text>
+            <Text style={[s.sectionTitle, { color: colors.foreground, marginTop: 10 }]}>Live Operations</Text>
             <View style={s.row}>
-              <GlassCard title="Delivered" value={parcelStats.delivered || 0} sub="completed" icon={<CircleCheckBig size={16} color={colors.success} />} />
-              <GlassCard title="In Transit" value={parcelStats.in_transit || 0} sub="on the way" icon={<Truck size={16} color={colors.info} />} />
+              <HeroCard title="Total Orders" value={summary?.orders?.total || 0} sub="last 60 days" icon={<Box size={20} color="#dbeafe" />} dark />
+              <HeroCard title="Delivery Success" value={`${deliveryProgress}%`} sub={`${parcelStats.delivered || 0} of ${parcelStats.total || 0} delivered`} icon={<Truck size={20} color="#172033" />} success />
             </View>
             <View style={[s.row, { marginTop: 10 }]}>
-              <GlassCard title="Pending" value={parcelStats.pending || 0} sub="processing" icon={<Package size={16} color={colors.warning} />} />
-              <GlassCard title="Failed" value={parcelStats.failed || 0} sub="issues" icon={<CircleAlert size={16} color={colors.destructive} />} />
+              <GlassCard title="Active Deliveries" value={activeDeliveries} sub="pending and in transit" icon={<Truck size={16} color={colors.info} />} />
+              <GlassCard title="Total Tasks" value={summary?.tasks?.total || 0} sub="across all stages" icon={<ClipboardList size={16} color="#a78bfa" />} />
+            </View>
+            <View style={[s.row, { marginTop: 10 }]}>
+              <GlassCard title="Total Folders" value={summary?.folders?.total || 0} sub="artwork workspaces" icon={<FolderOpen size={16} color={colors.warning} />} />
+              <GlassCard title="Users Online" value={summary?.onlineUsers?.count || 0} sub="active now" icon={<Users size={16} color={colors.success} />} />
             </View>
 
             {/* Artwork Analytics */}
             <Text style={[s.sectionTitle, { color: colors.foreground, marginTop: 20 }]}>Artwork Analytics</Text>
             <View style={s.row}>
-              <GlassCard title="Total Files" value={healthData?.application?.artworkTotal || 0} sub="managed" icon={<FileText size={16} color="#a78bfa" />} />
-              <GlassCard title="Storage Used" value={formatBytes(healthData?.application?.storageUsed || 0)} sub="aws s3" icon={<HardDrive size={16} color="#34d399" />} isString />
+              <GlassCard title="Total Files" value={summary?.files?.totalFiles || healthData?.application?.artworkTotal || 0} sub="managed" icon={<FileText size={16} color="#a78bfa" />} />
+              <GlassCard title="Storage Used" value={formatBytes(summary?.files?.totalSize || healthData?.application?.storageUsed || 0)} sub="tracked metadata" icon={<HardDrive size={16} color="#34d399" />} isString />
+            </View>
+            <View style={[s.row, { marginTop: 10 }]}>
+              <GlassCard title="Pending Review" value={summary?.files?.pendingReview || 0} sub="files requiring review" icon={<CircleAlert size={16} color={colors.warning} />} />
+              <GlassCard title="Failed Delivery" value={parcelStats.failed || 0} sub="requires attention" icon={<CircleAlert size={16} color={colors.destructive} />} />
             </View>
 
             {/* Progression Chart (Pure React Native View approach) */}
@@ -194,20 +205,6 @@ export default function DashboardScreen() {
               </BlurView>
             )}
 
-            {/* Recent Activity */}
-            <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.glassCard, { marginTop: 14 }]}>
-              <Text style={s.cardTitle}>Recent Activity</Text>
-              <Text style={s.cardSub}>Latest deliveries or artwork uploads</Text>
-              <View style={s.divider} />
-              {orders.slice(0, 5).length > 0 ? orders.slice(0, 5).map((o: any) => (
-                <View key={o._id} style={[s.deliveryRow]}>
-                  <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>Order #{o._id?.slice(-6).toUpperCase()}</Text>
-                  <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700' }}>RM {o.totalAmount?.toFixed(2)}</Text>
-                </View>
-              )) : (
-                <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>No recent activity yet.</Text>
-              )}
-            </BlurView>
           </>
         )}
       </ScrollView>
@@ -226,6 +223,17 @@ function GlassCard({ title, value, sub, icon, isString = false }: { title: strin
   );
 }
 
+function HeroCard({ title, value, sub, icon, dark = false, success = false }: { title: string; value: number | string; sub: string; icon: React.ReactNode; dark?: boolean; success?: boolean }) {
+  const { colors } = useTheme();
+  const backgroundColor = dark ? '#111827' : success ? '#bef264' : colors.glass;
+  const foreground = success ? '#172033' : colors.foreground;
+  return <View style={[s.heroCard, { backgroundColor, borderColor: dark ? '#334155' : success ? '#a3e635' : colors.glassBorder }]}>
+    <View style={s.statHeader}><Text style={[s.statTitle, { color: foreground }]}>{title}</Text>{icon}</View>
+    <Text style={[s.heroValue, { color: foreground }]}>{value}</Text>
+    <Text style={[s.statSub, { color: success ? '#334155' : colors.mutedForeground }]}>{sub}</Text>
+  </View>;
+}
+
 const s = StyleSheet.create({
   screen: { flex: 1 },
   header: { paddingTop: 54, paddingBottom: 16, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: THEME.glassBorder },
@@ -237,6 +245,8 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', gap: 10 },
   glassCard: { borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 16 },
   statCard: { flex: 1, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 14 },
+  heroCard: { flex: 1, minHeight: 150, borderRadius: 20, borderWidth: 1, padding: 16, justifyContent: 'space-between' },
+  heroValue: { fontSize: 34, fontWeight: '800', letterSpacing: -1 },
   statHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   statTitle: { color: THEME.foreground, fontSize: 12, fontWeight: '500', flex: 1 },
   statValue: { color: THEME.foreground, fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },

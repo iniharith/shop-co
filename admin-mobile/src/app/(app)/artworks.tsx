@@ -3,6 +3,7 @@ import { View, Text, FlatList, ActivityIndicator, RefreshControl, TouchableOpaci
 import { LinearGradient } from 'expo-linear-gradient';
 import AppBackground from '../../components/AppBackground';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../services/api';
 import socketService from '../../services/socket';
 import { Folder, FileText, ImageIcon, Download, ChevronLeft, Search, X, Trash2, Share2 } from 'lucide-react-native';
@@ -10,9 +11,11 @@ import { useTheme } from '../../context/ThemeContext';
 import { THEME } from '../../constants/theme';
 
 const CATEGORIES = ['ALL', 'DIGITAL PRINTING', 'DISPLAY ITEM', 'DIGITAL OFFSET', 'PREMIUM GIFT', 'APPAREL', 'FRAME', 'WEDDING PRODUCT', 'FOOD PACKAGING'];
+const MAX_FONT_SCALE = 1.15;
 
 export default function ArtworksScreen() {
   const { theme, colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [groups, setGroups]         = useState<any[]>([]);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -23,43 +26,8 @@ export default function ArtworksScreen() {
 
   const fetchGroups = async () => {
     try {
-      const [res, tasksRes, usersRes] = await Promise.all([
-        api.get('/files/grouped').catch(() => ({ data: { data: [] } })),
-        api.get('/tasks').catch(() => ({ data: [] })),
-        api.get('/admin/users').catch(() => ({ data: [] }))
-      ]);
-      
-      const allFiles = (res.data?.data || []).flatMap((g: any) => g.files || []);
-      const tasks = tasksRes.data?.data || tasksRes.data?.tasks || tasksRes.data || [];
-      const users = usersRes.data?.data || usersRes.data?.users || usersRes.data || [];
-      
-      const groupsMap: Record<string, any> = {};
-      allFiles.forEach((f: any) => {
-        let groupName = 'Unassigned';
-        
-        if (f.category === 'TASK' && f.taskId) {
-          const task = tasks.find((t: any) => t._id === f.taskId);
-          groupName = task ? task.title : 'Deleted Task';
-        } else {
-          if (f._shareFolderName) {
-            groupName = f._shareFolderName;
-          } else {
-            const user = users.find((u: any) => u._id?.toString() === f.userId?.toString());
-            groupName = user?.name || f.userId || 'Unassigned';
-          }
-        }
-        
-        if (!groupsMap[groupName]) {
-          groupsMap[groupName] = {
-            folderName: groupName,
-            orderId: f.orderId || '',
-            files: [],
-            category: f.category || 'ALL'
-          };
-        }
-        groupsMap[groupName].files.push(f);
-      });
-      setGroups(Object.values(groupsMap));
+      const res = await api.get('/files/folder-group?taskStatuses=PLACED,IN_DESIGN,IN_PROGRESS,PENDING_ARTWORK,ARTWORK_REVIEWED,ARTWORK_REJECTED,PEMBETULAN,DONE_DESIGN');
+      setGroups(res.data?.data || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); setRefreshing(false); }
   };
@@ -103,6 +71,19 @@ export default function ArtworksScreen() {
     ]);
   };
 
+  const openFolder = async (folder: any) => {
+    setSelected(folder);
+    try {
+      const params = folder.taskId
+        ? `taskId=${encodeURIComponent(folder.taskId)}`
+        : `orderId=${encodeURIComponent(folder.orderId || '')}&userId=${encodeURIComponent(folder.userId || '')}`;
+      const res = await api.get(`/files/by-folder?${params}`);
+      setSelected((current: any) => current?.folderName === folder.folderName ? { ...current, files: res.data?.data || [] } : current);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   if (loading) return (
     <AppBackground style={s.center}>
       <ActivityIndicator size="large" color={colors.primary} />
@@ -113,19 +94,19 @@ export default function ArtworksScreen() {
   if (selected) return (
     <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
-      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
+      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity onPress={() => setSelected(null)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
           <ChevronLeft size={18} color={colors.primary} />
-          <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>Back to Artworks</Text>
+          <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }} maxFontSizeMultiplier={MAX_FONT_SCALE}>Back to Artworks</Text>
         </TouchableOpacity>
-        <Text style={s.pageTitle} numberOfLines={1}>{selected.folderName}</Text>
-        <Text style={s.pageSub}>{selected.files?.length || 0} files{selected.orderId ? `  Â·  Order #${selected.orderId.slice(-6)}` : ''}</Text>
+        <Text style={s.pageTitle} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>{selected.folderName}</Text>
+            <Text style={s.pageSub} maxFontSizeMultiplier={MAX_FONT_SCALE}>{selected.files?.length || selected.fileCount || 0} files{selected.orderId ? `  Â·  Order #${selected.orderId.slice(-6)}` : ''}</Text>
       </BlurView>
 
       <FlatList
         data={selected.files}
         keyExtractor={i => i._id}
-        contentContainerStyle={{ padding: 16, paddingBottom: 130, gap: 10 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 160, gap: 10 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchGroups(); }} tintColor={colors.primary} />}
         ListEmptyComponent={
           <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.glassCard, { alignItems: 'center', paddingVertical: 40 }]}>
@@ -139,7 +120,7 @@ export default function ArtworksScreen() {
           const iconClr = isPdf ? '#f87171' : isImage ? '#60a5fa' : '#a78bfa';
 
           return (
-            <BlurView experimentalBlurMethod="dimezisBlurView" intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.glassCard}>
+            <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.glassCard, { backgroundColor: colors.glass }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={[s.iconBox, { backgroundColor: iconBg }]}>
                   {isImage ? <ImageIcon size={20} color={iconClr} /> : <FileText size={20} color={iconClr} />}
@@ -180,9 +161,9 @@ export default function ArtworksScreen() {
     <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
-      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
-        <Text style={s.pageTitle}>Artworks</Text>
-        <Text style={s.pageSub}>{groups.length} artwork folders</Text>
+      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { paddingTop: insets.top + 10 }]}>
+        <Text style={s.pageTitle} maxFontSizeMultiplier={MAX_FONT_SCALE}>Artworks</Text>
+        <Text style={s.pageSub} maxFontSizeMultiplier={MAX_FONT_SCALE}>{groups.length} artwork folders</Text>
         <View style={s.searchBox}>
           <Search size={14} color={colors.mutedForeground} />
           <TextInput placeholder="Search folders, orders..." placeholderTextColor={colors.mutedForeground} value={search} onChangeText={setSearch} style={s.searchInput} />
@@ -211,23 +192,23 @@ export default function ArtworksScreen() {
         keyExtractor={(item, i) => `${item.folderName}-${item.orderId}-${i}`}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchGroups(); }} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 16, paddingBottom: 130, gap: 10 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 160, gap: 10 }}
         ListEmptyComponent={
-          <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.glassCard, { alignItems: 'center', paddingVertical: 40 }]}>
-            <Text style={{ color: colors.mutedForeground }}>No artwork folders found.</Text>
+          <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.glassCard, { alignItems: 'center', paddingVertical: 40, backgroundColor: colors.glass }]}>
+            <Text style={{ color: colors.mutedForeground }} maxFontSizeMultiplier={MAX_FONT_SCALE}>No artwork folders found.</Text>
           </BlurView>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => setSelected(item)} activeOpacity={0.75}>
-            <BlurView experimentalBlurMethod="dimezisBlurView" intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.glassCard}>
+          <TouchableOpacity onPress={() => openFolder(item)} activeOpacity={0.75}>
+            <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.glassCard, { backgroundColor: colors.glass }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={[s.iconBox, { backgroundColor: '#1a1a0a' }]}>
                   <Folder size={22} color={colors.primary} />
                 </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={{ color: colors.foreground, fontWeight: '700', fontSize: 14 }} numberOfLines={1}>{item.folderName || 'Unassigned'}</Text>
-                  <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 2 }}>
-                    {item.files?.length || 0} files{item.orderId ? `  Â·  Order #${item.orderId.slice(-6)}` : ''}
+                <View style={{ flex: 1, flexShrink: 1, marginLeft: 12 }}>
+                  <Text style={{ color: colors.foreground, fontWeight: '700', fontSize: 14 }} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SCALE}>{item.folderName || 'Unassigned'}</Text>
+                  <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 2 }} maxFontSizeMultiplier={MAX_FONT_SCALE}>
+                    {item.fileCount ?? item.files?.length ?? 0} files{item.orderId ? `  Â·  Order #${item.orderId.slice(-6)}` : ''}
                   </Text>
                 </View>
                 <ChevronLeft size={16} color={colors.mutedForeground} style={{ transform: [{ rotate: '180deg' }] }} />

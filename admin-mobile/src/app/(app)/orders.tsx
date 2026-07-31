@@ -3,6 +3,7 @@ import { View, Text, FlatList, ActivityIndicator, RefreshControl, TouchableOpaci
 import { LinearGradient } from 'expo-linear-gradient';
 import AppBackground from '../../components/AppBackground';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../services/api';
 import socketService from '../../services/socket';
 import { ShoppingBag, Package, Truck, CheckCircle2, XCircle, Search, ChevronDown, Trash2, Archive } from 'lucide-react-native';
@@ -20,6 +21,7 @@ const FILTERS = ['ALL', 'PLACED', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
 
 export default function OrdersScreen() {
   const { theme, colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [orders, setOrders]       = useState<any[]>([]);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefresh]  = useState(false);
@@ -92,7 +94,7 @@ export default function OrdersScreen() {
     <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
-      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
+      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { paddingTop: insets.top + 10 }]}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View>
             <Text style={s.pageTitle}>Orders</Text>
@@ -139,7 +141,7 @@ export default function OrdersScreen() {
           const isUpdating = updating === item._id;
           const canAdvance = STATUS_CYCLE[item.orderStatus] && STATUS_CYCLE[item.orderStatus] !== item.orderStatus;
           return (
-            <BlurView experimentalBlurMethod="dimezisBlurView" intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.glassCard}>
+            <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.glassCard, { backgroundColor: colors.glass }]}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <View style={{ flex: 1 }}>
                   <Text style={s.orderId}>#{item._id?.slice(-8).toUpperCase()}</Text>

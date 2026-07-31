@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LayoutDashboard, CheckSquare, ShoppingBag, ImageIcon, LayoutGrid } from 'lucide-react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useTheme } from '../context/ThemeContext';
 import { THEME } from '../constants/theme';
+import RightNavigation from './RightNavigation';
 
 const TABS: Record<string, { label: string; icon: (color: string, focused: boolean) => React.ReactNode }> = {
   index:    { label: 'Dashboard', icon: (c, f) => <LayoutDashboard size={22} color={c} strokeWidth={f ? 2.5 : 1.8} /> },
@@ -16,6 +17,7 @@ const TABS: Record<string, { label: string; icon: (color: string, focused: boole
 
 export default function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const { theme, colors } = useTheme();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   
   return (
     <View style={s.wrapper} pointerEvents="box-none">
@@ -31,6 +33,10 @@ export default function FloatingTabBar({ state, navigation }: BottomTabBarProps)
               <TouchableOpacity
                 key={route.key}
                 onPress={() => {
+                  if (route.name === 'more') {
+                    setDrawerOpen(true);
+                    return;
+                  }
                   const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
                   if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
                 }}
@@ -45,6 +51,7 @@ export default function FloatingTabBar({ state, navigation }: BottomTabBarProps)
           })}
         </View>
       </BlurView>
+      <RightNavigation visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </View>
   );
 }

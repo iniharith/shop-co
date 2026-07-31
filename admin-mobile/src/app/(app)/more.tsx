@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView } from 
 import { LinearGradient } from 'expo-linear-gradient';
 import AppBackground from '../../components/AppBackground';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '../../constants/theme';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
@@ -23,13 +24,14 @@ const MENU_ITEMS = [
 export default function MoreScreen() {
   const router = useRouter();
   const { theme, toggleTheme, colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
       {/* Header */}
-      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { borderBottomColor: colors.glassBorder }]}>
+      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { borderBottomColor: colors.glassBorder, paddingTop: insets.top + 10 }]}>
         <View style={{ flex: 1 }}>
           <Text style={[s.pageTitle, { color: colors.foreground }]}>More Features</Text>
           <Text style={[s.pageSub, { color: colors.mutedForeground }]}>Explore additional management tools</Text>

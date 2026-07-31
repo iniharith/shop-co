@@ -3,6 +3,7 @@ import { View, Text, FlatList, ActivityIndicator, StyleSheet, StatusBar, Touchab
 import { LinearGradient } from 'expo-linear-gradient';
 import AppBackground from '../../components/AppBackground';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { THEME } from '../../constants/theme';
@@ -11,6 +12,7 @@ import { useRouter } from 'expo-router';
 
 export default function HistoryScreen() {
   const { theme, colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,8 +20,9 @@ export default function HistoryScreen() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await api.get('/history');
-        setData(res.data?.data || res.data || []);
+        const res = await api.get('/admin/orders');
+        const orders = res.data?.orders || [];
+        setData(orders.filter((order: any) => ['DELIVERED', 'DONE_DESIGN', 'SHIPPED', 'IN_TRANSIT', 'CANCELLED', 'FAILED'].includes(order.status) || order.isArchived));
       } catch (e) {
         console.error(e);
       } finally {
@@ -39,7 +42,7 @@ export default function HistoryScreen() {
     <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
-      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.header}>
+      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { paddingTop: insets.top + 10 }]}>
         <View style={s.headerTop}>
           <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
             <ArrowLeft size={20} color={colors.foreground} />
@@ -67,8 +70,8 @@ export default function HistoryScreen() {
         }
         renderItem={({ item }) => (
           <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.card}>
-            <Text style={s.cardTitle}>{item.title || 'Log Entry'}</Text>
-            <Text style={s.cardDesc}>{item.description || 'Details unavailable'}</Text>
+            <Text style={s.cardTitle}>{item.orderNumber || item.customerUsername || `Order #${item._id?.slice(-6)}`}</Text>
+            <Text style={s.cardDesc}>{item.status?.replace(/_/g, ' ') || 'Archived'}{item.createdAt ? ` · ${new Date(item.createdAt).toLocaleDateString('en-MY')}` : ''}</Text>
           </BlurView>
         )}
       />
