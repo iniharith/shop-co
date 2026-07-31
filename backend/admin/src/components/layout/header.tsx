@@ -51,7 +51,7 @@ export default function Header() {
             <div className='hidden sm:block'><SyncButton /></div>
             <div className='hidden md:block'><UploadMonitor /></div>
             <NotificationsPanel notifications={notifications} />
-            <div className='hidden sm:block'><ThemeToggle /></div>
+            <div className='block'><ThemeToggle /></div>
             <UserNav showDetails />
           </div>
         </div>
