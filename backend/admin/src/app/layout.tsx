@@ -13,6 +13,7 @@ import { authConfig } from "@/lib/auth.config";
 import { getServerSession } from "next-auth/next";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://admin.kampungcetak.com"),
   title: "Kampung Cetak Admin Console",
   description: "Admin dashboard for Kampung Cetak",
   icons: {

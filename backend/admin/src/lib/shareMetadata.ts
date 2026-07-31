@@ -20,7 +20,17 @@ export const buildShareMetadata = (name: string, kind: string): Metadata => {
     title,
     description,
     robots: { index: false, follow: false },
-    openGraph: { type: "website", title, description },
-    twitter: { card: "summary", title, description },
+    openGraph: {
+      type: "website",
+      title,
+      description,
+      images: [{ url: "/share-preview", width: 1200, height: 630, alt: "Kampung Cetak" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/share-preview"],
+    },
   };
 };
