@@ -6,6 +6,12 @@
 
 import { useSession } from "next-auth/react";
 import React, { useEffect, useState } from "react";
+import { isLowPowerDevice } from "@/hooks/useLowPowerAnimations";
+
+const mobileSafeBackground = (value: string | null) => {
+  const isImage = value?.startsWith("http") || value?.startsWith("data:image");
+  return isLowPowerDevice() && isImage ? null : value;
+};
 
 export default function BackgroundProvider({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
@@ -15,8 +21,14 @@ export default function BackgroundProvider({ children }: { children: React.React
   const [pointColor, setPointColor] = useState<string | null>(null);
 
   useEffect(() => {
+    document.body.classList.toggle("low-power-ui", isLowPowerDevice());
+    return () => document.body.classList.remove("low-power-ui");
+  }, []);
+
+  useEffect(() => {
     if (session?.user?.id) {
-      setBackgroundStr(localStorage.getItem(`theme-bg-${session.user.id}`));
+      const savedBackground = localStorage.getItem(`theme-bg-${session.user.id}`);
+      setBackgroundStr(mobileSafeBackground(savedBackground));
       setFontColor(localStorage.getItem(`theme-font-${session.user.id}`));
       setButtonColor(localStorage.getItem(`theme-button-${session.user.id}`));
       setPointColor(localStorage.getItem(`theme-point-${session.user.id}`));
@@ -26,7 +38,7 @@ export default function BackgroundProvider({ children }: { children: React.React
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (session?.user?.id) {
-        if (e.key === `theme-bg-${session.user.id}`) setBackgroundStr(e.newValue);
+        if (e.key === `theme-bg-${session.user.id}`) setBackgroundStr(mobileSafeBackground(e.newValue));
         if (e.key === `theme-font-${session.user.id}`) setFontColor(e.newValue);
         if (e.key === `theme-button-${session.user.id}`) setButtonColor(e.newValue);
         if (e.key === `theme-point-${session.user.id}`) setPointColor(e.newValue);
@@ -34,7 +46,7 @@ export default function BackgroundProvider({ children }: { children: React.React
     };
     window.addEventListener("storage", handleStorageChange);
     
-    const handleBgChange = (e: CustomEvent) => setBackgroundStr(e.detail);
+    const handleBgChange = (e: CustomEvent) => setBackgroundStr(mobileSafeBackground(e.detail));
     const handleFontChange = (e: CustomEvent) => setFontColor(e.detail);
     const handleButtonChange = (e: CustomEvent) => setButtonColor(e.detail);
     const handlePointChange = (e: CustomEvent) => setPointColor(e.detail);

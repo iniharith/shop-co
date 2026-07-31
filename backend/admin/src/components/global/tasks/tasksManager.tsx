@@ -28,6 +28,7 @@ import TaskModal from "./TaskModal";
 // color instead of each component deriving its own.
 import { getUserColor, AssigneeTag } from "@/lib/userColor";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
+import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
 
 // ─── Due Date Display ─────────────────────────────────────────────────────────
 const DueDateDisplay = ({ task, updateTask, className }: { task: any; updateTask: any; className?: string }) => {
@@ -147,10 +148,12 @@ const CreateTaskDialog = () => {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function TasksManager() {
+  const lowPower = useLowPowerAnimations();
+  const taskRenderBatch = lowPower ? 10 : TASK_RENDER_BATCH;
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const taskFilters = {
-        limit: "200",
+        limit: lowPower ? "100" : "200",
         ...(assigneeFilter !== "all" ? { assignee: assigneeFilter } : {}),
         ...(searchQuery ? { search: searchQuery } : {}),
       };
@@ -300,7 +303,7 @@ export default function TasksManager() {
   const toggleColumnCollapse   = (s: string) => setCollapsedColumns(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
   const showMoreTasks = (status: string) => setVisibleTaskCounts(prev => ({
     ...prev,
-    [status]: (prev[status] || TASK_RENDER_BATCH) + TASK_RENDER_BATCH,
+    [status]: (prev[status] || taskRenderBatch) + taskRenderBatch,
   }));
 
   // ── Sorted / filtered task list ───────────────────────────────────────────
@@ -455,7 +458,7 @@ export default function TasksManager() {
               {visibleColumns.map(status => {
                 const columnTasks = tasksByStatus[status];
                 const isCollapsed = collapsedColumns.includes(status);
-                const visibleCount = visibleTaskCounts[status] || TASK_RENDER_BATCH;
+                const visibleCount = visibleTaskCounts[status] || taskRenderBatch;
                 const displayedTasks = columnTasks.slice(0, visibleCount);
                 return (
                   <div key={status} className="bg-muted/30 rounded-2xl p-3 border border-border/50 flex flex-col gap-3 min-w-[270px] w-[270px] shrink-0">
@@ -520,7 +523,7 @@ export default function TasksManager() {
                         ))}
                         {visibleCount < columnTasks.length && (
                           <Button variant="ghost" size="sm" onClick={() => showMoreTasks(status)}>
-                            Show {Math.min(TASK_RENDER_BATCH, columnTasks.length - visibleCount)} more
+                            Show {Math.min(taskRenderBatch, columnTasks.length - visibleCount)} more
                           </Button>
                         )}
                       </div>
@@ -547,7 +550,7 @@ export default function TasksManager() {
             const sectionTasks = tasksByStatus[status];
             if (sectionTasks.length === 0) return null;
             const isCollapsed = collapsedSections.includes(status);
-            const visibleCount = visibleTaskCounts[status] || TASK_RENDER_BATCH;
+            const visibleCount = visibleTaskCounts[status] || taskRenderBatch;
             const displayedTasks = sectionTasks.slice(0, visibleCount);
             return (
               <Collapsible key={status} open={!isCollapsed} onOpenChange={() => toggleSectionCollapse(status)} className="bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden">
@@ -657,7 +660,7 @@ export default function TasksManager() {
                     {visibleCount < sectionTasks.length && (
                       <div className="p-3 text-center">
                         <Button variant="outline" size="sm" onClick={() => showMoreTasks(status)}>
-                          Show {Math.min(TASK_RENDER_BATCH, sectionTasks.length - visibleCount)} more
+                          Show {Math.min(taskRenderBatch, sectionTasks.length - visibleCount)} more
                         </Button>
                       </div>
                     )}

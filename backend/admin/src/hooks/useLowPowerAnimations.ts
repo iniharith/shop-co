@@ -21,7 +21,7 @@
  */
 import * as React from "react";
 
-function detectTouchDevice(): boolean {
+export function isLowPowerDevice(): boolean {
   if (typeof window === "undefined") return false;
 
   // Touch-only devices use the lite animation. Touch-capable desktops keep
@@ -43,11 +43,11 @@ export function useLowPowerAnimations(): boolean {
   const [lowPower, setLowPower] = React.useState(false);
 
   React.useEffect(() => {
-    setLowPower(detectTouchDevice());
+    setLowPower(isLowPowerDevice());
 
     const mql = window.matchMedia?.("(pointer: coarse) and (hover: none)");
     if (!mql) return;
-    const onChange = () => setLowPower(detectTouchDevice());
+    const onChange = () => setLowPower(isLowPowerDevice());
     mql.addEventListener("change", onChange);
     return () => mql.removeEventListener("change", onChange);
   }, []);
