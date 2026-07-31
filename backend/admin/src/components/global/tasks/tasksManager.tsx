@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useCallback, useDeferredValue, useEffect, useMemo, useTransition } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { useTasks, useTask, useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
 import { useSearchParams } from "next/navigation";
@@ -69,6 +69,25 @@ const TASK_COLUMNS = [
   'IN_DESIGN','PEMBETULAN','DONE_DESIGN','IN_PRODUCTION','HOLD_PRINTING',
   'DONE_PRINTING','PACKAGING','SHIPPED','IN_TRANSIT','DELIVERED','CANCELLED','FAILED','RETURN',
 ];
+const TASK_RENDER_BATCH = 30;
+
+const TaskSearchInput = ({ onSearch }: { onSearch: (value: string) => void }) => {
+  const [value, setValue] = useState("");
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => onSearch(value.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [value, onSearch]);
+
+  return (
+    <Input
+      placeholder="Search tasks..."
+      value={value}
+      onChange={event => setValue(event.target.value)}
+      className="h-8 w-48 text-sm"
+    />
+  );
+};
 
 // Keep form state outside the board so typing does not re-render every task card.
 const CreateTaskDialog = () => {
@@ -130,13 +149,11 @@ const CreateTaskDialog = () => {
 export default function TasksManager() {
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const deferredSearch = useDeferredValue(searchQuery.trim());
-  const taskFilters = assigneeFilter !== "all" || deferredSearch
-    ? {
+  const taskFilters = {
+        limit: "200",
         ...(assigneeFilter !== "all" ? { assignee: assigneeFilter } : {}),
-        ...(deferredSearch ? { search: deferredSearch } : {}),
-      }
-    : undefined;
+        ...(searchQuery ? { search: searchQuery } : {}),
+      };
   const { data: response, isPending: isTasksPending, refetch, isFetching } = useTasks(taskFilters);
   const linkedTaskId = useSearchParams().get("taskId") || undefined;
   const { data: linkedTaskResponse } = useTask(linkedTaskId);
@@ -151,10 +168,11 @@ export default function TasksManager() {
   // behaviour where you had to click a section to open it, instead of every
   // section dropping open the moment the Tasks page loads.
   const [collapsedSections, setCollapsedSections]   = useState<string[]>(TASK_COLUMNS);
-  const [collapsedColumns, setCollapsedColumns]     = useState<string[]>([]);
+  const [collapsedColumns, setCollapsedColumns]     = useState<string[]>(TASK_COLUMNS);
   const [columnsPopoverOpen, setColumnsPopoverOpen] = useState(false);
   const [sortOption, setSortOption]                 = useState<"dateDesc"|"dateAsc"|"nameAsc"|"nameDesc">("dateDesc");
   const [deletedTaskIds, setDeletedTaskIds]         = useState<string[]>([]);
+  const [visibleTaskCounts, setVisibleTaskCounts]   = useState<Record<string, number>>({});
 
   useEffect(() => {
     const linkedTask = (linkedTaskResponse as any)?.task;
@@ -280,6 +298,10 @@ export default function TasksManager() {
   const toggleColumnVisibility = (s: string) => setHiddenColumns(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
   const toggleSectionCollapse  = (s: string) => setCollapsedSections(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
   const toggleColumnCollapse   = (s: string) => setCollapsedColumns(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+  const showMoreTasks = (status: string) => setVisibleTaskCounts(prev => ({
+    ...prev,
+    [status]: (prev[status] || TASK_RENDER_BATCH) + TASK_RENDER_BATCH,
+  }));
 
   // ── Sorted / filtered task list ───────────────────────────────────────────
   const sortedTasks = useMemo(() => {
@@ -398,7 +420,7 @@ export default function TasksManager() {
             </SelectContent>
           </Select>
 
-          <Input placeholder="Search tasks…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="h-8 w-48 text-sm" />
+          <TaskSearchInput onSearch={setSearchQuery} />
 
           {/* Hint — only visible in list view when nothing is selected */}
           {viewMode === "list" && selectedIds.size === 0 && (
@@ -433,6 +455,8 @@ export default function TasksManager() {
               {visibleColumns.map(status => {
                 const columnTasks = tasksByStatus[status];
                 const isCollapsed = collapsedColumns.includes(status);
+                const visibleCount = visibleTaskCounts[status] || TASK_RENDER_BATCH;
+                const displayedTasks = columnTasks.slice(0, visibleCount);
                 return (
                   <div key={status} className="bg-muted/30 rounded-2xl p-3 border border-border/50 flex flex-col gap-3 min-w-[270px] w-[270px] shrink-0">
                     <button type="button" onClick={() => toggleColumnCollapse(status)} className="flex items-center gap-2 self-start rounded-full bg-card border border-border/50 shadow-sm pl-3 pr-2 py-1.5 hover:bg-muted/60 transition-colors">
@@ -442,7 +466,7 @@ export default function TasksManager() {
                     </button>
                     {!isCollapsed && (
                       <div className="flex flex-col gap-2">
-                        {columnTasks.map((task: any) => (
+                        {displayedTasks.map((task: any) => (
                           <Card key={task._id} className={`cursor-pointer hover:shadow-md transition-shadow group border border-border/50 ${task.isDone ? "opacity-60 bg-muted/20" : ""}`} onClick={() => setSelectedTask(task)}>
                             <CardContent className="p-3 flex flex-col gap-2">
                               <div className="flex justify-between items-start gap-2">
@@ -494,6 +518,11 @@ export default function TasksManager() {
                             </CardContent>
                           </Card>
                         ))}
+                        {visibleCount < columnTasks.length && (
+                          <Button variant="ghost" size="sm" onClick={() => showMoreTasks(status)}>
+                            Show {Math.min(TASK_RENDER_BATCH, columnTasks.length - visibleCount)} more
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -518,6 +547,8 @@ export default function TasksManager() {
             const sectionTasks = tasksByStatus[status];
             if (sectionTasks.length === 0) return null;
             const isCollapsed = collapsedSections.includes(status);
+            const visibleCount = visibleTaskCounts[status] || TASK_RENDER_BATCH;
+            const displayedTasks = sectionTasks.slice(0, visibleCount);
             return (
               <Collapsible key={status} open={!isCollapsed} onOpenChange={() => toggleSectionCollapse(status)} className="bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden">
                 <CollapsibleTrigger asChild>
@@ -539,7 +570,7 @@ export default function TasksManager() {
                   </div>
                   {/* Task rows */}
                   <div className="divide-y divide-border/50">
-                    {sectionTasks.map((task: any) => {
+                    {displayedTasks.map((task: any) => {
                       const isSelected = selectedIds.has(task._id);
                       return (
                         <div
@@ -623,6 +654,13 @@ export default function TasksManager() {
                         </div>
                       );
                     })}
+                    {visibleCount < sectionTasks.length && (
+                      <div className="p-3 text-center">
+                        <Button variant="outline" size="sm" onClick={() => showMoreTasks(status)}>
+                          Show {Math.min(TASK_RENDER_BATCH, sectionTasks.length - visibleCount)} more
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CollapsibleContent>
               </Collapsible>

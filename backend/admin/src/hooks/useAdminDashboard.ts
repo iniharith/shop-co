@@ -101,12 +101,12 @@ export const useGroupedFiles = () => {
     return useQueryData(['groupedFiles'], () => getGroupedFiles(session?.user?.token), { enabled: status === 'authenticated', staleTime: 300_000 });
 }
 
-export const useAllFiles = () => {
+export const useAllFiles = (search?: string) => {
     const { data: session, status } = useSession();
     return useQueryData(
-        ['allFiles'],
-        () => getAllFiles(session?.user?.token),
-        { enabled: status === "authenticated", staleTime: 0 }
+        ['allFiles', search],
+        () => getAllFiles(session?.user?.token, search),
+        { enabled: status === "authenticated" && search !== "", staleTime: 0 }
     );
 }
 

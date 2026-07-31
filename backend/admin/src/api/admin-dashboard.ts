@@ -55,8 +55,10 @@ export const getGroupedFiles = async (token: string) => {
     return response.data;
 }
 
-export const getAllFiles = async (token: string) => {
-    const response = await AxiosInstance(token).get(`${FILES_URL}`);
+export const getAllFiles = async (token: string, search?: string) => {
+    const response = await AxiosInstance(token).get(`${FILES_URL}`, {
+        params: search ? { search, limit: 200 } : undefined,
+    });
     return response.data;
 }
 

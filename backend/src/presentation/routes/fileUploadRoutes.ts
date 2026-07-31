@@ -311,10 +311,28 @@ router.get(
   authMiddilware,
   authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
   asyncHandler(async (req: Request, res: Response) => {
-    const { reviewed, search } = req.query as { reviewed?: string; search?: string };
+    const { reviewed, search, limit } = req.query as { reviewed?: string; search?: string; limit?: string };
     const filters: any = {};
     if (reviewed !== undefined) filters.adminReviewed = reviewed === 'true';
-    if (search) filters.search = search;
+    if (search) {
+      filters.search = search;
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(escapedSearch, 'i');
+      const matchingTasks = await Task.find({
+        isDeleted: { $ne: true },
+        $or: [
+          { title: searchRegex },
+          { description: searchRegex },
+          { orderId: searchRegex },
+          { customerUsername: searchRegex },
+        ],
+      }).select('_id').limit(100).lean();
+      filters.taskIds = matchingTasks.map(task => task._id.toString());
+    }
+    if (limit) {
+      const parsedLimit = parseInt(limit, 10);
+      if (!Number.isNaN(parsedLimit)) filters.limit = parsedLimit;
+    }
 
     const files = await fileUploadRepository.findAll(filters);
 

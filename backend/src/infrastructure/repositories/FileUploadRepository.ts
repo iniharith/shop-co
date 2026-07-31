@@ -84,15 +84,18 @@ export class FileUploadRepository {
     return FileUpload.find({ orderId }).sort({ uploadedAt: -1 });
   }
 
-  async findAll(filters?: { adminReviewed?: boolean; search?: string }): Promise<IFileUpload[]> {
+  async findAll(filters?: { adminReviewed?: boolean; search?: string; taskIds?: string[]; limit?: number }): Promise<IFileUpload[]> {
     const query: any = {};
     if (filters?.adminReviewed !== undefined) query.adminReviewed = filters.adminReviewed;
     if (filters?.search) {
+      const escapedSearch = filters.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { originalName: { $regex: filters.search, $options: 'i' } },
-        { userId: { $regex: filters.search, $options: 'i' } },
-        { orderId: { $regex: filters.search, $options: 'i' } },
+        { originalName: { $regex: escapedSearch, $options: 'i' } },
+        { filename: { $regex: escapedSearch, $options: 'i' } },
+        { userId: { $regex: escapedSearch, $options: 'i' } },
+        { orderId: { $regex: escapedSearch, $options: 'i' } },
       ];
+      if (filters.taskIds?.length) query.$or.push({ taskId: { $in: filters.taskIds } });
     }
     
     // Speed optimization: Only load files from the last 30 days by default to prevent massive payloads.
@@ -100,7 +103,8 @@ export class FileUploadRepository {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     query.uploadedAt = { $gte: thirtyDaysAgo };
 
-    return FileUpload.find(query).sort({ uploadedAt: -1 }).lean() as unknown as Promise<IFileUpload[]>;
+    const limit = filters?.limit ? Math.min(Math.max(filters.limit, 1), 500) : 0;
+    return FileUpload.find(query).sort({ uploadedAt: -1 }).limit(limit).lean() as unknown as Promise<IFileUpload[]>;
   }
 
   // Slim, unwindowed listing used to build the folder/task grouping on the

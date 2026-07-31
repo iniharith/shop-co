@@ -300,12 +300,30 @@ router.get('/my', auth_middileware_1.default, (0, express_async_handler_1.defaul
 // ─── GET /api/files ───────────────────────────────────────
 // Admin: list all uploaded files with optional filter
 router.get('/', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { reviewed, search } = req.query;
+    const { reviewed, search, limit } = req.query;
     const filters = {};
     if (reviewed !== undefined)
         filters.adminReviewed = reviewed === 'true';
-    if (search)
+    if (search) {
         filters.search = search;
+        const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const searchRegex = new RegExp(escapedSearch, 'i');
+        const matchingTasks = yield Task_1.Task.find({
+            isDeleted: { $ne: true },
+            $or: [
+                { title: searchRegex },
+                { description: searchRegex },
+                { orderId: searchRegex },
+                { customerUsername: searchRegex },
+            ],
+        }).select('_id').limit(100).lean();
+        filters.taskIds = matchingTasks.map(task => task._id.toString());
+    }
+    if (limit) {
+        const parsedLimit = parseInt(limit, 10);
+        if (!Number.isNaN(parsedLimit))
+            filters.limit = parsedLimit;
+    }
     const files = yield FileUploadRepository_1.fileUploadRepository.findAll(filters);
     // Enrich files that were uploaded via a share link with the link's metadata
     // so the admin grouping logic can place them in the correct folder

@@ -218,6 +218,17 @@ body.has-custom-bg .bg-destructive:hover {
   background-color: hsl(var(--destructive) / 0.8) !important;
 }
 
+/* Mobile Safari allocates a separate compositor surface for every backdrop
+   filter. A populated task section can contain hundreds of these surfaces,
+   which exhausts iPhone/iPad GPU memory and reloads the tab. Keep the same
+   translucent colors on touch-only devices, but render them without blur. */
+@media (pointer: coarse) and (hover: none) {
+  body.has-custom-bg * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
 /* Table overrides to ensure rows remain visible */
 body.has-custom-bg tr:hover,
 body.has-custom-bg .hover\:bg-muted:hover {

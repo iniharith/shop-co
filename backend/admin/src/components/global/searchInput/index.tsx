@@ -3,7 +3,7 @@
  * Kampungcetak ®
  */
 'use client';
-import { useState } from 'react';
+import { useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -23,12 +23,13 @@ export default function SearchInput({
   showShortcut = true,
 }: SearchInputProps = {}) {
   const router = useRouter();
-  const [query, setQuery] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      router.push(`/admin/search?q=${encodeURIComponent(query.trim())}`);
+    const query = inputRef.current?.value.trim();
+    if (query) {
+      router.push(`/admin/search?q=${encodeURIComponent(query)}`);
     }
   };
 
@@ -36,8 +37,7 @@ export default function SearchInput({
     <form onSubmit={handleSearch} className={cn('relative w-full space-y-2', className)}>
       <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
       <Input
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        ref={inputRef}
         placeholder={placeholder}
         className={cn('h-9 w-full rounded-[0.5rem] bg-background pl-9 pr-12 text-sm shadow-none md:w-40 lg:w-64', inputClassName)}
       />

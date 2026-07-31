@@ -100,21 +100,27 @@ class FileUploadRepository {
     }
     findAll(filters) {
         return __awaiter(this, void 0, void 0, function* () {
+            var _a;
             const query = {};
             if ((filters === null || filters === void 0 ? void 0 : filters.adminReviewed) !== undefined)
                 query.adminReviewed = filters.adminReviewed;
             if (filters === null || filters === void 0 ? void 0 : filters.search) {
+                const escapedSearch = filters.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 query.$or = [
-                    { originalName: { $regex: filters.search, $options: 'i' } },
-                    { userId: { $regex: filters.search, $options: 'i' } },
-                    { orderId: { $regex: filters.search, $options: 'i' } },
+                    { originalName: { $regex: escapedSearch, $options: 'i' } },
+                    { filename: { $regex: escapedSearch, $options: 'i' } },
+                    { userId: { $regex: escapedSearch, $options: 'i' } },
+                    { orderId: { $regex: escapedSearch, $options: 'i' } },
                 ];
+                if ((_a = filters.taskIds) === null || _a === void 0 ? void 0 : _a.length)
+                    query.$or.push({ taskId: { $in: filters.taskIds } });
             }
             // Speed optimization: Only load files from the last 30 days by default to prevent massive payloads.
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             query.uploadedAt = { $gte: thirtyDaysAgo };
-            return FileUpload_1.FileUpload.find(query).sort({ uploadedAt: -1 }).lean();
+            const limit = (filters === null || filters === void 0 ? void 0 : filters.limit) ? Math.min(Math.max(filters.limit, 1), 500) : 0;
+            return FileUpload_1.FileUpload.find(query).sort({ uploadedAt: -1 }).limit(limit).lean();
         });
     }
     // Slim, unwindowed listing used to build the folder/task grouping on the
