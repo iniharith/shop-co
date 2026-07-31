@@ -1082,9 +1082,7 @@ router.post(
       return;
     }
 
-    const uploadName = typeof item === 'string' && item.trim()
-      ? `${item.trim()} (#${orderId})`
-      : `Artwork Upload: #${orderId}`;
+    const uploadName = `Artwork Upload: #${orderId} - ${username}`;
 
     // 1. Create a Task for this upload
     const savedTask = await taskRepository.create({
