@@ -1,9 +1,11 @@
 "use client";
 import React, { useState, useRef, useCallback, useEffect, useMemo, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { useTasks, useTask, useCreateTask, useUpdateTask, useDeleteTask, useUploadTaskFile } from "@/hooks/useTasks";
+import { useTasks, useTask, useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
 import { useSearchParams } from "next/navigation";
 import { useUsers } from "@/hooks/useUsers";
+import { useSession } from "next-auth/react";
+import AxiosInstance from "@/utils/axios";
 import { useUploadStore } from "@/store/uploadStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,60 +76,89 @@ const TASK_COLUMNS = [
 ];
 const TASK_RENDER_BATCH = 30;
 
-// Create New Task dialog with optional artwork upload using the same
-// mechanic as the Artworks page / Task modal: drag & drop or upload
-// button, with a tag picker (Draft / Attachment / For Print). Files are
-// uploaded into the newly created task's folder right after creation.
-const CreateTaskDialog = () => {
+// Create New Task dialog with optional artwork upload that copies the
+// customer upload portal flow: presigned URL → direct S3 upload → save
+// metadata. No share link is created — files go straight to the task's own
+// folder via /api/tasks/:id/files/save-metadata, which attaches the taskId
+// server-side so the Artworks Manager groups them under the task name (never
+// a user folder). The upload simply creates the folder; nothing opens in a
+// new tab. The task detail opens in place once creation finishes.
+const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => void }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [newTask, setNewTask] = useState({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
   const { mutate: createTask, isPending: isCreating } = useCreateTask();
-  const { mutateAsync: uploadTaskFile } = useUploadTaskFile();
+  const { data: session } = useSession();
   const { addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [pendingFiles, setPendingFiles] = useState<{ file: File; tag: string }[]>([]);
-  const [tagPickerFiles, setTagPickerFiles] = useState<File[] | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
 
   const resetForm = () => {
     setNewTask({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
     setPendingFiles([]);
-    setTagPickerFiles(null);
     setIsDragOver(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const addFilesWithTag = (files: File[], tag: string) => {
-    setPendingFiles(prev => [...prev, ...files.map(file => ({ file, tag }))]);
-    setTagPickerFiles(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setTagPickerFiles(Array.from(e.target.files));
+      setPendingFiles(prev => [...prev, ...Array.from(e.target.files!)]);
     }
+    e.target.value = "";
   };
+
+  // Direct S3 PUT with progress + abort, mirroring the portal/upload store.
+  const putFileToS3 = (url: string, file: File, onProgress: (p: number) => void, abortController: AbortController) =>
+    new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.timeout = Math.min(30 * 60 * 1000, Math.max(5 * 60 * 1000, Math.ceil(file.size / (128 * 1024) * 1000)));
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100));
+      };
+      xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`S3 upload failed with status ${xhr.status}`)));
+      xhr.onerror = () => reject(new Error("Network error during upload. Please check your connection and try again."));
+      xhr.ontimeout = () => reject(new Error("Upload timed out. Please check your connection and try again."));
+      abortController.signal.addEventListener('abort', () => { xhr.abort(); reject(new Error("Upload cancelled")); });
+      xhr.open("PUT", url, true);
+      xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+      xhr.send(file);
+    });
 
   const uploadFilesForTask = async (taskId: string) => {
     if (pendingFiles.length === 0) return;
     setIsUploadingFiles(true);
     try {
-      const results = await Promise.allSettled(pendingFiles.map(async ({ file, tag }) => {
+      const token = session?.user?.token || localStorage.getItem('token') || "";
+
+      // Portal-style upload WITHOUT a share link: presigned URL → direct S3
+      // PUT → task save-metadata. The backend attaches the taskId to each
+      // FileUpload record, so the Artworks Manager groups the files under the
+      // task's own folder (named after the task), never a user folder.
+      const results = await Promise.allSettled(pendingFiles.map(async (file) => {
         const id = Date.now().toString() + Math.random().toString(36).substring(7);
         const abortController = new AbortController();
-        addUpload({ id, name: file.name, tag, taskId, file, abortController });
+        addUpload({ id, name: file.name, tag: 'attachment', taskId, file, abortController });
         try {
           updateStatus(id, 'uploading');
-          await uploadTaskFile({
-            id: taskId,
-            file,
-            tag,
-            onProgress: (percent) => updateProgress(id, percent),
-            abortController,
+          const presignRes = await AxiosInstance(token).post("/api/files/presigned-url", {
+            filename: file.name,
+            contentType: file.type || "application/octet-stream",
+            folderPath: `tasks/${taskId}`,
           });
+          const { signedUrl, fileUrl, key } = presignRes?.data || {};
+          if (!signedUrl || !fileUrl || !key) throw new Error("Failed to get presigned URL");
+          await putFileToS3(signedUrl, file, (percent) => updateProgress(id, percent), abortController);
+          const metaRes = await AxiosInstance(token).post(`/api/tasks/${taskId}/files/save-metadata`, {
+            fileUrl,
+            fileName: file.name,
+            fileKey: key,
+            mimetype: file.type || "application/octet-stream",
+            size: file.size,
+            tag: 'attachment',
+          });
+          if (!metaRes?.data?.success) throw new Error("Failed to save file metadata");
           updateStatus(id, 'success');
           setTimeout(() => removeUpload(id), 1000);
           return true;
@@ -138,6 +169,8 @@ const CreateTaskDialog = () => {
       }));
       const failed = results.filter(r => r.status === 'fulfilled' && !(r as any).value).length;
       if (failed > 0) toast.warning(`${failed} file(s) failed to upload`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to upload artwork");
     } finally {
       setIsUploadingFiles(false);
     }
@@ -151,8 +184,11 @@ const CreateTaskDialog = () => {
     createTask(newTask, {
       onSuccess: async (data: any) => {
         const taskId = data?.task?._id || data?._id;
+        const taskTitle = data?.task?.title || newTask.title;
         if (taskId) await uploadFilesForTask(taskId);
         toast.success("Task created!");
+        // Open the task detail in place — no new tab, no extra navigation.
+        onTaskCreated?.({ _id: taskId, title: taskTitle, ...newTask, ...(data?.task || {}) });
         setIsOpen(false);
         resetForm();
       },
@@ -199,7 +235,7 @@ const CreateTaskDialog = () => {
                 e.preventDefault();
                 setIsDragOver(false);
                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                  setTagPickerFiles(Array.from(e.dataTransfer.files));
+                  setPendingFiles(prev => [...prev, ...Array.from(e.dataTransfer.files!)]);
                 }
               }}
             >
@@ -222,7 +258,7 @@ const CreateTaskDialog = () => {
             {pendingFiles.length > 0 && (
               <div className="bg-muted/10 rounded-lg p-3 border border-border/50 space-y-2 max-h-40 overflow-y-auto mt-2 custom-scrollbar">
                 <h4 className="text-xs font-medium text-muted-foreground mb-2">{pendingFiles.length} File(s) to attach</h4>
-                {pendingFiles.map(({ file, tag }, i) => (
+                {pendingFiles.map((file, i) => (
                   <div key={i} className="flex items-center justify-between bg-background p-2 rounded border border-border/50">
                     <div className="flex items-center gap-2 overflow-hidden">
                       {file.type.includes('image') ? (
@@ -232,12 +268,7 @@ const CreateTaskDialog = () => {
                       )}
                       <div className="truncate">
                         <p className="text-xs font-medium truncate">{file.name}</p>
-                        <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
-                          {(file.size / 1024 / 1024).toFixed(2)} MB
-                          <Badge className={tag === 'draft' ? "bg-orange-500 text-[9px]" : tag === 'for_print' ? "bg-green-500 text-[9px]" : "bg-gray-500 text-[9px]"}>
-                            {tag === 'for_print' ? 'For Print' : tag === 'draft' ? 'Draft' : 'Attachment'}
-                          </Badge>
-                        </p>
+                        <p className="text-[10px] text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                       </div>
                     </div>
                     <button
@@ -256,28 +287,6 @@ const CreateTaskDialog = () => {
             {isCreating ? "Creating..." : isUploadingFiles ? "Uploading files..." : "Create Task"}
           </Button>
         </div>
-        {tagPickerFiles && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setTagPickerFiles(null)}>
-            <div className="bg-background border border-border rounded-xl shadow-2xl w-[90vw] max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
-              <h3 className="font-bold text-base mb-1">Upload {tagPickerFiles.length} file{tagPickerFiles.length > 1 ? 's' : ''}</h3>
-              <p className="text-sm text-muted-foreground mb-4">What type of file is this?</p>
-              <div className="flex flex-col gap-2">
-                <Button variant="outline" className="justify-start h-11" onClick={() => addFilesWithTag(tagPickerFiles, 'draft')}>
-                  <Badge className="bg-orange-500 mr-2 text-[10px]">Draft</Badge> Upload as Draft
-                </Button>
-                <Button variant="outline" className="justify-start h-11" onClick={() => addFilesWithTag(tagPickerFiles, 'attachment')}>
-                  <Badge className="bg-gray-500 mr-2 text-[10px]">Attachment</Badge> Upload as Attachment
-                </Button>
-                <Button variant="outline" className="justify-start h-11" onClick={() => addFilesWithTag(tagPickerFiles, 'for_print')}>
-                  <Badge className="bg-green-500 mr-2 text-[10px]">Artwork</Badge> Upload as Artwork (For Print)
-                </Button>
-              </div>
-              <Button variant="ghost" className="w-full mt-3 text-muted-foreground" onClick={() => setTagPickerFiles(null)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        )}
       </DialogContent>
     </Dialog>
   );
@@ -573,7 +582,7 @@ export default function TasksManager() {
           }}>
             Run Migration Fix
           </Button>
-          <CreateTaskDialog />
+          <CreateTaskDialog onTaskCreated={(task) => setSelectedTask(task)} />
         </div>
       </div>
 
