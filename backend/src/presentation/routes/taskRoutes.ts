@@ -282,6 +282,7 @@ router.delete(
       } else {
         await taskRepository.delete(req.params.id);
       }
+      await clearFolderGroupCache().catch(() => {});
     }
     res.json({ success: true, message: req.query.permanent === 'true' ? 'Task permanently deleted' : 'Task deleted' });
     emitTaskUpdated('task_deleted', { taskId: req.params.id });

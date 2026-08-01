@@ -458,7 +458,7 @@ router.get(
       ]),
       orderIds.length ? OrderModel.find({ _id: { $in: orderIds } }).select('orderStatus userId').lean() : [],
       userIds.length ? User.find({ _id: { $in: userIds } }).select('name').lean() : [],
-      allTaskIds.length ? Task.find({ _id: { $in: allTaskIds }, isDeleted: { $ne: true } }).select('title status orderId category').lean() : [],
+      allTaskIds.length ? Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category isDeleted').lean() : [],
     ]);
 
     const taskMap = new Map(tasks.map((t: any) => [t._id.toString(), t]));
@@ -477,6 +477,9 @@ router.get(
       if (file.taskId) {
         const task = allTaskMap.get(file.taskId) || taskMap.get(file.taskId);
         if (task) {
+          // Task is soft-deleted — hide its files entirely until the task is
+          // permanently deleted (when FileUpload records are removed too).
+          if ((task as any).isDeleted) continue;
           if (!matchesStatus(task.status)) {
             // Task status does not match requested queue filter — skip file
             continue;
