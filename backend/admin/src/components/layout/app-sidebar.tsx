@@ -3,25 +3,14 @@
  * Kampungcetak ®
  */
 "use client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
@@ -36,28 +25,16 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-import {
-  BadgeCheck,
-  Bell,
-  ChevronRight,
-  ChevronsUpDown,
-  CreditCard,
-  Printer,
-  LogOut,
-} from "lucide-react";
-import { signOut, useSession } from "next-auth/react";
-import { markSigningOut } from "./liveSessionMonitor";
+import { ChevronRight } from "lucide-react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import * as React from "react";
 import { Icons } from "../global/icons";
-import { useTheme } from "next-themes";
-import { useNotifications } from "@/hooks/useNotification";
 import { useConversations } from "@/hooks/useChat";
 
 import { roleByNavItems } from "@/constants/navItems";
-import { DialogTitle } from "../ui/dialog";
 export const company = {
   name: "Kampung Cetak",
   logo: "/logo.png",
@@ -67,11 +44,7 @@ export const company = {
 export default function AppSidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const { state, isMobile, setOpenMobile, openMobile } = useSidebar();
-  const { theme } = useTheme();
-  const { data: notificationsResponse } = useNotifications();
-  const unreadCount = notificationsResponse?.notifications?.filter((n: any) => !n.read).length || 0;
-  
+  const { state, setOpenMobile } = useSidebar();
   const { data: conversationsResponse } = useConversations();
   const unreadChatCount = (conversationsResponse as any)?.conversations?.reduce((total: number, conv: any) => total + (conv.unreadCount || 0), 0) || 0;
  
@@ -181,100 +154,6 @@ export default function AppSidebar() {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-slate-800 bg-slate-900 hover:bg-slate-800 data-[state=open]:text-slate-100"
-                >
-                  <div className="relative">
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] w-4 h-4 p-0 flex items-center justify-center rounded-full z-50 shadow-sm border border-slate-900">
-                        {unreadCount}
-                      </span>
-                    )}
-                    <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage src={((session?.user as any)?.avatar || (session?.user as any)?.image)?.startsWith('http') ? ((session?.user as any)?.avatar || (session?.user as any)?.image) : ((session?.user as any)?.avatar || (session?.user as any)?.image) ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${((session?.user as any)?.avatar || (session?.user as any)?.image).replace(/^\//, '')}` : ""} />
-                      <AvatarFallback className="rounded-lg text-white">
-                        {session?.user?.name?.slice(0, 2)?.toUpperCase() || "CN"}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <div className="grid flex-1 text-white text-left text-sm leading-tight">
-                    <span className="truncate text-white font-semibold">
-                      {session?.user?.name || ""}
-                    </span>
-                    <span className="truncate text-white text-xs">
-                      {session?.user?.email || ""}
-                    </span>
-                  </div>
-                  <ChevronsUpDown className="ml-auto size-4" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                side="bottom"
-                align="end"
-                sideOffset={4}
-              >
-                <DropdownMenuLabel className="p-0  font-normal">
-                  <div className="flex items-center  gap-2 px-1 py-1.5 text-left text-sm">
-                    <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage src={((session?.user as any)?.avatar || (session?.user as any)?.image)?.startsWith('http') ? ((session?.user as any)?.avatar || (session?.user as any)?.image) : ((session?.user as any)?.avatar || (session?.user as any)?.image) ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/${((session?.user as any)?.avatar || (session?.user as any)?.image).replace(/^\//, '')}` : ""} />
-                      <AvatarFallback className="rounded-lg text-white">
-                        {session?.user?.name?.slice(0, 2)?.toUpperCase() ||
-                          "CN"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="grid flex-1  text-left text-sm leading-tight">
-                      <span  className="truncate  font-semibold">
-                        {session?.user?.name || ""}
-                      </span>
-                      <span  className="truncate  text-xs">
-                        {" "}
-                        {session?.user?.email || ""}
-                      </span>
-                    </div>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-
-                <DropdownMenuGroup>
-                  {/* <DropdownMenuItem disabled>
-                    <BadgeCheck />
-                    Account
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled>
-                    <CreditCard />
-                    Billing
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled>
-                    <Bell />
-                    Notifications
-                  </DropdownMenuItem> */}
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                className="hover:bg-sidebar-accent/50 cursor-pointer"
-                  onClick={() => {
-                    document.cookie = 'fallback_admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-                    signOut({
-                      callbackUrl: `${window.location.origin}/auth/login` as string,
-                    });
-                    setOpenMobile(false);
-                  }}
-                >
-                  <LogOut />
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );

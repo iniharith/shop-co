@@ -1,9 +1,10 @@
 "use client";
 import React, { useState, useRef, useCallback, useEffect, useMemo, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { useTasks, useTask, useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
+import { useTasks, useTask, useCreateTask, useUpdateTask, useDeleteTask, useUploadTaskFile } from "@/hooks/useTasks";
 import { useSearchParams } from "next/navigation";
 import { useUsers } from "@/hooks/useUsers";
+import { useUploadStore } from "@/store/uploadStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ import {
   LayoutGrid, List, Plus, Calendar, MessageSquare, Trash2,
   ChevronDown, ChevronRight, Settings2, Check, RefreshCw,
   CheckCircle, Circle, ArrowDownUp, X, UserCheck, CalendarClock, Layers, Folder,
+  Upload, Download, Image as ImageIcon, FileText,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -72,29 +74,74 @@ const TASK_COLUMNS = [
 ];
 const TASK_RENDER_BATCH = 30;
 
-const TaskSearchInput = ({ onSearch }: { onSearch: (value: string) => void }) => {
-  const [value, setValue] = useState("");
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => onSearch(value.trim()), 300);
-    return () => window.clearTimeout(timer);
-  }, [value, onSearch]);
-
-  return (
-    <Input
-      placeholder="Search tasks..."
-      value={value}
-      onChange={event => setValue(event.target.value)}
-      className="h-8 w-48 text-sm"
-    />
-  );
-};
-
-// Keep form state outside the board so typing does not re-render every task card.
+// Create New Task dialog with optional artwork upload using the same
+// mechanic as the Artworks page / Task modal: drag & drop or upload
+// button, with a tag picker (Draft / Attachment / For Print). Files are
+// uploaded into the newly created task's folder right after creation.
 const CreateTaskDialog = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [newTask, setNewTask] = useState({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
   const { mutate: createTask, isPending: isCreating } = useCreateTask();
+  const { mutateAsync: uploadTaskFile } = useUploadTaskFile();
+  const { addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingFiles, setPendingFiles] = useState<{ file: File; tag: string }[]>([]);
+  const [tagPickerFiles, setTagPickerFiles] = useState<File[] | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+
+  const resetForm = () => {
+    setNewTask({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
+    setPendingFiles([]);
+    setTagPickerFiles(null);
+    setIsDragOver(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const addFilesWithTag = (files: File[], tag: string) => {
+    setPendingFiles(prev => [...prev, ...files.map(file => ({ file, tag }))]);
+    setTagPickerFiles(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setTagPickerFiles(Array.from(e.target.files));
+    }
+  };
+
+  const uploadFilesForTask = async (taskId: string) => {
+    if (pendingFiles.length === 0) return;
+    setIsUploadingFiles(true);
+    try {
+      const results = await Promise.allSettled(pendingFiles.map(async ({ file, tag }) => {
+        const id = Date.now().toString() + Math.random().toString(36).substring(7);
+        const abortController = new AbortController();
+        addUpload({ id, name: file.name, tag, taskId, file, abortController });
+        try {
+          updateStatus(id, 'uploading');
+          await uploadTaskFile({
+            id: taskId,
+            file,
+            tag,
+            onProgress: (percent) => updateProgress(id, percent),
+            abortController,
+          });
+          updateStatus(id, 'success');
+          setTimeout(() => removeUpload(id), 1000);
+          return true;
+        } catch (err: any) {
+          updateStatus(id, 'error', err?.message || 'Upload failed');
+          return false;
+        }
+      }));
+      const failed = results.filter(r => r.status === 'fulfilled' && !(r as any).value).length;
+      if (failed > 0) toast.warning(`${failed} file(s) failed to upload`);
+    } finally {
+      setIsUploadingFiles(false);
+    }
+  };
 
   const handleCreateTask = () => {
     if (!newTask.title.trim()) {
@@ -102,16 +149,18 @@ const CreateTaskDialog = () => {
       return;
     }
     createTask(newTask, {
-      onSuccess: () => {
+      onSuccess: async (data: any) => {
+        const taskId = data?.task?._id || data?._id;
+        if (taskId) await uploadFilesForTask(taskId);
         toast.success("Task created!");
         setIsOpen(false);
-        setNewTask({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
+        resetForm();
       },
     });
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
       <DialogTrigger asChild>
         <Button className="rounded-full px-6 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md">
           <Plus className="w-4 h-4 mr-2" /> New Task
@@ -139,8 +188,96 @@ const CreateTaskDialog = () => {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={handleCreateTask} disabled={isCreating} className="w-full">Create Task</Button>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Artwork (optional)</label>
+            <div
+              className="relative border-2 border-dashed border-border/50 rounded-xl p-6 text-center bg-muted/10 transition-colors group"
+              onDragEnter={(e) => { e.preventDefault(); if (Array.from(e.dataTransfer.types).includes("Files")) setIsDragOver(true); }}
+              onDragOver={(e) => { e.preventDefault(); if (Array.from(e.dataTransfer.types).includes("Files")) setIsDragOver(true); }}
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragOver(false);
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                  setTagPickerFiles(Array.from(e.dataTransfer.files));
+                }
+              }}
+            >
+              {isDragOver && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/70 backdrop-blur-sm rounded-xl">
+                  <p className="text-lg font-bold text-primary flex items-center gap-2">
+                    <Download className="w-5 h-5 animate-bounce" /> Drop files to attach
+                  </p>
+                </div>
+              )}
+              <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground group-hover:text-primary transition-colors" />
+              <h3 className="text-base font-medium mb-1">Upload artwork</h3>
+              <p className="text-xs text-muted-foreground mb-4">Drag and drop or click to browse files</p>
+              <Button type="button" variant="outline" size="sm" className="border-border/50" onClick={() => fileInputRef.current?.click()}>
+                Select Files
+              </Button>
+              <input ref={fileInputRef} type="file" multiple hidden onChange={handleFileInput} />
+            </div>
+
+            {pendingFiles.length > 0 && (
+              <div className="bg-muted/10 rounded-lg p-3 border border-border/50 space-y-2 max-h-40 overflow-y-auto mt-2 custom-scrollbar">
+                <h4 className="text-xs font-medium text-muted-foreground mb-2">{pendingFiles.length} File(s) to attach</h4>
+                {pendingFiles.map(({ file, tag }, i) => (
+                  <div key={i} className="flex items-center justify-between bg-background p-2 rounded border border-border/50">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      {file.type.includes('image') ? (
+                        <ImageIcon className="w-4 h-4 text-blue-400 shrink-0" />
+                      ) : (
+                        <FileText className="w-4 h-4 text-gray-400 shrink-0" />
+                      )}
+                      <div className="truncate">
+                        <p className="text-xs font-medium truncate">{file.name}</p>
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                          <Badge className={tag === 'draft' ? "bg-orange-500 text-[9px]" : tag === 'for_print' ? "bg-green-500 text-[9px]" : "bg-gray-500 text-[9px]"}>
+                            {tag === 'for_print' ? 'For Print' : tag === 'draft' ? 'Draft' : 'Attachment'}
+                          </Badge>
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPendingFiles(prev => prev.filter((_, idx) => idx !== i))}
+                      className="p-1 hover:bg-muted/50 rounded text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <Button onClick={handleCreateTask} disabled={isCreating || isUploadingFiles} className="w-full">
+            {isCreating ? "Creating..." : isUploadingFiles ? "Uploading files..." : "Create Task"}
+          </Button>
         </div>
+        {tagPickerFiles && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setTagPickerFiles(null)}>
+            <div className="bg-background border border-border rounded-xl shadow-2xl w-[90vw] max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
+              <h3 className="font-bold text-base mb-1">Upload {tagPickerFiles.length} file{tagPickerFiles.length > 1 ? 's' : ''}</h3>
+              <p className="text-sm text-muted-foreground mb-4">What type of file is this?</p>
+              <div className="flex flex-col gap-2">
+                <Button variant="outline" className="justify-start h-11" onClick={() => addFilesWithTag(tagPickerFiles, 'draft')}>
+                  <Badge className="bg-orange-500 mr-2 text-[10px]">Draft</Badge> Upload as Draft
+                </Button>
+                <Button variant="outline" className="justify-start h-11" onClick={() => addFilesWithTag(tagPickerFiles, 'attachment')}>
+                  <Badge className="bg-gray-500 mr-2 text-[10px]">Attachment</Badge> Upload as Attachment
+                </Button>
+                <Button variant="outline" className="justify-start h-11" onClick={() => addFilesWithTag(tagPickerFiles, 'for_print')}>
+                  <Badge className="bg-green-500 mr-2 text-[10px]">Artwork</Badge> Upload as Artwork (For Print)
+                </Button>
+              </div>
+              <Button variant="ghost" className="w-full mt-3 text-muted-foreground" onClick={() => setTagPickerFiles(null)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -151,11 +288,9 @@ export default function TasksManager() {
   const lowPower = useLowPowerAnimations();
   const taskRenderBatch = lowPower ? 10 : TASK_RENDER_BATCH;
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
   const taskFilters = {
         limit: "200",
         ...(assigneeFilter !== "all" ? { assignee: assigneeFilter } : {}),
-        ...(searchQuery ? { search: searchQuery } : {}),
       };
   const { data: response, isPending: isTasksPending, refetch, isFetching } = useTasks(taskFilters);
   const linkedTaskId = useSearchParams().get("taskId") || undefined;
@@ -308,14 +443,8 @@ export default function TasksManager() {
 
   // ── Sorted / filtered task list ───────────────────────────────────────────
   const sortedTasks = useMemo(() => {
-    const normalizedQuery = searchQuery.toLowerCase();
     return [...tasks]
       .filter((t: any) => !deletedTaskIds.includes(t._id))
-      .filter((t: any) =>
-        t.title?.toLowerCase().includes(normalizedQuery) ||
-        t.orderId?.toLowerCase().includes(normalizedQuery) ||
-        t.customerUsername?.toLowerCase().includes(normalizedQuery)
-      )
       .filter((t: any) => {
         if (assigneeFilter === "all") return true;
         if (assigneeFilter === "unassigned") return !t.assignee;
@@ -328,7 +457,7 @@ export default function TasksManager() {
         if (sortOption === "nameDesc") return (b.title || "").localeCompare(a.title || "");
         return 0;
       });
-  }, [tasks, deletedTaskIds, searchQuery, assigneeFilter, sortOption]);
+  }, [tasks, deletedTaskIds, assigneeFilter, sortOption]);
 
   const tasksByStatus = useMemo(() => {
     const grouped = Object.fromEntries(columns.map(status => [status, [] as any[]]));
@@ -423,8 +552,6 @@ export default function TasksManager() {
             </SelectContent>
           </Select>
 
-          <TaskSearchInput onSearch={setSearchQuery} />
-
           {/* Hint — only visible in list view when nothing is selected */}
           {viewMode === "list" && selectedIds.size === 0 && (
             <span className="text-xs text-muted-foreground hidden md:inline select-none">
@@ -434,7 +561,7 @@ export default function TasksManager() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="rounded-full h-10 w-10 shadow-sm border-slate-200" title="Refresh">
+          <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="rounded-full h-9 w-9 shadow-sm border-slate-200" title="Refresh">
             <RefreshCw className={`w-4 h-4 text-slate-500 ${isFetching ? "animate-spin" : ""}`} />
           </Button>
           <Button variant="secondary" className="rounded-full px-4 shadow-sm" onClick={async () => {

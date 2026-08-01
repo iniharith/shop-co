@@ -5,7 +5,7 @@
 'use client';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { LoaderCircle, Search } from 'lucide-react';
+import { LoaderCircle, Search, X } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { getTasks } from '@/api/tasks';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,7 @@ export default function SearchInput({
   const formRef = useRef<HTMLFormElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
+  const [value, setValue] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [searchedQuery, setSearchedQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -70,6 +71,7 @@ export default function SearchInput({
 
   const handleInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     const query = event.currentTarget.value.trim();
+    setValue(event.currentTarget.value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     requestIdRef.current += 1;
 
@@ -86,6 +88,17 @@ export default function SearchInput({
     debounceRef.current = setTimeout(() => void runLiveSearch(query), 150);
   };
 
+  const handleClear = () => {
+    setValue('');
+    setResults([]);
+    setSearchedQuery('');
+    setIsOpen(false);
+    setIsSearching(false);
+    requestIdRef.current += 1;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    inputRef.current?.focus();
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const query = inputRef.current?.value.trim();
@@ -95,22 +108,39 @@ export default function SearchInput({
   };
 
   return (
-    <form ref={formRef} onSubmit={handleSearch} className={cn('relative w-full space-y-2', className)}>
-      <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground' />
-      <Input
-        ref={inputRef}
-        onChange={handleInput}
-        onFocus={() => {
-          if ((inputRef.current?.value.trim().length || 0) >= 2) setIsOpen(true);
-        }}
-        placeholder={placeholder}
-        className={cn('h-9 w-full rounded-[0.5rem] bg-background pl-9 pr-12 text-sm shadow-none md:w-40 lg:w-64', inputClassName)}
-      />
-      {showShortcut && (
-        <kbd className='pointer-events-none absolute right-[0.3rem] top-[0.3rem] hidden h-6 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex'>
-          <span className='text-xs'>⌘</span>K
-        </kbd>
-      )}
+    <form ref={formRef} onSubmit={handleSearch} className={cn('relative w-full', className)}>
+      <div className='relative'>
+        <Search className='pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+        <Input
+          ref={inputRef}
+          value={value}
+          onChange={handleInput}
+          onFocus={() => {
+            if ((inputRef.current?.value.trim().length || 0) >= 2) setIsOpen(true);
+          }}
+          placeholder={placeholder}
+          className={cn(
+            'h-9 w-full rounded-[0.5rem] bg-background pl-10 pr-12 text-sm shadow-none md:w-40 lg:w-64',
+            inputClassName,
+            value && 'pr-10'
+          )}
+        />
+        {value && (
+          <button
+            type='button'
+            onClick={handleClear}
+            className='absolute right-[0.3rem] top-1/2 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
+            title='Clear search'
+          >
+            <X className='h-4 w-4' />
+          </button>
+        )}
+        {showShortcut && !value && (
+          <kbd className='pointer-events-none absolute right-[0.3rem] top-1/2 hidden h-6 -translate-y-1/2 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex'>
+            <span className='text-xs'>⌘</span>K
+          </kbd>
+        )}
+      </div>
       {isOpen && (
         <div className='fixed left-1/2 top-20 z-[100] mt-2 max-h-[calc(100svh-6rem)] w-[calc(100vw-1.5rem)] -translate-x-1/2 overflow-y-auto rounded-xl border border-border bg-popover text-popover-foreground shadow-2xl md:absolute md:left-auto md:right-0 md:top-full md:w-[min(28rem,calc(100vw-2rem))] md:translate-x-0'>
           {isSearching ? (
