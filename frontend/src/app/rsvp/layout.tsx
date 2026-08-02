@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 const title = "WALIMATUL URUS\nFATIN\n&\nHABRI";
 const description = "Dengan penuh kesyukuran, kami menjemput anda ke majlis perkahwinan kami.";
-const invitationUrl = "https://kampungcetak.com/rsvp";
+const invitationUrl = "https://kampungcetak.com/fatinhabri";
 const previewImage = "https://kampungcetak.com/images/wedding-wax-seal-fh.png";
 
 export const metadata: Metadata = {
