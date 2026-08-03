@@ -8,14 +8,16 @@ import { useSearchParams } from "next/navigation";
 import { DataTableSkeleton } from "../../global/table/data-table-skeleton";
 import { useOrders } from "@/hooks/useOrder";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import OrderCard from "./OrderCard";
+import ResponsiveVirtualizedOrderList from "./ResponsiveVirtualizedOrderList";
 import { Search, PackageX, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-interface Props {}
+interface Props {
+  scrollParent: HTMLElement | null;
+}
 
-const OrdersList = (props: Props) => {
+const OrdersList = ({ scrollParent }: Props) => {
   const urlSearchQuery = useSearchParams().get("search") || "";
   const { data, isPending, refetch, isFetching } = useOrders();
   const [activeTab, setActiveTab] = useState("ALL");
@@ -100,11 +102,7 @@ const OrdersList = (props: Props) => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 pb-10">
-            {filteredOrders.map((order: any) => (
-              <OrderCard key={order._id} order={order} />
-            ))}
-          </div>
+          <ResponsiveVirtualizedOrderList orders={filteredOrders} scrollParent={scrollParent} />
         )}
       </div>
     );

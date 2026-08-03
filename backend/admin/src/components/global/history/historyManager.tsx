@@ -8,7 +8,7 @@ import { DataTableSkeleton } from "../table/data-table-skeleton";
 import { useOrders } from "@/hooks/useOrder";
 import { useBulkDeleteOrders } from "@/hooks/useOrder";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import OrderCard from "../../table/orders/OrderCard";
+import ResponsiveVirtualizedOrderList from "../../table/orders/ResponsiveVirtualizedOrderList";
 import { Search, PackageX, RefreshCw, Archive, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,15 @@ import { useTasks, usePermanentDeleteTask } from "@/hooks/useTasks";
 import { useFileIndex } from "@/hooks/useAdminDashboard";
 import TaskModal from "../tasks/TaskModal";
 import { Folder } from "lucide-react";
+import { Virtuoso } from "react-virtuoso";
+import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
 
-const HistoryManager = () => {
+interface HistoryManagerProps {
+  scrollParent: HTMLElement | null;
+}
+
+const HistoryManager = ({ scrollParent }: HistoryManagerProps) => {
+  const lowPower = useLowPowerAnimations();
   const { data, isPending, refetch, isFetching } = useOrders();
   const { data: deletedTasksData, isPending: isTasksPending, refetch: refetchTasks, isFetching: isFetchingTasks } = useTasks({ deleted: 'true' });
   const { data: doneTasksData } = useTasks({ statuses: 'SHIPPED,DELIVERED,DONE_DESIGN,DONE,IN_TRANSIT' });
@@ -25,6 +32,13 @@ const HistoryManager = () => {
   const doneTasks: any[] = (doneTasksData as any)?.tasks || [];
   const { data: fileIndexResponse } = useFileIndex();
   const allFiles = (fileIndexResponse as any)?.data || [];
+  const fileCountByTaskId = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const file of allFiles) {
+      if (file.taskId) counts.set(file.taskId, (counts.get(file.taskId) || 0) + 1);
+    }
+    return counts;
+  }, [fileIndexResponse]);
   const { mutate: permanentDeleteTaskMutate, isPending: isPermanentDeleting } = usePermanentDeleteTask();
   const { mutate: bulkDeleteMutate, isPending: isDeleting } = useBulkDeleteOrders();
   const [activeTab, setActiveTab] = useState("DONE");
@@ -154,44 +168,63 @@ const HistoryManager = () => {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-4 pb-10">
-              {filteredTasks.map((task: any) => {
-                const taskFiles = allFiles.filter((f: any) => f.taskId === task._id);
-                return (
-                <div key={task._id} className="flex items-center justify-between p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl">
-                  <div className="flex items-center gap-4 cursor-pointer flex-1" onClick={() => setSelectedTask(task)}>
-                    <div className="bg-slate-200 p-3 rounded-xl">
-                      <Folder className="w-6 h-6 text-slate-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-lg hover:underline">{task.title}</h4>
-                      <div className="flex gap-4 text-sm text-muted-foreground mt-1">
-                        {task.orderId && <span>Order: {task.orderId}</span>}
-                        {task.customerUsername && <span>Customer: {task.customerUsername}</span>}
-                        {task.category && <span>Category: {task.category}</span>}
-                        <span>{taskFiles.length} file(s)</span>
-                        <span>Deleted on: {new Date(task.updatedAt).toLocaleDateString()}</span>
+            scrollParent ? (
+              <Virtuoso
+                className="w-full"
+                customScrollParent={scrollParent}
+                data={filteredTasks}
+                computeItemKey={(_, task) => task._id}
+                increaseViewportBy={lowPower ? 0 : { top: 500, bottom: 800 }}
+                itemContent={(_, task) => (
+                  <div className="pb-4">
+                    <div className="flex flex-col items-stretch gap-4 p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl sm:flex-row sm:items-center sm:justify-between">
+                      <div
+                        className="flex items-center gap-4 cursor-pointer flex-1 min-w-0"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setSelectedTask(task)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setSelectedTask(task);
+                          }
+                        }}
+                      >
+                        <div className="bg-slate-200 p-3 rounded-xl">
+                          <Folder className="w-6 h-6 text-slate-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-lg hover:underline">{task.title}</h4>
+                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mt-1">
+                            {task.orderId && <span>Order: {task.orderId}</span>}
+                            {task.customerUsername && <span>Customer: {task.customerUsername}</span>}
+                            {task.category && <span>Category: {task.category}</span>}
+                            <span>{fileCountByTaskId.get(task._id) || 0} file(s)</span>
+                            <span>Deleted on: {new Date(task.updatedAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
                       </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="w-full shrink-0 sm:w-auto"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm("Are you sure you want to permanently delete this task? All files will be removed. This cannot be undone.")) {
+                            permanentDeleteTaskMutate(task._id);
+                          }
+                        }}
+                        disabled={isPermanentDeleting}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" /> Permanently Delete
+                      </Button>
                     </div>
                   </div>
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    className="shrink-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (window.confirm("Are you sure you want to permanently delete this task? All files will be removed. This cannot be undone.")) {
-                        permanentDeleteTaskMutate(task._id);
-                      }
-                    }}
-                    disabled={isPermanentDeleting}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" /> Permanently Delete
-                  </Button>
-                </div>
-              );
-              })}
-            </div>
+                )}
+              />
+            ) : (
+              <div className="min-h-px" aria-hidden="true" />
+            )
           )
         ) : (
           (filteredOrders.length === 0 && filteredDoneTasks.length === 0) ? (
@@ -211,7 +244,6 @@ const HistoryManager = () => {
                   <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Completed Tasks ({filteredDoneTasks.length})</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {filteredDoneTasks.map((task: any) => {
-                      const taskFiles = allFiles.filter((f: any) => f.taskId === task._id);
                       return (
                         <div key={task._id} className="flex items-center justify-between p-4 bg-emerald-50/50 border-2 border-emerald-200 rounded-2xl cursor-pointer hover:border-emerald-400 transition-all" onClick={() => setSelectedTask(task)}>
                           <div className="flex items-center gap-4">
@@ -223,7 +255,7 @@ const HistoryManager = () => {
                               <div className="flex flex-wrap gap-2 text-xs text-emerald-800 mt-1">
                                 <span className="bg-emerald-200/60 px-2 py-0.5 rounded font-semibold uppercase">{task.status}</span>
                                 {task.orderId && <span>Order: #{task.orderId}</span>}
-                                <span>{taskFiles.length} file(s)</span>
+                                <span>{fileCountByTaskId.get(task._id) || 0} file(s)</span>
                               </div>
                             </div>
                           </div>
@@ -237,9 +269,11 @@ const HistoryManager = () => {
               {filteredOrders.length > 0 && (
                 <div className="space-y-3">
                   {filteredDoneTasks.length > 0 && <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Orders ({filteredOrders.length})</h3>}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
-                    {filteredOrders.map((order: any) => (
-                      <div key={order._id} className={activeTab === "CANCELLED" ? "border-2 border-red-500 bg-red-50 rounded-2xl p-2 relative overflow-hidden" : activeTab === "ARCHIVED" ? "border-2 border-indigo-500 bg-indigo-50/50 rounded-2xl p-2 relative overflow-hidden" : ""}>
+                  <ResponsiveVirtualizedOrderList
+                    orders={filteredOrders}
+                    scrollParent={scrollParent}
+                    renderOrder={(order, card) => (
+                      <div className={activeTab === "CANCELLED" ? "border-2 border-red-500 bg-red-50 rounded-2xl p-2 relative overflow-hidden" : activeTab === "ARCHIVED" ? "border-2 border-indigo-500 bg-indigo-50/50 rounded-2xl p-2 relative overflow-hidden" : ""}>
                         {activeTab === "CANCELLED" && (
                           <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10">
                             CANCELLED
@@ -251,11 +285,11 @@ const HistoryManager = () => {
                           </div>
                         )}
                         <div className={activeTab === "CANCELLED" ? "[&_*]:text-red-900" : activeTab === "ARCHIVED" ? "[&_*]:text-indigo-900" : ""}>
-                          <OrderCard order={order} />
+                          {card}
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  />
                 </div>
               )}
             </div>

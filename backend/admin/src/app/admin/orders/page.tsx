@@ -16,7 +16,6 @@ import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import AnimatedButton from "@/components/global/globalButton";
 import OrdersList from "@/components/table/orders/ordersList";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { ManualOrderModal } from "@/components/table/orders/ManualOrderModal";
 import { useConnectEasyParcel, useEasyParcelStatus } from "@/hooks/useOrder";
 import { toast } from "sonner";
@@ -30,6 +29,7 @@ export default function Page(props: pageProps) {
   const ref = useRef<HTMLInputElement>(null);
   const [sheamId, setsheamId] = useState<string>("");
   const [manualOrderOpen, setManualOrderOpen] = useState(false);
+  const [scrollParent, setScrollParent] = useState<HTMLDivElement | null>(null);
   const { data: easyParcelStatus, isPending: checkingEasyParcel } = useEasyParcelStatus();
   const { data: session } = useSession();
   const { mutate: connectEasyParcel, isPending: connectingEasyParcel } = useConnectEasyParcel();
@@ -51,7 +51,7 @@ export default function Page(props: pageProps) {
 
   return (
     <>
-      <PageContainer scrollable={true}>
+      <PageContainer scrollable={true} scrollContainerRef={setScrollParent}>
         <div className="flex flex-1 flex-col space-y-4 bg-background/40 backdrop-blur-md border border-white/10 p-6 rounded-2xl shadow-xl">
           <div className="flex items-start justify-between">
             <Heading
@@ -82,10 +82,7 @@ export default function Page(props: pageProps) {
             </div>
           </div>
           <Separator />
-          <ScrollArea className="md:w-[80vw] w-[92vw] ">
-            <OrdersList />
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
+          <OrdersList scrollParent={scrollParent} />
         </div>
       </PageContainer>
       <ManualOrderModal open={manualOrderOpen} onOpenChange={setManualOrderOpen} />

@@ -61,9 +61,17 @@ const getPaymentColor = (status: string) => {
 
 interface OrderCardProps {
   order: IOrder;
+  isMinimized?: boolean;
+  onMinimizedChange?: (isMinimized: boolean) => void;
+  onOpenShipmentDialog?: (order: IOrder) => void;
 }
 
-export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
+export const OrderCard: React.FC<OrderCardProps> = ({
+  order,
+  isMinimized: controlledIsMinimized,
+  onMinimizedChange,
+  onOpenShipmentDialog,
+}) => {
   const user = order.userId as any;
   const userName = user && typeof user === "object" ? user.name : user || "Unknown";
   
@@ -76,7 +84,8 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
   const { mutate: reconcileShipment, isPending: isReconcilingShipment } = useReconcileShipment();
   
   const [localStatus, setLocalStatus] = React.useState<string>(order.orderStatus as string);
-  const [isMinimized, setIsMinimized] = React.useState<boolean>(false);
+  const [internalIsMinimized, setInternalIsMinimized] = React.useState<boolean>(false);
+  const isMinimized = controlledIsMinimized ?? internalIsMinimized;
   const [shipmentDialogOpen, setShipmentDialogOpen] = React.useState(false);
   const awbPrintUrl = order.awbUrlsByFormat?.A6 || order.awbUrlsByFormat?.A4 || order.awbUrl;
 
@@ -99,6 +108,11 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
   };
 
   const queryClient = useQueryClient();
+
+  const handleMinimizedChange = (nextIsMinimized: boolean) => {
+    if (controlledIsMinimized === undefined) setInternalIsMinimized(nextIsMinimized);
+    onMinimizedChange?.(nextIsMinimized);
+  };
 
   const handleArchiveToggle = () => {
     const isCurrentlyArchived = (order as any).isArchived || false;
@@ -186,7 +200,8 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShipmentDialogOpen(true);
+                  if (onOpenShipmentDialog) onOpenShipmentDialog(order);
+                  else setShipmentDialogOpen(true);
                 }}
                 className="px-2 py-1 bg-primary/10 rounded border border-primary/20 hover:bg-primary/20 text-primary transition-colors text-[10px] font-bold uppercase tracking-wider"
                 title="Create EasyParcel Shipment"
@@ -239,7 +254,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
               {order.easyparcelBookingStatus === "awb_pending" && !awbPrintUrl ? <RefreshCw className={`w-4 h-4 text-amber-600 ${isRefreshingShipment ? "animate-spin" : ""}`} /> : <Printer className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
             </button>
             <button 
-              onClick={() => setIsMinimized(!isMinimized)} 
+              onClick={() => handleMinimizedChange(!isMinimized)}
               className="p-1.5 bg-muted rounded-full hover:bg-muted/80 text-muted-foreground transition-colors"
               title={isMinimized ? "Expand" : "Minimize"}
             >
@@ -340,7 +355,9 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order }) => {
           </CardFooter>
         </>
       )}
-      <EasyParcelShipmentDialog order={order} open={shipmentDialogOpen} onOpenChange={setShipmentDialogOpen} />
+      {!onOpenShipmentDialog && (
+        <EasyParcelShipmentDialog order={order} open={shipmentDialogOpen} onOpenChange={setShipmentDialogOpen} />
+      )}
     </Card>
   );
 };
