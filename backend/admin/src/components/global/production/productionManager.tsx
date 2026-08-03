@@ -29,6 +29,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
 import { Virtuoso } from "react-virtuoso";
+import SavedViewsControl from "@/components/global/SavedViewsControl";
 
 const categories = [
   "ALL",
@@ -43,6 +44,20 @@ const categories = [
 ];
 
 const ALL_STATUSES = ["IN_PRODUCTION", "HOLD_PRINTING"];
+type ProductionSavedView = {
+  searchQuery: string;
+  activeTab: string;
+  activeSubTab: string;
+  viewMode: "grid" | "list";
+};
+const isProductionSavedView = (value: unknown): value is ProductionSavedView => {
+  if (!value || typeof value !== "object") return false;
+  const view = value as ProductionSavedView;
+  return typeof view.searchQuery === "string"
+    && categories.includes(view.activeTab)
+    && ALL_STATUSES.includes(view.activeSubTab)
+    && (view.viewMode === "grid" || view.viewMode === "list");
+};
 
 const getFolderItemKey = (index: number, group: any) =>
   group.taskId
@@ -146,9 +161,9 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
 
     targets.forEach((group: any) => {
       if (group.taskId) {
-        updateTask({ id: group.taskId, data: { status: bulkTargetStatus } }, { onSuccess: finish, onError: finish });
+        updateTask({ id: group.taskId, data: { status: bulkTargetStatus }, skipUndo: true, silent: true }, { onSuccess: finish, onError: finish });
       } else if (group.orderId) {
-        updateOrderStatus({ id: group.orderId, status: bulkTargetStatus }, { onSuccess: finish, onError: finish });
+        updateOrderStatus({ id: group.orderId, status: bulkTargetStatus, skipUndo: true, silent: true }, { onSuccess: finish, onError: finish });
       } else {
         finish();
       }
@@ -231,15 +246,9 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
 
   const handleStatusChange = (group: any, newStatus: string) => {
     if (group.isTask) {
-      updateTask({ id: group.taskId, data: { status: newStatus } }, {
-        onSuccess: () => toast.success("Task status updated!"),
-        onError: () => toast.error("Failed to update task status")
-      });
+      updateTask({ id: group.taskId, data: { status: newStatus } });
     } else {
-      updateOrderStatus({ id: group.orderId, status: newStatus }, {
-        onSuccess: () => toast.success("Order status updated!"),
-        onError: () => toast.error("Failed to update order status")
-      });
+      updateOrderStatus({ id: group.orderId, status: newStatus });
     }
   };
 
@@ -513,6 +522,17 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
         </div>
 
         <div className="flex items-center gap-2">
+          <SavedViewsControl
+            scope="production"
+            state={{ searchQuery, activeTab, activeSubTab, viewMode }}
+            isValidState={isProductionSavedView}
+            onApply={view => {
+              setSearchQuery(view.searchQuery);
+              setActiveTab(view.activeTab);
+              setActiveSubTab(view.activeSubTab);
+              setViewMode(view.viewMode);
+            }}
+          />
           <div className="flex items-center bg-muted p-1 rounded-md">
             <button
               onClick={() => setViewMode("grid")}

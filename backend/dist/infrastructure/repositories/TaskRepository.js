@@ -8,6 +8,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -23,7 +34,17 @@ const cursorPagination_1 = require("../../shared/utils/cursorPagination");
 class TaskRepository {
     create(data) {
         return __awaiter(this, void 0, void 0, function* () {
-            return Task_1.Task.create(data);
+            const status = data.status || 'PLACED';
+            const isDone = Boolean(data.isDone);
+            const changedAt = new Date();
+            return Task_1.Task.create(Object.assign(Object.assign({}, data), { status,
+                isDone, statusUpdatedAt: changedAt, statusHistory: [{
+                        fromStatus: null,
+                        toStatus: status,
+                        fromIsDone: false,
+                        toIsDone: isDone,
+                        changedAt,
+                    }] }));
         });
     }
     buildQuery(filters) {
@@ -104,7 +125,7 @@ class TaskRepository {
             const query = this.buildQuery(filters);
             const limit = this.getLimit(filters);
             return Task_1.Task.find(query)
-                .select('-comments -activities -files')
+                .select('-comments -activities -files -statusHistory')
                 .sort({ updatedAt: -1, _id: -1 })
                 .limit(limit)
                 .maxTimeMS(10000)
@@ -116,7 +137,7 @@ class TaskRepository {
             const query = this.buildQuery(filters);
             const limit = this.getLimit(filters);
             const results = yield Task_1.Task.find(query)
-                .select('-comments -activities -files')
+                .select('-comments -activities -files -statusHistory')
                 .sort({ updatedAt: -1, _id: -1 })
                 .limit(limit + 1)
                 .maxTimeMS(10000)
@@ -153,12 +174,61 @@ class TaskRepository {
     }
     update(id, data) {
         return __awaiter(this, void 0, void 0, function* () {
-            return Task_1.Task.findByIdAndUpdate(id, { $set: data }, { new: true });
+            const updateData = Object.assign({}, data);
+            delete updateData.statusHistory;
+            for (let attempt = 0; attempt < 3; attempt++) {
+                const current = yield Task_1.Task.findById(id).select('status isDone').lean();
+                if (!current)
+                    return null;
+                const currentIsDone = Boolean(current.isDone);
+                const toStatus = data.status || current.status;
+                const toIsDone = typeof data.isDone === 'boolean' ? data.isDone : currentIsDone;
+                const workflowChanged = toStatus !== current.status || toIsDone !== currentIsDone;
+                if (!workflowChanged)
+                    return Task_1.Task.findByIdAndUpdate(id, { $set: updateData }, { new: true });
+                const changedAt = new Date();
+                const updated = yield Task_1.Task.findOneAndUpdate(Object.assign({ _id: id, status: current.status }, (currentIsDone
+                    ? { isDone: true }
+                    : { $or: [{ isDone: false }, { isDone: null }, { isDone: { $exists: false } }] })), {
+                    $set: Object.assign(Object.assign({}, updateData), { statusUpdatedAt: changedAt }),
+                    $push: {
+                        statusHistory: {
+                            fromStatus: current.status,
+                            toStatus,
+                            fromIsDone: currentIsDone,
+                            toIsDone,
+                            changedAt,
+                        },
+                    },
+                }, { new: true });
+                if (updated)
+                    return updated;
+            }
+            throw new Error('Task changed concurrently; retry the update');
         });
     }
     updateByOrderId(orderId, data) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield Task_1.Task.updateMany({ orderId }, { $set: data });
+            if (!data.status) {
+                yield Task_1.Task.updateMany({ orderId }, { $set: data });
+                return;
+            }
+            const changedAt = new Date();
+            const { statusUpdatedAt: _ignoredStatusUpdatedAt, statusHistory: _ignoredHistory } = data, setData = __rest(data, ["statusUpdatedAt", "statusHistory"]);
+            yield Task_1.Task.updateMany({ orderId, status: { $ne: data.status } }, [{
+                    $set: Object.assign(Object.assign({}, setData), { statusUpdatedAt: changedAt, statusHistory: {
+                            $concatArrays: [
+                                { $ifNull: ['$statusHistory', []] },
+                                [{
+                                        fromStatus: '$status',
+                                        toStatus: data.status,
+                                        fromIsDone: { $ifNull: ['$isDone', false] },
+                                        toIsDone: { $ifNull: ['$isDone', false] },
+                                        changedAt,
+                                    }],
+                            ],
+                        } }),
+                }]);
         });
     }
     findByOrderId(orderId) {
@@ -179,6 +249,11 @@ class TaskRepository {
     delete(id) {
         return __awaiter(this, void 0, void 0, function* () {
             yield Task_1.Task.findByIdAndUpdate(id, { $set: { isDeleted: true } });
+        });
+    }
+    restore(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return Task_1.Task.findOneAndUpdate({ _id: id, isDeleted: true }, { $set: { isDeleted: false } }, { new: true });
         });
     }
     permanentDelete(id) {

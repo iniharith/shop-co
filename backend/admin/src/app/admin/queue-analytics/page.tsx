@@ -95,7 +95,13 @@ export default function QueueAnalyticsPage() {
           <>
             <Alert className="border-amber-500/30 bg-amber-500/10 text-amber-950 dark:text-amber-100">
               <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
-              <AlertTitle>Estimated data</AlertTitle>
+              <AlertTitle>
+                {data.dataQuality.mode === "historical"
+                  ? "Historical completion data"
+                  : data.dataQuality.mode === "mixed"
+                    ? "Mixed historical and estimated data"
+                    : "Estimated legacy completion data"}
+              </AlertTitle>
               <AlertDescription className="text-amber-900/75 dark:text-amber-100/70">
                 {data.dataQuality.note} Use these figures as operational indicators rather than audited records.
               </AlertDescription>

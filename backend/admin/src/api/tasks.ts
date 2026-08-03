@@ -3,11 +3,14 @@
  * Kampungcetak ®
  */
 import AxiosInstance from "@/utils/axios";
+import { ITasksApiResponse } from "@/types/api";
 
-export const getTasks = async (token: string, filters?: any) => {
+export const getTasks = async (token?: string, filters?: Record<string, string | number | undefined>): Promise<ITasksApiResponse> => {
     let url = `/api/tasks`;
     if (filters) {
-        const queryParams = new URLSearchParams(filters).toString();
+        const queryParams = new URLSearchParams(
+            Object.entries(filters).filter((entry): entry is [string, string | number] => entry[1] !== undefined).map(([key, value]) => [key, String(value)])
+        ).toString();
         url += `?${queryParams}`;
     }
     const response = await AxiosInstance(token).get(url);
@@ -31,6 +34,11 @@ export const updateTask = async (token: string, id: string, data: any) => {
 
 export const deleteTask = async (token: string, id: string) => {
     const response = await AxiosInstance(token).delete(`/api/tasks/${id}`);
+    return response.data;
+}
+
+export const restoreTask = async (token: string | undefined, id: string) => {
+    const response = await AxiosInstance(token).post(`/api/tasks/${id}/restore`);
     return response.data;
 }
 

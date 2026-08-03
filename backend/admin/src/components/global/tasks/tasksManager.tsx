@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef, useCallback, useEffect, useMemo, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { useTasks, useTask, useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
+import { useInfiniteTasks, useTask, useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
 import { useSearchParams } from "next/navigation";
 import { useUsers } from "@/hooks/useUsers";
 import { useSession } from "next-auth/react";
@@ -33,6 +33,7 @@ import TaskModal from "./TaskModal";
 import { getUserColor, AssigneeTag } from "@/lib/userColor";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
+import SavedViewsControl from "@/components/global/SavedViewsControl";
 
 // ─── Due Date Display ─────────────────────────────────────────────────────────
 const DueDateDisplay = ({ task, updateTask, className }: { task: any; updateTask: any; className?: string }) => {
@@ -75,6 +76,22 @@ const TASK_COLUMNS = [
   'DONE_PRINTING','PACKAGING','SHIPPED','IN_TRANSIT','DELIVERED','CANCELLED','FAILED','RETURN',
 ];
 const TASK_RENDER_BATCH = 30;
+type TaskSavedView = {
+  assigneeFilter: string;
+  sortOption: "dateDesc" | "dateAsc" | "nameAsc" | "nameDesc";
+  viewMode: "board" | "list";
+  hiddenColumns: string[];
+};
+const TASK_SORT_OPTIONS = ["dateDesc", "dateAsc", "nameAsc", "nameDesc"] as const;
+const isTaskSavedView = (value: unknown): value is TaskSavedView => {
+  if (!value || typeof value !== "object") return false;
+  const view = value as TaskSavedView;
+  return typeof view.assigneeFilter === "string"
+    && TASK_SORT_OPTIONS.includes(view.sortOption)
+    && (view.viewMode === "board" || view.viewMode === "list")
+    && Array.isArray(view.hiddenColumns)
+    && view.hiddenColumns.every(column => TASK_COLUMNS.includes(column));
+};
 
 // Create New Task dialog with optional artwork upload that copies the
 // customer upload portal flow: presigned URL → direct S3 upload → save
@@ -298,13 +315,19 @@ export default function TasksManager() {
   const taskRenderBatch = lowPower ? 10 : TASK_RENDER_BATCH;
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const taskFilters = {
-        limit: "200",
+        limit: 100,
         ...(assigneeFilter !== "all" ? { assignee: assigneeFilter } : {}),
       };
-  const { data: response, isPending: isTasksPending, refetch, isFetching } = useTasks(taskFilters);
+  const { data: response, isPending: isTasksPending, refetch, isFetching, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteTasks(taskFilters);
   const linkedTaskId = useSearchParams().get("taskId") || undefined;
   const { data: linkedTaskResponse } = useTask(linkedTaskId);
-  const tasks = (response as any)?.tasks || [];
+  const tasks = useMemo(() => {
+    const byId = new Map<string, any>();
+    response?.pages.forEach(page => page.tasks.forEach(task => {
+      if (!byId.has(task._id)) byId.set(task._id, task);
+    }));
+    return Array.from(byId.values());
+  }, [response]);
   const { data: usersData } = useUsers();
 
   const [viewMode, setViewMode]                     = useState<"board" | "list">("list");
@@ -318,7 +341,6 @@ export default function TasksManager() {
   const [collapsedColumns, setCollapsedColumns]     = useState<string[]>(TASK_COLUMNS);
   const [columnsPopoverOpen, setColumnsPopoverOpen] = useState(false);
   const [sortOption, setSortOption]                 = useState<"dateDesc"|"dateAsc"|"nameAsc"|"nameDesc">("dateDesc");
-  const [deletedTaskIds, setDeletedTaskIds]         = useState<string[]>([]);
   const [visibleTaskCounts, setVisibleTaskCounts]   = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -396,7 +418,7 @@ export default function TasksManager() {
 
   const applyBulkUpdate = useCallback((data: Record<string, any>) => {
     const ids = Array.from(selectedIds);
-    ids.forEach(id => updateTask({ id, data }));
+    ids.forEach(id => updateTask({ id, data, skipUndo: true, silent: true }));
     toast.success(`Updated ${ids.length} task${ids.length > 1 ? "s" : ""}`);
     clearSelection();
   }, [selectedIds, updateTask, clearSelection]);
@@ -408,26 +430,12 @@ export default function TasksManager() {
 
   // ── Standard handlers ─────────────────────────────────────────────────────
   const handleStatusChange = (taskId: string, newStatus: string) => {
-    const old = tasks.find((t: any) => t._id === taskId)?.status;
-    updateTask({ id: taskId, data: { status: newStatus } }, {
-      onSuccess: () => {
-        toast.success("Status updated!", {
-          duration: 5000,
-          action: { label: "Undo", onClick: () => updateTask({ id: taskId, data: { status: old } }) },
-        });
-      },
-    });
+    updateTask({ id: taskId, data: { status: newStatus } });
   };
 
   const handleDelete = (taskId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setDeletedTaskIds(prev => [...prev, taskId]);
-    let cancelled = false;
-    toast.success("Task deleted!", {
-      duration: 5000,
-      action: { label: "Undo", onClick: () => { cancelled = true; setDeletedTaskIds(prev => prev.filter(id => id !== taskId)); } },
-    });
-    setTimeout(() => { if (!cancelled) deleteTask(taskId); }, 5000);
+    deleteTask(taskId);
   };
 
   const toggleTaskDone = (task: any, e: React.MouseEvent) => {
@@ -453,7 +461,6 @@ export default function TasksManager() {
   // ── Sorted / filtered task list ───────────────────────────────────────────
   const sortedTasks = useMemo(() => {
     return [...tasks]
-      .filter((t: any) => !deletedTaskIds.includes(t._id))
       .filter((t: any) => {
         if (assigneeFilter === "all") return true;
         if (assigneeFilter === "unassigned") return !t.assignee;
@@ -466,7 +473,7 @@ export default function TasksManager() {
         if (sortOption === "nameDesc") return (b.title || "").localeCompare(a.title || "");
         return 0;
       });
-  }, [tasks, deletedTaskIds, assigneeFilter, sortOption]);
+  }, [tasks, assigneeFilter, sortOption]);
 
   const tasksByStatus = useMemo(() => {
     const grouped = Object.fromEntries(columns.map(status => [status, [] as any[]]));
@@ -560,6 +567,20 @@ export default function TasksManager() {
               ))}
             </SelectContent>
           </Select>
+
+          <SavedViewsControl
+            scope="tasks"
+            state={{ assigneeFilter, sortOption, viewMode, hiddenColumns }}
+            isValidState={isTaskSavedView}
+            onApply={view => {
+              setAssigneeFilter(view.assigneeFilter);
+              setSortOption(view.sortOption);
+              startViewTransition(() => setViewMode(view.viewMode));
+              setHiddenColumns(view.hiddenColumns);
+              clearSelection();
+            }}
+            className="h-8 px-3 gap-2"
+          />
 
           {/* Hint — only visible in list view when nothing is selected */}
           {viewMode === "list" && selectedIds.size === 0 && (
@@ -805,6 +826,14 @@ export default function TasksManager() {
               </Collapsible>
             );
           })}
+        </div>
+      )}
+
+      {hasNextPage && (
+        <div className="flex justify-center py-2" aria-live="polite">
+          <Button variant="outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage} aria-busy={isFetchingNextPage}>
+            {isFetchingNextPage ? "Loading more tasks..." : "Load more tasks"}
+          </Button>
         </div>
       )}
 

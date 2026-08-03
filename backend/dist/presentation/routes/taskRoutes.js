@@ -216,9 +216,6 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
     if (isNewAssignment && preDesignStatuses.includes(currentStatus) && (!req.body.status || req.body.status === currentStatus)) {
         req.body.status = 'IN_DESIGN';
     }
-    if ((req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status)) || isDoneChanged) {
-        req.body.statusUpdatedAt = new Date();
-    }
     const task = yield TaskRepository_1.taskRepository.update(req.params.id, req.body);
     if (!task) {
         res.status(404).json({ success: false, message: 'Task not found' });
@@ -302,6 +299,23 @@ router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.de
     }
     res.json({ success: true, message: req.query.permanent === 'true' ? 'Task permanently deleted' : 'Task deleted' });
     (0, taskBroadcast_1.emitTaskUpdated)('task_deleted', { taskId: req.params.id });
+})));
+// POST /api/tasks/:id/restore
+router.post('/:id/restore', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d;
+    const task = yield TaskRepository_1.taskRepository.restore(req.params.id);
+    if (!task) {
+        res.status(404).json({ success: false, message: 'Deleted task not found' });
+        return;
+    }
+    const authReq = req;
+    const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a._id) || ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.id) || 'system';
+    const userName = ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.name) || ((_d = authReq.user) === null || _d === void 0 ? void 0 : _d.email) || 'System';
+    yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, 'restored this task');
+    yield (0, fileUploadRoutes_1.clearFolderGroupCache)().catch(() => { });
+    const freshTask = yield TaskRepository_1.taskRepository.findById(req.params.id);
+    res.json({ success: true, message: 'Task restored', task: freshTask });
+    void (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: freshTask });
 })));
 // POST /api/tasks/:id/comments
 router.post('/:id/comments', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {

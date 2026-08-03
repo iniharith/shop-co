@@ -4,6 +4,28 @@
  */
 import { IOrder } from "./IOrder";
 
+export interface ITask {
+    _id: string;
+    title: string;
+    status: string;
+    assignee?: string | null;
+    isDone?: boolean;
+    isDeleted?: boolean;
+    createdAt: string;
+    updatedAt: string;
+    [key: string]: unknown;
+}
+
+export interface ITasksApiResponse {
+    success: boolean;
+    tasks: ITask[];
+    pageInfo: {
+        limit: number;
+        hasNextPage: boolean;
+        nextCursor: string | null;
+    };
+}
+
 export interface IUser {
     _id: string;
     name: string;
@@ -54,6 +76,5 @@ export interface IOrderApiResponse {
     message: string;
     orders: IOrder[];
 }
-
 
 

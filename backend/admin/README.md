@@ -6,31 +6,22 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3001](http://localhost:3001) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Use `env.example` as the deployment variable reference. For Sentry:
 
-## Learn More
+- `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`, and `NEXT_PUBLIC_SENTRY_RELEASE` configure runtime reporting. Public variables are embedded at build time.
+- Set `SENTRY_DSN` for server-side reporting when a public DSN is not supplied.
+- `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` are build-only secrets used to upload source maps. Keep them out of browser-visible variables and runtime logs.
+- Set `SENTRY_RELEASE` and `NEXT_PUBLIC_SENTRY_RELEASE` to the same immutable deployment identifier, such as the Git commit SHA.
+- Source-map upload is disabled automatically when any upload credential is absent; application builds and runtime reporting still work.
 
-To learn more about Next.js, take a look at the following resources:
+Example deployment setup:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+cp env.example .env.local
+```

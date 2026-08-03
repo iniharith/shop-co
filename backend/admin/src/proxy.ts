@@ -2,12 +2,12 @@
  * Coded by Harith
  * Kampungcetak ®
  */
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { withAuth } from "next-auth/middleware";
 import { Roles } from "./types/api";
 
 export default withAuth(
-  async function middleware(req) {
+  async function proxy(req) {
     const path = req.nextUrl.pathname
     
     // Explicitly bypass /upload to guarantee no redirects happen

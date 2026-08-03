@@ -54,6 +54,13 @@ const TaskActivitySchema = new mongoose_1.Schema({
     details: { type: String, default: '' },
     createdAt: { type: Date, default: Date.now },
 });
+const TaskStatusTransitionSchema = new mongoose_1.Schema({
+    fromStatus: { type: String, default: null },
+    toStatus: { type: String, required: true },
+    fromIsDone: { type: Boolean, required: true },
+    toIsDone: { type: Boolean, required: true },
+    changedAt: { type: Date, required: true },
+}, { _id: false });
 const TaskSchema = new mongoose_1.Schema({
     title: { type: String, required: true },
     description: { type: String, default: '' },
@@ -74,11 +81,29 @@ const TaskSchema = new mongoose_1.Schema({
         }],
     comments: [TaskCommentSchema],
     activities: [TaskActivitySchema],
+    statusHistory: { type: [TaskStatusTransitionSchema], default: [] },
 }, { timestamps: true });
+// Some transactional admin flows create Task documents directly rather than
+// through TaskRepository, so establish the initial state at the model boundary.
+TaskSchema.pre('validate', function (next) {
+    if (this.isNew && this.statusHistory.length === 0) {
+        const changedAt = this.statusUpdatedAt || new Date();
+        this.statusUpdatedAt = changedAt;
+        this.statusHistory.push({
+            fromStatus: null,
+            toStatus: this.status || 'PLACED',
+            fromIsDone: false,
+            toIsDone: Boolean(this.isDone),
+            changedAt,
+        });
+    }
+    next();
+});
 TaskSchema.index({ createdAt: -1 });
 TaskSchema.index({ updatedAt: -1 });
 TaskSchema.index({ updatedAt: -1, _id: -1 });
 TaskSchema.index({ status: 1, isDeleted: 1, createdAt: -1 });
 TaskSchema.index({ assignee: 1, status: 1, createdAt: -1 });
 TaskSchema.index({ orderId: 1 });
+TaskSchema.index({ isDeleted: 1, 'statusHistory.changedAt': -1 });
 exports.Task = mongoose_1.default.model('Task', TaskSchema);

@@ -21,6 +21,7 @@ import { fileUploadRepository } from '../../infrastructure/repositories/FileUplo
 import { virtualFolderRepository } from '../../infrastructure/repositories/VirtualFolderRepository';
 import { taskRepository } from '../../infrastructure/repositories/TaskRepository';
 import User from '../../infrastructure/db/models/user.model';
+import { aggregateCompletionAnalytics, COMPLETION_STATUSES } from '../../shared/utils/queueAnalytics';
 
 import { getOnlineUsersCount } from '../../infrastructure/socket/socketHandler';
 
@@ -235,7 +236,7 @@ router.get(
     );
     const from = new Date(firstKlDay - (8 * 60 * 60 * 1000));
     const inactiveStatuses = ['SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED', 'RETURN', 'DONE'];
-    const completionStatuses = ['SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'DONE'];
+    const completionStatuses = [...COMPLETION_STATUSES];
     const activeMatch = {
       isDeleted: { $ne: true },
       isDone: { $ne: true },
@@ -249,13 +250,7 @@ router.get(
         { $lt: ['$dueDate', now] },
       ],
     };
-    const completionMatch = {
-      statusUpdatedAt: { $gte: from, $lte: now },
-      $or: [{ isDone: true }, { status: { $in: completionStatuses } }],
-    };
-
-    // These are estimates from current task state; history is not reconstructed from activities.
-    const [activeResults, rangeResults] = await Promise.all([
+    const [activeResults, rangeResults, completionTasks] = await Promise.all([
       Task.aggregate<any>([
         { $match: activeMatch },
         {
@@ -323,10 +318,7 @@ router.get(
         {
           $match: {
             isDeleted: { $ne: true },
-            $or: [
-              { createdAt: { $gte: from, $lte: now } },
-              completionMatch,
-            ],
+            createdAt: { $gte: from, $lte: now },
           },
         },
         {
@@ -340,36 +332,33 @@ router.get(
                 },
               },
             ],
-            completed: [
-              { $match: completionMatch },
-              {
-                $group: {
-                  _id: { $dateToString: { format: '%Y-%m-%d', date: '$statusUpdatedAt', timezone } },
-                  count: { $sum: 1 },
-                },
-              },
-            ],
-            completionSummary: [
-              { $match: completionMatch },
-              {
-                $group: {
-                  _id: null,
-                  completedInRange: { $sum: 1 },
-                  avgCompletionHours: {
-                    $avg: {
-                      $cond: [
-                        { $gte: ['$statusUpdatedAt', '$createdAt'] },
-                        { $divide: [{ $subtract: ['$statusUpdatedAt', '$createdAt'] }, 60 * 60 * 1000] },
-                        null,
-                      ],
-                    },
-                  },
-                },
-              },
-            ],
           },
         },
       ]).option({ maxTimeMS: 10_000 }),
+      Task.find({
+        isDeleted: { $ne: true },
+        $or: [
+          {
+            statusHistory: {
+              $elemMatch: {
+                changedAt: { $gte: from, $lte: now },
+                $or: [
+                  { toIsDone: true },
+                  { toStatus: { $in: completionStatuses } },
+                ],
+              },
+            },
+          },
+          {
+            'statusHistory.0': { $exists: false },
+            statusUpdatedAt: { $gte: from, $lte: now },
+            $or: [{ isDone: true }, { status: { $in: completionStatuses } }],
+          },
+        ],
+      })
+        .select('createdAt status isDone statusUpdatedAt statusHistory')
+        .lean()
+        .maxTimeMS(10_000),
     ]);
 
     const active = activeResults[0] || {};
@@ -393,7 +382,7 @@ router.get(
     const summaryRaw = active.summary?.[0] || {};
     const currentWip = summaryRaw.currentWip || 0;
     const overdueTasks = summaryRaw.overdueTasks || 0;
-    const completionSummary = range.completionSummary?.[0] || {};
+    const completionSummary = aggregateCompletionAnalytics(completionTasks, from, now);
     const statusBreakdown = (active.statusBreakdown || []).map((item: any) => ({
       status: String(item._id),
       count: item.count,
@@ -417,7 +406,7 @@ router.get(
       }))
       .sort((a: any, b: any) => b.score - a.score || a.status.localeCompare(b.status));
     const createdByDate = new Map((range.created || []).map((item: any) => [item._id, item.count]));
-    const completedByDate = new Map((range.completed || []).map((item: any) => [item._id, item.count]));
+    const completedByDate = completionSummary.completedByDate;
     const dailyThroughput = [];
     for (let index = 0; index < days; index++) {
       const date = new Date(firstKlDay + (index * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
@@ -445,15 +434,21 @@ router.get(
       data: {
         range: { days, from: from.toISOString(), to: now.toISOString(), timezone },
         dataQuality: {
-          mode: 'estimated',
-          note: 'Completion and stage-age metrics are estimated from current status, statusUpdatedAt, and createdAt.',
+          mode: completionSummary.legacyEstimatedCompletedInRange
+            ? (completionSummary.historicalCompletedInRange ? 'mixed' : 'legacy_estimated')
+            : 'historical',
+          historicalCompletedInRange: completionSummary.historicalCompletedInRange,
+          legacyEstimatedCompletedInRange: completionSummary.legacyEstimatedCompletedInRange,
+          note: completionSummary.legacyEstimatedCompletedInRange
+            ? 'Completion metrics use durable transition history where available; legacy tasks without history fall back to their current completed state and statusUpdatedAt.'
+            : 'Completion metrics use durable task transition history. Current stage-age metrics still use statusUpdatedAt.',
         },
         summary: {
           currentWip,
           overdueTasks,
           overdueRate: currentWip ? round((overdueTasks / currentWip) * 100) : 0,
           unassignedTasks: summaryRaw.unassignedTasks || 0,
-          completedInRange: completionSummary.completedInRange || 0,
+          completedInRange: completionSummary.completedInRange,
           avgCompletionHours: completionSummary.avgCompletionHours == null
             ? null
             : round(Math.max(0, completionSummary.avgCompletionHours)),

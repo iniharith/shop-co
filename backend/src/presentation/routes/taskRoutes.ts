@@ -200,9 +200,6 @@ router.put(
       req.body.status = 'IN_DESIGN';
     }
 
-    if ((req.body.status && req.body.status !== oldTask?.status) || isDoneChanged) {
-      req.body.statusUpdatedAt = new Date();
-    }
     const task = await taskRepository.update(req.params.id, req.body);
     if (!task) {
       res.status(404).json({ success: false, message: 'Task not found' });
@@ -300,6 +297,29 @@ router.delete(
     }
     res.json({ success: true, message: req.query.permanent === 'true' ? 'Task permanently deleted' : 'Task deleted' });
     emitTaskUpdated('task_deleted', { taskId: req.params.id });
+  })
+);
+
+// POST /api/tasks/:id/restore
+router.post(
+  '/:id/restore',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const task = await taskRepository.restore(req.params.id);
+    if (!task) {
+      res.status(404).json({ success: false, message: 'Deleted task not found' });
+      return;
+    }
+
+    const authReq = req as any;
+    const userId = authReq.userId || authReq.user?._id || authReq.user?.id || 'system';
+    const userName = authReq.user?.name || authReq.user?.email || 'System';
+    await taskRepository.addActivity(req.params.id, userId, userName, 'restored this task');
+    await clearFolderGroupCache().catch(() => {});
+
+    const freshTask = await taskRepository.findById(req.params.id);
+    res.json({ success: true, message: 'Task restored', task: freshTask });
+    void emitTaskUpdated('task_updated', { task: freshTask });
   })
 );
 

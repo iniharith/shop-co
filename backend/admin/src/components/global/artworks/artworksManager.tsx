@@ -464,9 +464,9 @@ export default function ArtworksManager() {
 
     targets.forEach((group: any) => {
       if (group.taskId) {
-        updateTask({ id: group.taskId, data: { status: bulkTargetStatus } }, { onSuccess: finish, onError: finish });
+        updateTask({ id: group.taskId, data: { status: bulkTargetStatus }, skipUndo: true, silent: true }, { onSuccess: finish, onError: finish });
       } else if (group.orderId) {
-        updateOrderStatus({ id: group.orderId, status: bulkTargetStatus }, { onSuccess: finish, onError: finish });
+        updateOrderStatus({ id: group.orderId, status: bulkTargetStatus, skipUndo: true, silent: true }, { onSuccess: finish, onError: finish });
       } else {
         finish();
       }

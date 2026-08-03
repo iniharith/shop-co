@@ -10,7 +10,9 @@ export interface QueueAnalyticsData {
     timezone: string;
   };
   dataQuality: {
-    mode: "estimated";
+    mode: "historical" | "mixed" | "legacy_estimated";
+    historicalCompletedInRange: number;
+    legacyEstimatedCompletedInRange: number;
     note: string;
   };
   summary: {

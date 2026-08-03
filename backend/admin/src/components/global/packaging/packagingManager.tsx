@@ -29,6 +29,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
 import { Virtuoso } from "react-virtuoso";
+import SavedViewsControl from "@/components/global/SavedViewsControl";
 
 const categories = [
   "ALL",
@@ -45,6 +46,18 @@ const categories = [
 // Packaging only ever deals with one status, so there are no sub-tabs (unlike Production's Printing/Hold/Done Printing)
 const PACKAGING_STATUS = "PACKAGING";
 const PACKAGING_STATUSES = ["PACKAGING"];
+type PackagingSavedView = {
+  searchQuery: string;
+  activeTab: string;
+  viewMode: "grid" | "list";
+};
+const isPackagingSavedView = (value: unknown): value is PackagingSavedView => {
+  if (!value || typeof value !== "object") return false;
+  const view = value as PackagingSavedView;
+  return typeof view.searchQuery === "string"
+    && categories.includes(view.activeTab)
+    && (view.viewMode === "grid" || view.viewMode === "list");
+};
 
 const getFolderItemKey = (index: number, group: any) =>
   group.taskId
@@ -149,9 +162,9 @@ export default function PackagingManager() {
 
     targets.forEach((group: any) => {
       if (group.taskId) {
-        updateTask({ id: group.taskId, data: { status: bulkTargetStatus } }, { onSuccess: finish, onError: finish });
+        updateTask({ id: group.taskId, data: { status: bulkTargetStatus }, skipUndo: true, silent: true }, { onSuccess: finish, onError: finish });
       } else if (group.orderId) {
-        updateOrderStatus({ id: group.orderId, status: bulkTargetStatus }, { onSuccess: finish, onError: finish });
+        updateOrderStatus({ id: group.orderId, status: bulkTargetStatus, skipUndo: true, silent: true }, { onSuccess: finish, onError: finish });
       } else {
         finish();
       }
@@ -233,15 +246,9 @@ export default function PackagingManager() {
 
   const handleStatusChange = (group: any, newStatus: string) => {
     if (group.isTask) {
-      updateTask({ id: group.taskId, data: { status: newStatus } }, {
-        onSuccess: () => toast.success("Task status updated!"),
-        onError: () => toast.error("Failed to update task status")
-      });
+      updateTask({ id: group.taskId, data: { status: newStatus } });
     } else {
-      updateOrderStatus({ id: group.orderId, status: newStatus }, {
-        onSuccess: () => toast.success("Order status updated!"),
-        onError: () => toast.error("Failed to update order status")
-      });
+      updateOrderStatus({ id: group.orderId, status: newStatus });
     }
   };
 
@@ -511,6 +518,16 @@ export default function PackagingManager() {
         </div>
 
         <div className="flex items-center gap-2">
+          <SavedViewsControl
+            scope="packaging"
+            state={{ searchQuery, activeTab, viewMode }}
+            isValidState={isPackagingSavedView}
+            onApply={view => {
+              setSearchQuery(view.searchQuery);
+              setActiveTab(view.activeTab);
+              setViewMode(view.viewMode);
+            }}
+          />
           <div className="flex items-center bg-muted p-1 rounded-md">
             <button
               onClick={() => setViewMode("grid")}

@@ -13,7 +13,6 @@ import { Package, CircleUserRound, MapPin, CreditCard, ShoppingBag, Trash2, Truc
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDeleteOrder, useUpdateOrderStatus, useToggleArchiveOrder, useReconcileShipment, useRefreshShipment } from "@/hooks/useOrder";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
 import EasyParcelShipmentDialog from "./EasyParcelShipmentDialog";
 
 const getStatusColor = (status: string) => {
@@ -107,32 +106,14 @@ export const OrderCard: React.FC<OrderCardProps> = ({
     }
   };
 
-  const queryClient = useQueryClient();
-
   const handleMinimizedChange = (nextIsMinimized: boolean) => {
     if (controlledIsMinimized === undefined) setInternalIsMinimized(nextIsMinimized);
     onMinimizedChange?.(nextIsMinimized);
   };
 
   const handleArchiveToggle = () => {
-    const isCurrentlyArchived = (order as any).isArchived || false;
-    toggleArchive({ id: order._id as string, isArchived: !isCurrentlyArchived }, {
-      onSuccess: () => {
-        toast.success(`Order ${isCurrentlyArchived ? 'unarchived' : 'archived'} successfully`);
-        queryClient.setQueryData(["orders"], (oldData: any) => {
-          if (!oldData || !oldData.orders) return oldData;
-          return {
-            ...oldData,
-            orders: oldData.orders.map((o: any) => 
-              o._id === order._id ? { ...o, isArchived: !isCurrentlyArchived } : o
-            )
-          };
-        });
-      },
-      onError: (err: any) => {
-        toast.error("Failed to update archive status");
-      }
-    });
+    const isCurrentlyArchived = order.isArchived || false;
+    toggleArchive({ id: order._id as string, isArchived: !isCurrentlyArchived });
   };
 
   return (
@@ -161,9 +142,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
               onValueChange={(v) => {
                 setLocalStatus(v);
                 updateStatus({ id: order._id as string, status: v }, {
-                  onSuccess: () => toast.success("Order status updated!"),
                   onError: () => {
-                    toast.error("Failed to update status");
                     setLocalStatus(order.orderStatus);
                   }
                 });
@@ -335,9 +314,9 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                 onClick={handleArchiveToggle}
                 disabled={isArchiving}
                 className="p-2 text-indigo-500 hover:bg-indigo-500/10 rounded-lg transition-colors"
-                title={(order as any).isArchived ? "Unarchive Order" : "Archive Order"}
+                title={order.isArchived ? "Unarchive Order" : "Archive Order"}
               >
-                {(order as any).isArchived ? <ArchiveRestore className="w-5 h-5" /> : <Archive className="w-5 h-5" />}
+                {order.isArchived ? <ArchiveRestore className="w-5 h-5" /> : <Archive className="w-5 h-5" />}
               </button>
               <button 
                 onClick={handleDelete}

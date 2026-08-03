@@ -38,7 +38,22 @@ export class TaskRepository {
   private static readonly DEFAULT_LIMIT = 500;
 
   async create(data: Partial<ITask>): Promise<ITask> {
-    return Task.create(data);
+    const status = data.status || 'PLACED';
+    const isDone = Boolean(data.isDone);
+    const changedAt = new Date();
+    return Task.create({
+      ...data,
+      status,
+      isDone,
+      statusUpdatedAt: changedAt,
+      statusHistory: [{
+        fromStatus: null,
+        toStatus: status,
+        fromIsDone: false,
+        toIsDone: isDone,
+        changedAt,
+      }],
+    });
   }
 
   private buildQuery(filters?: TaskFilters): any {
@@ -118,7 +133,7 @@ export class TaskRepository {
     const limit = this.getLimit(filters);
 
     return Task.find(query)
-      .select('-comments -activities -files')
+      .select('-comments -activities -files -statusHistory')
       .sort({ updatedAt: -1, _id: -1 })
       .limit(limit)
       .maxTimeMS(10_000)
@@ -129,7 +144,7 @@ export class TaskRepository {
     const query = this.buildQuery(filters);
     const limit = this.getLimit(filters);
     const results = await Task.find(query)
-      .select('-comments -activities -files')
+      .select('-comments -activities -files -statusHistory')
       .sort({ updatedAt: -1, _id: -1 })
       .limit(limit + 1)
       .maxTimeMS(10_000)
@@ -164,11 +179,77 @@ export class TaskRepository {
   }
 
   async update(id: string, data: Partial<ITask>): Promise<ITask | null> {
-    return Task.findByIdAndUpdate(id, { $set: data }, { new: true });
+    const updateData: any = { ...data };
+    delete updateData.statusHistory;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const current = await Task.findById(id).select('status isDone').lean();
+      if (!current) return null;
+
+      const currentIsDone = Boolean(current.isDone);
+      const toStatus = data.status || current.status;
+      const toIsDone = typeof data.isDone === 'boolean' ? data.isDone : currentIsDone;
+      const workflowChanged = toStatus !== current.status || toIsDone !== currentIsDone;
+      if (!workflowChanged) return Task.findByIdAndUpdate(id, { $set: updateData }, { new: true });
+
+      const changedAt = new Date();
+      const updated = await Task.findOneAndUpdate(
+        {
+          _id: id,
+          status: current.status,
+          ...(currentIsDone
+            ? { isDone: true }
+            : { $or: [{ isDone: false }, { isDone: null }, { isDone: { $exists: false } }] }),
+        },
+        {
+          $set: { ...updateData, statusUpdatedAt: changedAt },
+          $push: {
+            statusHistory: {
+              fromStatus: current.status,
+              toStatus,
+              fromIsDone: currentIsDone,
+              toIsDone,
+              changedAt,
+            },
+          },
+        },
+        { new: true },
+      );
+      if (updated) return updated;
+    }
+
+    throw new Error('Task changed concurrently; retry the update');
   }
 
   async updateByOrderId(orderId: string, data: Partial<ITask>): Promise<void> {
-    await Task.updateMany({ orderId }, { $set: data });
+    if (!data.status) {
+      await Task.updateMany({ orderId }, { $set: data });
+      return;
+    }
+
+    const changedAt = new Date();
+    const { statusUpdatedAt: _ignoredStatusUpdatedAt, statusHistory: _ignoredHistory, ...setData } = data;
+    await Task.updateMany(
+      { orderId, status: { $ne: data.status } },
+      [{
+        $set: {
+          ...setData,
+          statusUpdatedAt: changedAt,
+          statusHistory: {
+            $concatArrays: [
+              { $ifNull: ['$statusHistory', []] },
+              [{
+                fromStatus: '$status',
+                toStatus: data.status,
+                fromIsDone: { $ifNull: ['$isDone', false] },
+                toIsDone: { $ifNull: ['$isDone', false] },
+                changedAt,
+              }],
+            ],
+          },
+        },
+      }],
+    );
   }
 
   async findByOrderId(orderId: string): Promise<ITask[]> {
@@ -186,6 +267,14 @@ export class TaskRepository {
 
   async delete(id: string): Promise<void> {
     await Task.findByIdAndUpdate(id, { $set: { isDeleted: true } });
+  }
+
+  async restore(id: string): Promise<ITask | null> {
+    return Task.findOneAndUpdate(
+      { _id: id, isDeleted: true },
+      { $set: { isDeleted: false } },
+      { new: true },
+    );
   }
 
   async permanentDelete(id: string): Promise<void> {

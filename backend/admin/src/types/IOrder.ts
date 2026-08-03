@@ -52,6 +52,7 @@ export interface IOrder {
     deliveryBoy?: string;
     address: IAddress;
     isDeleted?: boolean;
+    isArchived?: boolean;
     createdAt: string;
     updatedAt: string;
 }

@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "nodemon ./src/settings/server.ts",
     "build": "tsc",
+    "test": "node --test test/*.test.js",
     "start": "node ./dist/settings/server.js"
   },
   "dependencies": {

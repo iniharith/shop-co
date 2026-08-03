@@ -6,6 +6,7 @@ import cron from 'node-cron';
 import { Task } from '../../domain/entities/Task';
 import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
 import { Parcel } from '../../domain/entities/Parcel';
+import { taskRepository } from '../repositories/TaskRepository';
 
 const PACKAGING_TO_DELIVERED_DAYS = 14;
 
@@ -60,12 +61,7 @@ async function transitionPackagingToDelivered(): Promise<void> {
         }
 
         // Update task status only after the provider-backed Parcel is delivered.
-        await Task.findByIdAndUpdate(taskId, {
-          $set: {
-            status: 'DELIVERED',
-            statusUpdatedAt: new Date(),
-          },
-        });
+        await taskRepository.update(taskId, { status: 'DELIVERED' });
 
         // Sync to linked order
         if (orderId) {
@@ -75,18 +71,12 @@ async function transitionPackagingToDelivered(): Promise<void> {
         }
 
         // Log activity
-        const { Task: TaskModel } = await import('../../domain/entities/Task');
-        await TaskModel.findByIdAndUpdate(taskId, {
-          $push: {
-            activities: {
-              userId: 'system',
-              userName: 'System',
-              action: `auto-transitioned from PACKAGING to DELIVERED (after ${PACKAGING_TO_DELIVERED_DAYS} days)`,
-              details: '',
-              createdAt: new Date(),
-            },
-          },
-        });
+        await taskRepository.addActivity(
+          taskId,
+          'system',
+          'System',
+          `auto-transitioned from PACKAGING to DELIVERED (after ${PACKAGING_TO_DELIVERED_DAYS} days)`,
+        );
 
         const updatedTask = await Task.findById(taskId);
         void emitTaskUpdated('task_updated', { task: updatedTask });

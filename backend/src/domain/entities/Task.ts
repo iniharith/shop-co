@@ -21,6 +21,14 @@ export interface ITaskActivity {
   createdAt: Date;
 }
 
+export interface ITaskStatusTransition {
+  fromStatus: string | null;
+  toStatus: string;
+  fromIsDone: boolean;
+  toIsDone: boolean;
+  changedAt: Date;
+}
+
 export interface ITask extends Document {
   title: string;
   description?: string;
@@ -35,6 +43,7 @@ export interface ITask extends Document {
   files: { url: string; name: string; notes?: string; tag?: string }[];
   comments: ITaskComment[];
   activities: ITaskActivity[];
+  statusHistory: ITaskStatusTransition[];
   statusUpdatedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -57,6 +66,14 @@ const TaskActivitySchema = new Schema<ITaskActivity>({
   createdAt: { type: Date, default: Date.now },
 });
 
+const TaskStatusTransitionSchema = new Schema<ITaskStatusTransition>({
+  fromStatus: { type: String, default: null },
+  toStatus: { type: String, required: true },
+  fromIsDone: { type: Boolean, required: true },
+  toIsDone: { type: Boolean, required: true },
+  changedAt: { type: Date, required: true },
+}, { _id: false });
+
 const TaskSchema = new Schema<ITask>(
   {
     title: { type: String, required: true },
@@ -78,9 +95,27 @@ const TaskSchema = new Schema<ITask>(
     }],
     comments: [TaskCommentSchema],
     activities: [TaskActivitySchema],
+    statusHistory: { type: [TaskStatusTransitionSchema], default: [] },
   },
   { timestamps: true }
 );
+
+// Some transactional admin flows create Task documents directly rather than
+// through TaskRepository, so establish the initial state at the model boundary.
+TaskSchema.pre('validate', function (next) {
+  if (this.isNew && this.statusHistory.length === 0) {
+    const changedAt = this.statusUpdatedAt || new Date();
+    this.statusUpdatedAt = changedAt;
+    this.statusHistory.push({
+      fromStatus: null,
+      toStatus: this.status || 'PLACED',
+      fromIsDone: false,
+      toIsDone: Boolean(this.isDone),
+      changedAt,
+    });
+  }
+  next();
+});
 
 TaskSchema.index({ createdAt: -1 });
 TaskSchema.index({ updatedAt: -1 });
@@ -88,5 +123,6 @@ TaskSchema.index({ updatedAt: -1, _id: -1 });
 TaskSchema.index({ status: 1, isDeleted: 1, createdAt: -1 });
 TaskSchema.index({ assignee: 1, status: 1, createdAt: -1 });
 TaskSchema.index({ orderId: 1 });
+TaskSchema.index({ isDeleted: 1, 'statusHistory.changedAt': -1 });
 
 export const Task = mongoose.model<ITask>('Task', TaskSchema);

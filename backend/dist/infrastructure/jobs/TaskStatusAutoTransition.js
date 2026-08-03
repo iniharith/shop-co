@@ -54,6 +54,7 @@ const node_cron_1 = __importDefault(require("node-cron"));
 const Task_1 = require("../../domain/entities/Task");
 const taskBroadcast_1 = require("../../shared/utils/taskBroadcast");
 const Parcel_1 = require("../../domain/entities/Parcel");
+const TaskRepository_1 = require("../repositories/TaskRepository");
 const PACKAGING_TO_DELIVERED_DAYS = 14;
 /**
  * Reconciles old packaging tasks only after parcel tracking confirms delivery.
@@ -96,12 +97,7 @@ function transitionPackagingToDelivered() {
                         continue;
                     }
                     // Update task status only after the provider-backed Parcel is delivered.
-                    yield Task_1.Task.findByIdAndUpdate(taskId, {
-                        $set: {
-                            status: 'DELIVERED',
-                            statusUpdatedAt: new Date(),
-                        },
-                    });
+                    yield TaskRepository_1.taskRepository.update(taskId, { status: 'DELIVERED' });
                     // Sync to linked order
                     if (orderId) {
                         const { OrderUsecase } = yield Promise.resolve().then(() => __importStar(require('../../application/usecases/orders/order.usecase')));
@@ -109,18 +105,7 @@ function transitionPackagingToDelivered() {
                         yield orderUsecase.updateOrderStatus(orderId, 'DELIVERED', false, taskId);
                     }
                     // Log activity
-                    const { Task: TaskModel } = yield Promise.resolve().then(() => __importStar(require('../../domain/entities/Task')));
-                    yield TaskModel.findByIdAndUpdate(taskId, {
-                        $push: {
-                            activities: {
-                                userId: 'system',
-                                userName: 'System',
-                                action: `auto-transitioned from PACKAGING to DELIVERED (after ${PACKAGING_TO_DELIVERED_DAYS} days)`,
-                                details: '',
-                                createdAt: new Date(),
-                            },
-                        },
-                    });
+                    yield TaskRepository_1.taskRepository.addActivity(taskId, 'system', 'System', `auto-transitioned from PACKAGING to DELIVERED (after ${PACKAGING_TO_DELIVERED_DAYS} days)`);
                     const updatedTask = yield Task_1.Task.findById(taskId);
                     void (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: updatedTask });
                     successCount++;

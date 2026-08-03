@@ -17,13 +17,13 @@ const backendUrl = configuredBackendUrl && !staleBackendUrls.has(configuredBacke
         : "http://localhost:8000";
 
 const nextConfig = {
+    turbopack: {
+        root: __dirname,
+    },
     env: {
         NEXT_PUBLIC_BACKEND_URL: backendUrl,
     },
     transpilePackages: ['@heroui/react', '@heroui/spinner', 'framer-motion', '@tanstack/react-query', 'lucide-react', 'sonner'],
-    eslint: {
-        ignoreDuringBuilds: true,
-    },
     typescript: {
         ignoreBuildErrors: true,
     },

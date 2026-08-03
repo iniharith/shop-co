@@ -12,6 +12,15 @@ import ResponsiveVirtualizedOrderList from "./ResponsiveVirtualizedOrderList";
 import { Search, PackageX, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import SavedViewsControl from "@/components/global/SavedViewsControl";
+
+type OrderSavedView = { activeTab: string; searchQuery: string };
+const ORDER_TABS = ["ALL", "WEB", "TIKTOK", "SHOPEE"];
+const isOrderSavedView = (value: unknown): value is OrderSavedView => {
+  if (!value || typeof value !== "object") return false;
+  const view = value as OrderSavedView;
+  return ORDER_TABS.includes(view.activeTab) && typeof view.searchQuery === "string";
+};
 
 interface Props {
   scrollParent: HTMLElement | null;
@@ -88,6 +97,16 @@ const OrdersList = ({ scrollParent }: Props) => {
             <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="rounded-xl h-10 w-10 shadow-sm border-border shrink-0" title="Refresh Orders">
               <RefreshCw className={`w-4 h-4 text-muted-foreground ${isFetching ? 'animate-spin' : ''}`} />
             </Button>
+            <SavedViewsControl
+              scope="orders"
+              state={{ activeTab, searchQuery }}
+              isValidState={isOrderSavedView}
+              onApply={view => {
+                setActiveTab(view.activeTab);
+                setSearchQuery(view.searchQuery);
+              }}
+              className="h-10 rounded-xl gap-2 shrink-0"
+            />
           </div>
         </div>
         
