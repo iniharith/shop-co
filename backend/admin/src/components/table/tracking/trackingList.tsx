@@ -3,7 +3,8 @@
  * Kampungcetak ®
  */
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { DataTableSkeleton } from "../../global/table/data-table-skeleton";
 import { useCustomerUpdateSettings, useParcels, useSyncAllParcels } from "@/hooks/useAdminDashboard";
 import TrackingCard from "./TrackingCard";
@@ -14,11 +15,19 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 export default function TrackingList() {
+  const urlSearchQuery = useSearchParams().get("search") || "";
   const { data: response, isPending, refetch, isFetching } = useParcels();
   const { data: updateSettings } = useCustomerUpdateSettings();
   const { mutate: syncAll, isPending: isSyncingAll } = useSyncAllParcels();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(urlSearchQuery);
   const [selectedCourier, setSelectedCourier] = useState("All");
+  const lastAppliedUrlSearch = useRef(urlSearchQuery);
+
+  useEffect(() => {
+    if (urlSearchQuery === lastAppliedUrlSearch.current) return;
+    lastAppliedUrlSearch.current = urlSearchQuery;
+    setSearchQuery(urlSearchQuery);
+  }, [urlSearchQuery]);
 
   const parcels = (response as any)?.data || [];
   const customerUpdatesEnabled = (updateSettings as any)?.data?.enabled === true;
@@ -28,7 +37,7 @@ export default function TrackingList() {
   const filteredParcels = useMemo(() => {
     return parcels.filter((parcel: any) => {
       const terminalStatuses = ["delivered", "cancelled", "returned", "failed"];
-      if (terminalStatuses.includes(parcel.status)) return false;
+      if (!searchQuery.trim() && terminalStatuses.includes(parcel.status)) return false;
 
       const matchesSearch = 
         parcel.trackingNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||

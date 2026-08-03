@@ -43,7 +43,7 @@ export default function Header() {
           <SearchInput
             className='mx-auto min-w-0 flex-1 sm:max-w-xl'
             inputClassName='h-11 rounded-full border-0 bg-background/90 pl-10 pr-4 shadow-sm md:w-full lg:w-full'
-            placeholder='Search orders, users or tracking...'
+            placeholder='Search across admin...'
             showShortcut={false}
           />
 

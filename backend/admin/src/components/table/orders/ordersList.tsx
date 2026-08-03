@@ -3,7 +3,8 @@
  * Kampungcetak ®
  */
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { DataTableSkeleton } from "../../global/table/data-table-skeleton";
 import { useOrders } from "@/hooks/useOrder";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,16 +16,26 @@ import { Button } from "@/components/ui/button";
 interface Props {}
 
 const OrdersList = (props: Props) => {
+  const urlSearchQuery = useSearchParams().get("search") || "";
   const { data, isPending, refetch, isFetching } = useOrders();
   const [activeTab, setActiveTab] = useState("ALL");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(urlSearchQuery);
+  const lastAppliedUrlSearch = useRef(urlSearchQuery);
+
+  useEffect(() => {
+    if (urlSearchQuery === lastAppliedUrlSearch.current) return;
+    lastAppliedUrlSearch.current = urlSearchQuery;
+    setSearchQuery(urlSearchQuery);
+  }, [urlSearchQuery]);
 
   const filteredOrders = useMemo(() => {
     let orders = data?.orders || [];
     
-    // Exclude completed or cancelled orders from the active orders view
-    const excludeStatuses = ["DELIVERED", "DONE_DESIGN", "CANCELLED", "FAILED"];
-    orders = orders.filter((o: any) => !excludeStatuses.includes(o.orderStatus) && !o.isArchived);
+    // Keep the default view active-only, but allow direct search links to find historical orders.
+    if (!searchQuery.trim()) {
+      const excludeStatuses = ["DELIVERED", "DONE_DESIGN", "CANCELLED", "FAILED"];
+      orders = orders.filter((o: any) => !excludeStatuses.includes(o.orderStatus) && !o.isArchived);
+    }
 
     // Filter by platform
     if (activeTab !== "ALL") {
@@ -37,6 +48,7 @@ const OrdersList = (props: Props) => {
       orders = orders.filter((o: any) => 
         o.trackingNumber?.toLowerCase().includes(lowerQuery) ||
         o.customerName?.toLowerCase().includes(lowerQuery) ||
+        o.shippingCustomerEmail?.toLowerCase().includes(lowerQuery) ||
         o.userId?.name?.toLowerCase().includes(lowerQuery) ||
         o.userId?.email?.toLowerCase().includes(lowerQuery) ||
         o._id?.toLowerCase().includes(lowerQuery)
