@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 
+type ShareMetadataOptions = {
+  imageUrl?: string;
+  imageAlt?: string;
+};
+
 export const fetchPublicShare = async (path: string) => {
   const backend = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
   if (!backend) return null;
@@ -12,9 +17,16 @@ export const fetchPublicShare = async (path: string) => {
   }
 };
 
-export const buildShareMetadata = (name: string, kind: string): Metadata => {
+export const buildShareMetadata = (
+  name: string,
+  kind: string,
+  { imageUrl = "/share-preview", imageAlt = "Kampung Cetak" }: ShareMetadataOptions = {}
+): Metadata => {
   const title = `${name} | Kampung Cetak`;
   const description = `View the shared ${kind}: ${name}.`;
+  const image = imageUrl === "/share-preview"
+    ? { url: imageUrl, width: 1200, height: 630, alt: imageAlt }
+    : { url: imageUrl, alt: imageAlt };
 
   return {
     title,
@@ -24,13 +36,13 @@ export const buildShareMetadata = (name: string, kind: string): Metadata => {
       type: "website",
       title,
       description,
-      images: [{ url: "/share-preview", width: 1200, height: 630, alt: "Kampung Cetak" }],
+      images: [image],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: ["/share-preview"],
+      images: [imageUrl],
     },
   };
 };

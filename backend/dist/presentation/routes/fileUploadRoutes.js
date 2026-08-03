@@ -1320,14 +1320,36 @@ router.get('/:id/download', (0, express_async_handler_1.default)((req, res) => _
     }
 })));
 // ─── GET /api/files/:id/preview ──────────────────────────
-// Redirects to S3 URL for inline preview
+// Redirects to an inline, signed URL so image previews work for private S3 files.
 router.get('/:id/preview', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const file = yield FileUploadRepository_1.fileUploadRepository.findById(req.params.id);
     if (!file) {
         res.status(404).json({ success: false, message: 'Fail tidak dijumpai' });
         return;
     }
-    res.redirect(file.path);
+    const previewPath = req.query.thumbnail === 'true' && file.thumbnailPath
+        ? file.thumbnailPath
+        : file.path;
+    try {
+        if (previewPath.includes('amazonaws.com')) {
+            const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+            const { GetObjectCommand } = require('@aws-sdk/client-s3');
+            const url = new URL(previewPath);
+            const key = decodeURIComponent(url.pathname.replace(/^\//, ''));
+            const safeName = file.originalName.replace(/["\\\r\n]/g, '_');
+            const command = new GetObjectCommand({
+                Bucket: s3_1.S3_BUCKET_NAME,
+                Key: key,
+                ResponseContentDisposition: `inline; filename="${safeName}"`,
+            });
+            res.redirect(yield getSignedUrl(s3_1.s3Client, command, { expiresIn: 3600 }));
+            return;
+        }
+    }
+    catch (err) {
+        console.error('Error creating file preview URL:', err);
+    }
+    res.redirect(previewPath);
 })));
 // ─── GET /api/files/:id/info ──────────────────────────────
 // Public: returns basic file metadata for share page display (no auth needed)
@@ -1346,6 +1368,7 @@ router.get('/:id/info', (0, express_async_handler_1.default)((req, res) => __awa
             size: file.size,
             createdAt: file.createdAt,
             path: file.path,
+            hasThumbnail: Boolean(file.thumbnailPath),
         }
     });
 })));

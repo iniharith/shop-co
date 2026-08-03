@@ -1547,7 +1547,7 @@ router.get(
 );
 
 // ─── GET /api/files/:id/preview ──────────────────────────
-// Redirects to S3 URL for inline preview
+// Redirects to an inline, signed URL so image previews work for private S3 files.
 router.get(
   '/:id/preview',
   asyncHandler(async (req: Request, res: Response) => {
@@ -1556,7 +1556,32 @@ router.get(
       res.status(404).json({ success: false, message: 'Fail tidak dijumpai' });
       return;
     }
-    res.redirect(file.path);
+
+    const previewPath = req.query.thumbnail === 'true' && file.thumbnailPath
+      ? file.thumbnailPath
+      : file.path;
+
+    try {
+      if (previewPath.includes('amazonaws.com')) {
+        const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+        const { GetObjectCommand } = require('@aws-sdk/client-s3');
+        const url = new URL(previewPath);
+        const key = decodeURIComponent(url.pathname.replace(/^\//, ''));
+        const safeName = file.originalName.replace(/["\\\r\n]/g, '_');
+        const command = new GetObjectCommand({
+          Bucket: S3_BUCKET_NAME,
+          Key: key,
+          ResponseContentDisposition: `inline; filename="${safeName}"`,
+        });
+
+        res.redirect(await getSignedUrl(s3Client, command, { expiresIn: 3600 }));
+        return;
+      }
+    } catch (err) {
+      console.error('Error creating file preview URL:', err);
+    }
+
+    res.redirect(previewPath);
   })
 );
 
@@ -1579,6 +1604,7 @@ router.get(
         size: (file as any).size,
         createdAt: (file as any).createdAt,
         path: file.path,
+        hasThumbnail: Boolean(file.thumbnailPath),
       }
     });
   })
