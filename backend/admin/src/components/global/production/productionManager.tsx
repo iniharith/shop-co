@@ -28,6 +28,7 @@ import { uploadFilesToS3Directly } from "@/utils/s3Upload";
 import { useSearchParams, useRouter } from "next/navigation";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
+import { Virtuoso } from "react-virtuoso";
 
 const categories = [
   "ALL",
@@ -43,10 +44,17 @@ const categories = [
 
 const ALL_STATUSES = ["IN_PRODUCTION", "HOLD_PRINTING"];
 
+const getFolderItemKey = (index: number, group: any) =>
+  group.taskId
+    ? `task:${group.taskId}`
+    : group.orderId
+      ? `order:${group.orderId}`
+      : group.userId
+        ? `user:${group.userId}`
+        : `folder:${group.folderName || "unnamed"}:${index}`;
+
 export default function ProductionManager() {
   const lowPower = useLowPowerAnimations();
-  const folderBatchSize = lowPower ? 10 : 40;
-  const [folderBatches, setFolderBatches] = useState(1);
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -584,7 +592,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
         <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-220px)] min-h-[600px]">
           
           {/* LEFT PANEL (MASTER) */}
-          <div className="w-full lg:w-1/3 xl:w-1/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
+          <div className="w-full lg:w-1/3 xl:w-1/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full min-h-0">
             <div className="p-4 border-b bg-muted/30 font-semibold text-sm flex justify-between items-center shrink-0 gap-2">
               <span>Task Folders</span>
               <div className="flex items-center gap-2">
@@ -624,15 +632,20 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                 </div>
               </div>
             )}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {groupedFiles.slice(0, folderBatchSize * folderBatches).map((group) => {
-                const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
-                const isSelected = selectedFolder === folderId;
-                const isBulkChecked = selectedFolderIds.includes(folderId);
-                return (
-                  <div 
-                    key={folderId} 
-                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+            <div className="flex-1 min-h-0">
+              <Virtuoso
+                className="h-full"
+                data={groupedFiles}
+                computeItemKey={getFolderItemKey}
+                increaseViewportBy={lowPower ? 0 : { top: 200, bottom: 400 }}
+                itemContent={(index, group) => {
+                  const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
+                  const isSelected = selectedFolder === folderId;
+                  const isBulkChecked = selectedFolderIds.includes(folderId);
+                  return (
+                    <div className={`px-3 pb-2 ${index === 0 ? "pt-3" : ""}`}>
+                      <div
+                     className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
                       isSelected 
                         ? 'bg-primary/10 border-l-4 border-primary shadow-sm' 
                         : 'border border-transparent hover:bg-muted'
@@ -658,16 +671,13 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                     </div>
                     <div className="shrink-0 flex items-center gap-2">
                       <span className="text-[10px] font-medium bg-background border px-1.5 py-0.5 rounded-full">{group.fileCount} file(s)</span>
-                      <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-primary translate-x-1' : 'text-muted-foreground'}`} />
+                       <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-primary translate-x-1' : 'text-muted-foreground'}`} />
+                       </div>
+                     </div>
                     </div>
-                  </div>
-                );
-              })}
-              {groupedFiles.length > folderBatchSize * folderBatches && (
-                <Button variant="outline" size="sm" className="w-full" onClick={() => setFolderBatches(value => value + 1)}>
-                  Show more folders
-                </Button>
-              )}
+                  );
+                }}
+              />
             </div>
           </div>
 

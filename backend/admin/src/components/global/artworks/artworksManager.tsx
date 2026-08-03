@@ -31,6 +31,7 @@ import { uploadFilesToS3Directly, uploadToS3Directly } from "@/utils/s3Upload";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
 import { buildFileShareUrl, isPdfFile, preparePdfSharePreview } from "@/lib/fileSharePreview";
+import { Virtuoso } from "react-virtuoso";
 
 const categories = [
   "ALL",
@@ -52,10 +53,17 @@ const ARTWORK_VISIBLE_STATUSES = ["PLACED", "IN_DESIGN", "IN_PROGRESS", "PENDING
 const ARTWORK_STATUSES = ARTWORK_VISIBLE_STATUSES;
 const ALL_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN", "IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING", "PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "FAILED", "RETURN"];
 
+const getFolderItemKey = (index: number, group: any) =>
+  group.taskId
+    ? `task:${group.taskId}`
+    : group.orderId
+      ? `order:${group.orderId}`
+      : group.userId
+        ? `user:${group.userId}`
+        : `folder:${group.folderName || "unnamed"}:${index}`;
+
 export default function ArtworksManager() {
   const lowPower = useLowPowerAnimations();
-  const folderBatchSize = lowPower ? 10 : 40;
-  const [folderBatches, setFolderBatches] = useState(1);
   const { addUpload, updateProgress, updateStatus } = useUploadStore();
   const { data: session } = useSession();
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
@@ -793,7 +801,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
         <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-220px)] min-h-[600px]">
 
           {/* LEFT PANEL (MASTER) */}
-          <div className="w-full lg:w-1/3 xl:w-1/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
+          <div className="w-full lg:w-1/3 xl:w-1/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full min-h-0">
             <div className="p-4 border-b bg-muted/30 font-semibold text-sm flex justify-between items-center shrink-0 gap-2">
               <span>Folders</span>
               <div className="flex items-center gap-2">
@@ -853,20 +861,26 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                 </div>
               </div>
             )}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            <div className="flex-1 min-h-0">
               {visibleGroupedFiles.length === 0 && (
                 <div className="p-6 text-center text-xs text-muted-foreground">
                   No folders match this filter.
                 </div>
               )}
-              {visibleGroupedFiles.slice(0, folderBatchSize * folderBatches).map((group) => {
-                const folderId = `${group.folderName}-${group.orderId}-${group.taskId}`;
-                const isSelected = selectedFolder === folderId;
-                const isBulkChecked = selectedFolderIds.includes(folderId);
-                return (
-                  <div
-                    key={folderId}
-                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all group ${isSelected ? 'bg-primary/10 border border-primary/30' : 'hover:bg-muted/50 border border-transparent'}`}
+              {visibleGroupedFiles.length > 0 && (
+                <Virtuoso
+                  className="h-full"
+                  data={visibleGroupedFiles}
+                  computeItemKey={getFolderItemKey}
+                  increaseViewportBy={lowPower ? 0 : { top: 200, bottom: 400 }}
+                  itemContent={(index, group) => {
+                    const folderId = `${group.folderName}-${group.orderId}-${group.taskId}`;
+                    const isSelected = selectedFolder === folderId;
+                    const isBulkChecked = selectedFolderIds.includes(folderId);
+                    return (
+                      <div className={`px-3 pb-2 ${index === 0 ? "pt-3" : ""}`}>
+                        <div
+                     className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all group ${isSelected ? 'bg-primary/10 border border-primary/30' : 'hover:bg-muted/50 border border-transparent'}`}
                     onClick={() => bulkSelectMode
                       ? setSelectedFolderIds(prev => prev.includes(folderId) ? prev.filter(id => id !== folderId) : [...prev, folderId])
                       : setSelectedFolder(folderId)
@@ -907,14 +921,12 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
-                    <ChevronRight className={`w-4 h-4 transition-transform shrink-0 ${isSelected ? 'text-primary translate-x-1' : 'text-muted-foreground'}`} />
-                  </div>
-                );
-              })}
-              {visibleGroupedFiles.length > folderBatchSize * folderBatches && (
-                <Button variant="outline" size="sm" onClick={() => setFolderBatches(value => value + 1)}>
-                  Show more folders
-                </Button>
+                          <ChevronRight className={`w-4 h-4 transition-transform shrink-0 ${isSelected ? 'text-primary translate-x-1' : 'text-muted-foreground'}`} />
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
               )}
             </div>
           </div>
