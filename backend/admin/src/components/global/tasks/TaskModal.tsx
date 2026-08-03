@@ -29,6 +29,7 @@ import { cn, forceDownload } from "@/lib/utils";
 import { useCreateShareLink, useFilesByFolder, useResolveFileByPath } from "@/hooks/useAdminDashboard";
 import { useRouter } from "next/navigation";
 import { AssigneeTag, AssigneeDot } from "@/lib/userColor";
+import { buildFileShareUrl, isPdfFile, preparePdfSharePreview } from "@/lib/fileSharePreview";
 
 const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview, onDeleteLocal, allFiles }: any) => {
   const [notes, setNotes] = useState(file.notes || "");
@@ -55,12 +56,24 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
   const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(fileUrlStr)}&name=${encodeURIComponent(file.name)}&stream=true`;
 
   const { mutateAsync: resolveFileByPath, isPending: isResolvingShareLink } = useResolveFileByPath();
+  const matchedFile = allFiles?.find((candidate: any) =>
+    candidate.path === file.url || (file.url && file.url.includes(candidate.filename))
+  );
+  const knownFileId = matchedFile?._id || matchedFile?.id;
+  const isPdf = isPdfFile({
+    mimetype: file.mimetype || matchedFile?.mimetype,
+    name: file.name,
+  });
+
+  const prepareSharePreview = () => {
+    if (!isPdf || !knownFileId) return;
+    void preparePdfSharePreview(knownFileId).catch(() => {});
+  };
 
   const handleCopyLink = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const realFile = allFiles?.find((f: any) => f.path === file.url || (file.url && file.url.includes(f.filename)));
-    let realFileId = realFile?._id || realFile?.id;
+    let realFileId = knownFileId;
 
     if (!realFileId) {
       // The local lookup failed — usually because the upload-time sync to
@@ -88,9 +101,25 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
        toast.error("Cannot generate share link: File ID not found in database.");
        return;
     }
-    const cleanShareLink = `${window.location.origin}/share/file/${realFileId}`;
-    navigator.clipboard.writeText(cleanShareLink);
-    toast.success("Share link copied to clipboard");
+
+    const toastId = isPdf ? toast.loading("Preparing PDF preview...") : undefined;
+    let previewReady = true;
+    if (isPdf) {
+      try {
+        await preparePdfSharePreview(realFileId);
+      } catch {
+        previewReady = false;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(buildFileShareUrl(window.location.origin, realFileId, isPdf));
+      const options = toastId !== undefined ? { id: toastId } : undefined;
+      if (previewReady) toast.success("Share link copied with preview ready", options);
+      else toast.warning("Share link copied, but the PDF preview may take longer", options);
+    } catch {
+      toast.error("Failed to copy share link", toastId !== undefined ? { id: toastId } : undefined);
+    }
   };
 
   return (
@@ -155,6 +184,8 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
                 variant="ghost" 
                 size="icon" 
                 className="w-5 h-5 shrink-0 text-slate-400 hover:text-slate-500 hover:bg-white/10 rounded-full ml-0.5"
+                onPointerEnter={prepareSharePreview}
+                onFocus={prepareSharePreview}
                 onClick={handleCopyLink}
                 title="Copy Share Link"
               >

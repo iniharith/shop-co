@@ -25,6 +25,7 @@ import { RedisService } from '../../infrastructure/redis/redis';
 import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
 import { streamFilesAsZip } from '../../shared/utils/streamFilesAsZip';
 import { getDownloadProgress } from '../../shared/utils/downloadProgress';
+import { warmPdfSharePreview } from '../../shared/utils/pdfSharePreview';
 
 // Tiered cache: Redis primary, in-memory fallback when Redis connection drops
 const enrichedIndexCache = new RedisService();
@@ -1595,6 +1596,7 @@ router.get(
       res.status(404).json({ success: false, message: 'File not found' });
       return;
     }
+    warmPdfSharePreview(file);
     res.json({
       success: true,
       data: {

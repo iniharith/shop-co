@@ -8,28 +8,6 @@ type ShareMetadataOptions = {
   imageType?: string;
 };
 
-const publicAppUrl = process.env.NEXT_PUBLIC_APP_URL || "https://admin.kampungcetak.com";
-
-export const buildPdfSharePreviewUrl = (fileId: string) => {
-  const sourceUrl = new URL(
-    `/api/files/${encodeURIComponent(fileId)}/preview`,
-    publicAppUrl
-  ).toString();
-  const previewUrl = new URL("https://wsrv.nl/");
-
-  previewUrl.searchParams.set("url", sourceUrl);
-  previewUrl.searchParams.set("page", "0");
-  previewUrl.searchParams.set("n", "1");
-  previewUrl.searchParams.set("w", "1200");
-  previewUrl.searchParams.set("h", "630");
-  previewUrl.searchParams.set("fit", "contain");
-  previewUrl.searchParams.set("cbg", "white");
-  previewUrl.searchParams.set("output", "jpg");
-  previewUrl.searchParams.set("q", "80");
-
-  return previewUrl.toString();
-};
-
 export const fetchPublicShare = async (path: string) => {
   const backend = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
   if (!backend) return null;

@@ -73,6 +73,7 @@ const redis_1 = require("../../infrastructure/redis/redis");
 const taskBroadcast_1 = require("../../shared/utils/taskBroadcast");
 const streamFilesAsZip_1 = require("../../shared/utils/streamFilesAsZip");
 const downloadProgress_1 = require("../../shared/utils/downloadProgress");
+const pdfSharePreview_1 = require("../../shared/utils/pdfSharePreview");
 // Tiered cache: Redis primary, in-memory fallback when Redis connection drops
 const enrichedIndexCache = new redis_1.RedisService();
 const ENRICHED_CACHE_KEY_PREFIX = 'files:enrichedIndex:v2:';
@@ -1359,6 +1360,7 @@ router.get('/:id/info', (0, express_async_handler_1.default)((req, res) => __awa
         res.status(404).json({ success: false, message: 'File not found' });
         return;
     }
+    (0, pdfSharePreview_1.warmPdfSharePreview)(file);
     res.json({
         success: true,
         data: {

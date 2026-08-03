@@ -17,6 +17,7 @@ exports.fileUploadRepository = exports.FileUploadRepository = exports.notifyFile
 const FileUpload_1 = require("../../domain/entities/FileUpload");
 const redis_1 = require("../redis/redis");
 const redis_constant_1 = require("../../shared/constants/redis.constant");
+const pdfSharePreview_1 = require("../../shared/utils/pdfSharePreview");
 const redisService = new redis_1.RedisService();
 const FILE_INDEX_CACHE_KEY = 'files:index:v1';
 const FILE_STATS_CACHE_KEY = 'files:stats:v1';
@@ -40,6 +41,7 @@ class FileUploadRepository {
     create(data) {
         return __awaiter(this, void 0, void 0, function* () {
             const result = yield FileUpload_1.FileUpload.create(data);
+            (0, pdfSharePreview_1.warmPdfSharePreview)(result);
             (0, exports.notifyFileClients)();
             return result;
         });
@@ -55,9 +57,12 @@ class FileUploadRepository {
     findOrCreateByPath(data) {
         return __awaiter(this, void 0, void 0, function* () {
             const existing = yield FileUpload_1.FileUpload.findOne({ path: data.path });
-            if (existing)
+            if (existing) {
+                (0, pdfSharePreview_1.warmPdfSharePreview)(existing);
                 return existing;
+            }
             const created = yield FileUpload_1.FileUpload.create(data);
+            (0, pdfSharePreview_1.warmPdfSharePreview)(created);
             (0, exports.notifyFileClients)();
             return created;
         });
@@ -83,9 +88,11 @@ class FileUploadRepository {
                 created.forEach((file) => byIdentity.set(`${file.userId}:${file.filename}`, file));
                 (0, exports.notifyFileClients)();
             }
-            return data
+            const result = data
                 .map((file) => byIdentity.get(`${file.userId}:${file.filename}`))
                 .filter((file) => Boolean(file));
+            result.forEach(pdfSharePreview_1.warmPdfSharePreview);
+            return result;
         });
     }
     findByUserId(userId) {

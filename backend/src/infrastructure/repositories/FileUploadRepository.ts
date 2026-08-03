@@ -5,6 +5,7 @@
 import { FileUpload, IFileUpload } from '../../domain/entities/FileUpload';
 import { RedisService } from '../redis/redis';
 import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
+import { warmPdfSharePreview } from '../../shared/utils/pdfSharePreview';
 
 const redisService = new RedisService();
 const FILE_INDEX_CACHE_KEY = 'files:index:v1';
@@ -27,6 +28,7 @@ export const notifyFileClients = () => {
 export class FileUploadRepository {
   async create(data: Partial<IFileUpload>): Promise<IFileUpload> {
     const result = await FileUpload.create(data);
+    warmPdfSharePreview(result);
     notifyFileClients();
     return result;
   }
@@ -41,8 +43,12 @@ export class FileUploadRepository {
   // upload time.
   async findOrCreateByPath(data: Partial<IFileUpload> & { path: string }): Promise<IFileUpload> {
     const existing = await FileUpload.findOne({ path: data.path });
-    if (existing) return existing;
+    if (existing) {
+      warmPdfSharePreview(existing);
+      return existing;
+    }
     const created = await FileUpload.create(data);
+    warmPdfSharePreview(created);
     notifyFileClients();
     return created;
   }
@@ -71,9 +77,11 @@ export class FileUploadRepository {
       notifyFileClients();
     }
 
-    return data
+    const result = data
       .map((file) => byIdentity.get(`${file.userId}:${file.filename}`))
       .filter((file): file is IFileUpload => Boolean(file));
+    result.forEach(warmPdfSharePreview);
+    return result;
   }
 
   async findByUserId(userId: string): Promise<IFileUpload[]> {

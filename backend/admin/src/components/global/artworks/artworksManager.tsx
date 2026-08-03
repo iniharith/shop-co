@@ -30,6 +30,7 @@ import AxiosInstance from "@/utils/axios";
 import { uploadFilesToS3Directly, uploadToS3Directly } from "@/utils/s3Upload";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
+import { buildFileShareUrl, isPdfFile, preparePdfSharePreview } from "@/lib/fileSharePreview";
 
 const categories = [
   "ALL",
@@ -539,12 +540,34 @@ export default function ArtworksManager() {
     return `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&w=200&h=200&fit=cover`;
   };
 
-  const handleCopyLink = (e: React.MouseEvent, file: any) => {
+  const prepareSharePreview = (file: any) => {
+    if (!file?._id || !isPdfFile(file)) return;
+    void preparePdfSharePreview(file._id).catch(() => {});
+  };
+
+  const handleCopyLink = async (e: React.MouseEvent, file: any) => {
     e.preventDefault();
     e.stopPropagation();
-    const shareLink = `${window.location.origin}/share/file/${file._id}`;
-    navigator.clipboard.writeText(shareLink);
-    toast.success("Share link copied to clipboard");
+    const isPdf = isPdfFile(file);
+    const toastId = isPdf ? toast.loading("Preparing PDF preview...") : undefined;
+    let previewReady = true;
+
+    if (isPdf) {
+      try {
+        await preparePdfSharePreview(file._id);
+      } catch {
+        previewReady = false;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(buildFileShareUrl(window.location.origin, file._id, isPdf));
+      const options = toastId !== undefined ? { id: toastId } : undefined;
+      if (previewReady) toast.success("Share link copied with preview ready", options);
+      else toast.warning("Share link copied, but the PDF preview may take longer", options);
+    } catch {
+      toast.error("Failed to copy share link", toastId !== undefined ? { id: toastId } : undefined);
+    }
   };
 
   const handleAudienceShare = async (audience: "CUSTOMER" | "SUPPLIER") => {
@@ -1215,7 +1238,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                           <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Attachment</div>
                         ) : null}
                         <div className={`absolute right-2 z-30 ${file.tag ? 'top-6' : 'top-2'}`}>
-                          <Button variant="secondary" size="icon" className="w-7 h-7 rounded-full bg-white/90 hover:bg-white text-slate-700 shadow-sm transition-all hover:scale-105" onClick={(e) => handleCopyLink(e, file)} title="Copy Share Link">
+                          <Button variant="secondary" size="icon" className="w-7 h-7 rounded-full bg-white/90 hover:bg-white text-slate-700 shadow-sm transition-all hover:scale-105" onPointerEnter={() => prepareSharePreview(file)} onFocus={() => prepareSharePreview(file)} onClick={(e) => handleCopyLink(e, file)} title="Copy Share Link">
                             <Share2 className="w-3.5 h-3.5" />
                           </Button>
                         </div>
@@ -1336,7 +1359,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                         }} title="Download">
                           <Download className="w-4 h-4 text-blue-500" />
                           </Button>
-                          <Button variant="default" size="icon" onClick={(e) => handleCopyLink(e, file)} title="Copy Share Link">
+                          <Button variant="default" size="icon" onPointerEnter={() => prepareSharePreview(file)} onFocus={() => prepareSharePreview(file)} onClick={(e) => handleCopyLink(e, file)} title="Copy Share Link">
                             <Share2 className="w-4 h-4" />
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => {

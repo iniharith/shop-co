@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import { buildPdfSharePreviewUrl, isPdfFile } from "@/lib/fileSharePreview";
 import {
-  buildPdfSharePreviewUrl,
   buildShareMetadata,
   fetchPublicShare,
 } from "@/lib/shareMetadata";
@@ -13,9 +13,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const isImage =
     /^image\/(avif|gif|jpe?g|png|webp)$/i.test(file?.mimetype || "") ||
     /\.(avif|gif|jpe?g|png|webp)$/i.test(name);
-  const isPdf =
-    /^application\/pdf(?:$|;)/i.test(file?.mimetype || "") ||
-    /\.pdf$/i.test(name);
+  const isPdf = isPdfFile({ mimetype: file?.mimetype, originalName: name });
   const usesGeneratedPdfPreview = isPdf && !file?.hasThumbnail;
   const imageUrl = file?.hasThumbnail
     ? `/api/files/${encodeURIComponent(id)}/preview?thumbnail=true`
