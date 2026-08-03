@@ -8,6 +8,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.taskRepository = exports.TaskRepository = void 0;
 /**
@@ -15,75 +18,120 @@ exports.taskRepository = exports.TaskRepository = void 0;
  * Kampungcetak ®
  */
 const Task_1 = require("../../domain/entities/Task");
+const mongoose_1 = __importDefault(require("mongoose"));
+const cursorPagination_1 = require("../../shared/utils/cursorPagination");
 class TaskRepository {
     create(data) {
         return __awaiter(this, void 0, void 0, function* () {
             return Task_1.Task.create(data);
         });
     }
+    buildQuery(filters) {
+        var _a, _b;
+        const query = {};
+        if (filters === null || filters === void 0 ? void 0 : filters.status)
+            query.status = filters.status;
+        if ((filters === null || filters === void 0 ? void 0 : filters.statuses) && filters.statuses.length > 0)
+            query.status = { $in: filters.statuses };
+        if ((filters === null || filters === void 0 ? void 0 : filters.assignee) === 'unassigned') {
+            query.assignee = { $in: [null, ''] };
+        }
+        else if (filters === null || filters === void 0 ? void 0 : filters.assignee) {
+            query.assignee = filters.assignee;
+        }
+        if (filters === null || filters === void 0 ? void 0 : filters.orderId)
+            query.orderId = filters.orderId;
+        if (filters === null || filters === void 0 ? void 0 : filters.customerUsername)
+            query.customerUsername = filters.customerUsername;
+        const search = (_a = filters === null || filters === void 0 ? void 0 : filters.search) === null || _a === void 0 ? void 0 : _a.trim();
+        if (search) {
+            const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const searchRegex = new RegExp(escapedSearch, 'i');
+            query.$or = [
+                { title: searchRegex },
+                { description: searchRegex },
+                { orderId: searchRegex },
+                { customerUsername: searchRegex },
+                { category: searchRegex },
+            ];
+            if (/^[a-f\d]{24}$/i.test(search))
+                query.$or.push({ _id: search });
+        }
+        if ((filters === null || filters === void 0 ? void 0 : filters.isDeleted) === true) {
+            query.isDeleted = true;
+        }
+        else {
+            query.isDeleted = { $ne: true };
+        }
+        // Fully unfiltered requests (no status/statuses/assignee/orderId/deleted
+        // at all — e.g. the main Tasks board, print-drafts) previously had NO
+        // date bound and NO limit, so they fetched every task ever created.
+        // Restore a sane default window here, same 180-day precedent already
+        // used for the `statuses` filter case below.
+        const isFullyUnfiltered = !(filters === null || filters === void 0 ? void 0 : filters.status) && !((_b = filters === null || filters === void 0 ? void 0 : filters.statuses) === null || _b === void 0 ? void 0 : _b.length) && !(filters === null || filters === void 0 ? void 0 : filters.assignee) &&
+            !(filters === null || filters === void 0 ? void 0 : filters.orderId) && !(filters === null || filters === void 0 ? void 0 : filters.customerUsername) && !search && (filters === null || filters === void 0 ? void 0 : filters.isDeleted) !== true;
+        if ((filters === null || filters === void 0 ? void 0 : filters.days) !== undefined) {
+            const daysAgo = new Date();
+            daysAgo.setDate(daysAgo.getDate() - filters.days);
+            query.createdAt = { $gte: daysAgo };
+        }
+        else if (isFullyUnfiltered) {
+            const daysAgo = new Date();
+            daysAgo.setDate(daysAgo.getDate() - 180);
+            query.createdAt = { $gte: daysAgo };
+        }
+        if (filters === null || filters === void 0 ? void 0 : filters.cursor) {
+            const cursorBoundary = {
+                $or: [
+                    { updatedAt: { $lt: new Date(filters.cursor.updatedAt) } },
+                    {
+                        updatedAt: new Date(filters.cursor.updatedAt),
+                        _id: { $lt: new mongoose_1.default.Types.ObjectId(filters.cursor.id) },
+                    },
+                ],
+            };
+            query.$and = [...(query.$and || []), cursorBoundary];
+        }
+        return query;
+    }
+    getLimit(filters) {
+        var _a;
+        const requestedLimit = (_a = filters === null || filters === void 0 ? void 0 : filters.limit) !== null && _a !== void 0 ? _a : TaskRepository.DEFAULT_LIMIT;
+        return Math.min(Math.max(requestedLimit, 1), TaskRepository.MAX_LIMIT);
+    }
     findAll(filters) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b, _c;
-            const query = {};
-            if (filters === null || filters === void 0 ? void 0 : filters.status)
-                query.status = filters.status;
-            if ((filters === null || filters === void 0 ? void 0 : filters.statuses) && filters.statuses.length > 0)
-                query.status = { $in: filters.statuses };
-            if ((filters === null || filters === void 0 ? void 0 : filters.assignee) === 'unassigned') {
-                query.assignee = { $in: [null, ''] };
-            }
-            else if (filters === null || filters === void 0 ? void 0 : filters.assignee) {
-                query.assignee = filters.assignee;
-            }
-            if (filters === null || filters === void 0 ? void 0 : filters.orderId)
-                query.orderId = filters.orderId;
-            if (filters === null || filters === void 0 ? void 0 : filters.customerUsername)
-                query.customerUsername = filters.customerUsername;
-            const search = (_a = filters === null || filters === void 0 ? void 0 : filters.search) === null || _a === void 0 ? void 0 : _a.trim();
-            if (search) {
-                const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const searchRegex = new RegExp(escapedSearch, 'i');
-                query.$or = [
-                    { title: searchRegex },
-                    { description: searchRegex },
-                    { orderId: searchRegex },
-                    { customerUsername: searchRegex },
-                    { category: searchRegex },
-                ];
-                if (/^[a-f\d]{24}$/i.test(search))
-                    query.$or.push({ _id: search });
-            }
-            if ((filters === null || filters === void 0 ? void 0 : filters.isDeleted) === true) {
-                query.isDeleted = true;
-            }
-            else {
-                query.isDeleted = { $ne: true };
-            }
-            // Fully unfiltered requests (no status/statuses/assignee/orderId/deleted
-            // at all — e.g. the main Tasks board, print-drafts) previously had NO
-            // date bound and NO limit, so they fetched every task ever created.
-            // Restore a sane default window here, same 180-day precedent already
-            // used for the `statuses` filter case below.
-            const isFullyUnfiltered = !(filters === null || filters === void 0 ? void 0 : filters.status) && !((_b = filters === null || filters === void 0 ? void 0 : filters.statuses) === null || _b === void 0 ? void 0 : _b.length) && !(filters === null || filters === void 0 ? void 0 : filters.assignee) &&
-                !(filters === null || filters === void 0 ? void 0 : filters.orderId) && !(filters === null || filters === void 0 ? void 0 : filters.customerUsername) && !search && (filters === null || filters === void 0 ? void 0 : filters.isDeleted) !== true;
-            if ((filters === null || filters === void 0 ? void 0 : filters.days) !== undefined) {
-                const daysAgo = new Date();
-                daysAgo.setDate(daysAgo.getDate() - filters.days);
-                query.createdAt = { $gte: daysAgo };
-            }
-            else if (isFullyUnfiltered) {
-                const daysAgo = new Date();
-                daysAgo.setDate(daysAgo.getDate() - 180);
-                query.createdAt = { $gte: daysAgo };
-            }
-            const requestedLimit = (_c = filters === null || filters === void 0 ? void 0 : filters.limit) !== null && _c !== void 0 ? _c : TaskRepository.DEFAULT_LIMIT;
-            const limit = Math.min(Math.max(requestedLimit, 1), TaskRepository.MAX_LIMIT);
+            const query = this.buildQuery(filters);
+            const limit = this.getLimit(filters);
             return Task_1.Task.find(query)
                 .select('-comments -activities -files')
-                .sort({ updatedAt: -1 })
+                .sort({ updatedAt: -1, _id: -1 })
                 .limit(limit)
                 .maxTimeMS(10000)
                 .lean();
+        });
+    }
+    findPage(filters) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const query = this.buildQuery(filters);
+            const limit = this.getLimit(filters);
+            const results = yield Task_1.Task.find(query)
+                .select('-comments -activities -files')
+                .sort({ updatedAt: -1, _id: -1 })
+                .limit(limit + 1)
+                .maxTimeMS(10000)
+                .lean();
+            const hasNextPage = results.length > limit;
+            const tasks = results.slice(0, limit);
+            const lastTask = tasks[tasks.length - 1];
+            const nextCursor = hasNextPage && lastTask
+                ? (0, cursorPagination_1.encodeCursor)({
+                    version: 1,
+                    updatedAt: lastTask.updatedAt.toISOString(),
+                    id: lastTask._id.toString(),
+                })
+                : null;
+            return { tasks, pageInfo: { limit, hasNextPage, nextCursor } };
         });
     }
     findById(id) {

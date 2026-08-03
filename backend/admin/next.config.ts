@@ -1,7 +1,9 @@
 /**
  * Coded by Harith
- * Kampungcetak ®
+ * Kampungcetak (R)
  */
+import { withSentryConfig } from "@sentry/nextjs";
+
 /** @type {import('next').NextConfig} */
 const configuredBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 const staleBackendUrls = new Set([
@@ -20,13 +22,12 @@ const nextConfig = {
     },
     transpilePackages: ['@heroui/react', '@heroui/spinner', 'framer-motion', '@tanstack/react-query', 'lucide-react', 'sonner'],
     eslint: {
-        ignoreDuringBuilds: true, // This will ignore all ESLint errors during build
+        ignoreDuringBuilds: true,
     },
     typescript: {
         ignoreBuildErrors: true,
     },
     images: {
-        // Images are already optimized via AWS S3 — skip Vercel's transformation pipeline
         unoptimized: true,
         remotePatterns: [
             {
@@ -51,4 +52,12 @@ const nextConfig = {
     },
 };
 
-module.exports = nextConfig;
+module.exports = withSentryConfig(nextConfig, {
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
+    authToken: process.env.SENTRY_AUTH_TOKEN,
+    silent: true,
+    sourcemaps: {
+        disable: !process.env.SENTRY_AUTH_TOKEN || !process.env.SENTRY_ORG || !process.env.SENTRY_PROJECT,
+    },
+});

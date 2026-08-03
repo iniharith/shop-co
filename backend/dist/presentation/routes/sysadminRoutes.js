@@ -66,6 +66,7 @@ const ParcelRepository_1 = require("../../infrastructure/repositories/ParcelRepo
 const FileUploadRepository_1 = require("../../infrastructure/repositories/FileUploadRepository");
 const VirtualFolderRepository_1 = require("../../infrastructure/repositories/VirtualFolderRepository");
 const TaskRepository_1 = require("../../infrastructure/repositories/TaskRepository");
+const user_model_1 = __importDefault(require("../../infrastructure/db/models/user.model"));
 const socketHandler_1 = require("../../infrastructure/socket/socketHandler");
 const router = (0, express_1.Router)();
 router.get('/online-users', (req, res) => {
@@ -255,6 +256,236 @@ router.get('/dashboard-summary', (0, express_async_handler_1.default)((req, res)
             tasks: { total: totalTasks },
             folders: { total: folders.length },
             onlineUsers: { count: (0, socketHandler_1.getOnlineUsersCount)() },
+        },
+    });
+})));
+// ─── GET /api/sysadmin/queue-analytics ─────────────────────────
+router.get('/queue-analytics', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    const timezone = 'Asia/Kuala_Lumpur';
+    const parsedDays = Number(req.query.days);
+    const days = Number.isFinite(parsedDays) ? Math.min(Math.max(Math.trunc(parsedDays), 7), 90) : 30;
+    const now = new Date();
+    const klNow = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    const firstKlDay = Date.UTC(klNow.getUTCFullYear(), klNow.getUTCMonth(), klNow.getUTCDate() - days + 1);
+    const from = new Date(firstKlDay - (8 * 60 * 60 * 1000));
+    const inactiveStatuses = ['SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED', 'RETURN', 'DONE'];
+    const completionStatuses = ['SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'DONE'];
+    const activeMatch = {
+        isDeleted: { $ne: true },
+        isDone: { $ne: true },
+        status: { $nin: inactiveStatuses },
+    };
+    const stageStartedAt = { $ifNull: ['$statusUpdatedAt', '$createdAt'] };
+    const ageHours = { $divide: [{ $subtract: [now, stageStartedAt] }, 60 * 60 * 1000] };
+    const isOverdue = {
+        $and: [
+            { $ne: [{ $ifNull: ['$dueDate', null] }, null] },
+            { $lt: ['$dueDate', now] },
+        ],
+    };
+    const completionMatch = {
+        statusUpdatedAt: { $gte: from, $lte: now },
+        $or: [{ isDone: true }, { status: { $in: completionStatuses } }],
+    };
+    // These are estimates from current task state; history is not reconstructed from activities.
+    const [activeResults, rangeResults] = yield Promise.all([
+        Task_1.Task.aggregate([
+            { $match: activeMatch },
+            {
+                $facet: {
+                    summary: [
+                        {
+                            $group: {
+                                _id: null,
+                                currentWip: { $sum: 1 },
+                                overdueTasks: { $sum: { $cond: [isOverdue, 1, 0] } },
+                                unassignedTasks: {
+                                    $sum: { $cond: [{ $eq: [{ $ifNull: ['$assignee', ''] }, ''] }, 1, 0] },
+                                },
+                            },
+                        },
+                    ],
+                    statusBreakdown: [
+                        {
+                            $group: {
+                                _id: { $ifNull: ['$status', 'UNKNOWN'] },
+                                count: { $sum: 1 },
+                                avgAgeHours: { $avg: ageHours },
+                                overdue: { $sum: { $cond: [isOverdue, 1, 0] } },
+                            },
+                        },
+                        { $sort: { count: -1, _id: 1 } },
+                    ],
+                    staffWorkload: [
+                        {
+                            $group: {
+                                _id: {
+                                    $cond: [
+                                        { $eq: [{ $ifNull: ['$assignee', ''] }, ''] },
+                                        null,
+                                        { $toString: '$assignee' },
+                                    ],
+                                },
+                                count: { $sum: 1 },
+                                overdue: { $sum: { $cond: [isOverdue, 1, 0] } },
+                                oldestStartedAt: { $min: stageStartedAt },
+                            },
+                        },
+                        { $sort: { count: -1, _id: 1 } },
+                    ],
+                    oldestTasks: [
+                        { $addFields: { stageStartedAt } },
+                        { $sort: { stageStartedAt: 1, _id: 1 } },
+                        { $limit: 10 },
+                        {
+                            $project: {
+                                _id: 1,
+                                title: 1,
+                                status: 1,
+                                assignee: 1,
+                                orderId: 1,
+                                dueDate: 1,
+                                stageStartedAt: 1,
+                            },
+                        },
+                    ],
+                },
+            },
+        ]).option({ maxTimeMS: 10000 }),
+        Task_1.Task.aggregate([
+            {
+                $match: {
+                    isDeleted: { $ne: true },
+                    $or: [
+                        { createdAt: { $gte: from, $lte: now } },
+                        completionMatch,
+                    ],
+                },
+            },
+            {
+                $facet: {
+                    created: [
+                        { $match: { createdAt: { $gte: from, $lte: now } } },
+                        {
+                            $group: {
+                                _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone } },
+                                count: { $sum: 1 },
+                            },
+                        },
+                    ],
+                    completed: [
+                        { $match: completionMatch },
+                        {
+                            $group: {
+                                _id: { $dateToString: { format: '%Y-%m-%d', date: '$statusUpdatedAt', timezone } },
+                                count: { $sum: 1 },
+                            },
+                        },
+                    ],
+                    completionSummary: [
+                        { $match: completionMatch },
+                        {
+                            $group: {
+                                _id: null,
+                                completedInRange: { $sum: 1 },
+                                avgCompletionHours: {
+                                    $avg: {
+                                        $cond: [
+                                            { $gte: ['$statusUpdatedAt', '$createdAt'] },
+                                            { $divide: [{ $subtract: ['$statusUpdatedAt', '$createdAt'] }, 60 * 60 * 1000] },
+                                            null,
+                                        ],
+                                    },
+                                },
+                            },
+                        },
+                    ],
+                },
+            },
+        ]).option({ maxTimeMS: 10000 }),
+    ]);
+    const active = activeResults[0] || {};
+    const range = rangeResults[0] || {};
+    const assigneeIds = new Set();
+    for (const item of active.staffWorkload || []) {
+        if (item._id)
+            assigneeIds.add(String(item._id));
+    }
+    for (const item of active.oldestTasks || []) {
+        if (item.assignee)
+            assigneeIds.add(String(item.assignee));
+    }
+    const validAssigneeIds = Array.from(assigneeIds).filter(id => mongoose_1.default.isValidObjectId(id));
+    const users = validAssigneeIds.length
+        ? yield user_model_1.default.find({ _id: { $in: validAssigneeIds } }).select('_id name').lean().maxTimeMS(5000)
+        : [];
+    const assigneeNames = new Map(users.map(user => [String(user._id), user.name || 'Unknown staff']));
+    const round = (value, precision = 1) => {
+        const factor = Math.pow(10, precision);
+        return Math.round(value * factor) / factor;
+    };
+    const summaryRaw = ((_a = active.summary) === null || _a === void 0 ? void 0 : _a[0]) || {};
+    const currentWip = summaryRaw.currentWip || 0;
+    const overdueTasks = summaryRaw.overdueTasks || 0;
+    const completionSummary = ((_b = range.completionSummary) === null || _b === void 0 ? void 0 : _b[0]) || {};
+    const statusBreakdown = (active.statusBreakdown || []).map((item) => ({
+        status: String(item._id),
+        count: item.count,
+        avgAgeHours: round(Math.max(0, item.avgAgeHours || 0)),
+        overdue: item.overdue,
+    }));
+    const staffWorkload = (active.staffWorkload || []).map((item) => {
+        const assigneeId = item._id ? String(item._id) : null;
+        return {
+            assigneeId,
+            assigneeName: assigneeId ? (assigneeNames.get(assigneeId) || 'Unknown staff') : 'Unassigned',
+            count: item.count,
+            overdue: item.overdue,
+            oldestAgeHours: round(Math.max(0, (now.getTime() - new Date(item.oldestStartedAt).getTime()) / (60 * 60 * 1000))),
+        };
+    });
+    const bottlenecks = statusBreakdown
+        .map((item) => (Object.assign(Object.assign({}, item), { score: round(item.count * (1 + item.avgAgeHours / 24) * (1 + item.overdue / item.count), 2) })))
+        .sort((a, b) => b.score - a.score || a.status.localeCompare(b.status));
+    const createdByDate = new Map((range.created || []).map((item) => [item._id, item.count]));
+    const completedByDate = new Map((range.completed || []).map((item) => [item._id, item.count]));
+    const dailyThroughput = [];
+    for (let index = 0; index < days; index++) {
+        const date = new Date(firstKlDay + (index * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+        dailyThroughput.push({
+            date,
+            created: Number(createdByDate.get(date) || 0),
+            completed: Number(completedByDate.get(date) || 0),
+        });
+    }
+    const oldestTasks = (active.oldestTasks || []).map((item) => {
+        const assigneeId = item.assignee ? String(item.assignee) : undefined;
+        return Object.assign(Object.assign(Object.assign(Object.assign({ id: String(item._id), title: String(item.title || ''), status: String(item.status || 'UNKNOWN') }, (assigneeId ? { assigneeId, assigneeName: assigneeNames.get(assigneeId) || 'Unknown staff' } : {})), (item.orderId ? { orderId: String(item.orderId) } : {})), (item.dueDate ? { dueDate: new Date(item.dueDate).toISOString() } : {})), { ageHours: round(Math.max(0, (now.getTime() - new Date(item.stageStartedAt).getTime()) / (60 * 60 * 1000))) });
+    });
+    res.json({
+        success: true,
+        data: {
+            range: { days, from: from.toISOString(), to: now.toISOString(), timezone },
+            dataQuality: {
+                mode: 'estimated',
+                note: 'Completion and stage-age metrics are estimated from current status, statusUpdatedAt, and createdAt.',
+            },
+            summary: {
+                currentWip,
+                overdueTasks,
+                overdueRate: currentWip ? round((overdueTasks / currentWip) * 100) : 0,
+                unassignedTasks: summaryRaw.unassignedTasks || 0,
+                completedInRange: completionSummary.completedInRange || 0,
+                avgCompletionHours: completionSummary.avgCompletionHours == null
+                    ? null
+                    : round(Math.max(0, completionSummary.avgCompletionHours)),
+            },
+            statusBreakdown,
+            staffWorkload,
+            bottlenecks,
+            dailyThroughput,
+            oldestTasks,
         },
     });
 })));

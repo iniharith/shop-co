@@ -14,40 +14,57 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 
+type Draft = {
+  _id: string;
+  originalName: string;
+  path: string;
+  tag?: string;
+  taskId?: string;
+  orderId?: string;
+  userId?: string;
+};
+
+type DraftTask = { _id: string; title: string };
+type DraftOrder = { _id: string; orderId?: string };
+
 export default function PrintDraftsPage() {
-  const { data: filesData, isLoading: filesLoading } = useAllFiles();
-  const { data: tasksResponse, isLoading: tasksLoading } = useTasks();
-  const { data: ordersResponse, isLoading: ordersLoading } = useOrders();
-  const { data: usersResponse, isLoading: usersLoading } = useUsers();
+  const { data: filesData, isPending: filesLoading } = useAllFiles();
+  const { data: tasksResponse, isPending: tasksLoading } = useTasks();
+  const { data: ordersResponse, isPending: ordersLoading } = useOrders();
+  const { data: usersResponse, isPending: usersLoading } = useUsers();
   
-  const [drafts, setDrafts] = useState<any[]>([]);
+  const [drafts, setDrafts] = useState<Draft[]>([]);
   const [itemsPerPage, setItemsPerPage] = useState<number>(4);
 
-  const tasks = tasksResponse?.tasks || [];
-  const orders = ordersResponse?.data || [];
-  const users = usersResponse?.data || [];
+  const tasks = typeof tasksResponse === "object" && tasksResponse !== null
+    && "tasks" in tasksResponse && Array.isArray(tasksResponse.tasks)
+    ? tasksResponse.tasks as DraftTask[]
+    : [];
+  const orders = (ordersResponse?.orders || []) as DraftOrder[];
+  const users = usersResponse?.users || [];
 
   const isLoading = filesLoading || tasksLoading || ordersLoading || usersLoading;
 
   useEffect(() => {
-    if (filesData?.data) {
-      const allDrafts = filesData.data.filter((f: any) => f.tag === 'draft');
+    if (typeof filesData === "object" && filesData !== null
+      && "data" in filesData && Array.isArray(filesData.data)) {
+      const allDrafts = (filesData.data as Draft[]).filter((file) => file.tag === 'draft');
       setDrafts(allDrafts);
     }
   }, [filesData]);
 
-  const getFolderName = (draft: any) => {
+  const getFolderName = (draft: Draft) => {
     if (draft.taskId && draft.taskId !== 'undefined') {
-      const task = tasks.find((t: any) => t._id === draft.taskId);
+      const task = tasks.find((task) => task._id === draft.taskId);
       if (task) return task.title;
       return `Task: ${draft.taskId}`;
     }
     if (draft.orderId && draft.orderId !== 'undefined') {
-      const order = orders.find((o: any) => o._id === draft.orderId);
+      const order = orders.find((order) => order._id === draft.orderId);
       if (order) return `Order: ${order.orderId}`;
       return `Order: ${draft.orderId}`;
     }
-    const user = users.find((u: any) => u._id === draft.userId);
+    const user = users.find((user) => user._id === draft.userId);
     if (user) return `User: ${user.name}`;
     return draft.originalName;
   };
@@ -132,7 +149,7 @@ export default function PrintDraftsPage() {
 
       {/* SCREEN PREVIEW LAYOUT (Normal Grid, 120x120 images) */}
       <div className="no-print grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-20">
-        {drafts.map((draft: any) => (
+        {drafts.map((draft) => (
           <div key={draft._id} className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm flex flex-col hover:shadow-md transition-shadow">
             <div className="relative w-full h-[120px] bg-gray-50 flex items-center justify-center border-b border-gray-100 p-2">
               <Image 
@@ -167,7 +184,7 @@ export default function PrintDraftsPage() {
             }}
           >
             <div className={`grid ${gridColsRows} gap-[10mm] w-full h-full`}>
-              {pageDrafts.map((draft: any) => (
+              {pageDrafts.map((draft) => (
                 <div key={draft._id} className="relative w-full h-full flex items-center justify-center p-2">
                   <div className="border border-dashed border-gray-600 p-2 flex flex-col items-center justify-center max-w-full max-h-full rounded-md bg-white">
                     <img 

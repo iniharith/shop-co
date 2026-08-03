@@ -19,6 +19,7 @@ import { sendPushNotification } from '../../services/pushNotification.service';
 import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
 import { fileUploadRepository, notifyFileClients } from '../../infrastructure/repositories/FileUploadRepository';
 import { clearFolderGroupCache } from './fileUploadRoutes';
+import { decodeCursor } from '../../shared/utils/cursorPagination';
 
 const redisService = new RedisService();
 type TaskFileTag = 'attachment' | 'draft' | 'for_print';
@@ -59,6 +60,19 @@ router.get(
       search: req.query.search as string,
     };
 
+    if (req.query.cursor !== undefined) {
+      if (typeof req.query.cursor !== 'string') {
+        res.status(400).json({ success: false, message: 'Invalid cursor' });
+        return;
+      }
+      try {
+        filters.cursor = decodeCursor(req.query.cursor);
+      } catch {
+        res.status(400).json({ success: false, message: 'Invalid cursor' });
+        return;
+      }
+    }
+
     // 'statuses' (plural, comma-separated) was being silently dropped here —
     // the admin manager pages (Production/Packaging) rely on it to scope
     // their queries, and without it they were falling back to the default
@@ -85,8 +99,8 @@ router.get(
       if (!Number.isNaN(parsed)) filters.limit = parsed;
     }
 
-    const tasks = await taskRepository.findAll(filters);
-    res.json({ success: true, tasks });
+    const { tasks, pageInfo } = await taskRepository.findPage(filters);
+    res.json({ success: true, tasks, pageInfo });
   })
 );
 
@@ -186,7 +200,7 @@ router.put(
       req.body.status = 'IN_DESIGN';
     }
 
-    if (req.body.status && req.body.status !== oldTask?.status) {
+    if ((req.body.status && req.body.status !== oldTask?.status) || isDoneChanged) {
       req.body.statusUpdatedAt = new Date();
     }
     const task = await taskRepository.update(req.params.id, req.body);

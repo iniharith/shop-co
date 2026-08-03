@@ -19,10 +19,8 @@ export default withAuth(
 
     const isLoggedIn = !!token;
     const userRole = token?.role;
-    // token.verified may come through as a real boolean or as a string ("true"/"false"),
-    // depending on the shape returned by the backend at login time. Normalize once here
-    // instead of comparing with == / === against a hardcoded string.
-    const isVerified = token?.verified === true || token?.verified === "true";
+    // The backend user field is boolean; the JWT declaration is stale and says string.
+    const isVerified = (token?.verified as unknown) === true;
     const isSuperAdminPage = path.startsWith("/admin/superAdmin");
     const hasAdminAccess = [Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(token?.role as Roles);
 

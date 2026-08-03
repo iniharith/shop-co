@@ -65,6 +65,7 @@ const redis_constant_1 = require("../../shared/constants/redis.constant");
 const taskBroadcast_1 = require("../../shared/utils/taskBroadcast");
 const FileUploadRepository_1 = require("../../infrastructure/repositories/FileUploadRepository");
 const fileUploadRoutes_1 = require("./fileUploadRoutes");
+const cursorPagination_1 = require("../../shared/utils/cursorPagination");
 const redisService = new redis_1.RedisService();
 const TASK_FILE_TAGS = new Set(['attachment', 'draft', 'for_print']);
 const normalizeTaskFileTag = (tag) => {
@@ -96,6 +97,19 @@ router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)
         orderId: req.query.orderId,
         search: req.query.search,
     };
+    if (req.query.cursor !== undefined) {
+        if (typeof req.query.cursor !== 'string') {
+            res.status(400).json({ success: false, message: 'Invalid cursor' });
+            return;
+        }
+        try {
+            filters.cursor = (0, cursorPagination_1.decodeCursor)(req.query.cursor);
+        }
+        catch (_c) {
+            res.status(400).json({ success: false, message: 'Invalid cursor' });
+            return;
+        }
+    }
     // 'statuses' (plural, comma-separated) was being silently dropped here —
     // the admin manager pages (Production/Packaging) rely on it to scope
     // their queries, and without it they were falling back to the default
@@ -119,8 +133,8 @@ router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)
         if (!Number.isNaN(parsed))
             filters.limit = parsed;
     }
-    const tasks = yield TaskRepository_1.taskRepository.findAll(filters);
-    res.json({ success: true, tasks });
+    const { tasks, pageInfo } = yield TaskRepository_1.taskRepository.findPage(filters);
+    res.json({ success: true, tasks, pageInfo });
 })));
 // GET /api/tasks/:id
 router.get('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -202,7 +216,7 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
     if (isNewAssignment && preDesignStatuses.includes(currentStatus) && (!req.body.status || req.body.status === currentStatus)) {
         req.body.status = 'IN_DESIGN';
     }
-    if (req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status)) {
+    if ((req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status)) || isDoneChanged) {
         req.body.statusUpdatedAt = new Date();
     }
     const task = yield TaskRepository_1.taskRepository.update(req.params.id, req.body);
@@ -284,6 +298,7 @@ router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.de
         else {
             yield TaskRepository_1.taskRepository.delete(req.params.id);
         }
+        yield (0, fileUploadRoutes_1.clearFolderGroupCache)().catch(() => { });
     }
     res.json({ success: true, message: req.query.permanent === 'true' ? 'Task permanently deleted' : 'Task deleted' });
     (0, taskBroadcast_1.emitTaskUpdated)('task_deleted', { taskId: req.params.id });

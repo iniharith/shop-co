@@ -5,5 +5,6 @@ node_modules
 .env.production
 .env.test
 
-package-lock.json
+!package-lock.json
+!admin/package-lock.json
 backend

@@ -3,6 +3,30 @@
  * Kampungcetak ®
  */
 import { Task, ITask } from '../../domain/entities/Task';
+import mongoose from 'mongoose';
+import { encodeCursor, TaskCursor } from '../../shared/utils/cursorPagination';
+
+export interface TaskFilters {
+  status?: string;
+  statuses?: string[];
+  assignee?: string;
+  orderId?: string;
+  customerUsername?: string;
+  search?: string;
+  isDeleted?: boolean;
+  days?: number;
+  limit?: number;
+  cursor?: TaskCursor;
+}
+
+export interface TaskPage {
+  tasks: ITask[];
+  pageInfo: {
+    limit: number;
+    hasNextPage: boolean;
+    nextCursor: string | null;
+  };
+}
 
 export class TaskRepository {
   // Hard ceiling — no caller, present or future, can ever pull more than
@@ -17,7 +41,7 @@ export class TaskRepository {
     return Task.create(data);
   }
 
-  async findAll(filters?: { status?: string; statuses?: string[]; assignee?: string; orderId?: string; customerUsername?: string; search?: string; isDeleted?: boolean; days?: number; limit?: number; }): Promise<ITask[]> {
+  private buildQuery(filters?: TaskFilters): any {
     const query: any = {};
     if (filters?.status) query.status = filters.status;
     if (filters?.statuses && filters.statuses.length > 0) query.status = { $in: filters.statuses };
@@ -68,15 +92,60 @@ export class TaskRepository {
       query.createdAt = { $gte: daysAgo };
     }
 
+    if (filters?.cursor) {
+      const cursorBoundary = {
+        $or: [
+          { updatedAt: { $lt: new Date(filters.cursor.updatedAt) } },
+          {
+            updatedAt: new Date(filters.cursor.updatedAt),
+            _id: { $lt: new mongoose.Types.ObjectId(filters.cursor.id) },
+          },
+        ],
+      };
+      query.$and = [...(query.$and || []), cursorBoundary];
+    }
+
+    return query;
+  }
+
+  private getLimit(filters?: TaskFilters): number {
     const requestedLimit = filters?.limit ?? TaskRepository.DEFAULT_LIMIT;
-    const limit = Math.min(Math.max(requestedLimit, 1), TaskRepository.MAX_LIMIT);
+    return Math.min(Math.max(requestedLimit, 1), TaskRepository.MAX_LIMIT);
+  }
+
+  async findAll(filters?: TaskFilters): Promise<ITask[]> {
+    const query = this.buildQuery(filters);
+    const limit = this.getLimit(filters);
 
     return Task.find(query)
       .select('-comments -activities -files')
-      .sort({ updatedAt: -1 })
+      .sort({ updatedAt: -1, _id: -1 })
       .limit(limit)
       .maxTimeMS(10_000)
       .lean() as unknown as Promise<ITask[]>;
+  }
+
+  async findPage(filters?: TaskFilters): Promise<TaskPage> {
+    const query = this.buildQuery(filters);
+    const limit = this.getLimit(filters);
+    const results = await Task.find(query)
+      .select('-comments -activities -files')
+      .sort({ updatedAt: -1, _id: -1 })
+      .limit(limit + 1)
+      .maxTimeMS(10_000)
+      .lean() as unknown as ITask[];
+    const hasNextPage = results.length > limit;
+    const tasks = results.slice(0, limit);
+    const lastTask = tasks[tasks.length - 1];
+    const nextCursor = hasNextPage && lastTask
+      ? encodeCursor({
+          version: 1,
+          updatedAt: lastTask.updatedAt.toISOString(),
+          id: lastTask._id.toString(),
+        })
+      : null;
+
+    return { tasks, pageInfo: { limit, hasNextPage, nextCursor } };
   }
 
   async findById(id: string): Promise<ITask | null> {

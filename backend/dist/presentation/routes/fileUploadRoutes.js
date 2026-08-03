@@ -436,7 +436,7 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
         ]),
         orderIds.length ? order_model_1.default.find({ _id: { $in: orderIds } }).select('orderStatus userId').lean() : [],
         userIds.length ? user_model_1.default.find({ _id: { $in: userIds } }).select('name').lean() : [],
-        allTaskIds.length ? Task_1.Task.find({ _id: { $in: allTaskIds }, isDeleted: { $ne: true } }).select('title status orderId category').lean() : [],
+        allTaskIds.length ? Task_1.Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category isDeleted').lean() : [],
     ]);
     const taskMap = new Map(tasks.map((t) => [t._id.toString(), t]));
     const allTaskMap = new Map(allReferencedTasks.map((t) => [t._id.toString(), t]));
@@ -452,6 +452,10 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
         if (file.taskId) {
             const task = allTaskMap.get(file.taskId) || taskMap.get(file.taskId);
             if (task) {
+                // Task is soft-deleted — hide its files entirely until the task is
+                // permanently deleted (when FileUpload records are removed too).
+                if (task.isDeleted)
+                    continue;
                 if (!matchesStatus(task.status)) {
                     // Task status does not match requested queue filter — skip file
                     continue;
@@ -946,9 +950,7 @@ router.post('/customer/save-metadata', (0, express_async_handler_1.default)((req
         res.status(400).json({ success: false, message: 'Files, orderId, and username required' });
         return;
     }
-    const uploadName = typeof item === 'string' && item.trim()
-        ? `${item.trim()} (#${orderId})`
-        : `Artwork Upload: #${orderId}`;
+    const uploadName = `Artwork Upload: #${orderId} - ${username}`;
     // 1. Create a Task for this upload
     const savedTask = yield TaskRepository_1.taskRepository.create({
         title: uploadName,

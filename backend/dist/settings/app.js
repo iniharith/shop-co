@@ -7,6 +7,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Coded by Harith
  * Kampungcetak ®
  */
+require("../instrumentation");
 const express_1 = __importDefault(require("express"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const cors_1 = __importDefault(require("cors"));
@@ -38,6 +39,8 @@ const auditRoutes_1 = __importDefault(require("../presentation/routes/auditRoute
 const easyParcelRoutes_1 = __importDefault(require("../presentation/routes/easyParcelRoutes"));
 const audit_middleware_1 = require("../presentation/middlewares/audit.middleware");
 const bandwidthTracker_1 = require("../shared/utils/bandwidthTracker");
+const crypto_1 = require("crypto");
+const mongoose_1 = __importDefault(require("mongoose"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const corsOptions = {
@@ -58,11 +61,20 @@ const corsOptions = {
         "Access-Control-Request-Method",
         "Access-Control-Request-Headers",
         "Cache-Control",
-        "Pragma"
+        "Pragma",
+        "X-Request-ID"
     ],
-    exposedHeaders: ["Content-Range", "X-Content-Range"],
+    exposedHeaders: ["Content-Range", "X-Content-Range", "X-Request-ID"],
     maxAge: 86400,
 };
+app.use((req, res, next) => {
+    const incomingId = req.get('X-Request-ID');
+    req.requestId = incomingId && /^[A-Za-z0-9._-]{1,100}$/.test(incomingId)
+        ? incomingId
+        : (0, crypto_1.randomUUID)();
+    res.setHeader('X-Request-ID', req.requestId);
+    next();
+});
 app.use((0, cors_1.default)(corsOptions));
 app.use(bandwidthTracker_1.bandwidthMiddleware);
 app.use((0, cookie_parser_1.default)());
@@ -107,8 +119,17 @@ app.use('/admin', express_1.default.static(adminPath));
 app.get(['/admin', '/admin/*'], (_req, res) => {
     res.sendFile(path_1.default.join(adminPath, 'index.html'));
 });
-app.get('/health', (_req, res) => {
+app.get(['/health', '/health/live'], (_req, res) => {
     res.status(200).json({ status: 'ok' });
+});
+app.get('/health/ready', (_req, res) => {
+    const databaseReady = mongoose_1.default.connection.readyState === 1;
+    res.status(databaseReady ? 200 : 503).json({
+        status: databaseReady ? 'ready' : 'not_ready',
+        checks: {
+            database: databaseReady ? 'up' : 'down',
+        },
+    });
 });
 // -------------------------  error middleware-------------------------------
 app.use(error_middleware_1.notFound);

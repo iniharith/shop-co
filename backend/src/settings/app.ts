@@ -2,7 +2,8 @@
  * Coded by Harith
  * Kampungcetak ®
  */
-import express from 'express';
+import '../instrumentation';
+import express, { NextFunction, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -34,6 +35,16 @@ import auditRoutes from '../presentation/routes/auditRoutes';
 import easyParcelRoutes from '../presentation/routes/easyParcelRoutes';
 import { auditMiddleware } from '../presentation/middlewares/audit.middleware';
 import { bandwidthMiddleware } from '../shared/utils/bandwidthTracker';
+import { randomUUID } from 'crypto';
+import mongoose from 'mongoose';
+
+declare global {
+    namespace Express {
+        interface Request {
+            requestId: string;
+        }
+    }
+}
 
 dotenv.config();
 const app = express();
@@ -55,12 +66,21 @@ const corsOptions: cors.CorsOptions = {
         "Access-Control-Request-Method",
         "Access-Control-Request-Headers",
         "Cache-Control",
-        "Pragma"
+        "Pragma",
+        "X-Request-ID"
     ],
-    exposedHeaders: ["Content-Range", "X-Content-Range"],
+    exposedHeaders: ["Content-Range", "X-Content-Range", "X-Request-ID"],
     maxAge: 86400,
 };
 
+app.use((req: Request, res: Response, next: NextFunction) => {
+    const incomingId = req.get('X-Request-ID');
+    req.requestId = incomingId && /^[A-Za-z0-9._-]{1,100}$/.test(incomingId)
+        ? incomingId
+        : randomUUID();
+    res.setHeader('X-Request-ID', req.requestId);
+    next();
+});
 app.use(cors(corsOptions));
 app.use(bandwidthMiddleware);
 app.use(cookieParser());
@@ -114,8 +134,19 @@ app.get(['/admin', '/admin/*'], (_req, res) => {
     res.sendFile(path.join(adminPath, 'index.html'));
 });
 
-app.get('/health', (_req, res) => {
+app.get(['/health', '/health/live'], (_req, res) => {
     res.status(200).json({ status: 'ok' });
+});
+
+app.get('/health/ready', (_req, res) => {
+    const databaseReady = mongoose.connection.readyState === 1;
+
+    res.status(databaseReady ? 200 : 503).json({
+        status: databaseReady ? 'ready' : 'not_ready',
+        checks: {
+            database: databaseReady ? 'up' : 'down',
+        },
+    });
 });
 
 // -------------------------  error middleware-------------------------------

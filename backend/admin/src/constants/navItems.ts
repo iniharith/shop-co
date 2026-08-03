@@ -110,6 +110,10 @@ export const AdminNavItems: NavItem[] = [
                 url: '/admin/reports',
             },
             {
+                title: 'Queue Analytics',
+                url: '/admin/queue-analytics',
+            },
+            {
                 title: 'Image Upscale',
                 url: '/admin/tools/upscale',
             },
