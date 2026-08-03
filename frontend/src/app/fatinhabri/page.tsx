@@ -35,7 +35,7 @@ function getTimeRemaining() {
   };
 }
 
-export default function RsvpPage() {
+export default function FatinHabriPage() {
   const [remaining, setRemaining] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [attendance, setAttendance] = useState<Attendance>("");
   const [submitted, setSubmitted] = useState(false);

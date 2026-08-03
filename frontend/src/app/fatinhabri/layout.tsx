@@ -24,6 +24,6 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RsvpLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function FatinHabriLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return children;
 }
