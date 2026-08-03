@@ -43,7 +43,10 @@ export const preparePdfSharePreview = (fileId: string) => {
       }
       await response.arrayBuffer();
     })
-    .finally(() => previewJobs.delete(fileId));
+    .catch((error) => {
+      previewJobs.delete(fileId);
+      throw error;
+    });
 
   previewJobs.set(fileId, job);
   return job;

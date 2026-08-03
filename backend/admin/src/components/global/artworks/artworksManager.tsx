@@ -549,24 +549,13 @@ export default function ArtworksManager() {
     e.preventDefault();
     e.stopPropagation();
     const isPdf = isPdfFile(file);
-    const toastId = isPdf ? toast.loading("Preparing PDF preview...") : undefined;
-    let previewReady = true;
-
-    if (isPdf) {
-      try {
-        await preparePdfSharePreview(file._id);
-      } catch {
-        previewReady = false;
-      }
-    }
 
     try {
       await navigator.clipboard.writeText(buildFileShareUrl(window.location.origin, file._id, isPdf));
-      const options = toastId !== undefined ? { id: toastId } : undefined;
-      if (previewReady) toast.success("Share link copied with preview ready", options);
-      else toast.warning("Share link copied, but the PDF preview may take longer", options);
+      toast.success(isPdf ? "Share link copied; PDF preview is warming in the background" : "Share link copied");
+      if (isPdf) void preparePdfSharePreview(file._id).catch(() => {});
     } catch {
-      toast.error("Failed to copy share link", toastId !== undefined ? { id: toastId } : undefined);
+      toast.error("Failed to copy share link");
     }
   };
 

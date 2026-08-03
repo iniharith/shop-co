@@ -102,23 +102,12 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
        return;
     }
 
-    const toastId = isPdf ? toast.loading("Preparing PDF preview...") : undefined;
-    let previewReady = true;
-    if (isPdf) {
-      try {
-        await preparePdfSharePreview(realFileId);
-      } catch {
-        previewReady = false;
-      }
-    }
-
     try {
       await navigator.clipboard.writeText(buildFileShareUrl(window.location.origin, realFileId, isPdf));
-      const options = toastId !== undefined ? { id: toastId } : undefined;
-      if (previewReady) toast.success("Share link copied with preview ready", options);
-      else toast.warning("Share link copied, but the PDF preview may take longer", options);
+      toast.success(isPdf ? "Share link copied; PDF preview is warming in the background" : "Share link copied");
+      if (isPdf) void preparePdfSharePreview(realFileId).catch(() => {});
     } catch {
-      toast.error("Failed to copy share link", toastId !== undefined ? { id: toastId } : undefined);
+      toast.error("Failed to copy share link");
     }
   };
 
