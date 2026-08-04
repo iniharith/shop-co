@@ -13,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Project, ProjectFile, ProjectFolder } from "@/api/projects";
 import { createProjectShare } from "@/api/projects";
-import { useCreateProjectFolder, useDeleteProject, useDeleteProjectFile, useDeleteProjectFolder, useProject, useRenameProjectFolder, useUpdateProject, useUpdateProjectFile, useUploadProjectFile } from "@/hooks/useProjects";
+import { useCreateProjectFolder, useDeleteProject, useDeleteProjectFile, useDeleteProjectFolder, useMoveProjectFolders, useProject, useRenameProjectFolder, useUpdateProject, useUpdateProjectFile, useUploadProjectFile } from "@/hooks/useProjects";
 import { useSession } from "next-auth/react";
 import { useUsers } from "@/hooks/useUsers";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -43,6 +43,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const createFolderMutation = useCreateProjectFolder(id);
   const renameFolderMutation = useRenameProjectFolder(id);
   const deleteFolderMutation = useDeleteProjectFolder(id);
+  const moveFolderMutation = useMoveProjectFolders(id);
   const updateFileMutation = useUpdateProjectFile(id);
   const { data: usersData } = useUsers();
   const [title, setTitle] = useState("");
@@ -55,8 +56,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [gridSize, setGridSize] = useState<4 | 6>(4);
   const [previewFile, setPreviewFile] = useState<ProjectFile | null>(null);
   const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(new Set());
+  const [selectedFolderIds, setSelectedFolderIds] = useState<Set<string>>(new Set());
   const [draggedFileIds, setDraggedFileIds] = useState<string[]>([]);
+  const [draggedFolderIds, setDraggedFolderIds] = useState<string[]>([]);
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   const lastSelectedFileIdRef = useRef<string | null>(null);
+  const lastSelectedFolderIdRef = useRef<string | null>(null);
   const [uploadFolderId, setUploadFolderId] = useState<string>("");
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [renamingItemId, setRenamingItemId] = useState<string | null>(null);
@@ -74,7 +79,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     const handleKeyDown = (e: globalThis.KeyboardEvent) => {
       // F2 - Rename selected file or folder
-      if (e.key === "F2" && selectedFileIds.size === 1) {
+      if (e.key === "F2" && selectedFolderIds.size === 1 && selectedFileIds.size === 0) {
+        e.preventDefault();
+        const folder = project?.folders.find(f => f._id === [...selectedFolderIds][0]);
+        if (folder) startRenamingFolder(folder);
+      } else if (e.key === "F2" && selectedFileIds.size === 1) {
         e.preventDefault();
         const fileId = [...selectedFileIds][0];
         const file = project?.files.find(f => f._id === fileId);
@@ -83,18 +92,23 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           setRenamingValue(file.originalName);
         }
       }
-      // Delete - Delete selected files
-      if (e.key === "Delete" && selectedFileIds.size > 0) {
+      // Delete - Delete selected folders and/or files
+      if (e.key === "Delete" && (selectedFolderIds.size > 0 || selectedFileIds.size > 0)) {
         e.preventDefault();
-        void deleteFiles([...selectedFileIds]);
+        if (selectedFolderIds.size > 0) void deleteFolders([...selectedFolderIds]);
+        if (selectedFileIds.size > 0) void deleteFiles([...selectedFileIds]);
       }
-      // Ctrl+A - Select all files in current folder
+      // Ctrl+A - Select all folders and files in current folder
       if (e.ctrlKey && e.key === "a" && containerRef.current?.contains(document.activeElement)) {
         e.preventDefault();
         const visibleFiles = selectedFolderId === null 
           ? project?.files.filter(file => !file.folderId) || []
           : project?.files.filter(file => file.folderId === selectedFolderId) || [];
+        const visibleFolders = (project?.folders || []).filter(f =>
+          selectedFolderId === null ? !f.parentFolderId : f.parentFolderId === selectedFolderId
+        );
         setSelectedFileIds(new Set(visibleFiles.map(f => f._id)));
+        setSelectedFolderIds(new Set(visibleFolders.map(f => f._id)));
       }
       // Escape - Clear selection or cancel rename
       if (e.key === "Escape") {
@@ -104,13 +118,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         } else {
           setSelectedFileIds(new Set());
           lastSelectedFileIdRef.current = null;
+          setSelectedFolderIds(new Set());
+          lastSelectedFolderIdRef.current = null;
         }
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [selectedFileIds, project, selectedFolderId, renamingItemId]);
+  }, [selectedFileIds, selectedFolderIds, project, selectedFolderId, renamingItemId]);
 
   const saveProject = async () => {
     if (!title.trim()) return toast.error("Project title is required");
@@ -313,6 +329,47 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const moveFolders = async (folderIds: string[], parentFolderId: string | null) => {
+    try {
+      await moveFolderMutation.mutateAsync({ folderIds, parentFolderId });
+      setSelectedFolderIds(new Set());
+      lastSelectedFolderIdRef.current = null;
+      toast.success(`Moved ${folderIds.length} folder${folderIds.length === 1 ? "" : "s"}`);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to move folders");
+    }
+  };
+
+  const deleteFolders = async (folderIds: string[]) => {
+    const childCount = (project?.folders || []).filter(f => folderIds.includes(f.parentFolderId || "")).length;
+    if (!confirm(`Delete ${folderIds.length} selected folder${folderIds.length === 1 ? "" : "s"}${childCount > 0 ? ` and their ${childCount} subfolder(s)` : ""}? Files will be kept in the project root.`)) return;
+    try {
+      for (const folderId of folderIds) await deleteFolderMutation.mutateAsync(folderId);
+      if (selectedFolderId && folderIds.includes(selectedFolderId)) setSelectedFolderId(null);
+      setSelectedFolderIds(new Set());
+      lastSelectedFolderIdRef.current = null;
+      toast.success(`Deleted ${folderIds.length} folder${folderIds.length === 1 ? "" : "s"}`);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to delete folders");
+    }
+  };
+
+  const selectFolderRange = (folderId: string, orderedFolderIds: string[]) => {
+    setSelectedFolderIds(current => {
+      const next = new Set(current);
+      const anchorId = lastSelectedFolderIdRef.current;
+      if (anchorId && orderedFolderIds.includes(anchorId)) {
+        const start = orderedFolderIds.indexOf(anchorId);
+        const end = orderedFolderIds.indexOf(folderId);
+        orderedFolderIds.slice(Math.min(start, end), Math.max(start, end) + 1).forEach(id => next.add(id));
+      } else {
+        next.has(folderId) ? next.delete(folderId) : next.add(folderId);
+      }
+      return next;
+    });
+    lastSelectedFolderIdRef.current = folderId;
+  };
+
   const selectFileRange = (fileId: string, orderedFileIds: string[]) => {
     setSelectedFileIds(current => {
       const next = new Set(current);
@@ -377,8 +434,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const hasActiveUploads = Object.keys(uploadProgress).length > 0 || uploadMutation.isPending;
   const visibleFiles = selectedFolderId === null ? project.files.filter(file => !file.folderId) : project.files.filter(file => file.folderId === selectedFolderId);
   const allVisibleFilesSelected = visibleFiles.length > 0 && visibleFiles.every(file => selectedFileIds.has(file._id));
-
-  // Helper functions for nested folders
+  const visibleFolders = selectedFolderId === null ? project.folders.filter(f => !f.parentFolderId) : project.folders.filter(f => f.parentFolderId === selectedFolderId);
+  const allVisibleFoldersSelected = visibleFolders.length > 0 && visibleFolders.every(folder => selectedFolderIds.has(folder._id));  // Helper functions for nested folders
   const getFolderPath = (folderId: string | null): Array<{ _id: string | null; name: string }> => {
     if (folderId === null) return [{ _id: null, name: "Project root" }];
     const path: Array<{ _id: string | null; name: string }> = [{ _id: null, name: "Project root" }];
@@ -570,7 +627,22 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             {selectedFolderId !== null && (
               <div
                 onClick={() => setSelectedFolderId(null)}
-                className="group relative flex cursor-pointer flex-col items-start rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-3 hover:bg-primary/10 transition-colors"
+                onDragEnter={event => { event.preventDefault(); setDragOverFolderId("ROOT"); }}
+                onDragOver={event => event.preventDefault()}
+                onDragLeave={event => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                    setDragOverFolderId(current => current === "ROOT" ? null : current);
+                  }
+                }}
+                onDrop={event => {
+                  event.preventDefault();
+                  setDragOverFolderId(null);
+                  if (draggedFolderIds.length > 0) { void moveFolders(draggedFolderIds, null); setDraggedFolderIds([]); }
+                  if (draggedFileIds.length > 0) { void moveFiles(draggedFileIds, null); setDraggedFileIds([]); }
+                }}
+                className={`group relative flex cursor-pointer flex-col items-start rounded-2xl border border-dashed p-4 transition-colors ${
+                  dragOverFolderId === "ROOT" ? "border-primary bg-primary/10" : "border-primary/40 bg-primary/5 hover:bg-primary/10"
+                }`}
               >
                 <div className="flex items-center gap-2">
                   <FolderOpen className="size-7 text-primary" />
@@ -581,31 +653,68 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             )}
 
             {/* Render Current Level Folders */}
-            {(selectedFolderId === null ? getRootFolders() : getSubfolders(selectedFolderId)).map(folder => {
+            {visibleFolders.map(folder => {
               const isActive = selectedFolderId === folder._id;
+              const isSelected = selectedFolderIds.has(folder._id);
               const subfolderCount = getSubfolders(folder._id).length;
               const fileCount = project.files.filter(f => f.folderId === folder._id).length;
               const thumbnails = getFolderThumbnails(folder._id);
               const isRenaming = renamingItemId === `folder-${folder._id}`;
+              const visibleFolderIds = visibleFolders.map(f => f._id);
 
               return (
                 <ContextMenu key={folder._id}>
                   <ContextMenuTrigger>
                     <div
+                      draggable
+                      onDragStart={() => setDraggedFolderIds(isSelected ? [...selectedFolderIds] : [folder._id])}
+                      onDragEnd={() => { setDraggedFolderIds([]); setDragOverFolderId(null); }}
+                      onDragEnter={event => { event.preventDefault(); setDragOverFolderId(folder._id); }}
                       onDragOver={event => event.preventDefault()}
+                      onDragLeave={event => {
+                        if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                          setDragOverFolderId(current => current === folder._id ? null : current);
+                        }
+                      }}
                       onDrop={event => {
                         event.preventDefault();
-                        void moveFiles(draggedFileIds, folder._id);
-                        setDraggedFileIds([]);
+                        setDragOverFolderId(null);
+                        if (draggedFolderIds.length > 0) {
+                          const targetIsDragged = draggedFolderIds.includes(folder._id);
+                          const targetIsDraggedChild = draggedFolderIds.some(id =>
+                            project.folders.some(f => f.parentFolderId === id && f._id === folder._id)
+                          );
+                          if (!targetIsDragged && !targetIsDraggedChild) {
+                            void moveFolders(draggedFolderIds, folder._id);
+                          }
+                          setDraggedFolderIds([]);
+                        }
+                        if (draggedFileIds.length > 0) {
+                          void moveFiles(draggedFileIds, folder._id);
+                          setDraggedFileIds([]);
+                        }
                       }}
                       onDoubleClick={() => setSelectedFolderId(folder._id)}
-                      onClick={() => setSelectedFolderId(folder._id)}
-                      className={`group relative rounded-2xl border p-3 transition-colors cursor-pointer ${
-                        isActive ? "border-primary bg-primary/10" : "border-border/60 bg-card/50 hover:border-primary/50"
+                      onClick={event => {
+                        if (event.shiftKey) {
+                          event.preventDefault();
+                          selectFolderRange(folder._id, visibleFolderIds);
+                        } else {
+                          setSelectedFolderId(folder._id);
+                        }
+                      }}
+                      className={`group relative rounded-2xl border p-4 transition-colors cursor-pointer ${
+                        isSelected
+                          ? "border-primary bg-primary/10"
+                          : isActive
+                            ? "border-primary bg-primary/10"
+                            : dragOverFolderId === folder._id
+                              ? "border-primary border-dashed bg-primary/10"
+                              : "border-border/60 bg-card/50 hover:border-primary/50"
                       }`}
                     >
                        {/* Folder Thumbnails (Windows 11 Preview) */}
-                       <div className="mb-2 relative flex h-20 w-full items-center justify-center overflow-hidden rounded-xl bg-background/50 p-1">
+                       <div className="mb-2 relative flex h-28 w-full items-center justify-center overflow-hidden rounded-xl bg-background/50 p-2">
                          {thumbnails.length > 0 ? (
                            <div className={`grid h-full w-full gap-1 ${thumbnails.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
                              {thumbnails.map((thumb, idx) => (
@@ -619,7 +728,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                              ))}
                            </div>
                          ) : (
-                           <Folder className="size-10 text-primary/80" />
+                           <Folder className="size-12 text-primary/80" />
                          )}
                        </div>
 
@@ -678,17 +787,21 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             })}
           </div>
 
-          {selectedFileIds.size > 0 && (
+          {(selectedFolderIds.size > 0 || selectedFileIds.size > 0) && (
             <div className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 p-3">
-              <span className="mr-1 text-sm font-semibold">{selectedFileIds.size} selected</span>
-              <select defaultValue="" onChange={event => { if (event.target.value !== "") void moveFiles([...selectedFileIds], event.target.value === "root" ? null : event.target.value); event.target.value = ""; }} className="h-8 rounded-md border bg-background px-2 text-xs">
+              <span className="mr-1 text-sm font-semibold">
+                {selectedFolderIds.size > 0 && `${selectedFolderIds.size} folder${selectedFolderIds.size === 1 ? "" : "s"}`}
+                {selectedFolderIds.size > 0 && selectedFileIds.size > 0 && " · "}
+                {selectedFileIds.size > 0 && `${selectedFileIds.size} file${selectedFileIds.size === 1 ? "" : "s"}`} selected
+              </span>
+              <select defaultValue="" onChange={event => { if (event.target.value !== "") { const target = event.target.value === "root" ? null : event.target.value; if (selectedFolderIds.size > 0) void moveFolders([...selectedFolderIds], target); if (selectedFileIds.size > 0) void moveFiles([...selectedFileIds], target); event.target.value = ""; } }} className="h-8 rounded-md border bg-background px-2 text-xs">
                 <option value="" disabled>Move to folder...</option>
                 <option value="root">Project root</option>
-                {project.folders.map(folder => <option key={folder._id} value={folder._id}>{folder.name}</option>)}
+                {project.folders.filter(folder => !selectedFolderIds.has(folder._id)).map(folder => <option key={folder._id} value={folder._id}>{folder.name}</option>)}
               </select>
-              {selectedFileIds.size === 1 && <Button type="button" size="sm" variant="outline" onClick={() => { const file = project.files.find(item => item._id === [...selectedFileIds][0]); if (file) void editFile(file); }}>Rename / notes</Button>}
-              <Button type="button" size="sm" variant="destructive" onClick={() => void deleteFiles([...selectedFileIds])}>Delete</Button>
-              <Button type="button" size="sm" variant="ghost" onClick={() => { setSelectedFileIds(new Set()); lastSelectedFileIdRef.current = null; }}>Clear</Button>
+              {selectedFileIds.size === 1 && selectedFolderIds.size === 0 && <Button type="button" size="sm" variant="outline" onClick={() => { const file = project.files.find(item => item._id === [...selectedFileIds][0]); if (file) void editFile(file); }}>Rename / notes</Button>}
+              <Button type="button" size="sm" variant="destructive" onClick={() => { if (selectedFolderIds.size > 0) void deleteFolders([...selectedFolderIds]); if (selectedFileIds.size > 0) void deleteFiles([...selectedFileIds]); }}>Delete</Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => { setSelectedFileIds(new Set()); lastSelectedFileIdRef.current = null; setSelectedFolderIds(new Set()); lastSelectedFolderIdRef.current = null; }}>Clear</Button>
             </div>
           )}
 

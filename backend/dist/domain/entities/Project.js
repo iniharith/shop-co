@@ -52,6 +52,7 @@ const ProjectFileSchema = new mongoose_1.Schema({
 });
 const ProjectFolderSchema = new mongoose_1.Schema({
     name: { type: String, required: true, trim: true, maxlength: 120 },
+    parentFolderId: { type: String, default: null },
 });
 const ProjectSchema = new mongoose_1.Schema({
     title: { type: String, required: true, trim: true, maxlength: 160 },

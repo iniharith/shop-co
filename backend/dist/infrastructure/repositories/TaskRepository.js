@@ -190,7 +190,7 @@ class TaskRepository {
                 const updated = yield Task_1.Task.findOneAndUpdate(Object.assign({ _id: id, status: current.status }, (currentIsDone
                     ? { isDone: true }
                     : { $or: [{ isDone: false }, { isDone: null }, { isDone: { $exists: false } }] })), {
-                    $set: Object.assign(Object.assign({}, updateData), { statusUpdatedAt: changedAt }),
+                    $set: Object.assign(Object.assign({}, updateData), (toStatus !== current.status ? { statusUpdatedAt: changedAt } : {})),
                     $push: {
                         statusHistory: {
                             fromStatus: current.status,

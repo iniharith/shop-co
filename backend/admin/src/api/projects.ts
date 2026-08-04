@@ -74,6 +74,11 @@ export const deleteProjectFolder = async (token: string, projectId: string, fold
   return response.data;
 };
 
+export const moveProjectFolders = async (token: string, projectId: string, folderIds: string[], parentFolderId?: string | null) => {
+  const response = await AxiosInstance(token).post(`/api/projects/${projectId}/folders/move`, { folderIds, parentFolderId });
+  return response.data;
+};
+
 export const updateProjectFile = async (token: string, projectId: string, fileId: string, data: { originalName?: string; notes?: string; folderId?: string | null }) => {
   const response = await AxiosInstance(token).patch(`/api/projects/${projectId}/files/${fileId}`, data);
   return response.data;

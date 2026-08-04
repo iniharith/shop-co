@@ -323,6 +323,76 @@ router.patch(
   })
 );
 
+router.post(
+  '/:id/folders/move',
+  asyncHandler(async (req: Request, res: Response) => {
+    const folderIds = Array.isArray(req.body.folderIds) ? req.body.folderIds.map(String) : [];
+    const targetParentId = req.body.parentFolderId || null;
+
+    if (folderIds.length === 0) {
+      res.status(400).json({ success: false, message: 'No folders to move' });
+      return;
+    }
+
+    const project = await Project.findOne({ _id: req.params.id, deletingAt: null });
+    if (!project) {
+      res.status(404).json({ success: false, message: 'Project not found' });
+      return;
+    }
+
+    // Validate each folder exists and cannot be moved into itself
+    for (const folderId of folderIds) {
+      if (!project.folders.some(f => f._id?.toString() === folderId)) {
+        res.status(400).json({ success: false, message: 'Folder not found in this project' });
+        return;
+      }
+      if (targetParentId === folderId) {
+        res.status(400).json({ success: false, message: 'Cannot move folder into itself' });
+        return;
+      }
+    }
+
+    // Validate new parent exists
+    if (targetParentId && !project.folders.some(f => f._id?.toString() === targetParentId)) {
+      res.status(400).json({ success: false, message: 'Parent folder not found in this project' });
+      return;
+    }
+
+    // Prevent moving folders into their own subfolders (circular reference)
+    const childIds = project.folders
+      .filter(f => folderIds.includes(f.parentFolderId || ''))
+      .map(f => f._id?.toString());
+    if (targetParentId && childIds.includes(targetParentId)) {
+      res.status(400).json({ success: false, message: 'Cannot move folder into its own subfolder' });
+      return;
+    }
+
+    // Check nesting level (max 2 levels)
+    if (targetParentId) {
+      const newParent = project.folders.find(f => f._id?.toString() === targetParentId);
+      if (newParent?.parentFolderId) {
+        res.status(400).json({ success: false, message: 'Maximum folder nesting depth (2 levels) reached' });
+        return;
+      }
+
+      // Folders that have subfolders cannot be moved to level 2
+      const hasChildren = project.folders.some(f => folderIds.includes(f.parentFolderId || ''));
+      if (hasChildren) {
+        res.status(400).json({ success: false, message: 'Cannot move folder with subfolders to level 2' });
+        return;
+      }
+    }
+
+    for (const folderId of folderIds) {
+      const folder = project.folders.find(f => f._id?.toString() === folderId);
+      if (folder) folder.parentFolderId = targetParentId;
+    }
+
+    await project.save();
+    res.json({ success: true, data: await withSignedFileUrls(project) });
+  })
+);
+
 router.delete(
   '/:id/folders/:folderId',
   asyncHandler(async (req: Request, res: Response) => {
