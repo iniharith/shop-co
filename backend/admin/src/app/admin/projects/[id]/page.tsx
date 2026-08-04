@@ -649,24 +649,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
-          {/* Hidden Upload Area - Keep Drag & Drop Functionality */}
-          <div
-            ref={containerRef}
-            onDragEnter={event => { event.preventDefault(); setDragActive(true); }}
-            onDragOver={event => event.preventDefault()}
-            onDragLeave={event => { if (event.currentTarget === event.target) setDragActive(false); }}
-            onDrop={handleDrop}
-            className={`${dragActive ? "fixed inset-0 z-50 flex items-center justify-center bg-primary/20 backdrop-blur-sm" : "hidden"}`}
-          >
-            {dragActive && (
-              <div className="rounded-3xl border-4 border-dashed border-primary bg-background/95 p-12 text-center shadow-2xl">
-                <UploadCloud className="mx-auto size-16 text-primary" />
-                <p className="mt-4 text-xl font-bold">Drop files to upload</p>
-                <p className="mt-2 text-sm text-muted-foreground">Release to upload to {selectedFolderId ? project.folders.find(f => f._id === selectedFolderId)?.name : "Project root"}</p>
-              </div>
-            )}
-          </div>
-          
+          {/* Hidden File Input */}
           <input
             ref={inputRef}
             type="file"
@@ -679,7 +662,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           />
 
           {activeUploads.length > 0 && (
-            <div className="mt-5 space-y-3 rounded-2xl border border-white/10 bg-card/40 p-4">
+            <div className="mb-5 space-y-3 rounded-2xl border border-white/10 bg-card/40 p-4">
               {activeUploads.map(([name, progress]) => (
                 <div key={name}>
                   <div className="mb-2 flex justify-between gap-4 text-xs"><span className="truncate">{name.split("-").slice(0, -2).join("-")}</span><span>{progress}%</span></div>
@@ -688,6 +671,36 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               ))}
             </div>
           )}
+
+          {/* Drag and Drop Area - Wraps entire files section like Artwork Manager */}
+          <div
+            ref={containerRef}
+            onDragEnter={event => { 
+              event.preventDefault(); 
+              if (Array.from(event.dataTransfer.types).includes("Files")) setDragActive(true); 
+            }}
+            onDragOver={event => { 
+              event.preventDefault(); 
+              if (Array.from(event.dataTransfer.types).includes("Files")) setDragActive(true); 
+            }}
+            onDragLeave={event => { 
+              event.preventDefault();
+              event.stopPropagation();
+              setDragActive(false);
+            }}
+            onDrop={handleDrop}
+            className={`relative transition-colors rounded-xl ${dragActive ? 'bg-primary/5 border-2 border-primary border-dashed p-4' : ''}`}
+          >
+            {dragActive && (
+              <div 
+                className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm rounded-xl"
+                onDragLeave={event => { event.preventDefault(); event.stopPropagation(); setDragActive(false); }}
+              >
+                <p className="text-lg font-bold text-primary flex items-center gap-2 pointer-events-none">
+                  <UploadCloud className="size-6 animate-bounce" /> Drop files to upload to {selectedFolderId ? project.folders.find(f => f._id === selectedFolderId)?.name : "Project root"}
+                </p>
+              </div>
+            )}
 
           {visibleFiles.length > 0 && viewMode === "grid" && (
             <div className={`mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 ${gridSize === 4 ? "xl:grid-cols-4" : "xl:grid-cols-6"}`}>
@@ -825,6 +838,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               })}
             </div>
           )}
+          </div>
         </div>
       </div>
       <Dialog open={!!previewFile} onOpenChange={open => !open && setPreviewFile(null)}>
