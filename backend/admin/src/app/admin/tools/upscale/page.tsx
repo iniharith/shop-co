@@ -44,7 +44,7 @@ export default function ImageUpscalePage() {
   const handleUpscale = async () => {
     if (!sourceFile) return;
     setIsUpscaling(true);
-    const toastId = toast.loading(`AI upscaling ${scale}x (free, local)… this can take a moment`);
+    const toastId = toast.loading(`Upscaling ${scale}x locally… this can take a moment`);
     try {
       const formData = new FormData();
       formData.append("image", sourceFile);
@@ -92,7 +92,7 @@ export default function ImageUpscalePage() {
         <div className="flex items-start justify-between">
           <Heading
             title="Image Upscale ✨"
-            description="Free AI upscaler for low-res customer photos before printing — runs locally, no cost per image"
+            description="High-quality local upscaler for low-res customer photos before printing — no cost per image"
           />
         </div>
         <Separator />

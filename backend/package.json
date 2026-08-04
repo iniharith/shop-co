@@ -5,14 +5,13 @@
     "dev": "nodemon ./src/settings/server.ts",
     "build": "tsc",
     "test": "node --test test/*.test.js",
+    "backfill:task-history": "node ./dist/shared/scripts/backfill-task-status-history.js",
     "start": "node ./dist/settings/server.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1075.0",
     "@aws-sdk/s3-request-presigner": "^3.1075.0",
     "@sentry/node": "^10.69.0",
-    "@tensorflow/tfjs-node": "^4.22.0",
-    "upscaler": "^1.0.0",
     "@types/archiver": "^8.0.0",
     "archiver": "^8.0.0",
     "axios": "^1.18.0",
@@ -34,6 +33,7 @@
     "multer": "^2.2.0",
     "multer-s3": "^3.0.1",
     "node-cron": "^4.2.1",
+    "sharp": "^0.35.3",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {

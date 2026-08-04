@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 async function main() {
-  const uri = "mongodb+srv://Admin_Harith:nutella210620@cluster0.dcoixot.mongodb.net/shop-co?retryWrites=true&w=majority&appName=Kampungcetak";
+  const uri = process.env.MONGO_URI;
+  if (!uri) throw new Error('MONGO_URI is required');
   await mongoose.connect(uri);
 
   try {
@@ -13,4 +14,7 @@ async function main() {
   }
 }
 
-main().catch(console.error);
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

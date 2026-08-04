@@ -31,7 +31,7 @@ const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
             family: 4, // Force IPv4 to bypass dual-stack DNS issues
             serverSelectionTimeoutMS: 5000,
         });
-        console.log("MongoDB connected 🟢 to ", mongoURI);
+        console.log("MongoDB connected");
     }
     catch (err) {
         console.error("MongoDB connection error 🔴:", err);

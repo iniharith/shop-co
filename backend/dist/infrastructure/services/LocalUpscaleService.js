@@ -8,56 +8,51 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.upscaleImageLocally = void 0;
+exports.upscaleImageLocally = exports.UpscaleBusyError = void 0;
 /**
  * Coded by Harith
  * Kampungcetak ®
  *
- * FREE image upscaler — no API key, no signup, no per-image cost.
- * Uses UpscalerJS (open-source, MIT licensed), running on TensorFlow.js's
- * Node.js CPU backend, entirely on your own server. Nothing is sent to any
- * third party; the model runs locally and downloads its (free) pretrained
- * weights once on first use, then caches them.
- *
- * Setup required: NONE beyond `npm install` (already added to package.json).
- * First upscale call will be slower as it downloads model weights (~a few
- * MB) into node_modules; every call after that is fast to start.
+ * Local image upscaler. Sharp's Lanczos resampling keeps processing on the
+ * server without TensorFlow's vulnerable native installer dependency chain.
  */
-let tf = null;
-let Upscaler = null;
-const loadDeps = () => {
-    if (!tf) {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        tf = require('@tensorflow/tfjs-node');
-    }
-    if (!Upscaler) {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        Upscaler = require('upscaler/node');
-    }
-};
-let upscalerInstance = null;
-const getUpscaler = () => {
-    if (!upscalerInstance) {
-        upscalerInstance = new Upscaler();
-    }
-    return upscalerInstance;
-};
+const sharp_1 = __importDefault(require("sharp"));
+const MAX_INPUT_PIXELS = 20000000;
+const MAX_OUTPUT_PIXELS = 12000000;
+const MAX_OUTPUT_BYTES = 25 * 1024 * 1024;
+let activeUpscales = 0;
+class UpscaleBusyError extends Error {
+}
+exports.UpscaleBusyError = UpscaleBusyError;
 const upscaleImageLocally = (_a) => __awaiter(void 0, [_a], void 0, function* ({ inputBuffer, passes = 1, }) {
-    loadDeps();
-    const upscaler = getUpscaler();
-    let tensor = tf.node.decodeImage(inputBuffer, 3);
+    if (activeUpscales >= 1)
+        throw new UpscaleBusyError('The local upscaler is busy');
+    activeUpscales += 1;
     try {
-        for (let i = 0; i < passes; i++) {
-            const upscaledTensor = (yield upscaler.upscale(tensor, { output: 'tensor' }));
-            tensor.dispose();
-            tensor = upscaledTensor;
+        const image = (0, sharp_1.default)(inputBuffer, { limitInputPixels: MAX_INPUT_PIXELS, failOn: 'warning' });
+        const metadata = yield image.metadata();
+        if (!metadata.width || !metadata.height)
+            throw new Error('Image dimensions could not be read');
+        const scale = passes === 2 ? 4 : 2;
+        const width = metadata.width * scale;
+        const height = metadata.height * scale;
+        if (width * height > MAX_OUTPUT_PIXELS) {
+            throw new Error('Upscaled image would exceed the safe pixel limit');
         }
-        const pngBytes = yield tf.node.encodePng(tensor);
-        return Buffer.from(pngBytes);
+        const output = yield image
+            .resize({ width, height, fit: 'fill', kernel: sharp_1.default.kernel.lanczos3 })
+            .png({ compressionLevel: 9 })
+            .toBuffer();
+        if (output.length > MAX_OUTPUT_BYTES)
+            throw new Error('Upscaled image exceeds the safe output size');
+        return output;
     }
     finally {
-        tensor.dispose();
+        activeUpscales -= 1;
     }
 });
 exports.upscaleImageLocally = upscaleImageLocally;

@@ -17,7 +17,10 @@ const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        yield mongoose_1.default.connect(process.env.MONGO_URI || 'mongodb+srv://Admin_Harith:nutella210620@cluster0.dcoixot.mongodb.net/shop-co?retryWrites=true&w=majority&appName=Kampungcetak');
+        const mongoUri = process.env.MONGO_URI;
+        if (!mongoUri)
+            throw new Error('MONGO_URI is required');
+        yield mongoose_1.default.connect(mongoUri);
         console.log('Connected');
         const Task = mongoose_1.default.connection.db.collection('tasks');
         const FileUpload = mongoose_1.default.connection.db.collection('fileuploads');
@@ -47,7 +50,11 @@ function run() {
             }
         }
         console.log(`Finished. Fixed ${fixedCount} tasks.`);
-        process.exit(0);
+        yield mongoose_1.default.disconnect();
     });
 }
-run();
+run().catch((error) => __awaiter(void 0, void 0, void 0, function* () {
+    console.error(error instanceof Error ? error.message : error);
+    yield mongoose_1.default.disconnect().catch(() => undefined);
+    process.exitCode = 1;
+}));

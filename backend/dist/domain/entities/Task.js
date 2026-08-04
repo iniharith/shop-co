@@ -60,6 +60,7 @@ const TaskStatusTransitionSchema = new mongoose_1.Schema({
     fromIsDone: { type: Boolean, required: true },
     toIsDone: { type: Boolean, required: true },
     changedAt: { type: Date, required: true },
+    estimated: { type: Boolean, default: false },
 }, { _id: false });
 const TaskSchema = new mongoose_1.Schema({
     title: { type: String, required: true },

@@ -6,6 +6,7 @@ interface StatusTransitionLike {
   fromIsDone?: boolean;
   toIsDone?: boolean;
   changedAt?: Date | string;
+  estimated?: boolean;
 }
 
 export interface CompletionTaskLike {
@@ -42,20 +43,24 @@ export function aggregateCompletionAnalytics(
   let legacyEstimatedCompletedInRange = 0;
 
   for (const task of tasks) {
-    const hasHistory = Array.isArray(task.statusHistory) && task.statusHistory.length > 0;
+    const completionTransitions = (task.statusHistory || [])
+      .filter(transition =>
+        transition.changedAt &&
+        isComplete(transition.toStatus, transition.toIsDone) &&
+        !isComplete(transition.fromStatus, transition.fromIsDone),
+      )
+      .map(transition => ({ transition, date: new Date(transition.changedAt!) }))
+      .filter(item => !Number.isNaN(item.date.getTime()))
+      .sort((left, right) => left.date.getTime() - right.date.getTime());
+    const historicalCompletion = completionTransitions.find(item => !item.transition.estimated);
+    const estimatedCompletion = completionTransitions[0];
+    const hasHistoricalCompletion = Boolean(historicalCompletion);
     let completedAt: Date | null = null;
 
-    if (hasHistory) {
-      const firstCompletion = task.statusHistory!
-        .filter(transition =>
-          transition.changedAt &&
-          isComplete(transition.toStatus, transition.toIsDone) &&
-          !isComplete(transition.fromStatus, transition.fromIsDone),
-        )
-        .map(transition => new Date(transition.changedAt!))
-        .filter(date => !Number.isNaN(date.getTime()))
-        .sort((left, right) => left.getTime() - right.getTime())[0];
-      completedAt = firstCompletion || null;
+    if (historicalCompletion) {
+      completedAt = historicalCompletion.date;
+    } else if (estimatedCompletion) {
+      completedAt = estimatedCompletion.date;
     } else if (isComplete(task.status, task.isDone) && task.statusUpdatedAt) {
       const fallbackDate = new Date(task.statusUpdatedAt);
       completedAt = Number.isNaN(fallbackDate.getTime()) ? null : fallbackDate;
@@ -63,7 +68,7 @@ export function aggregateCompletionAnalytics(
 
     if (!completedAt || completedAt < from || completedAt > to) continue;
 
-    if (hasHistory) historicalCompletedInRange += 1;
+    if (hasHistoricalCompletion) historicalCompletedInRange += 1;
     else legacyEstimatedCompletedInRange += 1;
     const key = dateKey(completedAt, timezoneOffsetHours);
     completedByDate.set(key, (completedByDate.get(key) || 0) + 1);

@@ -4,7 +4,7 @@
  */
 ﻿import mongoose from 'mongoose';
 
-const uri = 'mongodb://Admin_Harith:nutella210620@ac-ygpaslc-shard-00-00.dcoixot.mongodb.net:27017,ac-ygpaslc-shard-00-01.dcoixot.mongodb.net:27017,ac-ygpaslc-shard-00-02.dcoixot.mongodb.net:27017/shop-co?ssl=true&replicaSet=atlas-ygpaslc-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Kampungcetak';
+const uri = process.env.MONGO_URI;
 
 const ProductSchema = new mongoose.Schema({
     name: { type: String, required: true },
@@ -30,6 +30,7 @@ const names = [
 ];
 
 async function seed() {
+    if (!uri) throw new Error('MONGO_URI is required');
     await mongoose.connect(uri);
     console.log('Connected to DB');
     
@@ -52,4 +53,7 @@ async function seed() {
     await mongoose.disconnect();
 }
 
-seed().catch(console.error);
+seed().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+});

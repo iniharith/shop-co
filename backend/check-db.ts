@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const MONGO_URI = "mongodb+srv://Admin_Harith:nutella210620@cluster0.dcoixot.mongodb.net/shop-co?retryWrites=true&w=majority&appName=Kampungcetak";
+const MONGO_URI = process.env.MONGO_URI;
 
 const TaskSchema = new mongoose.Schema({
   title: String,
@@ -22,6 +22,7 @@ const TaskSchema = new mongoose.Schema({
 const Task = mongoose.models.Task || mongoose.model('Task', TaskSchema);
 
 async function checkTasks() {
+  if (!MONGO_URI) throw new Error('MONGO_URI is required');
   await mongoose.connect(MONGO_URI);
   console.log("Connected to MongoDB");
   
@@ -47,4 +48,7 @@ async function checkTasks() {
   await mongoose.disconnect();
 }
 
-checkTasks().catch(console.error);
+checkTasks().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

@@ -13,7 +13,7 @@ const connectDB = async () => {
             authSource: "admin",
         });
 
-        console.log("MongoDB connected 🟢 to ", mongoURI);
+        console.log("MongoDB connected");
     } catch (err) {
         console.error("MongoDB connection error 🔴:", err);
         process.exit(1);

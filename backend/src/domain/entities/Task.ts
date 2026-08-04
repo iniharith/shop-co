@@ -27,6 +27,7 @@ export interface ITaskStatusTransition {
   fromIsDone: boolean;
   toIsDone: boolean;
   changedAt: Date;
+  estimated?: boolean;
 }
 
 export interface ITask extends Document {
@@ -72,6 +73,7 @@ const TaskStatusTransitionSchema = new Schema<ITaskStatusTransition>({
   fromIsDone: { type: Boolean, required: true },
   toIsDone: { type: Boolean, required: true },
   changedAt: { type: Date, required: true },
+  estimated: { type: Boolean, default: false },
 }, { _id: false });
 
 const TaskSchema = new Schema<ITask>(

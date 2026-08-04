@@ -51,3 +51,21 @@ test('records done-state completion and excludes events outside the range', () =
   assert.equal(result.completedInRange, 0);
   assert.equal(result.avgCompletionHours, null);
 });
+
+test('keeps backfilled completion snapshots classified as estimated', () => {
+  const result = aggregateCompletionAnalytics([{
+    createdAt: '2026-07-01T00:00:00.000Z',
+    status: 'SHIPPED',
+    statusHistory: [{
+      fromStatus: null,
+      toStatus: 'SHIPPED',
+      fromIsDone: false,
+      toIsDone: false,
+      changedAt: '2026-08-02T00:00:00.000Z',
+      estimated: true,
+    }],
+  }], new Date('2026-08-01T00:00:00.000Z'), new Date('2026-08-03T00:00:00.000Z'));
+
+  assert.equal(result.historicalCompletedInRange, 0);
+  assert.equal(result.legacyEstimatedCompletedInRange, 1);
+});

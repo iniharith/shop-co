@@ -6,7 +6,9 @@ const axios = require('axios');
 const mongoose = require('mongoose');
 
 async function run() {
-  await mongoose.connect('mongodb://Admin_Harith:nutella210620@ac-ygpaslc-shard-00-00.dcoixot.mongodb.net:27017,ac-ygpaslc-shard-00-01.dcoixot.mongodb.net:27017,ac-ygpaslc-shard-00-02.dcoixot.mongodb.net:27017/shop-co?ssl=true&replicaSet=atlas-ygpaslc-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Kampungcetak');
+  const mongoUri = process.env.MONGO_URI;
+  if (!mongoUri) throw new Error('MONGO_URI is required');
+  await mongoose.connect(mongoUri);
   console.log("connected");
   
   const order = await mongoose.connection.collection('orders').findOne({});
@@ -26,6 +28,10 @@ async function run() {
      console.log("Error admin.kampungcetak.com:", err.response?.status, err.response?.data || err.message);
   }
   
-  process.exit(0);
+  await mongoose.disconnect();
 }
-run();
+run().catch(async (error) => {
+  console.error(error);
+  await mongoose.disconnect().catch(() => undefined);
+  process.exitCode = 1;
+});

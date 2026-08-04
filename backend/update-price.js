@@ -3,13 +3,15 @@
  * Kampungcetak ®
  */
 const mongoose = require('mongoose');
-const url = 'mongodb://Admin_Harith:nutella210620@ac-ygpaslc-shard-00-00.dcoixot.mongodb.net:27017,ac-ygpaslc-shard-00-01.dcoixot.mongodb.net:27017,ac-ygpaslc-shard-00-02.dcoixot.mongodb.net:27017/shop-co?ssl=true&replicaSet=atlas-ygpaslc-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Kampungcetak';
+const url = process.env.MONGO_URI;
+
+if (!url) throw new Error('MONGO_URI is required');
 
 mongoose.connect(url).then(async () => {
     const res = await mongoose.connection.db.collection('products').updateMany({name: /Business Card/i}, {$set: {price: 15}});
     console.log("Update Result:", res);
-    process.exit(0);
+    await mongoose.disconnect();
 }).catch(e => {
     console.error(e);
-    process.exit(1);
+    process.exitCode = 1;
 });

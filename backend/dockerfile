@@ -1,5 +1,5 @@
 # Use a specific Node version with Alpine for small image size
-FROM node:18-alpine
+FROM node:22-alpine
 
 # Create app directory
 WORKDIR /app
@@ -10,14 +10,17 @@ WORKDIR /app
 # Copy only package.json and package-lock.json first for better caching
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install the exact locked dependency graph, including build tooling.
+RUN npm ci
 
 # Copy the rest of the app files
 COPY . .
 
 # Build the TypeScript project
 RUN npm run build
+
+# Runtime image does not need TypeScript or other development tooling.
+RUN npm prune --omit=dev
 
 # Expose the port your app uses
 EXPOSE 8000

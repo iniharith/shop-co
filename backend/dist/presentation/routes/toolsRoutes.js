@@ -63,10 +63,10 @@ const router = (0, express_1.Router)();
 // processed and handed straight back to the browser as a data URL.
 const upload = (0, multer_1.default)({
     storage: multer_1.default.memoryStorage(),
-    limits: { fileSize: 25 * 1024 * 1024 }, // 25MB
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 });
 // ─── POST /api/tools/upscale ────────────────────────────────
-// FREE AI image upscaler (UpscalerJS, runs locally — no API cost).
+// Local high-quality image upscaler (Sharp/Lanczos, no API cost).
 // Accepts a single image file + desired scale, returns the upscaled
 // image as a base64 data URL for instant preview/download.
 router.post('/upscale', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('sysadmin', 'admin', 'boss'), upload.single('image'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -105,7 +105,11 @@ router.post('/upscale', auth_middileware_1.default, (0, auth_middileware_1.autho
     }
     catch (err) {
         console.error('[Tools/Upscale] Failed:', err.message);
-        res.status(500).json({ success: false, message: 'AI upscale failed. Please try a different image.' });
+        if (err instanceof LocalUpscaleService_1.UpscaleBusyError) {
+            res.status(429).json({ success: false, message: 'The upscaler is busy. Please try again shortly.' });
+            return;
+        }
+        res.status(500).json({ success: false, message: 'Image upscale failed. Please try a different image.' });
     }
 })));
 exports.default = router;

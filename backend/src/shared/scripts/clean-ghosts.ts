@@ -3,7 +3,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 async function run() {
-  await mongoose.connect(process.env.MONGO_URI || 'mongodb+srv://Admin_Harith:nutella210620@cluster0.dcoixot.mongodb.net/shop-co?retryWrites=true&w=majority&appName=Kampungcetak');
+  const mongoUri = process.env.MONGO_URI;
+  if (!mongoUri) throw new Error('MONGO_URI is required');
+
+  await mongoose.connect(mongoUri);
   console.log('Connected');
   
   const Task = mongoose.connection.db!.collection('tasks');
@@ -37,7 +40,11 @@ async function run() {
   }
   
   console.log(`Finished. Fixed ${fixedCount} tasks.`);
-  process.exit(0);
+  await mongoose.disconnect();
 }
 
-run();
+run().catch(async (error) => {
+  console.error(error instanceof Error ? error.message : error);
+  await mongoose.disconnect().catch(() => undefined);
+  process.exitCode = 1;
+});
