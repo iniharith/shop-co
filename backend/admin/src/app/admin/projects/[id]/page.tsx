@@ -717,7 +717,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       }`}
                     >
                        {/* Folder Thumbnails (Windows 11 Preview) */}
-                       <div className="mb-2 relative flex h-32 w-full items-center justify-center overflow-hidden rounded-xl bg-background/50 p-2">
+                       <div className="mb-2 relative flex h-36 w-full items-center justify-center overflow-hidden rounded-xl bg-background/50 p-2">
                          {thumbnails.length > 0 ? (
                            <div className={`grid h-full w-full gap-1 ${thumbnails.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
                              {thumbnails.map((thumb, idx) => (
