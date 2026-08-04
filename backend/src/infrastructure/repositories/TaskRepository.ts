@@ -202,7 +202,12 @@ export class TaskRepository {
             : { $or: [{ isDone: false }, { isDone: null }, { isDone: { $exists: false } }] }),
         },
         {
-          $set: { ...updateData, statusUpdatedAt: changedAt },
+          $set: {
+            ...updateData,
+            // Only bump statusUpdatedAt on a real status change. Toggling
+            // isDone alone must not reorder the task in the board.
+            ...(toStatus !== current.status ? { statusUpdatedAt: changedAt } : {}),
+          },
           $push: {
             statusHistory: {
               fromStatus: current.status,

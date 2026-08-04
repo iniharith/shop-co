@@ -1,6 +1,6 @@
 "use client";
 
-import { DragEvent, use, useEffect, useRef, useState, KeyboardEvent } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronDown, ChevronRight, Download, File, FileImage, Folder, FolderOpen, FolderPlus, Grid3x3, Home, List, Loader2, MoreVertical, Pencil, Save, Share2, Trash2, UploadCloud, Users } from "lucide-react";
@@ -48,6 +48,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dragActive, setDragActive] = useState(false);
+  const dragCounterRef = useRef(0);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [sharing, setSharing] = useState(false);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
@@ -149,11 +150,53 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setDragActive(false);
-    void uploadFiles(Array.from(event.dataTransfer.files));
-  };
+  const uploadFilesRef = useRef<(files: File[]) => void>(() => {});
+  useEffect(() => {
+    uploadFilesRef.current = uploadFiles;
+  });
+
+  // Full-screen drag & drop upload — lights up the whole page while files are dragged in.
+  useEffect(() => {
+    const hasFiles = (e: globalThis.DragEvent) => Array.from(e.dataTransfer.types).includes("Files");
+
+    const handleDragEnter = (e: globalThis.DragEvent) => {
+      e.preventDefault();
+      if (!hasFiles(e)) return;
+      dragCounterRef.current += 1;
+      setDragActive(true);
+    };
+
+    const handleDragOver = (e: globalThis.DragEvent) => {
+      e.preventDefault();
+      if (hasFiles(e)) setDragActive(true);
+    };
+
+    const handleDragLeave = (e: globalThis.DragEvent) => {
+      e.preventDefault();
+      dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+      if (dragCounterRef.current === 0) setDragActive(false);
+    };
+
+    const handleDrop = (e: globalThis.DragEvent) => {
+      e.preventDefault();
+      dragCounterRef.current = 0;
+      setDragActive(false);
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        uploadFilesRef.current(Array.from(e.dataTransfer.files));
+      }
+    };
+
+    window.addEventListener("dragenter", handleDragEnter);
+    window.addEventListener("dragover", handleDragOver);
+    window.addEventListener("dragleave", handleDragLeave);
+    window.addEventListener("drop", handleDrop);
+    return () => {
+      window.removeEventListener("dragenter", handleDragEnter);
+      window.removeEventListener("dragover", handleDragOver);
+      window.removeEventListener("dragleave", handleDragLeave);
+      window.removeEventListener("drop", handleDrop);
+    };
+  }, []);
 
   const deleteFile = async (file: ProjectFile) => {
     if (!confirm(`Delete ${file.originalName}?`)) return;
@@ -672,35 +715,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
-          {/* Drag and Drop Area - Wraps entire files section like Artwork Manager */}
-          <div
-            ref={containerRef}
-            onDragEnter={event => { 
-              event.preventDefault(); 
-              if (Array.from(event.dataTransfer.types).includes("Files")) setDragActive(true); 
-            }}
-            onDragOver={event => { 
-              event.preventDefault(); 
-              if (Array.from(event.dataTransfer.types).includes("Files")) setDragActive(true); 
-            }}
-            onDragLeave={event => { 
-              event.preventDefault();
-              event.stopPropagation();
-              setDragActive(false);
-            }}
-            onDrop={handleDrop}
-            className={`relative transition-colors rounded-xl ${dragActive ? 'bg-primary/5 border-2 border-primary border-dashed p-4' : ''}`}
-          >
-            {dragActive && (
-              <div 
-                className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm rounded-xl"
-                onDragLeave={event => { event.preventDefault(); event.stopPropagation(); setDragActive(false); }}
-              >
-                <p className="text-lg font-bold text-primary flex items-center gap-2 pointer-events-none">
-                  <UploadCloud className="size-6 animate-bounce" /> Drop files to upload to {selectedFolderId ? project.folders.find(f => f._id === selectedFolderId)?.name : "Project root"}
-                </p>
-              </div>
-            )}
+          {/* File section wrapper (drag & drop handled at page level via full-screen overlay) */}
+          <div ref={containerRef} className="relative transition-colors rounded-xl">
 
           {visibleFiles.length > 0 && viewMode === "grid" && (
             <div className={`mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 ${gridSize === 4 ? "xl:grid-cols-4" : "xl:grid-cols-6"}`}>
@@ -847,6 +863,18 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           {previewFile && <img src={previewFile.previewUrl} alt={previewFile.originalName} className="max-h-[85vh] w-full rounded object-contain" />}
         </DialogContent>
       </Dialog>
+
+      {dragActive && (
+        <div className="pointer-events-none fixed inset-0 z-[100] flex items-center justify-center bg-primary/10 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 rounded-3xl border-2 border-dashed border-primary bg-background/85 px-12 py-10 shadow-2xl">
+            <UploadCloud className="size-14 animate-bounce text-primary" />
+            <p className="text-xl font-bold text-primary">Drop files to upload</p>
+            <p className="text-sm text-muted-foreground">
+              to {selectedFolderId ? project.folders.find(f => f._id === selectedFolderId)?.name || "current folder" : "Project root"}
+            </p>
+          </div>
+        </div>
+      )}
     </PageContainer>
   );
 }
