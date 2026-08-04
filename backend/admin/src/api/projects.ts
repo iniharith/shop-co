@@ -16,6 +16,7 @@ export interface ProjectFile {
 export interface ProjectFolder {
   _id: string;
   name: string;
+  parentFolderId?: string;
 }
 
 export interface Project {
@@ -58,8 +59,8 @@ export const deleteProject = async (token: string, id: string) => {
   return response.data;
 };
 
-export const createProjectFolder = async (token: string, projectId: string, name: string) => {
-  const response = await AxiosInstance(token).post(`/api/projects/${projectId}/folders`, { name });
+export const createProjectFolder = async (token: string, projectId: string, name: string, parentFolderId?: string | null) => {
+  const response = await AxiosInstance(token).post(`/api/projects/${projectId}/folders`, { name, parentFolderId });
   return response.data;
 };
 

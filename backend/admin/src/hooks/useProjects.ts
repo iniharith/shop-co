@@ -103,7 +103,7 @@ const useProjectMutation = (id: string, mutationFn: (token: string, variables: a
   });
 };
 
-export const useCreateProjectFolder = (id: string) => useProjectMutation(id, (token, name: string) => createProjectFolder(token, id, name));
+export const useCreateProjectFolder = (id: string) => useProjectMutation(id, (token, { name, parentFolderId }: { name: string; parentFolderId?: string | null }) => createProjectFolder(token, id, name, parentFolderId));
 export const useRenameProjectFolder = (id: string) => useProjectMutation(id, (token, { folderId, name }) => renameProjectFolder(token, id, folderId, name));
 export const useDeleteProjectFolder = (id: string) => useProjectMutation(id, (token, folderId: string) => deleteProjectFolder(token, id, folderId));
 export const useUpdateProjectFile = (id: string) => useProjectMutation(id, (token, { fileId, data }) => updateProjectFile(token, id, fileId, data));

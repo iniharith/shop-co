@@ -20,6 +20,7 @@ export interface IProjectFile {
 export interface IProjectFolder {
   _id?: mongoose.Types.ObjectId;
   name: string;
+  parentFolderId?: string;
 }
 
 export interface IProject extends Document {
@@ -50,6 +51,7 @@ const ProjectFileSchema = new Schema<IProjectFile>({
 
 const ProjectFolderSchema = new Schema<IProjectFolder>({
   name: { type: String, required: true, trim: true, maxlength: 120 },
+  parentFolderId: { type: String, default: null },
 });
 
 const ProjectSchema = new Schema<IProject>(

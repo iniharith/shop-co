@@ -1,9 +1,9 @@
 "use client";
 
-import { DragEvent, use, useEffect, useRef, useState } from "react";
+import { DragEvent, use, useEffect, useRef, useState, KeyboardEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Download, File, FileImage, Folder, FolderPlus, Loader2, MoreVertical, Pencil, Save, Share2, Trash2, UploadCloud, Users } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Download, File, FileImage, Folder, FolderOpen, FolderPlus, Home, Loader2, MoreVertical, Pencil, Save, Share2, Trash2, UploadCloud, Users } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import PageContainer from "@/components/layout/page-container";
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { Project, ProjectFile } from "@/api/projects";
+import { Project, ProjectFile, ProjectFolder } from "@/api/projects";
 import { createProjectShare } from "@/api/projects";
 import { useCreateProjectFolder, useDeleteProject, useDeleteProjectFile, useDeleteProjectFolder, useProject, useRenameProjectFolder, useUpdateProject, useUpdateProjectFile, useUploadProjectFile } from "@/hooks/useProjects";
 import { useSession } from "next-auth/react";
@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { forceDownload } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 
 const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
@@ -56,12 +57,58 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [draggedFileIds, setDraggedFileIds] = useState<string[]>([]);
   const lastSelectedFileIdRef = useRef<string | null>(null);
   const [uploadFolderId, setUploadFolderId] = useState<string>("");
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [renamingItemId, setRenamingItemId] = useState<string | null>(null);
+  const [renamingValue, setRenamingValue] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!project) return;
     setTitle(project.title);
     setDescription(project.description || "");
   }, [project?._id, project?.title, project?.description]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: globalThis.KeyboardEvent) => {
+      // F2 - Rename selected file or folder
+      if (e.key === "F2" && selectedFileIds.size === 1) {
+        e.preventDefault();
+        const fileId = [...selectedFileIds][0];
+        const file = project?.files.find(f => f._id === fileId);
+        if (file) {
+          setRenamingItemId(fileId);
+          setRenamingValue(file.originalName);
+        }
+      }
+      // Delete - Delete selected files
+      if (e.key === "Delete" && selectedFileIds.size > 0) {
+        e.preventDefault();
+        void deleteFiles([...selectedFileIds]);
+      }
+      // Ctrl+A - Select all files in current folder
+      if (e.ctrlKey && e.key === "a" && containerRef.current?.contains(document.activeElement)) {
+        e.preventDefault();
+        const visibleFiles = selectedFolderId === null 
+          ? project?.files.filter(file => !file.folderId) || []
+          : project?.files.filter(file => file.folderId === selectedFolderId) || [];
+        setSelectedFileIds(new Set(visibleFiles.map(f => f._id)));
+      }
+      // Escape - Clear selection or cancel rename
+      if (e.key === "Escape") {
+        if (renamingItemId) {
+          setRenamingItemId(null);
+          setRenamingValue("");
+        } else {
+          setSelectedFileIds(new Set());
+          lastSelectedFileIdRef.current = null;
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [selectedFileIds, project, selectedFolderId, renamingItemId]);
 
   const saveProject = async () => {
     if (!title.trim()) return toast.error("Project title is required");
@@ -121,7 +168,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     const name = window.prompt("Folder name");
     if (!name?.trim()) return;
     try {
-      await createFolderMutation.mutateAsync(name.trim());
+      await createFolderMutation.mutateAsync({ name: name.trim(), parentFolderId: selectedFolderId });
       toast.success("Folder created");
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Failed to create folder");
@@ -139,8 +186,34 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  const startRenamingFolder = (folder: { _id: string; name: string }) => {
+    setRenamingItemId(`folder-${folder._id}`);
+    setRenamingValue(folder.name);
+  };
+
+  const finishRenamingFolder = async (folderId: string) => {
+    if (!renamingValue.trim() || renamingValue === project?.folders.find(f => f._id === folderId)?.name) {
+      setRenamingItemId(null);
+      setRenamingValue("");
+      return;
+    }
+    try {
+      await renameFolderMutation.mutateAsync({ folderId, name: renamingValue.trim() });
+      toast.success("Folder renamed");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to rename folder");
+    } finally {
+      setRenamingItemId(null);
+      setRenamingValue("");
+    }
+  };
+
   const removeFolder = async (folder: { _id: string; name: string }) => {
-    if (!confirm(`Delete ${folder.name}? Files will be kept in the project root.`)) return;
+    const childCount = project?.folders.filter(f => f.parentFolderId === folder._id).length || 0;
+    const warningMsg = childCount > 0 
+      ? `Delete ${folder.name} and its ${childCount} subfolder(s)? Files will be kept in the project root.`
+      : `Delete ${folder.name}? Files will be kept in the project root.`;
+    if (!confirm(warningMsg)) return;
     try {
       await deleteFolderMutation.mutateAsync(folder._id);
       if (selectedFolderId === folder._id) setSelectedFolderId(null);
@@ -259,8 +332,46 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const canDeleteProject = ["sysadmin", "admin", "boss"].includes(session?.user?.role || "");
   const hasActiveUploads = Object.keys(uploadProgress).length > 0 || uploadMutation.isPending;
   const visibleFiles = selectedFolderId === null ? project.files.filter(file => !file.folderId) : project.files.filter(file => file.folderId === selectedFolderId);
-  const folders = [{ _id: "", name: "Project root", count: project.files.filter(file => !file.folderId).length }, ...project.folders.map(folder => ({ ...folder, count: project.files.filter(file => file.folderId === folder._id).length }))];
   const allVisibleFilesSelected = visibleFiles.length > 0 && visibleFiles.every(file => selectedFileIds.has(file._id));
+
+  // Helper functions for nested folders
+  const getFolderPath = (folderId: string | null): Array<{ _id: string | null; name: string }> => {
+    if (folderId === null) return [{ _id: null, name: "Project root" }];
+    const path: Array<{ _id: string | null; name: string }> = [{ _id: null, name: "Project root" }];
+    let currentId: string | null = folderId;
+    
+    while (currentId) {
+      const folder = project.folders.find(f => f._id === currentId);
+      if (!folder) break;
+      path.push({ _id: folder._id, name: folder.name });
+      currentId = folder.parentFolderId || null;
+    }
+    
+    return path.reverse();
+  };
+
+  const getRootFolders = () => project.folders.filter(f => !f.parentFolderId);
+  const getSubfolders = (parentId: string) => project.folders.filter(f => f.parentFolderId === parentId);
+  const getFolderThumbnails = (folderId: string) => {
+    return project.files
+      .filter(f => f.folderId === folderId && f.mimetype.startsWith("image/"))
+      .slice(0, 4)
+      .map(f => f.previewUrl);
+  };
+
+  const toggleFolder = (folderId: string) => {
+    setExpandedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(folderId)) {
+        next.delete(folderId);
+      } else {
+        next.add(folderId);
+      }
+      return next;
+    });
+  };
+
+  const breadcrumbPath = getFolderPath(selectedFolderId);
 
   return (
     <PageContainer>
@@ -375,31 +486,132 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
-          <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-            {folders.map(folder => {
-              const isRoot = !folder._id;
-              const isActive = selectedFolderId === (folder._id || null);
+          {/* Breadcrumb Navigation Bar */}
+          <div className="mb-4 flex items-center gap-2 rounded-2xl border border-white/10 bg-card/30 p-3 text-sm">
+            {breadcrumbPath.map((item, index) => {
+              const isLast = index === breadcrumbPath.length - 1;
               return (
-                <div
-                  key={folder._id || "root"}
-                  onDragOver={event => event.preventDefault()}
-                  onDrop={event => {
-                    event.preventDefault();
-                    void moveFiles(draggedFileIds, folder._id || null);
-                    setDraggedFileIds([]);
-                  }}
-                  className={`group relative rounded-2xl border p-3 transition-colors ${isActive ? "border-primary bg-primary/10" : "border-border/60 bg-card/50 hover:border-primary/50"}`}
-                >
-                  <button type="button" className="flex w-full flex-col items-start gap-2 text-left" onClick={() => setSelectedFolderId(folder._id || null)}>
-                    <Folder className="size-7 text-primary" />
-                    <span className="w-full truncate text-sm font-semibold">{folder.name}</span>
-                    <span className="text-xs text-muted-foreground">{folder.count} files</span>
+                <div key={item._id || "root"} className="flex items-center gap-2">
+                  {index > 0 && <ChevronRight className="size-4 text-muted-foreground" />}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFolderId(item._id)}
+                    className={`flex items-center gap-1.5 transition-colors ${
+                      isLast ? "font-semibold text-primary" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {item._id === null ? <Home className="size-4" /> : <Folder className="size-4" />}
+                    <span>{item.name}</span>
                   </button>
-                  {!isRoot && <div className="absolute right-2 top-2 flex opacity-0 transition-opacity group-hover:opacity-100">
-                    <Button type="button" size="icon" variant="ghost" className="size-6" onClick={() => renameFolder(folder)}><Pencil className="size-3" /></Button>
-                    <Button type="button" size="icon" variant="ghost" className="size-6 text-destructive" onClick={() => removeFolder(folder)}><Trash2 className="size-3" /></Button>
-                  </div>}
                 </div>
+              );
+            })}
+          </div>
+
+          {/* Folder Explorer View (Windows 11 Style) */}
+          <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+            {/* Show Root button if inside a folder */}
+            {selectedFolderId !== null && (
+              <div
+                onClick={() => setSelectedFolderId(null)}
+                className="group relative flex cursor-pointer flex-col items-start rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-3 hover:bg-primary/10 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <FolderOpen className="size-7 text-primary" />
+                  <span className="text-sm font-semibold text-primary">← Go to Root</span>
+                </div>
+                <span className="mt-2 text-xs text-muted-foreground">Click to return to root level</span>
+              </div>
+            )}
+
+            {/* Render Current Level Folders */}
+            {(selectedFolderId === null ? getRootFolders() : getSubfolders(selectedFolderId)).map(folder => {
+              const isActive = selectedFolderId === folder._id;
+              const subfolderCount = getSubfolders(folder._id).length;
+              const fileCount = project.files.filter(f => f.folderId === folder._id).length;
+              const thumbnails = getFolderThumbnails(folder._id);
+              const isRenaming = renamingItemId === `folder-${folder._id}`;
+
+              return (
+                <ContextMenu key={folder._id}>
+                  <ContextMenuTrigger>
+                    <div
+                      onDragOver={event => event.preventDefault()}
+                      onDrop={event => {
+                        event.preventDefault();
+                        void moveFiles(draggedFileIds, folder._id);
+                        setDraggedFileIds([]);
+                      }}
+                      onDoubleClick={() => setSelectedFolderId(folder._id)}
+                      onClick={() => setSelectedFolderId(folder._id)}
+                      className={`group relative rounded-2xl border p-3 transition-colors cursor-pointer ${
+                        isActive ? "border-primary bg-primary/10" : "border-border/60 bg-card/50 hover:border-primary/50"
+                      }`}
+                    >
+                      {/* Folder Thumbnails (Windows 11 Preview) */}
+                      <div className="mb-2 relative flex h-20 w-full items-center justify-center overflow-hidden rounded-xl bg-background/50 p-1">
+                        {thumbnails.length > 0 ? (
+                          <div className={`grid h-full w-full gap-1 ${thumbnails.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                            {thumbnails.map((url, idx) => (
+                              <img key={idx} src={url} alt="" className="h-full w-full object-cover rounded" />
+                            ))}
+                          </div>
+                        ) : (
+                          <Folder className="size-10 text-primary/80" />
+                        )}
+                      </div>
+
+                      {/* Folder Name & Details */}
+                      {isRenaming ? (
+                        <Input
+                          value={renamingValue}
+                          onChange={e => setRenamingValue(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === "Enter") void finishRenamingFolder(folder._id);
+                            if (e.key === "Escape") {
+                              setRenamingItemId(null);
+                              setRenamingValue("");
+                            }
+                          }}
+                          onBlur={() => void finishRenamingFolder(folder._id)}
+                          autoFocus
+                          className="h-7 text-xs"
+                          onClick={e => e.stopPropagation()}
+                        />
+                      ) : (
+                        <div className="flex w-full flex-col">
+                          <span className="w-full truncate text-sm font-semibold">{folder.name}</span>
+                          <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>{fileCount} files</span>
+                            {subfolderCount > 0 && <span>{subfolderCount} subfolders</span>}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Quick Action Buttons */}
+                      <div className="absolute right-2 top-2 flex opacity-0 transition-opacity group-hover:opacity-100 bg-background/80 rounded-lg p-0.5">
+                        <Button type="button" size="icon" variant="ghost" className="size-6" onClick={e => { e.stopPropagation(); startRenamingFolder(folder); }}>
+                          <Pencil className="size-3" />
+                        </Button>
+                        <Button type="button" size="icon" variant="ghost" className="size-6 text-destructive" onClick={e => { e.stopPropagation(); removeFolder(folder); }}>
+                          <Trash2 className="size-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent className="w-48">
+                    <ContextMenuItem onClick={() => setSelectedFolderId(folder._id)}>
+                      <FolderOpen className="mr-2 size-4" /> Open Folder
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={() => startRenamingFolder(folder)}>
+                      <Pencil className="mr-2 size-4" /> Rename (F2)
+                    </ContextMenuItem>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem className="text-destructive" onClick={() => removeFolder(folder)}>
+                      <Trash2 className="mr-2 size-4" /> Delete (Del)
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               );
             })}
           </div>

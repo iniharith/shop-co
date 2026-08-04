@@ -228,6 +228,8 @@ router.post(
   '/:id/folders',
   asyncHandler(async (req: Request, res: Response) => {
     const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+    const parentFolderId = req.body.parentFolderId || null;
+    
     if (!name) {
       res.status(400).json({ success: false, message: 'Folder name is required' });
       return;
@@ -237,7 +239,23 @@ router.post(
       res.status(404).json({ success: false, message: 'Project not found' });
       return;
     }
-    project.folders.push({ name });
+    
+    // Validate parentFolderId exists if provided
+    if (parentFolderId && !project.folders.some(folder => folder._id?.toString() === parentFolderId)) {
+      res.status(400).json({ success: false, message: 'Parent folder not found in this project' });
+      return;
+    }
+    
+    // Check nesting level (max 2 levels: root -> level 1 -> level 2)
+    if (parentFolderId) {
+      const parentFolder = project.folders.find(f => f._id?.toString() === parentFolderId);
+      if (parentFolder?.parentFolderId) {
+        res.status(400).json({ success: false, message: 'Maximum folder nesting depth (2 levels) reached' });
+        return;
+      }
+    }
+    
+    project.folders.push({ name, parentFolderId });
     await project.save();
     res.status(201).json({ success: true, data: await withSignedFileUrls(project) });
   })
@@ -258,6 +276,48 @@ router.patch(
       return;
     }
     folder.name = name;
+    
+    // Handle parentFolderId update if provided
+    if ('parentFolderId' in req.body) {
+      const newParentId = req.body.parentFolderId || null;
+      
+      // Validate new parent exists
+      if (newParentId && !project.folders.some(f => f._id?.toString() === newParentId)) {
+        res.status(400).json({ success: false, message: 'Parent folder not found in this project' });
+        return;
+      }
+      
+      // Prevent moving folder into itself
+      if (newParentId === req.params.folderId) {
+        res.status(400).json({ success: false, message: 'Cannot move folder into itself' });
+        return;
+      }
+      
+      // Prevent moving folder into its own child (would create circular reference)
+      const childFolders = project.folders.filter(f => f.parentFolderId === req.params.folderId);
+      if (childFolders.some(child => child._id?.toString() === newParentId)) {
+        res.status(400).json({ success: false, message: 'Cannot move folder into its own subfolder' });
+        return;
+      }
+      
+      // Check nesting level (max 2 levels)
+      if (newParentId) {
+        const newParent = project.folders.find(f => f._id?.toString() === newParentId);
+        if (newParent?.parentFolderId) {
+          res.status(400).json({ success: false, message: 'Maximum folder nesting depth (2 levels) reached' });
+          return;
+        }
+        
+        // If this folder has children, it cannot be moved to level 1
+        if (childFolders.length > 0) {
+          res.status(400).json({ success: false, message: 'Cannot move folder with subfolders to level 2' });
+          return;
+        }
+      }
+      
+      folder.parentFolderId = newParentId;
+    }
+    
     await project.save();
     res.json({ success: true, data: await withSignedFileUrls(project) });
   })
@@ -271,10 +331,25 @@ router.delete(
       res.status(404).json({ success: false, message: 'Folder not found' });
       return;
     }
-    project.folders = project.folders.filter(item => item._id?.toString() !== req.params.folderId);
-    project.files.forEach(file => {
-      if (file.folderId === req.params.folderId) file.folderId = undefined;
+    
+    // Find all child folders (subfolders of this folder)
+    const childFolderIds = project.folders
+      .filter(f => f.parentFolderId === req.params.folderId)
+      .map(f => f._id?.toString());
+    
+    // Remove the folder and all its subfolders
+    project.folders = project.folders.filter(item => {
+      const folderId = item._id?.toString();
+      return folderId !== req.params.folderId && !childFolderIds.includes(folderId);
     });
+    
+    // Move files from deleted folders to project root
+    project.files.forEach(file => {
+      if (file.folderId === req.params.folderId || childFolderIds.includes(file.folderId)) {
+        file.folderId = undefined;
+      }
+    });
+    
     await project.save();
     res.json({ success: true, data: await withSignedFileUrls(project) });
   })
