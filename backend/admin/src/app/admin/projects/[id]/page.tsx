@@ -3,7 +3,7 @@
 import { DragEvent, use, useEffect, useRef, useState, KeyboardEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ChevronDown, ChevronRight, Download, File, FileImage, Folder, FolderOpen, FolderPlus, Home, Loader2, MoreVertical, Pencil, Save, Share2, Trash2, UploadCloud, Users } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, Download, File, FileImage, Folder, FolderOpen, FolderPlus, Grid3x3, Home, List, Loader2, MoreVertical, Pencil, Save, Share2, Trash2, UploadCloud, Users } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import PageContainer from "@/components/layout/page-container";
@@ -61,6 +61,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [renamingItemId, setRenamingItemId] = useState<string | null>(null);
   const [renamingValue, setRenamingValue] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   useEffect(() => {
     if (!project) return;
@@ -133,7 +134,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         await uploadMutation.mutateAsync({
           file,
           onProgress: progress => setUploadProgress(current => ({ ...current, [progressKey]: progress })),
-          folderId: uploadFolderId || null,
+          folderId: selectedFolderId || null,
         });
         toast.success(`${file.name} uploaded`);
       } catch (error: any) {
@@ -356,7 +357,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     return project.files
       .filter(f => f.folderId === folderId && f.mimetype.startsWith("image/"))
       .slice(0, 4)
-      .map(f => f.previewUrl);
+      .map(f => ({
+        url: f.previewUrl,
+        // Create optimized thumbnail URL with smaller size
+        thumbnail: f.previewUrl.split('?')[0] + '?w=100&h=100&fit=cover'
+      }));
   };
 
   const toggleFolder = (folderId: string) => {
@@ -472,6 +477,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
             <div className="flex items-center gap-2">
               <Button type="button" variant="outline" size="sm" onClick={createFolder}><FolderPlus className="mr-1.5 size-3.5" /> Folder</Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()}><UploadCloud className="mr-1.5 size-3.5" /> Upload</Button>
               {visibleFiles.length > 0 && <Button type="button" variant="outline" size="sm" onClick={() => {
                 if (allVisibleFilesSelected) {
                   setSelectedFileIds(new Set());
@@ -481,8 +487,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   lastSelectedFileIdRef.current = visibleFiles[0]._id;
                 }
               }}>{allVisibleFilesSelected ? "Clear all" : "Select all"}</Button>}
-              <Button type="button" variant={gridSize === 4 ? "default" : "outline"} size="sm" onClick={() => setGridSize(4)}>4 x 4</Button>
-              <Button type="button" variant={gridSize === 6 ? "default" : "outline"} size="sm" onClick={() => setGridSize(6)}>6 x 6</Button>
+              <div className="h-6 w-px bg-border" />
+              <Button type="button" variant={viewMode === "list" ? "default" : "outline"} size="sm" onClick={() => setViewMode("list")}><List className="size-4" /></Button>
+              <Button type="button" variant={viewMode === "grid" ? "default" : "outline"} size="sm" onClick={() => setViewMode("grid")}><Grid3x3 className="size-4" /></Button>
+              {viewMode === "grid" && (
+                <>
+                  <Button type="button" variant={gridSize === 4 ? "default" : "outline"} size="sm" onClick={() => setGridSize(4)}>4 x 4</Button>
+                  <Button type="button" variant={gridSize === 6 ? "default" : "outline"} size="sm" onClick={() => setGridSize(6)}>6 x 6</Button>
+                </>
+              )}
             </div>
           </div>
 
@@ -548,18 +561,24 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         isActive ? "border-primary bg-primary/10" : "border-border/60 bg-card/50 hover:border-primary/50"
                       }`}
                     >
-                      {/* Folder Thumbnails (Windows 11 Preview) */}
-                      <div className="mb-2 relative flex h-20 w-full items-center justify-center overflow-hidden rounded-xl bg-background/50 p-1">
-                        {thumbnails.length > 0 ? (
-                          <div className={`grid h-full w-full gap-1 ${thumbnails.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                            {thumbnails.map((url, idx) => (
-                              <img key={idx} src={url} alt="" className="h-full w-full object-cover rounded" />
-                            ))}
-                          </div>
-                        ) : (
-                          <Folder className="size-10 text-primary/80" />
-                        )}
-                      </div>
+                       {/* Folder Thumbnails (Windows 11 Preview) */}
+                       <div className="mb-2 relative flex h-20 w-full items-center justify-center overflow-hidden rounded-xl bg-background/50 p-1">
+                         {thumbnails.length > 0 ? (
+                           <div className={`grid h-full w-full gap-1 ${thumbnails.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                             {thumbnails.map((thumb, idx) => (
+                               <img 
+                                 key={idx} 
+                                 src={thumb.thumbnail} 
+                                 alt="" 
+                                 className="h-full w-full object-cover rounded"
+                                 loading="lazy"
+                               />
+                             ))}
+                           </div>
+                         ) : (
+                           <Folder className="size-10 text-primary/80" />
+                         )}
+                       </div>
 
                       {/* Folder Name & Details */}
                       {isRenaming ? (
@@ -630,37 +649,34 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
+          {/* Hidden Upload Area - Keep Drag & Drop Functionality */}
           <div
+            ref={containerRef}
             onDragEnter={event => { event.preventDefault(); setDragActive(true); }}
             onDragOver={event => event.preventDefault()}
             onDragLeave={event => { if (event.currentTarget === event.target) setDragActive(false); }}
             onDrop={handleDrop}
-            onClick={() => inputRef.current?.click()}
-            className={`flex min-h-48 cursor-pointer flex-col items-center justify-center rounded-[24px] border-2 border-dashed p-8 text-center transition-all ${dragActive ? "border-primary bg-primary/10" : "border-white/15 bg-card/35 hover:border-primary/50 hover:bg-card/55"}`}
+            className={`${dragActive ? "fixed inset-0 z-50 flex items-center justify-center bg-primary/20 backdrop-blur-sm" : "hidden"}`}
           >
-            <div className="mb-4 flex items-center gap-2" onClick={event => event.stopPropagation()}>
-              <span className="text-sm text-muted-foreground">Upload to</span>
-              <select value={uploadFolderId} onChange={event => setUploadFolderId(event.target.value)} className="h-9 rounded-md border bg-background px-2 text-sm">
-                <option value="">Project root</option>
-                {project.folders.map(folder => <option key={folder._id} value={folder._id}>{folder.name}</option>)}
-              </select>
-            </div>
-            <input
-              ref={inputRef}
-              type="file"
-              multiple
-              className="hidden"
-              onChange={event => {
-                if (event.target.files) void uploadFiles(Array.from(event.target.files));
-                event.target.value = "";
-              }}
-            />
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-              <UploadCloud className="size-7" />
-            </div>
-            <p className="mt-4 font-semibold">Drop files here or click to browse</p>
-            <p className="mt-1 text-sm text-muted-foreground">Images, PDF, AI, PSD, ZIP and other project files are supported</p>
+            {dragActive && (
+              <div className="rounded-3xl border-4 border-dashed border-primary bg-background/95 p-12 text-center shadow-2xl">
+                <UploadCloud className="mx-auto size-16 text-primary" />
+                <p className="mt-4 text-xl font-bold">Drop files to upload</p>
+                <p className="mt-2 text-sm text-muted-foreground">Release to upload to {selectedFolderId ? project.folders.find(f => f._id === selectedFolderId)?.name : "Project root"}</p>
+              </div>
+            )}
           </div>
+          
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={event => {
+              if (event.target.files) void uploadFiles(Array.from(event.target.files));
+              event.target.value = "";
+            }}
+          />
 
           {activeUploads.length > 0 && (
             <div className="mt-5 space-y-3 rounded-2xl border border-white/10 bg-card/40 p-4">
@@ -673,45 +689,138 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
-          {visibleFiles.length > 0 && (
+          {visibleFiles.length > 0 && viewMode === "grid" && (
             <div className={`mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 ${gridSize === 4 ? "xl:grid-cols-4" : "xl:grid-cols-6"}`}>
               {visibleFiles.map(file => {
                 const isImage = file.mimetype.startsWith("image/");
                 return (
-                  <div
-                    key={file._id}
-                    draggable
-                    onDragStart={() => setDraggedFileIds(selectedFileIds.has(file._id) ? [...selectedFileIds] : [file._id])}
-                    onDragEnd={() => setDraggedFileIds([])}
-                    onClick={event => { if (event.shiftKey) selectFileRange(file._id, visibleFiles.map(item => item._id)); }}
-                    className={`group overflow-hidden rounded-2xl border bg-card/55 ${selectedFileIds.has(file._id) ? "border-primary ring-2 ring-primary/40" : "border-white/10"}`}
-                  >
-                    <div className="relative flex h-32 items-center justify-center overflow-hidden bg-background/50">
-                      {isImage ? <button type="button" className="h-full w-full" onClick={event => { if (!event.shiftKey) setPreviewFile(file); }}><img src={file.previewUrl} alt={file.originalName} className="h-full w-full object-cover transition-transform group-hover:scale-105" /></button> : <File className="size-10 text-muted-foreground" />}
-                    </div>
-                    <div className="relative p-4">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button type="button" size="icon" variant="ghost" className="absolute right-2 top-2 h-7 w-7" title="File options"><MoreVertical className="size-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-52">
-                          <DropdownMenuLabel>File options</DropdownMenuLabel>
-                          {isImage && <DropdownMenuItem onClick={() => updateMutation.mutate({ coverFileId: file._id })}>{project.coverFileId === file._id ? "Project cover" : "Set as cover"}</DropdownMenuItem>}
-                          {isImage && <DropdownMenuSeparator />}
-                          <DropdownMenuItem onClick={() => moveFile(file, "")}>Project root{!file.folderId && " (current)"}</DropdownMenuItem>
-                          {project.folders.map(folder => <DropdownMenuItem key={folder._id} onClick={() => moveFile(file, folder._id)}>{folder.name}{file.folderId === folder._id && " (current)"}</DropdownMenuItem>)}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <p className="truncate text-sm font-semibold" title={file.originalName}>{file.originalName}</p>
-                      <div className="mt-1 flex justify-between text-[11px] text-muted-foreground"><span>{formatBytes(file.size)}</span><span>{format(new Date(file.uploadedAt), "dd MMM yyyy")}</span></div>
-                      {file.notes && <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{file.notes}</p>}
-                      <div className="mt-3 flex gap-2 border-t border-white/10 pt-3">
-                        <Button size="icon" variant="outline" className="h-[30px] w-[30px]" title="Download" onClick={() => forceDownload(file.previewUrl, file.originalName)}><Download className="size-3.5" /></Button>
-                        <Button size="icon" variant="outline" className="h-[30px] w-[30px] text-destructive hover:text-destructive" title="Delete" onClick={() => deleteFile(file)} disabled={deleteMutation.isPending}><Trash2 className="size-3.5" /></Button>
-                        <Button size="icon" variant="outline" className="h-[30px] w-[30px]" title="Edit name and notes" onClick={() => editFile(file)}><Pencil className="size-3.5" /></Button>
+                  <ContextMenu key={file._id}>
+                    <ContextMenuTrigger>
+                      <div
+                        draggable
+                        onDragStart={() => setDraggedFileIds(selectedFileIds.has(file._id) ? [...selectedFileIds] : [file._id])}
+                        onDragEnd={() => setDraggedFileIds([])}
+                        onClick={event => { if (event.shiftKey) selectFileRange(file._id, visibleFiles.map(item => item._id)); else { setSelectedFileIds(prev => { const next = new Set(prev); if (next.has(file._id)) next.delete(file._id); else next.add(file._id); return next; }); } }}
+                        className={`group overflow-hidden rounded-2xl border bg-card/55 cursor-pointer ${selectedFileIds.has(file._id) ? "border-primary ring-2 ring-primary/40" : "border-white/10"}`}
+                      >
+                        <div className="relative flex h-32 items-center justify-center overflow-hidden bg-background/50">
+                          {isImage ? <button type="button" className="h-full w-full" onClick={event => { event.stopPropagation(); if (!event.shiftKey) setPreviewFile(file); }}><img src={file.previewUrl} alt={file.originalName} className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" /></button> : <File className="size-10 text-muted-foreground" />}
+                        </div>
+                        <div className="relative p-4">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button type="button" size="icon" variant="ghost" className="absolute right-2 top-2 h-7 w-7" title="File options" onClick={e => e.stopPropagation()}><MoreVertical className="size-4" /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-52">
+                              <DropdownMenuLabel>File options</DropdownMenuLabel>
+                              {isImage && <DropdownMenuItem onClick={() => updateMutation.mutate({ coverFileId: file._id })}>{project.coverFileId === file._id ? "Project cover" : "Set as cover"}</DropdownMenuItem>}
+                              {isImage && <DropdownMenuSeparator />}
+                              <DropdownMenuItem onClick={() => moveFile(file, "")}>Project root{!file.folderId && " (current)"}</DropdownMenuItem>
+                              {project.folders.map(folder => <DropdownMenuItem key={folder._id} onClick={() => moveFile(file, folder._id)}>{folder.name}{file.folderId === folder._id && " (current)"}</DropdownMenuItem>)}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          <p className="truncate text-sm font-semibold" title={file.originalName}>{file.originalName}</p>
+                          <div className="mt-1 flex justify-between text-[11px] text-muted-foreground"><span>{formatBytes(file.size)}</span><span>{format(new Date(file.uploadedAt), "dd MMM yyyy")}</span></div>
+                          {file.notes && <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{file.notes}</p>}
+                          <div className="mt-3 flex gap-2 border-t border-white/10 pt-3">
+                            <Button size="icon" variant="outline" className="h-[30px] w-[30px]" title="Download" onClick={(e) => { e.stopPropagation(); forceDownload(file.previewUrl, file.originalName); }}><Download className="size-3.5" /></Button>
+                            <Button size="icon" variant="outline" className="h-[30px] w-[30px] text-destructive hover:text-destructive" title="Delete" onClick={(e) => { e.stopPropagation(); deleteFile(file); }} disabled={deleteMutation.isPending}><Trash2 className="size-3.5" /></Button>
+                            <Button size="icon" variant="outline" className="h-[30px] w-[30px]" title="Edit name and notes" onClick={(e) => { e.stopPropagation(); editFile(file); }}><Pencil className="size-3.5" /></Button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className="w-48">
+                      <ContextMenuItem onClick={() => setPreviewFile(file)}>
+                        <FileImage className="mr-2 size-4" /> Preview
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => forceDownload(file.previewUrl, file.originalName)}>
+                        <Download className="mr-2 size-4" /> Download
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => editFile(file)}>
+                        <Pencil className="mr-2 size-4" /> Rename (F2)
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem className="text-destructive" onClick={() => deleteFile(file)}>
+                        <Trash2 className="mr-2 size-4" /> Delete (Del)
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                );
+              })}
+            </div>
+          )}
+
+          {visibleFiles.length > 0 && viewMode === "list" && (
+            <div className="mt-6 space-y-1">
+              {/* List View Header */}
+              <div className="grid grid-cols-[2fr_1fr_1fr_100px] gap-4 border-b border-white/10 px-4 py-2 text-xs font-semibold text-muted-foreground">
+                <div>Name</div>
+                <div>Date Modified</div>
+                <div>Type</div>
+                <div>Size</div>
+              </div>
+              
+              {/* List View Items */}
+              {visibleFiles.map(file => {
+                const isImage = file.mimetype.startsWith("image/");
+                return (
+                  <ContextMenu key={file._id}>
+                    <ContextMenuTrigger>
+                      <div
+                        draggable
+                        onDragStart={() => setDraggedFileIds(selectedFileIds.has(file._id) ? [...selectedFileIds] : [file._id])}
+                        onDragEnd={() => setDraggedFileIds([])}
+                        onClick={event => { if (event.shiftKey) selectFileRange(file._id, visibleFiles.map(item => item._id)); else { setSelectedFileIds(prev => { const next = new Set(prev); if (next.has(file._id)) next.delete(file._id); else next.add(file._id); return next; }); } }}
+                        onDoubleClick={() => isImage && setPreviewFile(file)}
+                        className={`group grid grid-cols-[2fr_1fr_1fr_100px] gap-4 items-center rounded-lg border px-4 py-3 transition-colors cursor-pointer ${
+                          selectedFileIds.has(file._id) ? "border-primary bg-primary/10" : "border-transparent hover:bg-card/60"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-background/50">
+                            {isImage ? <img src={file.previewUrl} alt="" className="h-full w-full object-cover" loading="lazy" /> : <File className="size-5 text-muted-foreground" />}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium" title={file.originalName}>{file.originalName}</p>
+                            {file.notes && <p className="truncate text-xs text-muted-foreground">{file.notes}</p>}
+                          </div>
+                        </div>
+                        <div className="text-sm text-muted-foreground">{format(new Date(file.uploadedAt), "dd MMM yyyy, HH:mm")}</div>
+                        <div className="text-sm text-muted-foreground">{file.mimetype.split('/')[1]?.toUpperCase() || 'FILE'}</div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">{formatBytes(file.size)}</span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button type="button" size="icon" variant="ghost" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}><MoreVertical className="size-4" /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-52">
+                              <DropdownMenuLabel>File options</DropdownMenuLabel>
+                              {isImage && <DropdownMenuItem onClick={() => updateMutation.mutate({ coverFileId: file._id })}>{project.coverFileId === file._id ? "Project cover" : "Set as cover"}</DropdownMenuItem>}
+                              {isImage && <DropdownMenuSeparator />}
+                              <DropdownMenuItem onClick={() => moveFile(file, "")}>Project root{!file.folderId && " (current)"}</DropdownMenuItem>
+                              {project.folders.map(folder => <DropdownMenuItem key={folder._id} onClick={() => moveFile(file, folder._id)}>{folder.name}{file.folderId === folder._id && " (current)"}</DropdownMenuItem>)}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className="w-48">
+                      <ContextMenuItem onClick={() => isImage && setPreviewFile(file)}>
+                        <FileImage className="mr-2 size-4" /> Preview
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => forceDownload(file.previewUrl, file.originalName)}>
+                        <Download className="mr-2 size-4" /> Download
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => editFile(file)}>
+                        <Pencil className="mr-2 size-4" /> Rename (F2)
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem className="text-destructive" onClick={() => deleteFile(file)}>
+                        <Trash2 className="mr-2 size-4" /> Delete (Del)
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 );
               })}
             </div>
