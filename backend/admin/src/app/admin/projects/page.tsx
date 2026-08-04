@@ -14,6 +14,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Project } from "@/api/projects";
 import { useCreateProject, useProjects } from "@/hooks/useProjects";
 
+// Free global CDN proxy to downscale large S3 images on the fly
+const getThumbUrl = (url: string, w: number, h: number) =>
+  `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=${w}&h=${h}&fit=cover`;
+
 export default function ProjectsPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -83,7 +87,7 @@ export default function ProjectsPage() {
               >
                 <div className="relative h-40 overflow-hidden bg-gradient-to-br from-primary/25 via-card to-card">
                   {cover ? (
-                    <img src={cover.previewUrl} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    <img src={getThumbUrl(cover.url, 640, 480)} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                   ) : (
                     <div className="flex h-full items-center justify-center">
                       <FolderKanban className="size-12 text-primary/60" />

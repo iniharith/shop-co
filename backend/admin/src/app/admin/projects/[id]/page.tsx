@@ -29,6 +29,10 @@ const formatBytes = (bytes: number) => {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 };
 
+// Free global CDN proxy to downscale large S3 images on the fly
+const getThumbUrl = (url: string, w: number, h: number) =>
+  `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=${w}&h=${h}&fit=cover`;
+
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -458,9 +462,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       .filter(f => f.folderId === folderId && f.mimetype.startsWith("image/"))
       .slice(0, 4)
       .map(f => ({
-        url: f.previewUrl,
-        // Create optimized thumbnail URL with smaller size
-        thumbnail: f.previewUrl.split('?')[0] + '?w=100&h=100&fit=cover'
+        url: f.url,
+        thumbnail: getThumbUrl(f.url, 240, 240)
       }));
   };
 
@@ -518,7 +521,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           <div className={`grid gap-6 xl:grid-cols-[1.35fr_1fr] ${project.deletingAt ? "pointer-events-none opacity-60" : ""}`}>
             <div className="relative min-h-[280px] overflow-hidden rounded-[26px] border border-white/10 bg-gradient-to-br from-primary/20 via-card to-card md:min-h-[390px]">
               {heroImage ? (
-                <img src={heroImage.previewUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                <img src={getThumbUrl(heroImage.url, 1200, 800)} alt="" className="absolute inset-0 h-full w-full object-cover" />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-primary/60">
                   <FileImage className="size-16" />
@@ -622,7 +625,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </div>
 
           {/* Folder Explorer View (Windows 11 Style) */}
-          <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+          <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
             {/* Show Root button if inside a folder */}
             {selectedFolderId !== null && (
               <div
@@ -714,7 +717,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       }`}
                     >
                        {/* Folder Thumbnails (Windows 11 Preview) */}
-                       <div className="mb-2 relative flex h-28 w-full items-center justify-center overflow-hidden rounded-xl bg-background/50 p-2">
+                       <div className="mb-2 relative flex h-32 w-full items-center justify-center overflow-hidden rounded-xl bg-background/50 p-2">
                          {thumbnails.length > 0 ? (
                            <div className={`grid h-full w-full gap-1 ${thumbnails.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
                              {thumbnails.map((thumb, idx) => (
@@ -728,7 +731,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                              ))}
                            </div>
                          ) : (
-                           <Folder className="size-12 text-primary/80" />
+                           <Folder className="size-16 text-primary/80" />
                          )}
                        </div>
 
@@ -846,7 +849,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         className={`group overflow-hidden rounded-2xl border bg-card/55 cursor-pointer ${selectedFileIds.has(file._id) ? "border-primary ring-2 ring-primary/40" : "border-white/10"}`}
                       >
                         <div className="relative flex h-32 items-center justify-center overflow-hidden bg-background/50">
-                          {isImage ? <button type="button" className="h-full w-full" onClick={event => { event.stopPropagation(); if (!event.shiftKey) setPreviewFile(file); }}><img src={file.previewUrl} alt={file.originalName} className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" /></button> : <File className="size-10 text-muted-foreground" />}
+                          {isImage ? <button type="button" className="h-full w-full" onClick={event => { event.stopPropagation(); if (!event.shiftKey) setPreviewFile(file); }}><img src={getThumbUrl(file.url, 400, 300)} alt={file.originalName} className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" /></button> : <File className="size-10 text-muted-foreground" />}
                         </div>
                         <div className="relative p-4">
                           <DropdownMenu>
@@ -921,7 +924,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-background/50">
-                            {isImage ? <img src={file.previewUrl} alt="" className="h-full w-full object-cover" loading="lazy" /> : <File className="size-5 text-muted-foreground" />}
+                            {isImage ? <img src={getThumbUrl(file.url, 96, 96)} alt="" className="h-full w-full object-cover" loading="lazy" /> : <File className="size-5 text-muted-foreground" />}
                           </div>
                           <div className="min-w-0">
                             <p className="truncate text-sm font-medium" title={file.originalName}>{file.originalName}</p>
