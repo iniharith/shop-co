@@ -734,7 +734,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                   </div>
 
                   {uploadFiles && uploadFiles.length > 0 && (
-                    <div data-lenis-prevent className="bg-muted/10 rounded-lg p-3 border border-border/50 space-y-2 max-h-40 overflow-y-auto mt-2 custom-scrollbar">
+                    <div className="bg-muted/10 rounded-lg p-3 border border-border/50 space-y-2 max-h-40 overflow-y-auto mt-2 custom-scrollbar">
                       <h4 className="text-xs font-medium text-muted-foreground mb-2">{uploadFiles.length} File(s) Selected</h4>
                       {Array.from(uploadFiles).map((file, i) => (
                         <div key={i} className="flex items-center justify-between bg-background p-2 rounded border border-border/50">
@@ -869,7 +869,6 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
               )}
               {visibleGroupedFiles.length > 0 && (
                 <Virtuoso
-                  data-lenis-prevent
                   className="h-full"
                   data={visibleGroupedFiles}
                   computeItemKey={getFolderItemKey}
@@ -935,7 +934,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
           {/* RIGHT PANEL (DETAIL) */}
           <div className="w-full lg:w-2/3 xl:w-3/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
           {selectedFolder ? (
-          <div data-lenis-prevent className="space-y-4 p-4 sm:p-6 flex-1 overflow-y-auto">
+          <div className="space-y-4 p-4 sm:p-6 flex-1 overflow-y-auto">
           {(() => {
             const activeGroup = groupedFromServer.find(g => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
             if (!activeGroup) {
@@ -1109,7 +1108,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                         {/* Description */}
                         <div className="flex-1 min-w-0">
                           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Description</h3>
-                          <div data-lenis-prevent className="bg-muted/30 border rounded-lg p-3 sm:p-4 text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed max-h-[150px] overflow-y-auto">
+                          <div className="bg-muted/30 border rounded-lg p-3 sm:p-4 text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed max-h-[150px] overflow-y-auto">
                             {descriptionText}
                           </div>
                         </div>
@@ -1549,7 +1548,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
           <DialogHeader>
             <DialogTitle>Move {selectedFiles.length} item(s)</DialogTitle>
           </DialogHeader>
-          <div data-lenis-prevent className="py-4 flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-2">
+          <div className="py-4 flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-2">
             {(() => {
               const activeGroup = groupedFromServer.find((g: any) => `${g.folderName}-${g.orderId}-${g.taskId}` === selectedFolder);
               const groupFolders = activeGroup ? virtualFolders.filter((f: any) => 

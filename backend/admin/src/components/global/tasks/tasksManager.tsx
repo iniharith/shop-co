@@ -273,7 +273,7 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
             </div>
 
             {pendingFiles.length > 0 && (
-              <div data-lenis-prevent className="bg-muted/10 rounded-lg p-3 border border-border/50 space-y-2 max-h-40 overflow-y-auto mt-2 custom-scrollbar">
+              <div className="bg-muted/10 rounded-lg p-3 border border-border/50 space-y-2 max-h-40 overflow-y-auto mt-2 custom-scrollbar">
                 <h4 className="text-xs font-medium text-muted-foreground mb-2">{pendingFiles.length} File(s) to attach</h4>
                 {pendingFiles.map((file, i) => (
                   <div key={i} className="flex items-center justify-between bg-background p-2 rounded border border-border/50">

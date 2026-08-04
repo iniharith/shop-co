@@ -654,7 +654,6 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
             )}
             <div className="flex-1 min-h-0">
               <Virtuoso
-                data-lenis-prevent
                 className="h-full"
                 data={groupedFiles}
                 computeItemKey={getFolderItemKey}
@@ -815,7 +814,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                       {/* Description */}
                       <div className="flex-1 min-w-0">
                         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Description</h3>
-                        <div data-lenis-prevent className="bg-muted/30 border rounded-lg p-3 sm:p-4 text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed max-h-[150px] overflow-y-auto">
+                        <div className="bg-muted/30 border rounded-lg p-3 sm:p-4 text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed max-h-[150px] overflow-y-auto">
                           {descriptionText}
                         </div>
                       </div>
@@ -859,7 +858,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                     </div>
                   </div>
 
-                  <div data-lenis-prevent className="p-4 sm:p-6 flex-1 overflow-y-auto bg-muted/5 relative">
+                  <div className="p-4 sm:p-6 flex-1 overflow-y-auto bg-muted/5 relative">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
                         {activeSubFolderId ? "Subfolder Contents" : `${activeGroup.fileCount} Attachments`}
