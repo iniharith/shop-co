@@ -17,10 +17,10 @@ export default withAuth(
         // email.kampungcetak.com → webmail
         const host = req.nextUrl.hostname;
         if (host === "email.kampungcetak.com" && req.nextUrl.pathname === "/") {
-            return NextResponse.redirect(new URL("/mail", req.url));
+            return NextResponse.redirect(new URL("/email", req.url));
         }
-        if (host === "email.kampungcetak.com" && !req.nextUrl.pathname.startsWith("/mail")) {
-            return NextResponse.redirect(new URL("/mail", req.url));
+        if (host === "email.kampungcetak.com" && !req.nextUrl.pathname.startsWith("/email")) {
+            return NextResponse.redirect(new URL("/email", req.url));
         }
 
         if (!isLoggedIn && isProtectedRoute) {
@@ -46,5 +46,5 @@ export default withAuth(
 );
 
 export const config = {
-    matcher: ["/home/cart/:path*", "/home/profile/:path*", "/mail/:path*"],
+    matcher: ["/home/cart/:path*", "/home/profile/:path*", "/email/:path*"],
 };
