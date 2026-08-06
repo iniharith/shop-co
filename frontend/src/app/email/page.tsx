@@ -39,6 +39,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { ThemeSwitcher } from "@/components/global/ThemeSwitcher";
 import { cn } from "@/lib/utils";
 import {
   mailApi,
@@ -849,6 +850,7 @@ export default function MailPage() {
             </Badge>
           )}
           <div className="ml-auto flex items-center gap-2">
+            <ThemeSwitcher />
             <Button
               variant="ghost"
               size="icon"
