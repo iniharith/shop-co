@@ -13,7 +13,16 @@ export default withAuth(
         const isProtectedRoute = protectedRoutes.some((route) =>
             req.nextUrl.pathname === route || req.nextUrl.pathname.startsWith(`${route}/`)
         );
-        
+
+        // email.kampungcetak.com → webmail
+        const host = req.nextUrl.hostname;
+        if (host === "email.kampungcetak.com" && req.nextUrl.pathname === "/") {
+            return NextResponse.redirect(new URL("/mail", req.url));
+        }
+        if (host === "email.kampungcetak.com" && !req.nextUrl.pathname.startsWith("/mail")) {
+            return NextResponse.redirect(new URL("/mail", req.url));
+        }
+
         if (!isLoggedIn && isProtectedRoute) {
             return NextResponse.redirect(new URL("/", req.url));
         }
@@ -23,11 +32,11 @@ export default withAuth(
     {
         callbacks: {
             authorized: ({ token }) => {
-              
+
                 return true;
             },
         },
-        
+
         cookies: {
             sessionToken: {
                 name: `client-session-token`
@@ -37,5 +46,5 @@ export default withAuth(
 );
 
 export const config = {
-    matcher: ["/home/cart/:path*", "/home/profile/:path*"],
+    matcher: ["/home/cart/:path*", "/home/profile/:path*", "/mail/:path*"],
 };

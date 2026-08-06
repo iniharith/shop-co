@@ -300,7 +300,7 @@ router.get('/my', auth_middileware_1.default, (0, express_async_handler_1.defaul
 })));
 // ─── GET /api/files ───────────────────────────────────────
 // Admin: list all uploaded files with optional filter
-router.get('/', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get('/', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { reviewed, search, limit } = req.query;
     const filters = {};
     if (reviewed !== undefined)
@@ -367,7 +367,7 @@ function enrichWithShareLinks(files) {
 // of applying the 30-day cutoff that GET / below uses (that cutoff was
 // hiding folders whose artwork was uploaded more than 30 days ago, even
 // though the underlying job was still active).
-router.get('/index', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get('/index', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'), (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const files = yield FileUploadRepository_1.fileUploadRepository.findIndex();
     const enriched = yield enrichWithShareLinks(files);
     res.json({ success: true, data: enriched });
@@ -377,7 +377,7 @@ router.get('/index', auth_middileware_1.default, (0, auth_middileware_1.authoriz
 // Eliminates the client-side O(n*m) join between files, tasks, orders, users.
 // Accepts ?taskStatuses= comma-separated list to filter by task status
 // (defaults to artwork statuses if omitted).
-router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d;
     const ARTWORK_STATUSES = ["PLACED", "IN_DESIGN", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "PEMBETULAN", "DONE_DESIGN"];
     const rawStatuses = (_a = req.query.taskStatuses) === null || _a === void 0 ? void 0 : _a.split(',').filter(Boolean);
@@ -539,7 +539,7 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
 // ─── GET /api/files/by-folder ────────────────────────────────
 // Full file details (thumbnails, S3 URLs, etc.) for a single folder, fetched
 // only when that folder is actually opened. Pass taskId, or orderId/userId.
-router.get('/by-folder', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get('/by-folder', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { taskId, orderId, userId } = req.query;
     if (!taskId && !orderId && !userId) {
         res.status(400).json({ success: false, message: 'taskId, orderId, or userId is required' });
@@ -558,7 +558,7 @@ router.get('/by-folder', auth_middileware_1.default, (0, auth_middileware_1.auth
 })));
 // ─── GET /api/files/grouped ───────────────────────────────
 // Admin: files grouped by customer (Nextcloud folder view)
-router.get('/grouped', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get('/grouped', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'), (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const grouped = yield FileUploadRepository_1.fileUploadRepository.getFilesGroupedByUser();
     const stats = yield FileUploadRepository_1.fileUploadRepository.getStorageStats();
     res.json({ success: true, data: grouped, stats });

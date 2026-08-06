@@ -31,7 +31,7 @@ class AdminController {
     getUsers(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS, user_type_1.Roles.DESIGNER, user_type_1.Roles.PRODUCTION, user_type_1.Roles.PACKAGING].includes(req.role)) {
+                if (![user_type_1.Roles.ADMIN, user_type_1.Roles.SYSADMIN, user_type_1.Roles.BOSS, user_type_1.Roles.DESIGNER, user_type_1.Roles.PRODUCTION, user_type_1.Roles.PACKAGING, user_type_1.Roles.AWAPPAREL].includes(req.role)) {
                     throw new Error(api_constant_1.messages.UNAUTHORIZED);
                 }
                 const users = yield this.adminUsecase.getAllUsers();

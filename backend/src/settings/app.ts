@@ -34,6 +34,7 @@ import projectRoutes from '../presentation/routes/projectRoutes';
 import auditRoutes from '../presentation/routes/auditRoutes';
 import easyParcelRoutes from '../presentation/routes/easyParcelRoutes';
 import webVitalsRoutes from '../presentation/routes/webVitalsRoutes';
+import mailRoutes from '../presentation/routes/mailRoutes';
 import { auditMiddleware } from '../presentation/middlewares/audit.middleware';
 import { bandwidthMiddleware } from '../shared/utils/bandwidthTracker';
 import { randomUUID } from 'crypto';
@@ -128,6 +129,9 @@ app.use('/api/webhooks/whatsapp', whatsappWebhook);
 
 // Mobile App Routes
 app.use('/api/app', appRoutes);
+
+// ─── Webmail Bridge (email.kampungcetak.com) ────────
+app.use('/api/mail', mailRoutes);
 
 // ─── Admin Panel (served at admin.kampungcetak.com) ──────
 const adminPath = path.join(__dirname, '../../admin');

@@ -8,10 +8,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const user_usecase_1 = require("../../application/usecases/user/user.usecase");
 const api_constant_1 = require("../../shared/constants/api.constant");
+const jwt_1 = __importDefault(require("../../shared/utils/jwt"));
+const user_model_1 = __importDefault(require("../../infrastructure/db/models/user.model"));
 /**  @Controller */
 class AuthController {
     constructor() {
@@ -120,6 +125,108 @@ class AuthController {
                     success: false,
                     message: error.message || "Invalid refresh token"
                 });
+            }
+        });
+    }
+    /**
+     * @description Generate a one-time (time-limited) magic login link for a user.
+     *              Only sysadmin and boss may create these links.
+     * @Method POST
+     * @Route /api/auth/magic-link
+     * @Body userId: string OR email: string
+     * @ResponseJson {success: boolean, token: string, expiresIn: number}
+     */
+    generateMagicLink(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { userId, email } = req.body;
+                if (!userId && !email) {
+                    return res.status(api_constant_1.statusCodes.BAD_REQUEST).json({
+                        success: false,
+                        message: "userId or email is required"
+                    });
+                }
+                const user = yield user_model_1.default.findOne(userId ? { _id: userId } : { email: String(email).toLowerCase().trim() }).lean();
+                if (!user) {
+                    return res.status(api_constant_1.statusCodes.NOT_FOUND).json({
+                        success: false,
+                        message: "User not found"
+                    });
+                }
+                const jwtService = new jwt_1.default();
+                const token = jwtService.generateToken({ userId: user._id.toString(), purpose: "magic-login" }, "7d");
+                return res.status(api_constant_1.statusCodes.OK).json({
+                    success: true,
+                    token,
+                    expiresIn: 7,
+                    user: {
+                        _id: user._id,
+                        name: user.name,
+                        email: user.email,
+                        role: user.role,
+                    },
+                });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
+    /**
+     * @description Log a user in without a password by exchanging a magic link token.
+     * @Method POST
+     * @Route /api/auth/magic-login
+     * @Body magicToken: string
+     * @ResponseJson {success: boolean, message: string, user: User, accessToken: string, refreshToken: string}
+     */
+    magicLogin(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { magicToken } = req.body;
+                if (!magicToken) {
+                    return res.status(api_constant_1.statusCodes.BAD_REQUEST).json({
+                        success: false,
+                        message: "magicToken is required"
+                    });
+                }
+                const jwtService = new jwt_1.default();
+                let decoded;
+                try {
+                    decoded = jwtService.verifyToken(magicToken, "token");
+                }
+                catch (error) {
+                    return res.status(api_constant_1.statusCodes.UNAUTHORIZED).json({
+                        success: false,
+                        message: "Invalid or expired login link"
+                    });
+                }
+                if ((decoded === null || decoded === void 0 ? void 0 : decoded.purpose) !== "magic-login" || !(decoded === null || decoded === void 0 ? void 0 : decoded.userId)) {
+                    return res.status(api_constant_1.statusCodes.UNAUTHORIZED).json({
+                        success: false,
+                        message: "Invalid login link"
+                    });
+                }
+                const user = yield user_model_1.default.findById(decoded.userId);
+                if (!user) {
+                    return res.status(api_constant_1.statusCodes.NOT_FOUND).json({
+                        success: false,
+                        message: "User not found or blocked"
+                    });
+                }
+                const accessToken = jwtService.generateAccessToken({ userId: user._id });
+                const refreshToken = jwtService.generateRefreshToken({ userId: user._id });
+                const safeUser = user.toObject();
+                delete safeUser.password;
+                return res.status(api_constant_1.statusCodes.OK).json({
+                    success: true,
+                    message: "User logged in successfully",
+                    user: safeUser,
+                    accessToken,
+                    refreshToken
+                });
+            }
+            catch (error) {
+                next(error);
             }
         });
     }

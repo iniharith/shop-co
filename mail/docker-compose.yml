@@ -1,0 +1,27 @@
+# docker-mailserver — self-hosted mail server for @kampungcetak.com
+# Deploy this on the VPS (64.29.17.1) that already runs the backend/admin.
+#
+# Docs: https://docker-mailserver.github.io/docker-mailserver/latest/
+services:
+  mailserver:
+    image: ghcr.io/docker-mailserver/docker-mailserver:latest
+    container_name: mailserver
+    hostname: mail
+    domainname: kampungcetak.com
+    env_file: mailserver.env
+    ports:
+      - "25:25"      # SMTP (inbound + relay)
+      - "465:465"    # SMTPS (implicit TLS submission)
+      - "587:587"    # Submission (STARTTLS) — used by the webmail to send
+      - "993:993"    # IMAPS (implicit TLS) — used by the webmail to read
+    volumes:
+      - ./docker-data/dms/mail-data/:/var/mail/
+      - ./docker-data/dms/mail-state/:/var/mail-state/
+      - ./docker-data/dms/mail-logs/:/var/log/mail/
+      - ./docker-data/dms/config/:/tmp/docker-mailserver/
+      - /etc/letsencrypt/:/etc/letsencrypt/:ro   # TLS certs for mail.kampungcetak.com
+    cap_add:
+      - NET_ADMIN
+      - SYS_PTRACE
+    restart: always
+    stop_grace_period: 1m

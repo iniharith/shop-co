@@ -37,6 +37,8 @@ const webhook_route_1 = __importDefault(require("../presentation/routes/webhook.
 const projectRoutes_1 = __importDefault(require("../presentation/routes/projectRoutes"));
 const auditRoutes_1 = __importDefault(require("../presentation/routes/auditRoutes"));
 const easyParcelRoutes_1 = __importDefault(require("../presentation/routes/easyParcelRoutes"));
+const webVitalsRoutes_1 = __importDefault(require("../presentation/routes/webVitalsRoutes"));
+const mailRoutes_1 = __importDefault(require("../presentation/routes/mailRoutes"));
 const audit_middleware_1 = require("../presentation/middlewares/audit.middleware");
 const bandwidthTracker_1 = require("../shared/utils/bandwidthTracker");
 const crypto_1 = require("crypto");
@@ -108,11 +110,14 @@ app.use('/api/audit-logs', auditRoutes_1.default);
 app.use('/api/tools', toolsRoutes_1.default);
 app.use('/api/chat', chatRoutes_1.default);
 app.use('/api/sysadmin', sysadminRoutes_1.default);
+app.use('/api/web-vitals', webVitalsRoutes_1.default);
 // ─── WhatsApp Webhook (Meta callback verification) ───────
 // Callback URL: https://admin.kampungcetak.com/api/webhooks/whatsapp
 app.use('/api/webhooks/whatsapp', WhatsAppWebhookService_1.default);
 // Mobile App Routes
 app.use('/api/app', appRoutes_1.default);
+// ─── Webmail Bridge (email.kampungcetak.com) ────────
+app.use('/api/mail', mailRoutes_1.default);
 // ─── Admin Panel (served at admin.kampungcetak.com) ──────
 const adminPath = path_1.default.join(__dirname, '../../admin');
 app.use('/admin', express_1.default.static(adminPath));
