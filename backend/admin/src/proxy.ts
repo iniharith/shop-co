@@ -49,12 +49,18 @@ export default withAuth(
       }
 
       // Allow verified users or ANY internal staff role to bypass verified check
-      const isInternalStaff = [Roles.ADMIN, Roles.SYSADMIN, Roles.DESIGNER, Roles.BOSS, Roles.PRODUCTION, Roles.PACKAGING].includes(userRole as Roles);
+      const isInternalStaff = [Roles.ADMIN, Roles.SYSADMIN, Roles.DESIGNER, Roles.BOSS, Roles.PRODUCTION, Roles.PACKAGING, Roles.AWAPPAREL].includes(userRole as Roles);
+
+      // AWAPPAREL can only access the Sublimation manager
+      if (userRole === Roles.AWAPPAREL && !path.startsWith("/admin/sublimation")) {
+        return NextResponse.redirect(new URL("/admin/sublimation", req.url));
+      }
 
       if (path === "/admin/dashboard") {
         if (userRole === Roles.PRODUCTION) return NextResponse.redirect(new URL("/admin/production", req.url));
         if (userRole === Roles.PACKAGING) return NextResponse.redirect(new URL("/admin/packaging", req.url));
         if (userRole === Roles.DESIGNER) return NextResponse.redirect(new URL("/admin/tasks", req.url));
+        if (userRole === Roles.AWAPPAREL) return NextResponse.redirect(new URL("/admin/sublimation", req.url));
       }
       
       if (isLoggedIn && !isInternalStaff && !isVerified) {

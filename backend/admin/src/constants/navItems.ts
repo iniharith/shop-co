@@ -77,6 +77,13 @@ export const AdminNavItems: NavItem[] = [
         isActive: false,
     },
     {
+        title: 'Sublimation',
+        url: '/admin/sublimation',
+        icon: 'shirt',
+        shortcut: ['s', 'u'],
+        isActive: false,
+    },
+    {
         title: 'Packaging',
         url: '/admin/packaging',
         icon: 'packageBox',
@@ -137,11 +144,13 @@ export const roleByNavItems = (role: string) => {
     let allowedTitles = AdminNavItems.map(item => item.title); // Default: all allowed
     
     if (role === "production") {
-        allowedTitles = ['Orders', 'Tracking', 'Chat', 'Production', 'Packaging', 'History'];
+        allowedTitles = ['Orders', 'Tracking', 'Chat', 'Production', 'Sublimation', 'Packaging', 'History'];
     } else if (role === "packaging") {
         allowedTitles = ['Orders', 'Tracking', 'Chat', 'Packaging', 'History'];
     } else if (role === "designer") {
         allowedTitles = ['Projects', 'Artworks', 'Print Drafts', 'Tasks', 'Chat'];
+    } else if (role === "awapparel") {
+        allowedTitles = ['Sublimation'];
     } else if (role !== "sysadmin" && role !== "admin" && role !== "boss") {
         // Only sysadmin, admin, and boss can access the administrative tools.
         allowedTitles = allowedTitles.filter(title => title !== 'Server Status' && title !== 'Tools');

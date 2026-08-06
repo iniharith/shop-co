@@ -37,7 +37,6 @@ const categories = [
   "DISPLAY ITEM",
   "DIGITAL OFFSET",
   "PREMIUM GIFT",
-  "APPAREL",
   "FRAME",
   "WEDDING PRODUCT",
   "FOOD PACKAGING"

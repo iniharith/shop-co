@@ -310,7 +310,7 @@ router.get(
 router.get(
   '/',
   authMiddilware,
-  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
+  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'),
   asyncHandler(async (req: Request, res: Response) => {
     const { reviewed, search, limit } = req.query as { reviewed?: string; search?: string; limit?: string };
     const filters: any = {};
@@ -383,7 +383,7 @@ async function enrichWithShareLinks(files: any[]): Promise<any[]> {
 router.get(
   '/index',
   authMiddilware,
-  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
+  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'),
   asyncHandler(async (_req: Request, res: Response) => {
     const files = await fileUploadRepository.findIndex();
     const enriched = await enrichWithShareLinks(files);
@@ -399,7 +399,7 @@ router.get(
 router.get(
   '/folder-group',
   authMiddilware,
-  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
+  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'),
   asyncHandler(async (req: Request, res: Response) => {
     const ARTWORK_STATUSES = ["PLACED","IN_DESIGN","IN_PROGRESS","PENDING_ARTWORK","ARTWORK_REVIEWED","ARTWORK_REJECTED","PEMBETULAN","DONE_DESIGN"];
     const rawStatuses = (req.query.taskStatuses as string)?.split(',').filter(Boolean);
@@ -566,7 +566,7 @@ router.get(
 router.get(
   '/by-folder',
   authMiddilware,
-  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
+  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'),
   asyncHandler(async (req: Request, res: Response) => {
     const { taskId, orderId, userId } = req.query as { taskId?: string; orderId?: string; userId?: string };
     if (!taskId && !orderId && !userId) {
@@ -591,7 +591,7 @@ router.get(
 router.get(
   '/grouped',
   authMiddilware,
-  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'),
+  authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'),
   asyncHandler(async (_req: Request, res: Response) => {
     const grouped = await fileUploadRepository.getFilesGroupedByUser();
     const stats = await fileUploadRepository.getStorageStats();

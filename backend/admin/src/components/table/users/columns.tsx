@@ -31,6 +31,7 @@ export enum Roles {
   BOSS = "boss",
   PRODUCTION = "production",
   PACKAGING = "packaging",
+  AWAPPAREL = "awapparel",
 }
 
 export const userColumns: ColumnDef<IUser>[] = [

@@ -46,7 +46,8 @@ import {
   Server,
   Cloud,
   Wrench,
-  Sparkles
+  Sparkles,
+  Shirt
 } from "lucide-react";
 
 import { FaCartShopping } from "react-icons/fa6";
@@ -117,6 +118,7 @@ export const Icons = {
   server: Server,
   cloud: Cloud,
   printer: Printer,
+  shirt: Shirt,
   history: History,
   packageBox: Package,
   gitHub: ({ ...props }: LucideProps) => (

@@ -11,7 +11,7 @@ import { useUsers } from "@/hooks/useUsers";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, CheckCircle, User, Tag, Calendar, Link, Share2, CheckSquare, Printer } from "lucide-react";
+import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, CheckCircle, User, Tag, Calendar, Link, Share2, CheckSquare, Printer, Shirt } from "lucide-react";
 import { forceDownload } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -30,31 +30,19 @@ import LoadingAnimation from "@/components/global/LoadingAnimation";
 import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
 import { Virtuoso } from "react-virtuoso";
 import SavedViewsControl from "@/components/global/SavedViewsControl";
+import { Roles } from "@/types/api";
 
-const categories = [
-  "ALL",
-  "DIGITAL PRINTING",
-  "DISPLAY ITEM",
-  "DIGITAL OFFSET",
-  "PREMIUM GIFT",
-  "FRAME",
-  "WEDDING PRODUCT",
-  "FOOD PACKAGING"
-];
-
-// Packaging only ever deals with one status, so there are no sub-tabs (unlike Production's Printing/Hold/Done Printing)
-const PACKAGING_STATUS = "PACKAGING";
-const PACKAGING_STATUSES = ["PACKAGING"];
-type PackagingSavedView = {
+const SUBLIMATION_STATUSES = ["IN_PRODUCTION", "HOLD_PRINTING", "SHIPPED"];
+type SublimationSavedView = {
   searchQuery: string;
-  activeTab: string;
+  activeSubTab: string;
   viewMode: "grid" | "list";
 };
-const isPackagingSavedView = (value: unknown): value is PackagingSavedView => {
+const isSublimationSavedView = (value: unknown): value is SublimationSavedView => {
   if (!value || typeof value !== "object") return false;
-  const view = value as PackagingSavedView;
+  const view = value as SublimationSavedView;
   return typeof view.searchQuery === "string"
-    && categories.includes(view.activeTab)
+    && SUBLIMATION_STATUSES.includes(view.activeSubTab)
     && (view.viewMode === "grid" || view.viewMode === "list");
 };
 
@@ -67,13 +55,14 @@ const getFolderItemKey = (index: number, group: any) =>
         ? `user:${group.userId}`
         : `folder:${group.folderName || "unnamed"}:${index}`;
 
-export default function PackagingManager() {
+export default function SublimationManager() {
   const lowPower = useLowPowerAnimations();
   const { data: session } = useSession();
+  const isReadOnly = session?.user?.role === Roles.AWAPPAREL;
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
-  const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching } = useFolderGroup(PACKAGING_STATUSES);
+  const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching } = useFolderGroup(SUBLIMATION_STATUSES);
   const groupedFromServer: any[] = (folderGroupResponse as any)?.data || [];
   const selectedGroup = useMemo(() => groupedFromServer.find(
     group => `${group.folderName}-${group.orderId}-${group.taskId || ""}` === selectedFolder
@@ -83,14 +72,12 @@ export default function PackagingManager() {
   const { mutate: updateTask } = useUpdateTask();
   const { data: usersResponse } = useUsers(!!selectedFolder);
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
-
+  
   const { data: virtualFoldersResponse } = useFolders(!!selectedFolder);
   const virtualFolders = (virtualFoldersResponse as any)?.data || [];
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("ALL");
-  // Fixed sub-tab — Packaging has no Printing/Hold/Done Printing tabs like Production does
-  const [activeSubTab, setActiveSubTab] = useState("PACKAGING");
+  const [activeSubTab, setActiveSubTab] = useState("IN_PRODUCTION");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
@@ -123,14 +110,14 @@ export default function PackagingManager() {
   const [bulkSelectMode, setBulkSelectMode] = useState<boolean>(false);
   const [selectedFolderIds, setSelectedFolderIds] = useState<string[]>([]);
   const [bulkTargetStatus, setBulkTargetStatus] = useState<string>("SHIPPED");
-  const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN", "IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING", "PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "FAILED", "RETURN"];
+const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN", "IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING", "PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "FAILED", "RETURN"];
 
   // Optimistic removal — folders removed instantly from UI when tick button is clicked
   const [movedFolderIds, setMovedFolderIds] = useState<Set<string>>(new Set());
 
   // Upload Modal State
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [uploadData, setUploadData] = useState({ userId: "", orderId: "", category: "DIGITAL PRINTING", notes: "" });
+  const [uploadData, setUploadData] = useState({ userId: "", orderId: "", category: "APPAREL", notes: "" });
   const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -170,22 +157,22 @@ export default function PackagingManager() {
     });
   };
 
-  // The backend returns this queue as a compact folder index. Keeping the
-  // grouping server-side makes navigation fast and preserves cached results.
+  // This page is dedicated to apparel (sublimation) products only, so the list
+  // is filtered to the APPAREL category across the Printing / Hold / Sent queue.
   const groupedFiles = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     return groupedFromServer.filter((group: any) => {
       const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
       if (movedFolderIds.has(folderId)) return false; // optimistic removal
       if (group.orderStatus !== activeSubTab) return false;
-      if (activeTab !== "ALL" && group.category !== activeTab && group.files?.[0]?.category !== activeTab) return false;
+      if (group.category !== "APPAREL" && group.files?.[0]?.category !== "APPAREL") return false;
       if (!query) return true;
       return group.folderName?.toLowerCase().includes(query)
         || group.orderId?.toLowerCase().includes(query)
         || group.taskId?.toLowerCase().includes(query)
         || group.files?.some((file: any) => file.originalName?.toLowerCase().includes(query));
     });
-  }, [groupedFromServer, searchQuery, activeTab, activeSubTab, movedFolderIds]);
+  }, [groupedFromServer, searchQuery, activeSubTab, movedFolderIds]);
 
   // Once a folder is opened, fetch its full file details on demand — the
   // folder LIST only ever needed names/counts, which the slim index above
@@ -284,7 +271,7 @@ export default function PackagingManager() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ fileIds, zipName: group.folderName || "packaging", downloadId }),
+        body: JSON.stringify({ fileIds, zipName: group.folderName || "sublimation", downloadId }),
       });
 
       if (!response.ok) {
@@ -296,7 +283,7 @@ export default function PackagingManager() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${group.folderName || "packaging"}.zip`;
+      link.download = `${group.folderName || "sublimation"}.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -326,7 +313,7 @@ export default function PackagingManager() {
 
     if (group.taskId) {
       updateTask({ id: group.taskId, data: { status: "SHIPPED" } }, {
-        onSuccess: () => toast.success("✅ Moved to Shipped!"),
+        onSuccess: () => toast.success("✅ Moved to Sent!"),
         onError: () => {
           toast.error("Failed to update status");
           setMovedFolderIds(prev => { const s = new Set(prev); s.delete(folderId); return s; });
@@ -334,7 +321,7 @@ export default function PackagingManager() {
       });
     } else if (group.orderId) {
       updateOrderStatus({ id: group.orderId, status: "SHIPPED" }, {
-        onSuccess: () => toast.success("✅ Moved to Shipped!"),
+        onSuccess: () => toast.success("✅ Moved to Sent!"),
         onError: () => {
           toast.error("Failed to update status");
           setMovedFolderIds(prev => { const s = new Set(prev); s.delete(folderId); return s; });
@@ -381,7 +368,7 @@ export default function PackagingManager() {
       await AxiosInstance(token).post("/api/files/save-metadata", {
         userId: uploadData.userId || undefined,
         orderId: uploadData.orderId || undefined,
-        category: uploadData.category || "DIGITAL PRINTING",
+        category: uploadData.category || "APPAREL",
         notes: uploadData.notes || undefined,
         files: uploaded,
       });
@@ -511,19 +498,19 @@ export default function PackagingManager() {
               </button>
             )}
           </div>
-          <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="shrink-0" title="Refresh Packaging Files">
+          <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="shrink-0" title="Refresh Sublimation Files">
             <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
           </Button>
         </div>
 
         <div className="flex items-center gap-2">
           <SavedViewsControl
-            scope="packaging"
-            state={{ searchQuery, activeTab, viewMode }}
-            isValidState={isPackagingSavedView}
+            scope="sublimation"
+            state={{ searchQuery, activeSubTab, viewMode }}
+            isValidState={isSublimationSavedView}
             onApply={view => {
               setSearchQuery(view.searchQuery);
-              setActiveTab(view.activeTab);
+              setActiveSubTab(view.activeSubTab);
               setViewMode(view.viewMode);
             }}
           />
@@ -543,53 +530,48 @@ export default function PackagingManager() {
               <List className="w-4 h-4" />
             </button>
           </div>
-          <Dialog open={uploadModalOpen} onOpenChange={(open) => {
-            if (!isUploading) setUploadModalOpen(open);
-          }}>
-            <DialogTrigger asChild>
-              <Button><Plus className="w-4 h-4 mr-2" /> Upload File</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Upload File for Packaging</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={uploadData.category} onChange={e => setUploadData({ ...uploadData, category: e.target.value })}>
-                    {categories.filter(c => c !== "ALL").map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+          {!isReadOnly && (
+            <Dialog open={uploadModalOpen} onOpenChange={(open) => {
+              if (!isUploading) setUploadModalOpen(open);
+            }}>
+              <DialogTrigger asChild>
+                <Button><Plus className="w-4 h-4 mr-2" /> Upload File</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Upload File for Sublimation</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Files *</Label>
+                    <Input type="file" multiple disabled={isUploading} onChange={e => setUploadFiles(e.target.files)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Admin Notes</Label>
+                    <Textarea placeholder="Internal notes..." value={uploadData.notes} onChange={e => setUploadData({ ...uploadData, notes: e.target.value })} />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Files *</Label>
-                  <Input type="file" multiple disabled={isUploading} onChange={e => setUploadFiles(e.target.files)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Admin Notes</Label>
-                  <Textarea placeholder="Internal notes..." value={uploadData.notes} onChange={e => setUploadData({ ...uploadData, notes: e.target.value })} />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" disabled={isUploading} onClick={() => setUploadModalOpen(false)}>Cancel</Button>
-                <Button disabled={isUploading} onClick={handleUploadSubmit}>{isUploading ? "Uploading..." : "Upload"}</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <Button variant="outline" disabled={isUploading} onClick={() => setUploadModalOpen(false)}>Cancel</Button>
+                  <Button disabled={isUploading} onClick={handleUploadSubmit}>{isUploading ? "Uploading..." : "Upload"}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
         <TabsList className="flex flex-wrap h-auto gap-2 justify-start mb-2">
-          {categories.map(cat => (
-            <TabsTrigger key={cat} value={cat} className="text-xs md:text-sm">{cat}</TabsTrigger>
-          ))}
+          <TabsTrigger value="IN_PRODUCTION" className="text-xs md:text-sm">Printing</TabsTrigger>
+          <TabsTrigger value="HOLD_PRINTING" className="text-xs md:text-sm">Hold</TabsTrigger>
+          <TabsTrigger value="SHIPPED" className="text-xs md:text-sm">Sent</TabsTrigger>
         </TabsList>
       </Tabs>
 
       {groupedFiles.length === 0 ? (
         <div className="p-8 text-center text-muted-foreground border border-dashed rounded-xl bg-card">
-          No files in packaging right now.
+          No files in sublimation right now.
         </div>
       ) : (
         <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-220px)] min-h-[600px]">
@@ -600,15 +582,17 @@ export default function PackagingManager() {
               <span>Task Folders</span>
               <div className="flex items-center gap-2">
                 <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">{groupedFiles.length}</span>
-                <Button
-                  variant={bulkSelectMode ? "default" : "outline"}
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  onClick={() => { setBulkSelectMode(v => !v); setSelectedFolderIds([]); }}
-                  title="Move multiple folders to a status in one click"
-                >
-                  <CheckSquare className="w-3.5 h-3.5 mr-1" /> Bulk Move
-                </Button>
+                {!isReadOnly && (
+                  <Button
+                    variant={bulkSelectMode ? "default" : "outline"}
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => { setBulkSelectMode(v => !v); setSelectedFolderIds([]); }}
+                    title="Move multiple folders to a status in one click"
+                  >
+                    <CheckSquare className="w-3.5 h-3.5 mr-1" /> Bulk Move
+                  </Button>
+                )}
               </div>
             </div>
             {bulkSelectMode && (
@@ -726,7 +710,7 @@ export default function PackagingManager() {
                   <div className="p-4 sm:p-6 border-b bg-muted/10 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center shrink-0 min-w-0">
                     <div className="flex-1 min-w-0">
                       <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2 truncate">
-                        <Folder className="w-6 h-6 text-primary shrink-0" />
+                        <Shirt className="w-6 h-6 text-primary shrink-0" />
                         <span className="truncate">{activeGroup.folderName}</span>
                       </h2>
                       {(activeGroup.orderId || activeGroup.taskId) && (
@@ -739,6 +723,9 @@ export default function PackagingManager() {
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0 shrink-0">
                       <div className="flex items-center gap-2 bg-background border rounded-md p-1 pl-3 shadow-sm">
                         <span className="text-xs font-semibold text-muted-foreground">Status:</span>
+                        {isReadOnly ? (
+                          <span className="h-9 text-sm font-bold capitalize px-2 flex items-center">{activeGroup.orderStatus.replace(/_/g, ' ')}</span>
+                        ) : (
                         <select 
                           className="h-9 text-sm font-bold bg-transparent border-0 rounded px-2 focus:ring-0 w-full sm:w-40"
                           value={activeGroup.orderStatus}
@@ -757,16 +744,20 @@ export default function PackagingManager() {
                             <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                           ))}
                         </select>
+                        )}
                       </div>
+                      {!isReadOnly && (
                       <Button 
                         variant="outline" 
                         onClick={(e) => handleAdvanceFlow(activeGroup, e)} 
                         className="shadow-sm h-11 sm:h-10 border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                        title="Mark as Shipped"
+                        title="Mark as Sent"
                       >
                         <CheckCircle className="w-5 h-5 sm:mr-2" /> 
-                        <span className="hidden sm:inline">Shipped</span>
+                        <span className="hidden sm:inline">Sent</span>
                       </Button>
+                      )}
+                      {!isReadOnly && (
                       <Button 
                         variant="outline" 
                         disabled={isGeneratingLink}
@@ -785,6 +776,7 @@ export default function PackagingManager() {
                       >
                         <Share2 className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">{isGeneratingLink ? "Generating..." : "Share"}</span>
                       </Button>
+                      )}
                       <Button variant="secondary" onClick={(e) => handleDownloadAll(activeGroup, e)} className="shadow-sm h-11 sm:h-10">
                         <Download className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Download</span>
                       </Button>
@@ -820,17 +812,17 @@ export default function PackagingManager() {
                           </div>
                           
                           <div className="pt-3 mt-3 border-t flex flex-wrap gap-2">
-                            {activeGroup.orderId && (
+                            {!isReadOnly && activeGroup.orderId && (
                               <a href={`/admin/orders?search=${activeGroup.orderId}`} target="_blank" className="flex-1 text-center bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-1.5 px-2 rounded-md transition-colors">
                                 View Order
                               </a>
                             )}
-                            {activeGroup.taskId && (
+                            {!isReadOnly && activeGroup.taskId && (
                               <a href={`/admin/tasks?task=${activeGroup.taskId}`} target="_blank" className="flex-1 text-center bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-1.5 px-2 rounded-md transition-colors">
                                 View Task
                               </a>
                             )}
-                            {(activeGroup.orderId || activeGroup.folderName) && (
+                            {!isReadOnly && (activeGroup.orderId || activeGroup.folderName) && (
                               <a href={`/admin/artworks?folder=${encodeURIComponent(activeGroup.folderName)}`} target="_blank" className="flex-1 text-center bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-1.5 px-2 rounded-md transition-colors">
                                 Artworks
                               </a>
@@ -840,8 +832,8 @@ export default function PackagingManager() {
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="p-4 sm:p-6 flex-1 overflow-y-auto min-h-0 bg-background/50 relative">
+
+                  <div className="p-4 sm:p-6 flex-1 overflow-y-auto bg-muted/5 relative">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
                         {activeSubFolderId ? "Subfolder Contents" : `${activeGroup.fileCount} Attachments`}
@@ -900,12 +892,12 @@ export default function PackagingManager() {
             })() : (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center space-y-5 bg-muted/10">
                 <div className="w-24 h-24 bg-background border rounded-full flex items-center justify-center shadow-sm">
-                  <Folder className="w-12 h-12 text-muted-foreground/40" />
+                  <Shirt className="w-12 h-12 text-muted-foreground/40" />
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold text-foreground mb-2">Select a Task</h3>
                   <p className="text-sm max-w-sm mx-auto text-muted-foreground/80 leading-relaxed">
-                    Click on a folder from the list on the left to view its task details, update its status, and download files for packaging.
+                    Click on a folder from the list on the left to view its task details, update its status, and download files for sublimation.
                   </p>
                 </div>
               </div>

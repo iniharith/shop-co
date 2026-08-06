@@ -3,9 +3,10 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CheckSquare, Image as ImageIcon, Hammer, Menu } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Image as ImageIcon, Hammer, Menu, Shirt } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { motion, LayoutGroup } from "framer-motion";
+import { useSession } from "next-auth/react";
 
 const bottomNavItems = [
   {
@@ -28,16 +29,27 @@ const bottomNavItems = [
     url: "/admin/production",
     icon: Hammer,
   },
+  {
+    title: "Sublimation",
+    url: "/admin/sublimation",
+    icon: Shirt,
+  },
 ];
 
 export function MobileBottomNav() {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
+  const { data: session } = useSession();
+
+  const isAwapparel = session?.user?.role === "awapparel";
+  const navItems = isAwapparel
+    ? bottomNavItems.filter(item => item.title === "Sublimation")
+    : bottomNavItems;
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
       <div className="flex items-center justify-around bg-background border shadow-xl rounded-full p-2 ring-1 ring-border/50">
-        <LayoutGroup>{bottomNavItems.map((item) => {
+        <LayoutGroup>{navItems.map((item) => {
           const isActive = pathname === item.url || pathname.startsWith(`${item.url}/`);
           const Icon = item.icon;
           

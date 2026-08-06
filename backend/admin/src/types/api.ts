@@ -45,6 +45,7 @@ export enum Roles {
     BOSS = "boss",
     PRODUCTION = "production",
     PACKAGING = "packaging",
+    AWAPPAREL = "awapparel",
 }
 
 

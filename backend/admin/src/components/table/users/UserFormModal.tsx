@@ -247,6 +247,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, onOpenChange
                 <SelectItem value={Roles.BOSS}>Boss</SelectItem>
                 <SelectItem value={Roles.PRODUCTION}>Production</SelectItem>
                 <SelectItem value={Roles.PACKAGING}>Packaging</SelectItem>
+                <SelectItem value={Roles.AWAPPAREL}>Awapparel</SelectItem>
               </SelectContent>
             </Select>
           </div>
