@@ -32,7 +32,7 @@ import { Virtuoso } from "react-virtuoso";
 import SavedViewsControl from "@/components/global/SavedViewsControl";
 import { Roles } from "@/types/api";
 
-const SUBLIMATION_STATUSES = ["IN_PRODUCTION", "HOLD_PRINTING", "SHIPPED"];
+const SUBLIMATION_STATUSES = ["IN_PRODUCTION", "HOLD_PRINTING", "PACKAGING"];
 type SublimationSavedView = {
   searchQuery: string;
   activeSubTab: string;
@@ -158,7 +158,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
   };
 
   // This page is dedicated to apparel (sublimation) products only, so the list
-  // is filtered to the APPAREL category across the Printing / Hold / Sent queue.
+  // is filtered to the APPAREL category across the Printing / Hold / Done Print queue.
   const groupedFiles = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     return groupedFromServer.filter((group: any) => {
@@ -306,27 +306,32 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
 
   const handleAdvanceFlow = (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    // Optimistic: instantly remove from list and clear selection
     const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
+    const movingToShipped = activeSubTab === "PACKAGING";
+    const targetStatus = movingToShipped ? "SHIPPED" : "PACKAGING";
+    const successMessage = movingToShipped ? "✅ Moved to Shipped!" : "✅ Moved to Done Print!";
+    // Optimistic: instantly remove from list and clear selection
     setMovedFolderIds(prev => new Set([...prev, folderId]));
     setSelectedFolder(null);
 
+    const onSuccess = () => {
+      toast.success(successMessage);
+      // Status changes clear the folder-group cache server-side, so refetch to
+      // pull the folder back in under its new queue (Done Print for PACKAGING,
+      // or out of this page entirely for SHIPPED).
+      refetch().finally(() => {
+        setMovedFolderIds(prev => { const s = new Set(prev); s.delete(folderId); return s; });
+      });
+    };
+    const onError = () => {
+      toast.error("Failed to update status");
+      setMovedFolderIds(prev => { const s = new Set(prev); s.delete(folderId); return s; });
+    };
+
     if (group.taskId) {
-      updateTask({ id: group.taskId, data: { status: "SHIPPED" } }, {
-        onSuccess: () => toast.success("✅ Moved to Sent!"),
-        onError: () => {
-          toast.error("Failed to update status");
-          setMovedFolderIds(prev => { const s = new Set(prev); s.delete(folderId); return s; });
-        }
-      });
+      updateTask({ id: group.taskId, data: { status: targetStatus }, skipUndo: true, silent: true }, { onSuccess, onError });
     } else if (group.orderId) {
-      updateOrderStatus({ id: group.orderId, status: "SHIPPED" }, {
-        onSuccess: () => toast.success("✅ Moved to Sent!"),
-        onError: () => {
-          toast.error("Failed to update status");
-          setMovedFolderIds(prev => { const s = new Set(prev); s.delete(folderId); return s; });
-        }
-      });
+      updateOrderStatus({ id: group.orderId, status: targetStatus, skipUndo: true, silent: true }, { onSuccess, onError });
     }
   };
 
@@ -565,7 +570,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
         <TabsList className="flex flex-wrap h-auto gap-2 justify-start mb-2">
           <TabsTrigger value="IN_PRODUCTION" className="text-xs md:text-sm">Printing</TabsTrigger>
           <TabsTrigger value="HOLD_PRINTING" className="text-xs md:text-sm">Hold</TabsTrigger>
-          <TabsTrigger value="SHIPPED" className="text-xs md:text-sm">Sent</TabsTrigger>
+          <TabsTrigger value="PACKAGING" className="text-xs md:text-sm">Done Print</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -751,10 +756,10 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                         variant="outline" 
                         onClick={(e) => handleAdvanceFlow(activeGroup, e)} 
                         className="shadow-sm h-11 sm:h-10 border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                        title="Mark as Sent"
+                        title={activeSubTab === "PACKAGING" ? "Mark as Shipped" : "Mark as Done Print"}
                       >
                         <CheckCircle className="w-5 h-5 sm:mr-2" /> 
-                        <span className="hidden sm:inline">Sent</span>
+                        <span className="hidden sm:inline">{activeSubTab === "PACKAGING" ? "Shipped" : "Done Print"}</span>
                       </Button>
                       )}
                       {!isReadOnly && (

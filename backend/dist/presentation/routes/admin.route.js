@@ -86,7 +86,7 @@ router.get("/migrate-statuses", (0, express_async_handler_1.default)((req, res) 
         res.status(500).json({ success: false, error: err.message });
     }
 })));
-router.get("/search", auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)("admin", "sysadmin", "boss", "designer", "production", "packaging"), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/search", auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)("admin", "sysadmin", "boss", "designer", "production", "packaging", "awapparel"), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const startedAt = Date.now();
     const query = (typeof req.query.q === "string" ? req.query.q : "").trim().slice(0, 100);
     const parsedLimit = typeof req.query.limit === "string"
@@ -128,6 +128,9 @@ router.get("/search", auth_middileware_1.default, (0, auth_middileware_1.authori
         : null;
     const fetchLimit = limit + 1;
     const role = req.role;
+    const isAwapparel = role === "awapparel";
+    const canSearchTasks = !isAwapparel;
+    const canSearchOrders = !isAwapparel;
     const canSearchCustomers = ["admin", "sysadmin", "boss"].includes(role);
     const canSearchProjects = ["admin", "sysadmin", "boss", "designer"].includes(role);
     const canSearchTracking = ["admin", "sysadmin", "boss", "production", "packaging"].includes(role);
@@ -190,18 +193,22 @@ router.get("/search", auth_middileware_1.default, (0, auth_middileware_1.authori
         trackingMatches.push({ _id: objectId });
     }
     const [taskRows, orderRows, customerRows, fileRows, projectRows, trackingRows] = yield Promise.all([
-        Task_1.Task.find({ isDeleted: { $ne: true }, $or: taskMatches })
-            .select("_id title status orderId customerUsername updatedAt")
-            .sort({ updatedAt: -1 })
-            .limit(fetchLimit)
-            .maxTimeMS(SEARCH_MAX_TIME_MS)
-            .lean(),
-        order_model_1.default.find({ isDeleted: { $ne: true }, $or: orderMatches })
-            .select("_id orderStatus customerName shippingCustomerEmail trackingNumber createdAt")
-            .sort({ createdAt: -1 })
-            .limit(fetchLimit)
-            .maxTimeMS(SEARCH_MAX_TIME_MS)
-            .lean(),
+        canSearchTasks
+            ? Task_1.Task.find({ isDeleted: { $ne: true }, $or: taskMatches })
+                .select("_id title status orderId customerUsername updatedAt")
+                .sort({ updatedAt: -1 })
+                .limit(fetchLimit)
+                .maxTimeMS(SEARCH_MAX_TIME_MS)
+                .lean()
+            : Promise.resolve([]),
+        canSearchOrders
+            ? order_model_1.default.find({ isDeleted: { $ne: true }, $or: orderMatches })
+                .select("_id orderStatus customerName shippingCustomerEmail trackingNumber createdAt")
+                .sort({ createdAt: -1 })
+                .limit(fetchLimit)
+                .maxTimeMS(SEARCH_MAX_TIME_MS)
+                .lean()
+            : Promise.resolve([]),
         canSearchCustomers
             ? user_model_1.default.find({ role: "client", $or: customerMatches })
                 .select("_id name email phoneNumber")
@@ -210,7 +217,7 @@ router.get("/search", auth_middileware_1.default, (0, auth_middileware_1.authori
                 .maxTimeMS(SEARCH_MAX_TIME_MS)
                 .lean()
             : Promise.resolve([]),
-        FileUpload_1.FileUpload.find({ $or: fileMatches })
+        FileUpload_1.FileUpload.find(isAwapparel ? { category: "APPAREL", $or: fileMatches } : { $or: fileMatches })
             .select("_id originalName filename mimetype category taskId orderId userId uploadedAt")
             .sort({ uploadedAt: -1 })
             .limit(fetchLimit)
