@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { LayoutDashboard, CheckSquare, ShoppingBag, ImageIcon, LayoutGrid } from 'lucide-react-native';
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { LayoutDashboard, CheckSquare, ShoppingBag, ImageIcon, Menu } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
-import { THEME } from '../constants/theme';
 import RightNavigation from './RightNavigation';
 
 const TABS: Record<string, { label: string; icon: (color: string, focused: boolean) => React.ReactNode }> = {
@@ -12,18 +9,18 @@ const TABS: Record<string, { label: string; icon: (color: string, focused: boole
   tasks:    { label: 'Tasks',     icon: (c, f) => <CheckSquare     size={22} color={c} strokeWidth={f ? 2.5 : 1.8} /> },
   orders:   { label: 'Orders',    icon: (c, f) => <ShoppingBag     size={22} color={c} strokeWidth={f ? 2.5 : 1.8} /> },
   artworks: { label: 'Artworks',  icon: (c, f) => <ImageIcon       size={22} color={c} strokeWidth={f ? 2.5 : 1.8} /> },
-  more:     { label: 'More',      icon: (c, f) => <LayoutGrid      size={22} color={c} strokeWidth={f ? 2.5 : 1.8} /> },
+  more:     { label: 'Menu',      icon: (c, f) => <Menu            size={22} color={c} strokeWidth={f ? 2.5 : 1.8} /> },
 };
 
-export default function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
+export default function FloatingTabBar({ state, navigation }: any) {
   const { theme, colors } = useTheme();
   const [drawerOpen, setDrawerOpen] = useState(false);
   
   return (
     <View style={s.wrapper} pointerEvents="box-none">
-      <BlurView intensity={Platform.OS === 'ios' ? 80 : 0} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.blur, { borderColor: colors.glassBorder, backgroundColor: Platform.OS === 'android' ? (theme === 'dark' ? 'rgba(8, 8, 18, 0.94)' : 'rgba(255, 255, 255, 0.94)') : 'transparent' }]}>
+      <View style={[s.blur, { borderColor: colors.glassBorder, backgroundColor: theme === 'dark' ? 'rgb(9, 9, 11)' : '#ffffff' }]}>
         <View style={s.inner}>
-          {state.routes.map((route, index) => {
+          {state.routes.map((route: any, index: number) => {
             const focused = state.index === index;
             const color   = focused ? colors.primary : colors.mutedForeground;
             const tab     = TABS[route.name];
@@ -43,14 +40,13 @@ export default function FloatingTabBar({ state, navigation }: BottomTabBarProps)
                 style={s.tab}
                 activeOpacity={0.7}
               >
-                {/* Pill removed per request */}
                 {tab.icon(color, focused)}
                 <Text style={[s.label, { color, fontWeight: focused ? '700' : '400' }]}>{tab.label}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
-      </BlurView>
+      </View>
       <RightNavigation visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </View>
   );
@@ -58,45 +54,35 @@ export default function FloatingTabBar({ state, navigation }: BottomTabBarProps)
 
 const s = StyleSheet.create({
   wrapper: {
-    // KEY: absolute so it floats above ALL content
     position: 'absolute',
-    bottom: 24,
-    left: 20,
-    right: 20,
+    bottom: 16,
+    left: 16,
+    right: 16,
     zIndex: 9999,
     elevation: 30,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.7,
-    shadowRadius: 32,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
   },
   blur: {
-    borderRadius: 30,
+    borderRadius: 9999,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
-    // Android: BlurView doesn't blur natively — use opaque dark glass color
-    backgroundColor: Platform.OS === 'android' ? 'rgba(8, 8, 18, 0.94)' : 'transparent',
+    paddingHorizontal: 8,
   },
   inner: {
     flexDirection: 'row',
-    paddingVertical: 10,
-    paddingHorizontal: 6,
+    paddingVertical: 8,
+    justifyContent: 'space-around',
+    alignItems: 'center',
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 5,
-    gap: 3,
-  },
-  pill: {
-    width: 28,
-    height: 3,
-    borderRadius: 99,
-    backgroundColor: THEME.primary,
-    position: 'absolute',
-    top: -1,
+    paddingVertical: 4,
+    gap: 2,
   },
   label: {
     fontSize: 10,

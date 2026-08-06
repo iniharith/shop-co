@@ -16,7 +16,7 @@ export default function ProfileScreen() {
   const { theme, colors, customBackground, setCustomBackground } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user, setUser } = useAuthStore();
+  const { user } = useAuthStore();
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -64,9 +64,6 @@ export default function ProfileScreen() {
       const res = await api.put('/user/profile', payload);
       if (res.data?.success) {
         Alert.alert('Success', 'Profile updated successfully');
-        if (user) {
-           setUser({ ...user, name: formData.name, email: formData.email });
-        }
         setFormData(prev => ({ ...prev, password: '' }));
       }
     } catch (e: any) {

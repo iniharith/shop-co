@@ -12,7 +12,6 @@ import { Box, Truck, FileText, CircleCheckBig, CircleAlert, Wifi, WifiOff, Serve
 import api from '../../services/api';
 import socketService from '../../services/socket';
 import { useTheme } from '../../context/ThemeContext';
-import { THEME } from '../../constants/theme';
 
 export default function DashboardScreen() {
   const { theme, colors, toggleTheme } = useTheme();
@@ -82,26 +81,26 @@ export default function DashboardScreen() {
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
       {/* Header */}
-      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { paddingTop: insets.top + 10 }]}>
+      <View style={[s.header, { backgroundColor: theme === 'dark' ? 'rgb(15, 23, 42)' : '#ffffff', borderBottomColor: colors.glassBorder, paddingTop: insets.top + 10 }]}>
         <View>
-          <Text style={s.greeting}>Hi, Welcome back 👋</Text>
+          <Text style={[s.greeting, { color: colors.foreground }]}>Hi, Welcome back 👋</Text>
           <View style={s.liveRow}>
             {live ? <Wifi size={12} color={colors.success} /> : <WifiOff size={12} color={colors.destructive} />}
-            <Text style={s.liveText}>
+            <Text style={[s.liveText, { color: colors.mutedForeground }]}>
               <Text style={{ color: colors.primary }}>{user?.name || 'Admin'}</Text>
               {'  ·  '}{live ? 'Live' : 'Offline'}
             </Text>
           </View>
         </View>
         <View style={s.headerActions}>
-          <TouchableOpacity onPress={toggleTheme} style={s.themeBtn}>
+          <TouchableOpacity onPress={toggleTheme} style={[s.themeBtn, { borderColor: colors.glassBorder, backgroundColor: colors.glass }]}>
             {theme === 'dark' ? <Sun size={18} color={colors.foreground} /> : <Moon size={18} color={colors.foreground} />}
           </TouchableOpacity>
-          <TouchableOpacity onPress={async () => { await logout(); router.replace('/login'); }} style={s.logoutBtn}>
-            <Text style={s.logoutText}>Logout</Text>
+          <TouchableOpacity onPress={async () => { await logout(); router.replace('/login'); }} style={[s.logoutBtn, { borderColor: colors.glassBorder, backgroundColor: colors.glass }]}>
+            <Text style={[s.logoutText, { color: colors.foreground }]}>Logout</Text>
           </TouchableOpacity>
         </View>
-      </BlurView>
+      </View>
 
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130, paddingTop: 12 }}
@@ -142,10 +141,10 @@ export default function DashboardScreen() {
 
             {/* Progression Chart (Pure React Native View approach) */}
             {healthData?.charts?.progression && healthData.charts.progression.length > 0 && (
-              <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.glassCard, { marginTop: 14 }]}>
-                <Text style={s.cardTitle}>7-Day Task Progression</Text>
-                <Text style={s.cardSub}>Number of tasks created over the last week</Text>
-                <View style={[s.divider, { marginBottom: 20 }]} />
+              <View style={[s.glassCard, { marginTop: 14, backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
+                <Text style={[s.cardTitle, { color: colors.foreground }]}>7-Day Task Progression</Text>
+                <Text style={[s.cardSub, { color: colors.mutedForeground }]}>Number of tasks created over the last week</Text>
+                <View style={[s.divider, { backgroundColor: colors.glassBorder, marginBottom: 20 }]} />
                 
                 <View style={{ height: 120, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingHorizontal: 10 }}>
                   {(() => {
@@ -166,26 +165,26 @@ export default function DashboardScreen() {
                   })()}
                 </View>
                 <View style={{ height: 15 }} />
-              </BlurView>
+              </View>
             )}
 
             {/* Sysadmin Raw Server Health */}
             {showServerHealth && healthData?.server && (
-              <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.glassCard, { marginTop: 14, borderColor: '#3b82f644' }]}>
+              <View style={[s.glassCard, { marginTop: 14, backgroundColor: colors.glass, borderColor: '#3b82f644' }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Server size={18} color="#3b82f6" />
                   <View>
-                    <Text style={s.cardTitle}>Raw Server Health</Text>
+                    <Text style={[s.cardTitle, { color: colors.foreground }]}>Raw Server Health</Text>
                     <Text style={[s.cardSub, { color: '#3b82f6' }]}>SysAdmin / Boss Privileges</Text>
                   </View>
                 </View>
-                <View style={s.divider} />
+                <View style={[s.divider, { backgroundColor: colors.glassBorder }]} />
                 
                 <View style={{ gap: 14 }}>
                   <View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Cpu size={14} color={colors.foreground} /><Text style={s.healthLabel}>CPU Load</Text></View>
-                      <Text style={s.healthValue}>{healthData.server.cpuLoad?.[0]?.toFixed(2) || '0.00'}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Cpu size={14} color={colors.foreground} /><Text style={[s.healthLabel, { color: colors.foreground }]}>CPU Load</Text></View>
+                      <Text style={[s.healthValue, { color: colors.foreground }]}>{healthData.server.cpuLoad?.[0]?.toFixed(2) || '0.00'}</Text>
                     </View>
                     <View style={{ height: 6, backgroundColor: colors.glassBorder, borderRadius: 3, overflow: 'hidden' }}>
                       <View style={{ height: '100%', width: `${Math.min((healthData.server.cpuLoad?.[0] || 0) * 20, 100)}%`, backgroundColor: (healthData.server.cpuLoad?.[0] || 0) > 4 ? colors.destructive : colors.success }} />
@@ -194,8 +193,8 @@ export default function DashboardScreen() {
 
                   <View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><HardDrive size={14} color={colors.foreground} /><Text style={s.healthLabel}>Memory (RAM)</Text></View>
-                      <Text style={s.healthValue}>{formatBytes(healthData.server.usedMem)} / {formatBytes(healthData.server.totalMem)}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><HardDrive size={14} color={colors.foreground} /><Text style={[s.healthLabel, { color: colors.foreground }]}>Memory (RAM)</Text></View>
+                      <Text style={[s.healthValue, { color: colors.foreground }]}>{formatBytes(healthData.server.usedMem)} / {formatBytes(healthData.server.totalMem)}</Text>
                     </View>
                     <View style={{ height: 6, backgroundColor: colors.glassBorder, borderRadius: 3, overflow: 'hidden' }}>
                       <View style={{ height: '100%', width: `${(healthData.server.usedMem / healthData.server.totalMem) * 100}%`, backgroundColor: '#a78bfa' }} />
@@ -203,11 +202,11 @@ export default function DashboardScreen() {
                   </View>
 
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 6 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Clock size={14} color={colors.foreground} /><Text style={s.healthLabel}>Uptime</Text></View>
-                    <Text style={s.healthValue}>{formatUptime(healthData.server.uptime)}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Clock size={14} color={colors.foreground} /><Text style={[s.healthLabel, { color: colors.foreground }]}>Uptime</Text></View>
+                    <Text style={[s.healthValue, { color: colors.foreground }]}>{formatUptime(healthData.server.uptime)}</Text>
                   </View>
                 </View>
-              </BlurView>
+              </View>
             )}
 
           </>
@@ -220,18 +219,18 @@ export default function DashboardScreen() {
 function GlassCard({ title, value, sub, icon, isString = false }: { title: string; value: number | string; sub: string; icon: React.ReactNode; isString?: boolean }) {
   const { theme, colors } = useTheme();
   return (
-    <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.statCard}>
-      <View style={s.statHeader}><Text style={s.statTitle}>{title}</Text>{icon}</View>
+    <View style={[s.statCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
+      <View style={s.statHeader}><Text style={[s.statTitle, { color: colors.foreground }]}>{title}</Text>{icon}</View>
       <Text style={[s.statValue, { color: colors.foreground, fontSize: isString ? 20 : 26 }]}>{value}</Text>
       <Text style={[s.statSub, { color: colors.mutedForeground }]}>{sub}</Text>
-    </BlurView>
+    </View>
   );
 }
 
 function HeroCard({ title, value, sub, icon, dark = false, success = false }: { title: string; value: number | string; sub: string; icon: React.ReactNode; dark?: boolean; success?: boolean }) {
   const { colors } = useTheme();
-  const backgroundColor = dark ? '#111827' : success ? '#bef264' : colors.glass;
-  const foreground = success ? '#172033' : colors.foreground;
+  const backgroundColor = dark ? '#0f172a' : success ? '#bef264' : colors.glass;
+  const foreground = success ? '#0f172a' : colors.foreground;
   return <View style={[s.heroCard, { backgroundColor, borderColor: dark ? '#334155' : success ? '#a3e635' : colors.glassBorder }]}>
     <View style={s.statHeader}><Text style={[s.statTitle, { color: foreground }]}>{title}</Text>{icon}</View>
     <Text style={[s.heroValue, { color: foreground }]}>{value}</Text>
@@ -241,28 +240,28 @@ function HeroCard({ title, value, sub, icon, dark = false, success = false }: { 
 
 const s = StyleSheet.create({
   screen: { flex: 1 },
-  header: { paddingTop: 54, paddingBottom: 16, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: THEME.glassBorder },
-  greeting: { fontSize: 20, fontWeight: '700', color: THEME.foreground },
+  header: { paddingBottom: 16, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1 },
+  greeting: { fontSize: 20, fontWeight: '700' },
   liveRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  liveText: { color: THEME.mutedForeground, fontSize: 13 },
-  logoutBtn: { borderWidth: 1, borderColor: THEME.glassBorder, backgroundColor: THEME.glass, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
-  logoutText: { color: THEME.foreground, fontSize: 13, fontWeight: '500' },
+  liveText: { fontSize: 13 },
+  logoutBtn: { borderWidth: 1, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
+  logoutText: { fontSize: 13, fontWeight: '500' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  themeBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, borderColor: THEME.glassBorder, backgroundColor: THEME.glass, alignItems: 'center', justifyContent: 'center' },
+  themeBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   row: { flexDirection: 'row', gap: 10 },
-  glassCard: { borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 16 },
-  statCard: { flex: 1, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: THEME.glassBorder, padding: 14 },
+  glassCard: { borderRadius: 16, borderWidth: 1, padding: 16 },
+  statCard: { flex: 1, borderRadius: 16, borderWidth: 1, padding: 14 },
   heroCard: { flex: 1, minHeight: 150, borderRadius: 20, borderWidth: 1, padding: 16, justifyContent: 'space-between' },
   heroValue: { fontSize: 34, fontWeight: '800', letterSpacing: -1 },
   statHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  statTitle: { color: THEME.foreground, fontSize: 12, fontWeight: '500', flex: 1 },
-  statValue: { color: THEME.foreground, fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
-  statSub: { color: THEME.mutedForeground, fontSize: 10, marginTop: 2, lineHeight: 14 },
-  cardTitle: { color: THEME.foreground, fontSize: 15, fontWeight: '700' },
-  cardSub: { color: THEME.mutedForeground, fontSize: 12, marginTop: 4 },
+  statTitle: { fontSize: 12, fontWeight: '500', flex: 1 },
+  statValue: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
+  statSub: { fontSize: 10, marginTop: 2, lineHeight: 14 },
+  cardTitle: { fontSize: 15, fontWeight: '700' },
+  cardSub: { fontSize: 12, marginTop: 4 },
   sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
-  divider: { height: 1, backgroundColor: THEME.glassBorder, marginVertical: 14 },
-  deliveryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: THEME.glassBorder },
-  healthLabel: { color: THEME.foreground, fontSize: 13, fontWeight: '500' },
-  healthValue: { color: THEME.foreground, fontSize: 13, fontWeight: '700' },
+  divider: { height: 1, marginVertical: 14 },
+  deliveryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 },
+  healthLabel: { fontSize: 13, fontWeight: '500' },
+  healthValue: { fontSize: 13, fontWeight: '700' },
 });
