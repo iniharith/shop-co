@@ -45,6 +45,8 @@ import {
   getToken,
   getMailEmail,
   clearMailSession,
+  getPreviewMode,
+  setPreviewMode,
   type MailFolder,
   type MailEnvelope,
   type MailMessage,
@@ -58,6 +60,100 @@ const FOLDER_ICONS: Record<string, React.ElementType> = {
   "\\Drafts": FileText,
   "\\Trash": Trash2,
   "\\Flagged": Star,
+};
+
+const PREVIEW_FOLDERS: MailFolder[] = [
+  { path: "INBOX", name: "INBOX", flags: [], specialUse: "\\Inbox", total: 12 },
+  { path: "\\Sent", name: "Sent", flags: [], specialUse: "\\Sent", total: 5 },
+  { path: "\\Drafts", name: "Drafts", flags: [], specialUse: "\\Drafts", total: 2 },
+  { path: "\\Trash", name: "Trash", flags: [], specialUse: "\\Trash", total: 3 },
+  { path: "\\Flagged", name: "Flagged", flags: [], specialUse: "\\Flagged", total: 1 },
+];
+
+const PREVIEW_LIST: MailEnvelope[] = [
+  {
+    uid: 101,
+    seq: 1,
+    flags: [],
+    seen: false,
+    date: new Date(Date.now() - 2 * 60000).toISOString(),
+    subject: "Your order has been shipped 🚚",
+    from: [{ name: "Kampung Cetak", address: "no-reply@kampungcetak.com" }],
+    to: [{ name: "You", address: "you@kampungcetak.com" }],
+  },
+  {
+    uid: 102,
+    seq: 2,
+    flags: [],
+    seen: false,
+    date: new Date(Date.now() - 55 * 60000).toISOString(),
+    subject: "Invoice #KC-2026-0812",
+    from: [{ name: "Billing", address: "billing@kampungcetak.com" }],
+    to: [{ name: "You", address: "you@kampungcetak.com" }],
+  },
+  {
+    uid: 103,
+    seq: 3,
+    flags: [],
+    seen: true,
+    date: new Date(Date.now() - 3 * 3600000).toISOString(),
+    subject: "Design preview for your custom t-shirt",
+    from: [{ name: "Design Team", address: "design@kampungcetak.com" }],
+    to: [{ name: "You", address: "you@kampungcetak.com" }],
+  },
+  {
+    uid: 104,
+    seq: 4,
+    flags: [],
+    seen: true,
+    date: new Date(Date.now() - 26 * 3600000).toISOString(),
+    subject: "Re: Bulk order quotation",
+    from: [{ name: "Aiman", address: "aiman@kampungcetak.com" }],
+    to: [{ name: "You", address: "you@kampungcetak.com" }],
+  },
+  {
+    uid: 105,
+    seq: 5,
+    flags: ["\\Flagged"],
+    seen: true,
+    date: new Date(Date.now() - 2 * 86400000).toISOString(),
+    subject: "Weekly sales report 📊",
+    from: [{ name: "Analytics", address: "reports@kampungcetak.com" }],
+    to: [{ name: "You", address: "you@kampungcetak.com" }],
+  },
+  {
+    uid: 106,
+    seq: 6,
+    flags: [],
+    seen: true,
+    date: new Date(Date.now() - 4 * 86400000).toISOString(),
+    subject: "Welcome to Kampung Cetak Mail",
+    from: [{ name: "Kampung Cetak", address: "no-reply@kampungcetak.com" }],
+    to: [{ name: "You", address: "you@kampungcetak.com" }],
+  },
+];
+
+const PREVIEW_MESSAGE: MailMessage = {
+  uid: 101,
+  folder: "INBOX",
+  date: new Date(Date.now() - 2 * 60000).toISOString(),
+  subject: "Your order has been shipped 🚚",
+  from: [{ name: "Kampung Cetak", address: "no-reply@kampungcetak.com" }],
+  to: [{ name: "You", address: "you@kampungcetak.com" }],
+  cc: [],
+  flags: [],
+  seen: false,
+  text: "Hi there,\n\nGreat news! Your order #KC-2026-0812 has been packed and shipped. It should arrive within 2-4 business days.\n\nYou can track your parcel using the link below:\nhttps://kampungcetak.com/track\n\nThanks for supporting Kampung Cetak!\n- The Team",
+  html: "",
+  attachments: [
+    {
+      part: "1.2",
+      filename: "tracking-slip.pdf",
+      contentType: "application/pdf",
+      size: 248000,
+      contentId: null,
+    },
+  ],
 };
 
 function addr(a: MailAddress[]) {
@@ -95,10 +191,12 @@ function Avatar({ name, className }: { name: string; className?: string }) {
 
 function LoginScreen({
   onLoggedIn,
+  onPreview,
   email,
   setEmail,
 }: {
   onLoggedIn: () => void;
+  onPreview: () => void;
   email: string;
   setEmail: (e: string) => void;
 }) {
@@ -202,6 +300,22 @@ function LoginScreen({
             <p className="text-center text-xs text-muted-foreground">
               Your password is sent only to your own mail server to authenticate.
             </p>
+
+            <div className="relative py-2 text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
+              <span className="relative z-10 bg-background px-2 text-muted-foreground">
+                Or
+              </span>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 w-full rounded-2xl"
+              onClick={onPreview}
+            >
+              <MailIcon />
+              Preview UI with sample data
+            </Button>
           </div>
         </div>
       </div>
@@ -473,6 +587,7 @@ function MessageView({
 export default function MailPage() {
   const [token, setToken] = useState("");
   const [email, setEmail] = useState("");
+  const [preview, setPreview] = useState(false);
   const [folders, setFolders] = useState<MailFolder[]>([]);
   const [activeFolder, setActiveFolder] = useState("INBOX");
   const [page, setPage] = useState(1);
@@ -487,7 +602,7 @@ export default function MailPage() {
   const [replyTo, setReplyTo] = useState<MailMessage | null>(null);
   const [query, setQuery] = useState("");
 
-  const isLoggedIn = !!token;
+  const isLoggedIn = !!token || preview;
 
   useEffect(() => {
     const t = getToken();
@@ -495,10 +610,24 @@ export default function MailPage() {
     if (t) {
       setToken(t);
       setEmail(e);
+    } else if (getPreviewMode()) {
+      setPreview(true);
+      setEmail(e || "preview@kampungcetak.com");
     }
   }, []);
 
+  const enterPreview = () => {
+    setPreview(true);
+    setEmail("preview@kampungcetak.com");
+    setPreviewMode(true);
+    toast.success("Preview mode — sample data only");
+  };
+
   const loadFolders = async () => {
+    if (preview) {
+      setFolders(PREVIEW_FOLDERS);
+      return;
+    }
     try {
       const f = await mailApi.folders();
       setFolders(f);
@@ -510,9 +639,19 @@ export default function MailPage() {
   useEffect(() => {
     if (!isLoggedIn) return;
     loadFolders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn]);
 
   const loadMessages = async (folder: string, pg: number, silent = false) => {
+    if (preview) {
+      const items =
+        folder === "INBOX"
+          ? PREVIEW_LIST
+          : PREVIEW_LIST.filter((m) => m.flags.includes("\\Flagged"));
+      setList(items);
+      setTotal(items.length);
+      return;
+    }
     if (!silent) setLoadingList(true);
     try {
       const res = await mailApi.messages(folder, pg, pageSize);
@@ -543,7 +682,9 @@ export default function MailPage() {
     setSelected(env);
     setLoadingMsg(true);
     try {
-      const m = await mailApi.message(env.uid, activeFolder);
+      const m = preview
+        ? { ...PREVIEW_MESSAGE, uid: env.uid, subject: env.subject, from: env.from, to: env.to, date: env.date }
+        : await mailApi.message(env.uid, activeFolder);
       setMessage(m);
       if (!m.seen) {
         mailApi.setSeen(env.uid, activeFolder, true).catch(() => undefined);
@@ -568,7 +709,9 @@ export default function MailPage() {
   };
 
   const logout = async () => {
-    await mailApi.logout();
+    if (!preview) await mailApi.logout();
+    setPreview(false);
+    setPreviewMode(false);
     setToken("");
     setFolders([]);
     setList([]);
@@ -593,6 +736,7 @@ export default function MailPage() {
       <LoginScreen
         email={email}
         setEmail={setEmail}
+        onPreview={enterPreview}
         onLoggedIn={() => {
           setToken(getToken());
         }}
@@ -699,6 +843,11 @@ export default function MailPage() {
               className="h-10 rounded-xl pl-9"
             />
           </div>
+          {preview && (
+            <Badge variant="outline" className="hidden gap-1 sm:inline-flex">
+              Preview
+            </Badge>
+          )}
           <div className="ml-auto flex items-center gap-2">
             <Button
               variant="ghost"

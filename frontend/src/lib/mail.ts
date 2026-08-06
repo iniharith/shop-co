@@ -6,6 +6,7 @@ import axios from "axios";
 
 export const MAIL_TOKEN_KEY = "kc_mail_token";
 export const MAIL_EMAIL_KEY = "kc_mail_email";
+export const MAIL_PREVIEW_KEY = "kc_mail_preview";
 
 const BASE = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
@@ -78,6 +79,20 @@ export function getMailEmail() {
 export function clearMailSession() {
   localStorage.removeItem(MAIL_TOKEN_KEY);
   localStorage.removeItem(MAIL_EMAIL_KEY);
+  localStorage.removeItem(MAIL_PREVIEW_KEY);
+}
+
+export function getPreviewMode() {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(MAIL_PREVIEW_KEY) === "1";
+}
+
+export function setPreviewMode(on: boolean) {
+  if (on) {
+    localStorage.setItem(MAIL_PREVIEW_KEY, "1");
+  } else {
+    localStorage.removeItem(MAIL_PREVIEW_KEY);
+  }
 }
 
 export const mailApi = {
