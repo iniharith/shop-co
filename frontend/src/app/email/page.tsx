@@ -4,7 +4,7 @@
  */
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import {
   Inbox,
@@ -288,7 +288,7 @@ function LoginScreen({
               </div>
               <Button
                 type="submit"
-                className="h-12 w-full rounded-2xl bg-primary"
+                className="h-12 w-full rounded-2xl bg-primary dark:border dark:border-primary/40 dark:bg-primary/40 dark:text-white dark:backdrop-blur-xl"
                 disabled={loading}
               >
                 {loading ? (
@@ -602,16 +602,18 @@ function MessageContextMenu({
   onSpam: () => void;
   onClose: () => void;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const close = () => onClose();
+    const close = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
     const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("click", close);
-    window.addEventListener("contextmenu", close);
+    window.addEventListener("mousedown", close);
     window.addEventListener("keydown", esc);
     window.addEventListener("scroll", close, true);
     return () => {
-      window.removeEventListener("click", close);
-      window.removeEventListener("contextmenu", close);
+      window.removeEventListener("mousedown", close);
       window.removeEventListener("keydown", esc);
       window.removeEventListener("scroll", close, true);
     };
@@ -622,9 +624,9 @@ function MessageContextMenu({
 
   return (
     <div
+      ref={ref}
       className="fixed z-50 w-52 overflow-hidden rounded-xl border border-border bg-card p-1.5 shadow-xl"
       style={{ left, top }}
-      onClick={(e) => e.stopPropagation()}
     >
       <button
         className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
@@ -870,7 +872,7 @@ export default function MailPage() {
 
         <div className="px-4 pb-3">
           <Button
-            className="w-full gap-2 rounded-xl"
+            className="w-full gap-2 rounded-xl dark:border dark:border-primary/40 dark:bg-primary/40 dark:text-white dark:backdrop-blur-xl"
             onClick={() => { setReplyTo(null); setComposeOpen(true); }}
           >
             <PenSquare size={16} /> Compose
@@ -892,7 +894,7 @@ export default function MailPage() {
                 className={cn(
                   "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
                   active
-                    ? "bg-primary font-medium text-primary-foreground"
+                    ? "bg-primary font-medium text-primary-foreground dark:border dark:border-primary/40 dark:bg-primary/40 dark:text-white dark:backdrop-blur-xl"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 )}
               >
@@ -967,7 +969,7 @@ export default function MailPage() {
               <RefreshCw size={17} />
             </Button>
             <Button
-              className="hidden gap-2 rounded-xl sm:inline-flex"
+              className="hidden gap-2 rounded-xl sm:inline-flex dark:border dark:border-primary/40 dark:bg-primary/40 dark:text-white dark:backdrop-blur-xl"
               onClick={() => { setReplyTo(null); setComposeOpen(true); }}
             >
               <PenSquare size={15} /> Compose
@@ -1032,6 +1034,7 @@ export default function MailPage() {
                     onClick={() => openMessage(m)}
                     onContextMenu={(e) => {
                       e.preventDefault();
+                      e.stopPropagation();
                       setCtx({ x: e.clientX, y: e.clientY, env: m });
                     }}
                     className={cn(
