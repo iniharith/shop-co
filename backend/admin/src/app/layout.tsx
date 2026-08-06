@@ -11,6 +11,7 @@ import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 import { authConfig } from "@/lib/auth.config";
 import { getServerSession } from "next-auth/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://admin.kampungcetak.com"),
@@ -74,6 +75,7 @@ export default async function RootLayout({
             {children}
           </Providers>
         </NuqsAdapter>
+        <SpeedInsights />
       </body>
     </html>
   );
