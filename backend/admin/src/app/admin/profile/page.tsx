@@ -251,6 +251,17 @@ export default function ProfilePage() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="role">Role</Label>
+                <Input
+                  id="role"
+                  value={session?.user?.role ? `${session.user.role.charAt(0).toUpperCase()}${session.user.role.slice(1)}` : ""}
+                  readOnly
+                  className="bg-muted/50"
+                />
+                <p className="text-xs text-muted-foreground">Your account role is managed by the administrator.</p>
+              </div>
+
               <Button type="submit" disabled={loading || uploading} className="w-full">
                 {loading || uploading ? "Saving..." : "Save Changes"}
               </Button>

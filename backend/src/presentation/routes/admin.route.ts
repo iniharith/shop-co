@@ -49,7 +49,7 @@ router.get("/migrate-statuses", asyncHandler(async (req, res) => {
 router.get(
   "/search",
   authMiddilware,
-  authorizeRoles("admin", "sysadmin", "boss", "designer", "production", "packaging"),
+  authorizeRoles("admin", "sysadmin", "boss", "designer", "production", "packaging", "awapparel"),
   asyncHandler(async (req, res) => {
     const startedAt = Date.now();
     const query = (typeof req.query.q === "string" ? req.query.q : "").trim().slice(0, 100);
@@ -95,6 +95,9 @@ router.get(
       : null;
     const fetchLimit = limit + 1;
     const role = (req as any).role as string;
+    const isAwapparel = role === "awapparel";
+    const canSearchTasks = !isAwapparel;
+    const canSearchOrders = !isAwapparel;
     const canSearchCustomers = ["admin", "sysadmin", "boss"].includes(role);
     const canSearchProjects = ["admin", "sysadmin", "boss", "designer"].includes(role);
     const canSearchTracking = ["admin", "sysadmin", "boss", "production", "packaging"].includes(role);
@@ -159,18 +162,22 @@ router.get(
     }
 
     const [taskRows, orderRows, customerRows, fileRows, projectRows, trackingRows] = await Promise.all([
-      Task.find({ isDeleted: { $ne: true }, $or: taskMatches })
-        .select("_id title status orderId customerUsername updatedAt")
-        .sort({ updatedAt: -1 })
-        .limit(fetchLimit)
-        .maxTimeMS(SEARCH_MAX_TIME_MS)
-        .lean(),
-      Order.find({ isDeleted: { $ne: true }, $or: orderMatches })
-        .select("_id orderStatus customerName shippingCustomerEmail trackingNumber createdAt")
-        .sort({ createdAt: -1 })
-        .limit(fetchLimit)
-        .maxTimeMS(SEARCH_MAX_TIME_MS)
-        .lean(),
+      canSearchTasks
+        ? Task.find({ isDeleted: { $ne: true }, $or: taskMatches })
+            .select("_id title status orderId customerUsername updatedAt")
+            .sort({ updatedAt: -1 })
+            .limit(fetchLimit)
+            .maxTimeMS(SEARCH_MAX_TIME_MS)
+            .lean()
+        : Promise.resolve([]),
+      canSearchOrders
+        ? Order.find({ isDeleted: { $ne: true }, $or: orderMatches })
+            .select("_id orderStatus customerName shippingCustomerEmail trackingNumber createdAt")
+            .sort({ createdAt: -1 })
+            .limit(fetchLimit)
+            .maxTimeMS(SEARCH_MAX_TIME_MS)
+            .lean()
+        : Promise.resolve([]),
       canSearchCustomers
         ? User.find({ role: "client", $or: customerMatches })
             .select("_id name email phoneNumber")
@@ -179,7 +186,7 @@ router.get(
             .maxTimeMS(SEARCH_MAX_TIME_MS)
             .lean()
         : Promise.resolve([]),
-      FileUpload.find({ $or: fileMatches })
+      FileUpload.find(isAwapparel ? { category: "APPAREL", $or: fileMatches } : { $or: fileMatches })
         .select("_id originalName filename mimetype category taskId orderId userId uploadedAt")
         .sort({ uploadedAt: -1 })
         .limit(fetchLimit)

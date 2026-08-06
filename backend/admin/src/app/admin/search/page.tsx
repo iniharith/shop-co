@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { AlertCircle, LoaderCircle, SearchX, Sparkles } from "lucide-react";
 import PageContainer from "@/components/layout/page-container";
 import {
@@ -16,12 +17,15 @@ import {
 } from "@/hooks/useGlobalSearch";
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { GlobalSearchHit } from "@/types/globalSearch";
+import { Roles } from "@/types/api";
 
 const SEARCH_PAGE_LIMIT = 20;
 
 export default function SearchResultsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  const isAwapparel = session?.user?.role === Roles.AWAPPAREL;
   const query = (searchParams.get("q") || "").trim();
   const {
     data,
@@ -58,8 +62,12 @@ export default function SearchResultsPage() {
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Search results</h1>
             <p className="mt-1 break-words text-sm text-muted-foreground">
               {query
-                ? `Matches across the admin workspace for "${query}".`
-                : "Search tasks, orders, customers, files, projects and tracking."}
+                ? isAwapparel
+                  ? `Matches across Sublimation files for "${query}".`
+                  : `Matches across the admin workspace for "${query}".`
+                : isAwapparel
+                  ? "Search files in the Sublimation Manager."
+                  : "Search tasks, orders, customers, files, projects and tracking."}
             </p>
           </div>
           {data && resultsAreCurrent && (

@@ -13,6 +13,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { AlertCircle, History, LoaderCircle, Search, X } from "lucide-react";
 import {
   flattenGlobalSearchGroups,
@@ -28,6 +29,7 @@ import {
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { cn } from "@/lib/utils";
 import { GlobalSearchHit } from "@/types/globalSearch";
+import { Roles } from "@/types/api";
 
 interface SearchInputProps {
   className?: string;
@@ -39,15 +41,22 @@ interface SearchInputProps {
 export default function SearchInput({
   className,
   inputClassName,
-  placeholder = "Search tasks, orders, customers, files...",
+  placeholder,
   showShortcut = true,
 }: SearchInputProps = {}) {
   const router = useRouter();
+  const { data: session } = useSession();
   const inputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const [value, setValue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const isAwapparel = session?.user?.role === Roles.AWAPPAREL;
+  const resolvedPlaceholder =
+    placeholder ||
+    (isAwapparel
+      ? "Search files in Sublimation..."
+      : "Search tasks, orders, customers, files...");
   const {
     data,
     debouncedQuery,
@@ -183,7 +192,7 @@ export default function SearchInput({
           onChange={handleInput}
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           aria-label="Search admin"
           aria-autocomplete="list"
           aria-controls="global-search-results"

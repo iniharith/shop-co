@@ -52,8 +52,8 @@ export default withAuth(
       // Allow verified users or ANY internal staff role to bypass verified check
       const isInternalStaff = [Roles.ADMIN, Roles.SYSADMIN, Roles.DESIGNER, Roles.BOSS, Roles.PRODUCTION, Roles.PACKAGING, Roles.AWAPPAREL].includes(userRole as Roles);
 
-      // AWAPPAREL can only access the Sublimation manager
-      if (userRole === Roles.AWAPPAREL && !path.startsWith("/admin/sublimation")) {
+      // AWAPPAREL can only access the Sublimation manager and its file search
+      if (userRole === Roles.AWAPPAREL && !path.startsWith("/admin/sublimation") && !path.startsWith("/admin/search")) {
         return NextResponse.redirect(new URL("/admin/sublimation", req.url));
       }
 
