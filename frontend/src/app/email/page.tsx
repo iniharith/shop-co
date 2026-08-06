@@ -5,6 +5,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import {
   Inbox,
   Send,
@@ -22,7 +23,9 @@ import {
   Paperclip,
   Search,
   Clock,
+  PenSquare,
 } from "lucide-react";
+import { FaEnvelope, FaLock } from "react-icons/fa6";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -101,65 +104,107 @@ function LoginScreen({
 }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErr(null);
     try {
       await mailApi.login(email.trim(), password);
       toast.success("Signed in");
       onLoggedIn();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Login failed");
+      setErr(err?.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="mx-auto flex min-h-[70vh] w-full max-w-md flex-col items-center justify-center px-4">
-      <div className="mb-6 flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-        <MailIcon size={26} />
+    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
+      <div className="w-full max-w-sm">
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col items-center gap-2">
+              <a href="/" className="flex flex-col items-center gap-2 font-medium">
+                <div className="flex h-12 items-center justify-center rounded-md">
+                  <Image
+                    src="/images/kampung-cetak-logo.png"
+                    width={120}
+                    height={40}
+                    alt="Kampung Cetak"
+                    className="object-contain"
+                  />
+                </div>
+                <span className="sr-only">Kampung Cetak</span>
+              </a>
+              <h1 className="text-xl font-bold">Welcome to Kampung Cetak</h1>
+              <div className="text-center text-sm text-muted-foreground">
+                Login to your <span className="font-medium text-foreground">@kampungcetak.com</span> mail
+              </div>
+            </div>
+
+            <form onSubmit={submit} className="grid w-full gap-4 py-4 md:px-3">
+              {err && (
+                <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {err}
+                </div>
+              )}
+              <div className="space-y-2">
+                <label htmlFor="mail-email" className="text-sm font-medium">
+                  Email
+                </label>
+                <div className="relative">
+                  <FaEnvelope className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="mail-email"
+                    type="email"
+                    placeholder="you@kampungcetak.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-11 rounded-xl pl-10"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="mail-pass" className="text-sm font-medium">
+                  Password
+                </label>
+                <div className="relative">
+                  <FaLock className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="mail-pass"
+                    type="password"
+                    placeholder="********"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-11 rounded-xl pl-10"
+                    required
+                  />
+                </div>
+              </div>
+              <Button
+                type="submit"
+                className="h-12 w-full rounded-2xl bg-primary"
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <MailIcon />
+                )}
+                {loading ? "Logging in..." : "Login"}
+              </Button>
+            </form>
+
+            <p className="text-center text-xs text-muted-foreground">
+              Your password is sent only to your own mail server to authenticate.
+            </p>
+          </div>
+        </div>
       </div>
-      <h1 className="mb-1 text-2xl font-bold">Kampung Cetak Mail</h1>
-      <p className="mb-8 text-muted-foreground">
-        Sign in with your <span className="font-medium text-foreground">@kampungcetak.com</span> address
-      </p>
-      <form onSubmit={submit} className="w-full space-y-4">
-        <div className="space-y-2">
-          <label htmlFor="mail-email" className="text-sm font-medium">
-            Email address
-          </label>
-          <Input
-            id="mail-email"
-            type="email"
-            placeholder="you@kampungcetak.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <label htmlFor="mail-pass" className="text-sm font-medium">
-            Password
-          </label>
-          <Input
-            id="mail-pass"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? <Loader2 className="animate-spin" /> : <MailIcon />}
-          {loading ? "Signing in…" : "Sign in"}
-        </Button>
-      </form>
-      <p className="mt-6 text-center text-xs text-muted-foreground">
-        Your password is sent only to your own mail server to authenticate.
-      </p>
     </div>
   );
 }
@@ -558,201 +603,263 @@ export default function MailPage() {
   const folderLabel = folders.find((f) => f.path === activeFolder)?.name || activeFolder;
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-180px)] w-full max-w-7xl flex-col px-4 py-6">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <MailIcon size={20} />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold">Kampung Cetak Mail</h1>
-            <p className="text-xs text-muted-foreground">{email}</p>
+    <div className="flex h-svh w-full overflow-hidden bg-background">
+      {/* ── Sidebar ── */}
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card md:flex">
+        <div className="flex items-center gap-3 px-5 py-5">
+          <Image
+            src="/images/kampung-cetak-logo.png"
+            width={120}
+            height={40}
+            alt="Kampung Cetak"
+            className="object-contain"
+          />
+        </div>
+
+        <div className="px-4 pb-3">
+          <Button
+            className="w-full gap-2 rounded-xl"
+            onClick={() => { setReplyTo(null); setComposeOpen(true); }}
+          >
+            <PenSquare size={16} /> Compose
+          </Button>
+        </div>
+
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
+          {folders.map((f) => {
+            const Icon = FOLDER_ICONS[f.specialUse || ""] || Inbox;
+            const active = f.path === activeFolder;
+            const unread =
+              (f.specialUse === "\\Inbox" || f.path === "INBOX") && f.total > 0
+                ? f.total
+                : f.total;
+            return (
+              <button
+                key={f.path}
+                onClick={() => setActiveFolder(f.path)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
+                  active
+                    ? "bg-primary font-medium text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
+              >
+                <Icon size={17} className="shrink-0" />
+                <span className="flex-1 truncate text-left">
+                  {f.name === "INBOX" ? "Inbox" : f.name}
+                </span>
+                {unread > 0 && (
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-xs",
+                      active ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {unread}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="border-t border-border p-4">
+          <div className="flex items-center gap-3">
+            <Avatar name={email} />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium">{email}</div>
+              <div className="text-xs text-muted-foreground">Signed in</div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={logout} title="Sign out">
+              <LogOut size={16} />
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative hidden sm:block">
-            <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-48 pl-8"
+      </aside>
+
+      {/* ── Main column ── */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Topbar */}
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-card px-4">
+          <div className="flex items-center gap-2 md:hidden">
+            <Image
+              src="/images/kampung-cetak-logo.png"
+              width={80}
+              height={28}
+              alt="Kampung Cetak"
+              className="object-contain"
             />
           </div>
-          <Button onClick={() => { setReplyTo(null); setComposeOpen(true); }}>
-            <Plus /> Compose
-          </Button>
-          <Button variant="ghost" size="icon" onClick={logout} title="Sign out">
-            <LogOut />
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex min-h-0 flex-1 overflow-hidden rounded-xl border bg-card shadow-sm">
-        {/* Folders */}
-        <aside className="hidden w-52 shrink-0 flex-col border-r bg-muted/30 sm:flex">
-          <div className="flex-1 overflow-y-auto p-2">
-            {folders.map((f) => {
-              const Icon = FOLDER_ICONS[f.specialUse || ""] || Inbox;
-              const active = f.path === activeFolder;
-              return (
-                <button
-                  key={f.path}
-                  onClick={() => setActiveFolder(f.path)}
-                  className={cn(
-                    "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
-                    active
-                      ? "bg-primary text-primary-foreground font-medium"
-                      : "hover:bg-accent"
-                  )}
-                >
-                  <Icon size={16} className="shrink-0" />
-                  <span className="flex-1 truncate text-left">
-                    {f.name === "INBOX" ? "Inbox" : f.name}
-                  </span>
-                  {f.total > 0 && (
-                    <span
-                      className={cn(
-                        "rounded-full px-1.5 py-0.5 text-xs",
-                        active ? "bg-primary-foreground/20" : "bg-muted"
-                      )}
-                    >
-                      {f.total}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+          <div className="relative min-w-0 flex-1 max-w-md">
+            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search messages…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="h-10 rounded-xl pl-9"
+            />
           </div>
-        </aside>
-
-        {/* Message list */}
-        <div className={cn(
-            "w-full flex-col border-r lg:w-80 lg:shrink-0",
-            selected ? "hidden lg:flex" : "flex"
-          )}>
-
-          <div className="flex items-center justify-between border-b px-3 py-2 text-xs text-muted-foreground">
-            <span className="font-medium capitalize">
-              {folderLabel === "INBOX" ? "Inbox" : folderLabel}
-            </span>
-            <span>
-              {total} message{total === 1 ? "" : "s"}
-            </span>
-          </div>
-          <div className="border-b p-2 sm:hidden">
-            <select
-              value={activeFolder}
-              onChange={(e) => setActiveFolder(e.target.value)}
-              className="w-full rounded-md border bg-transparent px-2 py-1.5 text-sm outline-none"
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => loadMessages(activeFolder, page, true)}
+              title="Refresh"
             >
-              {folders.map((f) => (
-                <option key={f.path} value={f.path}>
-                  {f.name === "INBOX" ? "Inbox" : f.name} ({f.total})
-                </option>
-              ))}
-            </select>
+              <RefreshCw size={17} />
+            </Button>
+            <Button
+              className="hidden gap-2 rounded-xl sm:inline-flex"
+              onClick={() => { setReplyTo(null); setComposeOpen(true); }}
+            >
+              <PenSquare size={15} /> Compose
+            </Button>
+            <Button variant="ghost" size="icon" onClick={logout} title="Sign out" className="md:hidden">
+              <LogOut size={17} />
+            </Button>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            {loadingList ? (
-              <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
-                <Loader2 className="animate-spin" size={18} /> Loading…
-              </div>
-            ) : filteredList.length === 0 ? (
-              <div className="py-10 text-center text-sm text-muted-foreground">
-                No messages
-              </div>
-            ) : (
-              filteredList.map((m) => (
-                <button
-                  key={m.uid}
-                  onClick={() => openMessage(m)}
-                  className={cn(
-                    "flex w-full gap-3 border-b px-3 py-3 text-left transition-colors hover:bg-accent/60",
-                    selected?.uid === m.uid && "bg-accent",
-                    !m.seen && "bg-primary/[0.04]"
-                  )}
-                >
-                  <div className="relative mt-0.5 size-2 shrink-0">
-                    {!m.seen && (
-                      <span className="absolute size-2 rounded-full bg-primary" />
+        </header>
+
+        {/* Content: list + reading pane */}
+        <div className="flex min-h-0 flex-1">
+          {/* Message list */}
+          <div
+            className={cn(
+              "flex w-full flex-col border-r border-border md:w-96 md:shrink-0",
+              selected ? "hidden md:flex" : "flex"
+            )}
+          >
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                {(() => {
+                  const Icon = FOLDER_ICONS[activeFolder] || Inbox;
+                  return <Icon size={16} />;
+                })()}
+                <span className="capitalize">
+                  {folderLabel === "INBOX" ? "Inbox" : folderLabel}
+                </span>
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {total} message{total === 1 ? "" : "s"}
+              </span>
+            </div>
+
+            <div className="border-b border-border p-2 md:hidden">
+              <select
+                value={activeFolder}
+                onChange={(e) => setActiveFolder(e.target.value)}
+                className="w-full rounded-lg border bg-transparent px-2 py-1.5 text-sm outline-none"
+              >
+                {folders.map((f) => (
+                  <option key={f.path} value={f.path}>
+                    {f.name === "INBOX" ? "Inbox" : f.name} ({f.total})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {loadingList ? (
+                <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
+                  <Loader2 className="animate-spin" size={18} /> Loading…
+                </div>
+              ) : filteredList.length === 0 ? (
+                <div className="py-10 text-center text-sm text-muted-foreground">
+                  No messages
+                </div>
+              ) : (
+                filteredList.map((m) => (
+                  <button
+                    key={m.uid}
+                    onClick={() => openMessage(m)}
+                    className={cn(
+                      "flex w-full gap-3 border-b border-border px-4 py-3.5 text-left transition-colors hover:bg-accent/60",
+                      selected?.uid === m.uid && "bg-accent",
+                      !m.seen && "bg-primary/[0.04]"
                     )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span
+                  >
+                    <div className="relative mt-0.5 size-2 shrink-0">
+                      {!m.seen && (
+                        <span className="absolute size-2 rounded-full bg-primary" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span
+                          className={cn(
+                            "truncate text-sm",
+                            !m.seen ? "font-semibold" : "font-normal"
+                          )}
+                        >
+                          {addr(m.from) || m.subject}
+                        </span>
+                        <span className="shrink-0 text-[11px] text-muted-foreground">
+                          {fmtDate(m.date)}
+                        </span>
+                      </div>
+                      <div
                         className={cn(
                           "truncate text-sm",
-                          !m.seen ? "font-semibold" : "font-normal"
+                          m.seen ? "text-muted-foreground" : "font-medium"
                         )}
                       >
-                        {addr(m.from) || m.subject}
-                      </span>
-                      <span className="shrink-0 text-[11px] text-muted-foreground">
-                        {fmtDate(m.date)}
-                      </span>
+                        {m.subject}
+                      </div>
                     </div>
-                    <div
-                      className={cn(
-                        "truncate text-sm",
-                        m.seen ? "text-muted-foreground" : "font-medium"
-                      )}
-                    >
-                      {m.subject}
-                    </div>
-                  </div>
-                </button>
-              ))
+                  </button>
+                ))
+              )}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between border-t border-border px-3 py-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => {
+                    setPage((p) => p - 1);
+                    loadMessages(activeFolder, page - 1, true);
+                  }}
+                >
+                  <ChevronLeft />
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  {page} / {totalPages}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => {
+                    setPage((p) => p + 1);
+                    loadMessages(activeFolder, page + 1, true);
+                  }}
+                >
+                  <ChevronRight />
+                </Button>
+              </div>
             )}
           </div>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t px-3 py-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => {
-                  setPage((p) => p - 1);
-                  loadMessages(activeFolder, page - 1, true);
-                }}
-              >
-                <ChevronLeft />
-              </Button>
-              <span className="text-xs text-muted-foreground">
-                {page} / {totalPages}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => {
-                  setPage((p) => p + 1);
-                  loadMessages(activeFolder, page + 1, true);
-                }}
-              >
-                <ChevronRight />
-              </Button>
+
+          {/* Reading pane */}
+          {loadingMsg ? (
+            <div className="flex flex-1 items-center justify-center text-muted-foreground">
+              <Loader2 className="animate-spin" />
+            </div>
+          ) : (
+            <div className={cn("flex-1", selected ? "flex" : "hidden md:flex")}>
+              <MessageView
+                message={message}
+                folder={activeFolder}
+                onBack={() => setSelected(null)}
+                onRefresh={() => loadMessages(activeFolder, page, true)}
+                onReply={(m) => { setReplyTo(m); setComposeOpen(true); }}
+                onTrash={trashMessage}
+              />
             </div>
           )}
         </div>
-
-        {/* Reading pane */}
-        {loadingMsg ? (
-          <div className="flex flex-1 items-center justify-center text-muted-foreground">
-            <Loader2 className="animate-spin" />
-          </div>
-        ) : (
-          <div className={cn("flex-1", selected ? "flex" : "hidden lg:flex")}>
-            <MessageView
-              message={message}
-              folder={activeFolder}
-              onBack={() => setSelected(null)}
-              onRefresh={() => loadMessages(activeFolder, page, true)}
-              onReply={(m) => { setReplyTo(m); setComposeOpen(true); }}
-              onTrash={trashMessage}
-            />
-          </div>
-        )}
       </div>
 
       <ComposeDialog
