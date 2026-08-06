@@ -98,6 +98,13 @@ export const AdminNavItems: NavItem[] = [
         isActive: false,
     },
     {
+        title: 'Monitoring',
+        url: '/admin/monitoring',
+        icon: 'gauge',
+        shortcut: ['m', 'o'],
+        isActive: false,
+    },
+    {
         title: 'Tools',
         url: '/admin/tools',
         icon: 'wrench',
@@ -153,7 +160,7 @@ export const roleByNavItems = (role: string) => {
         allowedTitles = ['Sublimation'];
     } else if (role !== "sysadmin" && role !== "admin" && role !== "boss") {
         // Only sysadmin, admin, and boss can access the administrative tools.
-        allowedTitles = allowedTitles.filter(title => title !== 'Server Status' && title !== 'Tools');
+        allowedTitles = allowedTitles.filter(title => title !== 'Server Status' && title !== 'Tools' && title !== 'Monitoring');
     }
 
     // Route and implementation remain available; only hide it from navigation for now.

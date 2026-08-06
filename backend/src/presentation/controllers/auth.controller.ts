@@ -5,6 +5,9 @@
 import { Request, Response, NextFunction } from "express";
 import { UserUsecase } from "../../application/usecases/user/user.usecase";
 import { statusCodes } from "../../shared/constants/api.constant";
+import JwtService from "../../shared/utils/jwt";
+import userSchema from "../../infrastructure/db/models/user.model";
+import { AuthRequest } from "../../domain/types/api";
 
 
 /**  @Controller */
@@ -119,6 +122,117 @@ export class AuthController {
                 success: false,
                 message: (error as Error).message || "Invalid refresh token"
             });
+        }
+    }
+    /**
+     * @description Generate a one-time (time-limited) magic login link for a user.
+     *              Only sysadmin and boss may create these links.
+     * @Method POST
+     * @Route /api/auth/magic-link
+     * @Body userId: string OR email: string
+     * @ResponseJson {success: boolean, token: string, expiresIn: number}
+     */
+    async generateMagicLink(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            const { userId, email } = req.body;
+            if (!userId && !email) {
+                return res.status(statusCodes.BAD_REQUEST).json({
+                    success: false,
+                    message: "userId or email is required"
+                });
+            }
+
+            const user = await userSchema.findOne(
+                userId ? { _id: userId } : { email: String(email).toLowerCase().trim() }
+            ).lean();
+
+            if (!user) {
+                return res.status(statusCodes.NOT_FOUND).json({
+                    success: false,
+                    message: "User not found"
+                });
+            }
+
+            const jwtService = new JwtService();
+            const token = jwtService.generateToken(
+                { userId: user._id.toString(), purpose: "magic-login" },
+                "7d"
+            );
+
+            return res.status(statusCodes.OK).json({
+                success: true,
+                token,
+                expiresIn: 7,
+                user: {
+                    _id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * @description Log a user in without a password by exchanging a magic link token.
+     * @Method POST
+     * @Route /api/auth/magic-login
+     * @Body magicToken: string
+     * @ResponseJson {success: boolean, message: string, user: User, accessToken: string, refreshToken: string}
+     */
+    async magicLogin(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { magicToken } = req.body;
+            if (!magicToken) {
+                return res.status(statusCodes.BAD_REQUEST).json({
+                    success: false,
+                    message: "magicToken is required"
+                });
+            }
+
+            const jwtService = new JwtService();
+            let decoded: any;
+            try {
+                decoded = jwtService.verifyToken(magicToken, "token");
+            } catch (error) {
+                return res.status(statusCodes.UNAUTHORIZED).json({
+                    success: false,
+                    message: "Invalid or expired login link"
+                });
+            }
+
+            if (decoded?.purpose !== "magic-login" || !decoded?.userId) {
+                return res.status(statusCodes.UNAUTHORIZED).json({
+                    success: false,
+                    message: "Invalid login link"
+                });
+            }
+
+            const user = await userSchema.findById(decoded.userId);
+            if (!user) {
+                return res.status(statusCodes.NOT_FOUND).json({
+                    success: false,
+                    message: "User not found or blocked"
+                });
+            }
+
+            const accessToken = jwtService.generateAccessToken({ userId: user._id });
+            const refreshToken = jwtService.generateRefreshToken({ userId: user._id });
+
+            const safeUser = user.toObject();
+            delete (safeUser as any).password;
+
+            return res.status(statusCodes.OK).json({
+                success: true,
+                message: "User logged in successfully",
+                user: safeUser,
+                accessToken,
+                refreshToken
+            });
+        } catch (error) {
+            next(error);
         }
     }
 }

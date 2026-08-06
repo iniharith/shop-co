@@ -12,6 +12,8 @@ import "./globals.css";
 import { authConfig } from "@/lib/auth.config";
 import { getServerSession } from "next-auth/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
+import { WebVitalsTracker } from "@/components/global/webVitalsTracker";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://admin.kampungcetak.com"),
@@ -72,10 +74,12 @@ export default async function RootLayout({
         <NuqsAdapter>
           <Providers session={session}>
             <Toaster theme="light" />
+            <WebVitalsTracker />
             {children}
           </Providers>
         </NuqsAdapter>
         <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );

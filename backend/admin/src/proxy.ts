@@ -21,8 +21,9 @@ export default withAuth(
     const userRole = token?.role;
     // The backend user field is boolean; the JWT declaration is stale and says string.
     const isVerified = (token?.verified as unknown) === true;
-    const isSuperAdminPage = path.startsWith("/admin/superAdmin");
-    const hasAdminAccess = [Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(token?.role as Roles);
+      const isSuperAdminPage = path.startsWith("/admin/superAdmin");
+      const isMonitoringPage = path.startsWith("/admin/monitoring");
+      const hasAdminAccess = [Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(token?.role as Roles);
 
     if (path == "/auth/signout") {
       if (!isLoggedIn) {
@@ -68,6 +69,10 @@ export default withAuth(
       }
 
       if(isSuperAdminPage && !hasAdminAccess){
+        return NextResponse.redirect(new URL("/admin/dashboard", req.url))
+      }
+
+      if (isMonitoringPage && !hasAdminAccess) {
         return NextResponse.redirect(new URL("/admin/dashboard", req.url))
       }
     }

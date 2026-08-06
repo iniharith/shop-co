@@ -33,6 +33,7 @@ import webhookRouter from '../presentation/routes/webhook.route';
 import projectRoutes from '../presentation/routes/projectRoutes';
 import auditRoutes from '../presentation/routes/auditRoutes';
 import easyParcelRoutes from '../presentation/routes/easyParcelRoutes';
+import webVitalsRoutes from '../presentation/routes/webVitalsRoutes';
 import { auditMiddleware } from '../presentation/middlewares/audit.middleware';
 import { bandwidthMiddleware } from '../shared/utils/bandwidthTracker';
 import { randomUUID } from 'crypto';
@@ -119,6 +120,7 @@ app.use('/api/audit-logs', auditRoutes);
 app.use('/api/tools', toolsRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/sysadmin', sysadminRoutes);
+app.use('/api/web-vitals', webVitalsRoutes);
 
 // ─── WhatsApp Webhook (Meta callback verification) ───────
 // Callback URL: https://admin.kampungcetak.com/api/webhooks/whatsapp

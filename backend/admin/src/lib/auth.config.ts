@@ -12,8 +12,32 @@ export const authConfig: AuthOptions = {
       credentials: {
         email: { label: "Email", type: "email", placeholder: "your@email.com" },
         password: { label: "Password", type: "password" },
+        magicToken: { label: "Magic Token", type: "text" },
       },
       async authorize(credentials) {
+        if (credentials?.magicToken) {
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+          const response = await fetch(`${backendUrl}/api/auth/magic-login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ magicToken: credentials.magicToken }),
+            signal: typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(15_000) : (() => { const c = new AbortController(); setTimeout(() => c.abort(), 15_000); return c.signal; })(),
+            cache: 'no-store',
+          });
+          if (!response.ok) return null;
+          const data = await response.json();
+          if (!data?.user?._id || !data?.accessToken) return null;
+          return {
+            token: data.accessToken,
+            refreshToken: data.refreshToken,
+            id: data.user._id,
+            name: data.user.name,
+            email: data.user.email,
+            role: data.user.role,
+            verified: data.user.verified,
+            avatar: data.user.avatar || '',
+          };
+        }
         if (!credentials?.email || !credentials?.password) return null;
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
         const response = await fetch(`${backendUrl}/api/auth/login`, {
