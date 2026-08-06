@@ -179,18 +179,55 @@ router.get('/messages', requireMailSession, asyncHandler(async (req, res) => {
     const folder = String(req.query.folder || 'INBOX');
     const page = Math.max(1, parseInt(String(req.query.page || '1'), 10) || 1);
     const pageSize = Math.min(100, Math.max(1, parseInt(String(req.query.pageSize || '25'), 10) || 25));
+    const q = String(req.query.q || '').trim();
+    const from = String(req.query.from || '').trim();
+    const to = String(req.query.to || '').trim();
+    const subject = String(req.query.subject || '').trim();
+    const sinceRaw = req.query.since;
+    const beforeRaw = req.query.before;
+    const hasAttachment = req.query.hasAttachment === 'true';
 
     const client = imapClient(session);
     try {
         await client.connect();
         await client.mailboxOpen(folder);
         const total = client.mailbox ? client.mailbox.exists : 0;
-        const start = Math.max(1, total - ((page - 1) * pageSize + pageSize) + 1);
-        const end = start + pageSize - 1;
+
+        const searching = !!(q || from || to || subject || sinceRaw || beforeRaw);
+        let searchUids: number[] | null = null;
+        if (searching) {
+            const criteria: any = {};
+            if (q) {
+                criteria.or = [{ from: q }, { to: q }, { subject: q }, { body: q }];
+            } else {
+                if (from) criteria.from = from;
+                if (to) criteria.to = to;
+                if (subject) criteria.subject = subject;
+            }
+            if (sinceRaw) criteria.since = new Date(String(sinceRaw));
+            if (beforeRaw) criteria.before = new Date(String(beforeRaw));
+            const found = await client.search(criteria, { uid: true });
+            searchUids = (Array.isArray(found) ? found : []).reverse();
+        }
 
         const items: any[] = [];
-        if (start <= total && total > 0) {
-            for await (const m of client.fetch(`${start}:${end}`, { envelope: true, flags: true })) {
+        const attachmentCountOf = (bodyStructure: any) => {
+            const parts = flattenParts(bodyStructure, '');
+            let n = 0;
+            for (const part of parts) {
+                const isAttachment = !part.id || (part.disposition && part.disposition.startsWith('attachment'));
+                if (isAttachment) n++;
+            }
+            return n;
+        };
+
+        if (searching && searchUids) {
+            const slice = searchUids.slice((page - 1) * pageSize, page * pageSize);
+            for (const uid of slice) {
+                const m = await client.fetchOne(uid, { envelope: true, flags: true, bodyStructure: true }, { uid: true });
+                if (!m) continue;
+                const attachments = attachmentCountOf(m.bodyStructure);
+                if (hasAttachment && attachments === 0) continue;
                 items.push({
                     uid: m.uid,
                     seq: m.seq,
@@ -200,11 +237,135 @@ router.get('/messages', requireMailSession, asyncHandler(async (req, res) => {
                     subject: m.envelope?.subject || '(no subject)',
                     from: addressList(m.envelope?.from),
                     to: addressList(m.envelope?.to),
+                    attachments,
                 });
             }
-            items.reverse();
+        } else if (total > 0) {
+            const start = Math.max(1, total - ((page - 1) * pageSize + pageSize) + 1);
+            const end = start + pageSize - 1;
+            if (start <= total) {
+                for await (const m of client.fetch(`${start}:${end}`, { envelope: true, flags: true, bodyStructure: true })) {
+                    const attachments = attachmentCountOf(m.bodyStructure);
+                    if (hasAttachment && attachments === 0) continue;
+                    items.push({
+                        uid: m.uid,
+                        seq: m.seq,
+                        flags: flagList(m.flags),
+                        seen: !hasFlag(m.flags, '\\Seen'),
+                        date: m.envelope?.date ? new Date(m.envelope.date).toISOString() : null,
+                        subject: m.envelope?.subject || '(no subject)',
+                        from: addressList(m.envelope?.from),
+                        to: addressList(m.envelope?.to),
+                        attachments,
+                    });
+                }
+                items.reverse();
+            }
         }
-        res.json({ success: true, data: { items, total, page, pageSize, folder } });
+        res.json({ success: true, data: { items, total: searching ? (searchUids ? searchUids.length : 0) : total, page, pageSize, folder } });
+    } finally {
+        await client.logout().catch(() => undefined);
+    }
+}));
+
+router.post('/folders', requireMailSession, asyncHandler(async (req, res) => {
+    const session = (req as any).mailSession as MailSession;
+    const name = String(req.body?.name || '').trim().replace(/[\\/]/g, '-');
+    if (!name) {
+        res.status(400).json({ success: false, message: 'Folder name is required' });
+        return;
+    }
+    const client = imapClient(session);
+    try {
+        await client.connect();
+        await client.mailboxCreate(name);
+        res.json({ success: true, data: { path: name } });
+    } finally {
+        await client.logout().catch(() => undefined);
+    }
+}));
+
+router.put('/folders', requireMailSession, asyncHandler(async (req, res) => {
+    const session = (req as any).mailSession as MailSession;
+    const path = String(req.body?.path || '');
+    const newName = String(req.body?.newName || '').trim().replace(/[\\/]/g, '-');
+    if (!path || !newName) {
+        res.status(400).json({ success: false, message: 'Path and new name are required' });
+        return;
+    }
+    const client = imapClient(session);
+    try {
+        await client.connect();
+        await client.mailboxRename(path, newName);
+        res.json({ success: true, data: { path: newName } });
+    } finally {
+        await client.logout().catch(() => undefined);
+    }
+}));
+
+router.delete('/folders', requireMailSession, asyncHandler(async (req, res) => {
+    const session = (req as any).mailSession as MailSession;
+    const path = String(req.query.path || '');
+    if (!path) {
+        res.status(400).json({ success: false, message: 'Folder path is required' });
+        return;
+    }
+    const client = imapClient(session);
+    try {
+        await client.connect();
+        await client.mailboxDelete(path);
+        res.json({ success: true });
+    } finally {
+        await client.logout().catch(() => undefined);
+    }
+}));
+
+router.put('/drafts', requireMailSession, asyncHandler(async (req, res) => {
+    const session = (req as any).mailSession as MailSession;
+    const { uid, folder, to, cc, bcc, subject, text, html, attachments } = req.body || {};
+
+    const client = imapClient(session);
+    try {
+        await client.connect();
+        if (uid && folder) {
+            try {
+                await client.mailboxOpen(folder);
+                await client.messageDelete(uid, { uid: true });
+            } catch {
+                /* old draft gone */
+            }
+        }
+
+        const builder = nodemailer.createTransport({ streamTransport: true, newline: 'unix' });
+        const mail: any = {
+            from: session.email,
+            to: Array.isArray(to) ? to : [],
+            cc: Array.isArray(cc) && cc.length ? cc : undefined,
+            bcc: Array.isArray(bcc) && bcc.length ? bcc : undefined,
+            subject: subject || '',
+            text: text || '',
+            html: html || undefined,
+        };
+        if (Array.isArray(attachments) && attachments.length) {
+            mail.attachments = attachments
+                .map((a: any) => ({
+                    filename: a.filename || 'attachment',
+                    content: Buffer.from(a.base64 || '', 'base64'),
+                    contentType: a.contentType,
+                }))
+                .filter((a: any) => a.content.length > 0);
+        }
+        const info = await builder.sendMail(mail);
+
+        let draftsPath = 'Drafts';
+        try {
+            await client.mailboxOpen(draftsPath);
+        } catch {
+            await client.mailboxCreate(draftsPath);
+        }
+        const result = await client.append(draftsPath, info.message as Buffer, ['\\Draft'], new Date());
+        const draftUid = result && typeof result === 'object' && 'uid' in result ? result.uid : undefined;
+        res.json({ success: true, data: { uid: draftUid, folder: draftsPath } });
     } finally {
         await client.logout().catch(() => undefined);
     }
@@ -363,7 +524,7 @@ router.get('/attachments/:uid/:part', requireMailSession, asyncHandler(async (re
 
 router.post('/send', requireMailSession, asyncHandler(async (req, res) => {
     const session = (req as any).mailSession as MailSession;
-    const { to, cc, bcc, subject, text, html, attachments } = req.body || {};
+    const { to, cc, bcc, subject, text, html, attachments, draftUid, draftFolder } = req.body || {};
     if (!to || !to.length) {
         res.status(400).json({ success: false, message: 'Recipient is required' });
         return;
@@ -395,6 +556,23 @@ router.post('/send', requireMailSession, asyncHandler(async (req, res) => {
     }
 
     await transporter.sendMail(mail);
+
+    if (draftUid && draftFolder) {
+        try {
+            const client = imapClient(session);
+            await client.connect();
+            try {
+                await client.mailboxOpen(draftFolder);
+                await client.messageDelete(draftUid, { uid: true });
+            } catch {
+                /* draft already gone */
+            }
+            await client.logout().catch(() => undefined);
+        } catch {
+            /* cleanup best-effort */
+        }
+    }
+
     res.json({ success: true });
 }));
 

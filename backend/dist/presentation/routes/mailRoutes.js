@@ -168,47 +168,218 @@ router.get('/folders', requireMailSession, (0, express_async_handler_1.default)(
 })));
 router.get('/messages', requireMailSession, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, e_1, _b, _c;
-    var _d, _e, _f, _g;
+    var _d, _e, _f, _g, _h, _j, _k, _l;
     const session = req.mailSession;
     const folder = String(req.query.folder || 'INBOX');
     const page = Math.max(1, parseInt(String(req.query.page || '1'), 10) || 1);
     const pageSize = Math.min(100, Math.max(1, parseInt(String(req.query.pageSize || '25'), 10) || 25));
+    const q = String(req.query.q || '').trim();
+    const from = String(req.query.from || '').trim();
+    const to = String(req.query.to || '').trim();
+    const subject = String(req.query.subject || '').trim();
+    const sinceRaw = req.query.since;
+    const beforeRaw = req.query.before;
+    const hasAttachment = req.query.hasAttachment === 'true';
     const client = imapClient(session);
     try {
         yield client.connect();
         yield client.mailboxOpen(folder);
         const total = client.mailbox ? client.mailbox.exists : 0;
-        const start = Math.max(1, total - ((page - 1) * pageSize + pageSize) + 1);
-        const end = start + pageSize - 1;
-        const items = [];
-        if (start <= total && total > 0) {
-            try {
-                for (var _h = true, _j = __asyncValues(client.fetch(`${start}:${end}`, { envelope: true, flags: true })), _k; _k = yield _j.next(), _a = _k.done, !_a; _h = true) {
-                    _c = _k.value;
-                    _h = false;
-                    const m = _c;
-                    items.push({
-                        uid: m.uid,
-                        seq: m.seq,
-                        flags: flagList(m.flags),
-                        seen: !hasFlag(m.flags, '\\Seen'),
-                        date: ((_d = m.envelope) === null || _d === void 0 ? void 0 : _d.date) ? new Date(m.envelope.date).toISOString() : null,
-                        subject: ((_e = m.envelope) === null || _e === void 0 ? void 0 : _e.subject) || '(no subject)',
-                        from: addressList((_f = m.envelope) === null || _f === void 0 ? void 0 : _f.from),
-                        to: addressList((_g = m.envelope) === null || _g === void 0 ? void 0 : _g.to),
-                    });
-                }
+        const searching = !!(q || from || to || subject || sinceRaw || beforeRaw);
+        let searchUids = null;
+        if (searching) {
+            const criteria = {};
+            if (q) {
+                criteria.or = [{ from: q }, { to: q }, { subject: q }, { body: q }];
             }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-            finally {
-                try {
-                    if (!_h && !_a && (_b = _j.return)) yield _b.call(_j);
-                }
-                finally { if (e_1) throw e_1.error; }
+            else {
+                if (from)
+                    criteria.from = from;
+                if (to)
+                    criteria.to = to;
+                if (subject)
+                    criteria.subject = subject;
             }
-            items.reverse();
+            if (sinceRaw)
+                criteria.since = new Date(String(sinceRaw));
+            if (beforeRaw)
+                criteria.before = new Date(String(beforeRaw));
+            const found = yield client.search(criteria, { uid: true });
+            searchUids = (Array.isArray(found) ? found : []).reverse();
         }
-        res.json({ success: true, data: { items, total, page, pageSize, folder } });
+        const items = [];
+        const attachmentCountOf = (bodyStructure) => {
+            const parts = flattenParts(bodyStructure, '');
+            let n = 0;
+            for (const part of parts) {
+                const isAttachment = !part.id || (part.disposition && part.disposition.startsWith('attachment'));
+                if (isAttachment)
+                    n++;
+            }
+            return n;
+        };
+        if (searching && searchUids) {
+            const slice = searchUids.slice((page - 1) * pageSize, page * pageSize);
+            for (const uid of slice) {
+                const m = yield client.fetchOne(uid, { envelope: true, flags: true, bodyStructure: true }, { uid: true });
+                if (!m)
+                    continue;
+                const attachments = attachmentCountOf(m.bodyStructure);
+                if (hasAttachment && attachments === 0)
+                    continue;
+                items.push({
+                    uid: m.uid,
+                    seq: m.seq,
+                    flags: flagList(m.flags),
+                    seen: !hasFlag(m.flags, '\\Seen'),
+                    date: ((_d = m.envelope) === null || _d === void 0 ? void 0 : _d.date) ? new Date(m.envelope.date).toISOString() : null,
+                    subject: ((_e = m.envelope) === null || _e === void 0 ? void 0 : _e.subject) || '(no subject)',
+                    from: addressList((_f = m.envelope) === null || _f === void 0 ? void 0 : _f.from),
+                    to: addressList((_g = m.envelope) === null || _g === void 0 ? void 0 : _g.to),
+                    attachments,
+                });
+            }
+        }
+        else if (total > 0) {
+            const start = Math.max(1, total - ((page - 1) * pageSize + pageSize) + 1);
+            const end = start + pageSize - 1;
+            if (start <= total) {
+                try {
+                    for (var _m = true, _o = __asyncValues(client.fetch(`${start}:${end}`, { envelope: true, flags: true, bodyStructure: true })), _p; _p = yield _o.next(), _a = _p.done, !_a; _m = true) {
+                        _c = _p.value;
+                        _m = false;
+                        const m = _c;
+                        const attachments = attachmentCountOf(m.bodyStructure);
+                        if (hasAttachment && attachments === 0)
+                            continue;
+                        items.push({
+                            uid: m.uid,
+                            seq: m.seq,
+                            flags: flagList(m.flags),
+                            seen: !hasFlag(m.flags, '\\Seen'),
+                            date: ((_h = m.envelope) === null || _h === void 0 ? void 0 : _h.date) ? new Date(m.envelope.date).toISOString() : null,
+                            subject: ((_j = m.envelope) === null || _j === void 0 ? void 0 : _j.subject) || '(no subject)',
+                            from: addressList((_k = m.envelope) === null || _k === void 0 ? void 0 : _k.from),
+                            to: addressList((_l = m.envelope) === null || _l === void 0 ? void 0 : _l.to),
+                            attachments,
+                        });
+                    }
+                }
+                catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                finally {
+                    try {
+                        if (!_m && !_a && (_b = _o.return)) yield _b.call(_o);
+                    }
+                    finally { if (e_1) throw e_1.error; }
+                }
+                items.reverse();
+            }
+        }
+        res.json({ success: true, data: { items, total: searching ? (searchUids ? searchUids.length : 0) : total, page, pageSize, folder } });
+    }
+    finally {
+        yield client.logout().catch(() => undefined);
+    }
+})));
+router.post('/folders', requireMailSession, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const session = req.mailSession;
+    const name = String(((_a = req.body) === null || _a === void 0 ? void 0 : _a.name) || '').trim().replace(/[\\/]/g, '-');
+    if (!name) {
+        res.status(400).json({ success: false, message: 'Folder name is required' });
+        return;
+    }
+    const client = imapClient(session);
+    try {
+        yield client.connect();
+        yield client.mailboxCreate(name);
+        res.json({ success: true, data: { path: name } });
+    }
+    finally {
+        yield client.logout().catch(() => undefined);
+    }
+})));
+router.put('/folders', requireMailSession, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    const session = req.mailSession;
+    const path = String(((_a = req.body) === null || _a === void 0 ? void 0 : _a.path) || '');
+    const newName = String(((_b = req.body) === null || _b === void 0 ? void 0 : _b.newName) || '').trim().replace(/[\\/]/g, '-');
+    if (!path || !newName) {
+        res.status(400).json({ success: false, message: 'Path and new name are required' });
+        return;
+    }
+    const client = imapClient(session);
+    try {
+        yield client.connect();
+        yield client.mailboxRename(path, newName);
+        res.json({ success: true, data: { path: newName } });
+    }
+    finally {
+        yield client.logout().catch(() => undefined);
+    }
+})));
+router.delete('/folders', requireMailSession, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const session = req.mailSession;
+    const path = String(req.query.path || '');
+    if (!path) {
+        res.status(400).json({ success: false, message: 'Folder path is required' });
+        return;
+    }
+    const client = imapClient(session);
+    try {
+        yield client.connect();
+        yield client.mailboxDelete(path);
+        res.json({ success: true });
+    }
+    finally {
+        yield client.logout().catch(() => undefined);
+    }
+})));
+router.put('/drafts', requireMailSession, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const session = req.mailSession;
+    const { uid, folder, to, cc, bcc, subject, text, html, attachments } = req.body || {};
+    const client = imapClient(session);
+    try {
+        yield client.connect();
+        if (uid && folder) {
+            try {
+                yield client.mailboxOpen(folder);
+                yield client.messageDelete(uid, { uid: true });
+            }
+            catch (_a) {
+                /* old draft gone */
+            }
+        }
+        const builder = nodemailer_1.default.createTransport({ streamTransport: true, newline: 'unix' });
+        const mail = {
+            from: session.email,
+            to: Array.isArray(to) ? to : [],
+            cc: Array.isArray(cc) && cc.length ? cc : undefined,
+            bcc: Array.isArray(bcc) && bcc.length ? bcc : undefined,
+            subject: subject || '',
+            text: text || '',
+            html: html || undefined,
+        };
+        if (Array.isArray(attachments) && attachments.length) {
+            mail.attachments = attachments
+                .map((a) => ({
+                filename: a.filename || 'attachment',
+                content: Buffer.from(a.base64 || '', 'base64'),
+                contentType: a.contentType,
+            }))
+                .filter((a) => a.content.length > 0);
+        }
+        const info = yield builder.sendMail(mail);
+        let draftsPath = 'Drafts';
+        try {
+            yield client.mailboxOpen(draftsPath);
+        }
+        catch (_b) {
+            yield client.mailboxCreate(draftsPath);
+        }
+        const result = yield client.append(draftsPath, info.message, ['\\Draft'], new Date());
+        const draftUid = result && typeof result === 'object' && 'uid' in result ? result.uid : undefined;
+        res.json({ success: true, data: { uid: draftUid, folder: draftsPath } });
     }
     finally {
         yield client.logout().catch(() => undefined);
@@ -385,7 +556,7 @@ router.get('/attachments/:uid/:part', requireMailSession, (0, express_async_hand
 })));
 router.post('/send', requireMailSession, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const session = req.mailSession;
-    const { to, cc, bcc, subject, text, html, attachments } = req.body || {};
+    const { to, cc, bcc, subject, text, html, attachments, draftUid, draftFolder } = req.body || {};
     if (!to || !to.length) {
         res.status(400).json({ success: false, message: 'Recipient is required' });
         return;
@@ -416,6 +587,23 @@ router.post('/send', requireMailSession, (0, express_async_handler_1.default)((r
         })).filter((a) => a.content.length > 0);
     }
     yield transporter.sendMail(mail);
+    if (draftUid && draftFolder) {
+        try {
+            const client = imapClient(session);
+            yield client.connect();
+            try {
+                yield client.mailboxOpen(draftFolder);
+                yield client.messageDelete(draftUid, { uid: true });
+            }
+            catch (_a) {
+                /* draft already gone */
+            }
+            yield client.logout().catch(() => undefined);
+        }
+        catch (_b) {
+            /* cleanup best-effort */
+        }
+    }
     res.json({ success: true });
 })));
 exports.default = router;
