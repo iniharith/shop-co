@@ -11,5 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default function MailLayout({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+  return <div className="mail-app">{children}</div>;
 }

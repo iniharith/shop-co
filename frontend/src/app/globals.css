@@ -135,6 +135,12 @@
   body:has(.rsvp-page) .site-footer {
     display: none;
   }
+
+  /* The mail app is a standalone webmail dashboard. */
+  body:has(.mail-app) .site-header,
+  body:has(.mail-app) .site-footer {
+    display: none;
+  }
   h1, h2 {
     font-family: var(--font-provicali-ampersand), "integral";
   }
