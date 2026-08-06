@@ -8,6 +8,7 @@ import type { Metadata, Viewport } from "next";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { authConfig } from "@/lib/auth.config";
 import { getServerSession } from "next-auth/next";
@@ -74,6 +75,7 @@ export default async function RootLayout({
             {children}
           </Providers>
         </NuqsAdapter>
+        <SpeedInsights />
       </body>
     </html>
   );
