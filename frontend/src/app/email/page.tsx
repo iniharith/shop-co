@@ -24,6 +24,8 @@ import {
   Search,
   Clock,
   PenSquare,
+  Archive,
+  Ban,
 } from "lucide-react";
 import { FaEnvelope, FaLock } from "react-icons/fa6";
 import { toast } from "sonner";
@@ -585,6 +587,70 @@ function MessageView({
   );
 }
 
+function MessageContextMenu({
+  x,
+  y,
+  onDelete,
+  onArchive,
+  onSpam,
+  onClose,
+}: {
+  x: number;
+  y: number;
+  onDelete: () => void;
+  onArchive: () => void;
+  onSpam: () => void;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const close = () => onClose();
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("click", close);
+    window.addEventListener("contextmenu", close);
+    window.addEventListener("keydown", esc);
+    window.addEventListener("scroll", close, true);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("contextmenu", close);
+      window.removeEventListener("keydown", esc);
+      window.removeEventListener("scroll", close, true);
+    };
+  }, [onClose]);
+
+  const left = Math.min(x, window.innerWidth - 220);
+  const top = Math.min(y, window.innerHeight - 150);
+
+  return (
+    <div
+      className="fixed z-50 w-52 overflow-hidden rounded-xl border border-border bg-card p-1.5 shadow-xl"
+      style={{ left, top }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
+        onClick={onDelete}
+      >
+        <Trash2 size={15} className="text-destructive" />
+        Delete
+      </button>
+      <button
+        className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
+        onClick={onArchive}
+      >
+        <Archive size={15} />
+        Archive
+      </button>
+      <button
+        className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
+        onClick={onSpam}
+      >
+        <Ban size={15} />
+        Mark as spam
+      </button>
+    </div>
+  );
+}
+
 export default function MailPage() {
   const [token, setToken] = useState("");
   const [email, setEmail] = useState("");
@@ -602,6 +668,7 @@ export default function MailPage() {
   const [composeOpen, setComposeOpen] = useState(false);
   const [replyTo, setReplyTo] = useState<MailMessage | null>(null);
   const [query, setQuery] = useState("");
+  const [ctx, setCtx] = useState<{ x: number; y: number; env: MailEnvelope } | null>(null);
 
   const isLoggedIn = !!token || preview;
 
@@ -709,6 +776,46 @@ export default function MailPage() {
     toast.success("Moved to Trash");
   };
 
+  const moveTo = async (env: MailEnvelope, target: string, label: string) => {
+    if (preview) {
+      setList((prev) => prev.filter((x) => x.uid !== env.uid));
+      setTotal((t) => Math.max(0, t - 1));
+      toast.success(label);
+      return;
+    }
+    try {
+      await mailApi.move(env.uid, activeFolder, target);
+      setList((prev) => prev.filter((x) => x.uid !== env.uid));
+      setTotal((t) => Math.max(0, t - 1));
+      if (selected?.uid === env.uid) {
+        setMessage(null);
+        setSelected(null);
+      }
+      toast.success(label);
+      loadFolders();
+    } catch {
+      toast.error(`Could not ${label.toLowerCase()}`);
+    }
+  };
+
+  const ctxDelete = () => {
+    if (!ctx) return;
+    moveTo(ctx.env, "\\Trash", "Moved to Trash");
+    setCtx(null);
+  };
+
+  const ctxArchive = () => {
+    if (!ctx) return;
+    moveTo(ctx.env, "Archive", "Archived");
+    setCtx(null);
+  };
+
+  const ctxSpam = () => {
+    if (!ctx) return;
+    moveTo(ctx.env, "\\Junk", "Marked as spam");
+    setCtx(null);
+  };
+
   const logout = async () => {
     if (!preview) await mailApi.logout();
     setPreview(false);
@@ -750,7 +857,7 @@ export default function MailPage() {
   return (
     <div className="flex h-svh w-full overflow-hidden bg-background">
       {/* ── Sidebar ── */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card md:flex">
+      <aside className="hidden w-48 shrink-0 flex-col border-r border-border bg-card md:flex">
         <div className="flex items-center gap-3 px-5 py-5">
           <Image
             src="/images/kampung-cetak-logo.png"
@@ -923,6 +1030,10 @@ export default function MailPage() {
                   <button
                     key={m.uid}
                     onClick={() => openMessage(m)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setCtx({ x: e.clientX, y: e.clientY, env: m });
+                    }}
                     className={cn(
                       "flex w-full gap-3 border-b border-border px-4 py-3.5 text-left transition-colors hover:bg-accent/60",
                       selected?.uid === m.uid && "bg-accent",
@@ -1022,6 +1133,17 @@ export default function MailPage() {
           loadFolders();
         }}
       />
+
+      {ctx && (
+        <MessageContextMenu
+          x={ctx.x}
+          y={ctx.y}
+          onDelete={ctxDelete}
+          onArchive={ctxArchive}
+          onSpam={ctxSpam}
+          onClose={() => setCtx(null)}
+        />
+      )}
     </div>
   );
 }
