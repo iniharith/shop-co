@@ -169,6 +169,11 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
     });
   };
 
+  const selectAllFolders = () => {
+    const allIds = groupedFiles.map((g: any) => `${g.folderName}-${g.orderId}-${g.taskId || ""}`);
+    setSelectedFolderIds(allIds);
+  };
+
   // The backend already returns the correct status queue, folder metadata and
   // file count. Reusing this light index avoids downloading/joining every
   // order, user and file whenever this page is opened.
@@ -629,7 +634,29 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
             </div>
             {bulkSelectMode && (
               <div className="p-3 border-b bg-muted/20 flex flex-col gap-2 shrink-0">
-                <span className="text-xs text-muted-foreground">{selectedFolderIds.length} folder(s) selected</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">{selectedFolderIds.length} / {groupedFiles.length} folder(s) selected</span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      disabled={groupedFiles.length === 0 || selectedFolderIds.length === groupedFiles.length}
+                      onClick={selectAllFolders}
+                    >
+                      Select All
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      disabled={selectedFolderIds.length === 0}
+                      onClick={() => setSelectedFolderIds([])}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
                 <div className="flex items-center gap-2">
                   <select
                     className="flex-1 h-8 text-xs rounded-md border border-input bg-background px-2"

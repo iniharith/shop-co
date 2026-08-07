@@ -170,6 +170,11 @@ export default function PackagingManager() {
     });
   };
 
+  const selectAllFolders = () => {
+    const allIds = groupedFiles.map((g: any) => `${g.folderName}-${g.orderId}-${g.taskId || ""}`);
+    setSelectedFolderIds(allIds);
+  };
+
   // The backend returns this queue as a compact folder index. Keeping the
   // grouping server-side makes navigation fast and preserves cached results.
   const groupedFiles = useMemo(() => {
@@ -613,7 +618,29 @@ export default function PackagingManager() {
             </div>
             {bulkSelectMode && (
               <div className="p-3 border-b bg-muted/20 flex flex-col gap-2 shrink-0">
-                <span className="text-xs text-muted-foreground">{selectedFolderIds.length} folder(s) selected</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">{selectedFolderIds.length} / {groupedFiles.length} folder(s) selected</span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      disabled={groupedFiles.length === 0 || selectedFolderIds.length === groupedFiles.length}
+                      onClick={selectAllFolders}
+                    >
+                      Select All
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      disabled={selectedFolderIds.length === 0}
+                      onClick={() => setSelectedFolderIds([])}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
                 <div className="flex items-center gap-2">
                   <select
                     className="flex-1 h-8 text-xs rounded-md border border-input bg-background px-2"
