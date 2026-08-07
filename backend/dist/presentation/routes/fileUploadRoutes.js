@@ -434,7 +434,7 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
             { $match: { status: { $in: statusQueryValues }, isDeleted: { $ne: true } } },
             { $project: { fileCount: { $size: { $ifNull: ['$files', []] } } } },
         ]),
-        orderIds.length ? order_model_1.default.find({ _id: { $in: orderIds } }).select('orderStatus userId').lean() : [],
+        orderIds.length ? order_model_1.default.find({ _id: { $in: orderIds } }).select('orderStatus userId easyparcelAwb easyparcelBookingStatus awbUrl awbUrlsByFormat').lean() : [],
         userIds.length ? user_model_1.default.find({ _id: { $in: userIds } }).select('name').lean() : [],
         allTaskIds.length ? Task_1.Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category isDeleted').lean() : [],
     ]);
@@ -523,12 +523,22 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
     const result = Object.values(groups).map((g) => {
         var _a, _b;
         let orderStatus = null;
+        let orderAWB = null;
         if (g.taskId)
             orderStatus = ((_a = taskMap.get(g.taskId)) === null || _a === void 0 ? void 0 : _a.status) || null;
         else if (g.orderId)
             orderStatus = ((_b = orderMap.get(g.orderId)) === null || _b === void 0 ? void 0 : _b.orderStatus) || null;
         const taskFileCount = g.taskId ? (taskFileCountMap.get(g.taskId) || 0) : 0;
-        return Object.assign(Object.assign({}, g), { orderStatus, fileCount: Math.max(g.files.length, taskFileCount) });
+        const order = g.orderId ? orderMap.get(g.orderId) : null;
+        if (order) {
+            const awbUrls = order.awbUrlsByFormat || {};
+            orderAWB = {
+                easyparcelAwb: order.easyparcelAwb || '',
+                easyparcelBookingStatus: order.easyparcelBookingStatus || null,
+                printUrl: awbUrls.A6 || awbUrls.A4 || order.awbUrl || '',
+            };
+        }
+        return Object.assign(Object.assign({}, g), { orderStatus, orderAWB, fileCount: Math.max(g.files.length, taskFileCount) });
     });
     res.json({ success: true, data: result });
     if (result.length > 0) {

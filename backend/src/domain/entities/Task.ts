@@ -38,7 +38,7 @@ export interface ITask extends Document {
   orderId?: string; // Linked Order ID
   customerUsername?: string; // Linked Customer Username
   category?: string; // e.g. DIGITAL PRINTING, DISPLAY ITEM
-  status: 'PLACED' | 'IN_PROGRESS' | 'PENDING_ARTWORK' | 'ARTWORK_REVIEWED' | 'ARTWORK_REJECTED' | 'IN_DESIGN' | 'PEMBETULAN' | 'DONE_DESIGN' | 'IN_PRODUCTION' | 'HOLD_PRINTING' | 'DONE_PRINTING' | 'PACKAGING' | 'SHIPPED' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED' | 'FAILED' | 'RETURN';
+  status: 'PLACED' | 'IN_PROGRESS' | 'PENDING_ARTWORK' | 'ARTWORK_REVIEWED' | 'ARTWORK_REJECTED' | 'IN_DESIGN' | 'PEMBETULAN' | 'DONE_DESIGN' | 'IN_PRODUCTION' | 'PRINT_AWB' | 'DONE_PRINTING' | 'PACKAGING' | 'SHIPPED' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED' | 'FAILED' | 'RETURN';
   isDone?: boolean;
   isDeleted?: boolean;
   files: { url: string; name: string; notes?: string; tag?: string }[];
@@ -85,7 +85,7 @@ const TaskSchema = new Schema<ITask>(
     orderId: { type: String, default: null },
     customerUsername: { type: String, default: '' },
     category: { type: String, default: 'UNASSIGNED' },
-    status: { type: String, enum: ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED', 'RETURN'], default: 'PLACED' },
+    status: { type: String, enum: ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'PRINT_AWB', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED', 'RETURN'], default: 'PLACED' },
     isDone: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
     statusUpdatedAt: { type: Date, default: Date.now },

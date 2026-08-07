@@ -32,7 +32,7 @@ import { Virtuoso } from "react-virtuoso";
 import SavedViewsControl from "@/components/global/SavedViewsControl";
 import { Roles } from "@/types/api";
 
-const SUBLIMATION_STATUSES = ["IN_PRODUCTION", "HOLD_PRINTING", "PACKAGING"];
+const SUBLIMATION_STATUSES = ["IN_PRODUCTION", "PRINT_AWB", "PACKAGING"];
 type SublimationSavedView = {
   searchQuery: string;
   activeSubTab: string;
@@ -110,7 +110,7 @@ export default function SublimationManager() {
   const [bulkSelectMode, setBulkSelectMode] = useState<boolean>(false);
   const [selectedFolderIds, setSelectedFolderIds] = useState<string[]>([]);
   const [bulkTargetStatus, setBulkTargetStatus] = useState<string>("SHIPPED");
-const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN", "IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING", "PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "FAILED", "RETURN"];
+const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN", "IN_PRODUCTION", "PRINT_AWB", "DONE_PRINTING", "PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "FAILED", "RETURN"];
 
   // Optimistic removal — folders removed instantly from UI when tick button is clicked
   const [movedFolderIds, setMovedFolderIds] = useState<Set<string>>(new Set());
@@ -569,7 +569,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
         <TabsList className="flex flex-wrap h-auto gap-2 justify-start mb-2">
           <TabsTrigger value="IN_PRODUCTION" className="text-xs md:text-sm">Printing</TabsTrigger>
-          <TabsTrigger value="HOLD_PRINTING" className="text-xs md:text-sm">Hold</TabsTrigger>
+          <TabsTrigger value="PRINT_AWB" className="text-xs md:text-sm">Print AWB</TabsTrigger>
           <TabsTrigger value="PACKAGING" className="text-xs md:text-sm">Done Print</TabsTrigger>
         </TabsList>
       </Tabs>
@@ -745,7 +745,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                           }}
                           disabled={isUpdatingStatus}
                         >
-                          {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED', 'RETURN'].map(s => (
+                          {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'PRINT_AWB', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED', 'RETURN'].map(s => (
                             <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                           ))}
                         </select>

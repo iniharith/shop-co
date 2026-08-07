@@ -169,7 +169,7 @@ export class OrderUsecase {
         return order;
     }
 
-    async updateOrderStatus(orderId: string, updateStatus: "PLACED" | "IN_PROGRESS" | "PENDING_ARTWORK" | "ARTWORK_REVIEWED" | "ARTWORK_REJECTED" | "IN_DESIGN" | "PEMBETULAN" | "DONE_DESIGN" | "IN_PRODUCTION" | "HOLD_PRINTING" | "DONE_PRINTING" | "PACKAGING" | "SHIPPED" | "IN_TRANSIT" | "DELIVERED" | "RETURNED" | "CANCELLED" | "FAILED", syncTasks = true, sourceTaskId?: string) {
+    async updateOrderStatus(orderId: string, updateStatus: "PLACED" | "IN_PROGRESS" | "PENDING_ARTWORK" | "ARTWORK_REVIEWED" | "ARTWORK_REJECTED" | "IN_DESIGN" | "PEMBETULAN" | "DONE_DESIGN" | "IN_PRODUCTION" | "PRINT_AWB" | "DONE_PRINTING" | "PACKAGING" | "SHIPPED" | "IN_TRANSIT" | "DELIVERED" | "RETURNED" | "CANCELLED" | "FAILED", syncTasks = true, sourceTaskId?: string) {
         const order = await this.orderRepository.updateOrder(orderId, { orderStatus: updateStatus });
         if (!order) throw new Error("Order not found");
         
@@ -265,7 +265,7 @@ export class OrderUsecase {
     }
 
 
-    async getOrdersByStatus(status: "PLACED" | "IN_PROGRESS" | "PENDING_ARTWORK" | "ARTWORK_REVIEWED" | "ARTWORK_REJECTED" | "IN_DESIGN" | "PEMBETULAN" | "DONE_DESIGN" | "IN_PRODUCTION" | "HOLD_PRINTING" | "DONE_PRINTING" | "PACKAGING" | "SHIPPED" | "IN_TRANSIT" | "DELIVERED" | "RETURNED" | "CANCELLED" | "FAILED") {
+    async getOrdersByStatus(status: "PLACED" | "IN_PROGRESS" | "PENDING_ARTWORK" | "ARTWORK_REVIEWED" | "ARTWORK_REJECTED" | "IN_DESIGN" | "PEMBETULAN" | "DONE_DESIGN" | "IN_PRODUCTION" | "PRINT_AWB" | "DONE_PRINTING" | "PACKAGING" | "SHIPPED" | "IN_TRANSIT" | "DELIVERED" | "RETURNED" | "CANCELLED" | "FAILED") {
         const cachedOrders = await this.redisService.get(REDIS_KEYS.ORDERS + status);
         if (cachedOrders) {
             return JSON.parse(cachedOrders);

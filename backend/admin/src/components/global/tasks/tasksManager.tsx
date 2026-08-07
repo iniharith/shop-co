@@ -72,7 +72,7 @@ const DueDateDisplay = ({ task, updateTask, className }: { task: any; updateTask
 // value for collapsedSections below, before the component's other state exists.
 const TASK_COLUMNS = [
   'PLACED','IN_PROGRESS','PENDING_ARTWORK','ARTWORK_REVIEWED','ARTWORK_REJECTED',
-  'IN_DESIGN','PEMBETULAN','DONE_DESIGN','IN_PRODUCTION','HOLD_PRINTING',
+  'IN_DESIGN','PEMBETULAN','DONE_DESIGN','IN_PRODUCTION','PRINT_AWB',
   'DONE_PRINTING','PACKAGING','SHIPPED','IN_TRANSIT','DELIVERED','CANCELLED','FAILED','RETURN',
 ];
 const TASK_RENDER_BATCH = 30;

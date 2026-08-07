@@ -42,7 +42,7 @@ const categories = [
   "FOOD PACKAGING"
 ];
 
-const ALL_STATUSES = ["IN_PRODUCTION", "HOLD_PRINTING"];
+const ALL_STATUSES = ["IN_PRODUCTION", "PRINT_AWB"];
 type ProductionSavedView = {
   searchQuery: string;
   activeTab: string;
@@ -122,7 +122,7 @@ export default function ProductionManager() {
   const [bulkSelectMode, setBulkSelectMode] = useState<boolean>(false);
   const [selectedFolderIds, setSelectedFolderIds] = useState<string[]>([]);
   const [bulkTargetStatus, setBulkTargetStatus] = useState<string>("PACKAGING");
-const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN", "IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING", "PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "FAILED", "RETURN"];
+const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN", "IN_PRODUCTION", "PRINT_AWB", "DONE_PRINTING", "PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "FAILED", "RETURN"];
 
   // Optimistic removal — folders removed instantly from UI when tick button is clicked
   const [movedFolderIds, setMovedFolderIds] = useState<Set<string>>(new Set());
@@ -602,8 +602,8 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
           <TabsTrigger value="IN_PRODUCTION" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">
             Printing
           </TabsTrigger>
-          <TabsTrigger value="HOLD_PRINTING" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">
-            Hold
+          <TabsTrigger value="PRINT_AWB" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">
+            Print AWB
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -716,6 +716,18 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                        {group.orderId && <p className="text-xs text-muted-foreground truncate font-medium mt-0.5">Order: {group.orderId}</p>}
                     </div>
                     <div className="shrink-0 flex items-center gap-2">
+                      {activeSubTab === "PRINT_AWB" && group.orderAWB?.printUrl && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(group.orderAWB.printUrl, "_blank", "noopener,noreferrer");
+                          }}
+                          className="p-1.5 bg-muted rounded-full hover:bg-primary/20 text-blue-600 dark:text-blue-400 transition-colors"
+                          title="Print AWB (opens in popup)"
+                        >
+                          <Printer className="w-4 h-4" />
+                        </button>
+                      )}
                       <span className="text-[10px] font-medium bg-background border px-1.5 py-0.5 rounded-full">{group.fileCount} file(s)</span>
                        <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-primary translate-x-1' : 'text-muted-foreground'}`} />
                        </div>
@@ -758,6 +770,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
               const activeTask = (taskDetailResponse as any)?.task || null;
               const activeOrder = (orderDetailResponse as any)?.order || null;
               const activeUser = activeTask?.assignee ? users.find((u: any) => u._id === activeTask.assignee) : null;
+              const orderAwbPrintUrl = activeOrder?.awbUrlsByFormat?.A6 || activeOrder?.awbUrlsByFormat?.A4 || activeOrder?.awbUrl || activeGroup?.orderAWB?.printUrl;
               
               const descriptionText = activeTask?.description ? activeTask.description : (activeOrder?.items ? activeOrder.items.map((item: any) => `${item.name} (${item.quantity}x)`).join('\n') : "No description provided.");
               const assigneeName = activeUser ? (activeUser.name || activeUser.email) : "Unassigned";
@@ -796,11 +809,22 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                           }}
                           disabled={isUpdatingStatus}
                         >
-                          {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'HOLD_PRINTING', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED', 'RETURN'].map(s => (
+                          {['PLACED', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'PRINT_AWB', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED', 'RETURN'].map(s => (
                             <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
                           ))}
                         </select>
                       </div>
+                      {activeSubTab === "PRINT_AWB" && (
+                        <Button
+                          variant="outline"
+                          disabled={!orderAwbPrintUrl}
+                          onClick={() => orderAwbPrintUrl && window.open(orderAwbPrintUrl, "_blank", "noopener,noreferrer")}
+                          className="shadow-sm h-11 sm:h-10 border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"
+                          title={orderAwbPrintUrl ? "Print AWB (opens in popup)" : "AWB not available yet"}
+                        >
+                          <Printer className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Print AWB</span>
+                        </Button>
+                      )}
                       <Button 
                         variant="outline" 
                         onClick={(e) => handleAdvanceFlow(activeGroup, e)} 

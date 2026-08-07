@@ -46,12 +46,12 @@ const categories = [
 ];
 
 // Artwork Manager only owns the pre-production stages. Once a job hits
-// IN_PRODUCTION/HOLD_PRINTING/DONE_PRINTING it belongs to the Production
+// IN_PRODUCTION/PRINT_AWB/DONE_PRINTING it belongs to the Production
 // page; PACKAGING belongs to the Packaging page; everything after that
 // (shipped/delivered/cancelled/failed) belongs to History.
 const ARTWORK_VISIBLE_STATUSES = ["PLACED", "IN_DESIGN", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "PEMBETULAN", "DONE_DESIGN"];
 const ARTWORK_STATUSES = ARTWORK_VISIBLE_STATUSES;
-const ALL_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN", "IN_PRODUCTION", "HOLD_PRINTING", "DONE_PRINTING", "PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "FAILED", "RETURN"];
+const ALL_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN", "IN_PRODUCTION", "PRINT_AWB", "DONE_PRINTING", "PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "FAILED", "RETURN"];
 
 const getFolderItemKey = (index: number, group: any) =>
   group.taskId

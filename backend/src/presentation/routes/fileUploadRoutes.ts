@@ -457,7 +457,7 @@ router.get(
         { $match: { status: { $in: statusQueryValues }, isDeleted: { $ne: true } } },
         { $project: { fileCount: { $size: { $ifNull: ['$files', []] } } } },
       ]),
-      orderIds.length ? OrderModel.find({ _id: { $in: orderIds } }).select('orderStatus userId').lean() : [],
+      orderIds.length ? OrderModel.find({ _id: { $in: orderIds } }).select('orderStatus userId easyparcelAwb easyparcelBookingStatus awbUrl awbUrlsByFormat').lean() : [],
       userIds.length ? User.find({ _id: { $in: userIds } }).select('name').lean() : [],
       allTaskIds.length ? Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category isDeleted').lean() : [],
     ]);
@@ -545,10 +545,20 @@ router.get(
     // Enrich with orderStatus and derived fields
     const result = Object.values(groups).map((g: any) => {
       let orderStatus: string | null = null;
+      let orderAWB: any = null;
       if (g.taskId) orderStatus = taskMap.get(g.taskId)?.status || null;
       else if (g.orderId) orderStatus = (orderMap.get(g.orderId) as any)?.orderStatus || null;
       const taskFileCount = g.taskId ? (taskFileCountMap.get(g.taskId) || 0) : 0;
-      return { ...g, orderStatus, fileCount: Math.max(g.files.length, taskFileCount) };
+      const order = g.orderId ? orderMap.get(g.orderId) as any : null;
+      if (order) {
+        const awbUrls = order.awbUrlsByFormat || {};
+        orderAWB = {
+          easyparcelAwb: order.easyparcelAwb || '',
+          easyparcelBookingStatus: order.easyparcelBookingStatus || null,
+          printUrl: awbUrls.A6 || awbUrls.A4 || order.awbUrl || '',
+        };
+      }
+      return { ...g, orderStatus, orderAWB, fileCount: Math.max(g.files.length, taskFileCount) };
     });
 
     res.json({ success: true, data: result });
