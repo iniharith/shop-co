@@ -843,17 +843,6 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                       >
                         <Share2 className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">{isGeneratingLink ? "Generating..." : "Share"}</span>
                       </Button>
-                      {activeSubTab === "PRINT_AWB" && (
-                        <Button
-                          variant="outline"
-                          disabled={!orderAwbPrintUrl}
-                          onClick={() => orderAwbPrintUrl && window.open(orderAwbPrintUrl, "_blank", "noopener,noreferrer")}
-                          className="shadow-sm h-11 sm:h-10 border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"
-                          title={orderAwbPrintUrl ? "Print AWB (opens in popup)" : "AWB not available yet"}
-                        >
-                          <Printer className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Print AWB</span>
-                        </Button>
-                      )}
                       <Button variant="secondary" onClick={(e) => handleDownloadAll(activeGroup, e)} className="shadow-sm h-11 sm:h-10">
                         <Download className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Download</span>
                       </Button>
@@ -959,6 +948,15 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                             }}>
                               <Download className="w-4 h-4 mr-2" /> Download
                             </Button>
+                            {activeSubTab === "PRINT_AWB" && orderAwbPrintUrl && (
+                              <Button variant="secondary" size="sm" className="w-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 h-9 font-semibold" onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                window.open(orderAwbPrintUrl, "_blank", "noopener,noreferrer");
+                              }}>
+                                <Printer className="w-4 h-4 mr-2" /> Print AWB
+                              </Button>
+                            )}
                           </CardContent>
                         </Card>
                       ))}
