@@ -1283,45 +1283,36 @@ return (
             <div className="bg-background border border-border rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
               <h3 className="font-bold text-lg mb-1">Upload {pendingDropFiles.length} file{pendingDropFiles.length > 1 ? 's' : ''}</h3>
               <p className="text-sm text-muted-foreground mb-5">What type of file is this?</p>
-              <div className="grid gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
-                  className="flex items-center gap-4 rounded-2xl border border-orange-500/25 bg-orange-500/5 p-4 text-left transition hover:border-orange-500/60 hover:bg-orange-500/10"
+                  className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-orange-500/25 bg-orange-500/5 p-3 text-center transition hover:border-orange-500/60 hover:bg-orange-500/10"
                   onClick={() => { uploadDroppedFiles(pendingDropFiles, 'draft'); setPendingDropFiles(null); }}
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500 text-white">
                     <File className="h-5 w-5" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold text-foreground">Draft</p>
-                    <p className="mt-0.5 text-sm leading-5 text-muted-foreground">Upload as Draft</p>
-                  </div>
+                  <span className="text-sm font-semibold text-foreground">Draft</span>
                 </button>
                 <button
                   type="button"
-                  className="flex items-center gap-4 rounded-2xl border border-slate-500/25 bg-slate-500/5 p-4 text-left transition hover:border-slate-500/60 hover:bg-slate-500/10"
+                  className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-slate-500/25 bg-slate-500/5 p-3 text-center transition hover:border-slate-500/60 hover:bg-slate-500/10"
                   onClick={() => { uploadDroppedFiles(pendingDropFiles, 'attachment'); setPendingDropFiles(null); }}
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gray-500 text-white">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-500 text-white">
                     <Paperclip className="h-5 w-5" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold text-foreground">Attachment</p>
-                    <p className="mt-0.5 text-sm leading-5 text-muted-foreground">Upload as Attachment</p>
-                  </div>
+                  <span className="text-sm font-semibold text-foreground">Attachment</span>
                 </button>
                 <button
                   type="button"
-                  className="flex items-center gap-4 rounded-2xl border border-green-500/25 bg-green-500/5 p-4 text-left transition hover:border-green-500/60 hover:bg-green-500/10"
+                  className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-green-500/25 bg-green-500/5 p-3 text-center transition hover:border-green-500/60 hover:bg-green-500/10"
                   onClick={() => { uploadDroppedFiles(pendingDropFiles, 'for_print'); setPendingDropFiles(null); }}
                 >
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-green-500 text-white">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-500 text-white">
                     <Printer className="h-5 w-5" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold text-foreground">For Print</p>
-                    <p className="mt-0.5 text-sm leading-5 text-muted-foreground">Upload as Artwork (For Print)</p>
-                  </div>
+                  <span className="text-sm font-semibold text-foreground">For Print</span>
                 </button>
               </div>
               <button

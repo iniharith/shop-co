@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2, Upload, Pencil, User, Tag, Calendar, CheckSquare } from "lucide-react";
+import { Folder, File, FileText, Paperclip, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2, Upload, Pencil, User, Tag, Calendar, CheckSquare } from "lucide-react";
 import { forceDownload } from "@/lib/utils";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import { toast } from "sonner";
@@ -1601,36 +1601,49 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
       <FilePreviewModal isOpen={!!previewFile} onClose={() => setPreviewFile(null)} file={previewFile} files={previewList} onNavigate={setPreviewFile} />
 
       {pendingArtworkDrop && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setPendingArtworkDrop(null)}>
-          <div className="bg-background border border-border rounded-xl shadow-2xl w-[90vw] max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-bold text-base mb-1">Upload {pendingArtworkDrop.length} file{pendingArtworkDrop.length > 1 ? 's' : ''}</h3>
-            <p className="text-sm text-muted-foreground mb-4">What type of file is this?</p>
-            <div className="flex flex-col gap-2">
-              <Button
-                variant="outline"
-                className="justify-start h-11"
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setPendingArtworkDrop(null)}>
+          <div className="bg-background border border-border rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-1">Upload {pendingArtworkDrop.length} file{pendingArtworkDrop.length > 1 ? 's' : ''}</h3>
+            <p className="text-sm text-muted-foreground mb-5">What type of file is this?</p>
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                type="button"
+                className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-orange-500/25 bg-orange-500/5 p-3 text-center transition hover:border-orange-500/60 hover:bg-orange-500/10"
                 onClick={() => { uploadArtworkDroppedFiles(pendingArtworkDrop, 'draft'); setPendingArtworkDrop(null); }}
               >
-                <Badge className="bg-orange-500 mr-2 text-[10px]">Draft</Badge> Upload as Draft
-              </Button>
-              <Button
-                variant="outline"
-                className="justify-start h-11"
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500 text-white">
+                  <File className="h-5 w-5" />
+                </div>
+                <span className="text-sm font-semibold text-foreground">Draft</span>
+              </button>
+              <button
+                type="button"
+                className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-slate-500/25 bg-slate-500/5 p-3 text-center transition hover:border-slate-500/60 hover:bg-slate-500/10"
                 onClick={() => { uploadArtworkDroppedFiles(pendingArtworkDrop, 'attachment'); setPendingArtworkDrop(null); }}
               >
-                <Badge className="bg-gray-500 mr-2 text-[10px]">Attachment</Badge> Upload as Attachment
-              </Button>
-              <Button
-                variant="outline"
-                className="justify-start h-11"
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-500 text-white">
+                  <Paperclip className="h-5 w-5" />
+                </div>
+                <span className="text-sm font-semibold text-foreground">Attachment</span>
+              </button>
+              <button
+                type="button"
+                className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-green-500/25 bg-green-500/5 p-3 text-center transition hover:border-green-500/60 hover:bg-green-500/10"
                 onClick={() => { uploadArtworkDroppedFiles(pendingArtworkDrop, 'for_print'); setPendingArtworkDrop(null); }}
               >
-                <Badge className="bg-green-500 mr-2 text-[10px]">Artwork</Badge> Upload as Artwork (For Print)
-              </Button>
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-500 text-white">
+                  <Printer className="h-5 w-5" />
+                </div>
+                <span className="text-sm font-semibold text-foreground">For Print</span>
+              </button>
             </div>
-            <Button variant="ghost" className="w-full mt-3 text-muted-foreground" onClick={() => setPendingArtworkDrop(null)}>
+            <button
+              type="button"
+              className="mt-4 w-full rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              onClick={() => setPendingArtworkDrop(null)}
+            >
               Cancel
-            </Button>
+            </button>
           </div>
         </div>
       )}
