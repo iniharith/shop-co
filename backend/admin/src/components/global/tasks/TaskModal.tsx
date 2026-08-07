@@ -1279,36 +1279,58 @@ return (
           </div>
         </div>
         {pendingDropFiles && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setPendingDropFiles(null)}>
-            <div className="bg-background border border-border rounded-xl shadow-2xl w-[90vw] max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
-              <h3 className="font-bold text-base mb-1">Upload {pendingDropFiles.length} file{pendingDropFiles.length > 1 ? 's' : ''}</h3>
-              <p className="text-sm text-muted-foreground mb-4">What type of file is this?</p>
-              <div className="flex flex-col gap-2">
-                <Button
-                  variant="outline"
-                  className="justify-start h-11"
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setPendingDropFiles(null)}>
+            <div className="bg-background border border-border rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+              <h3 className="font-bold text-lg mb-1">Upload {pendingDropFiles.length} file{pendingDropFiles.length > 1 ? 's' : ''}</h3>
+              <p className="text-sm text-muted-foreground mb-5">What type of file is this?</p>
+              <div className="grid gap-3">
+                <button
+                  type="button"
+                  className="flex items-center gap-4 rounded-2xl border border-orange-500/25 bg-orange-500/5 p-4 text-left transition hover:border-orange-500/60 hover:bg-orange-500/10"
                   onClick={() => { uploadDroppedFiles(pendingDropFiles, 'draft'); setPendingDropFiles(null); }}
                 >
-                  <Badge className="bg-orange-500 mr-2 text-[10px]">Draft</Badge> Upload as Draft
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start h-11"
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white">
+                    <File className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-foreground">Draft</p>
+                    <p className="mt-0.5 text-sm leading-5 text-muted-foreground">Upload as Draft</p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className="flex items-center gap-4 rounded-2xl border border-slate-500/25 bg-slate-500/5 p-4 text-left transition hover:border-slate-500/60 hover:bg-slate-500/10"
                   onClick={() => { uploadDroppedFiles(pendingDropFiles, 'attachment'); setPendingDropFiles(null); }}
                 >
-                  <Badge className="bg-gray-500 mr-2 text-[10px]">Attachment</Badge> Upload as Attachment
-                </Button>
-                <Button
-                  variant="outline"
-                  className="justify-start h-11"
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gray-500 text-white">
+                    <Paperclip className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-foreground">Attachment</p>
+                    <p className="mt-0.5 text-sm leading-5 text-muted-foreground">Upload as Attachment</p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className="flex items-center gap-4 rounded-2xl border border-green-500/25 bg-green-500/5 p-4 text-left transition hover:border-green-500/60 hover:bg-green-500/10"
                   onClick={() => { uploadDroppedFiles(pendingDropFiles, 'for_print'); setPendingDropFiles(null); }}
                 >
-                  <Badge className="bg-green-500 mr-2 text-[10px]">Artwork</Badge> Upload as Artwork (For Print)
-                </Button>
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-green-500 text-white">
+                    <Printer className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-foreground">For Print</p>
+                    <p className="mt-0.5 text-sm leading-5 text-muted-foreground">Upload as Artwork (For Print)</p>
+                  </div>
+                </button>
               </div>
-              <Button variant="ghost" className="w-full mt-3 text-muted-foreground" onClick={() => setPendingDropFiles(null)}>
+              <button
+                type="button"
+                className="mt-4 w-full rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                onClick={() => setPendingDropFiles(null)}
+              >
                 Cancel
-              </Button>
+              </button>
             </div>
           </div>
         )}
