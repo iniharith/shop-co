@@ -921,6 +921,15 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                           <div className="bg-muted/50 p-2 text-center text-xs text-muted-foreground border-t">
                             {activeGroup.files.filter((f: any) => f.folderId === folder._id).length} files
                           </div>
+                          {activeSubTab === "PRINT_AWB" && orderAwbPrintUrl && (
+                            <Button variant="secondary" size="sm" className="w-full rounded-none bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 h-9 font-semibold" onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              window.open(orderAwbPrintUrl, "_blank", "noopener,noreferrer");
+                            }}>
+                              <Printer className="w-4 h-4 mr-2" /> Print AWB
+                            </Button>
+                          )}
                         </Card>
                       ))}
 
