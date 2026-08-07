@@ -31,6 +31,58 @@ export const useInfiniteTasks = (filters?: Record<string, string | number | unde
     });
 }
 
+// Per-column scoped fetch for the Tasks board. One infinite query per status
+// column (only enabled when the column is visible), each scoped with the
+// backend's `statuses` filter so the full 180-day window is honoured per
+// column. This replaces the old single top-100-by-updatedAt board list, which
+// silently dropped any task not touched in ~a day even though it was still
+// active and searchable.
+export const useTaskColumns = (
+    statuses: string[],
+    hiddenColumns: string[] = [],
+    filters: Record<string, string | number | undefined> = {},
+) => {
+    const { data: session, status: authStatus } = useSession();
+    const token = session?.user?.token;
+    const authenticated = authStatus === "authenticated";
+
+    const columns: Record<string, {
+        tasks: any[];
+        isPending: boolean;
+        isFetching: boolean;
+        isFetchingNextPage: boolean;
+        hasNextPage: boolean;
+        fetchNextPage: () => void;
+        refetch: () => void;
+        isError: boolean;
+    }> = {};
+
+    for (const status of statuses) {
+        const enabled = authenticated && !hiddenColumns.includes(status);
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const query = useInfiniteQuery({
+            queryKey: ['tasks', 'column', status, filters],
+            queryFn: ({ pageParam }) => getTasks(token, { ...filters, statuses: status, cursor: pageParam || undefined }),
+            initialPageParam: null as string | null,
+            getNextPageParam: page => page.pageInfo.nextCursor || undefined,
+            enabled,
+            staleTime: 30_000,
+        });
+        columns[status] = {
+            tasks: (query.data?.pages || []).flatMap(page => page?.tasks || []),
+            isPending: query.isPending,
+            isFetching: query.isFetching,
+            isFetchingNextPage: query.isFetchingNextPage,
+            hasNextPage: !!query.hasNextPage,
+            fetchNextPage: () => { void query.fetchNextPage(); },
+            refetch: () => { void query.refetch(); },
+            isError: query.isError,
+        };
+    }
+
+    return columns;
+}
+
 export const useTask = (id: string | undefined) => {
     const { data: session, status } = useSession();
     // staleTime: 30s so reopening the same task feels instant (uses cache).

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useRef, useCallback, useEffect, useMemo, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { useInfiniteTasks, useTask, useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
+import { useTaskColumns, useTask, useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
 import { useSearchParams } from "next/navigation";
 import { useUsers } from "@/hooks/useUsers";
 import { useSession } from "next-auth/react";
@@ -15,7 +15,7 @@ import {
   LayoutGrid, List, Plus, Calendar, MessageSquare, Trash2,
   ChevronDown, ChevronRight, Settings2, Check, RefreshCw,
   CheckCircle, Circle, ArrowDownUp, X, UserCheck, CalendarClock, Layers, Folder,
-  Upload, Download, Image as ImageIcon, FileText,
+  Upload, Download, Image as ImageIcon, FileText, Loader2,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -314,26 +314,27 @@ export default function TasksManager() {
   const lowPower = useLowPowerAnimations();
   const taskRenderBatch = lowPower ? 10 : TASK_RENDER_BATCH;
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
+  const [hiddenColumns, setHiddenColumns]           = useState<string[]>([]);
   const taskFilters = {
-        limit: 100,
         ...(assigneeFilter !== "all" ? { assignee: assigneeFilter } : {}),
       };
-  const { data: response, isPending: isTasksPending, refetch, isFetching, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteTasks(taskFilters);
+  const columnQueries = useTaskColumns(TASK_COLUMNS, hiddenColumns, taskFilters);
   const linkedTaskId = useSearchParams().get("taskId") || undefined;
   const { data: linkedTaskResponse } = useTask(linkedTaskId);
   const tasks = useMemo(() => {
     const byId = new Map<string, any>();
-    response?.pages.forEach(page => page.tasks.forEach(task => {
-      if (!byId.has(task._id)) byId.set(task._id, task);
-    }));
+    TASK_COLUMNS.forEach(status => {
+      columnQueries[status]?.tasks.forEach(task => {
+        if (!byId.has(task._id)) byId.set(task._id, task);
+      });
+    });
     return Array.from(byId.values());
-  }, [response]);
+  }, [columnQueries]);
   const { data: usersData } = useUsers();
 
   const [viewMode, setViewMode]                     = useState<"board" | "list">("list");
   const [, startViewTransition]                     = useTransition();
   const [selectedTask, setSelectedTask]             = useState<any>(null);
-  const [hiddenColumns, setHiddenColumns]           = useState<string[]>([]);
   // Sections start closed (all statuses "collapsed") — matches the previous
   // behaviour where you had to click a section to open it, instead of every
   // section dropping open the moment the Tasks page loads.
@@ -453,10 +454,15 @@ export default function TasksManager() {
   const toggleColumnVisibility = (s: string) => setHiddenColumns(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
   const toggleSectionCollapse  = (s: string) => setCollapsedSections(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
   const toggleColumnCollapse   = (s: string) => setCollapsedColumns(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
-  const showMoreTasks = (status: string) => setVisibleTaskCounts(prev => ({
-    ...prev,
-    [status]: (prev[status] || taskRenderBatch) + taskRenderBatch,
-  }));
+  // Loads the next page of a column's data (when one exists) and always bumps
+  // the display batch so newly fetched cards are actually shown.
+  const loadMoreForColumn = (status: string) => {
+    setVisibleTaskCounts(prev => ({ ...prev, [status]: (prev[status] || taskRenderBatch) + taskRenderBatch }));
+    const col = columnQueries[status];
+    if (col?.hasNextPage && !col.isFetchingNextPage) col.fetchNextPage();
+  };
+  const refetchAll = () => visibleColumns.forEach(s => columnQueries[s]?.refetch());
+  const isAnyFetching = visibleColumns.some(s => columnQueries[s]?.isFetching);
 
   // ── Sorted / filtered task list ───────────────────────────────────────────
   const sortedTasks = useMemo(() => {
@@ -488,7 +494,9 @@ export default function TasksManager() {
     [tasksByStatus]
   );
 
-  if (isTasksPending) return <LoadingAnimation fullScreen={false} label="Loading tasks" />;
+  const isInitialLoading = visibleColumns.length > 0 && visibleColumns.every(s => columnQueries[s]?.isPending && (columnQueries[s]?.tasks?.length ?? 0) === 0);
+
+  if (isInitialLoading) return <LoadingAnimation fullScreen={false} label="Loading tasks" />;
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-full min-w-0 overflow-hidden px-1">
@@ -591,14 +599,14 @@ export default function TasksManager() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="rounded-full h-9 w-9 shadow-sm border-slate-200" title="Refresh">
-            <RefreshCw className={`w-4 h-4 text-slate-500 ${isFetching ? "animate-spin" : ""}`} />
+          <Button variant="outline" size="icon" onClick={() => refetchAll()} disabled={isAnyFetching} className="rounded-full h-9 w-9 shadow-sm border-slate-200" title="Refresh">
+            <RefreshCw className={`w-4 h-4 text-slate-500 ${isAnyFetching ? "animate-spin" : ""}`} />
           </Button>
           <Button variant="secondary" className="rounded-full px-4 shadow-sm" onClick={async () => {
             try {
               const res  = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/admin/migrate-statuses`);
               const data = await res.json();
-              data.success ? toast.success("Migration successful!") && refetch() : toast.error(`Migration failed: ${JSON.stringify(data)}`);
+              data.success ? toast.success("Migration successful!") && refetchAll() : toast.error(`Migration failed: ${JSON.stringify(data)}`);
             } catch { toast.error("Network error during migration"); }
           }}>
             Run Migration Fix
@@ -614,9 +622,11 @@ export default function TasksManager() {
             <div className="flex gap-4 items-start w-max">
               {visibleColumns.map(status => {
                 const columnTasks = tasksByStatus[status];
+                const col = columnQueries[status];
                 const isCollapsed = collapsedColumns.includes(status);
                 const visibleCount = visibleTaskCounts[status] || taskRenderBatch;
                 const displayedTasks = columnTasks.slice(0, visibleCount);
+                const columnPending = col?.isPending && columnTasks.length === 0;
                 return (
                   <div key={status} className="bg-muted/30 rounded-2xl p-3 border border-border/50 flex flex-col gap-3 min-w-[270px] w-[270px] shrink-0">
                     <button type="button" onClick={() => toggleColumnCollapse(status)} className="flex items-center gap-2 self-start rounded-full bg-card border border-border/50 shadow-sm pl-3 pr-2 py-1.5 hover:bg-muted/60 transition-colors">
@@ -626,6 +636,12 @@ export default function TasksManager() {
                     </button>
                     {!isCollapsed && (
                       <div className="flex flex-col gap-2">
+                        {columnPending ? (
+                          <div className="flex items-center justify-center py-8 text-muted-foreground">
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          </div>
+                        ) : (
+                          <>
                         {displayedTasks.map((task: any) => (
                           <Card key={task._id} className={`cursor-pointer hover:shadow-md transition-shadow group border border-border/50 ${task.isDone ? "opacity-60 bg-muted/20" : ""}`} onClick={() => setSelectedTask(task)}>
                             <CardContent className="p-3 flex flex-col gap-2">
@@ -678,10 +694,14 @@ export default function TasksManager() {
                             </CardContent>
                           </Card>
                         ))}
-                        {visibleCount < columnTasks.length && (
-                          <Button variant="ghost" size="sm" onClick={() => showMoreTasks(status)}>
-                            Show {Math.min(taskRenderBatch, columnTasks.length - visibleCount)} more
+                        {(visibleCount < columnTasks.length || col?.hasNextPage) && (
+                          <Button variant="ghost" size="sm" onClick={() => loadMoreForColumn(status)} disabled={col?.isFetchingNextPage}>
+                            {col?.hasNextPage
+                              ? (col?.isFetchingNextPage ? "Loading more..." : "Load more tasks")
+                              : `Show ${Math.min(taskRenderBatch, columnTasks.length - visibleCount)} more`}
                           </Button>
+                        )}
+                          </>
                         )}
                       </div>
                     )}
@@ -814,10 +834,12 @@ export default function TasksManager() {
                         </div>
                       );
                     })}
-                    {visibleCount < sectionTasks.length && (
+                    {(visibleCount < sectionTasks.length || columnQueries[status]?.hasNextPage) && (
                       <div className="p-3 text-center">
-                        <Button variant="outline" size="sm" onClick={() => showMoreTasks(status)}>
-                          Show {Math.min(taskRenderBatch, sectionTasks.length - visibleCount)} more
+                        <Button variant="outline" size="sm" onClick={() => loadMoreForColumn(status)} disabled={columnQueries[status]?.isFetchingNextPage}>
+                          {columnQueries[status]?.hasNextPage
+                            ? (columnQueries[status]?.isFetchingNextPage ? "Loading more tasks..." : "Load more tasks")
+                            : `Show ${Math.min(taskRenderBatch, sectionTasks.length - visibleCount)} more`}
                         </Button>
                       </div>
                     )}
@@ -826,14 +848,6 @@ export default function TasksManager() {
               </Collapsible>
             );
           })}
-        </div>
-      )}
-
-      {hasNextPage && (
-        <div className="flex justify-center py-2" aria-live="polite">
-          <Button variant="outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage} aria-busy={isFetchingNextPage}>
-            {isFetchingNextPage ? "Loading more tasks..." : "Load more tasks"}
-          </Button>
         </div>
       )}
 
