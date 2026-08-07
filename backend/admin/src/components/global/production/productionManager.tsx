@@ -325,8 +325,10 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
   const handleAdvanceFlow = (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
     let nextStatus = "";
-    if (activeSubTab === "IN_PRODUCTION") nextStatus = "PACKAGING";
+    if (activeSubTab === "IN_PRODUCTION") nextStatus = "PRINT_AWB";
+    else if (activeSubTab === "PRINT_AWB") nextStatus = "PACKAGING";
     else return;
+    const nextLabel = nextStatus.replace(/_/g, " ");
 
     // Optimistic: instantly remove from list and clear selection
     const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
@@ -335,7 +337,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
 
     if (group.taskId) {
       updateTask({ id: group.taskId, data: { status: nextStatus } }, {
-        onSuccess: () => toast.success("✅ Moved to Packaging!"),
+        onSuccess: () => toast.success(`Moved to ${nextLabel}!`),
         onError: () => {
           toast.error("Failed to update status");
           setMovedFolderIds(prev => { const s = new Set(prev); s.delete(folderId); return s; });
@@ -343,7 +345,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
       });
     } else if (group.orderId) {
       updateOrderStatus({ id: group.orderId, status: nextStatus }, {
-        onSuccess: () => toast.success("✅ Moved to Packaging!"),
+        onSuccess: () => toast.success(`Moved to ${nextLabel}!`),
         onError: () => {
           toast.error("Failed to update status");
           setMovedFolderIds(prev => { const s = new Set(prev); s.delete(folderId); return s; });
@@ -814,25 +816,14 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                           ))}
                         </select>
                       </div>
-                      {activeSubTab === "PRINT_AWB" && (
-                        <Button
-                          variant="outline"
-                          disabled={!orderAwbPrintUrl}
-                          onClick={() => orderAwbPrintUrl && window.open(orderAwbPrintUrl, "_blank", "noopener,noreferrer")}
-                          className="shadow-sm h-11 sm:h-10 border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"
-                          title={orderAwbPrintUrl ? "Print AWB (opens in popup)" : "AWB not available yet"}
-                        >
-                          <Printer className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Print AWB</span>
-                        </Button>
-                      )}
                       <Button 
                         variant="outline" 
                         onClick={(e) => handleAdvanceFlow(activeGroup, e)} 
                         className="shadow-sm h-11 sm:h-10 border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                        title="Mark as Packaging"
+                        title={activeSubTab === "IN_PRODUCTION" ? "Mark as done and move to Print AWB" : "Mark as Packaging"}
                       >
                         <CheckCircle className="w-5 h-5 sm:mr-2" /> 
-                        <span className="hidden sm:inline">Packaging</span>
+                        <span className="hidden sm:inline">{activeSubTab === "IN_PRODUCTION" ? "Done" : "Packaging"}</span>
                       </Button>
                       <Button 
                         variant="outline" 
@@ -852,6 +843,17 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                       >
                         <Share2 className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">{isGeneratingLink ? "Generating..." : "Share"}</span>
                       </Button>
+                      {activeSubTab === "PRINT_AWB" && (
+                        <Button
+                          variant="outline"
+                          disabled={!orderAwbPrintUrl}
+                          onClick={() => orderAwbPrintUrl && window.open(orderAwbPrintUrl, "_blank", "noopener,noreferrer")}
+                          className="shadow-sm h-11 sm:h-10 border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"
+                          title={orderAwbPrintUrl ? "Print AWB (opens in popup)" : "AWB not available yet"}
+                        >
+                          <Printer className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Print AWB</span>
+                        </Button>
+                      )}
                       <Button variant="secondary" onClick={(e) => handleDownloadAll(activeGroup, e)} className="shadow-sm h-11 sm:h-10">
                         <Download className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Download</span>
                       </Button>
