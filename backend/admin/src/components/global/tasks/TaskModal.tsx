@@ -318,6 +318,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [activeTab, setActiveTab] = useState("comments");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isDragOverModal, setIsDragOverModal] = useState(false);
+  const dragDepthRef = React.useRef(0);
   const [pendingDropFiles, setPendingDropFiles] = useState<File[] | null>(null);
   const [previewFile, setPreviewFile] = useState<any>(null);
   const { uploads, addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
@@ -740,21 +741,32 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
           if (el) applySavedView(el);
         }}
         className="task-modal-content top-1/2 left-1/2 max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[85vh] flex flex-col will-change-transform"
-        onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverModal(true); }}
-        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverModal(true); }}
+        onDragEnter={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dragDepthRef.current += 1;
+          setIsDragOverModal(true);
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dragDepthRef.current = Math.max(1, dragDepthRef.current);
+          setIsDragOverModal(true);
+        }}
         onDragLeave={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          // relatedTarget is where the pointer is going. If it's still
-          // somewhere inside this dialog, ignore the leave — this only
-          // fires because the pointer crossed a child element boundary,
-          // not because it actually left the dialog.
-          if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-          setIsDragOverModal(false);
+          // dragenter/dragleave fire in matching pairs as the pointer crosses
+          // nested children, so track depth instead of trusting relatedTarget
+          // (which is often null in Chrome). Only hide once the drag has
+          // genuinely left the whole dialog.
+          dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+          if (dragDepthRef.current === 0) setIsDragOverModal(false);
         }}
         onDrop={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          dragDepthRef.current = 0;
           setIsDragOverModal(false);
           if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             setPendingDropFiles(Array.from(e.dataTransfer.files));

@@ -267,7 +267,7 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
           <Plus className="w-4 h-4 mr-2" /> New Task
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[85vh] overflow-y-auto custom-scrollbar">
         <DialogHeader><DialogTitle>Create New Task</DialogTitle></DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
