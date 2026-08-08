@@ -318,9 +318,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [activeTab, setActiveTab] = useState("comments");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isDragOverModal, setIsDragOverModal] = useState(false);
-  const dragDepthRef = React.useRef(0);
   const [dropFolderId, setDropFolderId] = useState<string | null>(null);
-  const folderDropDepthRef = React.useRef(0);
   const [pendingDropFiles, setPendingDropFiles] = useState<File[] | null>(null);
   const [previewFile, setPreviewFile] = useState<any>(null);
   const { uploads, addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
@@ -627,6 +625,51 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const winSizeRef = React.useRef<{ w: number; h: number } | null>(null);
   const dragStateRef = React.useRef<{ mode: 'move' | 'resize'; startX: number; startY: number; origX: number; origY: number; origW: number; origH: number; rafId: number | null } | null>(null);
 
+  // Drag-and-drop is handled from a single window-level dragover listener
+  // instead of React dragenter/dragleave pairs. dragenter/dragleave fire
+  // erratically when the pointer crosses nested children, which made the
+  // drop overlay flicker and the folder highlight get stuck. Tracking the
+  // pointer position here is stable: dropFolderId comes from the element
+  // under the cursor, and the overlay only shows while the pointer is inside
+  // the dialog and not over a folder.
+  React.useEffect(() => {
+    const resetDrag = () => {
+      setIsDragOverModal(false);
+      setDropFolderId(null);
+    };
+    const onWindowDragOver = (e: DragEvent) => {
+      if (!e.dataTransfer?.types?.includes("Files")) {
+        resetDrag();
+        return;
+      }
+      e.preventDefault();
+      const el = dialogRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const insideDialog =
+        e.clientX >= rect.left && e.clientX <= rect.right &&
+        e.clientY >= rect.top && e.clientY <= rect.bottom;
+      const underPointer = document.elementFromPoint(e.clientX, e.clientY);
+      const folderCard = underPointer instanceof Element ? underPointer.closest('[data-folder-id]') : null;
+      const folderId = folderCard?.getAttribute('data-folder-id') || null;
+      setDropFolderId(folderId);
+      setIsDragOverModal(insideDialog && !folderId);
+    };
+    const onLeaveWindow = (e: DragEvent) => {
+      if (e.target === document.documentElement) resetDrag();
+    };
+    window.addEventListener('dragover', onWindowDragOver);
+    window.addEventListener('drop', resetDrag);
+    window.addEventListener('dragend', resetDrag);
+    document.addEventListener('dragleave', onLeaveWindow);
+    return () => {
+      window.removeEventListener('dragover', onWindowDragOver);
+      window.removeEventListener('drop', resetDrag);
+      window.removeEventListener('dragend', resetDrag);
+      document.removeEventListener('dragleave', onLeaveWindow);
+    };
+  }, []);
+
   const applyWindowDrag = () => {
     const s = dragStateRef.current;
     const el = dialogRef.current;
@@ -743,33 +786,11 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
           if (el) applySavedView(el);
         }}
         className="task-modal-content top-1/2 left-1/2 max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[85vh] flex flex-col will-change-transform"
-        onDragEnter={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          dragDepthRef.current += 1;
-          setIsDragOverModal(true);
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          dragDepthRef.current = Math.max(1, dragDepthRef.current);
-          setIsDragOverModal(true);
-        }}
-        onDragLeave={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          // dragenter/dragleave fire in matching pairs as the pointer crosses
-          // nested children, so track depth instead of trusting relatedTarget
-          // (which is often null in Chrome). Only hide once the drag has
-          // genuinely left the whole dialog.
-          dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
-          if (dragDepthRef.current === 0) setIsDragOverModal(false);
-        }}
         onDrop={(e) => {
           e.preventDefault();
-          e.stopPropagation();
-          dragDepthRef.current = 0;
           setIsDragOverModal(false);
+          setDropFolderId(null);
+          setPendingDropFolderId(null);
           if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             setPendingDropFiles(Array.from(e.dataTransfer.files));
           }
@@ -1046,31 +1067,13 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                             return (
                               <div
                                 key={folder._id}
+                                data-folder-id={folder._id}
                                 className={`relative border border-border/60 rounded-xl overflow-hidden bg-muted/5 transition-colors ${isDropTarget ? 'ring-2 ring-primary border-primary bg-primary/5' : ''}`}
-                                onDragEnter={(e) => {
-                                  e.preventDefault();
-                                  if (!Array.from(e.dataTransfer.types).includes("Files")) return;
-                                  folderDropDepthRef.current += 1;
-                                  setDropFolderId(folder._id);
-                                }}
-                                onDragOver={(e) => {
-                                  e.preventDefault();
-                                  if (!Array.from(e.dataTransfer.types).includes("Files")) return;
-                                  folderDropDepthRef.current = Math.max(1, folderDropDepthRef.current);
-                                  setDropFolderId(folder._id);
-                                }}
-                                onDragLeave={(e) => {
-                                  e.preventDefault();
-                                  folderDropDepthRef.current = Math.max(0, folderDropDepthRef.current - 1);
-                                  if (folderDropDepthRef.current === 0) setDropFolderId(prev => prev === folder._id ? null : prev);
-                                }}
                                 onDrop={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  folderDropDepthRef.current = 0;
-                                  setDropFolderId(null);
-                                  dragDepthRef.current = 0;
                                   setIsDragOverModal(false);
+                                  setDropFolderId(null);
                                   if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                                     setPendingDropFolderId(folder._id);
                                     setPendingDropFiles(Array.from(e.dataTransfer.files));
@@ -1696,7 +1699,7 @@ return (
           </div>
         </div>
         {pendingDropFiles && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setPendingDropFiles(null)}>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => { setPendingDropFiles(null); setPendingDropFolderId(null); }}>
             <div className="bg-background border border-border rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
               <h3 className="font-bold text-lg mb-1">Upload {pendingDropFiles.length} file{pendingDropFiles.length > 1 ? 's' : ''}</h3>
               <p className="text-sm text-muted-foreground mb-3">What type of file is this?</p>
