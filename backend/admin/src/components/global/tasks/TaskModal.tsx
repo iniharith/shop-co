@@ -319,6 +319,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [isDragOverModal, setIsDragOverModal] = useState(false);
   const dragDepthRef = React.useRef(0);
+  const [dropFolderId, setDropFolderId] = useState<string | null>(null);
+  const folderDropDepthRef = React.useRef(0);
   const [pendingDropFiles, setPendingDropFiles] = useState<File[] | null>(null);
   const [previewFile, setPreviewFile] = useState<any>(null);
   const { uploads, addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
@@ -773,7 +775,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
           }
         }}
       >
-        {isDragOverModal && (
+        {isDragOverModal && !dropFolderId && (
           <div
             className="absolute inset-0 z-[70] flex items-center justify-center bg-background/85 backdrop-blur-sm border-2 border-primary border-dashed rounded-lg pointer-events-none"
           >
@@ -1040,8 +1042,48 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                           {taskFolders.map(folder => {
                             const folderFiles = folderFileGroups.map[folder._id] || [];
                             const isOpen = !!expandedFolderIds[folder._id];
+                            const isDropTarget = dropFolderId === folder._id;
                             return (
-                              <div key={folder._id} className="border border-border/60 rounded-xl overflow-hidden bg-muted/5">
+                              <div
+                                key={folder._id}
+                                className={`relative border border-border/60 rounded-xl overflow-hidden bg-muted/5 transition-colors ${isDropTarget ? 'ring-2 ring-primary border-primary bg-primary/5' : ''}`}
+                                onDragEnter={(e) => {
+                                  e.preventDefault();
+                                  if (!Array.from(e.dataTransfer.types).includes("Files")) return;
+                                  folderDropDepthRef.current += 1;
+                                  setDropFolderId(folder._id);
+                                }}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  if (!Array.from(e.dataTransfer.types).includes("Files")) return;
+                                  folderDropDepthRef.current = Math.max(1, folderDropDepthRef.current);
+                                  setDropFolderId(folder._id);
+                                }}
+                                onDragLeave={(e) => {
+                                  e.preventDefault();
+                                  folderDropDepthRef.current = Math.max(0, folderDropDepthRef.current - 1);
+                                  if (folderDropDepthRef.current === 0) setDropFolderId(prev => prev === folder._id ? null : prev);
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  folderDropDepthRef.current = 0;
+                                  setDropFolderId(null);
+                                  dragDepthRef.current = 0;
+                                  setIsDragOverModal(false);
+                                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                                    setPendingDropFolderId(folder._id);
+                                    setPendingDropFiles(Array.from(e.dataTransfer.files));
+                                  }
+                                }}
+                              >
+                                {isDropTarget && (
+                                  <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-primary/10">
+                                    <div className="bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                                      Drop to upload into this folder
+                                    </div>
+                                  </div>
+                                )}
                                 <button type="button" onClick={() => toggleFolder(folder._id)} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors text-left">
                                   {isOpen ? (
                                     <FolderOpen className="w-5 h-5 text-primary/70 shrink-0" fill="currentColor" />
