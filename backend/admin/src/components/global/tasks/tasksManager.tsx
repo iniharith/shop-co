@@ -113,12 +113,39 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
   const [newTaskFolders, setNewTaskFolders] = useState<{ name: string; files: File[] }[]>([]);
   const folderInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [folderDropTarget, setFolderDropTarget] = useState<number | null>(null);
+
+  // Track which folder card the pointer is dragging files over, using a single
+  // window-level dragover listener + elementFromPoint (dragenter/dragleave
+  // pairs flicker across nested children). Reset on drop/dragend/leave-window.
+  React.useEffect(() => {
+    const resetDrop = () => setFolderDropTarget(null);
+    const onDragOver = (e: DragEvent) => {
+      if (!e.dataTransfer?.types?.includes("Files")) { resetDrop(); return; }
+      e.preventDefault();
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const card = el instanceof Element ? el.closest('[data-create-folder-idx]') : null;
+      setFolderDropTarget(card ? Number(card.getAttribute('data-create-folder-idx')) : null);
+    };
+    const onLeaveWindow = (e: DragEvent) => { if (e.target === document.documentElement) resetDrop(); };
+    window.addEventListener('dragover', onDragOver);
+    window.addEventListener('drop', resetDrop);
+    window.addEventListener('dragend', resetDrop);
+    document.addEventListener('dragleave', onLeaveWindow);
+    return () => {
+      window.removeEventListener('dragover', onDragOver);
+      window.removeEventListener('drop', resetDrop);
+      window.removeEventListener('dragend', resetDrop);
+      document.removeEventListener('dragleave', onLeaveWindow);
+    };
+  }, []);
 
   const resetForm = () => {
     setNewTask({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
     setPendingFiles([]);
     setNewTaskFolders([]);
     setIsDragOver(false);
+    setFolderDropTarget(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -150,6 +177,10 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
 
   const removeFolderFile = (idx: number, fileIdx: number) => {
     setNewTaskFolders(prev => prev.map((f, i) => (i === idx ? { ...f, files: f.files.filter((_, fi) => fi !== fileIdx) } : f)));
+  };
+
+  const addFilesToFolder = (idx: number, files: File[]) => {
+    setNewTaskFolders(prev => prev.map((f, i) => (i === idx ? { ...f, files: [...f.files, ...files] } : f)));
   };
 
   // Direct S3 PUT with progress + abort, mirroring the portal/upload store.
@@ -357,7 +388,28 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
             </div>
             <p className="text-xs text-muted-foreground">Create folders to organize artwork. Files uploaded into a folder appear inside it when you open the task.</p>
             {newTaskFolders.map((folder, idx) => (
-              <div key={idx} className="border border-border/50 rounded-xl p-3 space-y-2 bg-muted/10">
+              <div
+                key={idx}
+                data-create-folder-idx={idx}
+                className={`relative border border-border/50 rounded-xl p-3 space-y-2 bg-muted/10 transition-colors ${folderDropTarget === idx ? 'ring-2 ring-primary border-primary bg-primary/5' : ''}`}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setFolderDropTarget(null);
+                  setIsDragOver(false);
+                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    addFilesToFolder(idx, Array.from(e.dataTransfer.files));
+                    toast.success(`${e.dataTransfer.files.length} file(s) added to "${folder.name.trim() || `Artwork ${idx + 1}`}"`);
+                  }
+                }}
+              >
+                {folderDropTarget === idx && (
+                  <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-primary/10">
+                    <div className="bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                      Drop to add files to this folder
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <Folder className="w-4 h-4 text-primary/70 shrink-0" />
                   <Input
