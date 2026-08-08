@@ -563,6 +563,10 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
         el.style.height = `${sz.h}px`;
         el.style.maxWidth = 'none';
         el.style.maxHeight = 'none';
+        // Compensate the -50% centering translate so the top-left corner
+        // stays fixed and only the bottom-right edge moves while resizing.
+        const p = winPosRef.current;
+        el.style.transform = `translate(calc(-50% + ${p.x}px), calc(-50% + ${p.y}px))`;
       }
     }
   };
@@ -593,7 +597,14 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     if (s.mode === 'move') {
       winPosRef.current = { x: s.origX + dx, y: s.origY + dy };
     } else {
-      winSizeRef.current = { w: Math.max(700, s.origW + dx), h: Math.max(500, s.origH + dy) };
+      const w = Math.max(700, s.origW + dx);
+      const h = Math.max(500, s.origH + dy);
+      winSizeRef.current = { w, h };
+      // Keep the top-left corner anchored while growing from bottom-right.
+      winPosRef.current = {
+        x: s.origX + (w - s.origW) / 2,
+        y: s.origY + (h - s.origH) / 2,
+      };
     }
     if (s.rafId == null) {
       s.rafId = requestAnimationFrame(applyWindowDrag);
