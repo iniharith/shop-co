@@ -1108,9 +1108,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                         {/* Description */}
                         <div className="flex-1 min-w-0">
                           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Description</h3>
-                          <div className="bg-muted/30 border rounded-lg p-3 sm:p-4 text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed max-h-[150px] overflow-y-auto">
-                            {descriptionText}
-                          </div>
+                          <div className="bg-muted/30 border rounded-lg p-3 sm:p-4 text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed max-h-[150px] overflow-y-auto" dangerouslySetInnerHTML={{ __html: descriptionText }} />
                         </div>
 
                         {/* Properties Grid */}

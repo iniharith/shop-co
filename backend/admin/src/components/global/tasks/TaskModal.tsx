@@ -10,11 +10,10 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useTask, useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
 import { useUploadStore } from '@/store/uploadStore';
 import { useUsers } from "@/hooks/useUsers";
-import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw, CheckCircle, Folder, Printer, GripVertical, MoveDiagonal, RotateCcw } from "lucide-react";
+import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw, CheckCircle, Folder, Printer, GripVertical, MoveDiagonal, RotateCcw, Bold, Underline as UnderlineIcon, Strikethrough } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -349,6 +348,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const editingFieldRef = React.useRef<string | null>(null);
   const titleOnFocusRef = React.useRef(title);
   const descriptionOnFocusRef = React.useRef(description);
+  const descriptionRef = React.useRef<HTMLDivElement>(null);
   const dueDateOnFocusRef = React.useRef(dueDate);
 
   React.useEffect(() => {
@@ -360,7 +360,11 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   }, [fullTask.title]);
 
   React.useEffect(() => {
-    if (editingFieldRef.current !== 'description') setDescription(fullTask.description || "");
+    if (editingFieldRef.current !== 'description') {
+      const html = fullTask.description || "";
+      setDescription(html);
+      if (descriptionRef.current) descriptionRef.current.innerHTML = html;
+    }
   }, [fullTask.description]);
 
   React.useEffect(() => {
@@ -382,7 +386,11 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       onSuccess: () => toast.success("Task details updated!"),
       onError: () => {
         if ('title' in data) setTitle(fullTask.title || "");
-        if ('description' in data) setDescription(fullTask.description || "");
+        if ('description' in data) {
+          const fb = fullTask.description || "";
+          setDescription(fb);
+          if (descriptionRef.current) descriptionRef.current.innerHTML = fb;
+        }
         if ('dueDate' in data) setDueDate(fullTask.dueDate ? new Date(fullTask.dueDate).toISOString().split('T')[0] : "");
         if ('orderId' in data) setOrderId(fullTask.orderId || "");
         if ('customerUsername' in data) setCustomerUsername(fullTask.customerUsername || "");
@@ -391,6 +399,14 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
         if ('assignee' in data) setAssignee(getAssigneeId(fullTask.assignee));
       },
     });
+  };
+
+  const formatDescription = (command: string) => {
+    const el = descriptionRef.current;
+    if (!el) return;
+    el.focus();
+    document.execCommand(command, false);
+    setDescription(el.innerHTML);
   };
 
   const handleAddComment = () => {
@@ -748,30 +764,44 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                 <label className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <span className="w-1.5 h-4 bg-primary rounded-full"></span> Description
                 </label>
-                <Textarea 
-                  className="min-h-[120px] bg-muted/30 focus-visible:ring-1 border-border/50 shadow-sm overflow-hidden resize-none" 
-                  value={description} 
-                  onChange={(e) => setDescription(e.target.value)} 
-                  onFocus={() => {
-                    editingFieldRef.current = 'description';
-                    descriptionOnFocusRef.current = description;
-                  }}
-                  onInput={(e) => {
-                    const target = e.target as HTMLTextAreaElement;
-                    target.style.height = "0px";
-                    target.style.height = target.scrollHeight + "px";
-                  }}
+                <div className="flex items-center gap-1 rounded-md border border-border/50 bg-muted/30 p-1 w-fit">
+                  <button type="button" title="Bold" onMouseDown={(e) => e.preventDefault()} onClick={() => formatDescription('bold')} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground">
+                    <Bold className="h-4 w-4" />
+                  </button>
+                  <button type="button" title="Underline" onMouseDown={(e) => e.preventDefault()} onClick={() => formatDescription('underline')} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground">
+                    <UnderlineIcon className="h-4 w-4" />
+                  </button>
+                  <button type="button" title="Strikethrough" onMouseDown={(e) => e.preventDefault()} onClick={() => formatDescription('strikeThrough')} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground">
+                    <Strikethrough className="h-4 w-4" />
+                  </button>
+                </div>
+                <div
                   ref={(el) => {
-                    if (el) {
-                      el.style.height = "0px";
-                      el.style.height = el.scrollHeight + "px";
+                    descriptionRef.current = el;
+                    if (el && !el.dataset.descriptionInit) {
+                      el.dataset.descriptionInit = '1';
+                      el.innerHTML = description;
                     }
                   }}
-                  placeholder="Add more details to this task..."
-                  onBlur={() => {
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="min-h-[120px] rounded-md border border-border/50 bg-muted/30 shadow-sm p-3 text-sm text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring whitespace-pre-wrap"
+                  onFocus={() => {
+                    editingFieldRef.current = 'description';
+                    descriptionOnFocusRef.current = descriptionRef.current?.innerHTML || description;
+                  }}
+                  onInput={(e) => {
+                    setDescription((e.currentTarget as HTMLDivElement).innerHTML);
+                  }}
+                  onBlur={(e) => {
                     editingFieldRef.current = null;
-                    if (description !== descriptionOnFocusRef.current) handleSaveDetails({ description });
-                    else setDescription(fullTask.description || "");
+                    const html = (e.currentTarget as HTMLDivElement).innerHTML;
+                    if (html !== descriptionOnFocusRef.current) handleSaveDetails({ description: html });
+                    else {
+                      const fb = fullTask.description || "";
+                      setDescription(fb);
+                      e.currentTarget.innerHTML = fb;
+                    }
                   }}
                 />
               </div>
