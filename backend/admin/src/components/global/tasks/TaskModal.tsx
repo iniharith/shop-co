@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTask, useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
 import { useUploadStore } from '@/store/uploadStore';
 import { useUsers } from "@/hooks/useUsers";
-import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw, CheckCircle, Folder, Printer } from "lucide-react";
+import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw, CheckCircle, Folder, Printer, GripVertical, MoveDiagonal } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -513,11 +513,60 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     }
   };
 
+  // Window management: move + resize the full-view task dialog
+  const [winPos, setWinPos] = React.useState({ x: 0, y: 0 });
+  const [winSize, setWinSize] = React.useState<{ w: number; h: number } | null>(null);
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+  const dragStateRef = React.useRef<{ mode: 'move' | 'resize'; startX: number; startY: number; origX: number; origY: number; origW: number; origH: number } | null>(null);
+
+  const stopWindowDrag = () => {
+    dragStateRef.current = null;
+    window.removeEventListener('pointermove', onWindowDragMove);
+    window.removeEventListener('pointerup', stopWindowDrag);
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+  };
+
+  const onWindowDragMove = (e: PointerEvent) => {
+    const s = dragStateRef.current;
+    if (!s) return;
+    const dx = e.clientX - s.startX;
+    const dy = e.clientY - s.startY;
+    if (s.mode === 'move') {
+      setWinPos({ x: s.origX + dx, y: s.origY + dy });
+    } else {
+      setWinSize({ w: Math.max(700, s.origW + dx), h: Math.max(500, s.origH + dy) });
+    }
+  };
+
+  const startWindowDrag = (e: React.PointerEvent, mode: 'move' | 'resize') => {
+    if (e.button !== 0) return;
+    const el = dialogRef.current;
+    dragStateRef.current = {
+      mode,
+      startX: e.clientX,
+      startY: e.clientY,
+      origX: winPos.x,
+      origY: winPos.y,
+      origW: winSize?.w ?? el?.offsetWidth ?? 1200,
+      origH: winSize?.h ?? el?.offsetHeight ?? 600,
+    };
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = mode === 'move' ? 'grabbing' : 'nwse-resize';
+    window.addEventListener('pointermove', onWindowDragMove);
+    window.addEventListener('pointerup', stopWindowDrag);
+  };
+
   return (
     <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="task-modal-content top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[85vh] flex flex-col"
+        ref={dialogRef}
+        className="task-modal-content top-1/2 left-1/2 max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[85vh] flex flex-col"
+        style={{
+          transform: `translate(calc(-50% + ${winPos.x}px), calc(-50% + ${winPos.y}px))`,
+          ...(winSize ? { width: `${winSize.w}px`, height: `${winSize.h}px`, maxWidth: 'none', maxHeight: 'none' } : {}),
+        }}
         onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverModal(true); }}
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverModal(true); }}
         onDragLeave={(e) => {
@@ -553,7 +602,16 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
           
           {/* Main Content (Left, 70% width) */}
           <div className="flex-none md:w-[70%] flex flex-col md:border-r border-border/50 bg-background min-h-0 shrink-0 md:shrink">
-            <div className="p-4 md:p-6 border-b border-border/50 shrink-0">
+            <div className="p-4 md:p-6 border-b border-border/50 shrink-0 cursor-move select-none"
+              onPointerDown={(e) => {
+                const target = e.target as HTMLElement;
+                if (target.closest('input, textarea, button, select, a, [role="button"]')) return;
+                startWindowDrag(e, 'move');
+              }}>
+              <div className="flex items-center gap-2 text-muted-foreground/60 mb-1 pointer-events-none">
+                <GripVertical className="w-4 h-4" />
+                <span className="text-[11px] uppercase tracking-wide">Drag to move</span>
+              </div>
               <DialogHeader>
                 <DialogTitle className="sr-only">Task Details</DialogTitle>
                 <DialogDescription className="sr-only">Dialog Content</DialogDescription>
@@ -1325,6 +1383,13 @@ return (
             </div>
           </div>
         )}
+        <div
+          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); startWindowDrag(e, 'resize'); }}
+          className="absolute bottom-1 right-1 z-[60] h-5 w-5 cursor-nwse-resize text-muted-foreground/50 hover:text-primary flex items-center justify-center"
+          title="Resize"
+        >
+          <MoveDiagonal className="h-4 w-4" />
+        </div>
       </DialogContent>
       <FilePreviewModal isOpen={!!previewFile} onClose={() => setPreviewFile(null)} file={previewFile} />
     </Dialog>
