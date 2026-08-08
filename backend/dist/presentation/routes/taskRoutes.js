@@ -438,6 +438,7 @@ router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'),
     const fileUrl = req.file.location;
     const fileName = req.file.originalname || 'Attached File';
     const tag = normalizeTaskFileTag(req.body.tag);
+    const folderId = req.body.folderId || undefined;
     const task = yield TaskRepository_1.taskRepository.addFile(req.params.id, fileUrl, fileName, tag);
     if (!task) {
         res.status(404).json({ success: false, message: 'Task not found' });
@@ -466,6 +467,7 @@ router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'),
             orderId: task.orderId || undefined,
             category: 'TASK',
             tag: tag,
+            folderId: folderId,
             filename: req.file.key || req.file.filename || req.file.originalname,
             originalName: fileName,
             mimetype: req.file.mimetype,
@@ -485,6 +487,7 @@ router.post('/:id/files/save-metadata', auth_middileware_1.default, (0, express_
     var _a, _b, _c, _d;
     const { fileUrl, fileName, fileKey, mimetype, size } = req.body;
     const tag = normalizeTaskFileTag(req.body.tag);
+    const folderId = req.body.folderId || undefined;
     if (!fileUrl || !fileName) {
         res.status(400).json({ success: false, message: 'fileUrl and fileName are required' });
         return;
@@ -516,6 +519,7 @@ router.post('/:id/files/save-metadata', auth_middileware_1.default, (0, express_
             orderId: task.orderId || undefined,
             category: 'TASK',
             tag,
+            folderId,
             filename: fileKey || fileName,
             originalName: fileName,
             mimetype: mimetype || 'application/octet-stream',

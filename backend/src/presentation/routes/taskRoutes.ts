@@ -483,6 +483,7 @@ router.post(
     const fileUrl = (req.file as any).location;
     const fileName = req.file.originalname || 'Attached File';
     const tag = normalizeTaskFileTag(req.body.tag);
+    const folderId = req.body.folderId || undefined;
 
     const task = await taskRepository.addFile(req.params.id, fileUrl, fileName, tag);
     if (!task) {
@@ -514,6 +515,7 @@ router.post(
         orderId: task.orderId || undefined,
         category: 'TASK',
         tag: tag,
+        folderId: folderId,
         filename: (req.file as any).key || req.file.filename || req.file.originalname,
         originalName: fileName,
         mimetype: req.file.mimetype,
@@ -537,6 +539,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const { fileUrl, fileName, fileKey, mimetype, size } = req.body;
     const tag = normalizeTaskFileTag(req.body.tag);
+    const folderId = req.body.folderId || undefined;
     
     if (!fileUrl || !fileName) {
       res.status(400).json({ success: false, message: 'fileUrl and fileName are required' });
@@ -572,6 +575,7 @@ router.post(
         orderId: task.orderId || undefined,
         category: 'TASK',
         tag,
+        folderId,
         filename: fileKey || fileName,
         originalName: fileName,
         mimetype: mimetype || 'application/octet-stream',

@@ -225,8 +225,8 @@ export const useUploadTaskFile = () => {
     const client = useQueryClient();
     const { mutate, mutateAsync, isPending } = useMutation({
         mutationKey: ['uploadTaskFile'],
-        mutationFn: (data: { id: string, file: File, tag?: string, onProgress?: (percent: number) => void, abortController?: AbortController }) =>
-            import("@/api/tasks").then(m => m.uploadTaskFile(session?.user?.token, data.id, data.file, data.tag, data.onProgress, data.abortController)),
+        mutationFn: (data: { id: string, file: File, tag?: string, folderId?: string, onProgress?: (percent: number) => void, abortController?: AbortController }) =>
+            import("@/api/tasks").then(m => m.uploadTaskFile(session?.user?.token, data.id, data.file, data.tag, data.onProgress, data.abortController, data.folderId)),
         onMutate: async ({ id }) => {
             await client.cancelQueries({ queryKey: ["task", id] });
         },

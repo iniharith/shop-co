@@ -54,7 +54,7 @@ export const addTaskComment = async (token: string, id: string, text: string) =>
 
 import { uploadToS3Directly } from "@/utils/s3Upload";
 
-export const uploadTaskFile = async (token: string, taskId: string, file: File, tag?: string, onProgress?: (percent: number) => void, abortController?: AbortController) => {
+export const uploadTaskFile = async (token: string, taskId: string, file: File, tag?: string, onProgress?: (percent: number) => void, abortController?: AbortController, folderId?: string) => {
     // 1. Upload directly to S3
     const uploadedData = await uploadToS3Directly(token, file, `tasks/${taskId}`, onProgress, abortController);
     
@@ -65,7 +65,8 @@ export const uploadTaskFile = async (token: string, taskId: string, file: File, 
         fileKey: uploadedData.key,
         mimetype: uploadedData.type,
         size: uploadedData.size,
-        tag: tag || 'attachment'
+        tag: tag || 'attachment',
+        folderId: folderId || undefined
     });
     return response.data;
 }

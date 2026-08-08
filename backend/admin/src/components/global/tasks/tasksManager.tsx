@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   LayoutGrid, List, Plus, Calendar, MessageSquare, Trash2,
   ChevronDown, ChevronRight, Settings2, Check, RefreshCw,
-  CheckCircle, Circle, ArrowDownUp, X, UserCheck, CalendarClock, Layers, Folder,
+  CheckCircle, Circle, ArrowDownUp, X, UserCheck, CalendarClock, Layers, Folder, FolderPlus,
   Upload, Download, Image as ImageIcon, FileText, Loader2,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -111,10 +111,13 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+  const [newTaskFolders, setNewTaskFolders] = useState<{ name: string; files: File[] }[]>([]);
+  const folderInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const resetForm = () => {
     setNewTask({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
     setPendingFiles([]);
+    setNewTaskFolders([]);
     setIsDragOver(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -124,6 +127,29 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
       setPendingFiles(prev => [...prev, ...Array.from(e.target.files!)]);
     }
     e.target.value = "";
+  };
+
+  const addFolderRow = () => {
+    setNewTaskFolders(prev => [...prev, { name: `Artwork ${prev.length + 1}`, files: [] }]);
+  };
+
+  const removeFolderRow = (idx: number) => {
+    setNewTaskFolders(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateFolderName = (idx: number, name: string) => {
+    setNewTaskFolders(prev => prev.map((f, i) => (i === idx ? { ...f, name } : f)));
+  };
+
+  const handleFolderFileInput = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setNewTaskFolders(prev => prev.map((f, i) => (i === idx ? { ...f, files: [...f.files, ...Array.from(e.target.files!)] } : f)));
+    }
+    e.target.value = "";
+  };
+
+  const removeFolderFile = (idx: number, fileIdx: number) => {
+    setNewTaskFolders(prev => prev.map((f, i) => (i === idx ? { ...f, files: f.files.filter((_, fi) => fi !== fileIdx) } : f)));
   };
 
   // Direct S3 PUT with progress + abort, mirroring the portal/upload store.
@@ -143,8 +169,12 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
       xhr.send(file);
     });
 
-  const uploadFilesForTask = async (taskId: string) => {
-    if (pendingFiles.length === 0) return;
+  const uploadFilesForTask = async (taskId: string, folderFiles?: { file: File; folderId: string }[]) => {
+    const allFiles = [
+      ...pendingFiles.map(file => ({ file, folderId: undefined as string | undefined })),
+      ...(folderFiles || []),
+    ];
+    if (allFiles.length === 0) return;
     setIsUploadingFiles(true);
     try {
       const token = session?.user?.token || localStorage.getItem('token') || "";
@@ -153,7 +183,7 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
       // PUT → task save-metadata. The backend attaches the taskId to each
       // FileUpload record, so the Artworks Manager groups the files under the
       // task's own folder (named after the task), never a user folder.
-      const results = await Promise.allSettled(pendingFiles.map(async (file) => {
+      const results = await Promise.allSettled(allFiles.map(async ({ file, folderId }) => {
         const id = Date.now().toString() + Math.random().toString(36).substring(7);
         const abortController = new AbortController();
         addUpload({ id, name: file.name, tag: 'attachment', taskId, file, abortController });
@@ -174,6 +204,7 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
             mimetype: file.type || "application/octet-stream",
             size: file.size,
             tag: 'attachment',
+            folderId: folderId || undefined,
           });
           if (!metaRes?.data?.success) throw new Error("Failed to save file metadata");
           updateStatus(id, 'success');
@@ -202,7 +233,24 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
       onSuccess: async (data: any) => {
         const taskId = data?.task?._id || data?._id;
         const taskTitle = data?.task?.title || newTask.title;
-        if (taskId) await uploadFilesForTask(taskId);
+        if (taskId) {
+          const token = session?.user?.token || localStorage.getItem('token') || "";
+          const folderFiles: { file: File; folderId: string }[] = [];
+          for (const folder of newTaskFolders) {
+            const name = folder.name.trim();
+            if (!name) continue;
+            try {
+              const res = await AxiosInstance(token).post("/api/folders", { name, taskId });
+              const createdId = res?.data?.data?._id || res?.data?._id;
+              if (createdId) {
+                for (const file of folder.files) folderFiles.push({ file, folderId: createdId });
+              }
+            } catch {
+              toast.error(`Failed to create folder "${name}"`);
+            }
+          }
+          await uploadFilesForTask(taskId, folderFiles);
+        }
         toast.success("Task created!");
         // Open the task detail in place — no new tab, no extra navigation.
         onTaskCreated?.({ _id: taskId, title: taskTitle, ...newTask, ...(data?.task || {}) });
@@ -299,6 +347,72 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
                 ))}
               </div>
             )}
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <label className="text-sm font-medium">Artwork Folders (optional)</label>
+              <Button type="button" variant="outline" size="sm" className="border-border/50" onClick={addFolderRow}>
+                <FolderPlus className="w-3.5 h-3.5 mr-1.5" /> Add Folder
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Create folders to organize artwork. Files uploaded into a folder appear inside it when you open the task.</p>
+            {newTaskFolders.map((folder, idx) => (
+              <div key={idx} className="border border-border/50 rounded-xl p-3 space-y-2 bg-muted/10">
+                <div className="flex items-center gap-2">
+                  <Folder className="w-4 h-4 text-primary/70 shrink-0" />
+                  <Input
+                    value={folder.name}
+                    onChange={(e) => updateFolderName(idx, e.target.value)}
+                    placeholder={`Artwork ${idx + 1}`}
+                    className="h-8 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeFolderRow(idx)}
+                    className="p-1.5 hover:bg-muted/50 rounded text-muted-foreground hover:text-destructive transition-colors"
+                    title="Remove folder"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button type="button" variant="outline" size="sm" className="border-border/50" onClick={() => folderInputRefs.current[idx]?.click()}>
+                    <Upload className="w-3.5 h-3.5 mr-1.5" /> Add files to {folder.name.trim() || `Artwork ${idx + 1}`}
+                  </Button>
+                  <span className="text-xs text-muted-foreground">{folder.files.length} file(s)</span>
+                  <input
+                    ref={(el) => { folderInputRefs.current[idx] = el; }}
+                    type="file"
+                    multiple
+                    hidden
+                    onChange={(e) => handleFolderFileInput(idx, e)}
+                  />
+                </div>
+                {folder.files.length > 0 && (
+                  <div className="space-y-2 max-h-32 overflow-y-auto custom-scrollbar">
+                    {folder.files.map((file, fi) => (
+                      <div key={fi} className="flex items-center justify-between bg-background p-2 rounded border border-border/50">
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          {file.type.includes('image') ? (
+                            <ImageIcon className="w-4 h-4 text-blue-400 shrink-0" />
+                          ) : (
+                            <FileText className="w-4 h-4 text-gray-400 shrink-0" />
+                          )}
+                          <p className="text-xs font-medium truncate">{file.name}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFolderFile(idx, fi)}
+                          className="p-1 hover:bg-muted/50 rounded text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
           <Button onClick={handleCreateTask} disabled={isCreating || isUploadingFiles} className="w-full">
             {isCreating ? "Creating..." : isUploadingFiles ? "Uploading files..." : "Create Task"}
