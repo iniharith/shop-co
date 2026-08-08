@@ -353,11 +353,18 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   };
 
   const combinedFiles = React.useMemo(() => {
-    let files = [...(fullTask?.files || [])];
-    
+    // The task API embeds files in task.files without a folderId, while the
+    // FileUpload records (taskFiles) carry the authoritative folderId. Enrich
+    // the embedded entries with the matching FileUpload's folderId/_id so
+    // files group into their assigned folder instead of falling to Ungrouped.
+    const enriched = (fullTask?.files || []).map((tf: any) => {
+      const match = taskFiles.find((f: any) => f.path === tf.url || (tf.name && f.originalName && tf.name === f.originalName));
+      return match ? { ...tf, _id: match._id, folderId: match.folderId } : tf;
+    });
+
     const uploadedTaskFiles = taskFiles.filter((f: any) => {
       // Don't duplicate files already included by the task API.
-      return !files.some(tf => tf.url === f.path || (tf.name && f.originalName && tf.name === f.originalName));
+      return !enriched.some(tf => tf.url === f.path || (tf.name && f.originalName && tf.name === f.originalName));
     }).map((f: any) => ({
       url: f.path,
       name: f.originalName || f.filename,
@@ -368,7 +375,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       folderId: f.folderId
     }));
     
-    return [...files, ...uploadedTaskFiles].filter(f => {
+    return [...enriched, ...uploadedTaskFiles].filter(f => {
       const fid = f._id || f.url?.split('/').pop();
       return !deletedFileIds.includes(fid);
     });
