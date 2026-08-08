@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTask, useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
 import { useUploadStore } from '@/store/uploadStore';
 import { useUsers } from "@/hooks/useUsers";
-import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw, CheckCircle, Folder, Printer, GripVertical, MoveDiagonal } from "lucide-react";
+import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw, CheckCircle, Folder, Printer, GripVertical, MoveDiagonal, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -30,6 +30,35 @@ import { useCreateShareLink, useFilesByFolder, useResolveFileByPath } from "@/ho
 import { useRouter } from "next/navigation";
 import { AssigneeTag, AssigneeDot } from "@/lib/userColor";
 import { buildFileShareUrl, isPdfFile, preparePdfSharePreview } from "@/lib/fileSharePreview";
+
+const TASK_MODAL_VIEW_KEY = "taskModalView:v1";
+
+type TaskModalView = { x: number; y: number; w?: number; h?: number };
+
+const loadTaskModalView = (): TaskModalView | null => {
+  try {
+    const raw = localStorage.getItem(TASK_MODAL_VIEW_KEY);
+    return raw ? (JSON.parse(raw) as TaskModalView) : null;
+  } catch {
+    return null;
+  }
+};
+
+const saveTaskModalView = (view: TaskModalView) => {
+  try {
+    localStorage.setItem(TASK_MODAL_VIEW_KEY, JSON.stringify(view));
+  } catch {
+    // storage unavailable — ignore
+  }
+};
+
+const clearTaskModalView = () => {
+  try {
+    localStorage.removeItem(TASK_MODAL_VIEW_KEY);
+  } catch {
+    // storage unavailable — ignore
+  }
+};
 
 const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview, onDeleteLocal, allFiles }: any) => {
   const [notes, setNotes] = useState(file.notes || "");
@@ -514,59 +543,116 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   };
 
   // Window management: move + resize the full-view task dialog
-  const [winPos, setWinPos] = React.useState({ x: 0, y: 0 });
-  const [winSize, setWinSize] = React.useState<{ w: number; h: number } | null>(null);
   const dialogRef = React.useRef<HTMLDivElement>(null);
-  const dragStateRef = React.useRef<{ mode: 'move' | 'resize'; startX: number; startY: number; origX: number; origY: number; origW: number; origH: number } | null>(null);
+  const winPosRef = React.useRef({ x: 0, y: 0 });
+  const winSizeRef = React.useRef<{ w: number; h: number } | null>(null);
+  const dragStateRef = React.useRef<{ mode: 'move' | 'resize'; startX: number; startY: number; origX: number; origY: number; origW: number; origH: number; rafId: number | null } | null>(null);
 
-  const stopWindowDrag = () => {
-    dragStateRef.current = null;
-    window.removeEventListener('pointermove', onWindowDragMove);
-    window.removeEventListener('pointerup', stopWindowDrag);
-    document.body.style.userSelect = '';
-    document.body.style.cursor = '';
-  };
-
-  const onWindowDragMove = (e: PointerEvent) => {
+  const applyWindowDrag = () => {
     const s = dragStateRef.current;
-    if (!s) return;
-    const dx = e.clientX - s.startX;
-    const dy = e.clientY - s.startY;
+    const el = dialogRef.current;
+    if (!s || !el) return;
+    s.rafId = null;
     if (s.mode === 'move') {
-      setWinPos({ x: s.origX + dx, y: s.origY + dy });
+      const p = winPosRef.current;
+      el.style.transform = `translate(calc(-50% + ${p.x}px), calc(-50% + ${p.y}px))`;
     } else {
-      setWinSize({ w: Math.max(700, s.origW + dx), h: Math.max(500, s.origH + dy) });
+      const sz = winSizeRef.current;
+      if (sz) {
+        el.style.width = `${sz.w}px`;
+        el.style.height = `${sz.h}px`;
+        el.style.maxWidth = 'none';
+        el.style.maxHeight = 'none';
+      }
     }
   };
 
-  const startWindowDrag = (e: React.PointerEvent, mode: 'move' | 'resize') => {
+  const onWindowPointerDown = (e: React.PointerEvent<HTMLDivElement>, mode: 'move' | 'resize') => {
     if (e.button !== 0) return;
     const el = dialogRef.current;
     dragStateRef.current = {
       mode,
       startX: e.clientX,
       startY: e.clientY,
-      origX: winPos.x,
-      origY: winPos.y,
-      origW: winSize?.w ?? el?.offsetWidth ?? 1200,
-      origH: winSize?.h ?? el?.offsetHeight ?? 600,
+      origX: winPosRef.current.x,
+      origY: winPosRef.current.y,
+      origW: winSizeRef.current?.w ?? el?.offsetWidth ?? 1200,
+      origH: winSizeRef.current?.h ?? el?.offsetHeight ?? 600,
+      rafId: null,
     };
     document.body.style.userSelect = 'none';
     document.body.style.cursor = mode === 'move' ? 'grabbing' : 'nwse-resize';
-    window.addEventListener('pointermove', onWindowDragMove);
-    window.addEventListener('pointerup', stopWindowDrag);
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+
+  const onWindowPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const s = dragStateRef.current;
+    if (!s) return;
+    const dx = e.clientX - s.startX;
+    const dy = e.clientY - s.startY;
+    if (s.mode === 'move') {
+      winPosRef.current = { x: s.origX + dx, y: s.origY + dy };
+    } else {
+      winSizeRef.current = { w: Math.max(700, s.origW + dx), h: Math.max(500, s.origH + dy) };
+    }
+    if (s.rafId == null) {
+      s.rafId = requestAnimationFrame(applyWindowDrag);
+    }
+  };
+
+  const onWindowPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const s = dragStateRef.current;
+    if (s?.rafId != null) {
+      cancelAnimationFrame(s.rafId);
+      s.rafId = null;
+    }
+    dragStateRef.current = null;
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+    const view: TaskModalView = { ...winPosRef.current };
+    const sz = winSizeRef.current;
+    if (sz) { view.w = sz.w; view.h = sz.h; }
+    saveTaskModalView(view);
+    try { (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId); } catch { /* noop */ }
+  };
+
+  const applySavedView = (el: HTMLDivElement) => {
+    const saved = loadTaskModalView();
+    if (!saved) return;
+    winPosRef.current = { x: saved.x, y: saved.y };
+    el.style.transform = `translate(calc(-50% + ${saved.x}px), calc(-50% + ${saved.y}px))`;
+    if (saved.w && saved.h) {
+      winSizeRef.current = { w: saved.w, h: saved.h };
+      el.style.width = `${saved.w}px`;
+      el.style.height = `${saved.h}px`;
+      el.style.maxWidth = 'none';
+      el.style.maxHeight = 'none';
+    }
+  };
+
+  const handleResetView = () => {
+    clearTaskModalView();
+    winPosRef.current = { x: 0, y: 0 };
+    winSizeRef.current = null;
+    const el = dialogRef.current;
+    if (el) {
+      el.style.transform = '';
+      el.style.width = '';
+      el.style.height = '';
+      el.style.maxWidth = '';
+      el.style.maxHeight = '';
+    }
   };
 
   return (
     <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        ref={dialogRef}
-        className="task-modal-content top-1/2 left-1/2 max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[85vh] flex flex-col"
-        style={{
-          transform: `translate(calc(-50% + ${winPos.x}px), calc(-50% + ${winPos.y}px))`,
-          ...(winSize ? { width: `${winSize.w}px`, height: `${winSize.h}px`, maxWidth: 'none', maxHeight: 'none' } : {}),
+        ref={(el) => {
+          dialogRef.current = el;
+          if (el) applySavedView(el);
         }}
+        className="task-modal-content top-1/2 left-1/2 max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[85vh] flex flex-col will-change-transform"
         onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverModal(true); }}
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragOverModal(true); }}
         onDragLeave={(e) => {
@@ -602,15 +688,28 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
           
           {/* Main Content (Left, 70% width) */}
           <div className="flex-none md:w-[70%] flex flex-col md:border-r border-border/50 bg-background min-h-0 shrink-0 md:shrink">
-            <div className="p-4 md:p-6 border-b border-border/50 shrink-0 cursor-move select-none"
+            <div className="p-4 md:p-6 border-b border-border/50 shrink-0 cursor-move select-none touch-none"
               onPointerDown={(e) => {
                 const target = e.target as HTMLElement;
                 if (target.closest('input, textarea, button, select, a, [role="button"]')) return;
-                startWindowDrag(e, 'move');
-              }}>
-              <div className="flex items-center gap-2 text-muted-foreground/60 mb-1 pointer-events-none">
-                <GripVertical className="w-4 h-4" />
-                <span className="text-[11px] uppercase tracking-wide">Drag to move</span>
+                onWindowPointerDown(e, 'move');
+              }}
+              onPointerMove={onWindowPointerMove}
+              onPointerUp={onWindowPointerUp}
+              onPointerCancel={onWindowPointerUp}>
+              <div className="flex items-center gap-2 text-muted-foreground/60 mb-1">
+                <div className="flex items-center gap-2 pointer-events-none">
+                  <GripVertical className="w-4 h-4" />
+                  <span className="text-[11px] uppercase tracking-wide">Drag to move</span>
+                </div>
+                <button
+                  type="button"
+                  title="Reset view"
+                  onClick={handleResetView}
+                  className="ml-auto pointer-events-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold text-muted-foreground/70 hover:bg-muted/60 hover:text-foreground transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> Reset
+                </button>
               </div>
               <DialogHeader>
                 <DialogTitle className="sr-only">Task Details</DialogTitle>
@@ -1384,8 +1483,11 @@ return (
           </div>
         )}
         <div
-          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); startWindowDrag(e, 'resize'); }}
-          className="absolute bottom-1 right-1 z-[60] h-5 w-5 cursor-nwse-resize text-muted-foreground/50 hover:text-primary flex items-center justify-center"
+          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); onWindowPointerDown(e, 'resize'); }}
+          onPointerMove={onWindowPointerMove}
+          onPointerUp={onWindowPointerUp}
+          onPointerCancel={onWindowPointerUp}
+          className="absolute bottom-1 right-1 z-[60] h-5 w-5 cursor-nwse-resize text-muted-foreground/50 hover:text-primary flex items-center justify-center touch-none"
           title="Resize"
         >
           <MoveDiagonal className="h-4 w-4" />
