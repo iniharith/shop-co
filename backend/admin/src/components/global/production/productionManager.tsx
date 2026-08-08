@@ -855,7 +855,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                       {/* Description */}
                       <div className="flex-1 min-w-0">
                         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Description</h3>
-                        <div className="bg-muted/30 border rounded-lg p-3 sm:p-4 text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed max-h-[150px] overflow-y-auto" dangerouslySetInnerHTML={{ __html: descriptionText }} />
+                        <div className="bg-muted/30 border rounded-lg p-3 sm:p-4 text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed max-h-[150px] overflow-y-auto [&_b]:font-black [&_b]:text-[16px] [&_strong]:font-black [&_strong]:text-[16px]" dangerouslySetInnerHTML={{ __html: descriptionText }} />
                       </div>
                       
                       {/* Properties Grid */}

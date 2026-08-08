@@ -785,7 +785,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   }}
                   contentEditable
                   suppressContentEditableWarning
-                  className="min-h-[120px] rounded-md border border-border/50 bg-muted/30 shadow-sm p-3 text-sm text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring whitespace-pre-wrap"
+                  className="min-h-[120px] rounded-md border border-border/50 bg-muted/30 shadow-sm p-3 text-sm text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring whitespace-pre-wrap [&_b]:font-black [&_b]:text-[16px] [&_strong]:font-black [&_strong]:text-[16px]"
                   onFocus={() => {
                     editingFieldRef.current = 'description';
                     descriptionOnFocusRef.current = descriptionRef.current?.innerHTML || description;
