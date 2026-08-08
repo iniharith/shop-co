@@ -957,15 +957,13 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                             }}>
                               <Download className="w-4 h-4 mr-2" /> Download
                             </Button>
-                            {activeSubTab === "PRINT_AWB" && orderAwbPrintUrl && (
-                              <Button variant="secondary" size="sm" className="w-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 h-9 font-semibold" onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                window.open(orderAwbPrintUrl, "_blank", "noopener,noreferrer");
-                              }}>
-                                <Printer className="w-4 h-4 mr-2" /> Print AWB
-                              </Button>
-                            )}
+                            <Button variant="secondary" size="sm" className="w-full bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 h-9 font-semibold" onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              window.open(getFileUrl(file.path), "_blank", "noopener,noreferrer");
+                            }}>
+                              <Printer className="w-4 h-4 mr-2" /> Print
+                            </Button>
                           </CardContent>
                         </Card>
                       ))}
