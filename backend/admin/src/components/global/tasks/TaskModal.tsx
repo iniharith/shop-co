@@ -1484,16 +1484,6 @@ return (
               <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
-                  className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-orange-500/25 bg-orange-500/5 p-3 text-center transition hover:border-orange-500/60 hover:bg-orange-500/10"
-                  onClick={() => { uploadDroppedFiles(pendingDropFiles, 'draft'); setPendingDropFiles(null); }}
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500 text-white">
-                    <File className="h-5 w-5" />
-                  </div>
-                  <span className="text-sm font-semibold text-foreground">Draft</span>
-                </button>
-                <button
-                  type="button"
                   className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-slate-500/25 bg-slate-500/5 p-3 text-center transition hover:border-slate-500/60 hover:bg-slate-500/10"
                   onClick={() => { uploadDroppedFiles(pendingDropFiles, 'attachment'); setPendingDropFiles(null); }}
                 >
@@ -1501,6 +1491,16 @@ return (
                     <Paperclip className="h-5 w-5" />
                   </div>
                   <span className="text-sm font-semibold text-foreground">Attachment</span>
+                </button>
+                <button
+                  type="button"
+                  className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-orange-500/25 bg-orange-500/5 p-3 text-center transition hover:border-orange-500/60 hover:bg-orange-500/10"
+                  onClick={() => { uploadDroppedFiles(pendingDropFiles, 'draft'); setPendingDropFiles(null); }}
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500 text-white">
+                    <File className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">Draft</span>
                 </button>
                 <button
                   type="button"
