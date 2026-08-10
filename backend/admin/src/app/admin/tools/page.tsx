@@ -42,9 +42,9 @@ const tools = [
     tone: "from-amber-500/20 to-orange-500/5 text-amber-400",
   },
   {
-    title: "WhatsApp AI Logs",
-    description: "Inspect live WhatsApp agent activity and responses.",
-    href: "/admin/whatsapp-logs",
+    title: "Telegram Bot Logs",
+    description: "Inspect live Telegram bot activity and responses.",
+    href: "/admin/bot-logs",
     icon: Bot,
     tone: "from-green-500/20 to-lime-500/5 text-green-400",
     sysadminOnly: true,

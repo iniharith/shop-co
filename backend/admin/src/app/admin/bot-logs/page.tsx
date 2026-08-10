@@ -12,7 +12,7 @@ interface LogEntry {
   message: string;
 }
 
-export default function WhatsAppLogsPage() {
+export default function BotLogsPage() {
   const { data: session, status } = useSession();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +22,7 @@ export default function WhatsAppLogsPage() {
     const token = session?.user?.token;
     if (!token) return;
     try {
-      const res = await fetch(`${BACKEND}/api/sysadmin/whatsapp-ai-logs`, {
+      const res = await fetch(`${BACKEND}/api/sysadmin/bot-logs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch logs");
@@ -30,7 +30,7 @@ export default function WhatsAppLogsPage() {
       setLogs(json.logs || []);
       setError(null);
     } catch (err: any) {
-      setError(err.message || "Failed to connect to the WhatsApp AI Agent API.");
+      setError(err.message || "Failed to connect to the Telegram bot API.");
     }
   }, [session?.user?.token]);
 
@@ -66,7 +66,7 @@ export default function WhatsAppLogsPage() {
         <div className="flex flex-wrap items-center space-x-2 md:space-x-6">
           <div className="flex items-center text-white font-bold text-xl mr-4">
             <Bot className="w-6 h-6 mr-2 text-green-400" />
-            <span>WhatsApp AI Logs</span>
+            <span>Telegram Bot Logs</span>
           </div>
           <div className="flex flex-wrap gap-2 md:space-x-4 text-xs md:text-sm font-medium text-gray-500">
             <span className="text-green-400 bg-green-500/10 px-3 py-1.5 rounded-full flex items-center">
@@ -88,7 +88,7 @@ export default function WhatsAppLogsPage() {
             <div className="w-3 h-3 rounded-full bg-green-500"></div>
           </div>
           <div className="mx-auto text-xs text-gray-500 font-mono">
-            sysadmin@ai-agent: ~
+            sysadmin@telegram-bot: ~
           </div>
         </div>
 
@@ -98,19 +98,19 @@ export default function WhatsAppLogsPage() {
             <div className="text-red-400 mb-4 bg-red-900/20 p-4 rounded-md border border-red-900/50">
               [SYSTEM ERROR] {error}
               <br />
-              Make sure `server-sandbox.js` is currently running in the ai-agent directory.
+              Make sure `telegram-bot.js` is currently running in the ai-agent directory.
             </div>
           )}
           
           {logs.length === 0 && !error ? (
-            <div className="text-gray-500 italic">Waiting for AI agent logs...</div>
+            <div className="text-gray-500 italic">Waiting for Telegram bot logs...</div>
           ) : (
             logs.map((log, index) => {
               // Colorize based on content
               let textColor = "text-gray-300";
               if (log.level === "error" || log.message.includes("[ERROR]")) {
                 textColor = "text-red-400";
-              } else if (log.message.includes("[INCOMING]")) {
+              } else if (log.message.includes("[INCOMING]") || log.message.includes("[TELEGRAM]")) {
                 textColor = "text-blue-400";
               } else if (log.message.includes("[AI REPLY]") || log.message.includes("[AI TOOL CALL]")) {
                 textColor = "text-green-400";

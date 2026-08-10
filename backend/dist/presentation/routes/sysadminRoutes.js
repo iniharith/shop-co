@@ -813,9 +813,15 @@ router.delete('/aws-media', (0, express_async_handler_1.default)((req, res) => _
     }
     res.json({ success: true });
 })));
-// Proxy the HTTP-only AI agent through the authenticated HTTPS backend.
+// Proxy the HTTP-only Telegram bot through the authenticated HTTPS backend.
+router.get('/bot-logs', (0, auth_middileware_1.authorizeRoles)('sysadmin'), (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const logsUrl = process.env.BOT_LOGS_URL || process.env.WHATSAPP_AI_LOGS_URL || 'http://56.68.8.52:5002/api/logs';
+    const response = yield axios_1.default.get(logsUrl, { timeout: 8000 });
+    res.json(response.data);
+})));
+// Legacy alias kept for old bookmarks.
 router.get('/whatsapp-ai-logs', (0, auth_middileware_1.authorizeRoles)('sysadmin'), (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const logsUrl = process.env.WHATSAPP_AI_LOGS_URL || 'http://56.68.8.52:5002/api/logs';
+    const logsUrl = process.env.BOT_LOGS_URL || process.env.WHATSAPP_AI_LOGS_URL || 'http://56.68.8.52:5002/api/logs';
     const response = yield axios_1.default.get(logsUrl, { timeout: 8000 });
     res.json(response.data);
 })));

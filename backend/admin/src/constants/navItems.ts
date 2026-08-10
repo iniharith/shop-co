@@ -140,8 +140,8 @@ export const AdminNavItems: NavItem[] = [
                 url: '/admin/aws-media',
             },
             {
-                title: 'WhatsApp AI Logs',
-                url: '/admin/whatsapp-logs',
+                title: 'Telegram Bot Logs',
+                url: '/admin/bot-logs',
             }
         ]
     }
@@ -169,7 +169,7 @@ export const roleByNavItems = (role: string) => {
     return AdminNavItems
         .filter(item => allowedTitles.includes(item.title))
         .map(item => item.title === 'Tools' && role !== 'sysadmin'
-            ? { ...item, items: item.items?.filter(child => child.url !== '/admin/whatsapp-logs') }
+            ? { ...item, items: item.items?.filter(child => child.url !== '/admin/bot-logs') }
             : item
         );
 };
