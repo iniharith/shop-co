@@ -16,6 +16,7 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useFilterStore } from "@/store/filterStore";
 import { useLanguage } from "@/i18n/LanguageProvider";
+import { filterCategories } from "@/constants";
 
 export default function FilterSidebar() {
   const { locale, t } = useLanguage();
@@ -47,10 +48,7 @@ export default function FilterSidebar() {
     setFunction(newArray);
   };
 
-  const categoryList = [
-    "Digital Printing", "Display Item", "Digital Offset", 
-    "Premium Gift", "Apparel", "Wedding Product", "Food Packaging", "Islamic Khat"
-  ];
+  const categoryList = filterCategories;
   const turnaroundList = ["Standard (3-4 Days)", "Express (1-2 Days)"];
   const formatList = ["A4", "A5", "A3", "Custom Size", "Large Format"];
   const materialList = ["Art Paper", "Art Card", "Glossy Photo Paper", "Matte Premium Paper", "Canvas", "Tarpaulin"];
@@ -59,10 +57,22 @@ export default function FilterSidebar() {
     "Display Item": "Item Pameran",
     "Digital Offset": "Offset Digital",
     "Premium Gift": "Hadiah Premium",
-    Apparel: "Pakaian",
+    "Apparel/Sublimation": "Pakaian/Sublimasi",
+    Frame: "Bingkai",
     "Wedding Product": "Produk Perkahwinan",
     "Food Packaging": "Pembungkusan Makanan",
     "Islamic Khat": "Khat Islamik",
+    Acrylic: "Akrilik",
+    "Bunting & Banner": "Bunting & Banner",
+    Photobook: "Buku Foto",
+    Magnet: "Magnet",
+    "Menu Book": "Buku Menu",
+    "Alamat Rumah": "Alamat Rumah",
+    "No Plat": "No Plat",
+    "E-Print": "E-Print",
+    Sticker: "Stiker",
+    "Wedding Card": "Kad Kahwin",
+    Notebook: "Buku Nota",
     "Standard (3-4 Days)": "Standard (3-4 Hari)",
     "Express (1-2 Days)": "Ekspres (1-2 Hari)",
     "Custom Size": "Saiz Tersuai",

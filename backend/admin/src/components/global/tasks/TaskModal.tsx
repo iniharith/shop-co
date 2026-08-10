@@ -22,6 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useOrders } from "@/hooks/useOrder";
+import { TASK_CATEGORIES } from "@/constants/taskCategories";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import { Check, ChevronsUpDown, Download as DownloadIcon, Copy } from "lucide-react";
 import { cn, forceDownload } from "@/lib/utils";
@@ -1460,15 +1461,13 @@ return (
                     <SelectValue placeholder="Unassigned" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="UNASSIGNED">Unassigned</SelectItem>
-                    <SelectItem value="DIGITAL PRINTING">Digital Printing</SelectItem>
-                    <SelectItem value="DISPLAY ITEM">Display Item</SelectItem>
-                    <SelectItem value="DIGITAL OFFSET">Digital Offset</SelectItem>
-                    <SelectItem value="PREMIUM GIFT">Premium Gift</SelectItem>
-                    <SelectItem value="APPAREL">Apparel</SelectItem>
-                    <SelectItem value="FRAME">Frame</SelectItem>
-                    <SelectItem value="WEDDING PRODUCT">Wedding Product</SelectItem>
-                    <SelectItem value="FOOD PACKAGING">Food Packaging</SelectItem>
+                    {TASK_CATEGORIES.map(category => (
+                      <SelectItem key={category} value={category}>
+                        {category === "UNASSIGNED"
+                          ? "Unassigned"
+                          : category.toLowerCase().split(" ").map(w => w.split("/").map(p => p.charAt(0).toUpperCase() + p.slice(1)).join("/")).join(" ")}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

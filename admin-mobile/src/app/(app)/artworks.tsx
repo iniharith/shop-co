@@ -10,7 +10,7 @@ import { Folder, FileText, ImageIcon, Download, ChevronLeft, Search, X, Trash2, 
 import { useTheme } from '../../context/ThemeContext';
 import { THEME } from '../../constants/theme';
 
-const CATEGORIES = ['ALL', 'DIGITAL PRINTING', 'DISPLAY ITEM', 'DIGITAL OFFSET', 'PREMIUM GIFT', 'APPAREL', 'FRAME', 'WEDDING PRODUCT', 'FOOD PACKAGING'];
+const CATEGORIES = ['ALL', 'DIGITAL PRINTING', 'DISPLAY ITEM', 'DIGITAL OFFSET', 'PREMIUM GIFT', 'APPAREL/SUBLIMATION', 'FRAME', 'WEDDING PRODUCT', 'FOOD PACKAGING', 'ACRYLIC', 'BUNTING & BANNER', 'PHOTOBOOK', 'MAGNET', 'MENU BOOK', 'ALAMAT RUMAH', 'NO PLAT', 'E-PRINT', 'STICKER', 'WEDDING CARD', 'NOTEBOOK'];
 const MAX_FONT_SCALE = 1.15;
 
 export default function ArtworksScreen() {

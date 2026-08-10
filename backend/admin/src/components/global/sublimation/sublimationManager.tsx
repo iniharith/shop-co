@@ -117,7 +117,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
 
   // Upload Modal State
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [uploadData, setUploadData] = useState({ userId: "", orderId: "", category: "APPAREL", notes: "" });
+  const [uploadData, setUploadData] = useState({ userId: "", orderId: "", category: "APPAREL/SUBLIMATION", notes: "" });
   const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -165,7 +165,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
       const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
       if (movedFolderIds.has(folderId)) return false; // optimistic removal
       if (group.orderStatus !== activeSubTab) return false;
-      if (group.category !== "APPAREL" && group.files?.[0]?.category !== "APPAREL") return false;
+      if (!["APPAREL", "APPAREL/SUBLIMATION"].includes(group.category) && !["APPAREL", "APPAREL/SUBLIMATION"].includes(group.files?.[0]?.category)) return false;
       if (!query) return true;
       return group.folderName?.toLowerCase().includes(query)
         || group.orderId?.toLowerCase().includes(query)
@@ -373,7 +373,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
       await AxiosInstance(token).post("/api/files/save-metadata", {
         userId: uploadData.userId || undefined,
         orderId: uploadData.orderId || undefined,
-        category: uploadData.category || "APPAREL",
+        category: uploadData.category || "APPAREL/SUBLIMATION",
         notes: uploadData.notes || undefined,
         files: uploaded,
       });

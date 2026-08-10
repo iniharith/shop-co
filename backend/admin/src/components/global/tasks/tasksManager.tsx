@@ -5,7 +5,9 @@ import { useTaskColumns, useTask, useCreateTask, useUpdateTask, useDeleteTask } 
 import { useSearchParams } from "next/navigation";
 import { useUsers } from "@/hooks/useUsers";
 import { useSession } from "next-auth/react";
+import { useProducts } from "@/hooks/useProducts";
 import AxiosInstance from "@/utils/axios";
+import { TASK_CATEGORIES, taskCategoryToProduct } from "@/constants/taskCategories";
 import { useUploadStore } from "@/store/uploadStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,15 +17,16 @@ import {
   LayoutGrid, List, Plus, Calendar, MessageSquare, Trash2,
   ChevronDown, ChevronRight, Settings2, Check, RefreshCw,
   CheckCircle, Circle, ArrowDownUp, X, UserCheck, CalendarClock, Layers, Folder, FolderPlus,
-  Upload, Download, Image as ImageIcon, FileText, Loader2,
+  Upload, Download, Image as ImageIcon, FileText, Loader2, ChevronsUpDown, Package,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import { Command, CommandGroup, CommandItem, CommandList, CommandInput, CommandEmpty } from "@/components/ui/command";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { format, isToday, isTomorrow } from "date-fns";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import TaskModal from "./TaskModal";
@@ -106,6 +109,21 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
   const { mutate: createTask, isPending: isCreating } = useCreateTask();
   const { data: session } = useSession();
   const { addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
+  const { data: productsData } = useProducts();
+  const [categoryOpen, setCategoryOpen] = useState(false);
+
+  const taskProducts = useMemo(
+    () =>
+      ((productsData as any)?.products || [])
+        .filter((p: any) => p && p.name)
+        .map((p: any) => ({
+          id: p._id,
+          name: p.name,
+          category: taskCategoryToProduct(p.category),
+          searchKey: `${p.name} ${p.category || ""} ${taskCategoryToProduct(p.category)}`.toLowerCase(),
+        })),
+    [productsData]
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -311,14 +329,61 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Category</label>
-            <Select value={newTask.category} onValueChange={category => setNewTask({ ...newTask, category })}>
-              <SelectTrigger className="w-full"><SelectValue placeholder="Select Category" /></SelectTrigger>
-              <SelectContent>
-                {["UNASSIGNED","DIGITAL PRINTING","DISPLAY ITEM","DIGITAL OFFSET","PREMIUM GIFT","APPAREL","FRAME","WEDDING PRODUCT","FOOD PACKAGING"].map(category => (
-                  <SelectItem key={category} value={category}>{category}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={categoryOpen}
+                  className="w-full justify-between h-10 font-normal"
+                >
+                  {newTask.category === "UNASSIGNED" ? "Select category or type a product name…" : newTask.category}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[min(90vw,var(--radix-popover-content-available-width))] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Type a product name or category…" />
+                  <CommandList>
+                    <CommandEmpty>No matching product or category.</CommandEmpty>
+                    <CommandGroup heading="Categories">
+                      {TASK_CATEGORIES.map(category => (
+                        <CommandItem
+                          key={category}
+                          value={category.toLowerCase()}
+                          onSelect={() => {
+                            setNewTask({ ...newTask, category });
+                            setCategoryOpen(false);
+                          }}
+                        >
+                          <Check className={cn("h-4 w-4", newTask.category === category ? "opacity-100" : "opacity-0")} />
+                          {category}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                    {taskProducts.length > 0 && (
+                      <CommandGroup heading="Products">
+                        {taskProducts.map(product => (
+                          <CommandItem
+                            key={product.id}
+                            value={product.searchKey}
+                            onSelect={() => {
+                              setNewTask({ ...newTask, category: product.category });
+                              setCategoryOpen(false);
+                            }}
+                          >
+                            <Package className="h-4 w-4 text-muted-foreground" />
+                            {product.name}
+                            <span className="ml-auto text-xs text-muted-foreground">{product.category}</span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Artwork (optional)</label>

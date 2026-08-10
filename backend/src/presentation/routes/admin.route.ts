@@ -188,7 +188,7 @@ router.get(
             .maxTimeMS(SEARCH_MAX_TIME_MS)
             .lean()
         : Promise.resolve([]),
-      FileUpload.find(isAwapparel ? { category: "APPAREL", $or: fileMatches } : { $or: fileMatches })
+      FileUpload.find(isAwapparel ? { category: { $in: ["APPAREL", "APPAREL/SUBLIMATION"] }, $or: fileMatches } : { $or: fileMatches })
         .select("_id originalName filename mimetype category taskId orderId userId uploadedAt")
         .sort({ uploadedAt: -1 })
         .limit(fetchLimit)

@@ -13,10 +13,21 @@ const categoryStyles: Record<string, { icon: string; color: string }> = {
   "DISPLAY ITEM": { icon: "🚩", color: "bg-red-50 dark:bg-red-900/20" },
   "DIGITAL OFFSET": { icon: "📄", color: "bg-yellow-50 dark:bg-yellow-900/20" },
   "PREMIUM GIFT": { icon: "🎁", color: "bg-green-50 dark:bg-green-900/20" },
-  "APPAREL": { icon: "👕", color: "bg-purple-50 dark:bg-purple-900/20" },
+  "APPAREL/SUBLIMATION": { icon: "👕", color: "bg-purple-50 dark:bg-purple-900/20" },
   "FRAME": { icon: "🖼️", color: "bg-orange-50 dark:bg-orange-900/20" },
   "WEDDING PRODUCT": { icon: "💍", color: "bg-pink-50 dark:bg-pink-900/20" },
   "FOOD PACKAGING": { icon: "🍔", color: "bg-teal-50 dark:bg-teal-900/20" },
+  "ACRYLIC": { icon: "🪞", color: "bg-cyan-50 dark:bg-cyan-900/20" },
+  "BUNTING & BANNER": { icon: "🚩", color: "bg-rose-50 dark:bg-rose-900/20" },
+  "PHOTOBOOK": { icon: "📷", color: "bg-amber-50 dark:bg-amber-900/20" },
+  "MAGNET": { icon: "🧲", color: "bg-indigo-50 dark:bg-indigo-900/20" },
+  "MENU BOOK": { icon: "📖", color: "bg-lime-50 dark:bg-lime-900/20" },
+  "ALAMAT RUMAH": { icon: "🏠", color: "bg-emerald-50 dark:bg-emerald-900/20" },
+  "NO PLAT": { icon: "🚗", color: "bg-slate-50 dark:bg-slate-900/20" },
+  "E-PRINT": { icon: "🖥️", color: "bg-violet-50 dark:bg-violet-900/20" },
+  "STICKER": { icon: "🏷️", color: "bg-fuchsia-50 dark:bg-fuchsia-900/20" },
+  "WEDDING CARD": { icon: "💌", color: "bg-rose-50 dark:bg-rose-900/20" },
+  "NOTEBOOK": { icon: "📒", color: "bg-orange-50 dark:bg-orange-900/20" },
 };
 
 const Categorys = () => {

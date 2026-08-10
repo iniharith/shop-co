@@ -12,6 +12,7 @@ import { useFilterStore } from "@/store/filterStore";
 import { useSearchParams } from "next/navigation";
 
 import { dummyProducts } from "@/constants/dummy-products";
+import { categoryProductValues } from "@/constants";
 
 const searchAliases: Record<string, string> = {
     "cetakan digital": "digital printing",
@@ -23,6 +24,17 @@ const searchAliases: Record<string, string> = {
     "produk perkahwinan": "wedding",
     "pembungkusan makanan": "food packaging",
     "khat islamik": "islamic khat",
+    "pakaian/sublimasi": "apparel/sublimation",
+    "buku foto": "photobook",
+    magnet: "magnet",
+    "buku menu": "menu book",
+    "alamat rumah": "alamat rumah",
+    "no plat": "no plat",
+    "e-print": "e-print",
+    stiker: "sticker",
+    "kad kahwin": "wedding card",
+    "buku nota": "notebook",
+    akrilik: "acrylic",
 };
 
 const getSearchTerms = (query: string) => {
@@ -108,10 +120,13 @@ export const useFilterProducts = () => {
     }
     
     if (serviceCategories && serviceCategories.length > 0) {
-        // Mock matching top-level category label with dummy products nested categories by keyword
+        // Match against the explicit label → product-category mapping
         filtered = filtered.filter(p => {
-             const lowerP = p?.category?.toLowerCase().replace('-', ' ') || '';
-             return serviceCategories.some(c => lowerP.includes(c.toLowerCase().split(' ')[1] || c.toLowerCase().split(' ')[0]));
+            const pc = (p?.category || '').toLowerCase().trim();
+            return serviceCategories.some(c => {
+                const values = categoryProductValues[c.toUpperCase()] || [];
+                return values.some(v => pc === v || pc.includes(v));
+            });
         });
     }
     

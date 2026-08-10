@@ -39,10 +39,21 @@ const categories = [
   "DISPLAY ITEM",
   "DIGITAL OFFSET",
   "PREMIUM GIFT",
-  "APPAREL",
+  "APPAREL/SUBLIMATION",
   "FRAME",
   "WEDDING PRODUCT",
-  "FOOD PACKAGING"
+  "FOOD PACKAGING",
+  "ACRYLIC",
+  "BUNTING & BANNER",
+  "PHOTOBOOK",
+  "MAGNET",
+  "MENU BOOK",
+  "ALAMAT RUMAH",
+  "NO PLAT",
+  "E-PRINT",
+  "STICKER",
+  "WEDDING CARD",
+  "NOTEBOOK"
 ];
 
 // Artwork Manager only owns the pre-production stages. Once a job hits

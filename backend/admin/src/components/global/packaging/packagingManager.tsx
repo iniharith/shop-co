@@ -37,9 +37,21 @@ const categories = [
   "DISPLAY ITEM",
   "DIGITAL OFFSET",
   "PREMIUM GIFT",
+  "APPAREL/SUBLIMATION",
   "FRAME",
   "WEDDING PRODUCT",
-  "FOOD PACKAGING"
+  "FOOD PACKAGING",
+  "ACRYLIC",
+  "BUNTING & BANNER",
+  "PHOTOBOOK",
+  "MAGNET",
+  "MENU BOOK",
+  "ALAMAT RUMAH",
+  "NO PLAT",
+  "E-PRINT",
+  "STICKER",
+  "WEDDING CARD",
+  "NOTEBOOK"
 ];
 
 // Packaging only ever deals with one status, so there are no sub-tabs (unlike Production's Printing/Hold/Done Printing)
