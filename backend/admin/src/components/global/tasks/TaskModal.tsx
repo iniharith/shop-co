@@ -361,7 +361,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     // files group into their assigned folder instead of falling to Ungrouped.
     const enriched = (fullTask?.files || []).map((tf: any) => {
       const match = taskFiles.find((f: any) => f.path === tf.url || (tf.name && f.originalName && tf.name === f.originalName));
-      return match ? { ...tf, _id: match._id, folderId: match.folderId } : tf;
+      return match ? { ...tf, _id: match._id, folderId: match.folderId, createdAt: tf.createdAt || match.createdAt || match.uploadedAt } : tf;
     });
 
     const uploadedTaskFiles = taskFiles.filter((f: any) => {
@@ -374,16 +374,18 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       notes: f.notes || f.adminNotes, // Make sure to sync notes
       tag: f.tag || 'customer_upload',
       _id: f._id,
-      folderId: f.folderId
+      folderId: f.folderId,
+      createdAt: f.createdAt || f.uploadedAt
     }));
     
     return [...enriched, ...uploadedTaskFiles].filter(f => {
       const fid = f._id || f.url?.split('/').pop();
       return !deletedFileIds.includes(fid);
     }).sort((a: any, b: any) => {
-      // Draft and For Print attachments always float to the front (left).
-      const priority = (tag: string) => (tag === 'draft' || tag === 'for_print') ? 0 : 1;
-      return priority(a.tag) - priority(b.tag);
+      // Order: Draft -> For Print -> New attachments (newest) -> Old attachments.
+      const tagPriority = (tag: string) => tag === 'draft' ? 0 : tag === 'for_print' ? 1 : 2;
+      const time = (f: any) => (f.createdAt ? new Date(f.createdAt).getTime() : 0);
+      return (tagPriority(a.tag) - tagPriority(b.tag)) || (time(b) - time(a));
     });
   }, [fullTask, taskFiles, deletedFileIds]);
 

@@ -110,13 +110,14 @@ export default function BackgroundProvider({ children }: { children: React.React
     <>
       <style suppressHydrationWarning>
         {`
-          :root {
+          :root:not(.dark) {
             ${fontColor ? `--foreground: ${hexToHSL(fontColor)};` : ''}
+          }
+          :root {
             ${buttonColor ? `--primary: ${hexToHSL(buttonColor)};` : ''}
             ${pointColor ? `--accent: ${hexToHSL(pointColor)}; --ring: ${hexToHSL(pointColor)};` : ''}
           }
           .dark {
-            ${fontColor ? `--foreground: ${hexToHSL(fontColor)};` : ''}
             ${buttonColor ? `--primary: ${hexToHSL(buttonColor)};` : ''}
             ${pointColor ? `--accent: ${hexToHSL(pointColor)}; --ring: ${hexToHSL(pointColor)};` : ''}
           }
