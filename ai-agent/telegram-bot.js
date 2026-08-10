@@ -116,6 +116,14 @@ function saveConversation(chatId, data) {
   });
 }
 
+function chatDisplayName(msg) {
+  const from = msg.from || {};
+  let name = from.first_name || '';
+  if (from.last_name) name += ` ${from.last_name}`;
+  if (from.username) name += ` (@${from.username})`;
+  return name ? `${name} [${msg.chat.id}]` : `chat [${msg.chat.id}]`;
+}
+
 function parseJson(text) {
   if (!text) return null;
   const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -299,6 +307,9 @@ async function processUpload(chatId, files, orderId, username) {
     await bot
       .editMessageText(text, { chat_id: chatId, message_id: progressMessageId })
       .catch(() => bot.sendMessage(chatId, text));
+
+    const fileList = files.map((f) => f.fileName).join(', ');
+    console.log(`[UPLOAD OK] ${username} (${chatId}) order ${orderId}: ${uploadedCount} file(s) [${fileList}]${failed.length ? `, failed: ${failed.join(', ')}` : ''}`);
   } catch (e) {
     console.error('[TELEGRAM] Upload failed:', e.message);
     const errDetail = (e.response && e.response.data && e.response.data.message) || e.message;
@@ -393,8 +404,13 @@ bot.on('message', (msg) => {
   enqueue(msg.chat.id, async () => {
     try {
       if (msg.photo || msg.document) {
+        const fileDesc = msg.document
+          ? (msg.document.file_name || 'file')
+          : 'photo';
+        console.log(`[INCOMING] from ${chatDisplayName(msg)}: ${fileDesc}`);
         await handleMedia(msg);
       } else if (msg.text) {
+        console.log(`[INCOMING] from ${chatDisplayName(msg)}: "${(msg.text || '').slice(0, 200)}"`);
         await handleText(msg);
       } else {
         await bot.sendMessage(msg.chat.id, 'Sila hantar imej (JPG/PNG) atau fail PDF untuk artwork anda.');

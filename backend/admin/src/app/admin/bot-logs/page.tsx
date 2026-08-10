@@ -112,7 +112,7 @@ export default function BotLogsPage() {
                 textColor = "text-red-400";
               } else if (log.message.includes("[INCOMING]") || log.message.includes("[TELEGRAM]")) {
                 textColor = "text-blue-400";
-              } else if (log.message.includes("[AI REPLY]") || log.message.includes("[AI TOOL CALL]")) {
+              } else if (log.message.includes("[AI REPLY]") || log.message.includes("[AI TOOL CALL]") || log.message.includes("[UPLOAD OK]")) {
                 textColor = "text-green-400";
               } else if (log.message.includes("[SYSTEM]") || log.message.includes("[AUTH]")) {
                 textColor = "text-yellow-400";
