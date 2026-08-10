@@ -1115,29 +1115,48 @@ router.post(
       ? `Phone Number: ${phoneNumber || 'N/A'}\nItems:\n${itemNames}`
       : `Phone Number: ${phoneNumber || 'N/A'}\nItem: ${(items[0]?.name || '').trim() || 'N/A'}`;
 
-    // 1. Create a Task for this upload
-    const savedTask = await taskRepository.create({
-      title: uploadName,
-      description,
+    // 1. Reuse the existing customer-upload task for this order so that
+    // multiple file batches land in ONE task instead of creating a new task
+    // per batch. Otherwise create the task.
+    let savedTask: any = await Task.findOne({
       orderId: orderId,
-      customerUsername: username,
-      status: 'PLACED',
-      category: 'UNASSIGNED',
-      assignee: undefined,
-      files: allFiles.map((f: any) => ({
+      title: { $regex: '^Artwork Upload: #' },
+      isDeleted: { $ne: true },
+      isDone: { $ne: true },
+    }).sort({ createdAt: -1 });
+
+    const taskWasCreated = !savedTask;
+    if (taskWasCreated) {
+      savedTask = await taskRepository.create({
+        title: uploadName,
+        description,
+        orderId: orderId,
+        customerUsername: username,
+        status: 'PLACED',
+        category: 'UNASSIGNED',
+        assignee: undefined,
+        files: allFiles.map((f: any) => ({
+          url: f.path,
+          name: f.originalName,
+          tag: 'attachment'
+        }))
+      });
+    } else {
+      savedTask.files.push(...allFiles.map((f: any) => ({
         url: f.path,
         name: f.originalName,
         tag: 'attachment'
-      }))
-    });
+      })));
+      await savedTask.save();
+    }
 
     const taskId = savedTask._id.toString();
 
     // 2. Create a folder per item so files land in their own subfolder.
-    // Only when there is more than one item — a single item keeps the old
-    // flat (ungrouped) behaviour.
+    // Only for a newly created task and when there is more than one item —
+    // a single item keeps the old flat (ungrouped) behaviour.
     const folderByItemIndex: Record<number, string> = {};
-    if (items.length > 1) {
+    if (taskWasCreated && items.length > 1) {
       for (let i = 0; i < items.length; i++) {
         const name = (items[i].name || '').trim();
         if (!name) continue;
@@ -1172,8 +1191,12 @@ router.post(
       }
     }
 
-    // ── Real-time: broadcast the new task + files to all admin tabs ────────
-    emitTaskUpdated('task_created', { task: savedTask }).catch(console.error);
+    // ── Real-time: broadcast the task + files to all admin tabs ────────
+    if (taskWasCreated) {
+      emitTaskUpdated('task_created', { task: savedTask }).catch(console.error);
+    } else {
+      emitTaskUpdated('task_updated', { task: savedTask }).catch(console.error);
+    }
 
     // 4. Create a ShareLink for the customer to view their uploaded files
     const shareLink = await shareLinkRepository.findOrCreate({

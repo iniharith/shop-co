@@ -140,28 +140,6 @@ async function extractFromText(text) {
   }
 }
 
-async function extractFromImage(mimeType, base64Data, caption) {
-  try {
-    const prompt = `Extract the Order ID (or order number) and Customer Name from this image or its caption: "${caption || ''}". This is a printing shop customer order. Return ONLY a JSON object: {"orderId": "id_here", "username": "name_here"}. If not found, leave empty strings.`;
-    const response = await ai.models.generateContent({
-      model: 'gemini-flash-latest',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: prompt },
-            { inlineData: { data: base64Data, mimeType: mimeType } },
-          ],
-        },
-      ],
-    });
-    return parseJson(response.text);
-  } catch (e) {
-    console.error('[TELEGRAM] Gemini image extraction failed:', e.message);
-    return null;
-  }
-}
-
 function extFromMime(mimeType) {
   const map = {
     'image/jpeg': 'jpg',
@@ -174,39 +152,64 @@ function extFromMime(mimeType) {
   return map[mimeType] || 'bin';
 }
 
-async function uploadToBackend(chatId, buffer, mimeType, originalName, orderId, username) {
-  const safeExt = extFromMime(mimeType);
-  const filename = `telegram_upload_${Date.now()}-${Math.round(Math.random() * 1e9)}.${safeExt}`;
+async function uploadFilesToBackend(chatId, files, orderId, username) {
+  const progressMsg = await bot.sendMessage(chatId, `⏳ Sedang memuat naik ${files.length} fail untuk pesanan *${orderId}*...`);
 
-  const urlRes = await axios.post(`${BACKEND_URL}/api/files/customer/upload-url`, {
-    filename,
-    contentType: mimeType,
-    orderId,
-    username,
-  });
-  const { url, key, publicUrl } = urlRes.data;
+  const uploaded = [];
+  const failed = [];
 
-  await axios.put(url, buffer, {
-    headers: { 'Content-Type': mimeType },
-  });
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    try {
+      const safeExt = extFromMime(file.mimeType);
+      const filename = `telegram_upload_${Date.now()}-${Math.round(Math.random() * 1e9)}.${safeExt}`;
+
+      const urlRes = await axios.post(`${BACKEND_URL}/api/files/customer/upload-url`, {
+        filename,
+        contentType: file.mimeType,
+        orderId,
+        username,
+      });
+      const { url, key, publicUrl } = urlRes.data;
+
+      await axios.put(url, file.buffer, {
+        headers: { 'Content-Type': file.mimeType },
+      });
+
+      uploaded.push({
+        key,
+        originalName: file.fileName,
+        mimetype: file.mimeType,
+        size: file.buffer.length,
+        path: publicUrl,
+      });
+
+      await bot
+        .editMessageText(`⏳ Memuat naik ${i + 1}/${files.length}...`, {
+          chat_id: chatId,
+          message_id: progressMsg.message_id,
+        })
+        .catch(() => {});
+    } catch (e) {
+      console.error('[TELEGRAM] File upload failed:', e.message);
+      failed.push(file.fileName);
+    }
+  }
+
+  if (uploaded.length === 0) {
+    const detail = (failed[0] && ` (${failed[0]})`) || '';
+    throw new Error(`Semua fail gagal dimuat naik${detail}`);
+  }
 
   const saveRes = await axios.post(`${BACKEND_URL}/api/files/customer/save-metadata`, {
-    files: [
-      {
-        key,
-        originalName,
-        mimetype: mimeType,
-        size: buffer.length,
-        path: publicUrl,
-      },
-    ],
+    files: uploaded,
     orderId,
     username,
     phoneNumber: `telegram-${chatId}`,
     item: 'Artwork via Telegram',
   });
 
-  return saveRes.data;
+  return { saveResult: saveRes.data, failed, progressMessageId: progressMsg.message_id };
 }
 
 async function handleText(msg) {
@@ -233,9 +236,16 @@ async function handleText(msg) {
   const state = (conv && conv.state) || 'awaiting_order';
 
   if (state === 'awaiting_order') {
-    let orderId = text;
     const extracted = await extractFromText(text);
-    if (extracted && extracted.orderId) orderId = extracted.orderId;
+    const orderId = (extracted && extracted.orderId) || text;
+    const username = (extracted && extracted.username) || null;
+
+    if (username) {
+      await saveConversation(chatId, { orderId, username, state: 'ready' });
+      await bot.sendMessage(chatId, `Pesanan *${orderId}* — *${username}* direkodkan! ✅\n\nSila hantar artwork anda — imej (JPG/PNG) atau fail PDF. Maksimum 20MB setiap fail.`);
+      return;
+    }
+
     await saveConversation(chatId, { orderId, state: 'awaiting_name' });
     await bot.sendMessage(chatId, `Baik! Pesanan *${orderId}* direkodkan. ✅\n\nSekarang sila berikan *Nama* anda (seperti dalam pesanan).`);
     return;
@@ -252,6 +262,48 @@ async function handleText(msg) {
   }
 
   await bot.sendMessage(chatId, `Pesanan *${conv.order_id}* — *${conv.username}* sudah lengkap.\nSila hantar artwork anda, atau hantar /new untuk pesanan baharu.`);
+}
+
+const MEDIA_BUFFER_MS = 4000;
+const mediaBuffers = new Map();
+const chatQueues = new Map();
+
+function enqueue(chatId, task) {
+  const prev = chatQueues.get(chatId) || Promise.resolve();
+  const next = prev.then(task).catch((e) => console.error('[TELEGRAM] Queued task error:', e.message));
+  chatQueues.set(chatId, next);
+  return next;
+}
+
+function flushMediaBuffer(chatId) {
+  const buf = mediaBuffers.get(chatId);
+  if (!buf) return;
+  clearTimeout(buf.timer);
+  mediaBuffers.delete(chatId);
+  enqueue(chatId, () => processUpload(chatId, buf.files, buf.orderId, buf.username));
+}
+
+async function processUpload(chatId, files, orderId, username) {
+  try {
+    const { saveResult, failed, progressMessageId } = await uploadFilesToBackend(chatId, files, orderId, username);
+    const slug = saveResult.shareLinkSlug;
+    const shareUrl = `${SHARE_BASE_URL}/${slug}`;
+    await saveConversation(chatId, { orderId, username, state: 'ready' });
+
+    const uploadedCount = files.length - failed.length;
+    const failNote = failed.length > 0
+      ? `\n\n⚠️ ${failed.length} fail gagal dimuat naik: ${failed.join(', ')}`
+      : '';
+    const text = `✅ ${uploadedCount} fail berjaya dimuat naik! Terima kasih kerana memilih KAMPUNG CETAK.\n\nPesanan: *${orderId}*\nNama: *${username}*\n\nAnda boleh menyemak fail anda di sini:\n${shareUrl}${failNote}`;
+
+    await bot
+      .editMessageText(text, { chat_id: chatId, message_id: progressMessageId })
+      .catch(() => bot.sendMessage(chatId, text));
+  } catch (e) {
+    console.error('[TELEGRAM] Upload failed:', e.message);
+    const errDetail = (e.response && e.response.data && e.response.data.message) || e.message;
+    await bot.sendMessage(chatId, `Maaf, terdapat ralat semasa memuat naik fail anda.\n${errDetail}`);
+  }
 }
 
 async function handleMedia(msg) {
@@ -272,6 +324,19 @@ async function handleMedia(msg) {
     fileName = msg.document.file_name || `telegram_file_${Date.now()}`;
   } else {
     await bot.sendMessage(chatId, 'Sila hantar artwork dalam bentuk imej (JPG/PNG) atau fail PDF.');
+    return;
+  }
+
+  const conv = await getConversation(chatId);
+  const orderId = (conv && conv.order_id) || null;
+  const username = (conv && conv.username) || null;
+
+  if (!orderId || !username) {
+    const missing = !orderId ? 'Nombor Pesanan (Order ID)' : 'Nama';
+    await bot.sendMessage(
+      chatId,
+      `Untuk memuat naik artwork, saya perlukan *${missing}* dahulu.\n\nHantar /start dan ikuti langkah:\n1️⃣ Nombor Pesanan\n2️⃣ Nama\n3️⃣ Hantar artwork`
+    );
     return;
   }
 
@@ -303,64 +368,44 @@ async function handleMedia(msg) {
     return;
   }
 
-  const conv = await getConversation(chatId);
-  let orderId = (conv && conv.order_id) || null;
-  let username = (conv && conv.username) || null;
+  const file = { buffer, mimeType, fileName };
 
-  if (!orderId || !username) {
-    try {
-      const extracted = await extractFromImage(mimeType, buffer.toString('base64'), msg.caption || '');
-      if (extracted && extracted.orderId) orderId = extracted.orderId;
-      if (extracted && extracted.username) username = extracted.username;
-    } catch (e) {
-      console.error('[TELEGRAM] Extraction fallback error:', e.message);
+  if (msg.media_group_id) {
+    let buf = mediaBuffers.get(chatId);
+    if (!buf || buf.orderId !== orderId || buf.username !== username) {
+      buf = { orderId, username, files: [], timer: null };
+      mediaBuffers.set(chatId, buf);
     }
-  }
-
-  if (!orderId || !username) {
-    await bot.sendMessage(
-      chatId,
-      'Untuk memuat naik artwork, saya perlukan butiran pesanan dahulu.\n\nHantar /start dan ikuti langkah:\n1️⃣ Nombor Pesanan\n2️⃣ Nama\n3️⃣ Hantar artwork'
-    );
+    clearTimeout(buf.timer);
+    buf.files.push(file);
+    buf.timer = setTimeout(() => flushMediaBuffer(chatId), MEDIA_BUFFER_MS);
+    await bot.sendMessage(chatId, `📥 Fail diterima (${buf.files.length}). Hantar lagi atau tunggu beberapa saat untuk memuat naik automatik.`);
     return;
   }
 
-  await bot.sendMessage(chatId, '⏳ Sedang memuat naik fail anda...');
-
-  try {
-    const result = await uploadToBackend(chatId, buffer, mimeType, fileName, orderId, username);
-    const slug = result.shareLinkSlug;
-    const shareUrl = `${SHARE_BASE_URL}/${slug}`;
-    await saveConversation(chatId, { orderId, username, state: 'ready' });
-    await bot.sendMessage(
-      chatId,
-      `✅ Fail berjaya dimuat naik! Terima kasih kerana memilih KAMPUNG CETAK.\n\nPesanan: *${orderId}*\nNama: *${username}*\n\nAnda boleh menyemak fail anda di sini:\n${shareUrl}`
-    );
-  } catch (e) {
-    console.error('[TELEGRAM] Upload failed:', e.message);
-    const errDetail = (e.response && e.response.data && e.response.data.message) || e.message;
-    await bot.sendMessage(chatId, `Maaf, terdapat ralat semasa memuat naik fail anda.\n${errDetail}`);
-  }
+  await processUpload(chatId, [file], orderId, username);
 }
 
-bot.on('message', async (msg) => {
-  try {
-    if (!msg || !msg.chat) return;
-    if (msg.chat.type !== 'private') return;
+bot.on('message', (msg) => {
+  if (!msg || !msg.chat) return;
+  if (msg.chat.type !== 'private') return;
 
-    if (msg.photo || msg.document) {
-      await handleMedia(msg);
-    } else if (msg.text) {
-      await handleText(msg);
-    } else {
-      await bot.sendMessage(msg.chat.id, 'Sila hantar imej (JPG/PNG) atau fail PDF untuk artwork anda.');
-    }
-  } catch (e) {
-    console.error('[TELEGRAM] Message handler error:', e.message);
+  enqueue(msg.chat.id, async () => {
     try {
-      await bot.sendMessage(msg.chat.id, 'Maaf, berlaku ralat. Sila cuba semula.');
-    } catch (_) {}
-  }
+      if (msg.photo || msg.document) {
+        await handleMedia(msg);
+      } else if (msg.text) {
+        await handleText(msg);
+      } else {
+        await bot.sendMessage(msg.chat.id, 'Sila hantar imej (JPG/PNG) atau fail PDF untuk artwork anda.');
+      }
+    } catch (e) {
+      console.error('[TELEGRAM] Message handler error:', e.message);
+      try {
+        await bot.sendMessage(msg.chat.id, 'Maaf, berlaku ralat. Sila cuba semula.');
+      } catch (_) {}
+    }
+  });
 });
 
 bot.getMe()
