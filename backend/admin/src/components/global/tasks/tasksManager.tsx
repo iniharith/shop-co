@@ -342,7 +342,7 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[min(90vw,var(--radix-popover-content-available-width))] p-0" align="start">
+              <PopoverContent className="w-80 max-w-[calc(100vw-2rem)] p-0" align="start">
                 <Command>
                   <CommandInput placeholder="Type a product name or category…" />
                   <CommandList>
