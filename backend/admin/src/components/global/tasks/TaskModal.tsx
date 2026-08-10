@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { useTask, useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
 import { useUploadStore } from '@/store/uploadStore';
 import { useUsers } from "@/hooks/useUsers";
-import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw, CheckCircle, Folder, Printer, GripVertical, MoveDiagonal, RotateCcw, Bold, Underline as UnderlineIcon, Strikethrough, FolderInput, FolderOpen, ChevronDown, Files, Truck } from "lucide-react";
+import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw, CheckCircle, Folder, Printer, GripVertical, MoveDiagonal, RotateCcw, FolderInput, FolderOpen, ChevronDown, Files, Truck } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -380,6 +380,10 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     return [...enriched, ...uploadedTaskFiles].filter(f => {
       const fid = f._id || f.url?.split('/').pop();
       return !deletedFileIds.includes(fid);
+    }).sort((a: any, b: any) => {
+      // Draft and For Print attachments always float to the front (left).
+      const priority = (tag: string) => (tag === 'draft' || tag === 'for_print') ? 0 : 1;
+      return priority(a.tag) - priority(b.tag);
     });
   }, [fullTask, taskFiles, deletedFileIds]);
 
@@ -483,14 +487,6 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
         if ('assignee' in data) setAssignee(getAssigneeId(fullTask.assignee));
       },
     });
-  };
-
-  const formatDescription = (command: string) => {
-    const el = descriptionRef.current;
-    if (!el) return;
-    el.focus();
-    document.execCommand(command, false);
-    setDescription(el.innerHTML);
   };
 
   const handleAddComment = () => {
@@ -885,17 +881,6 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                 <label className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <span className="w-1.5 h-4 bg-primary rounded-full"></span> Description
                 </label>
-                <div className="flex items-center gap-1 rounded-md border border-border/50 bg-muted/30 p-1 w-fit">
-                  <button type="button" title="Bold" onMouseDown={(e) => e.preventDefault()} onClick={() => formatDescription('bold')} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground">
-                    <Bold className="h-4 w-4" />
-                  </button>
-                  <button type="button" title="Underline" onMouseDown={(e) => e.preventDefault()} onClick={() => formatDescription('underline')} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground">
-                    <UnderlineIcon className="h-4 w-4" />
-                  </button>
-                  <button type="button" title="Strikethrough" onMouseDown={(e) => e.preventDefault()} onClick={() => formatDescription('strikeThrough')} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground">
-                    <Strikethrough className="h-4 w-4" />
-                  </button>
-                </div>
                 <div
                   ref={(el) => {
                     descriptionRef.current = el;
