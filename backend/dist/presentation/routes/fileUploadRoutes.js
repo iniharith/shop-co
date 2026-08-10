@@ -66,6 +66,7 @@ const user_repository_1 = __importDefault(require("../../infrastructure/db/repos
 const ShareLinkRepository_1 = require("../../infrastructure/repositories/ShareLinkRepository");
 const ShareLink_1 = require("../../domain/entities/ShareLink");
 const VirtualFolder_1 = require("../../domain/entities/VirtualFolder");
+const VirtualFolderRepository_1 = require("../../infrastructure/repositories/VirtualFolderRepository");
 const order_repository_1 = __importDefault(require("../../infrastructure/db/repositories/order.repository"));
 const order_model_1 = __importDefault(require("../../infrastructure/db/models/order.model"));
 const user_model_1 = __importDefault(require("../../infrastructure/db/models/user.model"));
@@ -955,47 +956,88 @@ router.post('/customer/upload-url', (0, express_async_handler_1.default)((req, r
 })));
 // 🌐 Public: Save metadata after direct S3 upload via CUSTOMER UPLOAD PORTAL
 router.post('/customer/save-metadata', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { files, orderId, username, phoneNumber, item } = req.body;
-    if (!files || !Array.isArray(files) || files.length === 0 || !orderId || !username) {
+    var _a;
+    const { orderId, username, phoneNumber } = req.body;
+    // New format: items = [{ name, files }] (one folder per item). Legacy
+    // format (flat files + single item string) still works and behaves as a
+    // single item.
+    let items = [];
+    if (Array.isArray(req.body.items) && req.body.items.length > 0) {
+        items = req.body.items;
+    }
+    else {
+        items = [{ name: req.body.item, files: req.body.files }];
+    }
+    const allFiles = items.flatMap((it) => it.files || []);
+    if (allFiles.length === 0 || !orderId || !username) {
         res.status(400).json({ success: false, message: 'Files, orderId, and username required' });
         return;
     }
     const uploadName = `Artwork Upload: #${orderId} - ${username}`;
+    const itemNames = items.map((it, i) => `${i + 1}. ${(it.name || '').trim() || 'Item'}`).join('\n');
+    const description = items.length > 1
+        ? `Phone Number: ${phoneNumber || 'N/A'}\nItems:\n${itemNames}`
+        : `Phone Number: ${phoneNumber || 'N/A'}\nItem: ${(((_a = items[0]) === null || _a === void 0 ? void 0 : _a.name) || '').trim() || 'N/A'}`;
     // 1. Create a Task for this upload
     const savedTask = yield TaskRepository_1.taskRepository.create({
         title: uploadName,
-        description: `Phone Number: ${phoneNumber || 'N/A'}\nItem: ${item || 'N/A'}`,
+        description,
         orderId: orderId,
         customerUsername: username,
         status: 'PLACED',
         category: 'UNASSIGNED',
         assignee: undefined,
-        files: files.map((f) => ({
+        files: allFiles.map((f) => ({
             url: f.path,
             name: f.originalName,
             tag: 'attachment'
         }))
     });
-    // 2. Save FileUpload entries
-    const savedFiles = yield Promise.all(files.map((f) => FileUploadRepository_1.fileUploadRepository.create({
-        userId: username,
-        orderId: orderId,
-        category: 'CUSTOMER_UPLOAD',
-        filename: f.key,
-        originalName: f.originalName,
-        mimetype: f.mimetype || 'application/octet-stream',
-        size: f.size,
-        path: f.path,
-        taskId: savedTask._id.toString(),
-        tag: 'attachment',
-        adminReviewed: false,
-    })));
+    const taskId = savedTask._id.toString();
+    // 2. Create a folder per item so files land in their own subfolder.
+    // Only when there is more than one item — a single item keeps the old
+    // flat (ungrouped) behaviour.
+    const folderByItemIndex = {};
+    if (items.length > 1) {
+        for (let i = 0; i < items.length; i++) {
+            const name = (items[i].name || '').trim();
+            if (!name)
+                continue;
+            const folder = yield VirtualFolderRepository_1.virtualFolderRepository.create({
+                name,
+                taskId: taskId,
+            });
+            folderByItemIndex[i] = folder._id.toString();
+        }
+    }
+    // 3. Save FileUpload entries (folderId only set when > 1 item)
+    const savedFiles = [];
+    for (let i = 0; i < items.length; i++) {
+        const folderId = folderByItemIndex[i];
+        for (const f of items[i].files || []) {
+            const saved = yield FileUploadRepository_1.fileUploadRepository.create({
+                userId: username,
+                orderId: orderId,
+                category: 'CUSTOMER_UPLOAD',
+                filename: f.key,
+                originalName: f.originalName,
+                mimetype: f.mimetype || 'application/octet-stream',
+                size: f.size,
+                path: f.path,
+                taskId: taskId,
+                tag: 'attachment',
+                adminReviewed: false,
+                folderId,
+            });
+            savedFiles.push(saved);
+        }
+    }
     // ── Real-time: broadcast the new task + files to all admin tabs ────────
     (0, taskBroadcast_1.emitTaskUpdated)('task_created', { task: savedTask }).catch(console.error);
-    // 3. Create a ShareLink for the customer to view their uploaded files
+    // 4. Create a ShareLink for the customer to view their uploaded files
     const shareLink = yield ShareLinkRepository_1.shareLinkRepository.findOrCreate({
         folderName: uploadName,
-        taskId: savedTask._id.toString(),
+        taskId: taskId,
         orderId: orderId,
         userId: username,
         audience: 'CUSTOMER',

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Upload, FileText, Check, Loader2, Image as ImageIcon, X, CloudUpload } from "lucide-react";
+import { Upload, FileText, Check, Loader2, Image as ImageIcon, X, CloudUpload, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,8 @@ const t = {
     phonePlaceholder: "e.g. +60123456789",
     itemLabel: "Item",
     itemPlaceholder: "Frame Size, Card, etc",
+    addItem: "Add Another Item",
+    removeItem: "Remove item",
     qualityWarning: "⚠️ PLEASE SEND HIGH RESOLUTION IMAGE. DO NOT SEND SCREENSHOT IMAGES BECAUSE ITS NOT HIGH QUALITY",
     uploadArtworkTitle: "Upload your artwork",
     dragDrop: "Drag and drop or click to browse files",
@@ -44,7 +46,8 @@ const t = {
     uploadingStatus: (curr: number, tot: number) => `Uploading files (${curr}/${tot})...`,
     successStatus: "Files uploaded successfully!",
     errUploadFailed: "Upload failed. Please try again.",
-    linkCopied: "Link copied to clipboard!"
+    linkCopied: "Link copied to clipboard!",
+    itemsHint: "If your order has multiple items, add one section per item — each item becomes its own folder for our team."
   },
   ms: {
     uploadComplete: "Muat Naik Selesai!",
@@ -60,6 +63,8 @@ const t = {
     phonePlaceholder: "cth. +60123456789",
     itemLabel: "Item",
     itemPlaceholder: "Saiz Bingkai, Kad, dll",
+    addItem: "Tambah Item Lain",
+    removeItem: "Buang item",
     qualityWarning: "⚠️ SILA HANTAR GAMBAR BERESOLUSI TINGGI. JANGAN HANTAR GAMBAR TANGKAPAN SKRIN (SCREENSHOT) KERANA KUALITINYA TIDAK BAGUS",
     uploadArtworkTitle: "Muat naik karya seni anda",
     dragDrop: "Seret dan lepas atau klik untuk menyemak imbas fail",
@@ -80,7 +85,8 @@ const t = {
     uploadingStatus: (curr: number, tot: number) => `Memuat naik fail (${curr}/${tot})...`,
     successStatus: "Fail berjaya dimuat naik!",
     errUploadFailed: "Muat naik gagal. Sila cuba lagi.",
-    linkCopied: "Pautan disalin ke papan keratan!"
+    linkCopied: "Pautan disalin ke papan keratan!",
+    itemsHint: "Jika pesanan anda mempunyai beberapa item, tambah satu bahagian untuk setiap item — setiap item menjadi folder yang berasingan untuk pasukan kami."
   }
 };
 
@@ -93,9 +99,17 @@ interface FileState {
   error?: string;
   uploaded?: { key: string; originalName: string; mimetype: string; size: number; path: string };
 }
+interface ItemGroup {
+  id: string;
+  name: string;
+  files: FileState[];
+}
 
 const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB — generous for print files, but stops accidental huge uploads
 const UPLOAD_CONCURRENCY = 3;
+
+const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const emptyItemGroup = (): ItemGroup => ({ id: genId(), name: "", files: [] });
 
 // fetch with a hard timeout — a plain fetch() with no timeout can hang
 // forever on a flaky connection, which is what made this page look "stuck".
@@ -154,14 +168,12 @@ export default function CustomerUploadPortal() {
   const [orderId, setOrderId] = useState("");
   const [username, setUsername] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [item, setItem] = useState("");
+  const [items, setItems] = useState<ItemGroup[]>([emptyItemGroup()]);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [generatedLink, setGeneratedLink] = useState("");
-  const [fileStates, setFileStates] = useState<FileState[]>([]);
 
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const addFilesToItem = (itemId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const incoming = Array.from(e.target.files);
     const tooBig = incoming.filter(f => f.size > MAX_FILE_SIZE);
@@ -169,16 +181,48 @@ export default function CustomerUploadPortal() {
     if (tooBig.length > 0) {
       toast.error(`${tooBig.map(f => f.name).join(", ")} ${tooBig.length > 1 ? "are" : "is"} over the 200MB limit and won't be uploaded.`);
     }
-    setFileStates(prev => [...prev, ...ok.map(file => ({ file, status: "pending" as FileStatus, progress: 0 }))]);
+    setItems(prev => prev.map(item =>
+      item.id === itemId
+        ? { ...item, files: [...item.files, ...ok.map(file => ({ file, status: "pending" as FileStatus, progress: 0 }))] }
+        : item
+    ));
     e.target.value = ""; // allow re-selecting the same file after removal
+  };
+
+  const removeItemFile = (itemId: string, index: number) => {
+    setItems(prev => prev.map(item =>
+      item.id === itemId
+        ? { ...item, files: item.files.filter((_, i) => i !== index) }
+        : item
+    ));
+  };
+
+  const setItemName = (itemId: string, name: string) => {
+    setItems(prev => prev.map(item => item.id === itemId ? { ...item, name } : item));
+  };
+
+  const addItemGroup = () => {
+    setItems(prev => [...prev, emptyItemGroup()]);
+  };
+
+  const removeItemGroup = (itemId: string) => {
+    setItems(prev => prev.filter(item => item.id !== itemId));
+  };
+
+  const updateItemFile = (itemId: string, index: number, patch: Partial<FileState>) => {
+    setItems(prev => prev.map(item =>
+      item.id === itemId
+        ? { ...item, files: item.files.map((f, i) => i === index ? { ...f, ...patch } : f) }
+        : item
+    ));
   };
 
   const parsePastedText = (text: string) => {
     let newOrderId = orderId;
     let newPhone = phoneNumber;
-    let newItem = item;
     let newUsername = username;
-    
+    const parsedItems: string[] = [];
+
     // Example WhatsApp message format:
     // ORDER 9 JULAI 2026
     // Phone Number: 0194728328
@@ -187,7 +231,7 @@ export default function CustomerUploadPortal() {
     // cheryllee8328
 
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-    
+
     // Check if it's a multi-line pasted message
     if (lines.length >= 2) {
       // 1. First line usually has "ORDER "
@@ -200,22 +244,24 @@ export default function CustomerUploadPortal() {
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const lowerLine = line.toLowerCase();
-        
+
         if (lowerLine.startsWith("phone number:") || lowerLine.startsWith("no telefon:")) {
           newPhone = line.split(':')[1].trim();
         } else if (lowerLine.startsWith("item:") || lowerLine.startsWith("produk:")) {
-          newItem = line.split(':')[1].trim();
+          parsedItems.push(line.split(':')[1].trim());
         } else if (lowerLine === "username" || lowerLine === "nama pengguna") {
           if (i + 1 < lines.length) {
             newUsername = lines[i + 1].trim();
           }
         }
       }
-      
+
       setOrderId(newOrderId);
       setPhoneNumber(newPhone);
-      setItem(newItem);
       setUsername(newUsername);
+      if (parsedItems.length > 0) {
+        setItems(parsedItems.map(name => ({ id: genId(), name, files: [] })));
+      }
       return true; // Successfully parsed
     }
     return false; // Not a multi-line message
@@ -240,13 +286,11 @@ export default function CustomerUploadPortal() {
     }
   };
 
-  const removeFile = (index: number) => {
-    setFileStates(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const uploadOneFile = async (index: number): Promise<FileState["uploaded"] | null> => {
-    const { file } = fileStates[index];
-    setFileStates(prev => prev.map((f, i) => i === index ? { ...f, status: "uploading", progress: 0, error: undefined } : f));
+  const uploadOneFile = async (itemId: string, index: number): Promise<FileState["uploaded"] | null> => {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return null;
+    const { file } = item.files[index];
+    updateItemFile(itemId, index, { status: "uploading", progress: 0, error: undefined });
 
     try {
       // 1. Get presigned URL (10s — this is just a tiny JSON call)
@@ -259,7 +303,7 @@ export default function CustomerUploadPortal() {
           orderId: orderId.trim(),
           username: username.trim(),
           phoneNumber: phoneNumber.trim(),
-          item: item.trim()
+          item: item.name.trim()
         })
       }, 30000);
 
@@ -271,7 +315,7 @@ export default function CustomerUploadPortal() {
 
       // 2. Upload directly to S3 with real progress + its own timeout
       await uploadToS3WithProgress(url, file, (pct) => {
-        setFileStates(prev => prev.map((f, i) => i === index ? { ...f, progress: pct } : f));
+        updateItemFile(itemId, index, { progress: pct });
       });
 
       const uploaded = {
@@ -281,10 +325,10 @@ export default function CustomerUploadPortal() {
         size: file.size,
         path: publicUrl
       };
-      setFileStates(prev => prev.map((f, i) => i === index ? { ...f, status: "done", progress: 100, uploaded } : f));
+      updateItemFile(itemId, index, { status: "done", progress: 100, uploaded });
       return uploaded;
     } catch (err: any) {
-      setFileStates(prev => prev.map((f, i) => i === index ? { ...f, status: "error", error: err.message || "Upload failed" } : f));
+      updateItemFile(itemId, index, { status: "error", error: err.message || "Upload failed" });
       return null;
     }
   };
@@ -293,37 +337,38 @@ export default function CustomerUploadPortal() {
     if (!orderId.trim()) return toast.error(langDict.errOrderId);
     if (!username.trim()) return toast.error(langDict.errUsername);
     if (!phoneNumber.trim()) return toast.error(langDict.errPhone);
-    if (!item.trim()) return toast.error(langDict.errItem);
-    if (fileStates.length === 0) return toast.error(langDict.errNoFiles);
+    const itemsWithFiles = items.filter(i => i.files.length > 0);
+    if (itemsWithFiles.length === 0) return toast.error(langDict.errNoFiles);
+    for (const it of itemsWithFiles) {
+      if (!it.name.trim()) return toast.error(langDict.errItem);
+    }
 
     setUploading(true);
     const toastId = toast.loading("Uploading files...");
 
     // Only upload files that aren't already "done" — a retry after a partial
     // failure won't re-upload files that already succeeded.
-    const pendingIndexes = fileStates
-      .map((f, i) => ({ f, i }))
-      .filter(({ f }) => f.status !== "done")
-      .map(({ i }) => i);
+    const pendingTasks: { itemId: string; index: number }[] = [];
+    items.forEach(item => item.files.forEach((f, i) => {
+      if (f.status !== "done") pendingTasks.push({ itemId: item.id, index: i });
+    }));
 
     // Run uploads with limited concurrency instead of one-at-a-time — this is
     // the main fix for the page feeling slow with multiple files.
     let cursor = 0;
     let completedCount = 0;
-    const uploadedByIndex = new Map<number, FileState["uploaded"]>();
     async function worker() {
-      while (cursor < pendingIndexes.length) {
-        const myIndex = pendingIndexes[cursor++];
-        const uploaded = await uploadOneFile(myIndex);
-        if (uploaded) uploadedByIndex.set(myIndex, uploaded);
+      while (cursor < pendingTasks.length) {
+        const task = pendingTasks[cursor++];
+        await uploadOneFile(task.itemId, task.index);
         completedCount++;
-        toast.loading(`Uploading files (${completedCount}/${pendingIndexes.length})...`, { id: toastId });
+        toast.loading(`Uploading files (${completedCount}/${pendingTasks.length})...`, { id: toastId });
       }
     }
-    await Promise.all(Array.from({ length: Math.min(UPLOAD_CONCURRENCY, pendingIndexes.length) }, worker));
+    await Promise.all(Array.from({ length: Math.min(UPLOAD_CONCURRENCY, pendingTasks.length) }, worker));
 
-    const uploadedFiles = fileStates.map((state, index) => state.uploaded || uploadedByIndex.get(index));
-    if (uploadedFiles.some(file => !file)) {
+    const allDone = items.every(item => item.files.every(f => f.status === "done"));
+    if (!allDone) {
       toast.error("Some files failed to upload. Fix your connection and press Submit again; completed files won't be re-uploaded.", { id: toastId });
       setUploading(false);
       return;
@@ -335,11 +380,12 @@ export default function CustomerUploadPortal() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          files: uploadedFiles,
+          items: items
+            .map(item => ({ name: item.name.trim(), files: item.files.map(f => f.uploaded).filter(Boolean) }))
+            .filter(p => p.files.length > 0),
           orderId: orderId.trim(),
           username: username.trim(),
-          phoneNumber: phoneNumber.trim(),
-          item: item.trim()
+          phoneNumber: phoneNumber.trim()
         })
       }, 60000);
       const data = await metaRes.json().catch(() => null);
@@ -352,7 +398,7 @@ export default function CustomerUploadPortal() {
       setGeneratedLink(`${window.location.origin}/share/${data.shareLinkSlug}`);
       toast.success(langDict.successStatus, { id: toastId });
       setSuccess(true);
-      setFileStates([]);
+      setItems([emptyItemGroup()]);
     } catch (err: any) {
       toast.error(err.message || "Couldn't finalize your submission. Please press Submit again.", { id: toastId });
     } finally {
@@ -411,7 +457,7 @@ export default function CustomerUploadPortal() {
               setOrderId("");
               setUsername("");
               setPhoneNumber("");
-              setItem("");
+              setItems([emptyItemGroup()]);
               setGeneratedLink("");
             }}
           >
@@ -471,7 +517,7 @@ export default function CustomerUploadPortal() {
                 disabled={uploading}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-medium text-white/80">{langDict.phoneLabel} <span className="text-red-500">*</span></label>
               <Input 
                 placeholder={langDict.phonePlaceholder} 
@@ -481,87 +527,115 @@ export default function CustomerUploadPortal() {
                 disabled={uploading}
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">{langDict.itemLabel} <span className="text-red-500">*</span></label>
-              <Input 
-                placeholder={langDict.itemPlaceholder} 
-                value={item}
-                onChange={(e) => setItem(e.target.value)}
-                className="bg-black/50 border-white/10 focus-visible:ring-yellow-500"
-                disabled={uploading}
-              />
-            </div>
           </div>
 
-          <div className="bg-yellow-500/10 border border-yellow-500/50 text-yellow-200 text-xs md:text-sm p-3 rounded-lg text-center font-medium mb-4">
+          <div className="bg-yellow-500/10 border border-yellow-500/50 text-yellow-200 text-xs md:text-sm p-3 rounded-lg text-center font-medium">
             {langDict.qualityWarning}
           </div>
 
-          <div className="border-2 border-dashed border-white/10 rounded-xl p-8 text-center bg-black/20 relative">
-            <input 
-              type="file" 
-              multiple 
-              onChange={handleFileChange}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+          <div className="space-y-4">
+            {items.map((itemGroup, itemIdx) => (
+              <div key={itemGroup.id} className="rounded-xl border border-white/10 bg-black/20 p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-yellow-400 bg-yellow-500/10 border border-yellow-500/30 rounded-md px-2 py-1 shrink-0">
+                    {langDict.itemLabel} {itemIdx + 1}
+                  </span>
+                  <Input 
+                    placeholder={langDict.itemPlaceholder} 
+                    value={itemGroup.name}
+                    onChange={(e) => setItemName(itemGroup.id, e.target.value)}
+                    className="bg-black/50 border-white/10 focus-visible:ring-yellow-500 flex-1"
+                    disabled={uploading}
+                  />
+                  {items.length > 1 && (
+                    <button
+                      onClick={() => removeItemGroup(itemGroup.id)}
+                      disabled={uploading}
+                      className="p-1.5 hover:bg-white/10 rounded text-white/60 hover:text-red-400 transition-colors shrink-0"
+                      title={langDict.removeItem}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="border-2 border-dashed border-white/10 rounded-xl p-6 text-center bg-black/20 relative">
+                  <input 
+                    type="file" 
+                    multiple 
+                    onChange={(e) => addFilesToItem(itemGroup.id, e)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    disabled={uploading}
+                    title="Click to select files"
+                  />
+                  <Upload className="w-7 h-7 mx-auto mb-2 text-white/40" />
+                  <p className="text-sm text-white/40">{langDict.dragDrop}</p>
+                </div>
+
+                {itemGroup.files.length > 0 && (
+                  <div className="bg-black/40 rounded-lg p-3 border border-white/5 space-y-2 max-h-48 overflow-y-auto">
+                    <h4 className="text-xs font-medium text-white/60">{itemGroup.files.length} {langDict.filesSelected}</h4>
+                    {itemGroup.files.map(({ file, status, progress, error }, i) => (
+                      <div key={i} className="bg-[#1a1a1a] p-2.5 rounded border border-white/5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            {file.type.includes('image') ? (
+                              <ImageIcon className="w-5 h-5 text-blue-400 shrink-0" />
+                            ) : (
+                              <FileText className="w-5 h-5 text-gray-400 shrink-0" />
+                            )}
+                            <div className="truncate">
+                              <p className="text-sm font-medium truncate">{file.name}</p>
+                              <p className="text-xs text-white/40">
+                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                                {status === "uploading" && ` · Uploading ${progress}%`}
+                                {status === "done" && " · Uploaded"}
+                                {status === "error" && ` · ${error || "Failed"}`}
+                              </p>
+                            </div>
+                          </div>
+                          {status === "done" ? (
+                            <Check className="w-4 h-4 text-green-400 shrink-0" />
+                          ) : (
+                            <button
+                              onClick={() => removeItemFile(itemGroup.id, i)}
+                              disabled={uploading}
+                              className="p-1.5 hover:bg-white/10 rounded text-white/60 hover:text-white transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                        {status === "uploading" && (
+                          <div className="w-full h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
+                            <div className="h-full bg-yellow-500 transition-all" style={{ width: `${progress}%` }} />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            <Button 
+              variant="outline"
+              className="w-full bg-transparent border-white/15 text-white/70 hover:bg-white/10 hover:text-white"
+              onClick={addItemGroup}
               disabled={uploading}
-              title="Click to select files"
-            />
-            <Upload className="w-10 h-10 mx-auto mb-3 text-white/40" />
-            <h3 className="text-lg font-medium mb-1">{langDict.uploadArtworkTitle}</h3>
-            <p className="text-sm text-white/40 mb-4">{langDict.dragDrop}</p>
-            <Button variant="outline" className="bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white pointer-events-none relative z-0">
-              Select Files
+            >
+              <Plus className="w-4 h-4 mr-2" /> {langDict.addItem}
             </Button>
           </div>
 
-          {fileStates.length > 0 && (
-            <div className="bg-black/40 rounded-lg p-4 border border-white/5 space-y-3 max-h-60 overflow-y-auto">
-              <h4 className="text-sm font-medium text-white/60 mb-2">{fileStates.length} {langDict.filesSelected}</h4>
-              {fileStates.map(({ file, status, progress, error }, i) => (
-                <div key={i} className="bg-[#1a1a1a] p-2.5 rounded border border-white/5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      {file.type.includes('image') ? (
-                        <ImageIcon className="w-5 h-5 text-blue-400 shrink-0" />
-                      ) : (
-                        <FileText className="w-5 h-5 text-gray-400 shrink-0" />
-                      )}
-                      <div className="truncate">
-                        <p className="text-sm font-medium truncate">{file.name}</p>
-                        <p className="text-xs text-white/40">
-                          {(file.size / 1024 / 1024).toFixed(2)} MB
-                          {status === "uploading" && ` · Uploading ${progress}%`}
-                          {status === "done" && " · Uploaded"}
-                          {status === "error" && ` · ${error || "Failed"}`}
-                        </p>
-                      </div>
-                    </div>
-                    {status === "done" ? (
-                      <Check className="w-4 h-4 text-green-400 shrink-0" />
-                    ) : (
-                      <button
-                        onClick={() => removeFile(i)}
-                        disabled={uploading}
-                        className="p-1.5 hover:bg-white/10 rounded text-white/60 hover:text-white transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                  {status === "uploading" && (
-                    <div className="w-full h-1 bg-white/10 rounded-full mt-2 overflow-hidden">
-                      <div className="h-full bg-yellow-500 transition-all" style={{ width: `${progress}%` }} />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="bg-white/5 border border-white/10 text-white/50 text-xs p-3 rounded-lg text-center">
+            {langDict.itemsHint}
+          </div>
 
           <Button 
             className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold h-12 text-lg"
             onClick={handleUpload}
-            disabled={uploading || fileStates.length === 0}
+            disabled={uploading || items.every(i => i.files.length === 0)}
           >
             {uploading ? (
               <>
@@ -587,7 +661,7 @@ export default function CustomerUploadPortal() {
         </p>
       </div>
 
-      {uploading && fileStates.length > 0 && (
+      {uploading && items.some(i => i.files.length > 0) && (
         <div className="fixed top-4 right-4 bg-background/95 backdrop-blur-md border border-border/50 p-4 rounded-xl shadow-2xl flex items-center gap-4 z-50">
           <div className="relative flex items-center justify-center">
             <CloudUpload className="w-8 h-8 text-blue-500 animate-pulse" />
@@ -595,7 +669,7 @@ export default function CustomerUploadPortal() {
           <div>
             <h3 className="text-sm font-semibold text-white">Uploading Files</h3>
             <p className="text-xs text-muted-foreground font-medium">
-              {fileStates.filter(f => f.status === "done").length} of {fileStates.length} complete
+              {items.reduce((acc, i) => acc + i.files.filter(f => f.status === "done").length, 0)} of {items.reduce((acc, i) => acc + i.files.length, 0)} complete
             </p>
           </div>
         </div>

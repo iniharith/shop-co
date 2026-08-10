@@ -18,6 +18,7 @@ import UserRepository from '../../infrastructure/db/repositories/user.repository
 import { shareLinkRepository } from '../../infrastructure/repositories/ShareLinkRepository';
 import { ShareLink } from '../../domain/entities/ShareLink';
 import { VirtualFolder } from '../../domain/entities/VirtualFolder';
+import { virtualFolderRepository } from '../../infrastructure/repositories/VirtualFolderRepository';
 import OrderRepository from '../../infrastructure/db/repositories/order.repository';
 import OrderModel from '../../infrastructure/db/models/order.model';
 import User from '../../infrastructure/db/models/user.model';
@@ -1090,35 +1091,70 @@ router.post(
 router.post(
   '/customer/save-metadata',
   asyncHandler(async (req: Request, res: Response) => {
-    const { files, orderId, username, phoneNumber, item } = req.body;
-    if (!files || !Array.isArray(files) || files.length === 0 || !orderId || !username) {
+    const { orderId, username, phoneNumber } = req.body;
+
+    // New format: items = [{ name, files }] (one folder per item). Legacy
+    // format (flat files + single item string) still works and behaves as a
+    // single item.
+    let items: { name?: string; files?: any[] }[] = [];
+    if (Array.isArray(req.body.items) && req.body.items.length > 0) {
+      items = req.body.items;
+    } else {
+      items = [{ name: req.body.item, files: req.body.files }];
+    }
+
+    const allFiles = items.flatMap((it) => it.files || []);
+    if (allFiles.length === 0 || !orderId || !username) {
       res.status(400).json({ success: false, message: 'Files, orderId, and username required' });
       return;
     }
 
     const uploadName = `Artwork Upload: #${orderId} - ${username}`;
+    const itemNames = items.map((it, i) => `${i + 1}. ${(it.name || '').trim() || 'Item'}`).join('\n');
+    const description = items.length > 1
+      ? `Phone Number: ${phoneNumber || 'N/A'}\nItems:\n${itemNames}`
+      : `Phone Number: ${phoneNumber || 'N/A'}\nItem: ${(items[0]?.name || '').trim() || 'N/A'}`;
 
     // 1. Create a Task for this upload
     const savedTask = await taskRepository.create({
       title: uploadName,
-      description: `Phone Number: ${phoneNumber || 'N/A'}\nItem: ${item || 'N/A'}`,
+      description,
       orderId: orderId,
       customerUsername: username,
       status: 'PLACED',
       category: 'UNASSIGNED',
       assignee: undefined,
-      files: files.map((f: any) => ({
+      files: allFiles.map((f: any) => ({
         url: f.path,
         name: f.originalName,
         tag: 'attachment'
       }))
     });
 
-    // 2. Save FileUpload entries
+    const taskId = savedTask._id.toString();
 
-    const savedFiles = await Promise.all(
-      files.map((f: any) =>
-        fileUploadRepository.create({
+    // 2. Create a folder per item so files land in their own subfolder.
+    // Only when there is more than one item — a single item keeps the old
+    // flat (ungrouped) behaviour.
+    const folderByItemIndex: Record<number, string> = {};
+    if (items.length > 1) {
+      for (let i = 0; i < items.length; i++) {
+        const name = (items[i].name || '').trim();
+        if (!name) continue;
+        const folder = await virtualFolderRepository.create({
+          name,
+          taskId: taskId,
+        });
+        folderByItemIndex[i] = folder._id.toString();
+      }
+    }
+
+    // 3. Save FileUpload entries (folderId only set when > 1 item)
+    const savedFiles: any[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const folderId = folderByItemIndex[i];
+      for (const f of items[i].files || []) {
+        const saved = await fileUploadRepository.create({
           userId: username,
           orderId: orderId,
           category: 'CUSTOMER_UPLOAD',
@@ -1127,20 +1163,22 @@ router.post(
           mimetype: f.mimetype || 'application/octet-stream',
           size: f.size,
           path: f.path,
-          taskId: savedTask._id.toString(),
+          taskId: taskId,
           tag: 'attachment',
           adminReviewed: false,
-        })
-      )
-    );
+          folderId,
+        });
+        savedFiles.push(saved);
+      }
+    }
 
     // ── Real-time: broadcast the new task + files to all admin tabs ────────
     emitTaskUpdated('task_created', { task: savedTask }).catch(console.error);
 
-    // 3. Create a ShareLink for the customer to view their uploaded files
+    // 4. Create a ShareLink for the customer to view their uploaded files
     const shareLink = await shareLinkRepository.findOrCreate({
       folderName: uploadName,
-      taskId: savedTask._id.toString(),
+      taskId: taskId,
       orderId: orderId,
       userId: username,
       audience: 'CUSTOMER',
