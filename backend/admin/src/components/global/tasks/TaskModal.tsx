@@ -404,6 +404,12 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     return raw.replace(/\\/g, '/');
   }, [awbFile]);
   const awbIsImage = !!awbFile && (awbFile.mimetype?.includes("image") || (awbFile.name || awbFile.url || "").match(/\.(jpeg|jpg|gif|png|webp|heic)$/i));
+  const awbIsPdf = !!awbFile && isPdfFile({ mimetype: awbFile.mimetype, name: awbFile.name || awbFile.url });
+  const awbProxyUrl = React.useMemo(() => {
+    if (!awbFile || !awbPreviewUrl) return "";
+    const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+    return `${backendBase}/api/files/proxy-download?url=${encodeURIComponent(awbPreviewUrl)}&name=${encodeURIComponent(awbFile.name || 'AWB')}&inline=true#toolbar=0`;
+  }, [awbFile, awbPreviewUrl]);
 
   const handleDownloadAllAttachments = () => {
     if (!combinedFiles || combinedFiles.length === 0) return;
@@ -1732,6 +1738,11 @@ return (
                     <img src={awbPreviewUrl} alt={awbFile.name || 'AWB'} className="w-full h-auto max-h-48 object-contain bg-white" />
                     <div className="bg-black/70 text-white text-[10px] px-2 py-1 truncate">{awbFile.name}</div>
                   </a>
+                ) : awbIsPdf ? (
+                  <div className="rounded-xl overflow-hidden border border-border bg-white">
+                    <iframe src={awbProxyUrl} className="w-full h-48 border-none" title={awbFile.name || 'AWB'} />
+                    <div className="bg-black/70 text-white text-[10px] px-2 py-1 truncate">{awbFile.name}</div>
+                  </div>
                 ) : (
                   <div className="rounded-xl border border-dashed border-red-300 bg-red-50/50 p-4 text-center">
                     <File className="w-6 h-6 text-red-400 mx-auto mb-1" />
@@ -1782,6 +1793,16 @@ return (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <button
                   type="button"
+                  className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-red-500/25 bg-red-500/5 p-3 text-center transition hover:border-red-500/60 hover:bg-red-500/10"
+                  onClick={() => { uploadDroppedFiles(pendingDropFiles, 'awb', pendingDropFolderId); setPendingDropFiles(null); setPendingDropFolderId(null); }}
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500 text-white">
+                    <Truck className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">AWB</span>
+                </button>
+                <button
+                  type="button"
                   className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-slate-500/25 bg-slate-500/5 p-3 text-center transition hover:border-slate-500/60 hover:bg-slate-500/10"
                   onClick={() => { uploadDroppedFiles(pendingDropFiles, 'attachment', pendingDropFolderId); setPendingDropFiles(null); setPendingDropFolderId(null); }}
                 >
@@ -1809,16 +1830,6 @@ return (
                     <Printer className="h-5 w-5" />
                   </div>
                   <span className="text-sm font-semibold text-foreground">For Print</span>
-                </button>
-                <button
-                  type="button"
-                  className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-red-500/25 bg-red-500/5 p-3 text-center transition hover:border-red-500/60 hover:bg-red-500/10"
-                  onClick={() => { uploadDroppedFiles(pendingDropFiles, 'awb', pendingDropFolderId); setPendingDropFiles(null); setPendingDropFolderId(null); }}
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500 text-white">
-                    <Truck className="h-5 w-5" />
-                  </div>
-                  <span className="text-sm font-semibold text-foreground">AWB</span>
                 </button>
               </div>
               <button

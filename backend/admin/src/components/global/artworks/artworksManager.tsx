@@ -1608,6 +1608,16 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <button
                 type="button"
+                className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-red-500/25 bg-red-500/5 p-3 text-center transition hover:border-red-500/60 hover:bg-red-500/10"
+                onClick={() => { uploadArtworkDroppedFiles(pendingArtworkDrop, 'awb'); setPendingArtworkDrop(null); }}
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500 text-white">
+                  <Truck className="h-5 w-5" />
+                </div>
+                <span className="text-sm font-semibold text-foreground">AWB</span>
+              </button>
+              <button
+                type="button"
                 className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-slate-500/25 bg-slate-500/5 p-3 text-center transition hover:border-slate-500/60 hover:bg-slate-500/10"
                 onClick={() => { uploadArtworkDroppedFiles(pendingArtworkDrop, 'attachment'); setPendingArtworkDrop(null); }}
               >
@@ -1635,16 +1645,6 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                   <Printer className="h-5 w-5" />
                 </div>
                 <span className="text-sm font-semibold text-foreground">For Print</span>
-              </button>
-              <button
-                type="button"
-                className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-red-500/25 bg-red-500/5 p-3 text-center transition hover:border-red-500/60 hover:bg-red-500/10"
-                onClick={() => { uploadArtworkDroppedFiles(pendingArtworkDrop, 'awb'); setPendingArtworkDrop(null); }}
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500 text-white">
-                  <Truck className="h-5 w-5" />
-                </div>
-                <span className="text-sm font-semibold text-foreground">AWB</span>
               </button>
             </div>
             <button
