@@ -1247,6 +1247,54 @@ router.post(
   })
 );
 
+// 🌐 Public: Add a note to a SPECIFIC uploaded file (used by the Telegram bot)
+router.post(
+  '/customer/file-note',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { orderId, username, fileUrl, note } = req.body;
+    const noteText = String(note || '').trim();
+    if (!orderId || !username || !fileUrl || !noteText) {
+      res.status(400).json({ success: false, message: 'orderId, username, fileUrl, and note required' });
+      return;
+    }
+
+    const artworkTask: any = await Task.findOne({
+      orderId: orderId,
+      title: { $regex: '^Artwork Upload: #' },
+      isDeleted: { $ne: true },
+      isDone: { $ne: true },
+    }).sort({ createdAt: -1 });
+
+    if (!artworkTask) {
+      res.status(404).json({ success: false, message: 'Artwork task not found for this order' });
+      return;
+    }
+
+    const taskId = artworkTask._id.toString();
+    let updated: any = await taskRepository.updateFileNotes(taskId, String(fileUrl), noteText);
+    if (!updated) {
+      // Fallback: match the file by its original name instead of the S3 URL.
+      const file = artworkTask.files.find((f: any) => f.name === String(fileUrl));
+      if (file) updated = await taskRepository.updateFileNotes(taskId, file.url, noteText);
+    }
+    if (!updated) {
+      res.status(404).json({ success: false, message: 'File not found in the artwork task' });
+      return;
+    }
+
+    await taskRepository.addActivity(
+      taskId,
+      String(username),
+      String(username),
+      `added a note for file ${(artworkTask.files.find((f: any) => f.name === String(fileUrl)) || artworkTask.files[0] || {}).name || 'uploaded file'}`,
+      noteText
+    ).catch(() => {});
+
+    emitTaskUpdated('task_updated', { task: updated }).catch(console.error);
+    res.json({ success: true, task: updated });
+  })
+);
+
 // 🌐 Public: Get presigned URL for direct S3 upload via shared link
 router.post(
   '/s/:slug/upload-url',

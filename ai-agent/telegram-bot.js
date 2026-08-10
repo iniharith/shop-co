@@ -170,6 +170,8 @@ async function handleText(msg) {
       clearTimeout(stale.timer);
       batches.delete(chatId);
     }
+    pendingFileNotes.delete(chatId);
+    chatUploads.delete(chatId);
     await saveConversation(chatId, { state: 'awaiting_order' });
     await bot.sendMessage(chatId, WELCOME_MSG);
     return;
@@ -237,12 +239,45 @@ async function handleText(msg) {
     return;
   }
 
+  if (state === 'awaiting_file_note') {
+    const pending = pendingFileNotes.get(chatId);
+    const orderId = (conv && conv.order_id) || null;
+    const username = (conv && conv.username) || null;
+    if (!pending || !orderId || !username) {
+      pendingFileNotes.delete(chatId);
+      await saveConversation(chatId, { orderId, username, state: 'ready' });
+      await bot.sendMessage(chatId, 'Sila pilih fail dahulu — tekan *📝 Nota pada Fail* dan pilih imej yang anda mahu beri nota.');
+      return;
+    }
+    try {
+      await axios.post(`${BACKEND_URL}/api/files/customer/file-note`, {
+        orderId,
+        username,
+        fileUrl: pending.fileUrl,
+        note: text,
+      });
+      pendingFileNotes.delete(chatId);
+      await saveConversation(chatId, { orderId, username, state: 'ready' });
+      await bot.sendMessage(
+        chatId,
+        `✅ Nota untuk *${pending.fileName}* telah disimpan!\n\n📝 *"${text}"*\n\nPilih pilihan di bawah jika anda perlu menambah nota atau fail lagi.`,
+        { reply_markup: AFTER_UPLOAD_KEYBOARD }
+      );
+    } catch (e) {
+      console.error('[TELEGRAM] File note save failed:', e.message);
+      await bot.sendMessage(chatId, 'Maaf, nota anda tidak dapat dihantar. Sila cuba sekali lagi atau hantar /new.');
+    }
+    return;
+  }
+
   await bot.sendMessage(chatId, `Pesanan *${conv.order_id}* — *${conv.username}* sudah lengkap.\nSila hantar artwork anda, atau hantar /new untuk pesanan baharu.`);
 }
 
 const BATCH_IDLE_MS = parseInt(process.env.TELEGRAM_BATCH_IDLE_MS || '20000', 10);
 const chatQueues = new Map();
 const batches = new Map();
+const chatUploads = new Map();
+const pendingFileNotes = new Map();
 
 function enqueue(chatId, task) {
   const prev = chatQueues.get(chatId) || Promise.resolve();
@@ -257,10 +292,20 @@ const DONE_KEYBOARD = {
 
 const AFTER_UPLOAD_KEYBOARD = {
   inline_keyboard: [
-    [{ text: '📝 Tambah Nota', callback_data: 'add_note' }],
+    [{ text: '📝 Nota pada Fail', callback_data: 'note_file' }],
+    [{ text: '📝 Nota Am', callback_data: 'add_note' }],
     [{ text: '➕ Tambah Lagi Fail', callback_data: 'add_more' }],
   ],
 };
+
+function fileDisplayName(file, index) {
+  const name = file.name || '';
+  if (name.startsWith('telegram_photo_') || name.startsWith('telegram_file_')) {
+    return `${index + 1}. Foto ${index + 1}`;
+  }
+  const short = name.length > 40 ? `${name.slice(0, 40)}…` : name;
+  return `${index + 1}. ${short}`;
+}
 
 function batchStatusText(b, orderId) {
   const received = b.files.length + b.failed.length;
@@ -365,6 +410,10 @@ async function finalizeBatch(chatId) {
     const slug = saveRes.data.shareLinkSlug;
     const shareUrl = `${SHARE_BASE_URL}/${slug}`;
     await saveConversation(chatId, { orderId: b.orderId, username: b.username, state: 'ready' });
+
+    const prev = chatUploads.get(chatId) || [];
+    const added = b.files.map((f) => ({ name: f.originalName, path: f.path, size: f.size }));
+    chatUploads.set(chatId, prev.concat(added).slice(-300));
 
     const failNote = b.failed.length > 0
       ? `\n\n⚠️ ${b.failed.length} fail gagal dimuat naik: ${b.failed.join(', ')}`
@@ -483,6 +532,53 @@ bot.on('callback_query', (query) => {
           chatId,
           '📝 Sila taip nota anda (contoh: arahan khas, warna, saiz, atau apa-apa maklumat tambahan).\n\nHantar /new untuk membatalkan.'
         );
+      } else if (data === 'note_file') {
+        const conv = await getConversation(chatId);
+        const orderId = (conv && conv.order_id) || null;
+        const username = (conv && conv.username) || null;
+        const files = chatUploads.get(chatId) || [];
+        if (!orderId || !username) {
+          await bot.sendMessage(chatId, 'Tiada pesanan aktif. Hantar /start untuk bermula.');
+          return;
+        }
+        if (files.length === 0) {
+          await bot.sendMessage(chatId, 'Tiada fail dijumpai untuk pesanan ini. Sila muat naik artwork dahulu.');
+          return;
+        }
+        const rows = files.slice(0, 90).map((f, i) => [{ text: fileDisplayName(f, i), callback_data: `note_file:${i}` }]);
+        rows.push([{ text: '🔙 Menu Utama', callback_data: 'main_menu' }]);
+        await bot.sendMessage(chatId, '📝 Pilih fail yang anda ingin beri nota:', {
+          reply_markup: { inline_keyboard: rows },
+        });
+      } else if (data && data.startsWith('note_file:')) {
+        const idx = parseInt(data.split(':')[1], 10);
+        const files = chatUploads.get(chatId) || [];
+        const conv = await getConversation(chatId);
+        const orderId = (conv && conv.order_id) || null;
+        const username = (conv && conv.username) || null;
+        const file = files[idx];
+        if (!file) {
+          await bot.sendMessage(chatId, 'Fail tidak ditemui. Sila tekan *📝 Nota pada Fail* dan pilih semula.');
+          return;
+        }
+        if (!orderId || !username) {
+          await bot.sendMessage(chatId, 'Tiada pesanan aktif. Hantar /start untuk bermula.');
+          return;
+        }
+        pendingFileNotes.set(chatId, { orderId, username, fileUrl: file.path, fileName: fileDisplayName(file, idx) });
+        await saveConversation(chatId, { orderId, username, state: 'awaiting_file_note' });
+        await bot.sendMessage(
+          chatId,
+          `📝 Sila taip nota untuk *${fileDisplayName(file, idx)}* (cth: ubah warna, ganti gambar, potong sini, dll).\n\nHantar /new untuk membatalkan.`
+        );
+      } else if (data === 'main_menu') {
+        await bot
+          .editMessageText('Pilih pilihan di bawah:', {
+            chat_id: chatId,
+            message_id: query.message.message_id,
+            reply_markup: AFTER_UPLOAD_KEYBOARD,
+          })
+          .catch(() => bot.sendMessage(chatId, 'Pilih pilihan di bawah:', { reply_markup: AFTER_UPLOAD_KEYBOARD }));
       } else if (data === 'add_more') {
         const conv = await getConversation(chatId);
         const orderId = (conv && conv.order_id) || null;

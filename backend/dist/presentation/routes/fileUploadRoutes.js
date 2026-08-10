@@ -1066,6 +1066,40 @@ router.post('/customer/note', (0, express_async_handler_1.default)((req, res) =>
     (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: updated }).catch(console.error);
     res.json({ success: true, task: updated });
 })));
+// 🌐 Public: Add a note to a SPECIFIC uploaded file (used by the Telegram bot)
+router.post('/customer/file-note', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { orderId, username, fileUrl, note } = req.body;
+    const noteText = String(note || '').trim();
+    if (!orderId || !username || !fileUrl || !noteText) {
+        res.status(400).json({ success: false, message: 'orderId, username, fileUrl, and note required' });
+        return;
+    }
+    const artworkTask = yield Task_1.Task.findOne({
+        orderId: orderId,
+        title: { $regex: '^Artwork Upload: #' },
+        isDeleted: { $ne: true },
+        isDone: { $ne: true },
+    }).sort({ createdAt: -1 });
+    if (!artworkTask) {
+        res.status(404).json({ success: false, message: 'Artwork task not found for this order' });
+        return;
+    }
+    const taskId = artworkTask._id.toString();
+    let updated = yield TaskRepository_1.taskRepository.updateFileNotes(taskId, String(fileUrl), noteText);
+    if (!updated) {
+        // Fallback: match the file by its original name instead of the S3 URL.
+        const file = artworkTask.files.find((f) => f.name === String(fileUrl));
+        if (file)
+            updated = yield TaskRepository_1.taskRepository.updateFileNotes(taskId, file.url, noteText);
+    }
+    if (!updated) {
+        res.status(404).json({ success: false, message: 'File not found in the artwork task' });
+        return;
+    }
+    yield TaskRepository_1.taskRepository.addActivity(taskId, String(username), String(username), `added a note for file ${(artworkTask.files.find((f) => f.name === String(fileUrl)) || artworkTask.files[0] || {}).name || 'uploaded file'}`, noteText).catch(() => { });
+    (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: updated }).catch(console.error);
+    res.json({ success: true, task: updated });
+})));
 // 🌐 Public: Get presigned URL for direct S3 upload via shared link
 router.post('/s/:slug/upload-url', (0, express_async_handler_1.default)(decodeSharedSlug), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { filename, contentType } = req.body;
