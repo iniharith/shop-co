@@ -7,6 +7,7 @@ import axios from 'axios';
 const META_API_URL = process.env.META_WHATSAPP_API_URL || 'https://graph.facebook.com/v19.0';
 const PHONE_NUMBER_ID = process.env.META_WHATSAPP_PHONE_NUMBER_ID || '';
 const ACCESS_TOKEN = process.env.META_WHATSAPP_ACCESS_TOKEN || '';
+const WHATSAPP_DISABLED = process.env.WHATSAPP_DISABLED === 'true';
 
 type ParcelStatus =
   | 'pending'
@@ -57,6 +58,11 @@ class WhatsAppService {
     courier: string;
   }): Promise<boolean> {
     const { phone, customerName, trackingNumber, status, courier } = params;
+
+    if (WHATSAPP_DISABLED) {
+      console.log('[WhatsApp] Disabled via WHATSAPP_DISABLED — status update not sent');
+      return false;
+    }
 
     if (!PHONE_NUMBER_ID || !ACCESS_TOKEN) {
       console.warn('[WhatsApp] META_WHATSAPP_PHONE_NUMBER_ID or META_WHATSAPP_ACCESS_TOKEN not set');
@@ -130,6 +136,11 @@ class WhatsAppService {
   }): Promise<boolean> {
     const { phone, customerName, orderId, fileCount } = params;
 
+    if (WHATSAPP_DISABLED) {
+      console.log('[WhatsApp] Disabled via WHATSAPP_DISABLED — upload confirmation not sent');
+      return false;
+    }
+
     if (!PHONE_NUMBER_ID || !ACCESS_TOKEN) return false;
 
     try {
@@ -180,6 +191,11 @@ class WhatsAppService {
    * Send a free-form custom message to any phone number
    */
   async sendCustomMessage(phone: string, message: string): Promise<boolean> {
+    if (WHATSAPP_DISABLED) {
+      console.log('[WhatsApp] Disabled via WHATSAPP_DISABLED — custom message not sent');
+      return false;
+    }
+
     if (!PHONE_NUMBER_ID || !ACCESS_TOKEN) return false;
 
     try {

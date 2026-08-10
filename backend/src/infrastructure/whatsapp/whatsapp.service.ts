@@ -20,6 +20,11 @@ export class WhatsAppService {
      */
     async sendMessage(phone: string, message: string): Promise<boolean> {
         try {
+            if (process.env.WHATSAPP_DISABLED === 'true') {
+                console.log("[WHATSAPP] Disabled via WHATSAPP_DISABLED — message not sent.");
+                return true;
+            }
+
             // Format phone number to international format (e.g., remove leading 0 and add country code if needed)
             let formattedPhone = phone.replace(/[^0-9]/g, "");
             if (formattedPhone.startsWith("0")) {
