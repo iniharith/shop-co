@@ -160,71 +160,16 @@ function extFromMime(mimeType) {
   return map[mimeType] || 'bin';
 }
 
-async function uploadFilesToBackend(chatId, files, orderId, username) {
-  const progressMsg = await bot.sendMessage(chatId, `⏳ Sedang memuat naik ${files.length} fail untuk pesanan *${orderId}*...`);
-
-  const uploaded = [];
-  const failed = [];
-
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    try {
-      const safeExt = extFromMime(file.mimeType);
-      const filename = `telegram_upload_${Date.now()}-${Math.round(Math.random() * 1e9)}.${safeExt}`;
-
-      const urlRes = await axios.post(`${BACKEND_URL}/api/files/customer/upload-url`, {
-        filename,
-        contentType: file.mimeType,
-        orderId,
-        username,
-      });
-      const { url, key, publicUrl } = urlRes.data;
-
-      await axios.put(url, file.buffer, {
-        headers: { 'Content-Type': file.mimeType },
-      });
-
-      uploaded.push({
-        key,
-        originalName: file.fileName,
-        mimetype: file.mimeType,
-        size: file.buffer.length,
-        path: publicUrl,
-      });
-
-      await bot
-        .editMessageText(`⏳ Memuat naik ${i + 1}/${files.length}...`, {
-          chat_id: chatId,
-          message_id: progressMsg.message_id,
-        })
-        .catch(() => {});
-    } catch (e) {
-      console.error('[TELEGRAM] File upload failed:', e.message);
-      failed.push(file.fileName);
-    }
-  }
-
-  if (uploaded.length === 0) {
-    const detail = (failed[0] && ` (${failed[0]})`) || '';
-    throw new Error(`Semua fail gagal dimuat naik${detail}`);
-  }
-
-  const saveRes = await axios.post(`${BACKEND_URL}/api/files/customer/save-metadata`, {
-    files: uploaded,
-    orderId,
-    username,
-    phoneNumber: `telegram-${chatId}`,
-    item: 'Artwork via Telegram',
-  });
-
-  return { saveResult: saveRes.data, failed, progressMessageId: progressMsg.message_id };
-}
-
 async function handleText(msg) {
   const chatId = msg.chat.id;
   const text = (msg.text || '').trim();
 
   if (text === '/start' || text === '/new' || text === '/mulakan') {
+    const stale = batches.get(chatId);
+    if (stale) {
+      clearTimeout(stale.timer);
+      batches.delete(chatId);
+    }
     await saveConversation(chatId, { state: 'awaiting_order' });
     await bot.sendMessage(chatId, WELCOME_MSG);
     return;
@@ -269,12 +214,35 @@ async function handleText(msg) {
     return;
   }
 
+  if (state === 'awaiting_note') {
+    const orderId = (conv && conv.order_id) || null;
+    const username = (conv && conv.username) || null;
+    if (!orderId || !username) {
+      await saveConversation(chatId, { state: 'awaiting_order' });
+      await bot.sendMessage(chatId, 'Tiada pesanan aktif. Hantar /start untuk bermula.');
+      return;
+    }
+    try {
+      await axios.post(`${BACKEND_URL}/api/files/customer/note`, { orderId, username, note: text });
+      await saveConversation(chatId, { orderId, username, state: 'ready' });
+      await bot.sendMessage(
+        chatId,
+        `✅ Nota anda telah dihantar kepada kami!\n\n📝 *"${text}"*\n\nPilih pilihan di bawah jika anda perlu menambah nota atau fail lagi.`,
+        { reply_markup: AFTER_UPLOAD_KEYBOARD }
+      );
+    } catch (e) {
+      console.error('[TELEGRAM] Note save failed:', e.message);
+      await bot.sendMessage(chatId, 'Maaf, nota anda tidak dapat dihantar. Sila cuba sekali lagi atau hantar /new.');
+    }
+    return;
+  }
+
   await bot.sendMessage(chatId, `Pesanan *${conv.order_id}* — *${conv.username}* sudah lengkap.\nSila hantar artwork anda, atau hantar /new untuk pesanan baharu.`);
 }
 
-const MEDIA_BUFFER_MS = 4000;
-const mediaBuffers = new Map();
+const BATCH_IDLE_MS = parseInt(process.env.TELEGRAM_BATCH_IDLE_MS || '20000', 10);
 const chatQueues = new Map();
+const batches = new Map();
 
 function enqueue(chatId, task) {
   const prev = chatQueues.get(chatId) || Promise.resolve();
@@ -283,37 +251,146 @@ function enqueue(chatId, task) {
   return next;
 }
 
-function flushMediaBuffer(chatId) {
-  const buf = mediaBuffers.get(chatId);
-  if (!buf) return;
-  clearTimeout(buf.timer);
-  mediaBuffers.delete(chatId);
-  enqueue(chatId, () => processUpload(chatId, buf.files, buf.orderId, buf.username));
+const DONE_KEYBOARD = {
+  inline_keyboard: [[{ text: '✅ Selesai & Muat Naik', callback_data: 'batch_done' }]],
+};
+
+const AFTER_UPLOAD_KEYBOARD = {
+  inline_keyboard: [
+    [{ text: '📝 Tambah Nota', callback_data: 'add_note' }],
+    [{ text: '➕ Tambah Lagi Fail', callback_data: 'add_more' }],
+  ],
+};
+
+function batchStatusText(b, orderId) {
+  const received = b.files.length + b.failed.length;
+  let text = `📥 *Sedang menerima fail...* (${received} diterima)`;
+  if (orderId) text += `\n\nPesanan: *${orderId}*`;
+  if (b.failed.length > 0) text += `\n\n⚠️ ${b.failed.length} fail gagal dimuat naik.`;
+  text += `\n\nHantar semua fail anda, kemudian tekan butang *Selesai* di bawah.`;
+  return text;
 }
 
-async function processUpload(chatId, files, orderId, username) {
-  try {
-    const { saveResult, failed, progressMessageId } = await uploadFilesToBackend(chatId, files, orderId, username);
-    const slug = saveResult.shareLinkSlug;
-    const shareUrl = `${SHARE_BASE_URL}/${slug}`;
-    await saveConversation(chatId, { orderId, username, state: 'ready' });
+async function uploadSingleFileToS3(file, orderId, username) {
+  const safeExt = extFromMime(file.mimeType);
+  const filename = `telegram_upload_${Date.now()}-${Math.round(Math.random() * 1e9)}.${safeExt}`;
 
-    const uploadedCount = files.length - failed.length;
-    const failNote = failed.length > 0
-      ? `\n\n⚠️ ${failed.length} fail gagal dimuat naik: ${failed.join(', ')}`
-      : '';
-    const text = `✅ ${uploadedCount} fail berjaya dimuat naik! Terima kasih kerana memilih KAMPUNG CETAK.\n\nPesanan: *${orderId}*\nNama: *${username}*\n\nAnda boleh menyemak fail anda di sini:\n${shareUrl}${failNote}`;
+  const urlRes = await axios.post(`${BACKEND_URL}/api/files/customer/upload-url`, {
+    filename,
+    contentType: file.mimeType,
+    orderId,
+    username,
+  });
+  const { url, key, publicUrl } = urlRes.data;
+
+  await axios.put(url, file.buffer, {
+    headers: { 'Content-Type': file.mimeType },
+  });
+
+  return {
+    key,
+    originalName: file.fileName,
+    mimetype: file.mimeType,
+    size: file.buffer.length,
+    path: publicUrl,
+  };
+}
+
+async function queueFileUpload(chatId, file, orderId, username) {
+  let b = batches.get(chatId);
+
+  if (!b || b.finalizing || b.statusMessageId == null || b.orderId !== orderId || b.username !== username) {
+    if (b) clearTimeout(b.timer);
+    b = { orderId, username, files: [], failed: [], statusMessageId: null, timer: null, finalizing: false };
+    batches.set(chatId, b);
+    const msg = await bot.sendMessage(chatId, batchStatusText(b, orderId), { reply_markup: DONE_KEYBOARD });
+    b.statusMessageId = msg.message_id;
+  }
+
+  try {
+    const meta = await uploadSingleFileToS3(file, orderId, username);
+    b.files.push(meta);
+  } catch (e) {
+    console.error('[TELEGRAM] File upload failed:', e.message);
+    b.failed.push(file.fileName);
+  }
+
+  await bot
+    .editMessageText(batchStatusText(b, orderId), {
+      chat_id: chatId,
+      message_id: b.statusMessageId,
+      reply_markup: DONE_KEYBOARD,
+    })
+    .catch(() => {});
+
+  clearTimeout(b.timer);
+  b.timer = setTimeout(() => finalizeBatch(chatId), BATCH_IDLE_MS);
+}
+
+async function finalizeBatch(chatId) {
+  const b = batches.get(chatId);
+  if (!b || b.finalizing) return;
+  b.finalizing = true;
+  clearTimeout(b.timer);
+
+  try {
+    if (b.files.length === 0) {
+      const failNote = b.failed.length > 0
+        ? `\n\n⚠️ Fail gagal dimuat naik: ${b.failed.join(', ')}`
+        : '';
+      await bot
+        .editMessageText(`Tiada fail berjaya dimuat naik.${failNote}`, {
+          chat_id: chatId,
+          message_id: b.statusMessageId,
+        })
+        .catch(() => {});
+      return;
+    }
 
     await bot
-      .editMessageText(text, { chat_id: chatId, message_id: progressMessageId })
-      .catch(() => bot.sendMessage(chatId, text));
+      .editMessageText(`⏳ Sedang memuat naik ${b.files.length} fail untuk pesanan *${b.orderId}*...`, {
+        chat_id: chatId,
+        message_id: b.statusMessageId,
+      })
+      .catch(() => {});
 
-    const fileList = files.map((f) => f.fileName).join(', ');
-    console.log(`[UPLOAD OK] ${username} (${chatId}) order ${orderId}: ${uploadedCount} file(s) [${fileList}]${failed.length ? `, failed: ${failed.join(', ')}` : ''}`);
+    const saveRes = await axios.post(`${BACKEND_URL}/api/files/customer/save-metadata`, {
+      files: b.files,
+      orderId: b.orderId,
+      username: b.username,
+      phoneNumber: `telegram-${chatId}`,
+      item: 'Artwork via Telegram',
+    });
+
+    const slug = saveRes.data.shareLinkSlug;
+    const shareUrl = `${SHARE_BASE_URL}/${slug}`;
+    await saveConversation(chatId, { orderId: b.orderId, username: b.username, state: 'ready' });
+
+    const failNote = b.failed.length > 0
+      ? `\n\n⚠️ ${b.failed.length} fail gagal dimuat naik: ${b.failed.join(', ')}`
+      : '';
+    const text = `✅ ${b.files.length} fail berjaya dimuat naik! Terima kasih kerana memilih KAMPUNG CETAK.\n\nPesanan: *${b.orderId}*\nNama: *${b.username}*\n\nAnda boleh menyemak fail anda di sini:\n${shareUrl}${failNote}\n\nPilih pilihan di bawah jika anda perlu menambah nota atau fail lagi.`;
+
+    await bot
+      .editMessageText(text, {
+        chat_id: chatId,
+        message_id: b.statusMessageId,
+        reply_markup: AFTER_UPLOAD_KEYBOARD,
+      })
+      .catch(() => bot.sendMessage(chatId, text, { reply_markup: AFTER_UPLOAD_KEYBOARD }));
+
+    console.log(`[UPLOAD OK] ${b.username} (${chatId}) order ${b.orderId}: ${b.files.length} file(s) [${b.files.map((f) => f.originalName).join(', ')}]${b.failed.length ? `, failed: ${b.failed.join(', ')}` : ''}`);
   } catch (e) {
     console.error('[TELEGRAM] Upload failed:', e.message);
     const errDetail = (e.response && e.response.data && e.response.data.message) || e.message;
-    await bot.sendMessage(chatId, `Maaf, terdapat ralat semasa memuat naik fail anda.\n${errDetail}`);
+    await bot
+      .editMessageText(`Maaf, terdapat ralat semasa memuat naik fail anda.\n${errDetail}`, {
+        chat_id: chatId,
+        message_id: b.statusMessageId,
+      })
+      .catch(() => bot.sendMessage(chatId, `Maaf, terdapat ralat semasa memuat naik fail anda.\n${errDetail}`));
+  } finally {
+    batches.delete(chatId);
   }
 }
 
@@ -379,23 +456,52 @@ async function handleMedia(msg) {
     return;
   }
 
-  const file = { buffer, mimeType, fileName };
-
-  if (msg.media_group_id) {
-    let buf = mediaBuffers.get(chatId);
-    if (!buf || buf.orderId !== orderId || buf.username !== username) {
-      buf = { orderId, username, files: [], timer: null };
-      mediaBuffers.set(chatId, buf);
-    }
-    clearTimeout(buf.timer);
-    buf.files.push(file);
-    buf.timer = setTimeout(() => flushMediaBuffer(chatId), MEDIA_BUFFER_MS);
-    await bot.sendMessage(chatId, `📥 Fail diterima (${buf.files.length}). Hantar lagi atau tunggu beberapa saat untuk memuat naik automatik.`);
-    return;
-  }
-
-  await processUpload(chatId, [file], orderId, username);
+  await queueFileUpload(chatId, { buffer, mimeType, fileName }, orderId, username);
 }
+
+bot.on('callback_query', (query) => {
+  if (!query || !query.message || !query.message.chat) return;
+
+  const chatId = query.message.chat.id;
+  enqueue(chatId, async () => {
+    try {
+      await bot.answerCallbackQuery(query.id);
+      const data = query.data || '';
+
+      if (data === 'batch_done') {
+        await finalizeBatch(chatId);
+      } else if (data === 'add_note') {
+        const conv = await getConversation(chatId);
+        const orderId = (conv && conv.order_id) || null;
+        const username = (conv && conv.username) || null;
+        if (!orderId || !username) {
+          await bot.sendMessage(chatId, 'Tiada pesanan aktif. Hantar /start untuk bermula.');
+          return;
+        }
+        await saveConversation(chatId, { orderId, username, state: 'awaiting_note' });
+        await bot.sendMessage(
+          chatId,
+          '📝 Sila taip nota anda (contoh: arahan khas, warna, saiz, atau apa-apa maklumat tambahan).\n\nHantar /new untuk membatalkan.'
+        );
+      } else if (data === 'add_more') {
+        const conv = await getConversation(chatId);
+        const orderId = (conv && conv.order_id) || null;
+        const username = (conv && conv.username) || null;
+        if (!orderId || !username) {
+          await bot.sendMessage(chatId, 'Tiada pesanan aktif. Hantar /start untuk bermula.');
+          return;
+        }
+        await saveConversation(chatId, { orderId, username, state: 'ready' });
+        const b = { orderId, username, files: [], failed: [], statusMessageId: null, timer: null, finalizing: false };
+        batches.set(chatId, b);
+        const msg = await bot.sendMessage(chatId, batchStatusText(b, orderId), { reply_markup: DONE_KEYBOARD });
+        b.statusMessageId = msg.message_id;
+      }
+    } catch (e) {
+      console.error('[TELEGRAM] Callback handler error:', e.message);
+    }
+  });
+});
 
 bot.on('message', (msg) => {
   if (!msg || !msg.chat) return;

@@ -1044,6 +1044,28 @@ router.post('/customer/save-metadata', (0, express_async_handler_1.default)((req
     });
     res.json({ success: true, data: savedFiles, task: savedTask, shareLinkSlug: shareLink.slug });
 })));
+// 🌐 Public: Add a customer note/comment to the artwork task (used by the Telegram bot)
+router.post('/customer/note', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { orderId, username, note } = req.body;
+    const noteText = String(note || '').trim();
+    if (!orderId || !username || !noteText) {
+        res.status(400).json({ success: false, message: 'orderId, username, and note required' });
+        return;
+    }
+    const artworkTask = yield Task_1.Task.findOne({
+        orderId: orderId,
+        title: { $regex: '^Artwork Upload: #' },
+        isDeleted: { $ne: true },
+        isDone: { $ne: true },
+    }).sort({ createdAt: -1 });
+    if (!artworkTask) {
+        res.status(404).json({ success: false, message: 'Artwork task not found for this order' });
+        return;
+    }
+    const updated = yield TaskRepository_1.taskRepository.addComment(artworkTask._id.toString(), String(username), String(username), `📝 Nota pelanggan: ${noteText}`, 'customer');
+    (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: updated }).catch(console.error);
+    res.json({ success: true, task: updated });
+})));
 // 🌐 Public: Get presigned URL for direct S3 upload via shared link
 router.post('/s/:slug/upload-url', (0, express_async_handler_1.default)(decodeSharedSlug), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { filename, contentType } = req.body;

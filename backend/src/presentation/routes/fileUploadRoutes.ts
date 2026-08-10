@@ -1211,6 +1211,42 @@ router.post(
   })
 );
 
+// 🌐 Public: Add a customer note/comment to the artwork task (used by the Telegram bot)
+router.post(
+  '/customer/note',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { orderId, username, note } = req.body;
+    const noteText = String(note || '').trim();
+    if (!orderId || !username || !noteText) {
+      res.status(400).json({ success: false, message: 'orderId, username, and note required' });
+      return;
+    }
+
+    const artworkTask: any = await Task.findOne({
+      orderId: orderId,
+      title: { $regex: '^Artwork Upload: #' },
+      isDeleted: { $ne: true },
+      isDone: { $ne: true },
+    }).sort({ createdAt: -1 });
+
+    if (!artworkTask) {
+      res.status(404).json({ success: false, message: 'Artwork task not found for this order' });
+      return;
+    }
+
+    const updated = await taskRepository.addComment(
+      artworkTask._id.toString(),
+      String(username),
+      String(username),
+      `📝 Nota pelanggan: ${noteText}`,
+      'customer'
+    );
+
+    emitTaskUpdated('task_updated', { task: updated }).catch(console.error);
+    res.json({ success: true, task: updated });
+  })
+);
+
 // 🌐 Public: Get presigned URL for direct S3 upload via shared link
 router.post(
   '/s/:slug/upload-url',
