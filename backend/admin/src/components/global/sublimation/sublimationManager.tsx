@@ -820,16 +820,6 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                                 View Order
                               </a>
                             )}
-                            {!isReadOnly && activeGroup.taskId && (
-                              <a href={`/admin/tasks?task=${activeGroup.taskId}`} target="_blank" className="flex-1 text-center bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-1.5 px-2 rounded-md transition-colors">
-                                View Task
-                              </a>
-                            )}
-                            {!isReadOnly && (activeGroup.orderId || activeGroup.folderName) && (
-                              <a href={`/admin/artworks?folder=${encodeURIComponent(activeGroup.folderName)}`} target="_blank" className="flex-1 text-center bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-1.5 px-2 rounded-md transition-colors">
-                                Artworks
-                              </a>
-                            )}
                           </div>
                         </div>
                       </div>
