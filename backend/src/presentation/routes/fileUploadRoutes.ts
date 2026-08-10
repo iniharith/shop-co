@@ -1796,6 +1796,43 @@ router.put(
   })
 );
 
+// 🟥 PUT /api/files/:id/tag
+// Admin changes a file's tag (attachment / draft / for_print / awb)
+router.put(
+  '/:id/tag',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { tag } = req.body;
+    const validTags = ['attachment', 'draft', 'for_print', 'awb'];
+    if (!tag || !validTags.includes(tag)) {
+      res.status(400).json({ success: false, message: 'Tag tidak sah' });
+      return;
+    }
+
+    const updatedFile = await FileUpload.findByIdAndUpdate(
+      req.params.id,
+      { tag },
+      { new: true }
+    );
+
+    if (!updatedFile) {
+      res.status(404).json({ success: false, message: 'File not found' });
+      return;
+    }
+
+    // Sync with task if this file is attached to a task
+    if (updatedFile.taskId) {
+      try {
+        await taskRepository.updateFileTag(updatedFile.taskId, updatedFile.path, tag);
+      } catch (syncErr) {
+        console.error("Failed to sync file tag to task:", syncErr);
+      }
+    }
+
+    res.json({ success: true, data: updatedFile, message: 'File tag updated successfully' });
+  })
+);
+
 
 // ─── AI AGENT ENDPOINTS ──────────────────────────────────────────────────
 router.get('/drafts/pending', async (req: Request, res: Response) => {

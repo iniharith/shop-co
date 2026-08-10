@@ -303,6 +303,11 @@ class TaskRepository {
             return Task_1.Task.findOneAndUpdate({ _id: taskId, 'files.url': fileUrl }, { $set: { 'files.$.notes': notes } }, { new: true });
         });
     }
+    updateFileTag(taskId, fileUrl, tag) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return Task_1.Task.findOneAndUpdate({ _id: taskId, 'files.url': fileUrl }, { $set: { 'files.$.tag': tag } }, { new: true });
+        });
+    }
 }
 exports.TaskRepository = TaskRepository;
 // Hard ceiling — no caller, present or future, can ever pull more than

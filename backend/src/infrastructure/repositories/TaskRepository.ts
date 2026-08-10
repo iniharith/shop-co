@@ -350,6 +350,14 @@ export class TaskRepository {
       { new: true }
     );
   }
+
+  async updateFileTag(taskId: string, fileUrl: string, tag: string): Promise<ITask | null> {
+    return Task.findOneAndUpdate(
+      { _id: taskId, 'files.url': fileUrl },
+      { $set: { 'files.$.tag': tag } },
+      { new: true }
+    );
+  }
 }
 
 export const taskRepository = new TaskRepository();

@@ -394,6 +394,17 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     return { map, ungrouped };
   }, [combinedFiles, taskFolders]);
 
+  // Auto-detect the AWB file uploaded to this task so the Quick Links panel
+  // can show a live preview of it above the Done button.
+  const awbFile = React.useMemo(() => combinedFiles.find((f: any) => f.tag === 'awb'), [combinedFiles]);
+  const awbPreviewUrl = React.useMemo(() => {
+    if (!awbFile) return "";
+    const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+    const raw = awbFile.url.startsWith('http') ? awbFile.url : `${backendBase}/${String(awbFile.url).replace(/^\/+/, '')}`;
+    return raw.replace(/\\/g, '/');
+  }, [awbFile]);
+  const awbIsImage = !!awbFile && (awbFile.mimetype?.includes("image") || (awbFile.name || awbFile.url || "").match(/\.(jpeg|jpg|gif|png|webp|heic)$/i));
+
   const handleDownloadAllAttachments = () => {
     if (!combinedFiles || combinedFiles.length === 0) return;
     toast.success(`Downloading ${combinedFiles.length} file(s)...`);
@@ -1659,53 +1670,77 @@ return (
             {(orderId || customerUsername) && (
               <div className="pt-4 space-y-2 border-t border-border/50">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Quick Links</h3>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {orderId && (
-                    <div className="flex flex-col gap-2">
-                      <a href={`/admin/orders?search=${orderId}`} target="_blank" className="text-xs text-primary hover:underline flex items-center gap-1 bg-primary/10 px-2 py-1.5 rounded-md w-fit font-medium">
-                        View Order
-                      </a>
-                      
-                      {(orders.find((o: any) => o._id === orderId) as any)?.awbUrl ? (
-                        <div className="flex gap-2 mt-2">
-                          <Button 
-                            variant="default" 
-                            size="sm" 
-                            className="text-xs h-8"
-                            onClick={() => window.open((orders.find((o: any) => o._id === orderId) as any)?.awbUrl, "_blank")}
-                          >
-                            View AWB
-                          </Button>
-                          <Button 
-                            variant="secondary" 
-                            size="sm" 
-                            className="text-xs h-8"
-                            onClick={() => {
-                                const win = window.open((orders.find((o: any) => o._id === orderId) as any)?.awbUrl, "_blank");
-                                win?.print();
-                            }}
-                          >
-                            Print AWB
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-xs h-8 w-fit mt-2 border-primary/50 text-primary hover:bg-primary/10"
-                          onClick={() => alert("EasyParcel integration: AWB will be automatically assigned here.")}
-                        >
-                          Assign AWB
-                        </Button>
-                      )}
-                    </div>
+                    <a href={`/admin/orders?search=${orderId}`} target="_blank" className="text-xs text-primary hover:underline flex items-center gap-1 bg-primary/10 px-2 py-1.5 rounded-md font-medium">
+                      View Order
+                    </a>
                   )}
+                  {orderId && ((orders.find((o: any) => o._id === orderId) as any)?.awbUrl ? (
+                    <>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="text-xs h-8"
+                        onClick={() => window.open((orders.find((o: any) => o._id === orderId) as any)?.awbUrl, "_blank")}
+                      >
+                        View AWB
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="text-xs h-8"
+                        onClick={() => {
+                            const win = window.open((orders.find((o: any) => o._id === orderId) as any)?.awbUrl, "_blank");
+                            win?.print();
+                        }}
+                      >
+                        Print AWB
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-8 border-primary/50 text-primary hover:bg-primary/10"
+                      onClick={() => alert("EasyParcel integration: AWB will be automatically assigned here.")}
+                    >
+                      Assign AWB
+                    </Button>
+                  ))}
                   {customerUsername && (
-                    <a href={`/admin/artworks?search=${customerUsername}`} target="_blank" className="text-xs text-primary hover:underline flex items-center gap-1 bg-primary/10 px-2 py-1.5 rounded-md w-fit font-medium">
+                    <a href={`/admin/artworks?search=${customerUsername}`} target="_blank" className="text-xs text-primary hover:underline flex items-center gap-1 bg-primary/10 px-2 py-1.5 rounded-md font-medium">
                       View Artworks
                     </a>
                   )}
                 </div>
+              </div>
+            )}
+            
+            {awbFile && (
+              <div className="pt-4 space-y-2 border-t border-border/50">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <Truck className="w-3.5 h-3.5 text-red-500" /> AWB Preview
+                </h3>
+                {awbIsImage ? (
+                  <a
+                    href={awbPreviewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block rounded-xl overflow-hidden border border-border bg-muted/30 hover:ring-2 hover:ring-red-400/50 transition-all"
+                  >
+                    <img src={awbPreviewUrl} alt={awbFile.name || 'AWB'} className="w-full h-auto max-h-48 object-contain bg-white" />
+                    <div className="bg-black/70 text-white text-[10px] px-2 py-1 truncate">{awbFile.name}</div>
+                  </a>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-red-300 bg-red-50/50 p-4 text-center">
+                    <File className="w-6 h-6 text-red-400 mx-auto mb-1" />
+                    <p className="text-xs text-muted-foreground">AWB file uploaded (cannot be previewed)</p>
+                    <Button variant="outline" size="sm" className="text-xs h-8 mt-2 text-red-500 border-red-300 hover:bg-red-100" onClick={() => { setPreviewFile(awbFile); }}>
+                      View AWB File
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
             

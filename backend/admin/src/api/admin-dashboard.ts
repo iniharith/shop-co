@@ -100,6 +100,11 @@ export const reviewFile = async (token: string, id: string, reviewed: boolean, n
     return response.data;
 }
 
+export const updateFileTag = async (token: string, id: string, tag: string) => {
+    const response = await AxiosInstance(token).put(`${FILES_URL}/${id}/tag`, { tag });
+    return response.data;
+}
+
 export const deleteFile = async (token: string, id: string) => {
     const response = await AxiosInstance(token).delete(`${FILES_URL}/${id}`);
     return response.data;

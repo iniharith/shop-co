@@ -1509,6 +1509,31 @@ router.put('/:id/move', auth_middileware_1.default, (0, express_async_handler_1.
     }
     res.json({ success: true, data: updatedFile, message: 'File moved successfully' });
 })));
+// 🟥 PUT /api/files/:id/tag
+// Admin changes a file's tag (attachment / draft / for_print / awb)
+router.put('/:id/tag', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { tag } = req.body;
+    const validTags = ['attachment', 'draft', 'for_print', 'awb'];
+    if (!tag || !validTags.includes(tag)) {
+        res.status(400).json({ success: false, message: 'Tag tidak sah' });
+        return;
+    }
+    const updatedFile = yield FileUpload_1.FileUpload.findByIdAndUpdate(req.params.id, { tag }, { new: true });
+    if (!updatedFile) {
+        res.status(404).json({ success: false, message: 'File not found' });
+        return;
+    }
+    // Sync with task if this file is attached to a task
+    if (updatedFile.taskId) {
+        try {
+            yield TaskRepository_1.taskRepository.updateFileTag(updatedFile.taskId, updatedFile.path, tag);
+        }
+        catch (syncErr) {
+            console.error("Failed to sync file tag to task:", syncErr);
+        }
+    }
+    res.json({ success: true, data: updatedFile, message: 'File tag updated successfully' });
+})));
 // ─── AI AGENT ENDPOINTS ──────────────────────────────────────────────────
 router.get('/drafts/pending', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {

@@ -947,7 +947,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
             );
             const visibleFiles = activeFolderFiles.filter((f: any) => 
               activeSubFolderId ? f.folderId === activeSubFolderId : (!f.folderId || f.folderId === 'null')
-            );
+            ).sort((a: any, b: any) => (b.tag === 'awb' ? 1 : 0) - (a.tag === 'awb' ? 1 : 0));
             const currentFolder = activeSubFolderId ? groupFolders.find(f => f._id === activeSubFolderId) : null;
             const visibleFolders = activeSubFolderId ? [] : groupFolders;
 

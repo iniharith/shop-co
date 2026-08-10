@@ -1,7 +1,24 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
-import { X, ExternalLink, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ExternalLink, Download, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import { useUpdateFileTag } from "@/hooks/useAdminDashboard";
+import { toast } from "sonner";
+
+const FILE_TAGS = [
+  { value: 'attachment', label: 'Attachment', dot: 'bg-gray-500' },
+  { value: 'draft', label: 'Draft', dot: 'bg-orange-500' },
+  { value: 'for_print', label: 'For Print', dot: 'bg-green-500' },
+  { value: 'awb', label: 'AWB', dot: 'bg-red-500' },
+];
 
 export const FilePreviewModal = ({ 
   isOpen, 
@@ -16,6 +33,13 @@ export const FilePreviewModal = ({
   files?: any[];
   onNavigate?: (file: any) => void;
 }) => {
+  const { mutate: updateFileTagMutate, isPending: isUpdatingTag } = useUpdateFileTag();
+  const [currentTag, setCurrentTag] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCurrentTag(file?.tag || null);
+  }, [file]);
+
   const currentIndex = files.findIndex(f => f._id === file?._id);
   const hasNext = currentIndex >= 0 && currentIndex < files.length - 1;
   const hasPrev = currentIndex > 0;
@@ -59,6 +83,8 @@ export const FilePreviewModal = ({
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
   const proxyUrl = `${backendUrl}/api/files/proxy-download?url=${encodeURIComponent(fileUrl)}&name=${encodeURIComponent(fileName)}&inline=true#toolbar=0`;
 
+  const activeTag = FILE_TAGS.find(t => t.value === (currentTag || file?.tag)) || FILE_TAGS[0];
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-[95vw] w-full max-h-[95vh] h-full flex flex-col p-0 overflow-hidden bg-black/95 border-none shadow-2xl z-[100]">
@@ -81,6 +107,31 @@ export const FilePreviewModal = ({
             }} title="Download">
               <Download className="w-4 h-4" />
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 h-8 gap-1.5" disabled={isUpdatingTag} title="Change file tag">
+                  <span className={`w-2 h-2 rounded-full ${activeTag.dot}`} />
+                  <span className="text-xs">{activeTag.label}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-700 text-white min-w-40">
+                <DropdownMenuLabel className="text-zinc-400 text-xs">File Tag</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-zinc-700" />
+                {FILE_TAGS.map(t => (
+                  <DropdownMenuItem key={t.value} className="gap-2 cursor-pointer" onClick={() => {
+                    setCurrentTag(t.value);
+                    updateFileTagMutate({ id: file._id, tag: t.value }, {
+                      onSuccess: () => toast.success(`Tag changed to ${t.label}`),
+                      onError: () => { toast.error("Failed to update tag"); setCurrentTag(file?.tag || null); },
+                    });
+                  }}>
+                    <span className={`w-2 h-2 rounded-full ${t.dot}`} />
+                    <span className="flex-1">{t.label}</span>
+                    {(currentTag || file?.tag) === t.value && <Check className="w-3.5 h-3.5" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <DialogClose asChild>
               <Button variant="ghost" size="icon" className="text-white hover:bg-red-500/80 h-8 w-8">
                 <X className="w-4 h-4" />

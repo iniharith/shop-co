@@ -690,7 +690,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
               const allGroupFiles = activeFolderFiles;
               const visibleFiles = allGroupFiles.filter((f: any) => 
                 activeSubFolderId ? f.folderId === activeSubFolderId : (!f.folderId || f.folderId === 'null')
-              );
+              ).sort((a: any, b: any) => (b.tag === 'awb' ? 1 : 0) - (a.tag === 'awb' ? 1 : 0));
 
               if (isFolderFilesPending && allGroupFiles.length === 0) {
                 return (
