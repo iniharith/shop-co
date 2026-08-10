@@ -93,7 +93,7 @@ const TaskSchema = new Schema<ITask>(
       url: { type: String, required: true },
       name: { type: String, required: true },
       notes: { type: String, default: '' },
-      tag: { type: String, enum: ['attachment', 'draft', 'for_print'], default: 'attachment' }
+      tag: { type: String, enum: ['attachment', 'draft', 'for_print', 'awb'], default: 'attachment' }
     }],
     comments: [TaskCommentSchema],
     activities: [TaskActivitySchema],

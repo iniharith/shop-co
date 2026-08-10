@@ -22,8 +22,8 @@ import { clearFolderGroupCache } from './fileUploadRoutes';
 import { decodeCursor } from '../../shared/utils/cursorPagination';
 
 const redisService = new RedisService();
-type TaskFileTag = 'attachment' | 'draft' | 'for_print';
-const TASK_FILE_TAGS = new Set<TaskFileTag>(['attachment', 'draft', 'for_print']);
+type TaskFileTag = 'attachment' | 'draft' | 'for_print' | 'awb';
+const TASK_FILE_TAGS = new Set<TaskFileTag>(['attachment', 'draft', 'for_print', 'awb']);
 const normalizeTaskFileTag = (tag: unknown): TaskFileTag => {
   const value = String(tag) as TaskFileTag;
   return TASK_FILE_TAGS.has(value) ? value : 'attachment';

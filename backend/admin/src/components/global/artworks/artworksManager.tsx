@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Folder, File, FileText, Paperclip, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2, Upload, Pencil, User, Tag, Calendar, CheckSquare } from "lucide-react";
+import { Folder, File, FileText, Paperclip, Image as ImageIcon, Download, Eye, CircleCheck, Trash2, Search, X, MessageSquare, Plus, LayoutGrid, List, ChevronLeft, ChevronRight, RefreshCw, Printer, Share2, Upload, Pencil, User, Tag, Calendar, CheckSquare, Truck } from "lucide-react";
 import { forceDownload } from "@/lib/utils";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
 import { toast } from "sonner";
@@ -1233,6 +1233,8 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                           <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Draft</div>
                         ) : file.tag === 'for_print' ? (
                           <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">For Print</div>
+                        ) : file.tag === 'awb' ? (
+                          <div className="absolute top-0 right-0 bg-red-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">AWB</div>
                         ) : file.tag === 'attachment' ? (
                           <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[11px] px-2 py-0.5 rounded-bl-xl shadow-sm tracking-wide z-10 uppercase">Attachment</div>
                         ) : null}
@@ -1603,7 +1605,7 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
           <div className="bg-background border border-border rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-bold text-lg mb-1">Upload {pendingArtworkDrop.length} file{pendingArtworkDrop.length > 1 ? 's' : ''}</h3>
             <p className="text-sm text-muted-foreground mb-5">What type of file is this?</p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <button
                 type="button"
                 className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-slate-500/25 bg-slate-500/5 p-3 text-center transition hover:border-slate-500/60 hover:bg-slate-500/10"
@@ -1633,6 +1635,16 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
                   <Printer className="h-5 w-5" />
                 </div>
                 <span className="text-sm font-semibold text-foreground">For Print</span>
+              </button>
+              <button
+                type="button"
+                className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-red-500/25 bg-red-500/5 p-3 text-center transition hover:border-red-500/60 hover:bg-red-500/10"
+                onClick={() => { uploadArtworkDroppedFiles(pendingArtworkDrop, 'awb'); setPendingArtworkDrop(null); }}
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500 text-white">
+                  <Truck className="h-5 w-5" />
+                </div>
+                <span className="text-sm font-semibold text-foreground">AWB</span>
               </button>
             </div>
             <button

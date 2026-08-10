@@ -67,7 +67,7 @@ const FileUploadRepository_1 = require("../../infrastructure/repositories/FileUp
 const fileUploadRoutes_1 = require("./fileUploadRoutes");
 const cursorPagination_1 = require("../../shared/utils/cursorPagination");
 const redisService = new redis_1.RedisService();
-const TASK_FILE_TAGS = new Set(['attachment', 'draft', 'for_print']);
+const TASK_FILE_TAGS = new Set(['attachment', 'draft', 'for_print', 'awb']);
 const normalizeTaskFileTag = (tag) => {
     const value = String(tag);
     return TASK_FILE_TAGS.has(value) ? value : 'attachment';

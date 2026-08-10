@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { useTask, useUpdateTask, useAddTaskComment, useUploadTaskFile, useDeleteTaskFile, useUpdateTaskFileNotes, useDeleteTaskComment, usePinTaskComment } from "@/hooks/useTasks";
 import { useUploadStore } from '@/store/uploadStore';
 import { useUsers } from "@/hooks/useUsers";
-import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw, CheckCircle, Folder, Printer, GripVertical, MoveDiagonal, RotateCcw, Bold, Underline as UnderlineIcon, Strikethrough, FolderInput, FolderOpen, ChevronDown, Files } from "lucide-react";
+import { Calendar, User, Link, Send, MessageSquare, Paperclip, File, LoaderCircle, Trash2, Tag, Share2, Pin, X, AlertCircle, RefreshCw, CheckCircle, Folder, Printer, GripVertical, MoveDiagonal, RotateCcw, Bold, Underline as UnderlineIcon, Strikethrough, FolderInput, FolderOpen, ChevronDown, Files, Truck } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -161,6 +161,8 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
             <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Draft</div>
           ) : file.tag === 'for_print' ? (
             <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">For Print</div>
+          ) : file.tag === 'awb' ? (
+            <div className="absolute top-0 right-0 bg-red-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">AWB</div>
           ) : (
             <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Attachment</div>
           )}
@@ -1045,6 +1047,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                                     <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Draft</div>
                                   ) : f.tag === 'for_print' ? (
                                     <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">For Print</div>
+                                  ) : f.tag === 'awb' ? (
+                                    <div className="absolute top-0 right-0 bg-red-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">AWB</div>
                                   ) : (
                                     <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Attachment</div>
                                   )}
@@ -1369,6 +1373,12 @@ return (
                       setTimeout(() => document.getElementById('task-file-upload')?.click(), 50);
                     }}>
                       <Badge className="bg-green-500 mr-2 text-[10px]">For Print</Badge> Upload For Print
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      uploadTagRef.current = 'awb';
+                      setTimeout(() => document.getElementById('task-file-upload')?.click(), 50);
+                    }}>
+                      <Badge className="bg-red-500 mr-2 text-[10px]">AWB</Badge> Upload AWB
                     </DropdownMenuItem>
                     {taskFolders.length > 0 && (
                       <>
@@ -1734,7 +1744,7 @@ return (
                   </div>
                 </div>
               )}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <button
                   type="button"
                   className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-slate-500/25 bg-slate-500/5 p-3 text-center transition hover:border-slate-500/60 hover:bg-slate-500/10"
@@ -1764,6 +1774,16 @@ return (
                     <Printer className="h-5 w-5" />
                   </div>
                   <span className="text-sm font-semibold text-foreground">For Print</span>
+                </button>
+                <button
+                  type="button"
+                  className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-red-500/25 bg-red-500/5 p-3 text-center transition hover:border-red-500/60 hover:bg-red-500/10"
+                  onClick={() => { uploadDroppedFiles(pendingDropFiles, 'awb', pendingDropFolderId); setPendingDropFiles(null); setPendingDropFolderId(null); }}
+                >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500 text-white">
+                    <Truck className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">AWB</span>
                 </button>
               </div>
               <button

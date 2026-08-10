@@ -56,7 +56,7 @@ const FileUploadSchema = new mongoose_1.Schema({
     adminNotes: { type: String },
     botNotified: { type: Boolean, default: false },
     // Tag to classify files uploaded from task board
-    tag: { type: String, enum: ['attachment', 'draft', 'for_print'] },
+    tag: { type: String, enum: ['attachment', 'draft', 'for_print', 'awb'] },
     // The exact share-link slug this file was uploaded through, if any.
     // This is the single source of truth linking an upload back to its
     // folder — independent of userId/orderId/taskId matching.
