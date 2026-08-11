@@ -5,6 +5,7 @@ import { Upload, FileText, Check, Loader2, Image as ImageIcon, X, CloudUpload, P
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
@@ -13,12 +14,10 @@ const t = {
   en: {
     pageTitle: "Manual Upload",
     uploadComplete: "Upload Complete!",
-    thankYou: (name: string, id: string) => `Thank you, ${name}. The files for Order #${id} have been successfully submitted to our team.`,
+    thankYou: (name: string) => `Thank you, ${name}. Your manual order has been successfully submitted to our team.`,
     copyLink: "Copy Link and Give to Admin",
     uploadMore: "Upload More Files",
     fileUploadTitle: "File Upload",
-    orderIdLabel: "Order ID/Order Number",
-    orderIdPlaceholder: "e.g. #12345 or paste details here",
     nameLabel: "Username / Name",
     namePlaceholder: "Your name",
     phoneLabel: "Phone Number",
@@ -41,7 +40,6 @@ const t = {
     terms3: "Please refer to our Terms & Conditions for more details regarding our data policy.",
     uploadingFiles: "Uploading Files",
     fileOf: (curr: number, tot: number) => `File ${curr} of ${tot}`,
-    errOrderId: "Please enter your Order ID",
     errUsername: "Please enter your Username",
     errPhone: "Please enter your Phone Number",
     errItem: "Please enter the Item name",
@@ -55,12 +53,10 @@ const t = {
   ms: {
     pageTitle: "Muat Naik Manual",
     uploadComplete: "Muat Naik Selesai!",
-    thankYou: (name: string, id: string) => `Terima kasih, ${name}. Fail untuk Pesanan #${id} telah berjaya dihantar kepada pasukan kami.`,
+    thankYou: (name: string) => `Terima kasih, ${name}. Pesanan manual anda telah berjaya dihantar kepada pasukan kami.`,
     copyLink: "Salin Pautan dan Beri ke Admin",
     uploadMore: "Muat Naik Lebih Banyak Fail",
     fileUploadTitle: "Muat Naik Fail",
-    orderIdLabel: "ID Pesanan/Nombor Pesanan",
-    orderIdPlaceholder: "cth. #12345 atau tampal butiran di sini",
     nameLabel: "Nama Pengguna / Nama",
     namePlaceholder: "Nama anda",
     phoneLabel: "Nombor Telefon",
@@ -83,7 +79,6 @@ const t = {
     terms3: "Sila rujuk Terma & Syarat kami untuk butiran lanjut mengenai dasar data kami.",
     uploadingFiles: "Memuat Naik Fail",
     fileOf: (curr: number, tot: number) => `Fail ${curr} daripada ${tot}`,
-    errOrderId: "Sila masukkan ID Pesanan anda",
     errUsername: "Sila masukkan Nama Pengguna anda",
     errPhone: "Sila masukkan Nombor Telefon anda",
     errItem: "Sila masukkan nama Item",
@@ -171,7 +166,6 @@ export default function ManualUploadPortal() {
     return () => { body.style.overflow = prevOverflow; };
   }, []);
 
-  const [orderId, setOrderId] = useState("");
   const [username, setUsername] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
@@ -224,75 +218,6 @@ export default function ManualUploadPortal() {
     ));
   };
 
-  const parsePastedText = (text: string) => {
-    let newOrderId = orderId;
-    let newPhone = phoneNumber;
-    let newUsername = username;
-    const parsedItems: string[] = [];
-
-    // Example WhatsApp message format:
-    // ORDER 9 JULAI 2026
-    // Phone Number: 0194728328
-    // Item: FRAME GAMBAR CUSTOM
-    // USERNAME
-    // cheryllee8328
-
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-
-    // Check if it's a multi-line pasted message
-    if (lines.length >= 2) {
-      // 1. First line usually has "ORDER "
-      if (lines[0].toUpperCase().startsWith("ORDER ") || lines[0].toUpperCase().startsWith("ORDER ID:") || lines[0].toUpperCase().startsWith("ORDER NUMBER:")) {
-        newOrderId = lines[0].replace(/ORDER ID:/i, '').replace(/ORDER NUMBER:/i, '').replace(/ORDER/i, '').replace(/#/g, '').trim();
-      } else {
-        newOrderId = lines[0].replace(/#/g, '').trim();
-      }
-
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const lowerLine = line.toLowerCase();
-
-        if (lowerLine.startsWith("phone number:") || lowerLine.startsWith("no telefon:")) {
-          newPhone = line.split(':')[1].trim();
-        } else if (lowerLine.startsWith("item:") || lowerLine.startsWith("produk:")) {
-          parsedItems.push(line.split(':')[1].trim());
-        } else if (lowerLine === "username" || lowerLine === "nama pengguna") {
-          if (i + 1 < lines.length) {
-            newUsername = lines[i + 1].trim();
-          }
-        }
-      }
-
-      setOrderId(newOrderId);
-      setPhoneNumber(newPhone);
-      setUsername(newUsername);
-      if (parsedItems.length > 0) {
-        setItems(parsedItems.map(name => ({ id: genId(), name, files: [] })));
-      }
-      return true; // Successfully parsed
-    }
-    return false; // Not a multi-line message
-  };
-
-  const handleOrderIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setOrderId(val);
-  };
-
-  const handleOrderIdPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    const pasted = e.clipboardData.getData('text');
-    if (parsePastedText(pasted)) {
-      e.preventDefault();
-    } else {
-      // If not multi-line, maybe just strip 'ORDER' and '#' if they pasted just the order ID
-      const cleaned = pasted.replace(/ORDER ID:/i, '').replace(/ORDER NUMBER:/i, '').replace(/ORDER/i, '').replace(/#/g, '').trim();
-      if (cleaned !== pasted) {
-        e.preventDefault();
-        setOrderId(cleaned);
-      }
-    }
-  };
-
   const uploadOneFile = async (itemId: string, index: number): Promise<FileState["uploaded"] | null> => {
     const item = items.find(i => i.id === itemId);
     if (!item) return null;
@@ -307,7 +232,6 @@ export default function ManualUploadPortal() {
         body: JSON.stringify({
           filename: file.name,
           contentType: file.type,
-          orderId: orderId.trim(),
           username: username.trim(),
           phoneNumber: phoneNumber.trim(),
           item: item.name.trim()
@@ -341,7 +265,6 @@ export default function ManualUploadPortal() {
   };
 
   const handleUpload = async () => {
-    if (!orderId.trim()) return toast.error(langDict.errOrderId);
     if (!username.trim()) return toast.error(langDict.errUsername);
     if (!phoneNumber.trim()) return toast.error(langDict.errPhone);
     const itemsWithFiles = items.filter(i => i.files.length > 0);
@@ -390,7 +313,6 @@ export default function ManualUploadPortal() {
           items: items
             .map(item => ({ name: item.name.trim(), files: item.files.map(f => f.uploaded).filter(Boolean) }))
             .filter(p => p.files.length > 0),
-          orderId: orderId.trim(),
           username: username.trim(),
           phoneNumber: phoneNumber.trim(),
           address: address.trim()
@@ -446,7 +368,7 @@ export default function ManualUploadPortal() {
           </div>
           <h2 className="text-2xl font-semibold mb-2">{langDict.uploadComplete}</h2>
           <p className="text-white/60 mb-8">
-            {langDict.thankYou(username, orderId)}
+            {langDict.thankYou(username)}
           </p>
           <Button
             className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold h-12 text-lg mb-4"
@@ -462,7 +384,6 @@ export default function ManualUploadPortal() {
             className="w-full bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white"
             onClick={() => {
               setSuccess(false);
-              setOrderId("");
               setUsername("");
               setPhoneNumber("");
               setAddress("");
@@ -506,12 +427,11 @@ export default function ManualUploadPortal() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-white/80">{langDict.orderIdLabel} <span className="text-red-500">*</span></label>
+              <label className="text-sm font-medium text-white/80">{langDict.phoneLabel} <span className="text-red-500">*</span></label>
               <Input
-                placeholder={langDict.orderIdPlaceholder}
-                value={orderId}
-                onChange={handleOrderIdChange}
-                onPaste={handleOrderIdPaste}
+                placeholder={langDict.phonePlaceholder}
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
                 className="bg-black/50 border-white/10 focus-visible:ring-yellow-500"
                 disabled={uploading}
               />
@@ -527,22 +447,12 @@ export default function ManualUploadPortal() {
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-medium text-white/80">{langDict.phoneLabel} <span className="text-red-500">*</span></label>
-              <Input
-                placeholder={langDict.phonePlaceholder}
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className="bg-black/50 border-white/10 focus-visible:ring-yellow-500"
-                disabled={uploading}
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-medium text-white/80">{langDict.addressLabel}</label>
-              <Input
+              <Textarea
                 placeholder={langDict.addressPlaceholder}
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="bg-black/50 border-white/10 focus-visible:ring-yellow-500"
+                className="bg-black/50 border-white/10 focus-visible:ring-yellow-500 min-h-[120px] resize-y"
                 disabled={uploading}
               />
             </div>

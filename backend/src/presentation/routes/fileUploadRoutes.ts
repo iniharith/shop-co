@@ -1220,8 +1220,8 @@ router.post(
   '/manual/upload-url',
   asyncHandler(async (req: Request, res: Response) => {
     const { filename, contentType, orderId, username } = req.body;
-    if (!filename || !orderId || !username) {
-      res.status(400).json({ success: false, message: 'Filename, orderId, and username required' });
+    if (!filename || !username) {
+      res.status(400).json({ success: false, message: 'Filename and username required' });
       return;
     }
 
@@ -1259,6 +1259,12 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const { orderId, username, phoneNumber, address } = req.body;
 
+    // No order number for staff manual orders — fall back to "Manual Order"
+    // so the task and its share link show a readable order reference instead
+    // of an empty id.
+    const manualOrderId = String(orderId || '').trim() || 'Manual Order';
+    const hasRealOrderId = String(orderId || '').trim().length > 0;
+
     // New format: items = [{ name, files }] (one folder per item). Legacy
     // format (flat files + single item string) still works and behaves as a
     // single item.
@@ -1270,12 +1276,14 @@ router.post(
     }
 
     const allFiles = items.flatMap((it) => it.files || []);
-    if (allFiles.length === 0 || !orderId || !username) {
-      res.status(400).json({ success: false, message: 'Files, orderId, and username required' });
+    if (allFiles.length === 0 || !username) {
+      res.status(400).json({ success: false, message: 'Files and username required' });
       return;
     }
 
-    const uploadName = `Manual Upload: #${orderId} - ${username}`;
+    const uploadName = hasRealOrderId
+      ? `Manual Upload: #${manualOrderId} - ${username}`
+      : `Manual Upload: Manual Order - ${username}`;
     const itemNames = items.map((it, i) => `${i + 1}. ${(it.name || '').trim() || 'Item'}`).join('\n');
     const description = [
       `Phone Number: ${phoneNumber || 'N/A'}`,
@@ -1283,22 +1291,27 @@ router.post(
       items.length > 1 ? `Items:\n${itemNames}` : `Item: ${(items[0]?.name || '').trim() || 'N/A'}`,
     ].join('\n');
 
-    // 1. Reuse the existing manual-upload task for this order so that
-    // multiple file batches land in ONE task (mirrors the customer
-    // Artwork Upload task). Otherwise create the task.
-    let savedTask: any = await Task.findOne({
-      orderId: orderId,
-      title: { $regex: '^Manual Upload: #' },
-      isDeleted: { $ne: true },
-      isDone: { $ne: true },
-    }).sort({ createdAt: -1 });
+    // 1. Reuse the existing manual-upload task so multiple file batches land
+    // in ONE task — but only when a real order number was given. Manual
+    // orders without an order number always get a fresh task, otherwise
+    // every staff upload would merge into a single shared "Manual Order"
+    // task.
+    let savedTask: any = null;
+    if (hasRealOrderId) {
+      savedTask = await Task.findOne({
+        orderId: manualOrderId,
+        title: { $regex: '^Manual Upload: #' },
+        isDeleted: { $ne: true },
+        isDone: { $ne: true },
+      }).sort({ createdAt: -1 });
+    }
 
     const taskWasCreated = !savedTask;
     if (taskWasCreated) {
       savedTask = await taskRepository.create({
         title: uploadName,
         description,
-        orderId: orderId,
+        orderId: manualOrderId,
         customerUsername: username,
         status: 'PLACED',
         category: 'UNASSIGNED',
@@ -1343,7 +1356,7 @@ router.post(
       for (const f of items[i].files || []) {
         const saved = await fileUploadRepository.create({
           userId: username,
-          orderId: orderId,
+          orderId: manualOrderId,
           category: 'MANUAL_UPLOAD',
           filename: f.key,
           originalName: f.originalName,
@@ -1370,7 +1383,7 @@ router.post(
     const shareLink = await shareLinkRepository.findOrCreate({
       folderName: uploadName,
       taskId: taskId,
-      orderId: orderId,
+      orderId: manualOrderId,
       userId: username,
       audience: 'CUSTOMER',
     });
