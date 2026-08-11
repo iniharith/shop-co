@@ -122,6 +122,9 @@ export const useFileIndex = () => {
 
 // Server-side grouped folder data — replaces the expensive client-side join
 // between files, tasks, orders and users. Accepts optional task status filter.
+// staleTime is aligned with the backend's 120s folder-group cache so page
+// loads (and window-focus refetches) hit either the client cache or the
+// backend cache instead of re-running the heavy grouping pipeline.
 export const useFolderGroup = (taskStatuses?: string[]) => {
     const { data: session, status } = useSession();
     return useQueryData(
@@ -129,8 +132,8 @@ export const useFolderGroup = (taskStatuses?: string[]) => {
         () => getFolderGroup(session?.user?.token, taskStatuses),
         {
             enabled: status === "authenticated",
-            staleTime: 60_000,
-            refetchOnWindowFocus: true,
+            staleTime: 120_000,
+            refetchOnWindowFocus: false,
             refetchOnMount: true,
         }
     );

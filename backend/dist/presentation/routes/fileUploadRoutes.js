@@ -401,21 +401,26 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
             return f === s || fNormalized === sNormalized || s.includes(f) || f.includes(s);
         });
     };
-    // Try cache: Redis first, in-memory as fallback
+    // Try cache: Redis first — raced against a short timeout so a slow or
+    // unhealthy Redis (queued commands + retries) can never block the hot
+    // page-load path. In-memory Map as fallback.
     const cacheKey = `${ENRICHED_CACHE_KEY_PREFIX}${filterUpper.join(',')}`;
     let cachedData = null;
     try {
-        const raw = yield enrichedIndexCache.get(cacheKey);
+        const raw = yield Promise.race([
+            enrichedIndexCache.get(cacheKey),
+            new Promise((resolve) => setTimeout(() => resolve(null), 1000)),
+        ]);
         if (raw)
             cachedData = JSON.parse(raw);
     }
     catch ( /* Redis unavailable, try in-memory */_e) { /* Redis unavailable, try in-memory */ }
-    if (!cachedData) {
+    if (cachedData === null) {
         const mem = memCache.get(cacheKey);
         if (mem && mem.expiresAt > Date.now())
             cachedData = mem.data;
     }
-    if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+    if (Array.isArray(cachedData)) {
         res.json({ success: true, data: cachedData });
         return;
     }
@@ -536,10 +541,10 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
         return Object.assign(Object.assign({}, g), { orderStatus, orderAWB, fileCount: g.files.length });
     });
     res.json({ success: true, data: result });
-    if (result.length > 0) {
-        enrichedIndexCache.set(cacheKey, JSON.stringify(result), ENRICHED_CACHE_TTL).catch(() => { });
-        memCache.set(cacheKey, { data: result, expiresAt: Date.now() + ENRICHED_CACHE_TTL * 1000 });
-    }
+    // Cache even empty results (fire-and-forget) so an empty queue does not
+    // re-run the full grouping pipeline on every page load.
+    enrichedIndexCache.set(cacheKey, JSON.stringify(result), ENRICHED_CACHE_TTL).catch(() => { });
+    memCache.set(cacheKey, { data: result, expiresAt: Date.now() + ENRICHED_CACHE_TTL * 1000 });
 })));
 // ─── GET /api/files/by-folder ────────────────────────────────
 // Full file details (thumbnails, S3 URLs, etc.) for a single folder, fetched
@@ -1032,6 +1037,155 @@ router.post('/customer/save-metadata', (0, express_async_handler_1.default)((req
                 userId: username,
                 orderId: orderId,
                 category: 'CUSTOMER_UPLOAD',
+                filename: f.key,
+                originalName: f.originalName,
+                mimetype: f.mimetype || 'application/octet-stream',
+                size: f.size,
+                path: f.path,
+                taskId: taskId,
+                tag: 'attachment',
+                adminReviewed: false,
+                folderId,
+            });
+            savedFiles.push(saved);
+        }
+    }
+    // ── Real-time: broadcast the task + files to all admin tabs ────────
+    if (taskWasCreated) {
+        (0, taskBroadcast_1.emitTaskUpdated)('task_created', { task: savedTask }).catch(console.error);
+    }
+    else {
+        (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: savedTask }).catch(console.error);
+    }
+    // 4. Create a ShareLink for the customer to view their uploaded files
+    const shareLink = yield ShareLinkRepository_1.shareLinkRepository.findOrCreate({
+        folderName: uploadName,
+        taskId: taskId,
+        orderId: orderId,
+        userId: username,
+        audience: 'CUSTOMER',
+    });
+    res.json({ success: true, data: savedFiles, task: savedTask, shareLinkSlug: shareLink.slug });
+})));
+// ─── Staff manual ordering upload portal ────────────────────
+// Same direct-to-S3 flow as the customer upload portal
+// (/api/files/customer/*) but creates a distinct "Manual Upload: #..." task
+// so staff manual orders never collide with the customer's "Artwork Upload:
+// #..." task for the same order.
+router.post('/manual/upload-url', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { filename, contentType, orderId, username } = req.body;
+    if (!filename || !orderId || !username) {
+        res.status(400).json({ success: false, message: 'Filename, orderId, and username required' });
+        return;
+    }
+    const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+    const { PutObjectCommand } = require('@aws-sdk/client-s3');
+    const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const safeUsername = username.toString().replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 100) || 'staff';
+    const key = `kampungcetak/manual_uploads/${safeUsername}/${uniqueSuffix}-${safeFilename}`;
+    const command = new PutObjectCommand({
+        Bucket: S3_BUCKET_NAME,
+        Key: key,
+        ContentType: contentType || 'application/octet-stream'
+    });
+    const uploadUrl = yield getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    res.json({
+        success: true,
+        url: uploadUrl,
+        key,
+        publicUrl: `https://${S3_BUCKET_NAME}.s3.ap-southeast-5.amazonaws.com/${key}`,
+        userId: username,
+        orderId,
+        category: 'MANUAL_UPLOAD'
+    });
+})));
+router.post('/manual/save-metadata', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const { orderId, username, phoneNumber, address } = req.body;
+    // New format: items = [{ name, files }] (one folder per item). Legacy
+    // format (flat files + single item string) still works and behaves as a
+    // single item.
+    let items = [];
+    if (Array.isArray(req.body.items) && req.body.items.length > 0) {
+        items = req.body.items;
+    }
+    else {
+        items = [{ name: req.body.item, files: req.body.files }];
+    }
+    const allFiles = items.flatMap((it) => it.files || []);
+    if (allFiles.length === 0 || !orderId || !username) {
+        res.status(400).json({ success: false, message: 'Files, orderId, and username required' });
+        return;
+    }
+    const uploadName = `Manual Upload: #${orderId} - ${username}`;
+    const itemNames = items.map((it, i) => `${i + 1}. ${(it.name || '').trim() || 'Item'}`).join('\n');
+    const description = [
+        `Phone Number: ${phoneNumber || 'N/A'}`,
+        `Address: ${(address || '').trim() || 'N/A'}`,
+        items.length > 1 ? `Items:\n${itemNames}` : `Item: ${(((_a = items[0]) === null || _a === void 0 ? void 0 : _a.name) || '').trim() || 'N/A'}`,
+    ].join('\n');
+    // 1. Reuse the existing manual-upload task for this order so that
+    // multiple file batches land in ONE task (mirrors the customer
+    // Artwork Upload task). Otherwise create the task.
+    let savedTask = yield Task_1.Task.findOne({
+        orderId: orderId,
+        title: { $regex: '^Manual Upload: #' },
+        isDeleted: { $ne: true },
+        isDone: { $ne: true },
+    }).sort({ createdAt: -1 });
+    const taskWasCreated = !savedTask;
+    if (taskWasCreated) {
+        savedTask = yield TaskRepository_1.taskRepository.create({
+            title: uploadName,
+            description,
+            orderId: orderId,
+            customerUsername: username,
+            status: 'PLACED',
+            category: 'UNASSIGNED',
+            assignee: undefined,
+            files: allFiles.map((f) => ({
+                url: f.path,
+                name: f.originalName,
+                tag: 'attachment'
+            }))
+        });
+    }
+    else {
+        savedTask.files.push(...allFiles.map((f) => ({
+            url: f.path,
+            name: f.originalName,
+            tag: 'attachment'
+        })));
+        yield savedTask.save();
+    }
+    const taskId = savedTask._id.toString();
+    // 2. Create a folder per item so files land in their own subfolder.
+    // Only for a newly created task and when there is more than one item —
+    // a single item keeps the old flat (ungrouped) behaviour.
+    const folderByItemIndex = {};
+    if (taskWasCreated && items.length > 1) {
+        for (let i = 0; i < items.length; i++) {
+            const name = (items[i].name || '').trim();
+            if (!name)
+                continue;
+            const folder = yield VirtualFolderRepository_1.virtualFolderRepository.create({
+                name,
+                taskId: taskId,
+            });
+            folderByItemIndex[i] = folder._id.toString();
+        }
+    }
+    // 3. Save FileUpload entries (folderId only set when > 1 item)
+    const savedFiles = [];
+    for (let i = 0; i < items.length; i++) {
+        const folderId = folderByItemIndex[i];
+        for (const f of items[i].files || []) {
+            const saved = yield FileUploadRepository_1.fileUploadRepository.create({
+                userId: username,
+                orderId: orderId,
+                category: 'MANUAL_UPLOAD',
                 filename: f.key,
                 originalName: f.originalName,
                 mimetype: f.mimetype || 'application/octet-stream',

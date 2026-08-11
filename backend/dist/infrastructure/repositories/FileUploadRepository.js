@@ -22,12 +22,18 @@ const redisService = new redis_1.RedisService();
 const FILE_INDEX_CACHE_KEY = 'files:index:v1';
 const FILE_STATS_CACHE_KEY = 'files:stats:v1';
 const FILE_FOLDER_GROUP_CACHE_PREFIX = 'files:enrichedIndex:';
+// In-memory fallback for the slim file index — survives Redis outages and
+// avoids re-scanning the whole collection on every page load. Kept short
+// (and cleared alongside the Redis keys) so it never serves stale counts.
+const FILE_INDEX_MEM_TTL = 120000;
+const fileIndexMemCache = new Map();
 let fileNotificationTimer = null;
 const notifyFileClients = () => {
     if (fileNotificationTimer)
         clearTimeout(fileNotificationTimer);
     fileNotificationTimer = setTimeout(() => __awaiter(void 0, void 0, void 0, function* () {
         fileNotificationTimer = null;
+        fileIndexMemCache.clear();
         yield redisService.del(FILE_INDEX_CACHE_KEY);
         yield redisService.del(FILE_STATS_CACHE_KEY);
         // Folder-group responses are keyed by status filters. Clear every
@@ -139,6 +145,11 @@ class FileUploadRepository {
     // via findByFolderKey() below once a folder is opened.
     findIndex() {
         return __awaiter(this, void 0, void 0, function* () {
+            // In-memory fallback first — instant, and survives Redis outages.
+            const now = Date.now();
+            const memHit = fileIndexMemCache.get('index');
+            if (memHit && memHit.expiresAt > now)
+                return memHit.data;
             // Raced against a short timeout — a slow/unhealthy Redis should never
             // meaningfully delay this response, since it's on the hot path for
             // every Artworks/Production/Packaging page load.
@@ -148,7 +159,9 @@ class FileUploadRepository {
             ]);
             if (cached) {
                 try {
-                    return JSON.parse(cached);
+                    const data = JSON.parse(cached);
+                    fileIndexMemCache.set('index', { data, expiresAt: now + FILE_INDEX_MEM_TTL });
+                    return data;
                 }
                 catch ( /* rebuild malformed cache */_a) { /* rebuild malformed cache */ }
             }
@@ -157,6 +170,7 @@ class FileUploadRepository {
                 .maxTimeMS(10000)
                 .lean();
             // Fire-and-forget — don't make the caller wait on the cache write.
+            fileIndexMemCache.set('index', { data: files, expiresAt: now + FILE_INDEX_MEM_TTL });
             redisService.set(FILE_INDEX_CACHE_KEY, JSON.stringify(files), 300).catch(() => { });
             return files;
         });

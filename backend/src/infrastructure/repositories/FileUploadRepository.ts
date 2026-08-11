@@ -11,11 +11,17 @@ const redisService = new RedisService();
 const FILE_INDEX_CACHE_KEY = 'files:index:v1';
 const FILE_STATS_CACHE_KEY = 'files:stats:v1';
 const FILE_FOLDER_GROUP_CACHE_PREFIX = 'files:enrichedIndex:';
+// In-memory fallback for the slim file index — survives Redis outages and
+// avoids re-scanning the whole collection on every page load. Kept short
+// (and cleared alongside the Redis keys) so it never serves stale counts.
+const FILE_INDEX_MEM_TTL = 120_000;
+const fileIndexMemCache = new Map<string, { data: any[]; expiresAt: number }>();
 let fileNotificationTimer: ReturnType<typeof setTimeout> | null = null;
 export const notifyFileClients = () => {
   if (fileNotificationTimer) clearTimeout(fileNotificationTimer);
   fileNotificationTimer = setTimeout(async () => {
     fileNotificationTimer = null;
+    fileIndexMemCache.clear();
     await redisService.del(FILE_INDEX_CACHE_KEY);
     await redisService.del(FILE_STATS_CACHE_KEY);
     // Folder-group responses are keyed by status filters. Clear every
@@ -123,6 +129,10 @@ export class FileUploadRepository {
   // file records. Actual file details are fetched per-folder, on demand,
   // via findByFolderKey() below once a folder is opened.
   async findIndex(): Promise<Pick<IFileUpload, 'userId' | 'orderId' | 'taskId' | 'category' | 'tag' | 'shareSlug' | 'folderId' | 'uploadedAt' | 'originalName'>[]> {
+    // In-memory fallback first — instant, and survives Redis outages.
+    const now = Date.now();
+    const memHit = fileIndexMemCache.get('index');
+    if (memHit && memHit.expiresAt > now) return memHit.data;
     // Raced against a short timeout — a slow/unhealthy Redis should never
     // meaningfully delay this response, since it's on the hot path for
     // every Artworks/Production/Packaging page load.
@@ -131,13 +141,18 @@ export class FileUploadRepository {
       new Promise<null>((resolve) => setTimeout(() => resolve(null), 150)),
     ]);
     if (cached) {
-      try { return JSON.parse(cached); } catch { /* rebuild malformed cache */ }
+      try {
+        const data = JSON.parse(cached);
+        fileIndexMemCache.set('index', { data, expiresAt: now + FILE_INDEX_MEM_TTL });
+        return data;
+      } catch { /* rebuild malformed cache */ }
     }
     const files = await FileUpload.find({}, 'userId orderId taskId category tag shareSlug folderId uploadedAt originalName')
       .sort({ uploadedAt: -1 })
       .maxTimeMS(10_000)
       .lean() as unknown as any[];
     // Fire-and-forget — don't make the caller wait on the cache write.
+    fileIndexMemCache.set('index', { data: files, expiresAt: now + FILE_INDEX_MEM_TTL });
     redisService.set(FILE_INDEX_CACHE_KEY, JSON.stringify(files), 300).catch(() => {});
     return files;
   }
