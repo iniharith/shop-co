@@ -813,15 +813,149 @@ router.delete('/aws-media', (0, express_async_handler_1.default)((req, res) => _
     }
     res.json({ success: true });
 })));
+// ─── POST /api/sysadmin/files/scan ─────────────────────────
+// Detect phantom DB records: FileUpload documents / Task.files entries whose
+// S3 object no longer exists (the browser shows these as "corrupted" files).
+// With ?cleanup=true (or body cleanup:true), deletes those DB records.
+router.post('/files/scan', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const cleanup = req.query.cleanup === 'true' || ((_a = req.body) === null || _a === void 0 ? void 0 : _a.cleanup) === true;
+    const mapWithConcurrency = (items, limit, fn) => __awaiter(void 0, void 0, void 0, function* () {
+        const results = new Array(items.length);
+        let next = 0;
+        const workers = Array.from({ length: Math.min(limit, items.length) }, () => __awaiter(void 0, void 0, void 0, function* () {
+            while (next < items.length) {
+                const idx = next++;
+                results[idx] = yield fn(items[idx]);
+            }
+        }));
+        yield Promise.all(workers);
+        return results;
+    });
+    const toKey = (url) => {
+        if (!url || !url.includes('amazonaws.com'))
+            return null;
+        try {
+            const u = new URL(url);
+            const raw = u.pathname.startsWith('/') ? u.pathname.substring(1) : u.pathname;
+            return decodeURIComponent(raw);
+        }
+        catch (_a) {
+            return null;
+        }
+    };
+    const [uploads, tasks] = yield Promise.all([
+        FileUpload_1.FileUpload.find({}).select('path filename originalName taskId orderId userId uploadedAt').lean(),
+        Task_1.Task.find({}).select('title files').lean(),
+    ]);
+    const refs = [];
+    const keySet = new Set();
+    for (const f of uploads) {
+        const url = String(f.path || '');
+        const key = toKey(url);
+        refs.push({
+            kind: 'fileupload',
+            id: String(f._id),
+            taskId: f.taskId ? String(f.taskId) : undefined,
+            originalName: f.originalName,
+            filename: f.filename,
+            uploadedAt: f.uploadedAt,
+            url,
+            key,
+        });
+        if (key)
+            keySet.add(key);
+    }
+    for (const t of tasks) {
+        const taskId = String(t._id);
+        for (const file of t.files || []) {
+            const url = String(file.url || '');
+            const key = toKey(url);
+            refs.push({
+                kind: 'taskfile',
+                id: taskId,
+                taskId,
+                taskTitle: t.title,
+                originalName: file.name,
+                url,
+                key,
+            });
+            if (key)
+                keySet.add(key);
+        }
+    }
+    const keys = [...keySet];
+    const exists = yield mapWithConcurrency(keys, 20, (key) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            yield s3_1.s3Client.send(new client_s3_1.HeadObjectCommand({ Bucket: s3_1.S3_BUCKET_NAME, Key: key }));
+            return true;
+        }
+        catch (_a) {
+            return false;
+        }
+    }));
+    const existsMap = new Map();
+    keys.forEach((key, index) => existsMap.set(key, exists[index]));
+    const missingRefs = refs.filter((r) => r.key && existsMap.get(r.key) === false);
+    const skippedRefs = refs.filter((r) => !r.key);
+    const existingKeys = keys.filter((key) => existsMap.get(key)).length;
+    let removedFileUploads = 0;
+    let removedTaskFiles = 0;
+    if (cleanup) {
+        const fileUploadIds = missingRefs.filter((r) => r.kind === 'fileupload').map((r) => r.id);
+        const taskUrls = [...new Set(missingRefs.filter((r) => r.kind === 'taskfile').map((r) => r.url))];
+        if (fileUploadIds.length) {
+            const result = yield FileUpload_1.FileUpload.deleteMany({ _id: { $in: fileUploadIds } });
+            removedFileUploads = result.deletedCount || 0;
+        }
+        for (const url of taskUrls) {
+            const result = yield Task_1.Task.updateMany({ 'files.url': url }, { $pull: { files: { url } } });
+            removedTaskFiles += result.modifiedCount || 0;
+        }
+    }
+    res.json({
+        success: true,
+        data: {
+            scannedAt: new Date().toISOString(),
+            cleanup,
+            summary: {
+                refsScanned: refs.length,
+                fileUploadRefs: uploads.length,
+                taskFileRefs: refs.filter((r) => r.kind === 'taskfile').length,
+                uniqueKeys: keys.length,
+                existingKeys,
+                missingKeys: keys.length - existingKeys,
+                missingRefs: missingRefs.length,
+                skippedRefs: skippedRefs.length,
+            },
+            missing: missingRefs.map((r) => ({
+                kind: r.kind,
+                id: r.id,
+                taskId: r.taskId,
+                taskTitle: r.taskTitle,
+                originalName: r.originalName,
+                filename: r.filename,
+                uploadedAt: r.uploadedAt,
+                url: r.url,
+                key: r.key,
+            })),
+            cleanupResult: cleanup ? { removedFileUploads, removedTaskFiles } : undefined,
+        },
+    });
+})));
 // Proxy the HTTP-only Telegram bot through the authenticated HTTPS backend.
 router.get('/bot-logs', (0, auth_middileware_1.authorizeRoles)('sysadmin'), (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const logsUrl = process.env.BOT_LOGS_URL || process.env.WHATSAPP_AI_LOGS_URL || 'http://56.68.8.52:5002/api/logs';
+    const logsUrl = process.env.BOT_LOGS_URL
+        || process.env.WHATSAPP_AI_LOGS_URL
+        || 'http://56.68.8.52:5002/api/logs';
     const response = yield axios_1.default.get(logsUrl, { timeout: 8000 });
     res.json(response.data);
 })));
 // Legacy alias kept for old bookmarks.
 router.get('/whatsapp-ai-logs', (0, auth_middileware_1.authorizeRoles)('sysadmin'), (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const logsUrl = process.env.BOT_LOGS_URL || process.env.WHATSAPP_AI_LOGS_URL || 'http://56.68.8.52:5002/api/logs';
+    const logsUrl = process.env.BOT_LOGS_URL
+        || process.env.WHATSAPP_AI_LOGS_URL
+        || 'http://56.68.8.52:5002/api/logs';
     const response = yield axios_1.default.get(logsUrl, { timeout: 8000 });
     res.json(response.data);
 })));

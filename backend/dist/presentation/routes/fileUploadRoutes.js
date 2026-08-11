@@ -427,21 +427,16 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
     const userIds = [...new Set(enriched.filter((f) => !f.taskId && f.userId && mongoose_1.default.Types.ObjectId.isValid(f.userId)).map((f) => f.userId))];
     const allTaskIds = [...new Set(enriched.filter((f) => f.taskId && mongoose_1.default.Types.ObjectId.isValid(f.taskId)).map((f) => f.taskId))];
     // 3. Load all tasks in this queue & all referenced tasks by ID
-    const [tasks, taskFileCounts, orders, users, allReferencedTasks] = yield Promise.all([
+    const [tasks, orders, users, allReferencedTasks] = yield Promise.all([
         Task_1.Task.find({ status: { $in: statusQueryValues }, isDeleted: { $ne: true } })
             .select('title status orderId category')
             .lean(),
-        Task_1.Task.aggregate([
-            { $match: { status: { $in: statusQueryValues }, isDeleted: { $ne: true } } },
-            { $project: { fileCount: { $size: { $ifNull: ['$files', []] } } } },
-        ]),
         orderIds.length ? order_model_1.default.find({ _id: { $in: orderIds } }).select('orderStatus userId easyparcelAwb easyparcelBookingStatus awbUrl awbUrlsByFormat').lean() : [],
         userIds.length ? user_model_1.default.find({ _id: { $in: userIds } }).select('name').lean() : [],
         allTaskIds.length ? Task_1.Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category isDeleted').lean() : [],
     ]);
     const taskMap = new Map(tasks.map((t) => [t._id.toString(), t]));
     const allTaskMap = new Map(allReferencedTasks.map((t) => [t._id.toString(), t]));
-    const taskFileCountMap = new Map(taskFileCounts.map((t) => [t._id.toString(), t.fileCount || 0]));
     const orderMap = new Map(orders.map((o) => [o._id.toString(), o]));
     const userMap = new Map(users.map((u) => [u._id.toString(), u]));
     // 4. Group files
@@ -529,7 +524,6 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
             orderStatus = ((_a = taskMap.get(g.taskId)) === null || _a === void 0 ? void 0 : _a.status) || null;
         else if (g.orderId)
             orderStatus = ((_b = orderMap.get(g.orderId)) === null || _b === void 0 ? void 0 : _b.orderStatus) || null;
-        const taskFileCount = g.taskId ? (taskFileCountMap.get(g.taskId) || 0) : 0;
         const order = g.orderId ? orderMap.get(g.orderId) : null;
         if (order) {
             const awbUrls = order.awbUrlsByFormat || {};
@@ -539,7 +533,7 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
                 printUrl: awbUrls.A6 || awbUrls.A4 || order.awbUrl || '',
             };
         }
-        return Object.assign(Object.assign({}, g), { orderStatus, orderAWB, fileCount: Math.max(g.files.length, taskFileCount) });
+        return Object.assign(Object.assign({}, g), { orderStatus, orderAWB, fileCount: g.files.length });
     });
     res.json({ success: true, data: result });
     if (result.length > 0) {
@@ -978,27 +972,46 @@ router.post('/customer/save-metadata', (0, express_async_handler_1.default)((req
     const description = items.length > 1
         ? `Phone Number: ${phoneNumber || 'N/A'}\nItems:\n${itemNames}`
         : `Phone Number: ${phoneNumber || 'N/A'}\nItem: ${(((_a = items[0]) === null || _a === void 0 ? void 0 : _a.name) || '').trim() || 'N/A'}`;
-    // 1. Create a Task for this upload
-    const savedTask = yield TaskRepository_1.taskRepository.create({
-        title: uploadName,
-        description,
+    // 1. Reuse the existing customer-upload task for this order so that
+    // multiple file batches land in ONE task instead of creating a new task
+    // per batch. Otherwise create the task.
+    let savedTask = yield Task_1.Task.findOne({
         orderId: orderId,
-        customerUsername: username,
-        status: 'PLACED',
-        category: 'UNASSIGNED',
-        assignee: undefined,
-        files: allFiles.map((f) => ({
+        title: { $regex: '^Artwork Upload: #' },
+        isDeleted: { $ne: true },
+        isDone: { $ne: true },
+    }).sort({ createdAt: -1 });
+    const taskWasCreated = !savedTask;
+    if (taskWasCreated) {
+        savedTask = yield TaskRepository_1.taskRepository.create({
+            title: uploadName,
+            description,
+            orderId: orderId,
+            customerUsername: username,
+            status: 'PLACED',
+            category: 'UNASSIGNED',
+            assignee: undefined,
+            files: allFiles.map((f) => ({
+                url: f.path,
+                name: f.originalName,
+                tag: 'attachment'
+            }))
+        });
+    }
+    else {
+        savedTask.files.push(...allFiles.map((f) => ({
             url: f.path,
             name: f.originalName,
             tag: 'attachment'
-        }))
-    });
+        })));
+        yield savedTask.save();
+    }
     const taskId = savedTask._id.toString();
     // 2. Create a folder per item so files land in their own subfolder.
-    // Only when there is more than one item — a single item keeps the old
-    // flat (ungrouped) behaviour.
+    // Only for a newly created task and when there is more than one item —
+    // a single item keeps the old flat (ungrouped) behaviour.
     const folderByItemIndex = {};
-    if (items.length > 1) {
+    if (taskWasCreated && items.length > 1) {
         for (let i = 0; i < items.length; i++) {
             const name = (items[i].name || '').trim();
             if (!name)
@@ -1032,8 +1045,13 @@ router.post('/customer/save-metadata', (0, express_async_handler_1.default)((req
             savedFiles.push(saved);
         }
     }
-    // ── Real-time: broadcast the new task + files to all admin tabs ────────
-    (0, taskBroadcast_1.emitTaskUpdated)('task_created', { task: savedTask }).catch(console.error);
+    // ── Real-time: broadcast the task + files to all admin tabs ────────
+    if (taskWasCreated) {
+        (0, taskBroadcast_1.emitTaskUpdated)('task_created', { task: savedTask }).catch(console.error);
+    }
+    else {
+        (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: savedTask }).catch(console.error);
+    }
     // 4. Create a ShareLink for the customer to view their uploaded files
     const shareLink = yield ShareLinkRepository_1.shareLinkRepository.findOrCreate({
         folderName: uploadName,

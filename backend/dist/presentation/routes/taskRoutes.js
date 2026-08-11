@@ -565,6 +565,15 @@ router.delete('/:id/files/:fileId', auth_middileware_1.default, (0, express_asyn
                 if (fileDoc.path)
                     yield (0, s3_1.deleteFromS3)(fileDoc.path).catch(console.error);
                 yield FileUpload.findByIdAndDelete(fileId);
+                // Remove the matching entry from the task's files array too, so the
+                // file does not resurrect on the next refetch / socket update.
+                if (fileDoc.path) {
+                    const tfIndex = task.files.findIndex((f) => f.url === fileDoc.path);
+                    if (tfIndex !== -1) {
+                        task.files.splice(tfIndex, 1);
+                        yield task.save();
+                    }
+                }
                 void (0, FileUploadRepository_1.notifyFileClients)();
                 yield TaskRepository_1.taskRepository.addActivity(id, actorId, actorName, `deleted file "${fileDoc.originalName || fileDoc.filename || 'attachment'}"`);
                 const freshTask = yield TaskRepository_1.taskRepository.findById(id);

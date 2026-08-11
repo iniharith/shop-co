@@ -21,6 +21,7 @@ const axios_1 = __importDefault(require("axios"));
 const META_API_URL = process.env.META_WHATSAPP_API_URL || 'https://graph.facebook.com/v19.0';
 const PHONE_NUMBER_ID = process.env.META_WHATSAPP_PHONE_NUMBER_ID || '';
 const ACCESS_TOKEN = process.env.META_WHATSAPP_ACCESS_TOKEN || '';
+const WHATSAPP_DISABLED = process.env.WHATSAPP_DISABLED === 'true';
 const STATUS_EMOJI = {
     pending: '⏳',
     picked_up: '📦',
@@ -54,6 +55,10 @@ class WhatsAppService {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
             const { phone, customerName, trackingNumber, status, courier } = params;
+            if (WHATSAPP_DISABLED) {
+                console.log('[WhatsApp] Disabled via WHATSAPP_DISABLED — status update not sent');
+                return false;
+            }
             if (!PHONE_NUMBER_ID || !ACCESS_TOKEN) {
                 console.warn('[WhatsApp] META_WHATSAPP_PHONE_NUMBER_ID or META_WHATSAPP_ACCESS_TOKEN not set');
                 return false;
@@ -112,6 +117,10 @@ class WhatsAppService {
     sendFileUploadConfirmation(params) {
         return __awaiter(this, void 0, void 0, function* () {
             const { phone, customerName, orderId, fileCount } = params;
+            if (WHATSAPP_DISABLED) {
+                console.log('[WhatsApp] Disabled via WHATSAPP_DISABLED — upload confirmation not sent');
+                return false;
+            }
             if (!PHONE_NUMBER_ID || !ACCESS_TOKEN)
                 return false;
             try {
@@ -158,6 +167,10 @@ class WhatsAppService {
      */
     sendCustomMessage(phone, message) {
         return __awaiter(this, void 0, void 0, function* () {
+            if (WHATSAPP_DISABLED) {
+                console.log('[WhatsApp] Disabled via WHATSAPP_DISABLED — custom message not sent');
+                return false;
+            }
             if (!PHONE_NUMBER_ID || !ACCESS_TOKEN)
                 return false;
             try {

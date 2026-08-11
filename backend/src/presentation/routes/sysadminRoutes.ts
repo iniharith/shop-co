@@ -6,7 +6,7 @@ import asyncHandler from 'express-async-handler';
 import authMiddilware, { authorizeRoles } from '../middlewares/auth.middileware';
 import os from 'os';
 import mongoose from 'mongoose';
-import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, HeadBucketCommand } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, HeadBucketCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import axios from 'axios';
 import { s3Client, S3_BUCKET_NAME } from '../../infrastructure/config/s3';
@@ -827,6 +827,157 @@ router.delete('/aws-media', asyncHandler(async (req: Request, res: Response) => 
   }
   res.json({ success: true });
 }));
+
+// ─── POST /api/sysadmin/files/scan ─────────────────────────
+// Detect phantom DB records: FileUpload documents / Task.files entries whose
+// S3 object no longer exists (the browser shows these as "corrupted" files).
+// With ?cleanup=true (or body cleanup:true), deletes those DB records.
+router.post(
+  '/files/scan',
+  asyncHandler(async (req: Request, res: Response) => {
+    const cleanup = req.query.cleanup === 'true' || req.body?.cleanup === true;
+
+    const mapWithConcurrency = async <T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> => {
+      const results: R[] = new Array(items.length);
+      let next = 0;
+      const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+        while (next < items.length) {
+          const idx = next++;
+          results[idx] = await fn(items[idx]);
+        }
+      });
+      await Promise.all(workers);
+      return results;
+    };
+
+    const toKey = (url: string): string | null => {
+      if (!url || !url.includes('amazonaws.com')) return null;
+      try {
+        const u = new URL(url);
+        const raw = u.pathname.startsWith('/') ? u.pathname.substring(1) : u.pathname;
+        return decodeURIComponent(raw);
+      } catch {
+        return null;
+      }
+    };
+
+    const [uploads, tasks] = await Promise.all([
+      FileUpload.find({}).select('path filename originalName taskId orderId userId uploadedAt').lean(),
+      Task.find({}).select('title files').lean(),
+    ]);
+
+    type Ref = {
+      kind: 'fileupload' | 'taskfile';
+      id: string;
+      taskId?: string;
+      taskTitle?: string;
+      originalName?: string;
+      filename?: string;
+      uploadedAt?: Date;
+      url: string;
+      key: string | null;
+    };
+
+    const refs: Ref[] = [];
+    const keySet = new Set<string>();
+
+    for (const f of uploads) {
+      const url = String((f as any).path || '');
+      const key = toKey(url);
+      refs.push({
+        kind: 'fileupload',
+        id: String(f._id),
+        taskId: (f as any).taskId ? String((f as any).taskId) : undefined,
+        originalName: (f as any).originalName,
+        filename: (f as any).filename,
+        uploadedAt: (f as any).uploadedAt,
+        url,
+        key,
+      });
+      if (key) keySet.add(key);
+    }
+
+    for (const t of tasks) {
+      const taskId = String(t._id);
+      for (const file of (t as any).files || []) {
+        const url = String(file.url || '');
+        const key = toKey(url);
+        refs.push({
+          kind: 'taskfile',
+          id: taskId,
+          taskId,
+          taskTitle: (t as any).title,
+          originalName: file.name,
+          url,
+          key,
+        });
+        if (key) keySet.add(key);
+      }
+    }
+
+    const keys = [...keySet];
+    const exists = await mapWithConcurrency(keys, 20, async (key: string): Promise<boolean> => {
+      try {
+        await s3Client.send(new HeadObjectCommand({ Bucket: S3_BUCKET_NAME, Key: key }));
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    const existsMap = new Map<string, boolean>();
+    keys.forEach((key, index) => existsMap.set(key, exists[index]));
+
+    const missingRefs = refs.filter((r) => r.key && existsMap.get(r.key as string) === false);
+    const skippedRefs = refs.filter((r) => !r.key);
+    const existingKeys = keys.filter((key) => existsMap.get(key)).length;
+
+    let removedFileUploads = 0;
+    let removedTaskFiles = 0;
+    if (cleanup) {
+      const fileUploadIds = missingRefs.filter((r) => r.kind === 'fileupload').map((r) => r.id);
+      const taskUrls = [...new Set(missingRefs.filter((r) => r.kind === 'taskfile').map((r) => r.url))];
+
+      if (fileUploadIds.length) {
+        const result = await FileUpload.deleteMany({ _id: { $in: fileUploadIds } });
+        removedFileUploads = result.deletedCount || 0;
+      }
+      for (const url of taskUrls) {
+        const result = await Task.updateMany({ 'files.url': url }, { $pull: { files: { url } } });
+        removedTaskFiles += result.modifiedCount || 0;
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        scannedAt: new Date().toISOString(),
+        cleanup,
+        summary: {
+          refsScanned: refs.length,
+          fileUploadRefs: uploads.length,
+          taskFileRefs: refs.filter((r) => r.kind === 'taskfile').length,
+          uniqueKeys: keys.length,
+          existingKeys,
+          missingKeys: keys.length - existingKeys,
+          missingRefs: missingRefs.length,
+          skippedRefs: skippedRefs.length,
+        },
+        missing: missingRefs.map((r) => ({
+          kind: r.kind,
+          id: r.id,
+          taskId: r.taskId,
+          taskTitle: r.taskTitle,
+          originalName: r.originalName,
+          filename: r.filename,
+          uploadedAt: r.uploadedAt,
+          url: r.url,
+          key: r.key,
+        })),
+        cleanupResult: cleanup ? { removedFileUploads, removedTaskFiles } : undefined,
+      },
+    });
+  })
+);
 
 // Proxy the HTTP-only Telegram bot through the authenticated HTTPS backend.
 router.get(

@@ -450,14 +450,10 @@ router.get(
     const allTaskIds = [...new Set(enriched.filter((f: any) => f.taskId && mongoose.Types.ObjectId.isValid(f.taskId)).map((f: any) => f.taskId))];
 
     // 3. Load all tasks in this queue & all referenced tasks by ID
-    const [tasks, taskFileCounts, orders, users, allReferencedTasks] = await Promise.all([
+    const [tasks, orders, users, allReferencedTasks] = await Promise.all([
       Task.find({ status: { $in: statusQueryValues }, isDeleted: { $ne: true } })
         .select('title status orderId category')
         .lean(),
-      Task.aggregate([
-        { $match: { status: { $in: statusQueryValues }, isDeleted: { $ne: true } } },
-        { $project: { fileCount: { $size: { $ifNull: ['$files', []] } } } },
-      ]),
       orderIds.length ? OrderModel.find({ _id: { $in: orderIds } }).select('orderStatus userId easyparcelAwb easyparcelBookingStatus awbUrl awbUrlsByFormat').lean() : [],
       userIds.length ? User.find({ _id: { $in: userIds } }).select('name').lean() : [],
       allTaskIds.length ? Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category isDeleted').lean() : [],
@@ -465,7 +461,6 @@ router.get(
 
     const taskMap = new Map(tasks.map((t: any) => [t._id.toString(), t]));
     const allTaskMap = new Map(allReferencedTasks.map((t: any) => [t._id.toString(), t]));
-    const taskFileCountMap = new Map(taskFileCounts.map((t: any) => [t._id.toString(), t.fileCount || 0]));
     const orderMap = new Map(orders.map((o: any) => [o._id.toString(), o]));
     const userMap = new Map(users.map((u: any) => [u._id.toString(), u]));
 
@@ -549,7 +544,6 @@ router.get(
       let orderAWB: any = null;
       if (g.taskId) orderStatus = taskMap.get(g.taskId)?.status || null;
       else if (g.orderId) orderStatus = (orderMap.get(g.orderId) as any)?.orderStatus || null;
-      const taskFileCount = g.taskId ? (taskFileCountMap.get(g.taskId) || 0) : 0;
       const order = g.orderId ? orderMap.get(g.orderId) as any : null;
       if (order) {
         const awbUrls = order.awbUrlsByFormat || {};
@@ -559,7 +553,7 @@ router.get(
           printUrl: awbUrls.A6 || awbUrls.A4 || order.awbUrl || '',
         };
       }
-      return { ...g, orderStatus, orderAWB, fileCount: Math.max(g.files.length, taskFileCount) };
+      return { ...g, orderStatus, orderAWB, fileCount: g.files.length };
     });
 
     res.json({ success: true, data: result });

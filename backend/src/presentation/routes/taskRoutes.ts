@@ -625,6 +625,17 @@ router.delete(
         if (fileDoc) {
           if (fileDoc.path) await deleteFromS3(fileDoc.path).catch(console.error);
           await FileUpload.findByIdAndDelete(fileId);
+
+          // Remove the matching entry from the task's files array too, so the
+          // file does not resurrect on the next refetch / socket update.
+          if (fileDoc.path) {
+            const tfIndex = task.files.findIndex((f: any) => f.url === fileDoc.path);
+            if (tfIndex !== -1) {
+              task.files.splice(tfIndex, 1);
+              await task.save();
+            }
+          }
+
           void notifyFileClients();
           await taskRepository.addActivity(id, actorId, actorName, `deleted file "${fileDoc.originalName || fileDoc.filename || 'attachment'}"`);
           const freshTask = await taskRepository.findById(id);
