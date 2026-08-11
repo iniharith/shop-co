@@ -383,10 +383,16 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       const fid = f._id || f.url?.split('/').pop();
       return !deletedFileIds.includes(fid);
     }).sort((a: any, b: any) => {
-      // Order: Draft -> For Print -> New attachments (newest) -> Old attachments.
+      // Order: Draft -> For Print -> Attachments oldest first, then newest.
       const tagPriority = (tag: string) => tag === 'draft' ? 0 : tag === 'for_print' ? 1 : 2;
       const time = (f: any) => (f.createdAt ? new Date(f.createdAt).getTime() : 0);
-      return (tagPriority(a.tag) - tagPriority(b.tag)) || (time(b) - time(a));
+      const pa = tagPriority(a.tag);
+      const pb = tagPriority(b.tag);
+      if (pa !== pb) return pa - pb;
+      // Within the same group: attachments go oldest-first; Draft and For
+      // Print stay newest-first.
+      const direction = pa === 2 ? 1 : -1;
+      return direction * (time(b) - time(a));
     });
   }, [fullTask, taskFiles, deletedFileIds]);
 
