@@ -890,8 +890,14 @@ router.get(
       .sort({ uploadedAt: -1 });
     const audience = shareAudience(link);
     let folders: any[] = [];
-    if (audience === 'SUPPLIER' && link.taskId) {
+    if (link.taskId) {
       folders = await VirtualFolder.find({ taskId: link.taskId }).select('_id name').sort({ name: 1 }).lean();
+      if (audience === 'CUSTOMER') {
+        const visibleFolderIds = new Set(
+          files.filter((f: any) => f.folderId).map((f: any) => f.folderId.toString())
+        );
+        folders = folders.filter((folder: any) => visibleFolderIds.has(folder._id.toString()));
+      }
     }
     res.json({ success: true, data: files, folders, folderName: link.folderName, audience });
   })

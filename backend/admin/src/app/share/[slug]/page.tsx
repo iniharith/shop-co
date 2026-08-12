@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Folder, FileText, Eye, Loader2, Upload, Download, Trash2, StickyNote, X, Check, Image as ImageIcon, CloudUpload, ChevronLeft
+  Folder, FileText, Eye, Loader2, Upload, Download, Trash2, StickyNote, X, Check, Image as ImageIcon, CloudUpload
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -64,12 +64,21 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
 
   useEffect(() => { fetchFiles(); }, [slug]);
 
-  const visibleFiles = audience === "SUPPLIER"
-    ? activeFolderId
-      ? files.filter((file) => file.folderId === activeFolderId)
-      : files
+  // When the share has per-item folders, open the first folder that actually
+  // has files so the customer/supplier sees files grouped by item right away
+  // instead of a flat dump of every picture.
+  useEffect(() => {
+    if (folders.length > 0 && !activeFolderId) {
+      const firstWithFiles = folders.find((folder) =>
+        files.some((file) => file.folderId === folder._id)
+      );
+      if (firstWithFiles) setActiveFolderId(firstWithFiles._id);
+    }
+  }, [folders, files]);
+
+  const visibleFiles = activeFolderId
+    ? files.filter((file) => file.folderId === activeFolderId)
     : files;
-  const activeFolder = folders.find((folder) => folder._id === activeFolderId);
   const folderNameOf = (file: any) => folders.find((folder) => folder._id === file.folderId)?.name;
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -317,19 +326,20 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
           </div>
         </div>
 
-        {audience === "SUPPLIER" && !activeFolderId && folders.length > 0 && (
+        {folders.length > 0 && (
           <section className="space-y-3">
             <div>
-              <h2 className="font-semibold">Production folders</h2>
-              <p className="text-sm text-muted-foreground">Click a folder to filter to its For Print files.</p>
+              <h2 className="font-semibold">{audience === "SUPPLIER" ? "Production folders" : "Item folders"}</h2>
+              <p className="text-sm text-muted-foreground">{audience === "SUPPLIER" ? "Click a folder to filter to its For Print files." : "Click a folder to open that item's files."}</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {folders.map((folder) => {
                 const count = files.filter((file) => file.folderId === folder._id).length;
+                const isActive = activeFolderId === folder._id;
                 return (
-                  <button key={folder._id} type="button" onClick={() => setActiveFolderId(folder._id)} className="flex items-center gap-3 rounded-2xl border bg-card p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-lime-500/15 text-lime-700 dark:text-lime-300"><Folder className="h-5 w-5" /></div>
-                    <div className="min-w-0"><p className="truncate font-semibold">{folder.name}</p><p className="text-xs text-muted-foreground">{count} For Print file{count !== 1 ? "s" : ""}</p></div>
+                  <button key={folder._id} type="button" onClick={() => setActiveFolderId(isActive ? null : folder._id)} className={`flex items-center gap-3 rounded-2xl border bg-card p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md ${isActive ? "border-primary ring-1 ring-primary" : ""}`}>
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${audience === "SUPPLIER" ? "bg-lime-500/15 text-lime-700 dark:text-lime-300" : "bg-blue-500/15 text-blue-700 dark:text-blue-300"}`}><Folder className="h-5 w-5" /></div>
+                    <div className="min-w-0"><p className="truncate font-semibold">{folder.name}</p><p className="text-xs text-muted-foreground">{count} {audience === "SUPPLIER" ? `For Print file${count !== 1 ? "s" : ""}` : `file${count !== 1 ? "s" : ""}`}</p></div>
                   </button>
                 );
               })}
@@ -337,19 +347,18 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
           </section>
         )}
 
-        {audience === "SUPPLIER" && activeFolderId && (
-          <div className="flex items-center gap-3 rounded-2xl border bg-card p-4">
-            <Button variant="ghost" size="sm" onClick={() => setActiveFolderId(null)}><ChevronLeft className="mr-1 h-4 w-4" />Back</Button>
-            <div><p className="font-semibold">{activeFolder?.name || "Production folder"}</p><p className="text-xs text-muted-foreground">For Print files only</p></div>
-          </div>
-        )}
-
         {/* Files Grid */}
         {visibleFiles.length === 0 ? (
           <div className="p-16 text-center text-muted-foreground bg-card border border-dashed rounded-xl shadow-sm">
             <Upload className="w-10 h-10 mx-auto mb-3 opacity-30" />
             <p className="font-medium">No visible files here</p>
-            <p className="text-sm mt-1">{audience === "SUPPLIER" ? "No For Print files are available in this location." : "Only Draft and Attachment files are available to customers."}</p>
+            <p className="text-sm mt-1">
+              {activeFolderId
+                ? "No files are available in this folder yet."
+                : audience === "SUPPLIER"
+                  ? "No For Print files are available in this location."
+                  : "Only Draft and Attachment files are available to customers."}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">

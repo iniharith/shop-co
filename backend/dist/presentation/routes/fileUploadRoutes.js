@@ -801,8 +801,12 @@ router.get('/s/:slug', (0, express_async_handler_1.default)((req, res) => __awai
         .sort({ uploadedAt: -1 });
     const audience = shareAudience(link);
     let folders = [];
-    if (audience === 'SUPPLIER' && link.taskId) {
+    if (link.taskId) {
         folders = yield VirtualFolder_1.VirtualFolder.find({ taskId: link.taskId }).select('_id name').sort({ name: 1 }).lean();
+        if (audience === 'CUSTOMER') {
+            const visibleFolderIds = new Set(files.filter((f) => f.folderId).map((f) => f.folderId.toString()));
+            folders = folders.filter((folder) => visibleFolderIds.has(folder._id.toString()));
+        }
     }
     res.json({ success: true, data: files, folders, folderName: link.folderName, audience });
 })));
