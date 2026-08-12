@@ -80,6 +80,20 @@ export const socketIoSetup = async (io: Namespace<DefaultEventsMap, DefaultEvent
                             }
                         });
                     }
+                    // Relay chat typing indicators (admin + customer namespaces).
+                    // Payload: { conversationId, typing } → server-stamped sender.
+                    socket.on('chat_typing', async (payload: any) => {
+                        try {
+                            const message = {
+                                ...(payload || {}),
+                                userId,
+                                userName: user?.name || user?.email || 'Someone',
+                            };
+                            await redisService.publish(REDIS_CHANNELS.CHAT_TYPING, JSON.stringify(message));
+                        } catch (e) {
+                            console.error('Failed to relay chat_typing:', e);
+                        }
+                    });
                     socket.on('disconnect', () => {
                         if (realtimeStatusInterval) clearInterval(realtimeStatusInterval);
                         if (userSocketMap.get(userId as string) === socket.id) {

@@ -83,6 +83,17 @@ const socketIoSetup = (io) => __awaiter(void 0, void 0, void 0, function* () {
                             }
                         }));
                     }
+                    // Relay chat typing indicators (admin + customer namespaces).
+                    // Payload: { conversationId, typing } → server-stamped sender.
+                    socket.on('chat_typing', (payload) => __awaiter(void 0, void 0, void 0, function* () {
+                        try {
+                            const message = Object.assign(Object.assign({}, (payload || {})), { userId, userName: (user === null || user === void 0 ? void 0 : user.name) || (user === null || user === void 0 ? void 0 : user.email) || 'Someone' });
+                            yield redisService.publish(redis_constant_1.REDIS_CHANNELS.CHAT_TYPING, JSON.stringify(message));
+                        }
+                        catch (e) {
+                            console.error('Failed to relay chat_typing:', e);
+                        }
+                    }));
                     socket.on('disconnect', () => {
                         if (realtimeStatusInterval)
                             clearInterval(realtimeStatusInterval);

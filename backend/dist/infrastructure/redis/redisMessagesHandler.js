@@ -36,6 +36,9 @@ function handleRedisAndSocketMessageClient(redisService, io) {
                 console.log("🟢 new chat message", message);
                 io.emit("new_message", JSON.parse(message));
                 break;
+            case redis_constant_1.REDIS_CHANNELS.CHAT_TYPING:
+                io.emit("chat_typing", JSON.parse(message));
+                break;
         }
     }));
 }
@@ -65,6 +68,9 @@ function handleRedisAndSocketMessageAdmin(redisService, io) {
             case redis_constant_1.REDIS_CHANNELS.CHAT_MESSAGE:
                 console.log("🟢 new chat message", message);
                 io.emit("new_message", JSON.parse(message));
+                break;
+            case redis_constant_1.REDIS_CHANNELS.CHAT_TYPING:
+                io.emit("chat_typing", JSON.parse(message));
                 break;
             case redis_constant_1.REDIS_CHANNELS.FILES_UPDATED:
                 console.log("🟢 files updated broadcast", message);

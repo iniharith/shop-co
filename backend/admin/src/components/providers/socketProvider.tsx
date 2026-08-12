@@ -10,6 +10,7 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { removeTaskFromCaches, updateTaskCaches } from "@/utils/taskCache";
 import { useTaskTypingStore } from "@/store/taskTypingStore";
+import { useChatTypingStore } from "@/store/chatTypingStore";
 import { isLowPowerDevice } from "@/hooks/useLowPowerAnimations";
 
 const SocketProvider = ({ children }: { children: React.ReactNode }) => {
@@ -103,6 +104,17 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
+    const handleChatTyping = (data: any) => {
+      if (!data?.conversationId) return;
+      if (String(data.userId) === String(userId)) return;
+      useChatTypingStore.getState().setTyping(data.conversationId, {
+        userId: data.userId,
+        userName: data.userName || 'Someone',
+        typing: !!data.typing,
+        at: Date.now(),
+      });
+    };
+
     const handleNotification = async (data: any) => {
       toast.info(data.message || data.title || "New Notification");
       await client.invalidateQueries({ queryKey: ["notifications"] });
@@ -149,6 +161,7 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     socket.on("realtime_status", handleRealtimeStatus);
     socket.on("order_placed", handleOrderPlaced);
     socket.on("new_message", handleNewMessage);
+    socket.on("chat_typing", handleChatTyping);
     socket.on("notification", handleNotification);
     socket.on("task_updated", handleTaskUpdated);
     socket.on("task_typing", handleTaskTyping);
@@ -167,6 +180,7 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       socket.off("realtime_status", handleRealtimeStatus);
       socket.off("order_placed", handleOrderPlaced);
       socket.off("new_message", handleNewMessage);
+      socket.off("chat_typing", handleChatTyping);
       socket.off("notification", handleNotification);
       socket.off("task_updated", handleTaskUpdated);
       socket.off("task_typing", handleTaskTyping);

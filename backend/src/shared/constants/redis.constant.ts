@@ -17,6 +17,7 @@ export enum REDIS_CHANNELS {
     NOTIFICATION = "notification",
     ORDER_PLACED = "order_placed",
     CHAT_MESSAGE = "chat_message",
+    CHAT_TYPING = "chat_typing",
     FILES_UPDATED = "files_updated",
     TASK_UPDATED = "task_updated",
     TASK_TYPING = "task_typing",
