@@ -28,6 +28,12 @@ const ProductSchema: Schema = new Schema(
             required: true,
             trim: true,
         },
+        // A product keeps one product type/category while appearing in one or
+        // more storefront sections. This prevents duplicate product records.
+        sections: [{
+            type: String,
+            trim: true,
+        }],
         sizes: [{
             stock: Number,
             size: String,

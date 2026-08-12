@@ -126,7 +126,11 @@ export class ProductController {
     
             if (category) {
                 // support comma-separated categories
-                filter.category = { $in: Array.isArray(category) ? category : (typeof category === 'string' ? category.split(',') : []) };
+                const categories = Array.isArray(category) ? category : (typeof category === 'string' ? category.split(',') : []);
+                filter.$or = [
+                    { category: { $in: categories } },
+                    { sections: { $in: categories } },
+                ];
             }
     
             if (size) {
@@ -145,6 +149,7 @@ export class ProductController {
                     price: 1,
                     sizes: 1,
                     category: 1,
+                    sections: 1,
                     description: 1,
                     images: 1,
                     rating: 1,

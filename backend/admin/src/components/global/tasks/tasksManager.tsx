@@ -7,7 +7,7 @@ import { useUsers } from "@/hooks/useUsers";
 import { useSession } from "next-auth/react";
 import { useProducts } from "@/hooks/useProducts";
 import AxiosInstance from "@/utils/axios";
-import { TASK_CATEGORIES, taskCategoryToProduct } from "@/constants/taskCategories";
+import { TASK_CATEGORIES, productToTaskCategory } from "@/constants/taskCategories";
 import { useUploadStore } from "@/store/uploadStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,7 +105,7 @@ const isTaskSavedView = (value: unknown): value is TaskSavedView => {
 // new tab. The task detail opens in place once creation finishes.
 const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => void }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [newTask, setNewTask] = useState({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
+  const [newTask, setNewTask] = useState({ title: "", description: "", status: "PLACED", category: "UNASSIGNED", productId: "", productName: "" });
   const { mutate: createTask, isPending: isCreating } = useCreateTask();
   const { data: session } = useSession();
   const { addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
@@ -119,8 +119,9 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
         .map((p: any) => ({
           id: p._id,
           name: p.name,
-          category: taskCategoryToProduct(p.category),
-          searchKey: `${p.name} ${p.category || ""} ${taskCategoryToProduct(p.category)}`.toLowerCase(),
+          category: productToTaskCategory(p),
+          sections: p.sections || [],
+          searchKey: `${p.name} ${p.category || ""} ${(p.sections || []).join(" ")} ${productToTaskCategory(p)}`.toLowerCase(),
         })),
     [productsData]
   );
@@ -159,7 +160,7 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
   }, []);
 
   const resetForm = () => {
-    setNewTask({ title: "", description: "", status: "PLACED", category: "UNASSIGNED" });
+    setNewTask({ title: "", description: "", status: "PLACED", category: "UNASSIGNED", productId: "", productName: "" });
     setPendingFiles([]);
     setNewTaskFolders([]);
     setIsDragOver(false);
@@ -369,13 +370,19 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
                             key={product.id}
                             value={product.searchKey}
                             onSelect={() => {
-                              setNewTask({ ...newTask, category: product.category });
+                              setNewTask({
+                                ...newTask,
+                                title: newTask.title.trim() ? newTask.title : product.name,
+                                category: product.category,
+                                productId: product.id,
+                                productName: product.name,
+                              });
                               setCategoryOpen(false);
                             }}
                           >
                             <Package className="h-4 w-4 text-muted-foreground" />
                             {product.name}
-                            <span className="ml-auto text-xs text-muted-foreground">{product.category}</span>
+                            <span className="ml-auto text-xs text-muted-foreground">{product.sections.join(", ") || product.category}</span>
                           </CommandItem>
                         ))}
                       </CommandGroup>

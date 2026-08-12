@@ -4,6 +4,7 @@
  */
 import { ProductRepository } from "../../infrastructure/db/repositories/product.repository";
 import ProductModel from "../../infrastructure/db/models/product.model";
+import { getProductSections } from "../constants/productSections";
 
 // Same dummy products from frontend, formatted for backend
 const data = [
@@ -517,7 +518,10 @@ export const forceSeedProducts = async () => {
         await ProductModel.deleteMany({});
         console.log("Seeding new printing products...");
         const productRepository = new ProductRepository();
-        await productRepository.createMany(data);
+        await productRepository.createMany(data.map(product => ({
+            ...product,
+            sections: getProductSections(product.category),
+        })));
         console.log("Seeding complete.");
         return true;
     } catch (e) {
@@ -525,4 +529,3 @@ export const forceSeedProducts = async () => {
         return false;
     }
 };
-

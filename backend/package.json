@@ -6,6 +6,7 @@
     "build": "tsc",
     "test": "node --test test/*.test.js",
     "backfill:task-history": "node ./dist/shared/scripts/backfill-task-status-history.js",
+    "migrate:product-sections": "node ./dist/shared/scripts/migrate-product-sections.js",
     "start": "node ./dist/settings/server.js"
   },
   "dependencies": {

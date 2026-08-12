@@ -30,6 +30,21 @@ npm run backfill:task-history -- --apply
 The script requires `MONGO_URI`, changes only tasks with missing or empty history, and is safe to preview repeatedly. Backfilled snapshots remain marked as estimated; only future recorded transitions are treated as historical facts.
 Run `npm run build` first when operating from a source checkout without an up-to-date `dist` directory.
 
+## Product Sections
+
+Products use one product category for pricing and an optional `sections` list for
+storefront discovery. Run this idempotent migration after deploying the catalog
+section change:
+
+```bash
+npm run build
+npm run migrate:product-sections
+```
+
+The migration updates existing products in place; it does not create duplicate
+product records. `E-PRINT` remains an internal task category and is not a
+storefront product section.
+
 ## Post-Deploy Smoke Test
 
 - Open Tasks and load another cursor page.

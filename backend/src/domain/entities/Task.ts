@@ -38,6 +38,8 @@ export interface ITask extends Document {
   orderId?: string; // Linked Order ID
   customerUsername?: string; // Linked Customer Username
   category?: string; // e.g. DIGITAL PRINTING, DISPLAY ITEM
+  productId?: string; // Linked catalog product ID
+  productName?: string; // Product name snapshot for task search/history
   status: 'PLACED' | 'IN_PROGRESS' | 'PENDING_ARTWORK' | 'ARTWORK_REVIEWED' | 'ARTWORK_REJECTED' | 'IN_DESIGN' | 'PEMBETULAN' | 'DONE_DESIGN' | 'IN_PRODUCTION' | 'PRINT_AWB' | 'DONE_PRINTING' | 'PACKAGING' | 'SHIPPED' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED' | 'FAILED' | 'RETURN';
   isDone?: boolean;
   isDeleted?: boolean;
@@ -85,6 +87,8 @@ const TaskSchema = new Schema<ITask>(
     orderId: { type: String, default: null },
     customerUsername: { type: String, default: '' },
     category: { type: String, default: 'UNASSIGNED' },
+    productId: { type: String, default: '' },
+    productName: { type: String, default: '' },
     status: { type: String, enum: ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'PRINT_AWB', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED', 'RETURN'], default: 'PLACED' },
     isDone: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },

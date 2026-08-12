@@ -100,3 +100,8 @@ export const PRODUCT_TO_TASK_CATEGORY: Record<string, string> = {
 
 export const taskCategoryToProduct = (productCategory: string): string =>
   PRODUCT_TO_TASK_CATEGORY[productCategory?.toLowerCase().trim()] || "UNASSIGNED";
+
+export const productToTaskCategory = (product: { category?: string; sections?: string[] }): string =>
+  PRODUCT_TO_TASK_CATEGORY[product.category?.toLowerCase().trim() || '']
+  || product.sections?.find(section => TASK_CATEGORIES.includes(section as TaskCategory))
+  || "UNASSIGNED";

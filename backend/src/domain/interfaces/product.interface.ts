@@ -9,6 +9,7 @@ export interface IProduct {
     description: string;
     price: number;
     category: string;
+    sections?: string[];
     sizes: ISize[];
     images: string[];
     createdAt: Date;
@@ -24,5 +25,4 @@ export interface ISize {
 
 
 export interface IProductDocument extends IProduct, Document { }
-
 

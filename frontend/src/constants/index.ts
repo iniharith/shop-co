@@ -123,6 +123,8 @@ export const printingCategories = [
     label: "BUNTING & BANNER",
     href: "/home/shop",
     subItems: [
+      { label: "BANNER", href: "/home/shop/prod-100" },
+      { label: "BUNTING", href: "/home/shop/prod-101" },
       { label: "BUNTING", href: "/home/shop/prod-136" },
       { label: "BANNER", href: "/home/shop/prod-137" },
       { label: "ARROW BUNTING", href: "/home/shop/prod-138" }
@@ -171,7 +173,8 @@ export const printingCategories = [
       { label: "CAR STICKER", href: "/home/shop/prod-102" },
       { label: "WALL STICKER", href: "/home/shop/prod-104" },
       { label: "GLASS STICKER", href: "/home/shop/prod-105" },
-      { label: "STICKER", href: "/home/shop/prod-117" }
+      { label: "STICKER", href: "/home/shop/prod-117" },
+      { label: "FOOD STICKER", href: "/home/shop/prod-148" }
     ]
   },
   {

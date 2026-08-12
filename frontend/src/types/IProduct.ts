@@ -14,6 +14,7 @@ export interface IProduct {
     description: string;
     price: number; // Base price
     category: string;
+    sections?: string[];
     sizes: ISize[]; // Keep for legacy
     printingOptions?: IPrintingOption[];
     images: string[];

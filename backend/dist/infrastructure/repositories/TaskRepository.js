@@ -74,6 +74,7 @@ class TaskRepository {
                 { orderId: searchRegex },
                 { customerUsername: searchRegex },
                 { category: searchRegex },
+                { productName: searchRegex },
             ];
             if (/^[a-f\d]{24}$/i.test(search))
                 query.$or.push({ _id: search });

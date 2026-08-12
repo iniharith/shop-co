@@ -19,6 +19,7 @@ exports.forceSeedProducts = void 0;
  */
 const product_repository_1 = require("../../infrastructure/db/repositories/product.repository");
 const product_model_1 = __importDefault(require("../../infrastructure/db/models/product.model"));
+const productSections_1 = require("../constants/productSections");
 // Same dummy products from frontend, formatted for backend
 const data = [
     {
@@ -530,7 +531,7 @@ const forceSeedProducts = () => __awaiter(void 0, void 0, void 0, function* () {
         yield product_model_1.default.deleteMany({});
         console.log("Seeding new printing products...");
         const productRepository = new product_repository_1.ProductRepository();
-        yield productRepository.createMany(data);
+        yield productRepository.createMany(data.map(product => (Object.assign(Object.assign({}, product), { sections: (0, productSections_1.getProductSections)(product.category) }))));
         console.log("Seeding complete.");
         return true;
     }

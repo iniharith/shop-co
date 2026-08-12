@@ -25,7 +25,7 @@ export class ProductRepository extends BaseRepository<IProductDocument> {
     }
 
     async findByCategory(category: string) {
-        return await this.model.find({ category });
+        return await this.model.find({ $or: [{ category }, { sections: category }] });
     }
 
     async findById(id: string) {

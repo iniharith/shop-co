@@ -70,6 +70,8 @@ const TaskSchema = new mongoose_1.Schema({
     orderId: { type: String, default: null },
     customerUsername: { type: String, default: '' },
     category: { type: String, default: 'UNASSIGNED' },
+    productId: { type: String, default: '' },
+    productName: { type: String, default: '' },
     status: { type: String, enum: ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'PRINT_AWB', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED', 'RETURN'], default: 'PLACED' },
     isDone: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
