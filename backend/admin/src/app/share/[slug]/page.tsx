@@ -65,11 +65,12 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
   useEffect(() => { fetchFiles(); }, [slug]);
 
   const visibleFiles = audience === "SUPPLIER"
-    ? folders.length === 0
-      ? files
-      : files.filter((file) => activeFolderId ? file.folderId === activeFolderId : !file.folderId || file.folderId === "null")
+    ? activeFolderId
+      ? files.filter((file) => file.folderId === activeFolderId)
+      : files
     : files;
   const activeFolder = folders.find((folder) => folder._id === activeFolderId);
+  const folderNameOf = (file: any) => folders.find((folder) => folder._id === file.folderId)?.name;
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -320,7 +321,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
           <section className="space-y-3">
             <div>
               <h2 className="font-semibold">Production folders</h2>
-              <p className="text-sm text-muted-foreground">Open a folder to view its For Print files.</p>
+              <p className="text-sm text-muted-foreground">Click a folder to filter to its For Print files.</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {folders.map((folder) => {
@@ -392,6 +393,11 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
                     {/* File info */}
                     <div>
                       <p className="font-semibold text-sm truncate" title={file.originalName}>{file.originalName}</p>
+                      {folderNameOf(file) && (
+                        <p className="text-[11px] text-primary font-medium mt-0.5 flex items-center gap-1">
+                          <Folder className="w-3 h-3" /> {folderNameOf(file)}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {format(new Date(file.uploadedAt), "dd MMM yyyy, HH:mm")}
                       </p>

@@ -776,16 +776,6 @@ const getShareFileQuery = (link, slug) => {
             ? { tag: 'for_print' }
             : { $or: customerTagConditions },
     ];
-    if (audience === 'CUSTOMER') {
-        filters.push({
-            $or: [
-                { folderId: { $exists: false } },
-                { folderId: null },
-                { folderId: '' },
-                { folderId: 'null' },
-            ],
-        });
-    }
     return { $and: filters };
 };
 router.get('/s/:slug/meta', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {

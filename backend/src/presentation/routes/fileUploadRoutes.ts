@@ -857,16 +857,6 @@ const getShareFileQuery = (link: any, slug: string): any => {
       ? { tag: 'for_print' }
       : { $or: customerTagConditions },
   ];
-  if (audience === 'CUSTOMER') {
-    filters.push({
-      $or: [
-        { folderId: { $exists: false } },
-        { folderId: null },
-        { folderId: '' },
-        { folderId: 'null' },
-      ],
-    });
-  }
   return { $and: filters };
 };
 
