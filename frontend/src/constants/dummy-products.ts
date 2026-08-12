@@ -1,3 +1,5 @@
+import { getProductArtwork } from "@/utils/getProductArtwork";
+
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -10441,5 +10443,5 @@ export const dummyProducts: any[] = [
 ];
 
 dummyProducts.forEach((product) => {
-  product.images = [`/product-art/${product._id}`];
+  product.images = [getProductArtwork(product)];
 });

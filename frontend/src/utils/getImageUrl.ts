@@ -4,7 +4,7 @@
  */
 export const getImageUrl = (imagePath: string) => {
   if (!imagePath) return "/placeholder.svg";
-  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://") || imagePath.startsWith("data:")) {
     return imagePath;
   }
   if (imagePath.startsWith("/images/") || imagePath.startsWith("/placeholder")) {
