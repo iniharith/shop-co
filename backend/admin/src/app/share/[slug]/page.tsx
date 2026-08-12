@@ -64,20 +64,10 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
 
   useEffect(() => { fetchFiles(); }, [slug]);
 
-  // When the share has per-item folders, open the first folder that actually
-  // has files so the customer/supplier sees files grouped by item right away
-  // instead of a flat dump of every picture.
-  useEffect(() => {
-    if (folders.length > 0 && !activeFolderId) {
-      const firstWithFiles = folders.find((folder) =>
-        files.some((file) => file.folderId === folder._id)
-      );
-      if (firstWithFiles) setActiveFolderId(firstWithFiles._id);
-    }
-  }, [folders, files]);
-
-  const visibleFiles = activeFolderId
-    ? files.filter((file) => file.folderId === activeFolderId)
+  const visibleFiles = folders.length > 0
+    ? activeFolderId
+      ? files.filter((file) => file.folderId === activeFolderId)
+      : []
     : files;
   const folderNameOf = (file: any) => folders.find((folder) => folder._id === file.folderId)?.name;
 
@@ -350,14 +340,28 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
         {/* Files Grid */}
         {visibleFiles.length === 0 ? (
           <div className="p-16 text-center text-muted-foreground bg-card border border-dashed rounded-xl shadow-sm">
-            <Upload className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">No visible files here</p>
+            {folders.length > 0 && !activeFolderId ? (
+              <Folder className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            ) : (
+              <Upload className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            )}
+            <p className="font-medium">
+              {folders.length > 0 && !activeFolderId
+                ? audience === "SUPPLIER"
+                  ? "Choose a production folder"
+                  : "Choose an item folder"
+                : "No visible files here"}
+            </p>
             <p className="text-sm mt-1">
-              {activeFolderId
-                ? "No files are available in this folder yet."
-                : audience === "SUPPLIER"
-                  ? "No For Print files are available in this location."
-                  : "Only Draft and Attachment files are available to customers."}
+              {folders.length > 0 && !activeFolderId
+                ? audience === "SUPPLIER"
+                  ? "Select a production folder to view its For Print files."
+                  : "Select an item folder to view its files."
+                : activeFolderId
+                  ? "No files are available in this folder yet."
+                  : audience === "SUPPLIER"
+                    ? "No For Print files are available in this location."
+                    : "Only Draft and Attachment files are available to customers."}
             </p>
           </div>
         ) : (
