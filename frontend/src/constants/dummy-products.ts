@@ -10439,3 +10439,7 @@ export const dummyProducts: any[] = [
     ]
   },
 ];
+
+dummyProducts.forEach((product) => {
+  product.images = [`/product-art/${product._id}`];
+});
