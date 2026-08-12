@@ -5,9 +5,20 @@
 import { VirtualFolder, IVirtualFolder } from '../../domain/entities/VirtualFolder';
 import { RedisService } from '../redis/redis';
 import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
+import { getAdminNamespace } from '../socket/socketRegistry';
 
 const redisService = new RedisService();
-const notifyClients = () => redisService.publish(REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' })).catch(console.error);
+const notifyClients = () => {
+  const adminNamespace = getAdminNamespace();
+  if (adminNamespace) {
+    try {
+      adminNamespace.emit('files_updated', { action: 'update' });
+    } catch (e) {
+      console.error('Failed to emit files socket event locally:', e);
+    }
+  }
+  return redisService.publish(REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' })).catch(console.error);
+};
 
 class VirtualFolderRepository {
   async create(data: Partial<IVirtualFolder>): Promise<IVirtualFolder> {

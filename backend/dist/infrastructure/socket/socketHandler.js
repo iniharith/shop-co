@@ -20,6 +20,7 @@ exports.getOnlineUsersCount = exports.getReceiverSocketId = exports.socketIoSetu
 const user_repository_1 = require("../db/repositories/user.repository");
 const jwt_1 = __importDefault(require("../../shared/utils/jwt"));
 const redis_1 = require("../redis/redis");
+const redis_constant_1 = require("../../shared/constants/redis.constant");
 const userSocketMap = new Map();
 const socketIoSetup = (io) => __awaiter(void 0, void 0, void 0, function* () {
     const userRepository = new user_repository_1.UserRepository();
@@ -68,6 +69,20 @@ const socketIoSetup = (io) => __awaiter(void 0, void 0, void 0, function* () {
                     const realtimeStatusInterval = io.name === '/admin'
                         ? setInterval(() => socket.emit('realtime_status', { ready: redisService.isReady() }), 2000)
                         : null;
+                    if (io.name === '/admin') {
+                        // Relay live-typing updates to the TASK_TYPING channel so
+                        // other admins viewing the same task see the text as it is
+                        // typed (Asana-style). Payload mirrors the client's emit.
+                        socket.on('task_typing', (payload) => __awaiter(void 0, void 0, void 0, function* () {
+                            try {
+                                const message = Object.assign(Object.assign({}, (payload || {})), { userId, userName: (user === null || user === void 0 ? void 0 : user.name) || (user === null || user === void 0 ? void 0 : user.email) || 'Someone' });
+                                yield redisService.publish(redis_constant_1.REDIS_CHANNELS.TASK_TYPING, JSON.stringify(message));
+                            }
+                            catch (e) {
+                                console.error('Failed to relay task_typing:', e);
+                            }
+                        }));
+                    }
                     socket.on('disconnect', () => {
                         if (realtimeStatusInterval)
                             clearInterval(realtimeStatusInterval);

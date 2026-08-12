@@ -74,6 +74,9 @@ function handleRedisAndSocketMessageAdmin(redisService, io) {
                 console.log("🟢 task updated broadcast", message);
                 io.emit("task_updated", JSON.parse(message));
                 break;
+            case redis_constant_1.REDIS_CHANNELS.TASK_TYPING:
+                io.emit("task_typing", JSON.parse(message));
+                break;
         }
     }));
 }

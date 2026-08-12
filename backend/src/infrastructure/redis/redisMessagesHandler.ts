@@ -72,6 +72,9 @@ export function handleRedisAndSocketMessageAdmin(redisService: RedisService, io:
                 console.log("🟢 task updated broadcast", message);
                 io.emit("task_updated", JSON.parse(message));
                 break;
+            case REDIS_CHANNELS.TASK_TYPING:
+                io.emit("task_typing", JSON.parse(message));
+                break;
         }
 
 

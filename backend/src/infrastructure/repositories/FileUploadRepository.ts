@@ -5,6 +5,7 @@
 import { FileUpload, IFileUpload } from '../../domain/entities/FileUpload';
 import { RedisService } from '../redis/redis';
 import { REDIS_CHANNELS } from '../../shared/constants/redis.constant';
+import { getAdminNamespace } from '../socket/socketRegistry';
 import { warmPdfSharePreview } from '../../shared/utils/pdfSharePreview';
 
 const redisService = new RedisService();
@@ -27,7 +28,16 @@ export const notifyFileClients = () => {
     // Folder-group responses are keyed by status filters. Clear every
     // variant so the visible file count updates immediately after a change.
     await redisService.delByPrefix(FILE_FOLDER_GROUP_CACHE_PREFIX);
-    await redisService.publish(REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' }));
+    const message = { action: 'update' as const };
+    const adminNamespace = getAdminNamespace();
+    if (adminNamespace) {
+      try {
+        adminNamespace.emit('files_updated', message);
+      } catch (e) {
+        console.error('Failed to emit files socket event locally:', e);
+      }
+    }
+    await redisService.publish(REDIS_CHANNELS.FILES_UPDATED, JSON.stringify(message));
   }, 300);
 };
 

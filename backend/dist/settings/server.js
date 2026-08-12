@@ -61,6 +61,7 @@ const socket_config_1 = __importDefault(require("../config/socket.config"));
 const redis_1 = require("../infrastructure/redis/redis");
 const redisMessagesHandler_1 = require("../infrastructure/redis/redisMessagesHandler");
 const socketHandler_1 = require("../infrastructure/socket/socketHandler");
+const socketRegistry_1 = require("../infrastructure/socket/socketRegistry");
 const TrackingCronJob_1 = require("../infrastructure/jobs/TrackingCronJob");
 const TaskStatusAutoTransition_1 = require("../infrastructure/jobs/TaskStatusAutoTransition");
 const Parcel_1 = require("../domain/entities/Parcel");
@@ -79,9 +80,11 @@ function main() {
         server = http_1.default.createServer(app_1.default);
         const io = (0, socket_config_1.default)(server);
         const clientNameSpace = io.of('/client');
+        (0, socketRegistry_1.setClientNamespace)(clientNameSpace);
         (0, socketHandler_1.socketIoSetup)(clientNameSpace);
         (0, redisMessagesHandler_1.handleRedisAndSocketMessageClient)(redisService, clientNameSpace);
         const adminNameSpace = io.of('/admin');
+        (0, socketRegistry_1.setAdminNamespace)(adminNameSpace);
         (0, socketHandler_1.socketIoSetup)(adminNameSpace);
         (0, redisMessagesHandler_1.handleRedisAndSocketMessageAdmin)(redisService, adminNameSpace);
         server.listen(constants_1.PORT, () => {

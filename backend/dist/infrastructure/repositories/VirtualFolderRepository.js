@@ -17,8 +17,20 @@ exports.virtualFolderRepository = void 0;
 const VirtualFolder_1 = require("../../domain/entities/VirtualFolder");
 const redis_1 = require("../redis/redis");
 const redis_constant_1 = require("../../shared/constants/redis.constant");
+const socketRegistry_1 = require("../socket/socketRegistry");
 const redisService = new redis_1.RedisService();
-const notifyClients = () => redisService.publish(redis_constant_1.REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' })).catch(console.error);
+const notifyClients = () => {
+    const adminNamespace = (0, socketRegistry_1.getAdminNamespace)();
+    if (adminNamespace) {
+        try {
+            adminNamespace.emit('files_updated', { action: 'update' });
+        }
+        catch (e) {
+            console.error('Failed to emit files socket event locally:', e);
+        }
+    }
+    return redisService.publish(redis_constant_1.REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' })).catch(console.error);
+};
 class VirtualFolderRepository {
     create(data) {
         return __awaiter(this, void 0, void 0, function* () {

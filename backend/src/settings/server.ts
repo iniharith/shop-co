@@ -16,6 +16,7 @@ import { RedisService } from '../infrastructure/redis/redis';
 import { REDIS_CHANNELS } from '../shared/constants/redis.constant';
 import { handleRedisAndSocketMessageAdmin, handleRedisAndSocketMessageClient } from '../infrastructure/redis/redisMessagesHandler';
 import { socketIoSetup } from '../infrastructure/socket/socketHandler';
+import { setAdminNamespace, setClientNamespace } from '../infrastructure/socket/socketRegistry';
 import { startTrackingCronJob } from '../infrastructure/jobs/TrackingCronJob';
 import { startTaskAutoTransitionJob } from '../infrastructure/jobs/TaskStatusAutoTransition';
 import { ensureParcelIndexes } from '../domain/entities/Parcel';
@@ -37,10 +38,12 @@ async function main() {
     server = http.createServer(app);
     const io = connectSocket(server);
     const clientNameSpace = io.of('/client');
+    setClientNamespace(clientNameSpace);
     socketIoSetup(clientNameSpace);
     handleRedisAndSocketMessageClient(redisService, clientNameSpace);
 
     const adminNameSpace = io.of('/admin');
+    setAdminNamespace(adminNameSpace);
     socketIoSetup(adminNameSpace);
     handleRedisAndSocketMessageAdmin(redisService, adminNameSpace);
 

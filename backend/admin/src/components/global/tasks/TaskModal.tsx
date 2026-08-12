@@ -28,8 +28,11 @@ import { Check, ChevronsUpDown, Download as DownloadIcon, Copy } from "lucide-re
 import { cn, forceDownload } from "@/lib/utils";
 import { useCreateShareLink, useFilesByFolder, useResolveFileByPath, useFolders, useMoveFile } from "@/hooks/useAdminDashboard";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { AssigneeTag, AssigneeDot } from "@/lib/userColor";
 import { buildFileShareUrl, isPdfFile, preparePdfSharePreview } from "@/lib/fileSharePreview";
+import { getSocket } from "@/utils/socket";
+import { useTaskTypingStore } from "@/store/taskTypingStore";
 
 const TASK_MODAL_VIEW_KEY = "taskModalView:v1";
 
@@ -447,6 +450,73 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const descriptionOnFocusRef = React.useRef(description);
   const descriptionRef = React.useRef<HTMLDivElement>(null);
   const dueDateOnFocusRef = React.useRef(dueDate);
+  const { data: session } = useSession();
+  const sessionUser = (session?.user as any) || null;
+  const myUserId = sessionUser?.id as string | undefined;
+  const typingTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingEmitRef = React.useRef(0);
+  const descriptionFocusActiveRef = React.useRef(false);
+
+  const emitTyping = React.useCallback((text: string, stopped?: boolean) => {
+    const socket = session ? getSocket(session) : null;
+    if (!socket) return;
+    socket.emit("task_typing", {
+      taskId: task._id,
+      field: "description",
+      text: stopped ? undefined : text,
+      stopped: stopped || undefined,
+    });
+  }, [task._id, session]);
+
+  // Throttled live-typing broadcast while the description is being edited.
+  const handleDescriptionInput = React.useCallback((html: string) => {
+    setDescription(html);
+    const now = Date.now();
+    const emit = () => {
+      lastTypingEmitRef.current = Date.now();
+      emitTyping(html);
+    };
+    if (now - lastTypingEmitRef.current >= 300) {
+      emit();
+    } else {
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = setTimeout(emit, 300);
+    }
+  }, [emitTyping]);
+
+  const typingInfo = useTaskTypingStore((s) => s.typing[task._id]);
+
+  // Asana-style live preview: apply the other user's typed text to the
+  // contentEditable while they type, but never clobber my own draft.
+  React.useEffect(() => {
+    if (!typingInfo?.text) return;
+    if (editingFieldRef.current === 'description') return;
+    if (descriptionRef.current && descriptionRef.current.dataset.descriptionInit) {
+      descriptionRef.current.innerHTML = typingInfo.text;
+    }
+  }, [typingInfo?.text, typingInfo?.at]);
+
+  // Revert the live preview to the saved value once the stream stops.
+  React.useEffect(() => {
+    if (typingInfo) return;
+    if (editingFieldRef.current === 'description') return;
+    if (descriptionFocusActiveRef.current) return;
+    if (descriptionRef.current && descriptionRef.current.dataset.descriptionInit) {
+      const saved = fullTask.description || "";
+      if (descriptionRef.current.innerHTML !== saved) {
+        descriptionRef.current.innerHTML = saved;
+        setDescription(saved);
+      }
+    }
+  }, [typingInfo, fullTask.description]);
+
+  // Clean up typing timers/stream when the modal closes.
+  React.useEffect(() => {
+    return () => {
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      useTaskTypingStore.getState().clearTyping(task._id);
+    };
+  }, [task._id]);
 
   React.useEffect(() => {
     setStatus(fullTask.status || "PLACED");
@@ -887,9 +957,18 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
             
             <div className="flex-none md:flex-1 p-4 md:p-6 space-y-6 md:overflow-y-auto">
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <div className="flex items-center gap-2">
                   <span className="w-1.5 h-4 bg-primary rounded-full"></span> Description
-                </label>
+                  {typingInfo && String(typingInfo.userId) !== String(myUserId) && (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary/80">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                      </span>
+                      {typingInfo.userName} is typing…
+                    </span>
+                  )}
+                </div>
                 <div
                   ref={(el) => {
                     descriptionRef.current = el;
@@ -900,16 +979,20 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   }}
                   contentEditable
                   suppressContentEditableWarning
-                  className="min-h-[120px] rounded-md border border-border/50 bg-muted/30 shadow-sm p-3 text-sm text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring whitespace-pre-wrap [&_b]:font-black [&_b]:text-[16px] [&_strong]:font-black [&_strong]:text-[16px]"
+                  className={`min-h-[120px] rounded-md border shadow-sm p-3 text-sm text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring whitespace-pre-wrap [&_b]:font-black [&_b]:text-[16px] [&_strong]:font-black [&_strong]:text-[16px] ${typingInfo && String(typingInfo.userId) !== String(myUserId) ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30" : "border-border/50 bg-muted/30"}`}
                   onFocus={() => {
                     editingFieldRef.current = 'description';
+                    descriptionFocusActiveRef.current = true;
                     descriptionOnFocusRef.current = descriptionRef.current?.innerHTML || description;
                   }}
                   onInput={(e) => {
-                    setDescription((e.currentTarget as HTMLDivElement).innerHTML);
+                    handleDescriptionInput((e.currentTarget as HTMLDivElement).innerHTML);
                   }}
                   onBlur={(e) => {
                     editingFieldRef.current = null;
+                    descriptionFocusActiveRef.current = false;
+                    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+                    emitTyping(descriptionRef.current?.innerHTML || "", true);
                     const html = (e.currentTarget as HTMLDivElement).innerHTML;
                     if (html !== descriptionOnFocusRef.current) handleSaveDetails({ description: html });
                     else {

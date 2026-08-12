@@ -8,6 +8,7 @@ import { Namespace } from "socket.io";
 import JwtService from "../../shared/utils/jwt";
 import type { JwtPayload } from "jsonwebtoken";
 import { RedisService } from "../redis/redis";
+import { REDIS_CHANNELS } from "../../shared/constants/redis.constant";
 
 
 const userSocketMap = new Map<string, string>()
@@ -62,6 +63,23 @@ export const socketIoSetup = async (io: Namespace<DefaultEventsMap, DefaultEvent
                     const realtimeStatusInterval = io.name === '/admin'
                         ? setInterval(() => socket.emit('realtime_status', { ready: redisService.isReady() }), 2000)
                         : null;
+                    if (io.name === '/admin') {
+                        // Relay live-typing updates to the TASK_TYPING channel so
+                        // other admins viewing the same task see the text as it is
+                        // typed (Asana-style). Payload mirrors the client's emit.
+                        socket.on('task_typing', async (payload: any) => {
+                            try {
+                                const message = {
+                                    ...(payload || {}),
+                                    userId,
+                                    userName: user?.name || user?.email || 'Someone',
+                                };
+                                await redisService.publish(REDIS_CHANNELS.TASK_TYPING, JSON.stringify(message));
+                            } catch (e) {
+                                console.error('Failed to relay task_typing:', e);
+                            }
+                        });
+                    }
                     socket.on('disconnect', () => {
                         if (realtimeStatusInterval) clearInterval(realtimeStatusInterval);
                         if (userSocketMap.get(userId as string) === socket.id) {

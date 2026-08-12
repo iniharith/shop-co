@@ -17,6 +17,7 @@ exports.fileUploadRepository = exports.FileUploadRepository = exports.notifyFile
 const FileUpload_1 = require("../../domain/entities/FileUpload");
 const redis_1 = require("../redis/redis");
 const redis_constant_1 = require("../../shared/constants/redis.constant");
+const socketRegistry_1 = require("../socket/socketRegistry");
 const pdfSharePreview_1 = require("../../shared/utils/pdfSharePreview");
 const redisService = new redis_1.RedisService();
 const FILE_INDEX_CACHE_KEY = 'files:index:v1';
@@ -39,7 +40,17 @@ const notifyFileClients = () => {
         // Folder-group responses are keyed by status filters. Clear every
         // variant so the visible file count updates immediately after a change.
         yield redisService.delByPrefix(FILE_FOLDER_GROUP_CACHE_PREFIX);
-        yield redisService.publish(redis_constant_1.REDIS_CHANNELS.FILES_UPDATED, JSON.stringify({ action: 'update' }));
+        const message = { action: 'update' };
+        const adminNamespace = (0, socketRegistry_1.getAdminNamespace)();
+        if (adminNamespace) {
+            try {
+                adminNamespace.emit('files_updated', message);
+            }
+            catch (e) {
+                console.error('Failed to emit files socket event locally:', e);
+            }
+        }
+        yield redisService.publish(redis_constant_1.REDIS_CHANNELS.FILES_UPDATED, JSON.stringify(message));
     }), 300);
 };
 exports.notifyFileClients = notifyFileClients;

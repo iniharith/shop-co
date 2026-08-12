@@ -9,6 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { removeTaskFromCaches, updateTaskCaches } from "@/utils/taskCache";
+import { useTaskTypingStore } from "@/store/taskTypingStore";
 import { isLowPowerDevice } from "@/hooks/useLowPowerAnimations";
 
 const SocketProvider = ({ children }: { children: React.ReactNode }) => {
@@ -118,7 +119,23 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
       // Refetch active filtered lists so tasks move into or out of status views.
       void client.invalidateQueries({ queryKey: ["tasks"], refetchType: "active" });
+      void client.invalidateQueries({ queryKey: ["task"], refetchType: "active" });
       void client.invalidateQueries({ queryKey: ["orders"], refetchType: "active" });
+    };
+
+    const handleTaskTyping = (data: any) => {
+      if (!data?.taskId || !data?.field) return;
+      if (data?.stopped) {
+        useTaskTypingStore.getState().clearTyping(data.taskId);
+        return;
+      }
+      if (!data?.text || String(data.userId) === String(userId)) return;
+      useTaskTypingStore.getState().setTyping(data.taskId, {
+        userId: data.userId,
+        userName: data.userName || 'Someone',
+        text: data.text,
+        at: Date.now(),
+      });
     };
 
     const handleFilesUpdated = () => refreshActiveFileData();
@@ -134,6 +151,7 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     socket.on("new_message", handleNewMessage);
     socket.on("notification", handleNotification);
     socket.on("task_updated", handleTaskUpdated);
+    socket.on("task_typing", handleTaskTyping);
     socket.on("files_updated", handleFilesUpdated);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
@@ -151,6 +169,7 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       socket.off("new_message", handleNewMessage);
       socket.off("notification", handleNotification);
       socket.off("task_updated", handleTaskUpdated);
+      socket.off("task_typing", handleTaskTyping);
       socket.off("files_updated", handleFilesUpdated);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       disconnectSocket();
