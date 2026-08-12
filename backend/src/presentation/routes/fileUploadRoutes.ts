@@ -838,19 +838,10 @@ const shareAudience = (link: any): 'CUSTOMER' | 'SUPPLIER' =>
 
 const getShareFileQuery = (link: any, slug: string): any => {
   const audience = shareAudience(link);
-  const legacyCustomerPortal = audience === 'CUSTOMER' && String(link.folderName || '').startsWith('Artwork Upload:');
   const customerTagConditions: any[] = [
     { tag: { $in: ['draft', 'attachment'] } },
-    {
-      $and: [
-        { shareSlug: slug },
-        { $or: [{ tag: { $exists: false } }, { tag: null }, { tag: '' }] },
-      ],
-    },
+    { $or: [{ tag: { $exists: false } }, { tag: null }, { tag: '' }] },
   ];
-  if (legacyCustomerPortal) {
-    customerTagConditions.push({ $or: [{ tag: { $exists: false } }, { tag: null }, { tag: '' }] });
-  }
   const filters: any[] = [
     { $or: getShareFileConditions(link, slug) },
     audience === 'SUPPLIER'
