@@ -215,6 +215,7 @@ export default function ChatManager() {
   // ---- Live typing (like the task modal) ----
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingEmitRef = useRef(0);
+  const typingKeepAliveRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const emitChatTyping = (typing: boolean) => {
     if (!activeConvId) return;
@@ -223,10 +224,37 @@ export default function ChatManager() {
     socket.emit("chat_typing", { conversationId: activeConvId, typing });
   };
 
+  // Always emit with the latest callback so the keep-alive/unmount cleanup
+  // never uses a stale conversation or session.
+  const emitChatTypingRef = useRef(emitChatTyping);
+  useEffect(() => {
+    emitChatTypingRef.current = emitChatTyping;
+  }, [emitChatTyping]);
+
+  const stopTypingKeepAlive = () => {
+    if (typingKeepAliveRef.current) {
+      clearInterval(typingKeepAliveRef.current);
+      typingKeepAliveRef.current = null;
+    }
+  };
+
+  // Re-broadcast the typing flag every 3s while a burst is active so other
+  // viewers' 5s indicator TTL never expires mid-typing (e.g. long pauses).
+  const ensureTypingKeepAlive = () => {
+    if (typingKeepAliveRef.current) return;
+    typingKeepAliveRef.current = setInterval(() => {
+      emitChatTypingRef.current(true);
+    }, 3000);
+  };
+
   const handleTextChange = (val: string) => {
+    if (!val.trim()) {
+      stopTyping();
+      return;
+    }
     setText(val);
     const now = Date.now();
-    if (now - lastTypingEmitRef.current >= 400) {
+    if (now - lastTypingEmitRef.current >= 150) {
       lastTypingEmitRef.current = now;
       emitChatTyping(true);
     } else if (!typingTimerRef.current) {
@@ -234,8 +262,9 @@ export default function ChatManager() {
         typingTimerRef.current = null;
         lastTypingEmitRef.current = Date.now();
         emitChatTyping(true);
-      }, 400);
+      }, 150);
     }
+    ensureTypingKeepAlive();
   };
 
   const stopTyping = () => {
@@ -243,13 +272,18 @@ export default function ChatManager() {
       clearTimeout(typingTimerRef.current);
       typingTimerRef.current = null;
     }
+    stopTypingKeepAlive();
     emitChatTyping(false);
     lastTypingEmitRef.current = 0;
   };
 
   // Make sure we don't leave a stale "typing" state behind when unmounting.
   useEffect(() => {
-    return () => stopTyping();
+    return () => {
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      stopTypingKeepAlive();
+      emitChatTypingRef.current(false);
+    };
   }, []);
 
   const selectConversation = (id: string) => {

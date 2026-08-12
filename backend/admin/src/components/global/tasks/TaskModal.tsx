@@ -456,6 +456,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const typingTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingEmitRef = React.useRef(0);
   const descriptionFocusActiveRef = React.useRef(false);
+  const typingKeepAliveRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
   const emitTyping = React.useCallback((text: string, stopped?: boolean) => {
     const socket = session ? getSocket(session) : null;
@@ -468,6 +469,30 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     });
   }, [task._id, session]);
 
+  // Always emit with the latest callback so the keep-alive interval never
+  // captures a stale task/session.
+  const emitTypingRef = React.useRef(emitTyping);
+  React.useEffect(() => {
+    emitTypingRef.current = emitTyping;
+  }, [emitTyping]);
+
+  const stopTypingKeepAlive = () => {
+    if (typingKeepAliveRef.current) {
+      clearInterval(typingKeepAliveRef.current);
+      typingKeepAliveRef.current = null;
+    }
+  };
+
+  // Re-broadcast the current draft every 3s while the editor stays focused so
+  // other viewers' 5s indicator TTL never expires mid-edit (e.g. long pauses).
+  const ensureTypingKeepAlive = () => {
+    if (typingKeepAliveRef.current) return;
+    typingKeepAliveRef.current = setInterval(() => {
+      if (!descriptionFocusActiveRef.current) return;
+      emitTypingRef.current(descriptionRef.current?.innerHTML || "");
+    }, 3000);
+  };
+
   // Throttled live-typing broadcast while the description is being edited.
   const handleDescriptionInput = React.useCallback((html: string) => {
     setDescription(html);
@@ -476,12 +501,13 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       lastTypingEmitRef.current = Date.now();
       emitTyping(html);
     };
-    if (now - lastTypingEmitRef.current >= 300) {
+    if (now - lastTypingEmitRef.current >= 150) {
       emit();
     } else {
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-      typingTimerRef.current = setTimeout(emit, 300);
+      typingTimerRef.current = setTimeout(emit, 150);
     }
+    ensureTypingKeepAlive();
   }, [emitTyping]);
 
   const typingInfo = useTaskTypingStore((s) => s.typing[task._id]);
@@ -514,6 +540,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   React.useEffect(() => {
     return () => {
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      stopTypingKeepAlive();
       useTaskTypingStore.getState().clearTyping(task._id);
     };
   }, [task._id]);
@@ -991,7 +1018,9 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   onBlur={(e) => {
                     editingFieldRef.current = null;
                     descriptionFocusActiveRef.current = false;
+                    stopTypingKeepAlive();
                     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+                    lastTypingEmitRef.current = 0;
                     emitTyping(descriptionRef.current?.innerHTML || "", true);
                     const html = (e.currentTarget as HTMLDivElement).innerHTML;
                     if (html !== descriptionOnFocusRef.current) handleSaveDetails({ description: html });
