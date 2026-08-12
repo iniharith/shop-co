@@ -43,6 +43,14 @@ export class ChatRepository {
     return msg.save();
   }
 
+  async updateMessage(id: string, text: string) {
+    return MessageModel.findByIdAndUpdate(id, { text }, { new: true }).populate('senderId', 'name email role');
+  }
+
+  async deleteMessage(id: string) {
+    return MessageModel.findByIdAndDelete(id).populate('senderId', 'name email role');
+  }
+
   async markAsRead(conversationId: string, userId: string) {
     // Mark messages not from this user as read
     return MessageModel.updateMany(

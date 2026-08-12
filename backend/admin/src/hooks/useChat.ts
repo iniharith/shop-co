@@ -55,3 +55,33 @@ export const useDeleteConversation = () => {
     }, ['conversations']);
     return { mutate, isPending };
 }
+
+export const useEditMessage = () => {
+    const { data: session } = useSession();
+    const token = session?.user?.token;
+    const { mutate, isPending } = useMutationData(['editMessage'], async ({ id, text }: { id: string; text: string }) => {
+        const res = await AxiosInstance(token).patch(`/api/chat/messages/${id}`, { text });
+        return res.data;
+    }, ['messages']);
+    return { mutate, isPending };
+}
+
+export const useDeleteMessage = () => {
+    const { data: session } = useSession();
+    const token = session?.user?.token;
+    const { mutate, isPending } = useMutationData(['deleteMessage'], async (id: string) => {
+        const res = await AxiosInstance(token).delete(`/api/chat/messages/${id}`);
+        return res.data;
+    }, ['messages']);
+    return { mutate, isPending };
+}
+
+export const useForwardMessage = () => {
+    const { data: session } = useSession();
+    const token = session?.user?.token;
+    const { mutate, isPending } = useMutationData(['forwardMessage'], async ({ conversationId, text }: { conversationId: string; text: string }) => {
+        const res = await AxiosInstance(token).post(`/api/chat/conversations/${conversationId}/messages`, { text });
+        return res.data;
+    }, ['conversations', 'messages']);
+    return { mutate, isPending };
+}

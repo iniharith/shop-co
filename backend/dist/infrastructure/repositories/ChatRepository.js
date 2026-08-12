@@ -62,6 +62,16 @@ class ChatRepository {
             return msg.save();
         });
     }
+    updateMessage(id, text) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return message_model_1.MessageModel.findByIdAndUpdate(id, { text }, { new: true }).populate('senderId', 'name email role');
+        });
+    }
+    deleteMessage(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return message_model_1.MessageModel.findByIdAndDelete(id).populate('senderId', 'name email role');
+        });
+    }
     markAsRead(conversationId, userId) {
         return __awaiter(this, void 0, void 0, function* () {
             // Mark messages not from this user as read

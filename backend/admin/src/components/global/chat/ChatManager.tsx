@@ -5,7 +5,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useConversations, useMessages, useSendMessage, useCreateConversation, useDeleteConversation } from "@/hooks/useChat";
+import { useConversations, useMessages, useSendMessage, useCreateConversation, useDeleteConversation, useEditMessage, useDeleteMessage, useForwardMessage } from "@/hooks/useChat";
 import { useUsers } from "@/hooks/useUsers";
 import { useSession } from "next-auth/react";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { format, isToday, isYesterday } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
-import { Plus, Send, MessageCircle, Trash2, RefreshCw } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Plus, Send, MessageCircle, Trash2, RefreshCw, MoreHorizontal, Pencil, Forward, Check, X } from "lucide-react";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 import { getSocket } from "@/utils/socket";
 import { useChatTypingStore } from "@/store/chatTypingStore";
@@ -90,6 +92,70 @@ function ConversationRow({ conv, currentUserId, active, onSelect, onDelete }: {
   );
 }
 
+function ForwardDialog({ message, onClose }: { message: any; onClose: () => void }) {
+  const { data: session } = useSession();
+  const currentUserId = (session?.user as any)?.id as string | undefined;
+  const { data: convData } = useConversations();
+  const { data: usersData } = useUsers();
+  const { mutate: createConv, isPending: isCreating } = useCreateConversation();
+  const { mutate: forward } = useForwardMessage();
+  const conversations = (convData as any)?.conversations || [];
+  const allUsers = usersData?.users?.filter((u: any) => u._id !== currentUserId) || [];
+
+  const handleSelect = (user: any) => {
+    if (!message) return;
+    const send = (convId: string) => forward({ conversationId: convId, text: message.text });
+    const existing = conversations.find((c: any) =>
+      c.type === 'admin_admin' &&
+      c.participants?.some((p: any) => String(p._id || p) === String(user._id))
+    );
+    if (existing) {
+      send(existing._id);
+      onClose();
+    } else {
+      createConv({ participantIds: [currentUserId, user._id], type: 'admin_admin' }, {
+        onSuccess: (res: any) => {
+          if (res.conversation) send(res.conversation._id);
+          onClose();
+        }
+      });
+    }
+  };
+
+  return (
+    <Dialog open={!!message} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle>Forward message</DialogTitle>
+          <DialogDescription>Choose who to forward this message to.</DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[320px] overflow-y-auto space-y-1">
+          {allUsers.map((u: any) => (
+            <button
+              key={u._id}
+              type="button"
+              onClick={() => handleSelect(u)}
+              disabled={isCreating}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors text-left disabled:opacity-50"
+            >
+              <Avatar className="w-8 h-8 border border-border/50">
+                <AvatarFallback>{(u.name || u.email).substring(0, 2).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">{u.name || u.email}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">{u.role}</p>
+              </div>
+            </button>
+          ))}
+          {allUsers.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-6">No users available to forward to.</p>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function ChatManager() {
   const { data: session } = useSession();
   const currentUserId = (session?.user as any)?.id as string | undefined;
@@ -103,6 +169,11 @@ export default function ChatManager() {
   const { mutate: sendMessage, isPending: isSending } = useSendMessage(activeConvId || "");
   const { mutate: createConv } = useCreateConversation();
   const { mutate: deleteConv } = useDeleteConversation();
+  const { mutate: editMessage } = useEditMessage();
+  const { mutate: deleteMessage } = useDeleteMessage();
+  const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [forwardMsg, setForwardMsg] = useState<any>(null);
 
   const { data: usersData } = useUsers();
   // Filter out the current user, but include everyone else (admins, bosses, clients)
@@ -217,6 +288,28 @@ export default function ChatManager() {
       messages: [...(old?.messages || []), optimistic],
     }));
     sendMessage(currentText);
+  };
+
+  const startEdit = (msg: any) => {
+    setEditingMsgId(msg._id);
+    setEditText(msg.text || "");
+  };
+
+  const cancelEdit = () => {
+    setEditingMsgId(null);
+    setEditText("");
+  };
+
+  const saveEdit = () => {
+    if (!editingMsgId || !editText.trim()) return;
+    editMessage({ id: editingMsgId, text: editText.trim() });
+    cancelEdit();
+  };
+
+  const handleDeleteMsg = (msgId: string) => {
+    if (confirm("Delete this message?")) {
+      deleteMessage(msgId);
+    }
   };
 
   const activeConv = conversations.find((c: any) => c._id === activeConvId);
@@ -342,15 +435,6 @@ export default function ChatManager() {
                 <h3 className="font-semibold text-lg truncate">
                   {getParticipantName(activeConv, currentUserId)}
                 </h3>
-                {activeTyping?.typing && (
-                  <p className="text-xs text-primary font-medium flex items-center gap-1.5">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                    </span>
-                    {activeTyping.userName} is typing…
-                  </p>
-                )}
               </div>
               <Button variant="outline" size="sm" className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600" onClick={() => {
                 if (confirm("Are you sure you want to delete this chat?")) {
@@ -376,22 +460,70 @@ export default function ChatManager() {
                 const showDay = day !== prevDay;
                 prevDay = day;
                 const isMe = msg.senderId?._id?.toString() === currentUserId || msg.senderId === currentUserId || (msg.senderRole && ADMIN_ROLES.includes(msg.senderRole) && msg.senderId?._id?.toString() === currentUserId);
+                const isOptimistic = msg._id?.toString().startsWith('temp-');
                 return (
                   <React.Fragment key={msg._id}>
                     {showDay && (
                       <div className="text-center text-[10px] uppercase tracking-widest text-muted-foreground/70 my-2">{dayLabel(day)}</div>
                     )}
-                    <div className={`flex min-w-0 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`min-w-0 max-w-[85%] p-3 rounded-2xl md:max-w-[70%] ${isMe ? 'bg-primary text-primary-foreground rounded-tr-sm' : 'bg-muted border border-border/50 rounded-tl-sm'}`}>
-                        {!isMe && msg.senderId && <p className="text-[10px] font-bold mb-1 opacity-70">{msg.senderId.name || msg.senderRole}</p>}
-                        <p className="text-sm whitespace-pre-wrap [overflow-wrap:anywhere]">{msg.text}</p>
-                        <div className={`text-[10px] mt-1 flex items-center justify-end gap-1 ${isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                          <span>{format(new Date(msg.createdAt), "h:mm a")}</span>
-                          {msg.source === 'whatsapp' && <span>• via WhatsApp</span>}
-                          {isMe && <span title={msg.isRead ? 'Read' : 'Sent'}>{msg.isRead ? '✓✓' : '✓'}</span>}
+                    {editingMsgId === msg._id ? (
+                      <div className={`flex min-w-0 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                        <div className="min-w-0 max-w-[85%] md:max-w-[70%] rounded-2xl p-3 bg-background border border-primary/40">
+                          <Input
+                            value={editText}
+                            onChange={e => setEditText(e.target.value)}
+                            autoFocus
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') saveEdit();
+                              if (e.key === 'Escape') cancelEdit();
+                            }}
+                            className="bg-muted/30 focus-visible:ring-1"
+                          />
+                          <div className="flex gap-2 mt-2">
+                            <Button size="sm" onClick={saveEdit} className="h-8">
+                              <Check className="w-3.5 h-3.5 mr-1" /> Save
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8">
+                              <X className="w-3.5 h-3.5 mr-1" /> Cancel
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className={`flex min-w-0 items-end gap-1 group ${isMe ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`min-w-0 max-w-[85%] p-3 rounded-2xl md:max-w-[70%] ${isMe ? 'bg-primary text-primary-foreground rounded-tr-sm' : 'bg-muted border border-border/50 rounded-tl-sm'}`}>
+                          {!isMe && msg.senderId && <p className="text-[10px] font-bold mb-1 opacity-70">{msg.senderId.name || msg.senderRole}</p>}
+                          <p className="text-sm whitespace-pre-wrap [overflow-wrap:anywhere]">{msg.text}</p>
+                          <div className={`text-[10px] mt-1 flex items-center justify-end gap-1 ${isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                            <span>{format(new Date(msg.createdAt), "h:mm a")}</span>
+                            {msg.source === 'whatsapp' && <span>• via WhatsApp</span>}
+                            {isMe && <span title={msg.isRead ? 'Read' : 'Sent'}>{msg.isRead ? '✓✓' : '✓'}</span>}
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted/50 transition-colors opacity-0 group-hover:opacity-100">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align={isMe ? "end" : "start"}>
+                            <DropdownMenuItem onClick={() => setForwardMsg(msg)}>
+                              <Forward className="w-4 h-4 mr-2" /> Forward
+                            </DropdownMenuItem>
+                            {isMe && !isOptimistic && (
+                              <DropdownMenuItem onClick={() => startEdit(msg)}>
+                                <Pencil className="w-4 h-4 mr-2" /> Edit
+                              </DropdownMenuItem>
+                            )}
+                            {isMe && !isOptimistic && (
+                              <DropdownMenuItem onClick={() => handleDeleteMsg(msg._id)} className="text-red-500 focus:text-red-500 focus:bg-red-50">
+                                <Trash2 className="w-4 h-4 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
                   </React.Fragment>
                 );
               })}
@@ -399,6 +531,18 @@ export default function ChatManager() {
             </div>
 
             <div className="shrink-0 p-4 border-t border-white/10 bg-background/40 backdrop-blur-md">
+              <div className="flex items-center h-6 mb-1 text-xs text-primary font-medium">
+                {activeTyping?.typing && (
+                  <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </span>
+                    <span>{activeTyping.userName} is typing…</span>
+                  </span>
+                )}
+              </div>
               <div className="flex gap-2">
                 <Input
                   placeholder="Type your message..."
@@ -421,6 +565,8 @@ export default function ChatManager() {
           </div>
         )}
       </div>
+
+      <ForwardDialog message={forwardMsg} onClose={() => setForwardMsg(null)} />
     </div>
   );
 }

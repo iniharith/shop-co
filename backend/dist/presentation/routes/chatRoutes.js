@@ -54,8 +54,13 @@ const express_async_handler_1 = __importDefault(require("express-async-handler")
 const ChatRepository_1 = require("../../infrastructure/repositories/ChatRepository");
 const auth_middileware_1 = __importDefault(require("../middlewares/auth.middileware"));
 const redis_1 = require("../../infrastructure/redis/redis");
+const redis_constant_1 = require("../../shared/constants/redis.constant");
 const router = (0, express_1.Router)();
 const redisService = new redis_1.RedisService();
+const publishChatMessage = (message) => __awaiter(void 0, void 0, void 0, function* () {
+    yield redisService.publish(redis_constant_1.REDIS_CHANNELS.CHAT_MESSAGE, JSON.stringify(message));
+});
+const ADMIN_ROLES = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'];
 // GET /api/chat/conversations
 router.get('/conversations', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -128,7 +133,7 @@ router.post('/conversations/:id/messages', auth_middileware_1.default, (0, expre
         source: source || 'web',
     });
     const conversation = yield ChatRepository_1.chatRepository.findConversationById(req.params.id);
-    if (conversation && conversation.whatsappPhone && ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(role)) {
+    if (conversation && conversation.whatsappPhone && ADMIN_ROLES.includes(role)) {
         // Send back to WhatsApp using WhatsAppService or directly via Meta API
         try {
             const { default: axios } = yield Promise.resolve().then(() => __importStar(require('axios')));
@@ -148,8 +153,7 @@ router.post('/conversations/:id/messages', auth_middileware_1.default, (0, expre
     }
     yield ChatRepository_1.chatRepository.updateLastMessage(req.params.id);
     // Publish to redis so websockets broadcast to clients
-    const { REDIS_CHANNELS } = yield Promise.resolve().then(() => __importStar(require('../../shared/constants/redis.constant')));
-    yield redisService.publish(REDIS_CHANNELS.CHAT_MESSAGE, JSON.stringify(message));
+    yield publishChatMessage(message);
     // Also notify other participants via standard notification so the bell updates
     if (conversation) {
         const { NotificationModel } = yield Promise.resolve().then(() => __importStar(require('../../infrastructure/db/models/notification.model')));
@@ -162,9 +166,56 @@ router.post('/conversations/:id/messages', auth_middileware_1.default, (0, expre
                 type: 'SYSTEM',
                 read: false,
             });
-            yield redisService.publish(REDIS_CHANNELS.NOTIFICATION, JSON.stringify(newNotif));
+            yield redisService.publish(redis_constant_1.REDIS_CHANNELS.NOTIFICATION, JSON.stringify(newNotif));
         }
     }
+    res.json({ success: true, message });
+})));
+// PATCH /api/chat/messages/:id — edit message text (sender or admin only)
+router.patch('/messages/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    const authReq = req;
+    const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
+    const role = authReq.role;
+    const { text } = req.body;
+    if (!text || !String(text).trim()) {
+        res.status(400).json({ success: false, message: 'Message text is required' });
+        return;
+    }
+    const { MessageModel } = yield Promise.resolve().then(() => __importStar(require('../../infrastructure/db/models/message.model')));
+    const existing = yield MessageModel.findById(req.params.id);
+    if (!existing) {
+        res.status(404).json({ success: false, message: 'Message not found' });
+        return;
+    }
+    const canEdit = ADMIN_ROLES.includes(role) || (((_b = existing.senderId) === null || _b === void 0 ? void 0 : _b.toString()) || '') === userId;
+    if (!canEdit) {
+        res.status(403).json({ success: false, message: 'You can only edit your own messages' });
+        return;
+    }
+    const message = yield ChatRepository_1.chatRepository.updateMessage(req.params.id, String(text).trim());
+    yield publishChatMessage(message);
+    res.json({ success: true, message });
+})));
+// DELETE /api/chat/messages/:id — delete message (sender or admin only)
+router.delete('/messages/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    const authReq = req;
+    const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
+    const role = authReq.role;
+    const { MessageModel } = yield Promise.resolve().then(() => __importStar(require('../../infrastructure/db/models/message.model')));
+    const existing = yield MessageModel.findById(req.params.id);
+    if (!existing) {
+        res.status(404).json({ success: false, message: 'Message not found' });
+        return;
+    }
+    const canDelete = ADMIN_ROLES.includes(role) || (((_b = existing.senderId) === null || _b === void 0 ? void 0 : _b.toString()) || '') === userId;
+    if (!canDelete) {
+        res.status(403).json({ success: false, message: 'You can only delete your own messages' });
+        return;
+    }
+    const message = yield ChatRepository_1.chatRepository.deleteMessage(req.params.id);
+    yield publishChatMessage(message);
     res.json({ success: true, message });
 })));
 exports.default = router;
