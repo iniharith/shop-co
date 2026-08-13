@@ -16,14 +16,14 @@
     "productId": "prod-101",
     "productName": "Bunting",
     "file": "002-prod-101.webp",
-    "title": "Representative Bunting photo",
-    "creator": "Pexels contributor",
-    "license": "Pexels License",
-    "sourcePage": "https://www.pexels.com/photo/20860334/",
-    "sourceImage": "https://images.pexels.com/photos/20860334/pexels-photo-20860334.jpeg",
-    "attribution": "Photo provided under the Pexels License.",
+    "title": "Outdoor Roll Up Bunting",
+    "creator": "User supplied",
+    "license": "User supplied",
+    "sourcePage": null,
+    "sourceImage": "C:/Users/PRINTARA/Downloads/Free-Outdoor-Roll-Up-Banner-Mockup.jpg",
+    "attribution": "Image supplied by the user.",
     "category": "bunting",
-    "licenseUrl": "https://www.pexels.com/license/"
+    "licenseUrl": null
   },
   {
     "productId": "prod-102",
