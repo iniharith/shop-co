@@ -3,21 +3,9 @@
  * Kampungcetak ®
  */
 "use client";
-import { cn } from "@/lib/utils";
 import type { IProduct } from "@/types/IProduct";
-import { ShoppingCart, Star } from "lucide-react";
 import Image from "next/image";
-import type React from "react";
-import { useState, useEffect } from "react";
 import { useRouter } from "nextjs-toploader/app";
-import axios from "axios";
-import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
-import { Button } from "@heroui/button";
-import { MdOutlineShoppingBag } from "react-icons/md";
-import { useAddtoCart } from "@/hooks/useCart";
-import { motion } from "framer-motion";
-import { item_variants } from "@/constants/framer-motion";
 
 interface ProductCardProps {
   product: IProduct;
@@ -29,95 +17,35 @@ const ProductCard = ({ product }: ProductCardProps) => {
     product.images?.length && product.images[0].startsWith("/") && !product.images[0].startsWith("/images/") && !product.images[0].startsWith("/placeholder")
       ? process.env.NEXT_PUBLIC_BACKEND_URL + product.images[0]
       : product.images[0];
-  const [imageLoading, setImageLoading] = useState(false);
-
-  const handleImageLoad = async () => {
-    try {
-      await axios.get(image).then((res: any) => {
-        setImageLoading(false);
-      });
-    } catch (error) {
-      console.log(error);
-      toast.error(`Error loading image of ${product.name}`);
-    }
-  };
-
-  const { mutate, isPending } = useAddtoCart();
-  const handleAddToCart = () => {
-    mutate({
-      productId: product._id,
-      size: product.sizes[0].size,
-      quantity: 1,
-    });
-  };
-
-  // useEffect(() => {
-  //   handleImageLoad();
-  // }, []);
+  const hasDiscount = product.discount > 0 && product.originalPrice > product.price;
 
   return (
     <div
       onClick={() => router.push(`/home/shop/${product._id}`)}
-      className="bg-card text-card-foreground border border-border shrink-0 hover:bg-muted/60 transition-all cursor-pointer hover:scale-95 duration-300 rounded-lg p-1 h-full flex flex-col"
+      className="bg-card text-card-foreground border border-border shrink-0 hover:bg-muted/60 transition-colors cursor-pointer rounded-lg overflow-hidden h-full flex flex-col"
     >
-      <div className="relative mb-4 w-full aspect-square">
-        {imageLoading ? (
-          <Skeleton className="w-full bg-gray-400/30 dark:bg-muted h-full rounded-lg" />
-        ) : (
-          <Image
-            src={image || "/placeholder.svg"}
-            alt={product.name}
-            fill
-            className="object-cover rounded-lg"
-          />
-        )}
+      <div className="relative w-full aspect-square overflow-hidden">
+        <Image
+          src={image || "/placeholder.svg"}
+          alt={product.name}
+          fill
+          className="object-cover"
+        />
       </div>
-      <div className="w-full p-1  grid grid-cols-1 md:grid-cols-2 gap-2">
-        <div className="col-span-1">
-          <h3 className="font-medium text-lg mb-2">{product.name}</h3>
-          <div className="flex items-center mb-2">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                size={16}
-                className={cn(
-                  "fill-current",
-                  i < Math.floor(product.rating)
-                    ? "text-yellow-400"
-                    : i < product.rating
-                    ? "text-yellow-400 fill-yellow-400"
-                    : "text-muted-foreground/40"
-                )}
-              />
-            ))}
-            <span className="text-sm text-gray-600 dark:text-muted-foreground ml-1">
-              {product.rating}/5
-            </span>
-          </div>
-          {product.category?.toLowerCase() !== "islamic khat" && (
-            <div className="mt-auto flex items-center">
-              <span className="font-bold text-lg">RM {product.price}</span>
-              {product.discount > 0 && (
-                <>
-                  <span className="text-gray-400 dark:text-muted-foreground line-through ml-2">
-                    RM {product.originalPrice}
-                  </span>
-                  <span className="ml-2 text-sm bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded">
-                    -{product.discount}%
-                  </span>
-                </>
-              )}
+      <div className="w-full p-3 flex flex-1 flex-col">
+        <h3 className="font-semibold text-base md:text-lg leading-snug mb-2">{product.name}</h3>
+        <div className="mt-auto">
+          {hasDiscount && (
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm text-muted-foreground line-through">
+                RM {product.originalPrice}
+              </span>
+              <span className="text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded">
+                -{product.discount}%
+              </span>
             </div>
           )}
-        </div>
-        <div className="col-span-1 md:flex hidden items-center justify-end">
-          <Button
-            onPress={handleAddToCart}
-            size="sm"
-            className="bg-secondary text-secondary-foreground cursor-pointer hover:bg-accent transition-all duration-300 active:scale-95 border-border border rounded-full w-[3rem] h-[3rem]"
-          >
-            <MdOutlineShoppingBag />
-          </Button>
+          <div className="font-bold text-xl">RM {product.price}</div>
         </div>
       </div>
     </div>

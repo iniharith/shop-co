@@ -7,7 +7,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { QuantityPicker } from "@/components/global/quantity-picker";
-import { StarRating } from "@/components/global/star-rating";
 import { IProduct } from "@/types/IProduct";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -307,10 +306,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       {/* Product Header inside configurator */}
       <div className="p-6 bg-gray-50 dark:bg-black/20 border-b border-gray-200 dark:border-border">
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-foreground">{product.name}</h1>
-        <div className="flex items-center gap-2 mt-2">
-          <StarRating rating={product.rating} maxRating={5} />
-          <span className="text-sm text-gray-500 dark:text-muted-foreground">({product.rating} / 5 {label("reviews", "ulasan")})</span>
-        </div>
       </div>
 
       <div className="p-6 space-y-8">
