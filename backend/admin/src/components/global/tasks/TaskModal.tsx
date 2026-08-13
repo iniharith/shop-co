@@ -510,6 +510,24 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     ensureTypingKeepAlive();
   }, [emitTyping]);
 
+  const handleDescriptionPaste = React.useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const text = event.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n');
+    const selection = window.getSelection();
+    if (!selection?.rangeCount) return;
+
+    const range = selection.getRangeAt(0);
+    if (!event.currentTarget.contains(range.commonAncestorContainer)) return;
+    range.deleteContents();
+    const textNode = document.createTextNode(text);
+    range.insertNode(textNode);
+    range.setStartAfter(textNode);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    handleDescriptionInput(event.currentTarget.innerHTML);
+  }, [handleDescriptionInput]);
+
   const typingInfo = useTaskTypingStore((s) => s.typing[task._id]);
 
   // Asana-style live preview: apply the other user's typed text to the
@@ -1015,6 +1033,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   onInput={(e) => {
                     handleDescriptionInput((e.currentTarget as HTMLDivElement).innerHTML);
                   }}
+                  onPaste={handleDescriptionPaste}
                   onBlur={(e) => {
                     editingFieldRef.current = null;
                     descriptionFocusActiveRef.current = false;
