@@ -1,4 +1,4 @@
-import { getProductArtwork } from "@/utils/getProductArtwork";
+import { productImages } from "@/constants/product-images";
 
 /**
  * Coded by Harith
@@ -10442,6 +10442,6 @@ export const dummyProducts: any[] = [
   },
 ];
 
-dummyProducts.forEach((product) => {
-  product.images = [getProductArtwork(product)];
+dummyProducts.forEach((product, index) => {
+  product.images = [productImages[index]];
 });
