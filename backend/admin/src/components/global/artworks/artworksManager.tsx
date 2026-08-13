@@ -35,15 +35,15 @@ import { Virtuoso } from "react-virtuoso";
 
 const categories = [
   "ALL",
+  "FRAME",
+  "ACRYLIC",
   "DIGITAL PRINTING",
   "DISPLAY ITEM",
   "DIGITAL OFFSET",
   "PREMIUM GIFT",
   "APPAREL/SUBLIMATION",
-  "FRAME",
   "WEDDING PRODUCT",
   "FOOD PACKAGING",
-  "ACRYLIC",
   "BUNTING & BANNER",
   "PHOTOBOOK",
   "MAGNET",
