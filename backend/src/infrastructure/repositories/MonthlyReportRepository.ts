@@ -16,6 +16,13 @@ import { MonthWindow } from '../../shared/utils/monthlyReport';
 
 const PAGE_SIZE = 100;
 
+const toStr = (value: unknown, fallback = ''): string => {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  try { return JSON.stringify(value); } catch { return fallback; }
+};
+
 interface OrderPage {
   orders: any[];
   hasNextPage: boolean;
@@ -206,15 +213,15 @@ export class MonthlyReportRepository {
         const category = item.productCategorySnapshot || item.category || product?.category || '';
 
         rows.push({
-          customerName: order.customerName || 'N/A',
+          customerName: toStr(order.customerName, 'N/A'),
           orderId,
           orderDate: order.createdAt,
-          orderStatus: order.orderStatus || 'PLACED',
-          category: category || 'N/A',
-          itemName: name,
-          itemDescription: description,
-          size: item.size || '',
-          quantity: item.quantity || 1,
+          orderStatus: toStr(order.orderStatus, 'PLACED'),
+          category: toStr(category, 'N/A'),
+          itemName: toStr(name, 'Unknown item'),
+          itemDescription: toStr(description),
+          size: toStr(item.size),
+          quantity: Number(item.quantity) || 1,
           fileCount,
           fileTotalBytes,
           fileSizeMB: fileTotalBytes / (1024 * 1024),

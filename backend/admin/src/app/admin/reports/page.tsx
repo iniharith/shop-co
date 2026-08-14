@@ -126,6 +126,17 @@ export default function ReportsPage() {
   const summary = monthlyData?.summary;
   const monthlyRows = Array.isArray(monthlyData?.rows) ? monthlyData.rows : [];
   const toNum = (v: any) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+  const toStr = (v: any, fallback = "") => {
+    if (v === null || v === undefined) return fallback;
+    if (typeof v === "string") return v;
+    if (typeof v === "number" || typeof v === "boolean") return String(v);
+    if (typeof v === "object" && !Array.isArray(v)) {
+      const keys = Object.keys(v);
+      if (keys.length === 0) return fallback;
+      try { return JSON.stringify(v); } catch { return fallback; }
+    }
+    return String(v);
+  };
 
   return (
     <>
@@ -210,11 +221,11 @@ export default function ReportsPage() {
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                  <MetricCard icon={<User className="w-5 h-5 text-blue-400" />} title="Assigned Tasks" value={reportData.tasksAssigned} />
-                  <MetricCard icon={<CheckCircle className="w-5 h-5 text-green-400" />} title="Completed / Downstream" value={reportData.tasksCompleted} />
-                  <MetricCard icon={<Clock className="w-5 h-5 text-orange-400" />} title="Est. Design Cycle" value={reportData.avgTimeFormatted || "-"} />
-                  <MetricCard icon={<File className="w-5 h-5 text-purple-400" />} title="Retained Files" value={reportData.fileQuantity} />
-                  <MetricCard icon={<TrendingUp className="w-5 h-5 text-yellow-400" />} title="Completion Ratio" value={`${reportData.efficiency}%`} />
+                  <MetricCard icon={<User className="w-5 h-5 text-blue-400" />} title="Assigned Tasks" value={toStr(reportData.tasksAssigned, "0")} />
+                  <MetricCard icon={<CheckCircle className="w-5 h-5 text-green-400" />} title="Completed / Downstream" value={toStr(reportData.tasksCompleted, "0")} />
+                  <MetricCard icon={<Clock className="w-5 h-5 text-orange-400" />} title="Est. Design Cycle" value={toStr(reportData.avgTimeFormatted, "-")} />
+                  <MetricCard icon={<File className="w-5 h-5 text-purple-400" />} title="Retained Files" value={toStr(reportData.fileQuantity, "0")} />
+                  <MetricCard icon={<TrendingUp className="w-5 h-5 text-yellow-400" />} title="Completion Ratio" value={`${toStr(reportData.efficiency, "0")}%`} />
                 </div>
 
                 <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4 lg:p-6 backdrop-blur-sm mt-6">
@@ -230,7 +241,7 @@ export default function ReportsPage() {
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                        <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#9ca3af', fontSize: 12 }} tickFormatter={(val) => val.split('-').slice(1).join('/')} />
+                        <XAxis dataKey="date" stroke="#9ca3af" tick={{ fill: '#9ca3af', fontSize: 12 }} tickFormatter={(val) => String(val).split('-').slice(1).join('/')} />
                         <YAxis stroke="#9ca3af" tick={{ fill: '#9ca3af', fontSize: 12 }} allowDecimals={false} />
                         <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: '#fff' }} itemStyle={{ color: '#60a5fa' }} />
                         <Area type="monotone" dataKey="completed" name="Completed Tasks" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorCompleted)" />
@@ -302,21 +313,23 @@ export default function ReportsPage() {
                         )}
                         {monthlyRows.map((row: any, index: number) => (
                           <tr key={`${row.orderId}-${index}`} className={`border-b border-gray-800/50 ${index % 2 === 0 ? 'bg-transparent' : 'bg-gray-800/20'}`}>
-                            <td className="px-4 py-3 font-medium text-gray-200">{row.customerName}</td>
-                            <td className="px-4 py-3 text-gray-400 font-mono text-xs">{row.orderId}</td>
-                            <td className="px-4 py-3 text-gray-300">{row.category}</td>
+                            <td className="px-4 py-3 font-medium text-gray-200">{toStr(row.customerName, "N/A")}</td>
+                            <td className="px-4 py-3 text-gray-400 font-mono text-xs">{toStr(row.orderId)}</td>
+                            <td className="px-4 py-3 text-gray-300">{toStr(row.category, "N/A")}</td>
                             <td className="px-4 py-3 max-w-xs">
-                              <div className="text-gray-200 font-medium">{row.itemName}</div>
-                              {row.itemDescription && (
-                                <div className="text-xs text-gray-500 mt-0.5 line-clamp-2">{row.itemDescription}</div>
+                              <div className="text-gray-200 font-medium">{toStr(row.itemName, "Unknown item")}</div>
+                              {toStr(row.itemDescription) && (
+                                <div className="text-xs text-gray-500 mt-0.5 line-clamp-2">{toStr(row.itemDescription)}</div>
                               )}
-                              {row.size && <div className="text-xs text-gray-500 mt-0.5">Size: {row.size} · Qty: {row.quantity}</div>}
+                              {(toStr(row.size) || toNum(row.quantity) > 0) && (
+                                <div className="text-xs text-gray-500 mt-0.5">Size: {toStr(row.size) || "-"} · Qty: {toNum(row.quantity)}</div>
+                              )}
                             </td>
-                            <td className="px-4 py-3 text-gray-300">{row.fileCount}</td>
+                            <td className="px-4 py-3 text-gray-300">{toNum(row.fileCount)}</td>
                             <td className="px-4 py-3 text-gray-300">
                               {toNum(row.fileTotalBytes) > 0 ? `${toNum(row.fileSizeMB).toFixed(2)} MB (${toNum(row.fileSizeGB).toFixed(2)} GB)` : "0 B"}
                             </td>
-                            <td className="px-4 py-3 text-gray-300">{row.assignedTo}</td>
+                            <td className="px-4 py-3 text-gray-300">{toStr(row.assignedTo, "Unassigned")}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -343,11 +356,11 @@ export default function ReportsPage() {
           </div>
 
           <div className="flex gap-8 mb-8 border border-gray-300 p-4 rounded-lg bg-gray-50">
-            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Total Assigned</span><span className="text-xl font-bold">{reportData.tasksAssigned}</span></div>
-            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Total Completed</span><span className="text-xl font-bold">{reportData.tasksCompleted}</span></div>
-            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Avg Time</span><span className="text-xl font-bold">{reportData.avgTimeFormatted || "-"}</span></div>
-            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Files Handled</span><span className="text-xl font-bold">{reportData.fileQuantity}</span></div>
-            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Efficiency</span><span className="text-xl font-bold">{reportData.efficiency}%</span></div>
+            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Total Assigned</span><span className="text-xl font-bold">{toStr(reportData.tasksAssigned, "0")}</span></div>
+            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Total Completed</span><span className="text-xl font-bold">{toStr(reportData.tasksCompleted, "0")}</span></div>
+            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Avg Time</span><span className="text-xl font-bold">{toStr(reportData.avgTimeFormatted, "-")}</span></div>
+            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Files Handled</span><span className="text-xl font-bold">{toStr(reportData.fileQuantity, "0")}</span></div>
+            <div><span className="text-gray-500 font-semibold text-xs uppercase block">Efficiency</span><span className="text-xl font-bold">{toStr(reportData.efficiency, "0")}%</span></div>
           </div>
 
           <h3 className="text-lg font-bold text-gray-900 mb-4 uppercase tracking-wide">Detailed Task List</h3>
@@ -364,10 +377,10 @@ export default function ReportsPage() {
             <tbody className="text-xs">
               {reportData.detailedTasks?.map((task: any, index: number) => (
                 <tr key={task._id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                  <td className="border border-gray-300 py-1 px-2 font-medium">{task.title}</td>
+                  <td className="border border-gray-300 py-1 px-2 font-medium">{toStr(task.title)}</td>
                   <td className="border border-gray-300 py-1 px-2 text-[10px]">
                     <span className={`px-1 py-0.5 rounded-sm font-bold uppercase tracking-wider ${task.isDone ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                      {task.status.replace(/_/g, ' ')}
+                      {toStr(task.status).replace(/_/g, ' ')}
                     </span>
                   </td>
                   <td className="border border-gray-300 py-1 px-2 text-center font-semibold text-gray-700">{task.fileCount}</td>
