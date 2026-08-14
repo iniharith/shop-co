@@ -343,10 +343,10 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 max-w-[calc(100vw-2rem)] p-0" align="start">
-                <Command>
+              <PopoverContent className="w-80 max-w-[calc(100vw-2rem)] p-0 max-h-[min(55vh,360px)] overflow-hidden flex flex-col" align="start">
+                <Command className="h-auto flex-1">
                   <CommandInput placeholder="Type a product name or category…" />
-                  <CommandList>
+                  <CommandList className="overflow-y-auto">
                     <CommandEmpty>No matching product or category.</CommandEmpty>
                     <CommandGroup heading="Categories">
                       {TASK_CATEGORIES.map(category => (
