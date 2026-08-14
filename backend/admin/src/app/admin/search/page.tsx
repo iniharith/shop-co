@@ -18,6 +18,7 @@ import {
 import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { GlobalSearchHit } from "@/types/globalSearch";
 import { Roles } from "@/types/api";
+import { AiSearchPanel } from "@/components/global/aiSearchPanel";
 
 const SEARCH_PAGE_LIMIT = 20;
 
@@ -78,6 +79,8 @@ export default function SearchResultsPage() {
         </div>
 
         <Separator />
+
+        <AiSearchPanel query={query} />
 
         {query.length < GLOBAL_SEARCH_MIN_LENGTH ? (
           <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-border/70 bg-card/30 px-6 text-center">

@@ -20,6 +20,26 @@ import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
 import { fileUploadRepository, notifyFileClients } from '../../infrastructure/repositories/FileUploadRepository';
 import { clearFolderGroupCache } from './fileUploadRoutes';
 import { decodeCursor } from '../../shared/utils/cursorPagination';
+import { indexTask, indexFile } from '../../application/ai/aiIndexService';
+import { pgVectorStore } from '../../infrastructure/vector/pgVectorStore';
+import { aiConfigured } from '../../infrastructure/ai/openaiClient';
+
+const reindexTaskInBg = (task: any) => {
+  if (!task || !aiConfigured()) return;
+  void indexTask(task).catch((err) => console.error('[ai] task index failed:', err.message));
+};
+const reindexFileInBg = (file: any) => {
+  if (!file || !aiConfigured()) return;
+  void indexFile(file).catch((err) => console.error('[ai] file index failed:', err.message));
+};
+const removeTaskIndex = (taskId: string) => {
+  if (!aiConfigured()) return;
+  void pgVectorStore.deleteEntity('tasks', taskId).catch(() => {});
+};
+const removeFileIndex = (fileId: string) => {
+  if (!aiConfigured()) return;
+  void pgVectorStore.deleteEntity('files', fileId).catch(() => {});
+};
 
 const redisService = new RedisService();
 type TaskFileTag = 'attachment' | 'draft' | 'for_print' | 'awb';
@@ -153,6 +173,7 @@ router.post(
     const freshTask = await taskRepository.findById(task._id.toString());
     res.json({ success: true, task: freshTask });
     void emitTaskUpdated('task_created', { task: freshTask });
+    reindexTaskInBg(freshTask);
   })
 );
 
@@ -277,6 +298,7 @@ router.put(
     const freshTask = await taskRepository.findById(req.params.id);
     res.json({ success: true, task: freshTask });
     void emitTaskUpdated('task_updated', { task: freshTask });
+    reindexTaskInBg(freshTask);
   })
 );
 
@@ -290,6 +312,7 @@ router.delete(
       if (req.query.permanent === 'true') {
         await deleteAllTaskFiles(task);
         await taskRepository.permanentDelete(req.params.id);
+        removeTaskIndex(req.params.id);
       } else {
         await taskRepository.delete(req.params.id);
       }
@@ -509,7 +532,7 @@ router.post(
       const authReq = req as any;
       const userId = authReq.userId || authReq.user?.id || 'admin';
 
-       await fileUploadRepository.create({
+       const createdUpload = await fileUploadRepository.create({
         userId: userId,
         taskId: task._id.toString(),
         orderId: task.orderId || undefined,
@@ -522,6 +545,7 @@ router.post(
         size: req.file.size,
         path: fileUrl,
       });
+      reindexFileInBg(createdUpload);
     } catch (e) {
       console.error('Failed to sync task file to FileUpload:', e);
     }
@@ -529,6 +553,7 @@ router.post(
     const freshTask = await taskRepository.findById(req.params.id);
     res.json({ success: true, task: freshTask });
     void emitTaskUpdated('task_updated', { task: freshTask });
+    reindexTaskInBg(freshTask);
   })
 );
 
@@ -569,7 +594,7 @@ router.post(
       const authReq = req as any;
       const userId = authReq.userId || authReq.user?.id || 'admin';
 
-      await fileUploadRepository.create({
+      const createdUpload = await fileUploadRepository.create({
         userId: userId,
         taskId: task._id.toString(),
         orderId: task.orderId || undefined,
@@ -582,6 +607,7 @@ router.post(
         size: size || 0,
         path: fileUrl,
       });
+      reindexFileInBg(createdUpload);
     } catch (e) {
       console.error('Failed to sync task file to FileUpload:', e);
     }
@@ -589,6 +615,7 @@ router.post(
     const freshTask = await taskRepository.findById(req.params.id);
     res.json({ success: true, task: freshTask });
     void emitTaskUpdated('task_updated', { task: freshTask });
+    reindexTaskInBg(freshTask);
   })
 );
 
@@ -625,6 +652,7 @@ router.delete(
         if (fileDoc) {
           if (fileDoc.path) await deleteFromS3(fileDoc.path).catch(console.error);
           await FileUpload.findByIdAndDelete(fileId);
+          removeFileIndex(fileId);
 
           // Remove the matching entry from the task's files array too, so the
           // file does not resurrect on the next refetch / socket update.

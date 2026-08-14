@@ -40,6 +40,7 @@ const auditRoutes_1 = __importDefault(require("../presentation/routes/auditRoute
 const easyParcelRoutes_1 = __importDefault(require("../presentation/routes/easyParcelRoutes"));
 const webVitalsRoutes_1 = __importDefault(require("../presentation/routes/webVitalsRoutes"));
 const mailRoutes_1 = __importDefault(require("../presentation/routes/mailRoutes"));
+const aiRoutes_1 = __importDefault(require("../presentation/routes/aiRoutes"));
 const audit_middleware_1 = require("../presentation/middlewares/audit.middleware");
 const bandwidthTracker_1 = require("../shared/utils/bandwidthTracker");
 const crypto_1 = require("crypto");
@@ -120,6 +121,8 @@ app.use('/api/webhooks/whatsapp', WhatsAppWebhookService_1.default);
 app.use('/api/app', appRoutes_1.default);
 // ─── Webmail Bridge (email.kampungcetak.com) ────────
 app.use('/api/mail', mailRoutes_1.default);
+// ─── AI Engine (semantic search + file verification) ────────
+app.use('/api/ai', aiRoutes_1.default);
 // ─── Admin Panel (served at admin.kampungcetak.com) ──────
 const adminPath = path_1.default.join(__dirname, '../../admin');
 app.use('/admin', express_1.default.static(adminPath));

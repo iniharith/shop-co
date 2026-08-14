@@ -64,6 +64,7 @@ const socketHandler_1 = require("../infrastructure/socket/socketHandler");
 const socketRegistry_1 = require("../infrastructure/socket/socketRegistry");
 const TrackingCronJob_1 = require("../infrastructure/jobs/TrackingCronJob");
 const TaskStatusAutoTransition_1 = require("../infrastructure/jobs/TaskStatusAutoTransition");
+const AiReindexJob_1 = require("../infrastructure/jobs/AiReindexJob");
 const Parcel_1 = require("../domain/entities/Parcel");
 const mongoose_1 = __importDefault(require("mongoose"));
 const Sentry = __importStar(require("@sentry/node"));
@@ -95,6 +96,7 @@ function main() {
                 });
                 (0, TrackingCronJob_1.startTrackingCronJob)(); // Auto-sync parcels every 15 min
                 (0, TaskStatusAutoTransition_1.startTaskAutoTransitionJob)(); // Auto-move PACKAGING → DELIVERED after 14 days
+                (0, AiReindexJob_1.startAiReindexCron)(); // Daily AI vector index refresh
             }, 30000);
         });
     });

@@ -66,6 +66,29 @@ const taskBroadcast_1 = require("../../shared/utils/taskBroadcast");
 const FileUploadRepository_1 = require("../../infrastructure/repositories/FileUploadRepository");
 const fileUploadRoutes_1 = require("./fileUploadRoutes");
 const cursorPagination_1 = require("../../shared/utils/cursorPagination");
+const aiIndexService_1 = require("../../application/ai/aiIndexService");
+const pgVectorStore_1 = require("../../infrastructure/vector/pgVectorStore");
+const openaiClient_1 = require("../../infrastructure/ai/openaiClient");
+const reindexTaskInBg = (task) => {
+    if (!task || !(0, openaiClient_1.aiConfigured)())
+        return;
+    void (0, aiIndexService_1.indexTask)(task).catch((err) => console.error('[ai] task index failed:', err.message));
+};
+const reindexFileInBg = (file) => {
+    if (!file || !(0, openaiClient_1.aiConfigured)())
+        return;
+    void (0, aiIndexService_1.indexFile)(file).catch((err) => console.error('[ai] file index failed:', err.message));
+};
+const removeTaskIndex = (taskId) => {
+    if (!(0, openaiClient_1.aiConfigured)())
+        return;
+    void pgVectorStore_1.pgVectorStore.deleteEntity('tasks', taskId).catch(() => { });
+};
+const removeFileIndex = (fileId) => {
+    if (!(0, openaiClient_1.aiConfigured)())
+        return;
+    void pgVectorStore_1.pgVectorStore.deleteEntity('files', fileId).catch(() => { });
+};
 const redisService = new redis_1.RedisService();
 const TASK_FILE_TAGS = new Set(['attachment', 'draft', 'for_print', 'awb']);
 const normalizeTaskFileTag = (tag) => {
@@ -177,6 +200,7 @@ router.post('/', auth_middileware_1.default, (0, express_async_handler_1.default
     const freshTask = yield TaskRepository_1.taskRepository.findById(task._id.toString());
     res.json({ success: true, task: freshTask });
     void (0, taskBroadcast_1.emitTaskUpdated)('task_created', { task: freshTask });
+    reindexTaskInBg(freshTask);
 })));
 // Helper function to delete all files for a task
 const deleteAllTaskFiles = (task) => __awaiter(void 0, void 0, void 0, function* () {
@@ -283,6 +307,7 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
     const freshTask = yield TaskRepository_1.taskRepository.findById(req.params.id);
     res.json({ success: true, task: freshTask });
     void (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: freshTask });
+    reindexTaskInBg(freshTask);
 })));
 // DELETE /api/tasks/:id
 router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -291,6 +316,7 @@ router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.de
         if (req.query.permanent === 'true') {
             yield deleteAllTaskFiles(task);
             yield TaskRepository_1.taskRepository.permanentDelete(req.params.id);
+            removeTaskIndex(req.params.id);
         }
         else {
             yield TaskRepository_1.taskRepository.delete(req.params.id);
@@ -461,7 +487,7 @@ router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'),
     try {
         const authReq = req;
         const userId = authReq.userId || ((_d = authReq.user) === null || _d === void 0 ? void 0 : _d.id) || 'admin';
-        yield FileUploadRepository_1.fileUploadRepository.create({
+        const createdUpload = yield FileUploadRepository_1.fileUploadRepository.create({
             userId: userId,
             taskId: task._id.toString(),
             orderId: task.orderId || undefined,
@@ -474,6 +500,7 @@ router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'),
             size: req.file.size,
             path: fileUrl,
         });
+        reindexFileInBg(createdUpload);
     }
     catch (e) {
         console.error('Failed to sync task file to FileUpload:', e);
@@ -481,6 +508,7 @@ router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'),
     const freshTask = yield TaskRepository_1.taskRepository.findById(req.params.id);
     res.json({ success: true, task: freshTask });
     void (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: freshTask });
+    reindexTaskInBg(freshTask);
 })));
 // POST /api/tasks/:id/files/save-metadata
 router.post('/:id/files/save-metadata', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -513,7 +541,7 @@ router.post('/:id/files/save-metadata', auth_middileware_1.default, (0, express_
     try {
         const authReq = req;
         const userId = authReq.userId || ((_d = authReq.user) === null || _d === void 0 ? void 0 : _d.id) || 'admin';
-        yield FileUploadRepository_1.fileUploadRepository.create({
+        const createdUpload = yield FileUploadRepository_1.fileUploadRepository.create({
             userId: userId,
             taskId: task._id.toString(),
             orderId: task.orderId || undefined,
@@ -526,6 +554,7 @@ router.post('/:id/files/save-metadata', auth_middileware_1.default, (0, express_
             size: size || 0,
             path: fileUrl,
         });
+        reindexFileInBg(createdUpload);
     }
     catch (e) {
         console.error('Failed to sync task file to FileUpload:', e);
@@ -533,6 +562,7 @@ router.post('/:id/files/save-metadata', auth_middileware_1.default, (0, express_
     const freshTask = yield TaskRepository_1.taskRepository.findById(req.params.id);
     res.json({ success: true, task: freshTask });
     void (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: freshTask });
+    reindexTaskInBg(freshTask);
 })));
 // DELETE /api/tasks/:id/files/:fileId
 router.delete('/:id/files/:fileId', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -565,6 +595,7 @@ router.delete('/:id/files/:fileId', auth_middileware_1.default, (0, express_asyn
                 if (fileDoc.path)
                     yield (0, s3_1.deleteFromS3)(fileDoc.path).catch(console.error);
                 yield FileUpload.findByIdAndDelete(fileId);
+                removeFileIndex(fileId);
                 // Remove the matching entry from the task's files array too, so the
                 // file does not resurrect on the next refetch / socket update.
                 if (fileDoc.path) {

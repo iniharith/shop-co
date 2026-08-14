@@ -75,6 +75,24 @@ const taskBroadcast_1 = require("../../shared/utils/taskBroadcast");
 const streamFilesAsZip_1 = require("../../shared/utils/streamFilesAsZip");
 const downloadProgress_1 = require("../../shared/utils/downloadProgress");
 const pdfSharePreview_1 = require("../../shared/utils/pdfSharePreview");
+const aiIndexService_1 = require("../../application/ai/aiIndexService");
+const pgVectorStore_1 = require("../../infrastructure/vector/pgVectorStore");
+const openaiClient_1 = require("../../infrastructure/ai/openaiClient");
+const reindexFileInBg = (file) => {
+    if (!file || !(0, openaiClient_1.aiConfigured)())
+        return;
+    void (0, aiIndexService_1.indexFile)(file).catch((err) => console.error('[ai] file index failed:', err.message));
+};
+const reindexTaskInBg = (task) => {
+    if (!task || !(0, openaiClient_1.aiConfigured)())
+        return;
+    void (0, aiIndexService_1.indexTask)(task).catch((err) => console.error('[ai] task index failed:', err.message));
+};
+const removeFileIndex = (fileId) => {
+    if (!(0, openaiClient_1.aiConfigured)())
+        return;
+    void pgVectorStore_1.pgVectorStore.deleteEntity('files', fileId).catch(() => { });
+};
 // Tiered cache: Redis primary, in-memory fallback when Redis connection drops
 const enrichedIndexCache = new redis_1.RedisService();
 const ENRICHED_CACHE_KEY_PREFIX = 'files:enrichedIndex:v2:';
@@ -167,6 +185,7 @@ router.post('/upload', auth_middileware_1.default, upload.array('files', 100), (
         data: savedFiles,
         count: savedFiles.length,
     });
+    savedFiles.forEach(reindexFileInBg);
 })));
 // ─── POST /api/files/presigned-url ────────────────────────
 // Get a presigned URL to upload file directly to S3
@@ -284,6 +303,7 @@ router.post('/save-metadata', auth_middileware_1.default, (0, express_async_hand
         data: savedFiles,
         count: savedFiles.length,
     });
+    savedFiles.forEach(reindexFileInBg);
 })));
 // ─── GET /api/files/my ────────────────────────────────────
 // Customer views their own uploaded files
@@ -1044,6 +1064,8 @@ router.post('/customer/save-metadata', (0, express_async_handler_1.default)((req
         audience: 'CUSTOMER',
     });
     res.json({ success: true, data: savedFiles, task: savedTask, shareLinkSlug: shareLink.slug });
+    savedFiles.forEach(reindexFileInBg);
+    reindexTaskInBg(savedTask);
 })));
 // ─── Staff manual ordering upload portal ────────────────────
 // Same direct-to-S3 flow as the customer upload portal
@@ -1205,6 +1227,8 @@ router.post('/manual/save-metadata', (0, express_async_handler_1.default)((req, 
         audience: 'CUSTOMER',
     });
     res.json({ success: true, data: savedFiles, task: savedTask, shareLinkSlug: shareLink.slug });
+    savedFiles.forEach(reindexFileInBg);
+    reindexTaskInBg(savedTask);
 })));
 // 🌐 Public: Add a customer note/comment to the artwork task (used by the Telegram bot)
 router.post('/customer/note', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -1326,6 +1350,7 @@ router.post('/s/:slug/save-metadata', (0, express_async_handler_1.default)(decod
         adminReviewed: false,
     })));
     res.json({ success: true, data: savedFiles });
+    savedFiles.forEach(reindexFileInBg);
 })));
 router.post('/s/:slug/upload', (0, express_async_handler_1.default)(decodeSharedSlug), upload.array('files', 100), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const files = req.files;
@@ -1426,6 +1451,7 @@ router.delete('/s/:slug/files/:id', (0, express_async_handler_1.default)((req, r
         console.warn('[SharedDelete] S3 delete failed:', err.message);
     }
     yield FileUploadRepository_1.fileUploadRepository.delete(req.params.id);
+    removeFileIndex(req.params.id);
     if (file.path) {
         yield Task_1.Task.updateMany({ "files.url": file.path }, { $pull: { files: { url: file.path } } });
     }
@@ -1708,6 +1734,7 @@ router.post('/bulk-delete', auth_middileware_1.default, (0, express_async_handle
                 continue; // skip if unauthorized
             }
             yield FileUploadRepository_1.fileUploadRepository.delete(id);
+            removeFileIndex(id);
             if (file.path) {
                 yield (0, s3_1.deleteFromS3)(file.path);
                 // Remove file from any Task that references it
@@ -1754,6 +1781,7 @@ router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.de
         console.warn('[FileUpload] Could not delete from S3:', err.message);
     }
     yield FileUploadRepository_1.fileUploadRepository.delete(req.params.id);
+    removeFileIndex(req.params.id);
     res.json({ success: true, message: 'Fail berjaya dipadam' });
 })));
 // ─── PUT /api/files/:id/move ─────────────────────────────────

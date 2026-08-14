@@ -30,6 +30,21 @@ interface QueuedFile {
   id: string;
 }
 
+interface AiIssue {
+  field: string;
+  found: string;
+  expected: string;
+  severity: 'error' | 'warning';
+  explanation: string;
+}
+
+interface AiVerification {
+  ok: boolean;
+  issues: AiIssue[];
+  summary: string;
+  textExtracted: boolean;
+}
+
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -86,6 +101,8 @@ export default function UploadPage() {
   const uploadedFilesRef = useRef(new Map<string, DirectUploadResult>());
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const [aiVerifications, setAiVerifications] = useState<Record<string, AiVerification>>({});
 
   const fetchMyFiles = useCallback(async () => {
     if (!token) return;
@@ -253,6 +270,29 @@ export default function UploadPage() {
       toast.error(e.message || "Gagal memadam fail");
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  async function runAiCheck(fileId: string) {
+    setVerifyingId(fileId);
+    try {
+      const res = await fetchWithTimeout(`${API}/api/ai/verify/${fileId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        credentials: 'include'
+      }, 60_000);
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || 'Semakan AI tidak tersedia. Sila cuba lagi.');
+      }
+      setAiVerifications(prev => ({ ...prev, [fileId]: data }));
+    } catch (e: any) {
+      toast.error(e.message || 'Semakan AI gagal. Sila cuba lagi.');
+    } finally {
+      setVerifyingId(null);
     }
   }
 
@@ -441,8 +481,11 @@ export default function UploadPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {myFiles.map(f => (
-                  <div key={f._id} className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm">
+                {myFiles.map(f => {
+                  const ai = aiVerifications[f._id];
+                  return (
+                  <div key={f._id} className="bg-white border border-gray-200 rounded-xl shadow-sm">
+                    <div className="px-4 py-3 flex items-center gap-3">
                     <div className="text-2xl">{f.mimetype.startsWith('image/') ? '🖼️' : '📄'}</div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-black truncate">{f.originalName}</p>
@@ -458,6 +501,21 @@ export default function UploadPage() {
                     }`}>
                       {f.adminReviewed ? '✅ Disemak' : '⏳ Menunggu'}
                     </span>
+                    <button
+                      onClick={() => runAiCheck(f._id)}
+                      disabled={verifyingId === f._id || deletingId === f._id}
+                      className="ml-2 text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 transition-colors px-4 py-2 rounded-lg font-bold flex items-center gap-2 text-sm border border-blue-200 shadow-sm"
+                      title="Semak fail dengan AI"
+                    >
+                      {verifyingId === f._id ? (
+                        <>
+                          <span className="block w-4 h-4 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" />
+                          Menyemak...
+                        </>
+                      ) : (
+                        <>🤖 Semak AI</>
+                      )}
+                    </button>
                     <button
                       onClick={() => handleDelete(f._id)}
                       disabled={deletingId === f._id}
@@ -475,8 +533,44 @@ export default function UploadPage() {
                         </>
                       )}
                     </button>
+                    </div>
+                    {ai && (
+                      <div className="border-t border-gray-100 px-4 py-3">
+                        <div className={`text-sm font-bold flex items-center gap-2 ${ai.ok ? 'text-green-700' : 'text-amber-700'}`}>
+                          {ai.ok ? '✅ Semakan AI: Tiada isu ditemui' : '⚠️ Semakan AI: Isu ditemui'}
+                        </div>
+                        {ai.summary && (
+                          <p className="text-sm text-gray-600 mt-1">{ai.summary}</p>
+                        )}
+                        {(ai.issues || []).length > 0 && (
+                          <ul className="mt-2 space-y-2">
+                            {(ai.issues || []).map((issue, idx) => (
+                              <li
+                                key={idx}
+                                className={`text-sm rounded-lg px-3 py-2 border ${
+                                  issue.severity === 'error'
+                                    ? 'bg-red-50 border-red-200 text-red-700'
+                                    : 'bg-amber-50 border-amber-200 text-amber-700'
+                                }`}
+                              >
+                                <span className="font-bold">{issue.field}:</span>{' '}
+                                {issue.explanation}
+                                {issue.found && <div className="text-xs opacity-80 mt-1">Ditemui: {issue.found}</div>}
+                                {issue.expected && <div className="text-xs opacity-80">Dijangka: {issue.expected}</div>}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        {!ai.textExtracted && (
+                          <p className="text-xs text-gray-400 mt-2">
+                            Fail ini tidak mengandungi teks yang boleh dibaca (cth. gambar). Semakan bergantung pada kandungan yang boleh diekstrak.
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

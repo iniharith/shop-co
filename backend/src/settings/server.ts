@@ -19,6 +19,7 @@ import { socketIoSetup } from '../infrastructure/socket/socketHandler';
 import { setAdminNamespace, setClientNamespace } from '../infrastructure/socket/socketRegistry';
 import { startTrackingCronJob } from '../infrastructure/jobs/TrackingCronJob';
 import { startTaskAutoTransitionJob } from '../infrastructure/jobs/TaskStatusAutoTransition';
+import { startAiReindexCron } from '../infrastructure/jobs/AiReindexJob';
 import { ensureParcelIndexes } from '../domain/entities/Parcel';
 import mongoose from 'mongoose';
 import * as Sentry from '@sentry/node';
@@ -55,6 +56,7 @@ async function main() {
             });
             startTrackingCronJob(); // Auto-sync parcels every 15 min
             startTaskAutoTransitionJob(); // Auto-move PACKAGING → DELIVERED after 14 days
+            startAiReindexCron(); // Daily AI vector index refresh
         }, 30_000);
     });
 }

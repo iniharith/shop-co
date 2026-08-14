@@ -6,10 +6,11 @@
 import { ICategoryResponse, IProductByIdResponse, IProductResponse } from "@/types/api";
 import { useQueryData } from "./useQueryData"
 import { getProductByCategory, getProductById, getProducts, getAvailableCategories, filterProducts } from "@/api/product";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFilterStore } from "@/store/filterStore";
 import { useSearchParams } from "next/navigation";
+import { AI_SEARCH_ENABLED, aiSemanticSearch } from "@/utils/aiSearch";
 
 import { dummyProducts } from "@/constants/dummy-products";
 
@@ -71,8 +72,38 @@ export const useProducts = (id?: string) => {
 
 export const useSearchProducts = (query: string) => {
     const terms = getSearchTerms(query);
-    const filtered = terms[0]?.length < 2 ? [] : dummyProducts.filter((product) => matchesSearch(product, terms));
-    return { data: { products: filtered }, isPending: false };
+    const keywordResults = terms[0]?.length < 2 ? [] : dummyProducts.filter((product) => matchesSearch(product, terms));
+    const [ai, setAi] = useState<{ products: any[]; summary: string | null } | null>(null);
+
+    useEffect(() => {
+        let active = true;
+        setAi(null);
+        if (!AI_SEARCH_ENABLED || query.trim().length < 2) return;
+        const timer = window.setTimeout(async () => {
+            const res = await aiSemanticSearch(query, { collections: ["products"], limit: 20 });
+            if (!active || !res?.groups?.products?.length) return;
+            const nameIndex = new Map(dummyProducts.map((p) => [String(p?.name || "").toLowerCase(), p]));
+            const ranked: any[] = [];
+            const seen = new Set<string>();
+            for (const hit of res.groups.products) {
+                const meta = hit.metadata || {};
+                const match = nameIndex.get(String(meta.name || hit.title || "").toLowerCase());
+                if (!match) continue;
+                const key = String(match._id);
+                if (seen.has(key)) continue;
+                seen.add(key);
+                ranked.push({ ...match, score: hit.score });
+            }
+            setAi({ products: ranked, summary: res.summary || null });
+        }, 250);
+        return () => { active = false; window.clearTimeout(timer); };
+    }, [query]);
+
+    const merged = ai?.products?.length
+        ? [...ai.products, ...keywordResults.filter((p) => !ai.products.some((ap) => String(ap._id) === String(p._id)))].slice(0, 20)
+        : keywordResults;
+
+    return { data: { products: merged }, isPending: false, aiSummary: ai?.summary || null, aiEnabled: AI_SEARCH_ENABLED };
 }
 
 export const useGetProductByCategory = (category: string) => {
@@ -93,14 +124,44 @@ export const useGetAvailableCategories = () => {
 export const useFilterProducts = () => {
     const searchParams = useSearchParams();
     const searchQuery = searchParams.get('search') || '';
-    
+
     const { serviceCategories, turnarounds, formats, materials, priceRange } = useFilterStore();
     // FORCE return the new printing products, simulating frontend filtering
     let filtered = [...dummyProducts.filter(p=>p)];
+
+    const [aiRanked, setAiRanked] = useState<string[] | null>(null);
+    const [aiSummary, setAiSummary] = useState<string | null>(null);
+
+    useEffect(() => {
+        let active = true;
+        setAiRanked(null);
+        setAiSummary(null);
+        if (!AI_SEARCH_ENABLED || searchQuery.trim().length < 2) return;
+        const timer = window.setTimeout(async () => {
+            const res = await aiSemanticSearch(searchQuery, { collections: ["products"], limit: 20 });
+            if (!active || !res?.groups?.products?.length) return;
+            const order: string[] = [];
+            for (const hit of res.groups.products) {
+                const meta = hit.metadata || {};
+                const match = dummyProducts.find((p) => String(p?.name || "").toLowerCase() === String(meta.name || hit.title || "").toLowerCase());
+                if (match) order.push(String(match._id));
+            }
+            setAiRanked(order);
+            setAiSummary(res.summary || null);
+        }, 250);
+        return () => { active = false; window.clearTimeout(timer); };
+    }, [searchQuery]);
     
     if (searchQuery) {
         const terms = getSearchTerms(searchQuery);
         filtered = filtered.filter((product) => matchesSearch(product, terms));
+    }
+
+    if (aiRanked && aiRanked.length > 0) {
+        const rankIndex = new Map(aiRanked.map((id, i) => [id, i]));
+        filtered = [...filtered].sort((a, b) =>
+            (rankIndex.get(String(a._id)) ?? 999) - (rankIndex.get(String(b._id)) ?? 999)
+        );
     }
     
     if (priceRange) {
@@ -119,7 +180,7 @@ export const useFilterProducts = () => {
         filtered = filtered.filter(p => p?.sizes && p.sizes.some((s: any) => formats.includes(s)));
     }
     
-    return { data: { products: filtered }, isPending: false, refetch: () => Promise.resolve() };
+    return { data: { products: filtered }, isPending: false, refetch: () => Promise.resolve(), aiSummary, aiEnabled: AI_SEARCH_ENABLED };
 }
 
 

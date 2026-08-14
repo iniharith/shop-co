@@ -25,6 +25,7 @@ import { ThemeSwitcher } from "./ThemeSwitcher";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { categoryLabels } from "@/i18n/messages";
+import { AI_SEARCH_ENABLED, aiSemanticSearch, aiSearchSuggestions } from "@/utils/aiSearch";
 
 // ── Mobile Drawer Content ────────────────────────────────────────────────────
 const MobileNavSheetContent = ({
@@ -37,6 +38,7 @@ const MobileNavSheetContent = ({
   isSearchFocused,
   setIsSearchFocused,
   handleSearch,
+  aiSuggestions,
 }: {
   closeDrawer: Function;
   session: any;
@@ -47,6 +49,7 @@ const MobileNavSheetContent = ({
   isSearchFocused: boolean;
   setIsSearchFocused: (val: boolean) => void;
   handleSearch: (e: React.FormEvent) => void;
+  aiSuggestions: string[];
 }) => {
   const pathname = usePathname();
   const { locale, t } = useLanguage();
@@ -159,6 +162,27 @@ const MobileNavSheetContent = ({
                 ) : (
                   <div className="px-3 py-3 text-xs text-muted-foreground text-center">{t("nav.noProducts")}</div>
                 )}
+                {aiSuggestions.length > 0 && (
+                  <div className="border-t border-border mt-1 pt-1">
+                    <p className="px-3 pt-2 pb-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">🤖 Cadangan AI</p>
+                    <div className="flex flex-wrap gap-2 px-3 pb-3 pt-1">
+                      {aiSuggestions.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => {
+                            setSearchQuery("");
+                            setIsSearchFocused(false);
+                            closeDrawer();
+                            router.push(`/home/shop?search=${encodeURIComponent(s)}`);
+                          }}
+                          className="text-xs bg-muted hover:bg-primary/10 text-foreground border border-border rounded-full px-3 py-1 transition-colors"
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </form>
@@ -269,6 +293,7 @@ const Nav = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
 
   const getAvatarUrl = () => {
     const avatar = (session?.user as any)?.avatar || (session?.user as any)?.image;
@@ -278,18 +303,45 @@ const Nav = () => {
   };
 
   useEffect(() => {
-    const query = searchQuery.trim().toLowerCase();
+    const query = searchQuery.trim();
     if (query.length < 2) {
       setSearchResults([]);
+      setAiSuggestions([]);
       return;
     }
     let active = true;
     const timer = window.setTimeout(async () => {
       const { dummyProducts } = await import("@/constants/dummy-products");
       if (!active) return;
-      setSearchResults(dummyProducts.filter((product: any) =>
-        product.name?.toLowerCase().includes(query) || product.category?.toLowerCase().includes(query)
-      ).slice(0, 8));
+      const lower = query.toLowerCase();
+      let results = dummyProducts.filter((product: any) =>
+        product.name?.toLowerCase().includes(lower) || product.category?.toLowerCase().includes(lower)
+      ).slice(0, 8);
+
+      if (AI_SEARCH_ENABLED) {
+        const [ai, suggestions] = await Promise.all([
+          aiSemanticSearch(query, { collections: ["products"], limit: 10 }),
+          aiSearchSuggestions(query),
+        ]);
+        if (!active) return;
+        if (ai?.groups?.products?.length) {
+          const seen = new Set(results.map((p: any) => String(p._id)));
+          const nameIndex = new Map(dummyProducts.map((p: any) => [String(p?.name || "").toLowerCase(), p]));
+          const extra: any[] = [];
+          for (const hit of ai.groups.products) {
+            const meta = hit.metadata || {};
+            const match = nameIndex.get(String(meta.name || hit.title || "").toLowerCase());
+            if (match && !seen.has(String(match._id))) {
+              seen.add(String(match._id));
+              extra.push(match);
+            }
+          }
+          results = [...extra, ...results].slice(0, 8);
+        }
+        setAiSuggestions(suggestions.filter((s) => s.toLowerCase() !== lower).slice(0, 4));
+      }
+      if (!active) return;
+      setSearchResults(results);
     }, 180);
     return () => {
       active = false;
@@ -332,6 +384,7 @@ const Nav = () => {
                 isSearchFocused={isSearchFocused}
                 setIsSearchFocused={setIsSearchFocused}
                 handleSearch={handleSearch}
+                aiSuggestions={aiSuggestions}
               />
             </Drawer.Root>
 
@@ -394,6 +447,26 @@ const Nav = () => {
                   ))
                 ) : (
                   <div className="px-4 py-3 text-sm text-muted-foreground text-center">{t("nav.noProducts")} &quot;{searchQuery}&quot;</div>
+                )}
+                {aiSuggestions.length > 0 && (
+                  <div className="border-t border-border mt-1 pt-1">
+                    <p className="px-4 pt-2 pb-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">🤖 Cadangan AI</p>
+                    <div className="flex flex-wrap gap-2 px-4 pb-3 pt-1">
+                      {aiSuggestions.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => {
+                            setSearchQuery("");
+                            setIsSearchFocused(false);
+                            router.push(`/home/shop?search=${encodeURIComponent(s)}`);
+                          }}
+                          className="text-xs bg-muted hover:bg-primary/10 text-foreground border border-border rounded-full px-3 py-1 transition-colors"
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             )}

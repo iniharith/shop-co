@@ -27,7 +27,7 @@ const ITEMS_PER_PAGE = 8;
 
 const ShopContent = () => {
   const { t } = useLanguage();
-  const { data, isPending } = useFilterProducts();
+  const { data, isPending, aiSummary, aiEnabled } = useFilterProducts();
   const products = data?.products || [];
   
   const searchParams = useSearchParams();
@@ -65,6 +65,12 @@ const ShopContent = () => {
               </Drawer>
             </div>
           </div>
+          {aiEnabled && aiSummary && (
+            <div className="flex items-start gap-3 bg-primary/5 border border-primary/20 rounded-2xl px-4 py-3 text-sm text-foreground">
+              <span className="text-lg leading-none mt-0.5">🤖</span>
+              <p className="leading-relaxed">{aiSummary}</p>
+            </div>
+          )}
           <motion.div
             variants={container_variants}
             initial="hidden"

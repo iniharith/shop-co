@@ -27,6 +27,22 @@ import { emitTaskUpdated } from '../../shared/utils/taskBroadcast';
 import { streamFilesAsZip } from '../../shared/utils/streamFilesAsZip';
 import { getDownloadProgress } from '../../shared/utils/downloadProgress';
 import { warmPdfSharePreview } from '../../shared/utils/pdfSharePreview';
+import { indexFile, indexTask } from '../../application/ai/aiIndexService';
+import { pgVectorStore } from '../../infrastructure/vector/pgVectorStore';
+import { aiConfigured } from '../../infrastructure/ai/openaiClient';
+
+const reindexFileInBg = (file: any) => {
+  if (!file || !aiConfigured()) return;
+  void indexFile(file).catch((err) => console.error('[ai] file index failed:', err.message));
+};
+const reindexTaskInBg = (task: any) => {
+  if (!task || !aiConfigured()) return;
+  void indexTask(task).catch((err) => console.error('[ai] task index failed:', err.message));
+};
+const removeFileIndex = (fileId: string) => {
+  if (!aiConfigured()) return;
+  void pgVectorStore.deleteEntity('files', fileId).catch(() => {});
+};
 
 // Tiered cache: Redis primary, in-memory fallback when Redis connection drops
 const enrichedIndexCache = new RedisService();
@@ -139,6 +155,7 @@ router.post(
       data: savedFiles,
       count: savedFiles.length,
     });
+    savedFiles.forEach(reindexFileInBg);
   })
 );
 // ─── POST /api/files/presigned-url ────────────────────────
@@ -286,6 +303,7 @@ router.post(
       data: savedFiles,
       count: savedFiles.length,
     });
+    savedFiles.forEach(reindexFileInBg);
   })
 );
 
@@ -1186,6 +1204,8 @@ router.post(
     });
 
     res.json({ success: true, data: savedFiles, task: savedTask, shareLinkSlug: shareLink.slug });
+    savedFiles.forEach(reindexFileInBg);
+    reindexTaskInBg(savedTask);
   })
 );
 
@@ -1368,6 +1388,8 @@ router.post(
     });
 
     res.json({ success: true, data: savedFiles, task: savedTask, shareLinkSlug: shareLink.slug });
+    savedFiles.forEach(reindexFileInBg);
+    reindexTaskInBg(savedTask);
   })
 );
 
@@ -1541,6 +1563,7 @@ router.post(
     );
 
     res.json({ success: true, data: savedFiles });
+    savedFiles.forEach(reindexFileInBg);
   })
 );
 
@@ -1660,6 +1683,7 @@ router.delete(
       console.warn('[SharedDelete] S3 delete failed:', err.message);
     }
     await fileUploadRepository.delete(req.params.id);
+    removeFileIndex(req.params.id);
     if (file.path) {
       await Task.updateMany(
         { "files.url": file.path },
@@ -2012,6 +2036,7 @@ router.post(
         }
 
         await fileUploadRepository.delete(id);
+        removeFileIndex(id);
         if (file.path) {
           await deleteFromS3(file.path);
           // Remove file from any Task that references it
@@ -2072,6 +2097,7 @@ router.delete(
     }
 
     await fileUploadRepository.delete(req.params.id);
+    removeFileIndex(req.params.id);
     res.json({ success: true, message: 'Fail berjaya dipadam' });
   })
 );

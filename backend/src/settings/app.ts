@@ -36,6 +36,7 @@ import auditRoutes from '../presentation/routes/auditRoutes';
 import easyParcelRoutes from '../presentation/routes/easyParcelRoutes';
 import webVitalsRoutes from '../presentation/routes/webVitalsRoutes';
 import mailRoutes from '../presentation/routes/mailRoutes';
+import aiRoutes from '../presentation/routes/aiRoutes';
 import { auditMiddleware } from '../presentation/middlewares/audit.middleware';
 import { bandwidthMiddleware } from '../shared/utils/bandwidthTracker';
 import { randomUUID } from 'crypto';
@@ -134,6 +135,9 @@ app.use('/api/app', appRoutes);
 
 // ─── Webmail Bridge (email.kampungcetak.com) ────────
 app.use('/api/mail', mailRoutes);
+
+// ─── AI Engine (semantic search + file verification) ────────
+app.use('/api/ai', aiRoutes);
 
 // ─── Admin Panel (served at admin.kampungcetak.com) ──────
 const adminPath = path.join(__dirname, '../../admin');

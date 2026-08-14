@@ -37,6 +37,29 @@ services:
       timeout: 5s
       retries: 5
 
+  vector-db:
+    image: pgvector/pgvector:pg16
+    container_name: shopco_vector_db_container
+    restart: on-failure
+    ports:
+      - "5432:5432"
+    volumes:
+      - vector_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: shopco
+      POSTGRES_PASSWORD: shopco
+      POSTGRES_DB: shopco
+    networks:
+      app-network:
+        aliases:
+          - vector-db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shopco -d shopco"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   backend:
     image: abshar777/shopco_backend_2:latest
     container_name: shopco_backend_container
@@ -48,12 +71,16 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      vector-db:
+        condition: service_healthy
     environment:
       PORT: 8000
       FRONTEND_URL: https://studioivory.art
       ADMIN_URL: https://admin.studioivory.art
       MONGO_URI: mongodb://abshar:123@mongo:27017/shop-co?authSource=admin
       REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgres://shopco:shopco@vector-db:5432/shopco
+      AI_EMBEDDING_DIM: "1536"
       ADMIN_EMAIL: admin@gmail.com
       ADMIN_PASSWORD: admin
       JWT_REFRESH_SECRET: 8590026442@Abshar*
@@ -108,3 +135,4 @@ networks:
 volumes:
   mongo_data:
   redis_data:
+  vector_data:
