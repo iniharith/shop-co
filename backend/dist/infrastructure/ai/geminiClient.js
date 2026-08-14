@@ -85,8 +85,8 @@ function embedTexts(texts) {
                 requests: batch.map((text) => ({
                     model: `models/${model}`,
                     content: { parts: [{ text }] },
+                    outputDimensionality: getEmbeddingDim(),
                 })),
-                outputDimensionality: getEmbeddingDim(),
             });
             out.push(...(data.embeddings || []).map((e) => e.values || []));
         }

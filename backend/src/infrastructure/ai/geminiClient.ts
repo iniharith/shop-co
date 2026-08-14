@@ -77,8 +77,8 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
       requests: batch.map((text) => ({
         model: `models/${model}`,
         content: { parts: [{ text }] },
+        outputDimensionality: getEmbeddingDim(),
       })),
-      outputDimensionality: getEmbeddingDim(),
     });
     out.push(...((data.embeddings || []) as any[]).map((e) => e.values || []));
   }
