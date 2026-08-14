@@ -770,6 +770,10 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const winPosRef = React.useRef({ x: 0, y: 0 });
   const winSizeRef = React.useRef<{ w: number; h: number } | null>(null);
   const dragStateRef = React.useRef<{ mode: 'move' | 'resize'; startX: number; startY: number; origX: number; origY: number; origW: number; origH: number; rafId: number | null } | null>(null);
+  // Guards so the saved view is applied once per open (never mid-drag) and
+  // the close-time persist never overwrites a good saved view with defaults.
+  const viewAppliedRef = React.useRef(false);
+  const viewTouchedRef = React.useRef(false);
 
   // Drag-and-drop is handled from a single window-level dragover listener
   // instead of React dragenter/dragleave pairs. dragenter/dragleave fire
@@ -877,6 +881,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     if (s.rafId == null) {
       s.rafId = requestAnimationFrame(applyWindowDrag);
     }
+    viewTouchedRef.current = true;
   };
 
   const onWindowPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -888,28 +893,48 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     dragStateRef.current = null;
     document.body.style.userSelect = '';
     document.body.style.cursor = '';
-    const view: TaskModalView = { ...winPosRef.current };
-    const sz = winSizeRef.current;
-    if (sz) { view.w = sz.w; view.h = sz.h; }
-    saveTaskModalView(view);
+    persistCurrentView();
     try { (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId); } catch { /* noop */ }
   };
 
-  const applySavedView = (el: HTMLDivElement) => {
+  const applySavedView = React.useCallback((): boolean => {
+    const el = dialogRef.current;
+    if (!el) return false;
     const saved = loadTaskModalView();
-    if (!saved) return;
-    winPosRef.current = { x: saved.x, y: saved.y };
-    el.style.transform = `translate(calc(-50% + ${saved.x}px), calc(-50% + ${saved.y}px))`;
-    if (saved.w && saved.h) {
+    if (!saved) return false;
+    const x = Number.isFinite(saved.x) ? saved.x : 0;
+    const y = Number.isFinite(saved.y) ? saved.y : 0;
+    winPosRef.current = { x, y };
+    el.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+    if (Number.isFinite(saved.w) && Number.isFinite(saved.h) && saved.w > 0 && saved.h > 0) {
       winSizeRef.current = { w: saved.w, h: saved.h };
       el.style.width = `${saved.w}px`;
       el.style.height = `${saved.h}px`;
       el.style.maxWidth = 'none';
       el.style.maxHeight = 'none';
     }
-  };
+    viewTouchedRef.current = true;
+    return true;
+  }, []);
 
-  const persistCurrentView = () => {
+  // Applies the saved view the moment the dialog node exists. The layout
+  // effect below covers the toggle-open case; this ref callback covers the
+  // case where the portal content mounts in a later commit than the effect
+  // ran, which made the restore silently never happen.
+  const attachDialogRef = React.useCallback((el: HTMLDivElement | null) => {
+    if (!el) {
+      dialogRef.current = null;
+      viewAppliedRef.current = false;
+      return;
+    }
+    dialogRef.current = el;
+    if (!viewAppliedRef.current && (applySavedView() || dialogRef.current)) {
+      viewAppliedRef.current = true;
+    }
+  }, [applySavedView]);
+
+  const persistCurrentView = React.useCallback(() => {
+    if (!viewTouchedRef.current) return;
     const view: TaskModalView = { ...winPosRef.current };
     const size = winSizeRef.current;
     if (size) {
@@ -917,22 +942,29 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       view.h = size.h;
     }
     saveTaskModalView(view);
-  };
+  }, []);
 
   React.useLayoutEffect(() => {
-    if (!isOpen || !dialogRef.current) return;
-    applySavedView(dialogRef.current);
-  }, [isOpen]);
+    if (!isOpen) {
+      viewAppliedRef.current = false;
+      viewTouchedRef.current = false;
+      return;
+    }
+    if (!viewAppliedRef.current && (applySavedView() || dialogRef.current)) {
+      viewAppliedRef.current = true;
+    }
+  }, [isOpen, applySavedView]);
 
   React.useEffect(() => {
     if (!isOpen) return;
     return persistCurrentView;
-  }, [isOpen]);
+  }, [isOpen, persistCurrentView]);
 
   const handleResetView = () => {
     clearTaskModalView();
     winPosRef.current = { x: 0, y: 0 };
     winSizeRef.current = null;
+    viewTouchedRef.current = false;
     const el = dialogRef.current;
     if (el) {
       el.style.transform = '';
@@ -1166,7 +1198,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        ref={dialogRef}
+        ref={attachDialogRef}
         className="task-modal-content top-1/2 left-1/2 max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[85vh] flex flex-col will-change-transform"
         onDrop={(e) => {
           e.preventDefault();
