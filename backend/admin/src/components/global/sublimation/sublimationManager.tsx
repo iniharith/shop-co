@@ -766,7 +766,6 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                         </select>
                         )}
                       </div>
-                      {!isReadOnly && (
                       <Button 
                         variant="outline" 
                         onClick={(e) => handleAdvanceFlow(activeGroup, e)} 
@@ -776,7 +775,6 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                         <CheckCircle className="w-5 h-5 sm:mr-2" /> 
                         <span className="hidden sm:inline">{activeSubTab === "IN_PRODUCTION" ? "Done Print" : activeSubTab === "PRINT_AWB" ? "Done Print AWB" : "Shipped"}</span>
                       </Button>
-                      )}
                       {!isReadOnly && (
                       <Button 
                         variant="outline" 
