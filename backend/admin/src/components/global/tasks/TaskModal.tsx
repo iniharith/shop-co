@@ -341,7 +341,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { mutateAsync: moveFile, isPending: isMovingFile } = useMoveFile();
   const taskFolders = ((foldersData as any)?.data || []).filter((f: any) => f.taskId === task._id);
   const [expandedFolderIds, setExpandedFolderIds] = useState<Record<string, boolean>>({});
-  const [ungroupedOpen, setUngroupedOpen] = useState(true);
+  const [ungroupedOpen, setUngroupedOpen] = useState<Record<string, boolean>>({ artworks: true, attachments: true });
   const [pendingDropFolderId, setPendingDropFolderId] = useState<string | null>(null);
   const uploadFolderIdRef = React.useRef<string | null>(null);
 
@@ -399,16 +399,16 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     });
   }, [fullTask, taskFiles, deletedFileIds]);
 
-  const folderFileGroups = React.useMemo(() => {
-    const map: Record<string, any[]> = {};
-    taskFolders.forEach((f: any) => { map[f._id] = []; });
-    const ungrouped: any[] = [];
-    combinedFiles.forEach((file: any) => {
-      if (file.folderId && map[file.folderId]) map[file.folderId].push(file);
-      else ungrouped.push(file);
-    });
-    return { map, ungrouped };
-  }, [combinedFiles, taskFolders]);
+  const artworkFiles = React.useMemo(
+    () => combinedFiles.filter((file: any) => file.tag === 'draft' || file.tag === 'for_print'),
+    [combinedFiles]
+  );
+  const attachmentFiles = React.useMemo(
+    () => combinedFiles.filter((file: any) => file.tag !== 'draft' && file.tag !== 'for_print'),
+    [combinedFiles]
+  );
+  const artworkUploads = uploadingFiles.filter(file => file.tag === 'draft' || file.tag === 'for_print');
+  const attachmentUploads = uploadingFiles.filter(file => file.tag !== 'draft' && file.tag !== 'for_print');
 
   // Auto-detect the AWB file uploaded to this task so the Quick Links panel
   // can show a live preview of it above the Done button.
@@ -427,10 +427,10 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     return `${backendBase}/api/files/proxy-download?url=${encodeURIComponent(awbPreviewUrl)}&name=${encodeURIComponent(awbFile.name || 'AWB')}&inline=true#toolbar=0`;
   }, [awbFile, awbPreviewUrl]);
 
-  const handleDownloadAllAttachments = () => {
-    if (!combinedFiles || combinedFiles.length === 0) return;
-    toast.success(`Downloading ${combinedFiles.length} file(s)...`);
-    combinedFiles.forEach((file: any, index: number) => {
+  const handleDownloadFiles = (files: any[], label: string) => {
+    if (files.length === 0) return;
+    toast.success(`Downloading ${files.length} ${label.toLowerCase()} file(s)...`);
+    files.forEach((file: any, index: number) => {
       setTimeout(() => {
         forceDownload(file.url, file.name);
       }, index * 300);
@@ -923,6 +923,225 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     }
   };
 
+  const renderUploadingFile = (file: any) => (
+    <div key={file.id} className={`relative group w-fit max-w-full mb-6 mt-1 opacity-70 ${file.status === 'uploading' ? 'animate-pulse' : ''}`}>
+      <div className={`flex items-center gap-1.5 p-1.5 pb-3 pr-1.5 rounded-[12px] w-full min-w-[140px] shadow-sm relative z-10 overflow-visible ${file.status === 'error' ? 'bg-[#ffcfcf]' : 'bg-[#5a5a5a]'}`}>
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${file.status === 'error' ? 'bg-[#ff9999]' : 'bg-[#666666]'}`}>
+          {file.status === 'uploading' ? (
+            <LoaderCircle className="w-4 h-4 text-white animate-spin" />
+          ) : file.status === 'success' ? (
+            <CheckCircle className="w-4 h-4 text-[#4ade80]" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-white" />
+          )}
+        </div>
+        <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-0.5 gap-0.5 pt-3">
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              removeUpload(file.id);
+            }}
+            className="absolute top-1 left-1 p-0.5 bg-black/50 hover:bg-red-500 rounded-full text-white transition-colors z-20"
+            title={file.status === 'error' ? 'Dismiss' : 'Cancel Upload'}
+          >
+            <X className="w-3 h-3" />
+          </button>
+          {file.status === 'error' && file.file && (
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                handleRetryUpload(file);
+              }}
+              className="absolute top-1 left-5 ml-1 p-0.5 bg-blue-500 hover:bg-blue-600 rounded-full text-white transition-colors z-20"
+              title="Retry Upload"
+            >
+              <RefreshCw className="w-3 h-3" />
+            </button>
+          )}
+          {file.tag === 'draft' ? (
+            <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Draft</div>
+          ) : file.tag === 'for_print' ? (
+            <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">For Print</div>
+          ) : file.tag === 'awb' ? (
+            <div className="absolute top-0 right-0 bg-red-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">AWB</div>
+          ) : (
+            <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Attachment</div>
+          )}
+          <div className="flex justify-between items-center w-full min-w-0 mt-1">
+            <span className={`truncate font-medium text-[10px] tracking-wide pr-1 ${file.status === 'error' ? 'text-red-900' : 'text-white'}`}>
+              {file.name}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="absolute -bottom-4 left-[5%] right-[5%] z-0">
+        <div className={`w-full text-[10px] font-medium p-1 px-3 rounded-b-[12px] shadow-sm text-center ${file.status === 'error' ? 'bg-red-500 text-white' : 'bg-[#fae863] text-black'}`}>
+          {file.status === 'uploading' ? `Uploading... ${file.progress}%` : file.status === 'success' ? 'Uploaded!' : 'Failed'}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderFileCard = (file: any, includeFolders = false) => (
+    <FileAttachmentCard
+      key={file.url}
+      allFiles={taskFiles}
+      task={fullTask}
+      file={file}
+      deleteFile={deleteFile}
+      isDeletingFile={isDeletingFile}
+      onPreview={setPreviewFile}
+      onDeleteLocal={(fileId: string) => setDeletedFileIds(prev => [...prev, fileId])}
+      folders={includeFolders ? taskFolders : undefined}
+      moveFile={includeFolders ? handleMoveFile : undefined}
+    />
+  );
+
+  const renderFileSection = ({
+    id,
+    title,
+    files,
+    pendingUploads,
+    icon,
+  }: {
+    id: 'artworks' | 'attachments';
+    title: string;
+    files: any[];
+    pendingUploads: any[];
+    icon: React.ReactNode;
+  }) => {
+    if (files.length === 0 && pendingUploads.length === 0) return null;
+
+    const folderGroups: Record<string, any[]> = {};
+    taskFolders.forEach((folder: any) => { folderGroups[folder._id] = []; });
+    const ungroupedFiles: any[] = [];
+    files.forEach((file: any) => {
+      if (file.folderId && folderGroups[file.folderId]) folderGroups[file.folderId].push(file);
+      else ungroupedFiles.push(file);
+    });
+
+    return (
+      <section className="space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+            {icon} {title}
+            {files.length > 0 && <span className="text-xs text-muted-foreground font-normal">({files.length})</span>}
+          </label>
+          {files.length > 0 && (
+            <button
+              type="button"
+              onClick={() => handleDownloadFiles(files, title)}
+              className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors cursor-pointer"
+              title={`Download all ${title.toLowerCase()}`}
+            >
+              <DownloadIcon className="w-3.5 h-3.5" />
+              Download All
+            </button>
+          )}
+        </div>
+
+        {pendingUploads.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
+            {pendingUploads.map(renderUploadingFile)}
+          </div>
+        )}
+
+        {taskFolders.length > 0 ? (
+          <div className="space-y-3">
+            {taskFolders.map((folder: any) => {
+              const folderFiles = folderGroups[folder._id] || [];
+              const expandedKey = `${id}:${folder._id}`;
+              const isOpen = !!expandedFolderIds[expandedKey];
+              const isDropTarget = dropFolderId === folder._id;
+              return (
+                <div
+                  key={folder._id}
+                  data-folder-id={folder._id}
+                  className={`relative border border-border/60 rounded-xl overflow-hidden bg-muted/5 transition-colors ${isDropTarget ? 'ring-2 ring-primary border-primary bg-primary/5' : ''}`}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setIsDragOverModal(false);
+                    setDropFolderId(null);
+                    if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+                      setPendingDropFolderId(folder._id);
+                      setPendingDropFiles(Array.from(event.dataTransfer.files));
+                    }
+                  }}
+                >
+                  {isDropTarget && (
+                    <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-primary/10">
+                      <div className="bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                        Drop to upload into this folder
+                      </div>
+                    </div>
+                  )}
+                  <button type="button" onClick={() => toggleFolder(expandedKey)} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors text-left">
+                    {isOpen ? (
+                      <FolderOpen className="w-5 h-5 text-primary/70 shrink-0" fill="currentColor" />
+                    ) : (
+                      <Folder className="w-5 h-5 text-primary/70 shrink-0" fill="currentColor" />
+                    )}
+                    <span className="text-sm font-semibold flex-1 truncate">{folder.name}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{folderFiles.length} file(s)</span>
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? '' : '-rotate-90'}`} />
+                  </button>
+                  {isOpen && (
+                    <div className="border-t border-border/60 p-3">
+                      {folderFiles.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No {title.toLowerCase()} in this folder yet.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
+                          {folderFiles.map((file: any) => renderFileCard(file, true))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {ungroupedFiles.length > 0 && (
+              <div className="border border-border/60 rounded-xl overflow-hidden bg-muted/5">
+                <button type="button" onClick={() => setUngroupedOpen(prev => ({ ...prev, [id]: !prev[id] }))} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors text-left">
+                  <Files className="w-5 h-5 text-muted-foreground shrink-0" />
+                  <span className="text-sm font-semibold flex-1 truncate">Ungrouped</span>
+                  <span className="text-xs text-muted-foreground shrink-0">{ungroupedFiles.length} file(s)</span>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${ungroupedOpen[id] ? '' : '-rotate-90'}`} />
+                </button>
+                {ungroupedOpen[id] && (
+                  <div className="border-t border-border/60 p-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
+                      {ungroupedFiles.map((file: any) => renderFileCard(file, true))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
+            {files.slice(0, 12).map((file: any) => renderFileCard(file))}
+          </div>
+        )}
+
+        {files.length > 12 && taskFolders.length === 0 && (
+          <div className="mt-4 flex justify-center">
+            <Button
+              variant="secondary"
+              className="w-full shadow-sm hover:shadow-md transition-shadow"
+              onClick={() => {
+                onClose();
+                router.push(`/admin/artworks?folder=${encodeURIComponent(task.title)}`);
+              }}
+            >
+              View all {files.length} {title.toLowerCase()} in Artworks Manager
+            </Button>
+          </div>
+        )}
+      </section>
+    );
+  };
+
   return (
     <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -1053,27 +1272,14 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               </div>
 
               <div className="space-y-4 pt-4 border-t border-border/50">
-                <div className="mb-6 space-y-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Paperclip className="w-4 h-4 text-muted-foreground" /> Attachments {combinedFiles.length > 0 && <span className="text-xs text-muted-foreground font-normal">({combinedFiles.length})</span>}
-                    </label>
+                <div className="mb-6 space-y-5">
+                  <div className="flex items-center justify-end flex-wrap gap-2">
                     {fullTask.status === "IN_PRODUCTION" ? (
                       <div className="flex items-center gap-2 flex-wrap">
                         <a href={`/admin/production?folder=${encodeURIComponent(task.title || task._id)}`} target="_blank" className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors shadow-sm" title="Go to Production Folder">
                           <Folder className="w-3.5 h-3.5" />
                           Production Folder
                         </a>
-                        <button
-                          type="button"
-                          onClick={handleDownloadAllAttachments}
-                          disabled={!combinedFiles || combinedFiles.length === 0}
-                          className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
-                          title="Download all attachments"
-                        >
-                          <DownloadIcon className="w-3.5 h-3.5" />
-                          Download All
-                        </button>
                         <button
                           type="button"
                           disabled={isGeneratingLink}
@@ -1093,16 +1299,6 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                         </a>
                         <button
                           type="button"
-                          onClick={handleDownloadAllAttachments}
-                          disabled={!combinedFiles || combinedFiles.length === 0}
-                          className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
-                          title="Download all attachments"
-                        >
-                          <DownloadIcon className="w-3.5 h-3.5" />
-                          Download All
-                        </button>
-                        <button
-                          type="button"
                           disabled={isGeneratingLink}
                           onClick={() => handleShareLink()}
                           className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-50"
@@ -1118,16 +1314,6 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                           <Folder className="w-3.5 h-3.5" />
                           Artwork Folder
                         </a>
-                        <button
-                          type="button"
-                          onClick={handleDownloadAllAttachments}
-                          disabled={!combinedFiles || combinedFiles.length === 0}
-                          className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold rounded-md transition-colors disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
-                          title="Download all attachments"
-                        >
-                          <DownloadIcon className="w-3.5 h-3.5" />
-                          Download All
-                        </button>
                         <button
                           type="button"
                           disabled={isGeneratingLink}
@@ -1147,192 +1333,21 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                       No files attached to this task yet. Upload files below or click Share Link to send an upload portal link to the customer.
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      {uploadingFiles.length > 0 && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
-                          {uploadingFiles.map(f => (
-                            <div key={f.id} className={`relative group w-fit max-w-full mb-6 mt-1 opacity-70 ${f.status === 'uploading' ? 'animate-pulse' : ''}`}>
-                              <div className={`flex items-center gap-1.5 p-1.5 pb-3 pr-1.5 rounded-[12px] w-full min-w-[140px] shadow-sm relative z-10 overflow-visible ${f.status === 'error' ? 'bg-[#ffcfcf]' : 'bg-[#5a5a5a]'}`}>
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${f.status === 'error' ? 'bg-[#ff9999]' : 'bg-[#666666]'}`}>
-                                  {f.status === 'uploading' ? (
-                                    <LoaderCircle className="w-4 h-4 text-white animate-spin" />
-                                  ) : f.status === 'success' ? (
-                                    <CheckCircle className="w-4 h-4 text-[#4ade80]" />
-                                  ) : (
-                                    <AlertCircle className="w-4 h-4 text-white" />
-                                  )}
-                                </div>
-                                <div className="flex-1 flex flex-col justify-center min-w-0 mr-1 pl-0.5 gap-0.5 pt-3">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      removeUpload(f.id);
-                                    }}
-                                    className="absolute top-1 left-1 p-0.5 bg-black/50 hover:bg-red-500 rounded-full text-white transition-colors z-20"
-                                    title={f.status === 'error' ? 'Dismiss' : 'Cancel Upload'}
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                  {f.status === 'error' && f.file && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRetryUpload(f);
-                                      }}
-                                      className="absolute top-1 left-5 ml-1 p-0.5 bg-blue-500 hover:bg-blue-600 rounded-full text-white transition-colors z-20"
-                                      title="Retry Upload"
-                                    >
-                                      <RefreshCw className="w-3 h-3" />
-                                    </button>
-                                  )}
-                                  {f.tag === 'draft' ? (
-                                    <div className="absolute top-0 right-0 bg-orange-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Draft</div>
-                                  ) : f.tag === 'for_print' ? (
-                                    <div className="absolute top-0 right-0 bg-green-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">For Print</div>
-                                  ) : f.tag === 'awb' ? (
-                                    <div className="absolute top-0 right-0 bg-red-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">AWB</div>
-                                  ) : (
-                                    <div className="absolute top-0 right-0 bg-gray-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl-lg shadow-sm tracking-wide z-10 uppercase">Attachment</div>
-                                  )}
-                                  <div className="flex justify-between items-center w-full min-w-0 mt-1">
-                                    <span className={`truncate font-medium text-[10px] tracking-wide pr-1 ${f.status === 'error' ? 'text-red-900' : 'text-white'}`}>
-                                      {f.name}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="absolute -bottom-4 left-[5%] right-[5%] z-0">
-                                <div className={`w-full text-[10px] font-medium p-1 px-3 rounded-b-[12px] shadow-sm text-center ${f.status === 'error' ? 'bg-red-500 text-white' : 'bg-[#fae863] text-black'}`}>
-                                  {f.status === 'uploading' ? `Uploading... ${f.progress}%` : f.status === 'success' ? 'Uploaded!' : 'Failed'}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {taskFolders.length > 0 ? (
-                        <div className="space-y-3">
-                          {taskFolders.map(folder => {
-                            const folderFiles = folderFileGroups.map[folder._id] || [];
-                            const isOpen = !!expandedFolderIds[folder._id];
-                            const isDropTarget = dropFolderId === folder._id;
-                            return (
-                              <div
-                                key={folder._id}
-                                data-folder-id={folder._id}
-                                className={`relative border border-border/60 rounded-xl overflow-hidden bg-muted/5 transition-colors ${isDropTarget ? 'ring-2 ring-primary border-primary bg-primary/5' : ''}`}
-                                onDrop={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setIsDragOverModal(false);
-                                  setDropFolderId(null);
-                                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                                    setPendingDropFolderId(folder._id);
-                                    setPendingDropFiles(Array.from(e.dataTransfer.files));
-                                  }
-                                }}
-                              >
-                                {isDropTarget && (
-                                  <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-primary/10">
-                                    <div className="bg-primary text-primary-foreground text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-                                      Drop to upload into this folder
-                                    </div>
-                                  </div>
-                                )}
-                                <button type="button" onClick={() => toggleFolder(folder._id)} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors text-left">
-                                  {isOpen ? (
-                                    <FolderOpen className="w-5 h-5 text-primary/70 shrink-0" fill="currentColor" />
-                                  ) : (
-                                    <Folder className="w-5 h-5 text-primary/70 shrink-0" fill="currentColor" />
-                                  )}
-                                  <span className="text-sm font-semibold flex-1 truncate">{folder.name}</span>
-                                  <span className="text-xs text-muted-foreground shrink-0">{folderFiles.length} file(s)</span>
-                                  <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? '' : '-rotate-90'}`} />
-                                </button>
-                                {isOpen && (
-                                  <div className="border-t border-border/60 p-3">
-                                    {folderFiles.length === 0 ? (
-                                      <p className="text-xs text-muted-foreground">No files in this folder yet.</p>
-                                    ) : (
-                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
-                                        {folderFiles.map((file: any) => (
-                                          <FileAttachmentCard key={file.url} allFiles={taskFiles}
-                                            task={fullTask}
-                                            file={file}
-                                            deleteFile={deleteFile}
-                                            isDeletingFile={isDeletingFile}
-                                            onPreview={setPreviewFile}
-                                            onDeleteLocal={(fid: string) => setDeletedFileIds(prev => [...prev, fid])}
-                                            folders={taskFolders}
-                                            moveFile={handleMoveFile}
-                                          />
-                                        ))}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                          {folderFileGroups.ungrouped.length > 0 && (
-                            <div className="border border-border/60 rounded-xl overflow-hidden bg-muted/5">
-                              <button type="button" onClick={() => setUngroupedOpen(o => !o)} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors text-left">
-                                <Files className="w-5 h-5 text-muted-foreground shrink-0" />
-                                <span className="text-sm font-semibold flex-1 truncate">Ungrouped</span>
-                                <span className="text-xs text-muted-foreground shrink-0">{folderFileGroups.ungrouped.length} file(s)</span>
-                                <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${ungroupedOpen ? '' : '-rotate-90'}`} />
-                              </button>
-                              {ungroupedOpen && (
-                                <div className="border-t border-border/60 p-3">
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
-                                    {folderFileGroups.ungrouped.map((file: any) => (
-                                      <FileAttachmentCard key={file.url} allFiles={taskFiles}
-                                        task={fullTask}
-                                        file={file}
-                                        deleteFile={deleteFile}
-                                        isDeletingFile={isDeletingFile}
-                                        onPreview={setPreviewFile}
-                                        onDeleteLocal={(fid: string) => setDeletedFileIds(prev => [...prev, fid])}
-                                        folders={taskFolders}
-                                        moveFile={handleMoveFile}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-2">
-                          {combinedFiles.slice(0, 12).map((file: any) => (
-                            <FileAttachmentCard key={file.url} allFiles={taskFiles}
-                              task={fullTask}
-                              file={file}
-                              deleteFile={deleteFile}
-                              isDeletingFile={isDeletingFile}
-                              onPreview={setPreviewFile}
-                              onDeleteLocal={(fid: string) => setDeletedFileIds(prev => [...prev, fid])}
-                            />
-                          ))}
-                        </div>
-                      )}
-
-                      {combinedFiles.length > 12 && taskFolders.length === 0 && (
-                        <div className="mt-4 flex justify-center">
-                          <Button
-                            variant="secondary"
-                            className="w-full shadow-sm hover:shadow-md transition-shadow"
-                            onClick={() => {
-                              onClose();
-                              router.push(`/admin/artworks?folder=${encodeURIComponent(task.title)}`);
-                            }}
-                          >
-                            View all {combinedFiles.length} files in Artworks Manager
-                          </Button>
-                        </div>
-                      )}
+                    <div className="space-y-6">
+                      {renderFileSection({
+                        id: 'artworks',
+                        title: 'Artworks',
+                        files: artworkFiles,
+                        pendingUploads: artworkUploads,
+                        icon: <Printer className="w-4 h-4 text-muted-foreground" />,
+                      })}
+                      {renderFileSection({
+                        id: 'attachments',
+                        title: 'Attachments',
+                        files: attachmentFiles,
+                        pendingUploads: attachmentUploads,
+                        icon: <Paperclip className="w-4 h-4 text-muted-foreground" />,
+                      })}
                     </div>
                   )}
                 </div>
