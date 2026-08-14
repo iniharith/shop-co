@@ -131,6 +131,8 @@ export default function ReportsPage() {
   }
 
   const summary = monthlyData?.summary;
+  const monthlyRows = Array.isArray(monthlyData?.rows) ? monthlyData.rows : [];
+  const toNum = (v: any) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
   return (
     <>
@@ -279,8 +281,8 @@ export default function ReportsPage() {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <MetricCard icon={<Activity className="w-5 h-5 text-blue-400" />} title="Orders" value={summary?.orderCount ?? 0} />
                   <MetricCard icon={<File className="w-5 h-5 text-purple-400" />} title="Files" value={summary?.fileCount ?? 0} />
-                  <MetricCard icon={<Database className="w-5 h-5 text-green-400" />} title="Total Size (MB)" value={`${(summary?.fileSizeMB ?? 0).toFixed(2)} MB`} />
-                  <MetricCard icon={<Database className="w-5 h-5 text-yellow-400" />} title="Total Size (GB)" value={`${(summary?.fileSizeGB ?? 0).toFixed(2)} GB`} />
+                  <MetricCard icon={<Database className="w-5 h-5 text-green-400" />} title="Total Size (MB)" value={`${toNum(summary?.fileSizeMB).toFixed(2)} MB`} />
+                  <MetricCard icon={<Database className="w-5 h-5 text-yellow-400" />} title="Total Size (GB)" value={`${toNum(summary?.fileSizeGB).toFixed(2)} GB`} />
                 </div>
 
                 <div className="bg-gray-900/60 border border-gray-800 rounded-xl overflow-hidden">
@@ -298,14 +300,14 @@ export default function ReportsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {monthlyData.rows?.length === 0 && (
+                        {monthlyRows.length === 0 && (
                           <tr>
                             <td colSpan={7} className="px-4 py-8 text-center text-gray-500 italic">
                               No orders found for {month}.
                             </td>
                           </tr>
                         )}
-                        {monthlyData.rows?.map((row: any, index: number) => (
+                        {monthlyRows.map((row: any, index: number) => (
                           <tr key={`${row.orderId}-${index}`} className={`border-b border-gray-800/50 ${index % 2 === 0 ? 'bg-transparent' : 'bg-gray-800/20'}`}>
                             <td className="px-4 py-3 font-medium text-gray-200">{row.customerName}</td>
                             <td className="px-4 py-3 text-gray-400 font-mono text-xs">{row.orderId}</td>
@@ -319,7 +321,7 @@ export default function ReportsPage() {
                             </td>
                             <td className="px-4 py-3 text-gray-300">{row.fileCount}</td>
                             <td className="px-4 py-3 text-gray-300">
-                              {row.fileTotalBytes > 0 ? `${row.fileSizeMB.toFixed(2)} MB (${row.fileSizeGB.toFixed(2)} GB)` : "0 B"}
+                              {toNum(row.fileTotalBytes) > 0 ? `${toNum(row.fileSizeMB).toFixed(2)} MB (${toNum(row.fileSizeGB).toFixed(2)} GB)` : "0 B"}
                             </td>
                             <td className="px-4 py-3 text-gray-300">{row.assignedTo}</td>
                           </tr>
