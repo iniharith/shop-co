@@ -3,7 +3,7 @@
  * Coded by Harith
  * Kampungcetak ®
  * Thin wrapper around the Google Gemini REST API used by the AI engine:
- *  - text embedding (gemini-embedding-001, 768 dims)
+ *  - text embedding (gemini-embedding-001, 3072 dims)
  *  - chat generation (gemini-2.0-flash) with JSON-safe output
  *  - file text extraction (PDF via pdf-parse, images via Gemini vision)
  * Mirrors the openaiClient.ts API so aiProvider.ts can switch between them.
@@ -40,7 +40,7 @@ function aiConfigured() {
     return Boolean(process.env.GEMINI_API_KEY);
 }
 function getGenModel() {
-    return process.env.GEMINI_GEN_MODEL || 'gemini-2.0-flash';
+    return process.env.GEMINI_GEN_MODEL || 'gemini-flash-latest';
 }
 function getEmbeddingModel() {
     return process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
