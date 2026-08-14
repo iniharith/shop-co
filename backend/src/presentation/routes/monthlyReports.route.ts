@@ -6,8 +6,9 @@
  */
 import { Router, Response } from 'express';
 import asyncHandler from 'express-async-handler';
+import ExcelJS from 'exceljs';
 import authMiddilware, { authorizeRoles } from '../middlewares/auth.middileware';
-import { getMonthWindow, escapeCsvCell } from '../../shared/utils/monthlyReport';
+import { getMonthWindow } from '../../shared/utils/monthlyReport';
 import monthlyReportRepository from '../../infrastructure/repositories/MonthlyReportRepository';
 
 const router = Router();
@@ -81,14 +82,35 @@ router.get('/monthly-orders/export', asyncHandler(async (req: any, res: Response
     'File Size GB',
     'Assigned To',
   ];
-  const lines = [header.map(escapeCsvCell).join(',')];
+  const columnWidths = [24, 22, 20, 18, 30, 48, 12, 10, 12, 16, 14, 14, 24];
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Kampungcetak Admin';
+  workbook.created = new Date();
+  const sheet = workbook.addWorksheet('Monthly Orders', {
+    views: [{ state: 'frozen', ySplit: 1 }],
+  });
+
+  sheet.autoFilter = {
+    from: { row: 1, column: 1 },
+    to: { row: 1, column: header.length },
+  };
+
+  const headerRow = sheet.addRow(header);
+  headerRow.height = 22;
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F2937' } };
+    cell.alignment = { vertical: 'middle' };
+    cell.border = { bottom: { style: 'thin', color: { argb: 'FF374151' } } };
+  });
 
   let cursor: string | undefined;
   for (;;) {
     const page = await monthlyReportRepository.getTaskPage(window, cursor, 500);
     const rows = await monthlyReportRepository.assemble(page.tasks);
     for (const row of rows) {
-      lines.push([
+      sheet.addRow([
         row.customerName,
         row.orderId,
         row.orderDate ? new Date(row.orderDate).toISOString() : '',
@@ -99,19 +121,24 @@ router.get('/monthly-orders/export', asyncHandler(async (req: any, res: Response
         row.quantity,
         row.fileCount,
         row.fileTotalBytes,
-        row.fileSizeMB?.toFixed(2),
-        row.fileSizeGB?.toFixed(4),
+        Number.isFinite(row.fileSizeMB) ? Number(row.fileSizeMB.toFixed(2)) : '',
+        Number.isFinite(row.fileSizeGB) ? Number(row.fileSizeGB.toFixed(4)) : '',
         row.assignedTo,
-      ].map(escapeCsvCell).join(','));
+      ]);
     }
     if (!page.hasNextPage) break;
     cursor = page.nextCursor || undefined;
   }
 
-  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="monthly-orders-${month}.csv"`);
-  // UTF-8 BOM so Excel opens the file with correct encoding.
-  res.send('\uFEFF' + lines.join('\r\n'));
+  sheet.columns.forEach((column, index) => {
+    column.width = columnWidths[index] ?? 16;
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="monthly-orders-${month}.xlsx"`);
+  res.send(Buffer.from(buffer as any));
 }));
 
 export default router;

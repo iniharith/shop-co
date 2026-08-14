@@ -125,13 +125,13 @@ export default function ReportsPage() {
       const url = URL.createObjectURL(res.data as Blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `monthly-orders-${month}.csv`;
+      link.download = `monthly-orders-${month}.xlsx`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || error.message || "Failed to export CSV");
+      toast.error(error.response?.data?.message || error.message || "Failed to export Excel");
     } finally {
       setIsExporting(false);
     }
@@ -280,7 +280,7 @@ export default function ReportsPage() {
                 disabled={!monthlyData || monthlyLoading || isExporting}
                 className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700"
               >
-                <Download className="w-4 h-4 mr-2" /> {isExporting ? "Exporting..." : "Export CSV"}
+                <Download className="w-4 h-4 mr-2" /> {isExporting ? "Exporting..." : "Export Excel"}
               </Button>
             </div>
 

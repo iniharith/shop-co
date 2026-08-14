@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Activity, ArrowUpRight, Bot, ChartNoAxesCombined, ClipboardList, Cloud, Sparkles } from "lucide-react";
+import { Activity, ArrowUpRight, Bot, ChartNoAxesCombined, ClipboardList, Cloud, Layers3, Sparkles } from "lucide-react";
 import PageContainer from "@/components/layout/page-container";
 
 const tools = [
@@ -19,6 +19,13 @@ const tools = [
     href: "/admin/reports",
     icon: ChartNoAxesCombined,
     tone: "from-blue-500/20 to-cyan-500/5 text-blue-400",
+  },
+  {
+    title: "Queue Analytics",
+    description: "WIP, throughput, workload and turnaround insights.",
+    href: "/admin/queue-analytics",
+    icon: Layers3,
+    tone: "from-indigo-500/20 to-sky-500/5 text-indigo-400",
   },
   {
     title: "Image Upscale",

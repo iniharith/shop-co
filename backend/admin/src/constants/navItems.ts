@@ -110,40 +110,6 @@ export const AdminNavItems: NavItem[] = [
         icon: 'wrench',
         shortcut: ['t', 'o'],
         isActive: false,
-        items: [
-            {
-                title: 'Tools Overview',
-                url: '/admin/tools',
-            },
-            {
-                title: 'Website Logs',
-                url: '/admin/tools/audit-log',
-            },
-            {
-                title: 'Reports',
-                url: '/admin/reports',
-            },
-            {
-                title: 'Queue Analytics',
-                url: '/admin/queue-analytics',
-            },
-            {
-                title: 'Image Upscale',
-                url: '/admin/tools/upscale',
-            },
-            {
-                title: 'Server Status',
-                url: '/admin/server-status',
-            },
-            {
-                title: 'AWS Media Server',
-                url: '/admin/aws-media',
-            },
-            {
-                title: 'Telegram Bot Logs',
-                url: '/admin/bot-logs',
-            }
-        ]
     }
 ];
 
@@ -166,10 +132,5 @@ export const roleByNavItems = (role: string) => {
     // Route and implementation remain available; only hide it from navigation for now.
     allowedTitles = allowedTitles.filter(title => title !== 'Print Drafts');
 
-    return AdminNavItems
-        .filter(item => allowedTitles.includes(item.title))
-        .map(item => item.title === 'Tools' && role !== 'sysadmin'
-            ? { ...item, items: item.items?.filter(child => child.url !== '/admin/bot-logs') }
-            : item
-        );
+    return AdminNavItems.filter(item => allowedTitles.includes(item.title));
 };

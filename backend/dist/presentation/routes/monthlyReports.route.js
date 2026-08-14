@@ -53,6 +53,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 const express_1 = require("express");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
+const exceljs_1 = __importDefault(require("exceljs"));
 const auth_middileware_1 = __importStar(require("../middlewares/auth.middileware"));
 const monthlyReport_1 = require("../../shared/utils/monthlyReport");
 const MonthlyReportRepository_1 = __importDefault(require("../../infrastructure/repositories/MonthlyReportRepository"));
@@ -99,7 +100,6 @@ router.get('/monthly-orders', (0, express_async_handler_1.default)((req, res) =>
 })));
 // ─── GET /api/admin/reports/monthly-orders/export ──────────────────
 router.get('/monthly-orders/export', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
     const { month, timezone } = parseMonth(req.query.month);
     const window = (0, monthlyReport_1.getMonthWindow)(month, timezone);
     const header = [
@@ -117,13 +117,31 @@ router.get('/monthly-orders/export', (0, express_async_handler_1.default)((req, 
         'File Size GB',
         'Assigned To',
     ];
-    const lines = [header.map(monthlyReport_1.escapeCsvCell).join(',')];
+    const columnWidths = [24, 22, 20, 18, 30, 48, 12, 10, 12, 16, 14, 14, 24];
+    const workbook = new exceljs_1.default.Workbook();
+    workbook.creator = 'Kampungcetak Admin';
+    workbook.created = new Date();
+    const sheet = workbook.addWorksheet('Monthly Orders', {
+        views: [{ state: 'frozen', ySplit: 1 }],
+    });
+    sheet.autoFilter = {
+        from: { row: 1, column: 1 },
+        to: { row: 1, column: header.length },
+    };
+    const headerRow = sheet.addRow(header);
+    headerRow.height = 22;
+    headerRow.eachCell((cell) => {
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F2937' } };
+        cell.alignment = { vertical: 'middle' };
+        cell.border = { bottom: { style: 'thin', color: { argb: 'FF374151' } } };
+    });
     let cursor;
     for (;;) {
         const page = yield MonthlyReportRepository_1.default.getTaskPage(window, cursor, 500);
         const rows = yield MonthlyReportRepository_1.default.assemble(page.tasks);
         for (const row of rows) {
-            lines.push([
+            sheet.addRow([
                 row.customerName,
                 row.orderId,
                 row.orderDate ? new Date(row.orderDate).toISOString() : '',
@@ -134,18 +152,22 @@ router.get('/monthly-orders/export', (0, express_async_handler_1.default)((req, 
                 row.quantity,
                 row.fileCount,
                 row.fileTotalBytes,
-                (_a = row.fileSizeMB) === null || _a === void 0 ? void 0 : _a.toFixed(2),
-                (_b = row.fileSizeGB) === null || _b === void 0 ? void 0 : _b.toFixed(4),
+                Number.isFinite(row.fileSizeMB) ? Number(row.fileSizeMB.toFixed(2)) : '',
+                Number.isFinite(row.fileSizeGB) ? Number(row.fileSizeGB.toFixed(4)) : '',
                 row.assignedTo,
-            ].map(monthlyReport_1.escapeCsvCell).join(','));
+            ]);
         }
         if (!page.hasNextPage)
             break;
         cursor = page.nextCursor || undefined;
     }
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="monthly-orders-${month}.csv"`);
-    // UTF-8 BOM so Excel opens the file with correct encoding.
-    res.send('\uFEFF' + lines.join('\r\n'));
+    sheet.columns.forEach((column, index) => {
+        var _a;
+        column.width = (_a = columnWidths[index]) !== null && _a !== void 0 ? _a : 16;
+    });
+    const buffer = yield workbook.xlsx.writeBuffer();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="monthly-orders-${month}.xlsx"`);
+    res.send(Buffer.from(buffer));
 })));
 exports.default = router;
