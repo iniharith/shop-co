@@ -304,9 +304,12 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
   const handleAdvanceFlow = (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
     const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
-    const movingToShipped = activeSubTab === "PACKAGING";
-    const targetStatus = movingToShipped ? "SHIPPED" : "PACKAGING";
-    const successMessage = movingToShipped ? "✅ Moved to Shipped!" : "✅ Moved to Done Print!";
+    const targetStatus = activeSubTab === "IN_PRODUCTION"
+      ? "PRINT_AWB"
+      : activeSubTab === "PRINT_AWB"
+        ? "DONE_PRINTING"
+        : "SHIPPED";
+    const successMessage = `✅ Moved to ${targetStatus.replace(/_/g, ' ')}!`;
     // Optimistic: instantly remove from list and clear selection
     setMovedFolderIds(prev => new Set([...prev, folderId]));
     setSelectedFolder(null);
@@ -768,10 +771,10 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                         variant="outline" 
                         onClick={(e) => handleAdvanceFlow(activeGroup, e)} 
                         className="shadow-sm h-11 sm:h-10 border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                        title={activeSubTab === "PACKAGING" ? "Mark as Shipped" : "Mark as Done Print"}
+                        title={activeSubTab === "IN_PRODUCTION" ? "Mark as done and move to Print AWB" : activeSubTab === "PRINT_AWB" ? "Mark as done and move to Done Print" : "Mark as Shipped"}
                       >
                         <CheckCircle className="w-5 h-5 sm:mr-2" /> 
-                        <span className="hidden sm:inline">{activeSubTab === "PACKAGING" ? "Shipped" : "Done Print"}</span>
+                        <span className="hidden sm:inline">{activeSubTab === "IN_PRODUCTION" ? "Done Print" : activeSubTab === "PRINT_AWB" ? "Done Print AWB" : "Shipped"}</span>
                       </Button>
                       )}
                       {!isReadOnly && (
