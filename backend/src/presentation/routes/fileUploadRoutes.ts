@@ -414,6 +414,177 @@ router.get(
 // Eliminates the client-side O(n*m) join between files, tasks, orders, users.
 // Accepts ?taskStatuses= comma-separated list to filter by task status
 // (defaults to artwork statuses if omitted).
+// Returns folder SUMMARIES only — per-file records are fetched on demand via
+// /by-folder when a folder is opened. Shipping every file in the response is
+// what made these pages slow (measured ~2.5 MB across all 19k files); the
+// status filter barely trims it because order/user folders bypass it.
+// Optional ?q= filters folders server-side by folder name, order id, user id
+// or any file name (search results are not cached).
+async function buildFolderGroups(taskStatusFilter: string[], q?: string): Promise<any[]> {
+  const filterUpper = taskStatusFilter.map(s => s.toUpperCase());
+
+  // Generate plain string variants for MongoDB queries ($in array)
+  const statusQueryValues = Array.from(new Set([
+    ...filterUpper,
+    ...filterUpper.map(s => s.toLowerCase()),
+    ...filterUpper.map(s => s.replace(/_/g, ' ')),
+    ...filterUpper.map(s => s.replace(/_/g, '-')),
+  ]));
+
+  const matchesStatus = (status?: string) => {
+    if (!status) return false;
+    const s = status.toUpperCase();
+    const sNormalized = s.replace(/[\s-]/g, '_');
+    return filterUpper.some(f => {
+      const fNormalized = f.replace(/[\s-]/g, '_');
+      return f === s || fNormalized === sNormalized || s.includes(f) || f.includes(s);
+    });
+  };
+
+  // 1. Load enriched file index
+  const files: any[] = await fileUploadRepository.findIndex();
+  const enriched = await enrichWithShareLinks(files);
+
+  // 2. Collect unique references with ObjectId validation
+  const orderIds = [...new Set(enriched.filter((f: any) => f.orderId && mongoose.Types.ObjectId.isValid(f.orderId)).map((f: any) => f.orderId))];
+  const userIds = [...new Set(enriched.filter((f: any) => !f.taskId && f.userId && mongoose.Types.ObjectId.isValid(f.userId)).map((f: any) => f.userId))];
+  const allTaskIds = [...new Set(enriched.filter((f: any) => f.taskId && mongoose.Types.ObjectId.isValid(f.taskId)).map((f: any) => f.taskId))];
+
+  // 3. Load all tasks in this queue & all referenced tasks by ID
+  const [tasks, orders, users, allReferencedTasks] = await Promise.all([
+    Task.find({ status: { $in: statusQueryValues }, isDeleted: { $ne: true } })
+      .select('title status orderId category')
+      .lean(),
+    orderIds.length ? OrderModel.find({ _id: { $in: orderIds } }).select('orderStatus userId easyparcelAwb easyparcelBookingStatus awbUrl awbUrlsByFormat').lean() : [],
+    userIds.length ? User.find({ _id: { $in: userIds } }).select('name').lean() : [],
+    allTaskIds.length ? Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category isDeleted').lean() : [],
+  ]);
+
+  const taskMap = new Map(tasks.map((t: any) => [t._id.toString(), t]));
+  const allTaskMap = new Map(allReferencedTasks.map((t: any) => [t._id.toString(), t]));
+  const orderMap = new Map(orders.map((o: any) => [o._id.toString(), o]));
+  const userMap = new Map(users.map((u: any) => [u._id.toString(), u]));
+
+  // 4. Group files
+  const groups: Record<string, any> = {};
+  for (const file of enriched) {
+    let groupKey: string;
+    let folderName: string;
+    let isTask = false;
+
+    if (file.taskId) {
+      const task = allTaskMap.get(file.taskId) || taskMap.get(file.taskId);
+      if (task) {
+        // Task is soft-deleted — hide its files entirely until the task is
+        // permanently deleted (when FileUpload records are removed too).
+        if ((task as any).isDeleted) continue;
+        if (!matchesStatus(task.status)) {
+          // Task status does not match requested queue filter — skip file
+          continue;
+        }
+        groupKey = `task:${file.taskId}`;
+        folderName = task.title;
+        isTask = true;
+      } else {
+        if (file.orderId) {
+          const order = orderMap.get(file.orderId);
+          if (order && !matchesStatus((order as any).orderStatus)) continue;
+        }
+        groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
+        folderName = file._shareFolderName || userMap.get(file.userId)?.name || file.userId || 'Unknown';
+      }
+    } else {
+      if (file.orderId) {
+        const order = orderMap.get(file.orderId);
+        if (order && !matchesStatus((order as any).orderStatus)) continue;
+      }
+      groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
+      folderName = file._shareFolderName || userMap.get(file.userId)?.name || file.userId || 'Unknown';
+    }
+
+    if (!groups[groupKey]) {
+      groups[groupKey] = {
+        folderName,
+        orderId: file.orderId || '',
+        taskId: file.taskId || '',
+        userId: file.userId || '',
+        isTask,
+        category: isTask
+          ? allTaskMap.get(file.taskId)?.category || taskMap.get(file.taskId)?.category
+          : file.category,
+        files: [],
+      };
+    }
+    groups[groupKey].files.push({
+      originalName: file.originalName,
+      userId: file.userId,
+    });
+  }
+
+  // 5. Add empty placeholders for tasks that have no files yet
+  for (const task of tasks) {
+    if (!matchesStatus((task as any).status)) continue;
+    const key = `task:${(task as any)._id}`;
+    if (!groups[key]) {
+      groups[key] = {
+        folderName: (task as any).title,
+        orderId: (task as any).orderId || '',
+        taskId: (task as any)._id.toString(),
+        userId: '',
+        isTask: true,
+        category: (task as any).category,
+        files: [],
+      };
+    }
+  }
+
+  // 6. Optional server-side search: keep only folders that match the query
+  let groupList = Object.values(groups);
+  if (q) {
+    const needle = q.toLowerCase();
+    groupList = groupList.filter((g: any) =>
+      (g.folderName && g.folderName.toLowerCase().includes(needle)) ||
+      (g.orderId && g.orderId.toLowerCase().includes(needle)) ||
+      (g.taskId && g.taskId.toLowerCase().includes(needle)) ||
+      g.files.some((f: any) =>
+        (f.originalName && f.originalName.toLowerCase().includes(needle)) ||
+        (f.userId && f.userId.toString().toLowerCase().includes(needle))
+      )
+    );
+  }
+
+  // 7. Enrich with orderStatus and derived fields (folder summaries only —
+  // the per-file records are intentionally dropped here)
+  const result = groupList.map((g: any) => {
+    let orderStatus: string | null = null;
+    let orderAWB: any = null;
+    if (g.taskId) orderStatus = taskMap.get(g.taskId)?.status || null;
+    else if (g.orderId) orderStatus = (orderMap.get(g.orderId) as any)?.orderStatus || null;
+    const order = g.orderId ? orderMap.get(g.orderId) as any : null;
+    if (order) {
+      const awbUrls = order.awbUrlsByFormat || {};
+      orderAWB = {
+        easyparcelAwb: order.easyparcelAwb || '',
+        easyparcelBookingStatus: order.easyparcelBookingStatus || null,
+        printUrl: awbUrls.A6 || awbUrls.A4 || order.awbUrl || '',
+      };
+    }
+    return {
+      folderName: g.folderName,
+      orderId: g.orderId,
+      taskId: g.taskId,
+      userId: g.userId,
+      isTask: g.isTask,
+      category: g.category || '',
+      orderStatus,
+      orderAWB,
+      fileCount: g.files.length,
+    };
+  });
+
+  return result;
+}
+
 router.get(
   '/folder-group',
   authMiddilware,
@@ -423,166 +594,42 @@ router.get(
     const rawStatuses = (req.query.taskStatuses as string)?.split(',').filter(Boolean);
     const taskStatusFilter = rawStatuses && rawStatuses.length > 0 ? rawStatuses : ARTWORK_STATUSES;
     const filterUpper = taskStatusFilter.map(s => s.toUpperCase());
-
-    // Generate plain string variants for MongoDB queries ($in array)
-    const statusQueryValues = Array.from(new Set([
-      ...filterUpper,
-      ...filterUpper.map(s => s.toLowerCase()),
-      ...filterUpper.map(s => s.replace(/_/g, ' ')),
-      ...filterUpper.map(s => s.replace(/_/g, '-')),
-    ]));
-
-    const matchesStatus = (status?: string) => {
-      if (!status) return false;
-      const s = status.toUpperCase();
-      const sNormalized = s.replace(/[\s-]/g, '_');
-      return filterUpper.some(f => {
-        const fNormalized = f.replace(/[\s-]/g, '_');
-        return f === s || fNormalized === sNormalized || s.includes(f) || f.includes(s);
-      });
-    };
+    const rawQuery = (req.query.q as string)?.trim();
+    const q = rawQuery ? rawQuery.toLowerCase() : '';
 
     // Use the process-local cache first so a slow Redis connection never adds
-    // latency to this hot page-load path.
-    const cacheKey = `${ENRICHED_CACHE_KEY_PREFIX}${filterUpper.join(',')}`;
+    // latency to this hot page-load path. Search requests are excluded — they
+    // are debounced, less frequent, and don't benefit from caching.
     let cachedData: any = null;
-    const mem = memCache.get(cacheKey);
-    if (mem && mem.expiresAt > Date.now()) cachedData = mem.data;
-    if (cachedData === null && enrichedIndexCache.isReady()) {
-      try {
-        const raw = await Promise.race([
-          enrichedIndexCache.get(cacheKey),
-          new Promise<string | null>((resolve) => setTimeout(() => resolve(null), 150)),
-        ]);
-        if (raw) cachedData = JSON.parse(raw);
-      } catch { /* Redis unavailable, rebuild from the database */ }
-    }
-    if (Array.isArray(cachedData)) {
-      res.json({ success: true, data: cachedData }); return;
-    }
-
-    // 1. Load enriched file index
-    const files: any[] = await fileUploadRepository.findIndex();
-    const enriched = await enrichWithShareLinks(files);
-
-    // 2. Collect unique references with ObjectId validation
-    const orderIds = [...new Set(enriched.filter((f: any) => f.orderId && mongoose.Types.ObjectId.isValid(f.orderId)).map((f: any) => f.orderId))];
-    const userIds = [...new Set(enriched.filter((f: any) => !f.taskId && f.userId && mongoose.Types.ObjectId.isValid(f.userId)).map((f: any) => f.userId))];
-    const allTaskIds = [...new Set(enriched.filter((f: any) => f.taskId && mongoose.Types.ObjectId.isValid(f.taskId)).map((f: any) => f.taskId))];
-
-    // 3. Load all tasks in this queue & all referenced tasks by ID
-    const [tasks, orders, users, allReferencedTasks] = await Promise.all([
-      Task.find({ status: { $in: statusQueryValues }, isDeleted: { $ne: true } })
-        .select('title status orderId category')
-        .lean(),
-      orderIds.length ? OrderModel.find({ _id: { $in: orderIds } }).select('orderStatus userId easyparcelAwb easyparcelBookingStatus awbUrl awbUrlsByFormat').lean() : [],
-      userIds.length ? User.find({ _id: { $in: userIds } }).select('name').lean() : [],
-      allTaskIds.length ? Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category isDeleted').lean() : [],
-    ]);
-
-    const taskMap = new Map(tasks.map((t: any) => [t._id.toString(), t]));
-    const allTaskMap = new Map(allReferencedTasks.map((t: any) => [t._id.toString(), t]));
-    const orderMap = new Map(orders.map((o: any) => [o._id.toString(), o]));
-    const userMap = new Map(users.map((u: any) => [u._id.toString(), u]));
-
-    // 4. Group files
-    const groups: Record<string, any> = {};
-    for (const file of enriched) {
-      let groupKey: string;
-      let folderName: string;
-      let isTask = false;
-
-      if (file.taskId) {
-        const task = allTaskMap.get(file.taskId) || taskMap.get(file.taskId);
-        if (task) {
-          // Task is soft-deleted — hide its files entirely until the task is
-          // permanently deleted (when FileUpload records are removed too).
-          if ((task as any).isDeleted) continue;
-          if (!matchesStatus(task.status)) {
-            // Task status does not match requested queue filter — skip file
-            continue;
-          }
-          groupKey = `task:${file.taskId}`;
-          folderName = task.title;
-          isTask = true;
-        } else {
-          if (file.orderId) {
-            const order = orderMap.get(file.orderId);
-            if (order && !matchesStatus((order as any).orderStatus)) continue;
-          }
-          groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
-          folderName = file._shareFolderName || userMap.get(file.userId)?.name || file.userId || 'Unknown';
-        }
-      } else {
-        if (file.orderId) {
-          const order = orderMap.get(file.orderId);
-          if (order && !matchesStatus((order as any).orderStatus)) continue;
-        }
-        groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
-        folderName = file._shareFolderName || userMap.get(file.userId)?.name || file.userId || 'Unknown';
+    if (!q) {
+      const cacheKey = `${ENRICHED_CACHE_KEY_PREFIX}${filterUpper.join(',')}`;
+      const mem = memCache.get(cacheKey);
+      if (mem && mem.expiresAt > Date.now()) cachedData = mem.data;
+      if (cachedData === null && enrichedIndexCache.isReady()) {
+        try {
+          const raw = await Promise.race([
+            enrichedIndexCache.get(cacheKey),
+            new Promise<string | null>((resolve) => setTimeout(() => resolve(null), 150)),
+          ]);
+          if (raw) cachedData = JSON.parse(raw);
+        } catch { /* Redis unavailable, rebuild from the database */ }
       }
-
-      if (!groups[groupKey]) {
-        groups[groupKey] = {
-          folderName,
-          orderId: file.orderId || '',
-          taskId: file.taskId || '',
-          userId: file.userId || '',
-          isTask,
-          category: isTask ? taskMap.get(file.taskId)?.category : file.category,
-          files: [],
-        };
-      }
-      groups[groupKey].files.push({
-        _id: file._id,
-        originalName: file.originalName,
-        folderId: file.folderId,
-        shareSlug: file.shareSlug,
-        category: file.category,
-      });
-    }
-
-    // 5. Add empty placeholders for tasks that have no files yet
-    for (const task of tasks) {
-      if (!matchesStatus((task as any).status)) continue;
-      const key = `task:${(task as any)._id}`;
-      if (!groups[key]) {
-        groups[key] = {
-          folderName: (task as any).title,
-          orderId: (task as any).orderId || '',
-          taskId: (task as any)._id.toString(),
-          userId: '',
-          isTask: true,
-          category: (task as any).category,
-          files: [],
-        };
+      if (Array.isArray(cachedData)) {
+        res.json({ success: true, data: cachedData }); return;
       }
     }
 
-    // Enrich with orderStatus and derived fields
-    const result = Object.values(groups).map((g: any) => {
-      let orderStatus: string | null = null;
-      let orderAWB: any = null;
-      if (g.taskId) orderStatus = taskMap.get(g.taskId)?.status || null;
-      else if (g.orderId) orderStatus = (orderMap.get(g.orderId) as any)?.orderStatus || null;
-      const order = g.orderId ? orderMap.get(g.orderId) as any : null;
-      if (order) {
-        const awbUrls = order.awbUrlsByFormat || {};
-        orderAWB = {
-          easyparcelAwb: order.easyparcelAwb || '',
-          easyparcelBookingStatus: order.easyparcelBookingStatus || null,
-          printUrl: awbUrls.A6 || awbUrls.A4 || order.awbUrl || '',
-        };
-      }
-      return { ...g, orderStatus, orderAWB, fileCount: g.files.length };
-    });
+    const result = await buildFolderGroups(taskStatusFilter, q || undefined);
 
     res.json({ success: true, data: result });
 
-    // Cache even empty results (fire-and-forget) so an empty queue does not
-    // re-run the full grouping pipeline on every page load.
-    enrichedIndexCache.set(cacheKey, JSON.stringify(result), ENRICHED_CACHE_TTL).catch(() => {});
-    memCache.set(cacheKey, { data: result, expiresAt: Date.now() + ENRICHED_CACHE_TTL * 1000 });
+    if (!q) {
+      // Cache even empty results (fire-and-forget) so an empty queue does not
+      // re-run the full grouping pipeline on every page load.
+      const cacheKey = `${ENRICHED_CACHE_KEY_PREFIX}${filterUpper.join(',')}`;
+      enrichedIndexCache.set(cacheKey, JSON.stringify(result), ENRICHED_CACHE_TTL).catch(() => {});
+      memCache.set(cacheKey, { data: result, expiresAt: Date.now() + ENRICHED_CACHE_TTL * 1000 });
+    }
   })
 );
 

@@ -44,7 +44,7 @@ export const notifyFileClients = () => {
       }
     }
     await redisService.publish(REDIS_CHANNELS.FILES_UPDATED, JSON.stringify(message));
-  }, 300);
+  }, 5000);
 };
 
 export class FileUploadRepository {

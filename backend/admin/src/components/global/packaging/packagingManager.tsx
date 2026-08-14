@@ -85,7 +85,10 @@ export default function PackagingManager() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
-  const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching, isError: folderGroupError } = useFolderGroup(PACKAGING_STATUSES);
+  // Search query is fed to the server (?q=) so file names match too, even
+  // though the folder list only carries summaries.
+  const [searchQuery, setSearchQuery] = useState("");
+  const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching, isError: folderGroupError } = useFolderGroup(PACKAGING_STATUSES, searchQuery);
   const groupedFromServer: any[] = (folderGroupResponse as any)?.data || [];
   const selectedGroup = useMemo(() => groupedFromServer.find(
     group => `${group.folderName}-${group.orderId}-${group.taskId || ""}` === selectedFolder
@@ -99,7 +102,6 @@ export default function PackagingManager() {
   const { data: virtualFoldersResponse } = useFolders(!!selectedFolder);
   const virtualFolders = (virtualFoldersResponse as any)?.data || [];
 
-  const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
   // Fixed sub-tab — Packaging has no Printing/Hold/Done Printing tabs like Production does
   const [activeSubTab, setActiveSubTab] = useState("PACKAGING");
@@ -190,19 +192,14 @@ export default function PackagingManager() {
   // The backend returns this queue as a compact folder index. Keeping the
   // grouping server-side makes navigation fast and preserves cached results.
   const groupedFiles = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
     return groupedFromServer.filter((group: any) => {
       const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
       if (movedFolderIds.has(folderId)) return false; // optimistic removal
       if (group.orderStatus !== activeSubTab) return false;
-      if (activeTab !== "ALL" && group.category !== activeTab && group.files?.[0]?.category !== activeTab) return false;
-      if (!query) return true;
-      return group.folderName?.toLowerCase().includes(query)
-        || group.orderId?.toLowerCase().includes(query)
-        || group.taskId?.toLowerCase().includes(query)
-        || group.files?.some((file: any) => file.originalName?.toLowerCase().includes(query));
+      if (activeTab !== "ALL" && group.category !== activeTab) return false;
+      return true;
     });
-  }, [groupedFromServer, searchQuery, activeTab, activeSubTab, movedFolderIds]);
+  }, [groupedFromServer, activeTab, activeSubTab, movedFolderIds]);
 
   // Once a folder is opened, fetch its full file details on demand — the
   // folder LIST only ever needed names/counts, which the slim index above
@@ -369,19 +366,34 @@ export default function PackagingManager() {
     });
   };
 
-  const handleDeleteFolder = (group: any, e: React.MouseEvent) => {
+  const handleDeleteFolder = async (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm(`Are you sure you want to delete ALL ${group.files.length} files in ${group.folderName}? This cannot be undone.`)) return;
-    
-    const fileIds = group.files.map((f: any) => f._id);
-    bulkDeleteMutate(fileIds, {
-      onSuccess: () => {
-        toast.success(`Deleted ${group.files.length} files successfully!`);
-      },
-      onError: (err: any) => {
-        toast.error(`Failed to delete files: ${err.message || 'Unknown error'}`);
+    if (!confirm(`Are you sure you want to delete ALL ${group.fileCount ?? 0} files in ${group.folderName}? This cannot be undone.`)) return;
+
+    try {
+      // The folder summary doesn't ship file records anymore — fetch the
+      // folder's real file ids on demand before bulk-deleting.
+      const token = session?.user?.token || localStorage.getItem('token') || "";
+      const qs = group.taskId
+        ? `taskId=${encodeURIComponent(group.taskId)}`
+        : `${group.orderId ? `orderId=${encodeURIComponent(group.orderId)}&` : ""}${group.userId ? `userId=${encodeURIComponent(group.userId)}` : ""}`;
+      const { data } = await AxiosInstance(token).get(`/api/files/by-folder?${qs}`);
+      const fileIds = (data?.data || []).map((f: any) => f._id).filter(Boolean);
+      if (fileIds.length === 0) {
+        toast.success("No files to delete");
+        return;
       }
-    });
+      bulkDeleteMutate(fileIds, {
+        onSuccess: () => {
+          toast.success(`Deleted ${fileIds.length} files successfully!`);
+        },
+        onError: (err: any) => {
+          toast.error(`Failed to delete files: ${err.message || 'Unknown error'}`);
+        }
+      });
+    } catch {
+      toast.error("Failed to load folder files");
+    }
   };
 
   const handleUploadSubmit = async () => {
@@ -833,7 +845,7 @@ export default function PackagingManager() {
                       >
                         <Share2 className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">{isGeneratingLink ? "Generating..." : "Share"}</span>
                       </Button>
-                      <Button variant="secondary" onClick={(e) => handleDownloadAll(activeGroup, e)} className="shadow-sm h-11 sm:h-10">
+                      <Button variant="secondary" onClick={(e) => handleDownloadAll({ ...activeGroup, files: visibleFiles }, e)} className="shadow-sm h-11 sm:h-10">
                         <Download className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Download</span>
                       </Button>
                     </div>
@@ -909,7 +921,7 @@ export default function PackagingManager() {
                             <h3 className="font-semibold text-sm text-center line-clamp-2">{folder.name}</h3>
                           </div>
                           <div className="bg-muted/50 p-2 text-center text-xs text-muted-foreground border-t">
-                            {activeGroup.files.filter((f: any) => f.folderId === folder._id).length} files
+                            {activeFolderFiles.filter((f: any) => f.folderId === folder._id).length} files
                           </div>
                         </Card>
                       ))}

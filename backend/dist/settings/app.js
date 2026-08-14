@@ -14,6 +14,7 @@ const cors_1 = __importDefault(require("cors"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const express_mongo_sanitize_1 = __importDefault(require("express-mongo-sanitize"));
 const morgan_1 = __importDefault(require("morgan"));
+const compression_1 = __importDefault(require("compression"));
 const auth_route_1 = __importDefault(require("../presentation/routes/auth.route"));
 const api_constant_1 = require("../shared/constants/api.constant");
 const error_middleware_1 = require("../presentation/middlewares/error.middleware");
@@ -82,6 +83,8 @@ app.use((req, res, next) => {
 app.use((0, cors_1.default)(corsOptions));
 app.use(bandwidthTracker_1.bandwidthMiddleware);
 app.use((0, cookie_parser_1.default)());
+// gzip large JSON responses (folder-group, reports, etc.) — measured ~4x smaller on the wire.
+app.use((0, compression_1.default)());
 // -------------------- util middleware-------------------------------
 app.use(express_1.default.json({ limit: '500mb' }));
 app.use(express_1.default.urlencoded({ extended: true, limit: '500mb' }));

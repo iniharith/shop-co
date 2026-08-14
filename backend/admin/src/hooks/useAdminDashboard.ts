@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import AxiosInstance from "@/utils/axios";
 import { useQueryData } from "./useQueryData";
 import { useMutationData } from "./useMutation";
+import { useDebounce } from "./use-debounce";
 import { 
     getParcelStats, 
     getParcels, 
@@ -121,23 +122,26 @@ export const useFileIndex = () => {
 }
 
 // Server-side grouped folder data — replaces the expensive client-side join
-// between files, tasks, orders and users. Accepts optional task status filter.
-// Keep a short-lived client cache and refresh active queues in the background
-// so navigation is instant while status/file changes still appear promptly.
-export const useFolderGroup = (taskStatuses?: string[]) => {
+// between files, tasks, orders and users. Accepts optional task status filter
+// and optional search query (passed to the server as ?q=, debounced 300ms so
+// typing doesn't hammer the uncached search endpoint). The client cache serves
+// navigation within a minute instantly; live updates arrive via socket-driven
+// invalidations (and 60s fallback polling when the socket is down), so a
+// background poll is unnecessary.
+export const useFolderGroup = (taskStatuses?: string[], searchQuery?: string) => {
     const { data: session, status } = useSession();
     const token = session?.user?.token;
     const userId = session?.user?.id;
+    const debouncedSearch = useDebounce(searchQuery ?? '', 300);
+    const q = debouncedSearch.trim() || undefined;
     return useQueryData(
-        ['folderGroup', userId, taskStatuses],
-        () => getFolderGroup(token, taskStatuses),
+        ['folderGroup', userId, taskStatuses, q],
+        () => getFolderGroup(token, taskStatuses, q),
         {
             enabled: status === "authenticated" && !!token,
-            staleTime: 15_000,
-            refetchInterval: 15_000,
-            refetchIntervalInBackground: false,
-            refetchOnWindowFocus: "always",
-            refetchOnMount: "always",
+            staleTime: 60_000,
+            refetchOnWindowFocus: false,
+            refetchOnMount: true,
             retry: 2,
         }
     );

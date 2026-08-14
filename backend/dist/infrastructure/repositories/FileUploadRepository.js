@@ -59,7 +59,7 @@ const notifyFileClients = () => {
             }
         }
         yield redisService.publish(redis_constant_1.REDIS_CHANNELS.FILES_UPDATED, JSON.stringify(message));
-    }), 300);
+    }), 5000);
 };
 exports.notifyFileClients = notifyFileClients;
 class FileUploadRepository {

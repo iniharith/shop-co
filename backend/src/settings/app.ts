@@ -10,6 +10,7 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import mongoSanitize from 'express-mongo-sanitize';
 import morgan from 'morgan';
+import compression from 'compression';
 import authRoutes from '../presentation/routes/auth.route';
 import { apiRoutes } from '../shared/constants/api.constant';
 import { notFound, errorHandler } from '../presentation/middlewares/error.middleware';
@@ -88,6 +89,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use(cors(corsOptions));
 app.use(bandwidthMiddleware);
 app.use(cookieParser());
+// gzip large JSON responses (folder-group, reports, etc.) — measured ~4x smaller on the wire.
+app.use(compression());
 
 // -------------------- util middleware-------------------------------
 app.use(express.json({ limit: '500mb' }));

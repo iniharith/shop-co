@@ -396,91 +396,83 @@ router.get('/index', auth_middileware_1.default, (0, auth_middileware_1.authoriz
 // Eliminates the client-side O(n*m) join between files, tasks, orders, users.
 // Accepts ?taskStatuses= comma-separated list to filter by task status
 // (defaults to artwork statuses if omitted).
-router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d;
-    const ARTWORK_STATUSES = ["PLACED", "IN_DESIGN", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "PEMBETULAN", "DONE_DESIGN"];
-    const rawStatuses = (_a = req.query.taskStatuses) === null || _a === void 0 ? void 0 : _a.split(',').filter(Boolean);
-    const taskStatusFilter = rawStatuses && rawStatuses.length > 0 ? rawStatuses : ARTWORK_STATUSES;
-    const filterUpper = taskStatusFilter.map(s => s.toUpperCase());
-    // Generate plain string variants for MongoDB queries ($in array)
-    const statusQueryValues = Array.from(new Set([
-        ...filterUpper,
-        ...filterUpper.map(s => s.toLowerCase()),
-        ...filterUpper.map(s => s.replace(/_/g, ' ')),
-        ...filterUpper.map(s => s.replace(/_/g, '-')),
-    ]));
-    const matchesStatus = (status) => {
-        if (!status)
-            return false;
-        const s = status.toUpperCase();
-        const sNormalized = s.replace(/[\s-]/g, '_');
-        return filterUpper.some(f => {
-            const fNormalized = f.replace(/[\s-]/g, '_');
-            return f === s || fNormalized === sNormalized || s.includes(f) || f.includes(s);
-        });
-    };
-    // Use the process-local cache first so a slow Redis connection never adds
-    // latency to this hot page-load path.
-    const cacheKey = `${ENRICHED_CACHE_KEY_PREFIX}${filterUpper.join(',')}`;
-    let cachedData = null;
-    const mem = memCache.get(cacheKey);
-    if (mem && mem.expiresAt > Date.now())
-        cachedData = mem.data;
-    if (cachedData === null && enrichedIndexCache.isReady()) {
-        try {
-            const raw = yield Promise.race([
-                enrichedIndexCache.get(cacheKey),
-                new Promise((resolve) => setTimeout(() => resolve(null), 150)),
-            ]);
-            if (raw)
-                cachedData = JSON.parse(raw);
-        }
-        catch ( /* Redis unavailable, rebuild from the database */_e) { /* Redis unavailable, rebuild from the database */ }
-    }
-    if (Array.isArray(cachedData)) {
-        res.json({ success: true, data: cachedData });
-        return;
-    }
-    // 1. Load enriched file index
-    const files = yield FileUploadRepository_1.fileUploadRepository.findIndex();
-    const enriched = yield enrichWithShareLinks(files);
-    // 2. Collect unique references with ObjectId validation
-    const orderIds = [...new Set(enriched.filter((f) => f.orderId && mongoose_1.default.Types.ObjectId.isValid(f.orderId)).map((f) => f.orderId))];
-    const userIds = [...new Set(enriched.filter((f) => !f.taskId && f.userId && mongoose_1.default.Types.ObjectId.isValid(f.userId)).map((f) => f.userId))];
-    const allTaskIds = [...new Set(enriched.filter((f) => f.taskId && mongoose_1.default.Types.ObjectId.isValid(f.taskId)).map((f) => f.taskId))];
-    // 3. Load all tasks in this queue & all referenced tasks by ID
-    const [tasks, orders, users, allReferencedTasks] = yield Promise.all([
-        Task_1.Task.find({ status: { $in: statusQueryValues }, isDeleted: { $ne: true } })
-            .select('title status orderId category')
-            .lean(),
-        orderIds.length ? order_model_1.default.find({ _id: { $in: orderIds } }).select('orderStatus userId easyparcelAwb easyparcelBookingStatus awbUrl awbUrlsByFormat').lean() : [],
-        userIds.length ? user_model_1.default.find({ _id: { $in: userIds } }).select('name').lean() : [],
-        allTaskIds.length ? Task_1.Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category isDeleted').lean() : [],
-    ]);
-    const taskMap = new Map(tasks.map((t) => [t._id.toString(), t]));
-    const allTaskMap = new Map(allReferencedTasks.map((t) => [t._id.toString(), t]));
-    const orderMap = new Map(orders.map((o) => [o._id.toString(), o]));
-    const userMap = new Map(users.map((u) => [u._id.toString(), u]));
-    // 4. Group files
-    const groups = {};
-    for (const file of enriched) {
-        let groupKey;
-        let folderName;
-        let isTask = false;
-        if (file.taskId) {
-            const task = allTaskMap.get(file.taskId) || taskMap.get(file.taskId);
-            if (task) {
-                // Task is soft-deleted — hide its files entirely until the task is
-                // permanently deleted (when FileUpload records are removed too).
-                if (task.isDeleted)
-                    continue;
-                if (!matchesStatus(task.status)) {
-                    // Task status does not match requested queue filter — skip file
-                    continue;
+// Returns folder SUMMARIES only — per-file records are fetched on demand via
+// /by-folder when a folder is opened. Shipping every file in the response is
+// what made these pages slow (measured ~2.5 MB across all 19k files); the
+// status filter barely trims it because order/user folders bypass it.
+// Optional ?q= filters folders server-side by folder name, order id, user id
+// or any file name (search results are not cached).
+function buildFolderGroups(taskStatusFilter, q) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var _a, _b, _c, _d;
+        const filterUpper = taskStatusFilter.map(s => s.toUpperCase());
+        // Generate plain string variants for MongoDB queries ($in array)
+        const statusQueryValues = Array.from(new Set([
+            ...filterUpper,
+            ...filterUpper.map(s => s.toLowerCase()),
+            ...filterUpper.map(s => s.replace(/_/g, ' ')),
+            ...filterUpper.map(s => s.replace(/_/g, '-')),
+        ]));
+        const matchesStatus = (status) => {
+            if (!status)
+                return false;
+            const s = status.toUpperCase();
+            const sNormalized = s.replace(/[\s-]/g, '_');
+            return filterUpper.some(f => {
+                const fNormalized = f.replace(/[\s-]/g, '_');
+                return f === s || fNormalized === sNormalized || s.includes(f) || f.includes(s);
+            });
+        };
+        // 1. Load enriched file index
+        const files = yield FileUploadRepository_1.fileUploadRepository.findIndex();
+        const enriched = yield enrichWithShareLinks(files);
+        // 2. Collect unique references with ObjectId validation
+        const orderIds = [...new Set(enriched.filter((f) => f.orderId && mongoose_1.default.Types.ObjectId.isValid(f.orderId)).map((f) => f.orderId))];
+        const userIds = [...new Set(enriched.filter((f) => !f.taskId && f.userId && mongoose_1.default.Types.ObjectId.isValid(f.userId)).map((f) => f.userId))];
+        const allTaskIds = [...new Set(enriched.filter((f) => f.taskId && mongoose_1.default.Types.ObjectId.isValid(f.taskId)).map((f) => f.taskId))];
+        // 3. Load all tasks in this queue & all referenced tasks by ID
+        const [tasks, orders, users, allReferencedTasks] = yield Promise.all([
+            Task_1.Task.find({ status: { $in: statusQueryValues }, isDeleted: { $ne: true } })
+                .select('title status orderId category')
+                .lean(),
+            orderIds.length ? order_model_1.default.find({ _id: { $in: orderIds } }).select('orderStatus userId easyparcelAwb easyparcelBookingStatus awbUrl awbUrlsByFormat').lean() : [],
+            userIds.length ? user_model_1.default.find({ _id: { $in: userIds } }).select('name').lean() : [],
+            allTaskIds.length ? Task_1.Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category isDeleted').lean() : [],
+        ]);
+        const taskMap = new Map(tasks.map((t) => [t._id.toString(), t]));
+        const allTaskMap = new Map(allReferencedTasks.map((t) => [t._id.toString(), t]));
+        const orderMap = new Map(orders.map((o) => [o._id.toString(), o]));
+        const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+        // 4. Group files
+        const groups = {};
+        for (const file of enriched) {
+            let groupKey;
+            let folderName;
+            let isTask = false;
+            if (file.taskId) {
+                const task = allTaskMap.get(file.taskId) || taskMap.get(file.taskId);
+                if (task) {
+                    // Task is soft-deleted — hide its files entirely until the task is
+                    // permanently deleted (when FileUpload records are removed too).
+                    if (task.isDeleted)
+                        continue;
+                    if (!matchesStatus(task.status)) {
+                        // Task status does not match requested queue filter — skip file
+                        continue;
+                    }
+                    groupKey = `task:${file.taskId}`;
+                    folderName = task.title;
+                    isTask = true;
                 }
-                groupKey = `task:${file.taskId}`;
-                folderName = task.title;
-                isTask = true;
+                else {
+                    if (file.orderId) {
+                        const order = orderMap.get(file.orderId);
+                        if (order && !matchesStatus(order.orderStatus))
+                            continue;
+                    }
+                    groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
+                    folderName = file._shareFolderName || ((_a = userMap.get(file.userId)) === null || _a === void 0 ? void 0 : _a.name) || file.userId || 'Unknown';
+                }
             }
             else {
                 if (file.orderId) {
@@ -491,77 +483,127 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
                 groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
                 folderName = file._shareFolderName || ((_b = userMap.get(file.userId)) === null || _b === void 0 ? void 0 : _b.name) || file.userId || 'Unknown';
             }
-        }
-        else {
-            if (file.orderId) {
-                const order = orderMap.get(file.orderId);
-                if (order && !matchesStatus(order.orderStatus))
-                    continue;
+            if (!groups[groupKey]) {
+                groups[groupKey] = {
+                    folderName,
+                    orderId: file.orderId || '',
+                    taskId: file.taskId || '',
+                    userId: file.userId || '',
+                    isTask,
+                    category: isTask
+                        ? ((_c = allTaskMap.get(file.taskId)) === null || _c === void 0 ? void 0 : _c.category) || ((_d = taskMap.get(file.taskId)) === null || _d === void 0 ? void 0 : _d.category)
+                        : file.category,
+                    files: [],
+                };
             }
-            groupKey = file.orderId ? `order:${file.orderId}` : `user:${file.userId}`;
-            folderName = file._shareFolderName || ((_c = userMap.get(file.userId)) === null || _c === void 0 ? void 0 : _c.name) || file.userId || 'Unknown';
+            groups[groupKey].files.push({
+                originalName: file.originalName,
+                userId: file.userId,
+            });
         }
-        if (!groups[groupKey]) {
-            groups[groupKey] = {
-                folderName,
-                orderId: file.orderId || '',
-                taskId: file.taskId || '',
-                userId: file.userId || '',
-                isTask,
-                category: isTask ? (_d = taskMap.get(file.taskId)) === null || _d === void 0 ? void 0 : _d.category : file.category,
-                files: [],
+        // 5. Add empty placeholders for tasks that have no files yet
+        for (const task of tasks) {
+            if (!matchesStatus(task.status))
+                continue;
+            const key = `task:${task._id}`;
+            if (!groups[key]) {
+                groups[key] = {
+                    folderName: task.title,
+                    orderId: task.orderId || '',
+                    taskId: task._id.toString(),
+                    userId: '',
+                    isTask: true,
+                    category: task.category,
+                    files: [],
+                };
+            }
+        }
+        // 6. Optional server-side search: keep only folders that match the query
+        let groupList = Object.values(groups);
+        if (q) {
+            const needle = q.toLowerCase();
+            groupList = groupList.filter((g) => (g.folderName && g.folderName.toLowerCase().includes(needle)) ||
+                (g.orderId && g.orderId.toLowerCase().includes(needle)) ||
+                (g.taskId && g.taskId.toLowerCase().includes(needle)) ||
+                g.files.some((f) => (f.originalName && f.originalName.toLowerCase().includes(needle)) ||
+                    (f.userId && f.userId.toString().toLowerCase().includes(needle))));
+        }
+        // 7. Enrich with orderStatus and derived fields (folder summaries only —
+        // the per-file records are intentionally dropped here)
+        const result = groupList.map((g) => {
+            var _a, _b;
+            let orderStatus = null;
+            let orderAWB = null;
+            if (g.taskId)
+                orderStatus = ((_a = taskMap.get(g.taskId)) === null || _a === void 0 ? void 0 : _a.status) || null;
+            else if (g.orderId)
+                orderStatus = ((_b = orderMap.get(g.orderId)) === null || _b === void 0 ? void 0 : _b.orderStatus) || null;
+            const order = g.orderId ? orderMap.get(g.orderId) : null;
+            if (order) {
+                const awbUrls = order.awbUrlsByFormat || {};
+                orderAWB = {
+                    easyparcelAwb: order.easyparcelAwb || '',
+                    easyparcelBookingStatus: order.easyparcelBookingStatus || null,
+                    printUrl: awbUrls.A6 || awbUrls.A4 || order.awbUrl || '',
+                };
+            }
+            return {
+                folderName: g.folderName,
+                orderId: g.orderId,
+                taskId: g.taskId,
+                userId: g.userId,
+                isTask: g.isTask,
+                category: g.category || '',
+                orderStatus,
+                orderAWB,
+                fileCount: g.files.length,
             };
-        }
-        groups[groupKey].files.push({
-            _id: file._id,
-            originalName: file.originalName,
-            folderId: file.folderId,
-            shareSlug: file.shareSlug,
-            category: file.category,
         });
-    }
-    // 5. Add empty placeholders for tasks that have no files yet
-    for (const task of tasks) {
-        if (!matchesStatus(task.status))
-            continue;
-        const key = `task:${task._id}`;
-        if (!groups[key]) {
-            groups[key] = {
-                folderName: task.title,
-                orderId: task.orderId || '',
-                taskId: task._id.toString(),
-                userId: '',
-                isTask: true,
-                category: task.category,
-                files: [],
-            };
-        }
-    }
-    // Enrich with orderStatus and derived fields
-    const result = Object.values(groups).map((g) => {
-        var _a, _b;
-        let orderStatus = null;
-        let orderAWB = null;
-        if (g.taskId)
-            orderStatus = ((_a = taskMap.get(g.taskId)) === null || _a === void 0 ? void 0 : _a.status) || null;
-        else if (g.orderId)
-            orderStatus = ((_b = orderMap.get(g.orderId)) === null || _b === void 0 ? void 0 : _b.orderStatus) || null;
-        const order = g.orderId ? orderMap.get(g.orderId) : null;
-        if (order) {
-            const awbUrls = order.awbUrlsByFormat || {};
-            orderAWB = {
-                easyparcelAwb: order.easyparcelAwb || '',
-                easyparcelBookingStatus: order.easyparcelBookingStatus || null,
-                printUrl: awbUrls.A6 || awbUrls.A4 || order.awbUrl || '',
-            };
-        }
-        return Object.assign(Object.assign({}, g), { orderStatus, orderAWB, fileCount: g.files.length });
+        return result;
     });
+}
+router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    const ARTWORK_STATUSES = ["PLACED", "IN_DESIGN", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "PEMBETULAN", "DONE_DESIGN"];
+    const rawStatuses = (_a = req.query.taskStatuses) === null || _a === void 0 ? void 0 : _a.split(',').filter(Boolean);
+    const taskStatusFilter = rawStatuses && rawStatuses.length > 0 ? rawStatuses : ARTWORK_STATUSES;
+    const filterUpper = taskStatusFilter.map(s => s.toUpperCase());
+    const rawQuery = (_b = req.query.q) === null || _b === void 0 ? void 0 : _b.trim();
+    const q = rawQuery ? rawQuery.toLowerCase() : '';
+    // Use the process-local cache first so a slow Redis connection never adds
+    // latency to this hot page-load path. Search requests are excluded — they
+    // are debounced, less frequent, and don't benefit from caching.
+    let cachedData = null;
+    if (!q) {
+        const cacheKey = `${ENRICHED_CACHE_KEY_PREFIX}${filterUpper.join(',')}`;
+        const mem = memCache.get(cacheKey);
+        if (mem && mem.expiresAt > Date.now())
+            cachedData = mem.data;
+        if (cachedData === null && enrichedIndexCache.isReady()) {
+            try {
+                const raw = yield Promise.race([
+                    enrichedIndexCache.get(cacheKey),
+                    new Promise((resolve) => setTimeout(() => resolve(null), 150)),
+                ]);
+                if (raw)
+                    cachedData = JSON.parse(raw);
+            }
+            catch ( /* Redis unavailable, rebuild from the database */_c) { /* Redis unavailable, rebuild from the database */ }
+        }
+        if (Array.isArray(cachedData)) {
+            res.json({ success: true, data: cachedData });
+            return;
+        }
+    }
+    const result = yield buildFolderGroups(taskStatusFilter, q || undefined);
     res.json({ success: true, data: result });
-    // Cache even empty results (fire-and-forget) so an empty queue does not
-    // re-run the full grouping pipeline on every page load.
-    enrichedIndexCache.set(cacheKey, JSON.stringify(result), ENRICHED_CACHE_TTL).catch(() => { });
-    memCache.set(cacheKey, { data: result, expiresAt: Date.now() + ENRICHED_CACHE_TTL * 1000 });
+    if (!q) {
+        // Cache even empty results (fire-and-forget) so an empty queue does not
+        // re-run the full grouping pipeline on every page load.
+        const cacheKey = `${ENRICHED_CACHE_KEY_PREFIX}${filterUpper.join(',')}`;
+        enrichedIndexCache.set(cacheKey, JSON.stringify(result), ENRICHED_CACHE_TTL).catch(() => { });
+        memCache.set(cacheKey, { data: result, expiresAt: Date.now() + ENRICHED_CACHE_TTL * 1000 });
+    }
 })));
 // ─── GET /api/files/by-folder ────────────────────────────────
 // Full file details (thumbnails, S3 URLs, etc.) for a single folder, fetched

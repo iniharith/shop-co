@@ -47,6 +47,7 @@ export default function ReportsPage() {
   const [monthlyData, setMonthlyData] = useState<any | null>(null);
   const [monthlyLoading, setMonthlyLoading] = useState(false);
   const [monthlyLoaded, setMonthlyLoaded] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
 
   const users = Array.isArray(usersResponse?.users) ? usersResponse.users : [];
 
@@ -113,11 +114,13 @@ export default function ReportsPage() {
   }, [tab, month, fetchMonthly]);
 
   const downloadCsv = async () => {
-    if (!month) return;
+    if (!month || isExporting) return;
+    setIsExporting(true);
     try {
       const res = await AxiosInstance(token).get(`/api/admin/reports/monthly-orders/export`, {
         params: { month },
         responseType: "blob",
+        timeout: 300000,
       });
       const url = URL.createObjectURL(res.data as Blob);
       const link = document.createElement("a");
@@ -129,6 +132,8 @@ export default function ReportsPage() {
       URL.revokeObjectURL(url);
     } catch (error: any) {
       toast.error(error.response?.data?.message || error.message || "Failed to export CSV");
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -272,10 +277,10 @@ export default function ReportsPage() {
               </div>
               <Button
                 onClick={downloadCsv}
-                disabled={!monthlyData || monthlyLoading}
+                disabled={!monthlyData || monthlyLoading || isExporting}
                 className="bg-gray-800 hover:bg-gray-700 text-white border border-gray-700"
               >
-                <Download className="w-4 h-4 mr-2" /> Export CSV
+                <Download className="w-4 h-4 mr-2" /> {isExporting ? "Exporting..." : "Export CSV"}
               </Button>
             </div>
 

@@ -96,8 +96,11 @@ export default function ArtworksManager() {
   const { addUpload, updateProgress, updateStatus } = useUploadStore();
   const { data: session } = useSession();
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  // Search query is fed to the server (?q=) so file names match too, even
+  // though the folder list only carries summaries.
+  const [searchQuery, setSearchQuery] = useState("");
   // Folder list from server-side grouped endpoint — fast, single query
-  const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching, isError: folderGroupError } = useFolderGroup(ARTWORK_STATUSES);
+  const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching, isError: folderGroupError } = useFolderGroup(ARTWORK_STATUSES, searchQuery);
   const groupedFromServer: any[] = (folderGroupResponse as any)?.data || [];
   const selectedGroup = useMemo(() => groupedFromServer.find(
     group => `${group.folderName}-${group.orderId}-${group.taskId}` === selectedFolder
@@ -108,7 +111,6 @@ export default function ArtworksManager() {
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
   const searchParams = useSearchParams();
 
-  const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ALL");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [commentModalOpen, setCommentModalOpen] = useState(false);
@@ -171,39 +173,24 @@ export default function ArtworksManager() {
   const [showEmptyFolders, setShowEmptyFolders] = useState<boolean>(true);
   const [folderScope, setFolderScope] = useState<"all" | "tasks">("all");
 
-  // Server-side grouping already handles status filtering and ordering.
-  // Client just filters by category tab and search query.
+  // Server-side grouping handles status filtering, ordering and search (q).
+  // Client only filters by category tab, empty-folder toggle and scope.
   const visibleGroupedFiles = useMemo(() => {
     let result = groupedFromServer;
 
     if (activeTab !== "ALL") {
-      result = result.filter((g: any) => {
-        const firstFile = g.files?.[0];
-        return g.category === activeTab || firstFile?.category === activeTab;
-      });
+      result = result.filter((g: any) => g.category === activeTab);
     }
 
     if (!showEmptyFolders) {
-      result = result.filter((g: any) => g.files?.length > 0);
+      result = result.filter((g: any) => g.fileCount > 0);
     }
     if (folderScope === "tasks") {
       result = result.filter((g: any) => g.taskId);
     }
 
-    const q = searchQuery.trim().toLowerCase();
-    if (q) {
-      result = result.filter((g: any) => {
-        const nameMatch = g.folderName?.toLowerCase().includes(q);
-        const fileMatch = g.files?.some((f: any) =>
-          f.originalName?.toLowerCase().includes(q) ||
-          f.userId?.toString().toLowerCase().includes(q)
-        );
-        return nameMatch || fileMatch;
-      });
-    }
-
     return result;
-  }, [groupedFromServer, activeTab, showEmptyFolders, folderScope, searchQuery]);
+  }, [groupedFromServer, activeTab, showEmptyFolders, folderScope]);
 
   // Once a folder is opened, fetch its full file details (thumbnails, S3
   // URLs, etc.) on demand — the folder LIST above only ever needed names
@@ -376,7 +363,7 @@ export default function ArtworksManager() {
       if (successful.length === 0) throw errors[0] || new Error('Upload failed');
 
       try {
-        const shareSlug = activeGroup.files.find((file: any) => file.shareSlug)?.shareSlug;
+        const shareSlug = activeFolderFiles.find((file: any) => file.shareSlug)?.shareSlug;
         await AxiosInstance(token).post("/api/files/save-metadata", {
           userId: activeGroup.userId || undefined,
           orderId: activeGroup.orderId || undefined,
@@ -502,19 +489,34 @@ export default function ArtworksManager() {
     });
   };
 
-  const handleDeleteFolder = (group: any, e: React.MouseEvent) => {
+  const handleDeleteFolder = async (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm(`Are you sure you want to delete ALL ${group.files.length} files in ${group.folderName}? This cannot be undone.`)) return;
-    
-    const fileIds = group.files.map((f: any) => f._id);
-    bulkDeleteMutate(fileIds, {
-      onSuccess: () => {
-        toast.success(`Deleted ${group.files.length} files successfully!`);
-      },
-      onError: (err: any) => {
-        toast.error(`Failed to delete files: ${err.message || 'Unknown error'}`);
+    if (!confirm(`Are you sure you want to delete ALL ${group.fileCount ?? 0} files in ${group.folderName}? This cannot be undone.`)) return;
+
+    try {
+      // The folder summary doesn't ship file records anymore — fetch the
+      // folder's real file ids on demand before bulk-deleting.
+      const token = session?.user?.token || localStorage.getItem('token') || "";
+      const qs = group.taskId
+        ? `taskId=${encodeURIComponent(group.taskId)}`
+        : `${group.orderId ? `orderId=${encodeURIComponent(group.orderId)}&` : ""}${group.userId ? `userId=${encodeURIComponent(group.userId)}` : ""}`;
+      const { data } = await AxiosInstance(token).get(`/api/files/by-folder?${qs}`);
+      const fileIds = (data?.data || []).map((f: any) => f._id).filter(Boolean);
+      if (fileIds.length === 0) {
+        toast.success("No files to delete");
+        return;
       }
-    });
+      bulkDeleteMutate(fileIds, {
+        onSuccess: () => {
+          toast.success(`Deleted ${fileIds.length} files successfully!`);
+        },
+        onError: (err: any) => {
+          toast.error(`Failed to delete files: ${err.message || 'Unknown error'}`);
+        }
+      });
+    } catch {
+      toast.error("Failed to load folder files");
+    }
   };
 
   const handleUploadSubmit = async () => {
@@ -1129,9 +1131,9 @@ export default function ArtworksManager() {
                             <Folder className="w-4 h-4 mr-2" /> New Folder
                           </Button>
                         )}
-                        <Button 
+                          <Button 
                           onClick={() => {
-                            const inferredCategory = activeGroup.taskId ? "TASK" : (activeGroup.files?.length > 0 ? activeGroup.files[0].category : (activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING"));
+                            const inferredCategory = activeGroup.taskId ? "TASK" : (activeGroup.category || (activeTab !== "ALL" ? activeTab : "DIGITAL PRINTING"));
                             setUploadData({ userId: activeGroup.userId || "", orderId: activeGroup.orderId || "", category: inferredCategory, notes: "", taskId: activeGroup.taskId || "", folderId: activeSubFolderId || "" });
                             setUploadModalOpen(true);
                           }}
