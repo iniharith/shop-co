@@ -32,6 +32,7 @@ import LoadingAnimation from "@/components/global/LoadingAnimation";
 import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
 import { buildFileShareUrl, isPdfFile, preparePdfSharePreview } from "@/lib/fileSharePreview";
 import { Virtuoso } from "react-virtuoso";
+import SavedViewsControl from "@/components/global/SavedViewsControl";
 
 const categories = [
   "ALL",
@@ -64,6 +65,23 @@ const ARTWORK_VISIBLE_STATUSES = ["PLACED", "IN_DESIGN", "IN_PROGRESS", "PENDING
 const ARTWORK_STATUSES = ARTWORK_VISIBLE_STATUSES;
 const ALL_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN", "IN_PRODUCTION", "PRINT_AWB", "DONE_PRINTING", "PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "FAILED", "RETURN"];
 
+type ArtworkSavedView = {
+  searchQuery: string;
+  activeTab: string;
+  viewMode: "grid" | "list";
+  showEmptyFolders: boolean;
+  folderScope: "all" | "tasks";
+};
+const isArtworkSavedView = (value: unknown): value is ArtworkSavedView => {
+  if (!value || typeof value !== "object") return false;
+  const view = value as ArtworkSavedView;
+  return typeof view.searchQuery === "string"
+    && categories.includes(view.activeTab)
+    && (view.viewMode === "grid" || view.viewMode === "list")
+    && typeof view.showEmptyFolders === "boolean"
+    && (view.folderScope === "all" || view.folderScope === "tasks");
+};
+
 const getFolderItemKey = (index: number, group: any) =>
   group.taskId
     ? `task:${group.taskId}`
@@ -79,7 +97,7 @@ export default function ArtworksManager() {
   const { data: session } = useSession();
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   // Folder list from server-side grouped endpoint — fast, single query
-  const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching } = useFolderGroup(ARTWORK_STATUSES);
+  const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching, isError: folderGroupError } = useFolderGroup(ARTWORK_STATUSES);
   const groupedFromServer: any[] = (folderGroupResponse as any)?.data || [];
   const selectedGroup = useMemo(() => groupedFromServer.find(
     group => `${group.folderName}-${group.orderId}-${group.taskId}` === selectedFolder
@@ -657,7 +675,15 @@ export default function ArtworksManager() {
       </div>
     );
   };
-if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fullScreen={false} label="Loading artworks" />;
+  if (!groupedFromServer.length && (folderGroupPending || isFetching)) return <LoadingAnimation fullScreen={false} label="Loading artworks" />;
+  if (!groupedFromServer.length && folderGroupError) {
+    return (
+      <div className="p-8 text-center border border-dashed rounded-xl bg-card space-y-3">
+        <p className="text-sm text-muted-foreground">Artworks could not be loaded.</p>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>Try Again</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">
@@ -683,6 +709,19 @@ if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fu
         </div>
 
         <div className="flex items-center gap-2">
+          <SavedViewsControl
+            scope="artworks"
+            state={{ searchQuery, activeTab, viewMode, showEmptyFolders, folderScope }}
+            isValidState={isArtworkSavedView}
+            rememberLastView
+            onApply={view => {
+              setSearchQuery(view.searchQuery);
+              setActiveTab(view.activeTab);
+              setViewMode(view.viewMode);
+              setShowEmptyFolders(view.showEmptyFolders);
+              setFolderScope(view.folderScope);
+            }}
+          />
           <div className="flex items-center bg-muted p-1 rounded-md">
             <button
               onClick={() => setViewMode("grid")}

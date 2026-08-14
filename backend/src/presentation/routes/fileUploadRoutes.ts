@@ -425,21 +425,20 @@ router.get(
       });
     };
 
-    // Try cache: Redis first — raced against a short timeout so a slow or
-    // unhealthy Redis (queued commands + retries) can never block the hot
-    // page-load path. In-memory Map as fallback.
+    // Use the process-local cache first so a slow Redis connection never adds
+    // latency to this hot page-load path.
     const cacheKey = `${ENRICHED_CACHE_KEY_PREFIX}${filterUpper.join(',')}`;
     let cachedData: any = null;
-    try {
-      const raw = await Promise.race([
-        enrichedIndexCache.get(cacheKey),
-        new Promise<string | null>((resolve) => setTimeout(() => resolve(null), 1000)),
-      ]);
-      if (raw) cachedData = JSON.parse(raw);
-    } catch { /* Redis unavailable, try in-memory */ }
+    const mem = memCache.get(cacheKey);
+    if (mem && mem.expiresAt > Date.now()) cachedData = mem.data;
     if (cachedData === null) {
-      const mem = memCache.get(cacheKey);
-      if (mem && mem.expiresAt > Date.now()) cachedData = mem.data;
+      try {
+        const raw = await Promise.race([
+          enrichedIndexCache.get(cacheKey),
+          new Promise<string | null>((resolve) => setTimeout(() => resolve(null), 150)),
+        ]);
+        if (raw) cachedData = JSON.parse(raw);
+      } catch { /* Redis unavailable, rebuild from the database */ }
     }
     if (Array.isArray(cachedData)) {
       res.json({ success: true, data: cachedData }); return;

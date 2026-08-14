@@ -909,6 +909,26 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     }
   };
 
+  const persistCurrentView = () => {
+    const view: TaskModalView = { ...winPosRef.current };
+    const size = winSizeRef.current;
+    if (size) {
+      view.w = size.w;
+      view.h = size.h;
+    }
+    saveTaskModalView(view);
+  };
+
+  React.useLayoutEffect(() => {
+    if (!isOpen || !dialogRef.current) return;
+    applySavedView(dialogRef.current);
+  }, [isOpen]);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    return persistCurrentView;
+  }, [isOpen]);
+
   const handleResetView = () => {
     clearTaskModalView();
     winPosRef.current = { x: 0, y: 0 };
@@ -1146,10 +1166,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        ref={(el) => {
-          dialogRef.current = el;
-          if (el) applySavedView(el);
-        }}
+        ref={dialogRef}
         className="task-modal-content top-1/2 left-1/2 max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[85vh] flex flex-col will-change-transform"
         onDrop={(e) => {
           e.preventDefault();

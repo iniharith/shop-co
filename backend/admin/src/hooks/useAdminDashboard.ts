@@ -134,7 +134,7 @@ export const useFolderGroup = (taskStatuses?: string[]) => {
             enabled: status === "authenticated",
             staleTime: 120_000,
             refetchOnWindowFocus: false,
-            refetchOnMount: true,
+            refetchOnMount: "always",
         }
     );
 }

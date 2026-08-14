@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { Bookmark, Trash2 } from "lucide-react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { Bookmark, History, Trash2 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ type SavedViewsControlProps<T> = {
   isValidState: (value: unknown) => value is T;
   onApply: (state: T) => void;
   className?: string;
+  rememberLastView?: boolean;
 };
 
 export default function SavedViewsControl<T>({
@@ -29,10 +31,55 @@ export default function SavedViewsControl<T>({
   isValidState,
   onApply,
   className,
+  rememberLastView = false,
 }: SavedViewsControlProps<T>) {
+  const { data: session } = useSession();
   const [name, setName] = useState("");
   const [open, setOpen] = useState(false);
+  const [lastView, setLastView] = useState<T | null>(null);
   const { savedViews, saveView, deleteView } = useSavedViews(scope, isValidState);
+  const lastViewKey = rememberLastView && session?.user?.id
+    ? `shop-co:admin:last-view:${session.user.id}:${scope}`
+    : "";
+  const restoredKeyRef = useRef("");
+  const skipNextPersistRef = useRef(false);
+  const lastSerializedRef = useRef("");
+
+  useEffect(() => {
+    if (!lastViewKey || restoredKeyRef.current === lastViewKey) return;
+    restoredKeyRef.current = lastViewKey;
+    skipNextPersistRef.current = true;
+
+    try {
+      const parsed: unknown = JSON.parse(localStorage.getItem(lastViewKey) || "null");
+      if (isValidState(parsed)) {
+        lastSerializedRef.current = JSON.stringify(parsed);
+        setLastView(parsed);
+        onApply(parsed);
+      }
+    } catch {
+      localStorage.removeItem(lastViewKey);
+    }
+  }, [lastViewKey]);
+
+  useEffect(() => {
+    if (!lastViewKey || restoredKeyRef.current !== lastViewKey || !isValidState(state)) return;
+
+    const serialized = JSON.stringify(state);
+    if (skipNextPersistRef.current) {
+      skipNextPersistRef.current = false;
+      if (lastSerializedRef.current) return;
+    }
+    if (serialized === lastSerializedRef.current) return;
+
+    try {
+      localStorage.setItem(lastViewKey, serialized);
+      lastSerializedRef.current = serialized;
+      setLastView(state);
+    } catch {
+      // Storage may be unavailable in restricted browser contexts.
+    }
+  }, [lastViewKey, state, isValidState]);
 
   const handleSave = (event: FormEvent) => {
     event.preventDefault();
@@ -54,6 +101,14 @@ export default function SavedViewsControl<T>({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
         <DropdownMenuLabel>Saved views</DropdownMenuLabel>
+        {rememberLastView && lastView && (
+          <>
+            <DropdownMenuItem onSelect={() => onApply(lastView)}>
+              <History className="mr-2 h-4 w-4" /> Last view
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
         {savedViews.length === 0 ? (
           <div className="px-2 py-3 text-sm text-muted-foreground">No saved views yet.</div>
         ) : (

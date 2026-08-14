@@ -85,7 +85,7 @@ export default function ProductionManager() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
-  const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching } = useFolderGroup(ALL_STATUSES);
+  const { data: folderGroupResponse, isPending: folderGroupPending, refetch, isFetching, isError: folderGroupError } = useFolderGroup(ALL_STATUSES);
   const groupedFromServer: any[] = (folderGroupResponse as any)?.data || [];
   const selectedGroup = useMemo(() => groupedFromServer.find(
     group => `${group.folderName}-${group.orderId}-${group.taskId || ""}` === selectedFolder
@@ -514,7 +514,15 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
     );
   };
 
-  if (!groupedFromServer.length && folderGroupPending) return <LoadingAnimation fullScreen={false} label="Loading files" />;
+  if (!groupedFromServer.length && (folderGroupPending || isFetching)) return <LoadingAnimation fullScreen={false} label="Loading files" />;
+  if (!groupedFromServer.length && folderGroupError) {
+    return (
+      <div className="p-8 text-center border border-dashed rounded-xl bg-card space-y-3">
+        <p className="text-sm text-muted-foreground">Production files could not be loaded.</p>
+        <Button variant="outline" size="sm" onClick={() => refetch()}>Try Again</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 bg-background/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl p-6">
@@ -544,6 +552,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
             scope="production"
             state={{ searchQuery, activeTab, activeSubTab, viewMode }}
             isValidState={isProductionSavedView}
+            rememberLastView
             onApply={view => {
               setSearchQuery(view.searchQuery);
               setActiveTab(view.activeTab);

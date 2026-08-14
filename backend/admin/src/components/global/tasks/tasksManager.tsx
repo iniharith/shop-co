@@ -818,6 +818,7 @@ export default function TasksManager() {
             scope="tasks"
             state={{ assigneeFilter, sortOption, viewMode, hiddenColumns }}
             isValidState={isTaskSavedView}
+            rememberLastView
             onApply={view => {
               setAssigneeFilter(view.assigneeFilter);
               setSortOption(view.sortOption);
