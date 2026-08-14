@@ -71,12 +71,14 @@ router.get('/monthly-orders', (0, express_async_handler_1.default)((req, res) =>
     const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : undefined;
     const page = yield MonthlyReportRepository_1.default.getTaskPage(window, cursor, limit);
     const rows = yield MonthlyReportRepository_1.default.assemble(page.tasks);
+    const seenOrderIds = new Set();
     const totals = rows.reduce((acc, row) => {
-        acc.orders = new Set([...acc.orders, row.orderId]).size;
+        seenOrderIds.add(String(row.orderId));
+        acc.orders = seenOrderIds.size;
         acc.files += row.fileCount;
         acc.bytes += row.fileTotalBytes;
         return acc;
-    }, { orders: new Set(), files: 0, bytes: 0 });
+    }, { orders: 0, files: 0, bytes: 0 });
     res.json({
         success: true,
         period: { month, timezone, start: window.start, endExclusive: window.endExclusive },

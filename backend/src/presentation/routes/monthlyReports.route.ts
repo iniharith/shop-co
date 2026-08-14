@@ -30,14 +30,16 @@ router.get('/monthly-orders', asyncHandler(async (req: any, res: Response) => {
   const page = await monthlyReportRepository.getTaskPage(window, cursor, limit);
   const rows = await monthlyReportRepository.assemble(page.tasks);
 
+  const seenOrderIds = new Set<string>();
   const totals = rows.reduce(
     (acc, row) => {
-      acc.orders = new Set([...acc.orders, row.orderId]).size;
+      seenOrderIds.add(String(row.orderId));
+      acc.orders = seenOrderIds.size;
       acc.files += row.fileCount;
       acc.bytes += row.fileTotalBytes;
       return acc;
     },
-    { orders: new Set<string>(), files: 0, bytes: 0 }
+    { orders: 0, files: 0, bytes: 0 }
   );
 
   res.json({
