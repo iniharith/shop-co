@@ -117,14 +117,19 @@ class AdminUsecase {
             try {
                 yield session.withTransaction(() => __awaiter(this, void 0, void 0, function* () {
                     var _a, _b;
-                    const [createdOrder] = yield order_model_1.default.create([data], { session });
+                    const manualItemName = String(data.productChoice || '').trim();
+                    const manualItemCategory = String(data.productCategory || data.category || '').trim() || 'MANUAL';
+                    const manualItemDescription = String(data.productDescription || '').trim();
+                    const [createdOrder] = yield order_model_1.default.create([Object.assign(Object.assign({}, data), { products: data.products || [], manualItemName,
+                            manualItemDescription,
+                            manualItemCategory })], { session });
                     order = createdOrder;
                     yield Task_1.Task.create([{
                             title: `Order: ${createdOrder._id.toString().slice(-6).toUpperCase()} - ${data.customerName}`,
                             description: `Manual order task for Order ${createdOrder._id.toString()}.`,
                             orderId: createdOrder._id.toString(),
                             customerUsername: data.customerName,
-                            category: data.productChoice || 'UNASSIGNED',
+                            category: manualItemName || 'UNASSIGNED',
                             status: data.orderStatus || 'PLACED',
                         }], { session });
                     if (data.trackingNumber) {

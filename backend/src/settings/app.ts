@@ -18,6 +18,7 @@ import productRoutes from '../presentation/routes/product.route';
 import cartRoutes from '../presentation/routes/cart.route';
 import orderRoutes from '../presentation/routes/order.route';
 import adminRoutes from '../presentation/routes/admin.route';
+import monthlyReportsRoutes from '../presentation/routes/monthlyReports.route';
 import notificationRoutes from '../presentation/routes/notification.route';
 import parcelRoutes from '../presentation/routes/parcelRoutes';
 import fileUploadRoutes from '../presentation/routes/fileUploadRoutes';
@@ -109,6 +110,7 @@ app.use(apiRoutes.ORDER, orderRoutes);
 app.use('/api/webhooks', webhookRouter);
 app.use('/api/easyparcel', easyParcelRoutes);
 app.use(apiRoutes.ADMIN, adminRoutes);
+app.use('/api/admin/reports', monthlyReportsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/folders', virtualFolderRoutes);
 

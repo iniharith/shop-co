@@ -30,6 +30,18 @@ const OrderedProductSchema = new Schema(
       type: String,
       default: '',
     },
+    productNameSnapshot: {
+      type: String,
+      default: '',
+    },
+    productDescriptionSnapshot: {
+      type: String,
+      default: '',
+    },
+    productCategorySnapshot: {
+      type: String,
+      default: '',
+    },
   },
   { _id: false }
 );
@@ -62,6 +74,23 @@ const OrderSchema: Schema = new Schema(
       default: '',
     },
     products: [OrderedProductSchema],
+    manualItemName: {
+      type: String,
+      default: '',
+    },
+    manualItemDescription: {
+      type: String,
+      default: '',
+    },
+    manualItemCategory: {
+      type: String,
+      default: '',
+    },
+    fileSummarySnapshot: {
+      count: { type: Number, default: 0 },
+      totalBytes: { type: Number, default: 0 },
+      capturedAt: { type: Date },
+    },
     totalAmount: {
       type: Number,
       required: true,

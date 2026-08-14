@@ -145,7 +145,10 @@ class OrderUsecase {
                     quantity: item.quantity,
                     price: productPrice,
                     size: item.size,
-                    artworkUrl: item.artworkUrl
+                    artworkUrl: item.artworkUrl,
+                    productNameSnapshot: product.name || '',
+                    productDescriptionSnapshot: product.description || '',
+                    productCategorySnapshot: product.category || '',
                 });
                 totalAmount += productPrice;
             }
@@ -237,6 +240,26 @@ class OrderUsecase {
                         : sourceTaskId
                             ? yield Task.find({ _id: sourceTaskId })
                             : [];
+                    // Preserve file totals on the order before S3 metadata is deleted,
+                    // so monthly database reports remain accurate after delivery.
+                    try {
+                        const taskIds = tasks.map(task => task._id.toString());
+                        const taskFiles = taskIds.length
+                            ? yield FileUpload.find({ taskId: { $in: taskIds } }).lean()
+                            : [];
+                        const orderFiles = yield FileUpload.find({ orderId }).lean();
+                        const allFiles = taskFiles.concat(orderFiles).filter((file, index, list) => list.findIndex(other => other._id.toString() === file._id.toString()) === index);
+                        yield order_model_1.default.findByIdAndUpdate(orderId, {
+                            fileSummarySnapshot: {
+                                count: allFiles.length,
+                                totalBytes: allFiles.reduce((sum, file) => sum + (Number(file.size) || 0), 0),
+                                capturedAt: new Date(),
+                            },
+                        });
+                    }
+                    catch (snapshotError) {
+                        console.error('Failed to persist file summary snapshot for order:', orderId, snapshotError);
+                    }
                     for (const task of tasks) {
                         const fileUploads = yield FileUpload.find({ taskId: task._id.toString() });
                         const fileUrls = new Set([

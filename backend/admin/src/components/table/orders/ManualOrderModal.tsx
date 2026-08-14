@@ -40,6 +40,8 @@ const initialFormData = {
   trackingNumber: "",
   courier: "none",
   productChoice: "",
+  productDescription: "",
+  productCategory: "",
 };
 
 export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpenChange }) => {
@@ -83,6 +85,9 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
       totalAmount: parseFloat(formData.totalAmount),
       orderStatus: formData.orderStatus,
       products: [], // Empty products for manual orders by default or can add items
+      productChoice: formData.productChoice || undefined,
+      productDescription: formData.productDescription || undefined,
+      productCategory: formData.productCategory || undefined,
       orderNotes: formData.productChoice ? `Product: ${formData.productChoice}` : "",
       trackingNumber: formData.trackingNumber,
       courier: formData.courier === "none" ? undefined : formData.courier,
@@ -204,7 +209,12 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
                           key={product._id}
                           value={product.name}
                           onSelect={() => {
-                            setFormData({ ...formData, productChoice: product.name });
+                            setFormData({
+                              ...formData,
+                              productChoice: product.name,
+                              productDescription: product.description || "",
+                              productCategory: product.category || "",
+                            });
                             setOpenProductBox(false);
                             setProductSearch("");
                           }}

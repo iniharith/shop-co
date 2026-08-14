@@ -12,6 +12,9 @@ export interface IOrderedProduct {
   quantity: number;
   price: number;
   artworkUrl?: string;
+  productNameSnapshot?: string;
+  productDescriptionSnapshot?: string;
+  productCategorySnapshot?: string;
 }
 
 
@@ -53,6 +56,14 @@ export interface IOrder {
   customerName: string;
   orderNotes?: string;
   products: IOrderedProduct[];
+  manualItemName?: string;
+  manualItemDescription?: string;
+  manualItemCategory?: string;
+  fileSummarySnapshot?: {
+    count: number;
+    totalBytes: number;
+    capturedAt: Date;
+  };
   totalAmount: number;
   paymentMethod: 'COD' | 'ONLINE';
   paymentStatus: 'PENDING' | 'PAID' | 'FAILED';

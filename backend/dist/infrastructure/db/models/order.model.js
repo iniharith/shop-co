@@ -62,6 +62,18 @@ const OrderedProductSchema = new mongoose_1.Schema({
         type: String,
         default: '',
     },
+    productNameSnapshot: {
+        type: String,
+        default: '',
+    },
+    productDescriptionSnapshot: {
+        type: String,
+        default: '',
+    },
+    productCategorySnapshot: {
+        type: String,
+        default: '',
+    },
 }, { _id: false });
 const AddressSchema = new mongoose_1.Schema({
     address: { type: String, required: true },
@@ -86,6 +98,23 @@ const OrderSchema = new mongoose_1.Schema({
         default: '',
     },
     products: [OrderedProductSchema],
+    manualItemName: {
+        type: String,
+        default: '',
+    },
+    manualItemDescription: {
+        type: String,
+        default: '',
+    },
+    manualItemCategory: {
+        type: String,
+        default: '',
+    },
+    fileSummarySnapshot: {
+        count: { type: Number, default: 0 },
+        totalBytes: { type: Number, default: 0 },
+        capturedAt: { type: Date },
+    },
     totalAmount: {
         type: Number,
         required: true,

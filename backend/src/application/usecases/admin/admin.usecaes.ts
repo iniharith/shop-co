@@ -111,14 +111,23 @@ export class AdminUsecase {
         let order: IOrderDocument | null = null;
         try {
             await session.withTransaction(async () => {
-                const [createdOrder] = await OrderModel.create([data], { session });
+                const manualItemName = String(data.productChoice || '').trim();
+                const manualItemCategory = String(data.productCategory || data.category || '').trim() || 'MANUAL';
+                const manualItemDescription = String(data.productDescription || '').trim();
+                const [createdOrder] = await OrderModel.create([{
+                    ...data,
+                    products: data.products || [],
+                    manualItemName,
+                    manualItemDescription,
+                    manualItemCategory,
+                }], { session });
                 order = createdOrder;
                 await Task.create([{
                     title: `Order: ${createdOrder._id.toString().slice(-6).toUpperCase()} - ${data.customerName}`,
                     description: `Manual order task for Order ${createdOrder._id.toString()}.`,
                     orderId: createdOrder._id.toString(),
                     customerUsername: data.customerName,
-                    category: data.productChoice || 'UNASSIGNED',
+                    category: manualItemName || 'UNASSIGNED',
                     status: data.orderStatus || 'PLACED',
                 }], { session });
 
