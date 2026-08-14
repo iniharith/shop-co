@@ -111,6 +111,17 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
   const { addUpload, updateProgress, updateStatus, removeUpload } = useUploadStore();
   const { data: productsData } = useProducts();
   const [categoryOpen, setCategoryOpen] = useState(false);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!categoryOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(e.target as Node)) {
+        setCategoryOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [categoryOpen]);
 
   const taskProducts = useMemo(
     () =>
@@ -330,67 +341,68 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Category</label>
-            <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={categoryOpen}
-                  className="w-full justify-between h-10 font-normal"
-                >
-                  {newTask.category === "UNASSIGNED" ? "Select category or type a product name…" : newTask.category}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 max-w-[calc(100vw-2rem)] p-0 max-h-[min(55vh,360px)] overflow-hidden flex flex-col" align="start">
-                <Command className="h-auto flex-1">
-                  <CommandInput placeholder="Type a product name or category…" />
-                  <CommandList className="overflow-y-auto">
-                    <CommandEmpty>No matching product or category.</CommandEmpty>
-                    <CommandGroup heading="Categories">
-                      {TASK_CATEGORIES.map(category => (
-                        <CommandItem
-                          key={category}
-                          value={category.toLowerCase()}
-                          onSelect={() => {
-                            setNewTask({ ...newTask, category });
-                            setCategoryOpen(false);
-                          }}
-                        >
-                          <Check className={cn("h-4 w-4", newTask.category === category ? "opacity-100" : "opacity-0")} />
-                          {category}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                    {taskProducts.length > 0 && (
-                      <CommandGroup heading="Products">
-                        {taskProducts.map(product => (
+            <div ref={categoryDropdownRef} className="relative">
+              <Button
+                type="button"
+                variant="outline"
+                role="combobox"
+                aria-expanded={categoryOpen}
+                onClick={() => setCategoryOpen(open => !open)}
+                className="w-full justify-between h-10 font-normal"
+              >
+                {newTask.category === "UNASSIGNED" ? "Select category or type a product name…" : newTask.category}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+              {categoryOpen && (
+                <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-md border bg-popover text-popover-foreground shadow-md max-h-[min(55vh,360px)] overflow-hidden flex flex-col">
+                  <Command className="h-auto flex-1">
+                    <CommandInput placeholder="Type a product name or category…" />
+                    <CommandList className="overflow-y-auto">
+                      <CommandEmpty>No matching product or category.</CommandEmpty>
+                      <CommandGroup heading="Categories">
+                        {TASK_CATEGORIES.map(category => (
                           <CommandItem
-                            key={product.id}
-                            value={product.searchKey}
+                            key={category}
+                            value={category.toLowerCase()}
                             onSelect={() => {
-                              setNewTask({
-                                ...newTask,
-                                title: newTask.title.trim() ? newTask.title : product.name,
-                                category: product.category,
-                                productId: product.id,
-                                productName: product.name,
-                              });
+                              setNewTask({ ...newTask, category });
                               setCategoryOpen(false);
                             }}
                           >
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                            {product.name}
-                            <span className="ml-auto text-xs text-muted-foreground">{product.sections.join(", ") || product.category}</span>
+                            <Check className={cn("h-4 w-4", newTask.category === category ? "opacity-100" : "opacity-0")} />
+                            {category}
                           </CommandItem>
                         ))}
                       </CommandGroup>
-                    )}
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+                      {taskProducts.length > 0 && (
+                        <CommandGroup heading="Products">
+                          {taskProducts.map(product => (
+                            <CommandItem
+                              key={product.id}
+                              value={product.searchKey}
+                              onSelect={() => {
+                                setNewTask({
+                                  ...newTask,
+                                  title: newTask.title.trim() ? newTask.title : product.name,
+                                  category: product.category,
+                                  productId: product.id,
+                                  productName: product.name,
+                                });
+                                setCategoryOpen(false);
+                              }}
+                            >
+                              <Package className="h-4 w-4 text-muted-foreground" />
+                              {product.name}
+                              <span className="ml-auto text-xs text-muted-foreground">{product.sections.join(", ") || product.category}</span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      )}
+                    </CommandList>
+                  </Command>
+                </div>
+              )}
+            </div>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Artwork (optional)</label>
