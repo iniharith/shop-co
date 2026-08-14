@@ -27,8 +27,8 @@ router.get('/monthly-orders', asyncHandler(async (req: any, res: Response) => {
   const limit = Number(req.query.limit) || 100;
   const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : undefined;
 
-  const page = await monthlyReportRepository.getOrderPage(window, cursor, limit);
-  const rows = await monthlyReportRepository.assemble(page.orders);
+  const page = await monthlyReportRepository.getTaskPage(window, cursor, limit);
+  const rows = await monthlyReportRepository.assemble(page.tasks);
 
   const totals = rows.reduce(
     (acc, row) => {
@@ -54,7 +54,7 @@ router.get('/monthly-orders', asyncHandler(async (req: any, res: Response) => {
       limit,
       hasNextPage: page.hasNextPage,
       nextCursor: page.nextCursor,
-      paginationUnit: 'orders',
+      paginationUnit: 'tasks',
     },
   });
 }));
@@ -83,8 +83,8 @@ router.get('/monthly-orders/export', asyncHandler(async (req: any, res: Response
 
   let cursor: string | undefined;
   for (;;) {
-    const page = await monthlyReportRepository.getOrderPage(window, cursor, 500);
-    const rows = await monthlyReportRepository.assemble(page.orders);
+    const page = await monthlyReportRepository.getTaskPage(window, cursor, 500);
+    const rows = await monthlyReportRepository.assemble(page.tasks);
     for (const row of rows) {
       lines.push([
         row.customerName,

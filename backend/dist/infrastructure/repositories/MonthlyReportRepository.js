@@ -17,15 +17,15 @@ exports.MonthlyReportRepository = void 0;
  * Coded by Harith
  * Kampungcetak ®
  *
- * Monthly orders report repository. Assembles orders with their item
- * snapshots, file totals and staff assignments for a given month window.
+ * Monthly orders report repository. Assembles every production task into a
+ * report row — including manually created tasks that have no linked order —
+ * and enriches with file totals and staff assignments for a given month.
  */
 const mongoose_1 = __importDefault(require("mongoose"));
 const order_model_1 = __importDefault(require("../db/models/order.model"));
 const product_model_1 = __importDefault(require("../db/models/product.model"));
 const user_model_1 = __importDefault(require("../db/models/user.model"));
 const FileUpload_1 = require("../../domain/entities/FileUpload");
-const ShareLink_1 = require("../../domain/entities/ShareLink");
 const Task_1 = require("../../domain/entities/Task");
 const PAGE_SIZE = 100;
 const toStr = (value, fallback = '') => {
@@ -41,6 +41,15 @@ const toStr = (value, fallback = '') => {
     catch (_a) {
         return fallback;
     }
+};
+/**
+ * Manual tasks usually encode the customer inside the title, e.g.
+ * "F | 14 AUG 26 | KC Seriazhari (MANUAL POSTAGE)" → "Seriazhari".
+ * Used as a last-resort fallback for the customer column.
+ */
+const kcNameFromTitle = (title) => {
+    const match = toStr(title).match(/KC\s+([A-Za-z0-9_.-]+)/i);
+    return match ? match[1] : '';
 };
 class MonthlyReportRepository {
     buildCursor(value) {
@@ -59,11 +68,12 @@ class MonthlyReportRepository {
             return null;
         }
     }
-    getOrderPage(window_1, cursor_1) {
+    getTaskPage(window_1, cursor_1) {
         return __awaiter(this, arguments, void 0, function* (window, cursor, limit = PAGE_SIZE) {
             const safeLimit = Math.min(Math.max(Number(limit) || PAGE_SIZE, 1), 500);
             const filter = {
                 createdAt: { $gte: window.start, $lt: window.endExclusive },
+                isDeleted: { $ne: true },
             };
             const decoded = this.buildCursor(cursor);
             if (decoded) {
@@ -72,173 +82,105 @@ class MonthlyReportRepository {
                     { createdAt: decoded.createdAt, _id: { $lt: new mongoose_1.default.Types.ObjectId(decoded.id) } },
                 ];
             }
-            const orders = yield order_model_1.default.find(filter)
+            const tasks = yield Task_1.Task.find(filter)
                 .sort({ createdAt: -1, _id: -1 })
                 .limit(safeLimit + 1)
                 .lean()
                 .exec();
-            const hasNextPage = orders.length > safeLimit;
-            const pageOrders = hasNextPage ? orders.slice(0, safeLimit) : orders;
+            const hasNextPage = tasks.length > safeLimit;
+            const pageTasks = hasNextPage ? tasks.slice(0, safeLimit) : tasks;
             let nextCursor = null;
-            if (hasNextPage && pageOrders.length > 0) {
-                const last = pageOrders[pageOrders.length - 1];
+            if (hasNextPage && pageTasks.length > 0) {
+                const last = pageTasks[pageTasks.length - 1];
                 nextCursor = Buffer.from(JSON.stringify({ createdAt: last.createdAt, id: String(last._id) })).toString('base64url');
             }
-            return { orders: pageOrders, hasNextPage, nextCursor };
+            return { tasks: pageTasks, hasNextPage, nextCursor };
         });
     }
-    assemble(orders) {
+    assemble(tasks) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!orders.length)
+            var _a;
+            if (!tasks.length)
                 return [];
-            const orderIds = orders.map(o => String(o._id));
-            const validOrderIds = orderIds.filter(id => mongoose_1.default.Types.ObjectId.isValid(id));
-            const productIds = orders
-                .flatMap(o => (o.products || []).map((p) => { var _a, _b; return ((_b = (_a = p.product) === null || _a === void 0 ? void 0 : _a.toString) === null || _b === void 0 ? void 0 : _b.call(_a)) || p.product; }))
-                .filter((id) => mongoose_1.default.Types.ObjectId.isValid(id));
-            const [productDocs, tasks, shareLinks, orderScopedFiles] = yield Promise.all([
-                product_model_1.default.find({ _id: { $in: productIds } }).select('name description category').lean().exec(),
-                Task_1.Task.find({ orderId: { $in: validOrderIds } }).lean().exec(),
-                ShareLink_1.ShareLink.find({ orderId: { $in: validOrderIds } }).lean().exec(),
-                FileUpload_1.FileUpload.find({ orderId: { $in: validOrderIds } }).lean().exec(),
-            ]);
             const taskIds = tasks.map(t => String(t._id));
-            const taskFiles = taskIds.length
-                ? yield FileUpload_1.FileUpload.find({ taskId: { $in: taskIds } }).lean().exec()
-                : [];
-            const shareSlugs = [...new Set(shareLinks.map(link => link.slug).filter(Boolean))];
-            const shareFiles = shareSlugs.length
-                ? yield FileUpload_1.FileUpload.find({ shareSlug: { $in: shareSlugs } }).lean().exec()
-                : [];
-            const productMap = new Map(productDocs.map(p => [String(p._id), p]));
-            const tasksByOrder = new Map();
-            for (const task of tasks) {
-                if (!task.orderId)
-                    continue;
-                const list = tasksByOrder.get(String(task.orderId)) || [];
-                list.push(task);
-                tasksByOrder.set(String(task.orderId), list);
-            }
+            const validOrderIds = tasks
+                .map(t => t.orderId)
+                .filter((id) => typeof id === 'string' && mongoose_1.default.Types.ObjectId.isValid(id));
+            const validProductIds = tasks
+                .map(t => t.productId)
+                .filter((id) => typeof id === 'string' && mongoose_1.default.Types.ObjectId.isValid(id));
             const assigneeIds = [...new Set(tasks
                     .map(t => t.assignee)
                     .filter((a) => typeof a === 'string' && mongoose_1.default.Types.ObjectId.isValid(a)))];
-            const assigneeDocs = assigneeIds.length
-                ? yield user_model_1.default.find({ _id: { $in: assigneeIds } }).select('name role').lean().exec()
-                : [];
+            const [orderDocs, productDocs, taskFiles, assigneeDocs] = yield Promise.all([
+                validOrderIds.length ? order_model_1.default.find({ _id: { $in: validOrderIds } }).lean().exec() : Promise.resolve([]),
+                validProductIds.length ? product_model_1.default.find({ _id: { $in: validProductIds } }).select('name description category').lean().exec() : Promise.resolve([]),
+                FileUpload_1.FileUpload.find({ taskId: { $in: taskIds } }).lean().exec(),
+                assigneeIds.length ? user_model_1.default.find({ _id: { $in: assigneeIds } }).select('name role').lean().exec() : Promise.resolve([]),
+            ]);
+            const orderMap = new Map(orderDocs.map(o => [String(o._id), o]));
+            const productMap = new Map(productDocs.map(p => [String(p._id), p]));
             const assigneeMap = new Map(assigneeDocs.map(u => [String(u._id), u]));
-            const filesByOrderId = new Map();
             const filesByTaskId = new Map();
-            const addFile = (map, key, file) => {
-                if (!key)
-                    return;
-                const list = map.get(key) || [];
-                list.push(file);
-                map.set(key, list);
-            };
-            for (const file of orderScopedFiles) {
-                if (file.orderId)
-                    addFile(filesByOrderId, String(file.orderId), file);
-                if (file.taskId)
-                    addFile(filesByTaskId, String(file.taskId), file);
-            }
             for (const file of taskFiles) {
-                if (file.orderId)
-                    addFile(filesByOrderId, String(file.orderId), file);
-                if (file.taskId)
-                    addFile(filesByTaskId, String(file.taskId), file);
-            }
-            for (const file of shareFiles) {
-                if (file.orderId)
-                    addFile(filesByOrderId, String(file.orderId), file);
-                if (file.taskId)
-                    addFile(filesByTaskId, String(file.taskId), file);
+                if (!file.taskId)
+                    continue;
+                const list = filesByTaskId.get(String(file.taskId)) || [];
+                list.push(file);
+                filesByTaskId.set(String(file.taskId), list);
             }
             const rows = [];
-            for (const order of orders) {
-                const orderId = String(order._id);
-                const orderTasks = tasksByOrder.get(orderId) || [];
-                const collectFiles = () => {
-                    const seen = new Set();
-                    const files = [];
-                    const push = (file) => {
-                        const id = String(file._id);
-                        if (seen.has(id))
-                            return;
-                        seen.add(id);
-                        files.push(file);
-                    };
-                    for (const file of filesByOrderId.get(orderId) || [])
-                        push(file);
-                    for (const task of orderTasks) {
-                        for (const file of filesByTaskId.get(String(task._id)) || [])
-                            push(file);
-                    }
-                    return files;
-                };
-                const files = collectFiles();
-                let fileCount = files.length;
-                let fileTotalBytes = files.reduce((sum, file) => sum + (Number(file.size) || 0), 0);
-                let fileSource = 'live';
-                // Delivered orders rely on the preserved summary (files are deleted from S3).
-                if (order.fileSummarySnapshot && order.fileSummarySnapshot.capturedAt) {
-                    const snapshot = order.fileSummarySnapshot;
-                    if (files.length === 0) {
-                        fileCount = snapshot.count || 0;
-                        fileTotalBytes = snapshot.totalBytes || 0;
-                        fileSource = 'snapshot';
-                    }
-                }
-                const assignments = [...new Map(orderTasks
-                        .filter(t => t.assignee && mongoose_1.default.Types.ObjectId.isValid(t.assignee))
-                        .map(t => {
-                        var _a, _b;
-                        return [String(t.assignee), {
-                                assigneeId: String(t.assignee),
-                                assigneeName: ((_a = assigneeMap.get(String(t.assignee))) === null || _a === void 0 ? void 0 : _a.name) || null,
-                                role: ((_b = assigneeMap.get(String(t.assignee))) === null || _b === void 0 ? void 0 : _b.role) || null,
-                            }];
-                    })).values()];
-                const assignedTo = assignments.length
-                    ? assignments.map(a => a.assigneeName || a.assigneeId).join(', ')
-                    : 'Unassigned';
-                const items = order.products && order.products.length
-                    ? order.products
-                    : [{
-                            product: null,
-                            size: '',
-                            quantity: 1,
-                            name: order.manualItemName || '',
-                            description: order.manualItemDescription || '',
-                            category: order.manualItemCategory || '',
-                            isManual: true,
-                        }];
-                for (const item of items) {
-                    const productRef = item.product;
-                    const product = productRef && mongoose_1.default.Types.ObjectId.isValid(String(productRef))
-                        ? productMap.get(String(productRef))
-                        : null;
-                    const name = item.productNameSnapshot || item.name || (product === null || product === void 0 ? void 0 : product.name) || 'Unknown item';
-                    const description = item.productDescriptionSnapshot || item.description || (product === null || product === void 0 ? void 0 : product.description) || '';
-                    const category = item.productCategorySnapshot || item.category || (product === null || product === void 0 ? void 0 : product.category) || '';
-                    rows.push({
-                        customerName: toStr(order.customerName, 'N/A'),
-                        orderId,
-                        orderDate: order.createdAt,
-                        orderStatus: toStr(order.orderStatus, 'PLACED'),
-                        category: toStr(category, 'N/A'),
-                        itemName: toStr(name, 'Unknown item'),
-                        itemDescription: toStr(description),
-                        size: toStr(item.size),
-                        quantity: Number(item.quantity) || 1,
-                        fileCount,
-                        fileTotalBytes,
-                        fileSizeMB: fileTotalBytes / (1024 * 1024),
-                        fileSizeGB: fileTotalBytes / (1024 * 1024 * 1024),
-                        assignedTo,
-                        assignments,
-                        fileSource,
-                    });
-                }
+            for (const task of tasks) {
+                const taskId = String(task._id);
+                const linkedOrder = task.orderId ? orderMap.get(String(task.orderId)) : null;
+                const product = task.productId ? productMap.get(String(task.productId)) : null;
+                const orderItem = ((_a = linkedOrder === null || linkedOrder === void 0 ? void 0 : linkedOrder.products) === null || _a === void 0 ? void 0 : _a[0]) || null;
+                const manualItem = (linkedOrder === null || linkedOrder === void 0 ? void 0 : linkedOrder.manualItemName)
+                    ? { name: linkedOrder.manualItemName, description: linkedOrder.manualItemDescription || '', category: linkedOrder.manualItemCategory || '' }
+                    : null;
+                const itemName = (orderItem === null || orderItem === void 0 ? void 0 : orderItem.productNameSnapshot)
+                    || (manualItem === null || manualItem === void 0 ? void 0 : manualItem.name)
+                    || (product === null || product === void 0 ? void 0 : product.name)
+                    || task.title
+                    || 'Unknown item';
+                const description = (orderItem === null || orderItem === void 0 ? void 0 : orderItem.productDescriptionSnapshot)
+                    || (manualItem === null || manualItem === void 0 ? void 0 : manualItem.description)
+                    || (product === null || product === void 0 ? void 0 : product.description)
+                    || task.description
+                    || '';
+                const category = (orderItem === null || orderItem === void 0 ? void 0 : orderItem.productCategorySnapshot)
+                    || (manualItem === null || manualItem === void 0 ? void 0 : manualItem.category)
+                    || (product === null || product === void 0 ? void 0 : product.category)
+                    || task.category
+                    || 'N/A';
+                const fileDocs = filesByTaskId.get(taskId) || [];
+                const embeddedFiles = Array.isArray(task.files) ? task.files : [];
+                const fileCount = Math.max(embeddedFiles.length, fileDocs.length) || 0;
+                const fileTotalBytes = fileDocs.reduce((sum, file) => sum + (Number(file.size) || 0), 0);
+                const assignee = task.assignee && assigneeMap.get(String(task.assignee));
+                const assignedTo = (assignee === null || assignee === void 0 ? void 0 : assignee.name) || (task.assignee ? String(task.assignee) : 'Unassigned');
+                // Some imported tasks store the platform order number (digits only) in
+                // customerUsername; prefer the KC handle from the title for those.
+                const rawUsername = toStr(task.customerUsername);
+                const usableUsername = /^\d+$/.test(rawUsername) ? '' : rawUsername;
+                rows.push({
+                    customerName: toStr((linkedOrder === null || linkedOrder === void 0 ? void 0 : linkedOrder.customerName) || usableUsername || kcNameFromTitle(task.title), 'N/A'),
+                    orderId: toStr(task.orderId) || `TASK-${taskId}`,
+                    orderDate: task.createdAt,
+                    orderStatus: toStr(task.status, 'PLACED'),
+                    category: toStr(category, 'N/A'),
+                    itemName: toStr(itemName, 'Unknown item'),
+                    itemDescription: toStr(description),
+                    size: toStr((orderItem === null || orderItem === void 0 ? void 0 : orderItem.size) || ''),
+                    quantity: Number(orderItem === null || orderItem === void 0 ? void 0 : orderItem.quantity) || 1,
+                    fileCount,
+                    fileTotalBytes,
+                    fileSizeMB: fileTotalBytes / (1024 * 1024),
+                    fileSizeGB: fileTotalBytes / (1024 * 1024 * 1024),
+                    assignedTo,
+                    assignments: assignee ? [{ assigneeId: String(task.assignee), assigneeName: assignee.name, role: assignee.role }] : [],
+                    fileSource: 'tasks',
+                });
             }
             return rows;
         });

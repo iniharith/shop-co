@@ -69,8 +69,8 @@ router.get('/monthly-orders', (0, express_async_handler_1.default)((req, res) =>
     const window = (0, monthlyReport_1.getMonthWindow)(month, timezone);
     const limit = Number(req.query.limit) || 100;
     const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : undefined;
-    const page = yield MonthlyReportRepository_1.default.getOrderPage(window, cursor, limit);
-    const rows = yield MonthlyReportRepository_1.default.assemble(page.orders);
+    const page = yield MonthlyReportRepository_1.default.getTaskPage(window, cursor, limit);
+    const rows = yield MonthlyReportRepository_1.default.assemble(page.tasks);
     const totals = rows.reduce((acc, row) => {
         acc.orders = new Set([...acc.orders, row.orderId]).size;
         acc.files += row.fileCount;
@@ -91,7 +91,7 @@ router.get('/monthly-orders', (0, express_async_handler_1.default)((req, res) =>
             limit,
             hasNextPage: page.hasNextPage,
             nextCursor: page.nextCursor,
-            paginationUnit: 'orders',
+            paginationUnit: 'tasks',
         },
     });
 })));
@@ -118,8 +118,8 @@ router.get('/monthly-orders/export', (0, express_async_handler_1.default)((req, 
     const lines = [header.map(monthlyReport_1.escapeCsvCell).join(',')];
     let cursor;
     for (;;) {
-        const page = yield MonthlyReportRepository_1.default.getOrderPage(window, cursor, 500);
-        const rows = yield MonthlyReportRepository_1.default.assemble(page.orders);
+        const page = yield MonthlyReportRepository_1.default.getTaskPage(window, cursor, 500);
+        const rows = yield MonthlyReportRepository_1.default.assemble(page.tasks);
         for (const row of rows) {
             lines.push([
                 row.customerName,
