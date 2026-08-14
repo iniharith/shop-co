@@ -80,14 +80,12 @@ const enrichedIndexCache = new redis_1.RedisService();
 const ENRICHED_CACHE_KEY_PREFIX = 'files:enrichedIndex:v2:';
 const ENRICHED_CACHE_TTL = 120; // seconds
 const memCache = new Map();
+(0, FileUploadRepository_1.registerFolderGroupMemoryCacheInvalidator)(() => memCache.clear());
 const clearFolderGroupCache = () => __awaiter(void 0, void 0, void 0, function* () {
     memCache.clear();
-    try {
-        yield enrichedIndexCache.delByPrefix(ENRICHED_CACHE_KEY_PREFIX);
-    }
-    catch (err) {
+    enrichedIndexCache.delByPrefix(ENRICHED_CACHE_KEY_PREFIX).catch((err) => {
         console.error('Failed to clear folderGroup cache:', err);
-    }
+    });
 });
 exports.clearFolderGroupCache = clearFolderGroupCache;
 const router = (0, express_1.Router)();
@@ -408,7 +406,7 @@ router.get('/folder-group', auth_middileware_1.default, (0, auth_middileware_1.a
     const mem = memCache.get(cacheKey);
     if (mem && mem.expiresAt > Date.now())
         cachedData = mem.data;
-    if (cachedData === null) {
+    if (cachedData === null && enrichedIndexCache.isReady()) {
         try {
             const raw = yield Promise.race([
                 enrichedIndexCache.get(cacheKey),

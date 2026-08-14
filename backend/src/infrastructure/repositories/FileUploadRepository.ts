@@ -17,12 +17,18 @@ const FILE_FOLDER_GROUP_CACHE_PREFIX = 'files:enrichedIndex:';
 // (and cleared alongside the Redis keys) so it never serves stale counts.
 const FILE_INDEX_MEM_TTL = 120_000;
 const fileIndexMemCache = new Map<string, { data: any[]; expiresAt: number }>();
+let clearFolderGroupMemoryCache: (() => void) | null = null;
+export const registerFolderGroupMemoryCacheInvalidator = (invalidator: () => void) => {
+  clearFolderGroupMemoryCache = invalidator;
+};
+export const invalidateFolderGroupMemoryCache = () => clearFolderGroupMemoryCache?.();
 let fileNotificationTimer: ReturnType<typeof setTimeout> | null = null;
 export const notifyFileClients = () => {
   if (fileNotificationTimer) clearTimeout(fileNotificationTimer);
   fileNotificationTimer = setTimeout(async () => {
     fileNotificationTimer = null;
     fileIndexMemCache.clear();
+    invalidateFolderGroupMemoryCache();
     await redisService.del(FILE_INDEX_CACHE_KEY);
     await redisService.del(FILE_STATS_CACHE_KEY);
     // Folder-group responses are keyed by status filters. Clear every

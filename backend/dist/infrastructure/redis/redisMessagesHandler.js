@@ -13,6 +13,7 @@ exports.handleRedisAndSocketMessageClient = handleRedisAndSocketMessageClient;
 exports.handleRedisAndSocketMessageAdmin = handleRedisAndSocketMessageAdmin;
 const redis_constant_1 = require("../../shared/constants/redis.constant");
 const socketHandler_1 = require("../socket/socketHandler");
+const FileUploadRepository_1 = require("../repositories/FileUploadRepository");
 function handleRedisAndSocketMessageClient(redisService, io) {
     //   enum to array
     const channels = Object.values(redis_constant_1.REDIS_CHANNELS);
@@ -74,10 +75,12 @@ function handleRedisAndSocketMessageAdmin(redisService, io) {
                 break;
             case redis_constant_1.REDIS_CHANNELS.FILES_UPDATED:
                 console.log("🟢 files updated broadcast", message);
+                (0, FileUploadRepository_1.invalidateFolderGroupMemoryCache)();
                 io.emit("files_updated", JSON.parse(message));
                 break;
             case redis_constant_1.REDIS_CHANNELS.TASK_UPDATED:
                 console.log("🟢 task updated broadcast", message);
+                (0, FileUploadRepository_1.invalidateFolderGroupMemoryCache)();
                 io.emit("task_updated", JSON.parse(message));
                 break;
             case redis_constant_1.REDIS_CHANNELS.TASK_TYPING:

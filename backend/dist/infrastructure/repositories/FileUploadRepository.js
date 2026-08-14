@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.fileUploadRepository = exports.FileUploadRepository = exports.notifyFileClients = void 0;
+exports.fileUploadRepository = exports.FileUploadRepository = exports.notifyFileClients = exports.invalidateFolderGroupMemoryCache = exports.registerFolderGroupMemoryCacheInvalidator = void 0;
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -28,6 +28,13 @@ const FILE_FOLDER_GROUP_CACHE_PREFIX = 'files:enrichedIndex:';
 // (and cleared alongside the Redis keys) so it never serves stale counts.
 const FILE_INDEX_MEM_TTL = 120000;
 const fileIndexMemCache = new Map();
+let clearFolderGroupMemoryCache = null;
+const registerFolderGroupMemoryCacheInvalidator = (invalidator) => {
+    clearFolderGroupMemoryCache = invalidator;
+};
+exports.registerFolderGroupMemoryCacheInvalidator = registerFolderGroupMemoryCacheInvalidator;
+const invalidateFolderGroupMemoryCache = () => clearFolderGroupMemoryCache === null || clearFolderGroupMemoryCache === void 0 ? void 0 : clearFolderGroupMemoryCache();
+exports.invalidateFolderGroupMemoryCache = invalidateFolderGroupMemoryCache;
 let fileNotificationTimer = null;
 const notifyFileClients = () => {
     if (fileNotificationTimer)
@@ -35,6 +42,7 @@ const notifyFileClients = () => {
     fileNotificationTimer = setTimeout(() => __awaiter(void 0, void 0, void 0, function* () {
         fileNotificationTimer = null;
         fileIndexMemCache.clear();
+        (0, exports.invalidateFolderGroupMemoryCache)();
         yield redisService.del(FILE_INDEX_CACHE_KEY);
         yield redisService.del(FILE_STATS_CACHE_KEY);
         // Folder-group responses are keyed by status filters. Clear every

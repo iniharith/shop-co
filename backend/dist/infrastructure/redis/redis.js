@@ -28,8 +28,8 @@ class RedisService {
         this.redis = redis;
     }
     isReady() {
-        var _a, _b;
-        return ((_a = this.redis) === null || _a === void 0 ? void 0 : _a.status) === 'ready' && ((_b = this.redisSubscriber) === null || _b === void 0 ? void 0 : _b.status) === 'ready';
+        var _a;
+        return ((_a = this.redis) === null || _a === void 0 ? void 0 : _a.status) === 'ready';
     }
     set(key, value, ttl) {
         return __awaiter(this, void 0, void 0, function* () {

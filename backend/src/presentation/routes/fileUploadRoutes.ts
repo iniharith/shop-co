@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 import multer from 'multer';
 import { s3Client, S3_BUCKET_NAME, deleteFromS3 } from '../../infrastructure/config/s3';
 import multerS3 from 'multer-s3';
-import { fileUploadRepository } from '../../infrastructure/repositories/FileUploadRepository';
+import { fileUploadRepository, registerFolderGroupMemoryCacheInvalidator } from '../../infrastructure/repositories/FileUploadRepository';
 import { FileUpload } from '../../domain/entities/FileUpload';
 import { whatsAppService } from '../../infrastructure/services/WhatsAppService';
 import authMiddilware, { authorizeRoles } from '../middlewares/auth.middileware';
@@ -33,14 +33,13 @@ const enrichedIndexCache = new RedisService();
 const ENRICHED_CACHE_KEY_PREFIX = 'files:enrichedIndex:v2:';
 const ENRICHED_CACHE_TTL = 120; // seconds
 const memCache = new Map<string, { data: any; expiresAt: number }>();
+registerFolderGroupMemoryCacheInvalidator(() => memCache.clear());
 
 export const clearFolderGroupCache = async () => {
   memCache.clear();
-  try {
-    await enrichedIndexCache.delByPrefix(ENRICHED_CACHE_KEY_PREFIX);
-  } catch (err) {
+  enrichedIndexCache.delByPrefix(ENRICHED_CACHE_KEY_PREFIX).catch((err) => {
     console.error('Failed to clear folderGroup cache:', err);
-  }
+  });
 };
 
 const router = Router();
@@ -431,7 +430,7 @@ router.get(
     let cachedData: any = null;
     const mem = memCache.get(cacheKey);
     if (mem && mem.expiresAt > Date.now()) cachedData = mem.data;
-    if (cachedData === null) {
+    if (cachedData === null && enrichedIndexCache.isReady()) {
       try {
         const raw = await Promise.race([
           enrichedIndexCache.get(cacheKey),

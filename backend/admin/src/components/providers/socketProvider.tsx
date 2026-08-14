@@ -47,6 +47,7 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       void client.invalidateQueries({ queryKey: ["tasks"], refetchType: "active" });
       void client.invalidateQueries({ queryKey: ["task"], refetchType: "active" });
       void client.invalidateQueries({ queryKey: ["orders"], refetchType: "active" });
+      void client.invalidateQueries({ queryKey: ["folderGroup"], refetchType: "active" });
     };
 
     const refreshActiveFileData = () => {
@@ -152,7 +153,10 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     const handleFilesUpdated = () => refreshActiveFileData();
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible" && !socket.connected && !isLowPowerDevice()) startFallbackPolling();
+      if (document.visibilityState !== "visible") return;
+      refreshActiveTaskData();
+      refreshActiveFileData();
+      if (!socket.connected && !isLowPowerDevice()) startFallbackPolling();
     };
 
     socket.on("connect", handleConnect);

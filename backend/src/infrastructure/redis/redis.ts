@@ -25,7 +25,7 @@ export class RedisService {
     }
 
     isReady() {
-        return this.redis?.status === 'ready' && this.redisSubscriber?.status === 'ready';
+        return this.redis?.status === 'ready';
     }
 
 

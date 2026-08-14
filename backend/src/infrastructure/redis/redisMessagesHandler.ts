@@ -6,6 +6,7 @@ import { RedisService } from "./redis";
 import { REDIS_CHANNELS } from "../../shared/constants/redis.constant";
 import { DefaultEventsMap, Namespace, Server } from "socket.io";
 import { getReceiverSocketId } from "../socket/socketHandler";
+import { invalidateFolderGroupMemoryCache } from "../repositories/FileUploadRepository";
 
 export function handleRedisAndSocketMessageClient(redisService: RedisService, io: Namespace<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>) {
     //   enum to array
@@ -72,10 +73,12 @@ export function handleRedisAndSocketMessageAdmin(redisService: RedisService, io:
                 break;
             case REDIS_CHANNELS.FILES_UPDATED:
                 console.log("🟢 files updated broadcast", message);
+                invalidateFolderGroupMemoryCache();
                 io.emit("files_updated", JSON.parse(message));
                 break;
             case REDIS_CHANNELS.TASK_UPDATED:
                 console.log("🟢 task updated broadcast", message);
+                invalidateFolderGroupMemoryCache();
                 io.emit("task_updated", JSON.parse(message));
                 break;
             case REDIS_CHANNELS.TASK_TYPING:
@@ -86,4 +89,3 @@ export function handleRedisAndSocketMessageAdmin(redisService: RedisService, io:
 
     });
 }
-
