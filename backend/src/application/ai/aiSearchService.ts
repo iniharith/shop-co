@@ -13,7 +13,7 @@ import {
   aiConfigured,
   embedTexts,
   generateJson,
-} from '../../infrastructure/ai/openaiClient';
+} from '../../infrastructure/ai/aiProvider';
 import { AI_COLLECTIONS } from './aiIndexService';
 
 export const AI_SEARCH_COLLECTIONS = [
@@ -115,7 +115,7 @@ export async function aiSearch(
   query: string,
   opts: AiSearchOptions = {}
 ): Promise<AiSearchResult> {
-  if (!aiConfigured()) throw new Error('AI is not configured (OPENAI_API_KEY missing)');
+  if (!aiConfigured()) throw new Error('AI is not configured');
 
   const startedAt = Date.now();
   const language = opts.language || 'ms';

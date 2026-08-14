@@ -7,7 +7,7 @@ import { Task } from '../../domain/entities/Task';
 import { FileUpload } from '../../domain/entities/FileUpload';
 import ProductModel from '../../infrastructure/db/models/product.model';
 import { pgVectorStore } from '../../infrastructure/vector/pgVectorStore';
-import { embedTexts, aiConfigured } from '../../infrastructure/ai/openaiClient';
+import { embedTexts, aiConfigured, EMBEDDING_DIM } from '../../infrastructure/ai/aiProvider';
 
 export const AI_COLLECTIONS = {
   products: 'products',
@@ -51,7 +51,7 @@ async function indexEntity(input: IndexEntityInput): Promise<void> {
     // Keep a stub row so counts/recently-indexed are meaningful even for
     // entities without searchable text (e.g. binary-only uploads).
     await pgVectorStore.upsertBatch(input.collection, [
-      { entityId: input.entityId, chunkIndex: 0, text: input.text || '', metadata, embedding: new Array(1536).fill(0) },
+      { entityId: input.entityId, chunkIndex: 0, text: input.text || '', metadata, embedding: new Array(EMBEDDING_DIM).fill(0) },
     ]);
     return;
   }
@@ -188,7 +188,7 @@ export async function reindexAll(opts: { onProgress?: (msg: string) => void } = 
   tasks: number;
   files: number;
 }> {
-  if (!aiConfigured()) throw new Error('AI is not configured (OPENAI_API_KEY missing)');
+  if (!aiConfigured()) throw new Error('AI is not configured');
   await pgVectorStore.initSchema();
   const report = { products: 0, tasks: 0, files: 0 };
 

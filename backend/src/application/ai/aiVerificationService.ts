@@ -13,7 +13,7 @@ import {
   aiConfigured,
   extractTextFromBuffer,
   generateJson,
-} from '../../infrastructure/ai/openaiClient';
+} from '../../infrastructure/ai/aiProvider';
 
 export interface VerificationIssue {
   field: string;

@@ -28,6 +28,20 @@ const FileUpload_1 = require("../../domain/entities/FileUpload");
 const ShareLink_1 = require("../../domain/entities/ShareLink");
 const Task_1 = require("../../domain/entities/Task");
 const PAGE_SIZE = 100;
+const toStr = (value, fallback = '') => {
+    if (value === null || value === undefined)
+        return fallback;
+    if (typeof value === 'string')
+        return value;
+    if (typeof value === 'number' || typeof value === 'boolean')
+        return String(value);
+    try {
+        return JSON.stringify(value);
+    }
+    catch (_a) {
+        return fallback;
+    }
+};
 class MonthlyReportRepository {
     buildCursor(value) {
         if (!value)
@@ -207,15 +221,15 @@ class MonthlyReportRepository {
                     const description = item.productDescriptionSnapshot || item.description || (product === null || product === void 0 ? void 0 : product.description) || '';
                     const category = item.productCategorySnapshot || item.category || (product === null || product === void 0 ? void 0 : product.category) || '';
                     rows.push({
-                        customerName: order.customerName || 'N/A',
+                        customerName: toStr(order.customerName, 'N/A'),
                         orderId,
                         orderDate: order.createdAt,
-                        orderStatus: order.orderStatus || 'PLACED',
-                        category: category || 'N/A',
-                        itemName: name,
-                        itemDescription: description,
-                        size: item.size || '',
-                        quantity: item.quantity || 1,
+                        orderStatus: toStr(order.orderStatus, 'PLACED'),
+                        category: toStr(category, 'N/A'),
+                        itemName: toStr(name, 'Unknown item'),
+                        itemDescription: toStr(description),
+                        size: toStr(item.size),
+                        quantity: Number(item.quantity) || 1,
                         fileCount,
                         fileTotalBytes,
                         fileSizeMB: fileTotalBytes / (1024 * 1024),

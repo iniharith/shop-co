@@ -68,24 +68,24 @@ const fileUploadRoutes_1 = require("./fileUploadRoutes");
 const cursorPagination_1 = require("../../shared/utils/cursorPagination");
 const aiIndexService_1 = require("../../application/ai/aiIndexService");
 const pgVectorStore_1 = require("../../infrastructure/vector/pgVectorStore");
-const openaiClient_1 = require("../../infrastructure/ai/openaiClient");
+const aiProvider_1 = require("../../infrastructure/ai/aiProvider");
 const reindexTaskInBg = (task) => {
-    if (!task || !(0, openaiClient_1.aiConfigured)())
+    if (!task || !(0, aiProvider_1.aiConfigured)())
         return;
     void (0, aiIndexService_1.indexTask)(task).catch((err) => console.error('[ai] task index failed:', err.message));
 };
 const reindexFileInBg = (file) => {
-    if (!file || !(0, openaiClient_1.aiConfigured)())
+    if (!file || !(0, aiProvider_1.aiConfigured)())
         return;
     void (0, aiIndexService_1.indexFile)(file).catch((err) => console.error('[ai] file index failed:', err.message));
 };
 const removeTaskIndex = (taskId) => {
-    if (!(0, openaiClient_1.aiConfigured)())
+    if (!(0, aiProvider_1.aiConfigured)())
         return;
     void pgVectorStore_1.pgVectorStore.deleteEntity('tasks', taskId).catch(() => { });
 };
 const removeFileIndex = (fileId) => {
-    if (!(0, openaiClient_1.aiConfigured)())
+    if (!(0, aiProvider_1.aiConfigured)())
         return;
     void pgVectorStore_1.pgVectorStore.deleteEntity('files', fileId).catch(() => { });
 };

@@ -24,7 +24,7 @@ exports.aiSearch = aiSearch;
  *  5. LLM writes a natural-language search summary
  */
 const pgVectorStore_1 = require("../../infrastructure/vector/pgVectorStore");
-const openaiClient_1 = require("../../infrastructure/ai/openaiClient");
+const aiProvider_1 = require("../../infrastructure/ai/aiProvider");
 const aiIndexService_1 = require("./aiIndexService");
 exports.AI_SEARCH_COLLECTIONS = [
     aiIndexService_1.AI_COLLECTIONS.products,
@@ -45,7 +45,7 @@ function expandSearchQueries(query) {
             'Include Malay and English variations, synonyms, and related terms.',
             'Reply ONLY with JSON: {"queries": ["...", "..."]}.',
         ].join(' ');
-        const result = yield (0, openaiClient_1.generateJson)(system, `User query: "${query}"`);
+        const result = yield (0, aiProvider_1.generateJson)(system, `User query: "${query}"`);
         const queries = Array.isArray(result.queries)
             ? result.queries.filter((q) => typeof q === 'string' && q.trim().length > 0).slice(0, 5)
             : [];
@@ -70,7 +70,7 @@ function summarizeResults(query, groups, language) {
             `Tasks:\n${describe(groups.tasks) || '(tiada)'}`,
             `Files:\n${describe(groups.files) || '(tiada)'}`,
         ].join('\n\n');
-        const result = yield (0, openaiClient_1.generateJson)(system, user, { maxTokens: 512 });
+        const result = yield (0, aiProvider_1.generateJson)(system, user, { maxTokens: 512 });
         return (result.summary || '').trim();
     });
 }
@@ -81,8 +81,8 @@ function summarizeResults(query, groups, language) {
 function aiSearch(query_1) {
     return __awaiter(this, arguments, void 0, function* (query, opts = {}) {
         var _a, _b, _c;
-        if (!(0, openaiClient_1.aiConfigured)())
-            throw new Error('AI is not configured (OPENAI_API_KEY missing)');
+        if (!(0, aiProvider_1.aiConfigured)())
+            throw new Error('AI is not configured');
         const startedAt = Date.now();
         const language = opts.language || 'ms';
         const limit = Math.min(Math.max((_a = opts.limit) !== null && _a !== void 0 ? _a : 8, 1), 20);
@@ -93,7 +93,7 @@ function aiSearch(query_1) {
         // 1. Query expansion (requirement 1)
         const expandedQueries = yield expandSearchQueries(query);
         // 2. Embed every expanded query in one batch
-        const embeddings = yield (0, openaiClient_1.embedTexts)(expandedQueries);
+        const embeddings = yield (0, aiProvider_1.embedTexts)(expandedQueries);
         // 3. Vector search per collection, keep the best score per entity across queries
         const bestByCollection = {
             [aiIndexService_1.AI_COLLECTIONS.products]: new Map(),

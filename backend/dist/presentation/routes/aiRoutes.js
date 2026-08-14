@@ -59,7 +59,7 @@ const aiSearchService_1 = require("../../application/ai/aiSearchService");
 const aiVerificationService_1 = require("../../application/ai/aiVerificationService");
 const aiIndexService_1 = require("../../application/ai/aiIndexService");
 const pgVectorStore_1 = require("../../infrastructure/vector/pgVectorStore");
-const openaiClient_1 = require("../../infrastructure/ai/openaiClient");
+const aiProvider_1 = require("../../infrastructure/ai/aiProvider");
 const redis_1 = require("../../infrastructure/redis/redis");
 const router = (0, express_1.Router)();
 const redisService = new redis_1.RedisService();
@@ -152,7 +152,7 @@ router.get('/search/suggestions', (0, express_async_handler_1.default)((req, res
         res.json({ success: true, suggestions: [] });
         return;
     }
-    if (!(0, openaiClient_1.aiConfigured)()) {
+    if (!(0, aiProvider_1.aiConfigured)()) {
         res.json({ success: true, suggestions: [] });
         return;
     }
@@ -257,17 +257,18 @@ router.post('/reindex', auth_middileware_1.default, (0, auth_middileware_1.autho
 })));
 // ─── GET /api/ai/status ────────────────────────────────
 router.get('/status', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)(...ADMIN_ROLES), (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const configured = (0, openaiClient_1.aiConfigured)();
+    const configured = (0, aiProvider_1.aiConfigured)();
     const counts = configured && pgVectorStore_1.pgVectorStore.isConfigured()
         ? yield pgVectorStore_1.pgVectorStore.counts().catch(() => [])
         : [];
     res.json({
         success: true,
         configured,
+        provider: (0, aiProvider_1.getActiveProvider)(),
         vectorDbConfigured: pgVectorStore_1.pgVectorStore.isConfigured(),
         models: {
-            gen: process.env.OPENAI_GEN_MODEL || 'gpt-4o-mini',
-            embedding: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small',
+            gen: (0, aiProvider_1.getGenModel)(),
+            embedding: (0, aiProvider_1.getEmbeddingModel)(),
             dim: Number(process.env.AI_EMBEDDING_DIM || 1536),
         },
         counts,

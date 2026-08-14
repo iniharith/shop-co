@@ -20,12 +20,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 const dotenv_1 = __importDefault(require("dotenv"));
 const mongoose_1 = __importDefault(require("mongoose"));
+const dns_1 = __importDefault(require("dns"));
 const aiIndexService_1 = require("../../application/ai/aiIndexService");
 const pgVectorStore_1 = require("../../infrastructure/vector/pgVectorStore");
+const aiProvider_1 = require("../../infrastructure/ai/aiProvider");
 dotenv_1.default.config();
+// Same DNS workaround as src/config/db.config.ts — Telekom Malaysia's IPv6
+// DNS breaks SRV lookups, so force Google DNS + IPv4.
+dns_1.default.setServers(['8.8.8.8', '8.8.4.4']);
 const run = () => __awaiter(void 0, void 0, void 0, function* () {
-    if (!process.env.OPENAI_API_KEY) {
-        throw new Error('OPENAI_API_KEY is required in .env');
+    if (!(0, aiProvider_1.aiConfigured)()) {
+        throw new Error('AI_PROVIDER is not configured — set AI_PROVIDER=gemini + GEMINI_API_KEY or OPENAI_API_KEY in .env');
     }
     if (!process.env.DATABASE_URL) {
         throw new Error('DATABASE_URL (pgvector) is required in .env');
@@ -36,6 +41,7 @@ const run = () => __awaiter(void 0, void 0, void 0, function* () {
     yield mongoose_1.default.connect(mongoUri, {
         dbName: process.env.MONGO_DB_NAME || 'shop-co',
         serverSelectionTimeoutMS: 10000,
+        family: 4,
     });
     console.log('Starting AI index backfill...');
     const report = yield (0, aiIndexService_1.reindexAll)({

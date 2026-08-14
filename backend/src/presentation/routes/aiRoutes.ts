@@ -15,7 +15,12 @@ import {
 } from '../../application/ai/aiVerificationService';
 import { reindexAll, indexFile } from '../../application/ai/aiIndexService';
 import { pgVectorStore } from '../../infrastructure/vector/pgVectorStore';
-import { aiConfigured } from '../../infrastructure/ai/openaiClient';
+import {
+  aiConfigured,
+  getActiveProvider,
+  getGenModel,
+  getEmbeddingModel,
+} from '../../infrastructure/ai/aiProvider';
 import { RedisService } from '../../infrastructure/redis/redis';
 
 const router = Router();
@@ -256,10 +261,11 @@ router.get(
     res.json({
       success: true,
       configured,
+      provider: getActiveProvider(),
       vectorDbConfigured: pgVectorStore.isConfigured(),
       models: {
-        gen: process.env.OPENAI_GEN_MODEL || 'gpt-4o-mini',
-        embedding: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small',
+        gen: getGenModel(),
+        embedding: getEmbeddingModel(),
         dim: Number(process.env.AI_EMBEDDING_DIM || 1536),
       },
       counts,

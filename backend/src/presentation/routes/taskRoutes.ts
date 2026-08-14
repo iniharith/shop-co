@@ -22,7 +22,7 @@ import { clearFolderGroupCache } from './fileUploadRoutes';
 import { decodeCursor } from '../../shared/utils/cursorPagination';
 import { indexTask, indexFile } from '../../application/ai/aiIndexService';
 import { pgVectorStore } from '../../infrastructure/vector/pgVectorStore';
-import { aiConfigured } from '../../infrastructure/ai/openaiClient';
+import { aiConfigured } from '../../infrastructure/ai/aiProvider';
 
 const reindexTaskInBg = (task: any) => {
   if (!task || !aiConfigured()) return;

@@ -21,7 +21,7 @@ exports.startAiReindexCron = startAiReindexCron;
  */
 const node_cron_1 = __importDefault(require("node-cron"));
 const aiIndexService_1 = require("../../application/ai/aiIndexService");
-const openaiClient_1 = require("../../infrastructure/ai/openaiClient");
+const aiProvider_1 = require("../../infrastructure/ai/aiProvider");
 const pgVectorStore_1 = require("../../infrastructure/vector/pgVectorStore");
 function startAiReindexCron() {
     const enabled = process.env.AI_DAILY_REINDEX !== 'false';
@@ -29,8 +29,8 @@ function startAiReindexCron() {
         console.log('[Cron] 🧠 AI reindex cron disabled (AI_DAILY_REINDEX=false)');
         return;
     }
-    if (!(0, openaiClient_1.aiConfigured)() || !pgVectorStore_1.pgVectorStore.isConfigured()) {
-        console.log('[Cron] 🧠 AI reindex cron skipped — OpenAI/DATABASE_URL not configured');
+    if (!(0, aiProvider_1.aiConfigured)() || !pgVectorStore_1.pgVectorStore.isConfigured()) {
+        console.log('[Cron] 🧠 AI reindex cron skipped — AI/DATABASE_URL not configured');
         return;
     }
     console.log('[Cron] 🧠 AI vector reindex registered (runs daily at 03:00)');

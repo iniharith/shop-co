@@ -26,7 +26,7 @@ const axios_1 = __importDefault(require("axios"));
 const order_model_1 = __importDefault(require("../../infrastructure/db/models/order.model"));
 const Task_1 = require("../../domain/entities/Task");
 const FileUpload_1 = require("../../domain/entities/FileUpload");
-const openaiClient_1 = require("../../infrastructure/ai/openaiClient");
+const aiProvider_1 = require("../../infrastructure/ai/aiProvider");
 const MAX_DOWNLOAD_BYTES = 25 * 1024 * 1024; // 25 MB
 function downloadFile(path) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -84,7 +84,7 @@ function verifyUploadedFile(opts) {
             summary: 'Pengesahan tidak dapat dijalankan.',
             textExtracted: null,
         };
-        if (!(0, openaiClient_1.aiConfigured)())
+        if (!(0, aiProvider_1.aiConfigured)())
             return empty;
         const { file, orderId, taskId, notes } = opts;
         let order = null;
@@ -118,7 +118,7 @@ function verifyUploadedFile(opts) {
         if (!buffer) {
             return Object.assign(Object.assign({}, empty), { summary: 'Fail tidak dapat dimuat turun untuk disemak.' });
         }
-        const textExtracted = yield (0, openaiClient_1.extractTextFromBuffer)(buffer, file.mimetype, file.originalName);
+        const textExtracted = yield (0, aiProvider_1.extractTextFromBuffer)(buffer, file.mimetype, file.originalName);
         // Non-parseable (e.g. raw vector/design files) — nothing to compare.
         if (!textExtracted.trim()) {
             return Object.assign(Object.assign({}, empty), { textExtracted: null, summary: 'Tiada teks boleh diekstrak daripada fail.' });
@@ -144,7 +144,7 @@ function verifyUploadedFile(opts) {
             textExtracted.slice(0, 20000),
         ].join('\n');
         try {
-            const result = yield (0, openaiClient_1.generateJson)(system, user, { maxTokens: 2048 });
+            const result = yield (0, aiProvider_1.generateJson)(system, user, { maxTokens: 2048 });
             const issues = Array.isArray(result.issues) ? result.issues.slice(0, 10) : [];
             const safeIssues = issues.map((i) => {
                 var _a, _b;

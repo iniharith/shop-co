@@ -29,7 +29,7 @@ import { getDownloadProgress } from '../../shared/utils/downloadProgress';
 import { warmPdfSharePreview } from '../../shared/utils/pdfSharePreview';
 import { indexFile, indexTask } from '../../application/ai/aiIndexService';
 import { pgVectorStore } from '../../infrastructure/vector/pgVectorStore';
-import { aiConfigured } from '../../infrastructure/ai/openaiClient';
+import { aiConfigured } from '../../infrastructure/ai/aiProvider';
 
 const reindexFileInBg = (file: any) => {
   if (!file || !aiConfigured()) return;

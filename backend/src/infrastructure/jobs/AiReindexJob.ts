@@ -6,7 +6,7 @@
  */
 import cron from 'node-cron';
 import { reindexAll } from '../../application/ai/aiIndexService';
-import { aiConfigured } from '../../infrastructure/ai/openaiClient';
+import { aiConfigured } from '../../infrastructure/ai/aiProvider';
 import { pgVectorStore } from '../../infrastructure/vector/pgVectorStore';
 
 export function startAiReindexCron(): void {
@@ -16,7 +16,7 @@ export function startAiReindexCron(): void {
     return;
   }
   if (!aiConfigured() || !pgVectorStore.isConfigured()) {
-    console.log('[Cron] 🧠 AI reindex cron skipped — OpenAI/DATABASE_URL not configured');
+    console.log('[Cron] 🧠 AI reindex cron skipped — AI/DATABASE_URL not configured');
     return;
   }
 

@@ -27,7 +27,7 @@ const Task_1 = require("../../domain/entities/Task");
 const FileUpload_1 = require("../../domain/entities/FileUpload");
 const product_model_1 = __importDefault(require("../../infrastructure/db/models/product.model"));
 const pgVectorStore_1 = require("../../infrastructure/vector/pgVectorStore");
-const openaiClient_1 = require("../../infrastructure/ai/openaiClient");
+const aiProvider_1 = require("../../infrastructure/ai/aiProvider");
 exports.AI_COLLECTIONS = {
     products: 'products',
     tasks: 'tasks',
@@ -54,7 +54,7 @@ function safeMetadata(obj) {
 }
 function indexEntity(input) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (!(0, openaiClient_1.aiConfigured)())
+        if (!(0, aiProvider_1.aiConfigured)())
             return;
         const chunks = chunkText(input.text);
         const metadata = safeMetadata(input.metadata);
@@ -62,11 +62,11 @@ function indexEntity(input) {
             // Keep a stub row so counts/recently-indexed are meaningful even for
             // entities without searchable text (e.g. binary-only uploads).
             yield pgVectorStore_1.pgVectorStore.upsertBatch(input.collection, [
-                { entityId: input.entityId, chunkIndex: 0, text: input.text || '', metadata, embedding: new Array(1536).fill(0) },
+                { entityId: input.entityId, chunkIndex: 0, text: input.text || '', metadata, embedding: new Array(aiProvider_1.EMBEDDING_DIM).fill(0) },
             ]);
             return;
         }
-        const embeddings = yield (0, openaiClient_1.embedTexts)(chunks);
+        const embeddings = yield (0, aiProvider_1.embedTexts)(chunks);
         yield pgVectorStore_1.pgVectorStore.upsertBatch(input.collection, chunks.map((chunk, i) => ({
             entityId: input.entityId,
             chunkIndex: i,
@@ -78,7 +78,7 @@ function indexEntity(input) {
 }
 function indexTask(task) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (!(task === null || task === void 0 ? void 0 : task._id) || !(0, openaiClient_1.aiConfigured)())
+        if (!(task === null || task === void 0 ? void 0 : task._id) || !(0, aiProvider_1.aiConfigured)())
             return;
         const text = [
             task.title,
@@ -110,7 +110,7 @@ function indexTask(task) {
 }
 function indexFile(file) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (!(file === null || file === void 0 ? void 0 : file._id) || !(0, openaiClient_1.aiConfigured)())
+        if (!(file === null || file === void 0 ? void 0 : file._id) || !(0, aiProvider_1.aiConfigured)())
             return;
         const text = [
             file.originalName,
@@ -141,7 +141,7 @@ function indexFile(file) {
 }
 function indexProduct(product) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (!(product === null || product === void 0 ? void 0 : product._id) || !(0, openaiClient_1.aiConfigured)())
+        if (!(product === null || product === void 0 ? void 0 : product._id) || !(0, aiProvider_1.aiConfigured)())
             return;
         const sizes = Array.isArray(product.sizes)
             ? product.sizes.map((s) => s.size || s).filter(Boolean).join(', ')
@@ -193,8 +193,8 @@ function forEachEntity(model, filter, batchSize, fn) {
 function reindexAll() {
     return __awaiter(this, arguments, void 0, function* (opts = {}) {
         var _a, _b, _c;
-        if (!(0, openaiClient_1.aiConfigured)())
-            throw new Error('AI is not configured (OPENAI_API_KEY missing)');
+        if (!(0, aiProvider_1.aiConfigured)())
+            throw new Error('AI is not configured');
         yield pgVectorStore_1.pgVectorStore.initSchema();
         const report = { products: 0, tasks: 0, files: 0 };
         (_a = opts.onProgress) === null || _a === void 0 ? void 0 : _a.call(opts, 'Mengindeks produk...');
