@@ -12,8 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
-
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+import AxiosInstance from "@/utils/axios";
 
 type ReportTab = "staff" | "monthly";
 
@@ -44,19 +43,17 @@ export default function ReportsPage() {
     setReportData(null);
     setLoadedUserId("");
     try {
-      const res = await fetch(`${BACKEND}/api/sysadmin/reports?userId=${userId}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-        credentials: "include",
+      const res = await AxiosInstance(token).get(`/api/sysadmin/reports`, {
+        params: { userId },
         signal,
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Failed to fetch report data");
+      const json = res.data;
       if (json.success) {
         setReportData(json.data);
         setLoadedUserId(userId);
       }
     } catch (error: any) {
-      if (error.name !== 'AbortError') toast.error(error.message || "Failed to fetch report");
+      if (error.name !== 'AbortError') toast.error(error.response?.data?.message || error.message || "Failed to fetch report");
       setReportData(null);
     } finally {
       setLoading(false);
@@ -80,18 +77,16 @@ export default function ReportsPage() {
     setMonthlyData(null);
     setMonthlyLoaded("");
     try {
-      const res = await fetch(`${BACKEND}/api/admin/reports/monthly-orders?month=${value}&limit=100`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-        credentials: "include",
+      const res = await AxiosInstance(token).get(`/api/admin/reports/monthly-orders`, {
+        params: { month: value, limit: 100 },
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Failed to fetch monthly report");
+      const json = res.data;
       if (json.success) {
         setMonthlyData(json);
         setMonthlyLoaded(value);
       }
     } catch (error: any) {
-      toast.error(error.message || "Failed to fetch monthly report");
+      toast.error(error.response?.data?.message || error.message || "Failed to fetch monthly report");
       setMonthlyData(null);
     } finally {
       setMonthlyLoading(false);
@@ -107,13 +102,11 @@ export default function ReportsPage() {
   const downloadCsv = async () => {
     if (!month) return;
     try {
-      const res = await fetch(`${BACKEND}/api/admin/reports/monthly-orders/export?month=${month}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-        credentials: "include",
+      const res = await AxiosInstance(token).get(`/api/admin/reports/monthly-orders/export`, {
+        params: { month },
+        responseType: "blob",
       });
-      if (!res.ok) throw new Error("Failed to export CSV");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(res.data as Blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = `monthly-orders-${month}.csv`;
@@ -122,7 +115,7 @@ export default function ReportsPage() {
       link.remove();
       URL.revokeObjectURL(url);
     } catch (error: any) {
-      toast.error(error.message || "Failed to export CSV");
+      toast.error(error.response?.data?.message || error.message || "Failed to export CSV");
     }
   };
 
