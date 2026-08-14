@@ -16,6 +16,19 @@ import AxiosInstance from "@/utils/axios";
 
 type ReportTab = "staff" | "monthly";
 
+const toNum = (v: any) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+const toStr = (v: any, fallback = "") => {
+  if (v === null || v === undefined) return fallback;
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  if (typeof v === "object" && !Array.isArray(v)) {
+    const keys = Object.keys(v);
+    if (keys.length === 0) return fallback;
+    try { return JSON.stringify(v); } catch { return fallback; }
+  }
+  return String(v);
+};
+
 export default function ReportsPage() {
   const { data: session } = useSession();
   const { data: usersResponse, isPending: usersLoading } = useUsers();
@@ -125,18 +138,6 @@ export default function ReportsPage() {
 
   const summary = monthlyData?.summary;
   const monthlyRows = Array.isArray(monthlyData?.rows) ? monthlyData.rows : [];
-  const toNum = (v: any) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
-  const toStr = (v: any, fallback = "") => {
-    if (v === null || v === undefined) return fallback;
-    if (typeof v === "string") return v;
-    if (typeof v === "number" || typeof v === "boolean") return String(v);
-    if (typeof v === "object" && !Array.isArray(v)) {
-      const keys = Object.keys(v);
-      if (keys.length === 0) return fallback;
-      try { return JSON.stringify(v); } catch { return fallback; }
-    }
-    return String(v);
-  };
 
   return (
     <>
@@ -182,8 +183,8 @@ export default function ReportsPage() {
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-700 text-white">
                   {users.map((user: any) => (
-                    <SelectItem key={user._id} value={user._id}>
-                      {user.name} ({user.role})
+                    <SelectItem key={toStr(user._id)} value={toStr(user._id)}>
+                      {toStr(user.name, "Unknown user")} ({toStr(user.role, "—")})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -233,7 +234,7 @@ export default function ReportsPage() {
                   <p className="mb-6 text-xs text-gray-500">Based on the latest recorded status-change timestamp. Reassignment history is not yet available.</p>
                   <div className="h-72 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={reportData.chartData}>
+                      <AreaChart data={Array.isArray(reportData.chartData) ? reportData.chartData : []}>
                         <defs>
                           <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
@@ -283,8 +284,8 @@ export default function ReportsPage() {
             {!monthlyLoading && monthlyData && monthlyLoaded === month && (
               <>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <MetricCard icon={<Activity className="w-5 h-5 text-blue-400" />} title="Orders" value={summary?.orderCount ?? 0} />
-                  <MetricCard icon={<File className="w-5 h-5 text-purple-400" />} title="Files" value={summary?.fileCount ?? 0} />
+                  <MetricCard icon={<Activity className="w-5 h-5 text-blue-400" />} title="Orders" value={toNum(summary?.orderCount)} />
+                  <MetricCard icon={<File className="w-5 h-5 text-purple-400" />} title="Files" value={toNum(summary?.fileCount)} />
                   <MetricCard icon={<Database className="w-5 h-5 text-green-400" />} title="Total Size (MB)" value={`${toNum(summary?.fileSizeMB).toFixed(2)} MB`} />
                   <MetricCard icon={<Database className="w-5 h-5 text-yellow-400" />} title="Total Size (GB)" value={`${toNum(summary?.fileSizeGB).toFixed(2)} GB`} />
                 </div>
@@ -348,7 +349,7 @@ export default function ReportsPage() {
           <div className="border-b-2 border-gray-900 pb-4 mb-6">
             <h1 className="text-2xl font-bold text-gray-900 uppercase tracking-wider">Staff Performance Report</h1>
             <p className="text-gray-600 mt-2 font-medium">
-              Staff Name: <span className="text-black">{users.find((u: any) => u._id === selectedUserId)?.name || "Unknown"}</span>
+              Staff Name: <span className="text-black">{toStr(users.find((u: any) => u._id === selectedUserId)?.name, "Unknown")}</span>
             </p>
             <p className="text-gray-600 font-medium">
               Date: <span className="text-black">{format(new Date(), 'dd MMMM yyyy, hh:mm a')}</span>
@@ -383,9 +384,9 @@ export default function ReportsPage() {
                       {toStr(task.status).replace(/_/g, ' ')}
                     </span>
                   </td>
-                  <td className="border border-gray-300 py-1 px-2 text-center font-semibold text-gray-700">{task.fileCount}</td>
+                  <td className="border border-gray-300 py-1 px-2 text-center font-semibold text-gray-700">{toNum(task.fileCount)}</td>
                   <td className="border border-gray-300 py-1 px-2 text-center font-semibold text-gray-700">
-                    {task.timeTookFormatted || '-'}
+                    {toStr(task.timeTookFormatted, '-')}
                   </td>
                 </tr>
               ))}
@@ -414,7 +415,7 @@ function MetricCard({ icon, title, value }: { icon: React.ReactNode, title: stri
         {icon}
       </CardHeader>
       <CardContent className="px-4 pb-4">
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-2xl font-bold">{toStr(value)}</div>
       </CardContent>
     </Card>
   );
