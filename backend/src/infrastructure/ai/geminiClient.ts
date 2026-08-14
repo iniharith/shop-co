@@ -40,6 +40,11 @@ export function getEmbeddingModel(): string {
   return process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
 }
 
+/** pgvector indexes cap at 2000 dims, so we request a fixed, index-safe dimensionality. */
+function getEmbeddingDim(): number {
+  return parseInt(process.env.AI_EMBEDDING_DIM || '768', 10) || 768;
+}
+
 async function geminiFetch(path: string, body: unknown): Promise<any> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
@@ -73,6 +78,7 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
         model: `models/${model}`,
         content: { parts: [{ text }] },
       })),
+      outputDimensionality: getEmbeddingDim(),
     });
     out.push(...((data.embeddings || []) as any[]).map((e) => e.values || []));
   }
@@ -84,6 +90,7 @@ export async function embedText(text: string): Promise<number[]> {
   const data = await geminiFetch(`/models/${model}:embedContent`, {
     model: `models/${model}`,
     content: { parts: [{ text }] },
+    outputDimensionality: getEmbeddingDim(),
   });
   return data?.embedding?.values || [];
 }

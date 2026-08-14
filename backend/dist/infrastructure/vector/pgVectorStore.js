@@ -72,11 +72,19 @@ class PgVectorStore {
           CREATE INDEX IF NOT EXISTS ai_documents_entity_idx
           ON ai_documents (collection, entity_id)
         `);
-                    yield pool.query(`
-          CREATE INDEX IF NOT EXISTS ai_documents_embedding_idx
-          ON ai_documents USING ivfflat (embedding vector_cosine_ops)
-          WITH (lists = 100)
-        `);
+                    if (this.dim > 2000) {
+                        // pgvector indexes (ivfflat/hnsw) cap at 2000 dims — skip the index
+                        // so a misconfigured dim doesn't break the whole schema; search
+                        // falls back to a sequential scan.
+                        console.warn(`[pgvector] dim ${this.dim} exceeds the 2000-dim index limit — skipping vector index`);
+                    }
+                    else {
+                        yield pool.query(`
+            CREATE INDEX IF NOT EXISTS ai_documents_embedding_idx
+            ON ai_documents USING ivfflat (embedding vector_cosine_ops)
+            WITH (lists = 100)
+          `);
+                    }
                     console.log('[pgvector] schema ready');
                 }))().catch((err) => {
                     this.schemaReady = null;

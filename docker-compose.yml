@@ -81,7 +81,7 @@ services:
       REDIS_URL: redis://redis:6379
       DATABASE_URL: postgres://shopco:shopco@vector-db:5432/shopco
       AI_PROVIDER: gemini
-      AI_EMBEDDING_DIM: "3072"
+      AI_EMBEDDING_DIM: "768"
       ADMIN_EMAIL: admin@gmail.com
       ADMIN_PASSWORD: admin
       JWT_REFRESH_SECRET: 8590026442@Abshar*
