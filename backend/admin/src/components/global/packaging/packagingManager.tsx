@@ -630,10 +630,10 @@ export default function PackagingManager() {
           No files in packaging right now.
         </div>
       ) : (
-        <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-220px)] min-h-[600px]">
+        <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-220px)] lg:min-h-[600px]">
           
           {/* LEFT PANEL (MASTER) */}
-          <div className="w-full lg:w-1/3 xl:w-1/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full min-h-0">
+          <div className="w-full lg:w-1/3 xl:w-1/4 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-[45vh] lg:h-full min-h-0">
             <div className="p-4 border-b bg-muted/30 font-semibold text-sm flex justify-between items-center shrink-0 gap-2">
               <span>Task Folders</span>
               <div className="flex items-center gap-2">
@@ -745,7 +745,7 @@ export default function PackagingManager() {
           </div>
 
           {/* RIGHT PANEL (DETAIL) */}
-          <div className="w-full lg:w-2/3 xl:w-3/4 min-w-0 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden h-full">
+          <div className="w-full lg:w-2/3 xl:w-3/4 min-w-0 border rounded-xl bg-card shadow-sm flex flex-col overflow-hidden lg:h-full">
             {selectedFolder ? (() => {
               const activeGroup = groupedFiles.find(g => `${g.folderName}-${g.orderId}-${g.taskId || ""}` === selectedFolder);
               if (!activeGroup) {
