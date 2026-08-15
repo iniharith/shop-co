@@ -882,6 +882,54 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                     </div>
                   </div>
 
+                  {/* Task / Order Details Card */}
+                  <div className="px-4 sm:px-6 py-4 border-b bg-card min-w-0">
+                    <div className="flex flex-col 2xl:flex-row gap-6">
+                      {/* Description */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Description</h3>
+                        <div className="bg-muted/30 border rounded-lg p-3 sm:p-4 text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed max-h-[150px] overflow-y-auto [&_b]:font-black [&_b]:text-[16px] [&_strong]:font-black [&_strong]:text-[16px]" dangerouslySetInnerHTML={{ __html: descriptionText }} />
+                      </div>
+                      
+                      {/* Properties Grid */}
+                      <div className="w-full 2xl:w-72 shrink-0">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Properties</h3>
+                        <div className="bg-muted/30 border rounded-lg p-3 sm:p-4 space-y-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1.5"><User className="w-3.5 h-3.5"/> Assignee</span>
+                            <span className="text-xs font-semibold truncate max-w-[120px] text-right">{assigneeName}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1.5"><Tag className="w-3.5 h-3.5"/> Category</span>
+                            <span className="text-xs font-semibold truncate max-w-[120px] text-right">{categoryName}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5"/> Due Date</span>
+                            <span className="text-xs font-semibold truncate max-w-[120px] text-right">{dueDate}</span>
+                          </div>
+                          
+                          <div className="pt-3 mt-3 border-t flex flex-wrap gap-2">
+                            {activeGroup.orderId && (
+                              <a href={`/admin/orders?search=${activeGroup.orderId}`} target="_blank" className="flex-1 text-center bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-1.5 px-2 rounded-md transition-colors">
+                                View Order
+                              </a>
+                            )}
+                            {activeGroup.taskId && (
+                              <a href={`/admin/tasks?task=${activeGroup.taskId}`} target="_blank" className="flex-1 text-center bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-1.5 px-2 rounded-md transition-colors">
+                                View Task
+                              </a>
+                            )}
+                            {(activeGroup.orderId || activeGroup.folderName) && (
+                              <a href={`/admin/artworks?folder=${encodeURIComponent(activeGroup.folderName)}`} target="_blank" className="flex-1 text-center bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-1.5 px-2 rounded-md transition-colors">
+                                Artworks
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="p-4 sm:p-6 flex-1 overflow-y-auto bg-muted/5 relative">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
@@ -954,54 +1002,6 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                       ))}
                     </div>
                   </div>
-                  {/* Task / Order Details Card */}
-                  <div className="px-4 sm:px-6 py-4 border-b bg-card min-w-0">
-                    <div className="flex flex-col 2xl:flex-row gap-6">
-                      {/* Description */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Description</h3>
-                        <div className="bg-muted/30 border rounded-lg p-3 sm:p-4 text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed max-h-[150px] overflow-y-auto [&_b]:font-black [&_b]:text-[16px] [&_strong]:font-black [&_strong]:text-[16px]" dangerouslySetInnerHTML={{ __html: descriptionText }} />
-                      </div>
-                      
-                      {/* Properties Grid */}
-                      <div className="w-full 2xl:w-72 shrink-0">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Properties</h3>
-                        <div className="bg-muted/30 border rounded-lg p-3 sm:p-4 space-y-3">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs text-muted-foreground flex items-center gap-1.5"><User className="w-3.5 h-3.5"/> Assignee</span>
-                            <span className="text-xs font-semibold truncate max-w-[120px] text-right">{assigneeName}</span>
-                          </div>
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs text-muted-foreground flex items-center gap-1.5"><Tag className="w-3.5 h-3.5"/> Category</span>
-                            <span className="text-xs font-semibold truncate max-w-[120px] text-right">{categoryName}</span>
-                          </div>
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs text-muted-foreground flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5"/> Due Date</span>
-                            <span className="text-xs font-semibold truncate max-w-[120px] text-right">{dueDate}</span>
-                          </div>
-                          
-                          <div className="pt-3 mt-3 border-t flex flex-wrap gap-2">
-                            {activeGroup.orderId && (
-                              <a href={`/admin/orders?search=${activeGroup.orderId}`} target="_blank" className="flex-1 text-center bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-1.5 px-2 rounded-md transition-colors">
-                                View Order
-                              </a>
-                            )}
-                            {activeGroup.taskId && (
-                              <a href={`/admin/tasks?task=${activeGroup.taskId}`} target="_blank" className="flex-1 text-center bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-1.5 px-2 rounded-md transition-colors">
-                                View Task
-                              </a>
-                            )}
-                            {(activeGroup.orderId || activeGroup.folderName) && (
-                              <a href={`/admin/artworks?folder=${encodeURIComponent(activeGroup.folderName)}`} target="_blank" className="flex-1 text-center bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-1.5 px-2 rounded-md transition-colors">
-                                Artworks
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
                 </div>
               );
             })() : (
