@@ -6,15 +6,20 @@
 import Link from "next/link";
 import { ProductDetails } from "@/components/page-sections/shop/product-details";
 import { ProductGallery } from "@/components/page-sections/shop/product-gallery";
+import ProductHero from "@/components/page-sections/shop/ProductHero";
 import ProductSctions from "@/components/page-sections/home/productSctions";
-import { mockProduct, products } from "@/constants/data";
 import React, { useEffect, useState } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { useParams } from "next/navigation";
 import ProductDetailSkeleton from "@/components/loading/ProductDetailSkeleton";
 import { IProduct } from "@/types/IProduct";
+import { useLanguage } from "@/i18n/LanguageProvider";
+import { ChevronRight } from "lucide-react";
+
 const page = () => {
   const { id } = useParams();
+  const { locale } = useLanguage();
+  const label = (en: string, ms: string) => locale === "ms" ? ms : en;
   const { data, isPending } = useProducts(id as string);
   const { data: productsData, isPending: isProductsPending } = useProducts();
   const [relatedProducts, setRelatedProducts] = useState<IProduct[]>([]);
@@ -24,57 +29,56 @@ const page = () => {
     setRelatedProducts(products.filter((product) => product._id !== id).reverse().slice(0, 6));
   }, [products, id]);
 
-
-
-    
   return (
-    <div className="w-full py-5 md:px-10 px-5 max-w-[1400px] mx-auto">
-      {/* Custom Dynamic Breadcrumbs */}
-      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-muted-foreground mb-6 bg-white dark:bg-card p-3 rounded-xl border border-gray-200 dark:border-border shadow-sm">
-         <Link href="/" className="hover:text-primary transition-colors">Home</Link>
-         <span>/</span>
-         <Link href="/home/shop" className="hover:text-primary transition-colors">Shop</Link>
-         {product && (
-           <>
-             <span>/</span>
-             <Link href={`/home/shop?category=${product.category}`} className="hover:text-primary transition-colors capitalize">
-               {product.category.replace(/-/g, ' ')}
-             </Link>
-             <span>/</span>
-             <span className="text-gray-900 dark:text-foreground font-semibold truncate max-w-[200px] md:max-w-[400px]">
-               {product.name}
-             </span>
-           </>
-         )}
+    <div className="w-full">
+      {/* ── Minimal Breadcrumbs ── */}
+      <div className="max-w-[1400px] mx-auto px-5 md:px-10 py-4">
+        <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Link href="/" className="hover:text-primary transition-colors">{label("Home", "Utama")}</Link>
+          <ChevronRight className="w-3 h-3" />
+          <Link href="/home/shop" className="hover:text-primary transition-colors">{label("Shop", "Kedai")}</Link>
+          {product && (
+            <>
+              <ChevronRight className="w-3 h-3" />
+              <Link href={`/home/shop?category=${product.category}`} className="hover:text-primary transition-colors capitalize">
+                {product.category.replace(/-/g, ' ')}
+              </Link>
+              <ChevronRight className="w-3 h-3" />
+              <span className="text-foreground font-medium truncate max-w-[200px] md:max-w-[400px]">{product.name}</span>
+            </>
+          )}
+        </nav>
       </div>
+
       {isPending && <ProductDetailSkeleton />}
       {!isPending && product && (
-        <div className="grid border-b border-border pb-10 grid-cols-1 mt-6 lg:grid-cols-12 gap-8 items-start">
-          {/* ── LEFT COLUMN: IMAGES & DESCRIPTION ── */}
-          <div className="w-full lg:col-span-7 space-y-8">
-            <div className="bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border">
-              <ProductGallery images={product.images} />
+        <>
+          {/* ── Full-width Hero Image ── */}
+          <div className="max-w-[1400px] mx-auto px-5 md:px-10 mb-8">
+            <ProductHero images={product.images} alt={product.name} />
+          </div>
+
+          {/* ── Two-column: Gallery + Configurator ── */}
+          <div className="max-w-[1400px] mx-auto px-5 md:px-10 pb-16">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* Left: Gallery (sticky) */}
+              <div className="w-full lg:col-span-5 lg:sticky lg:top-28">
+                <ProductGallery images={product.images} />
+              </div>
+
+              {/* Right: Configurator */}
+              <div className="w-full lg:col-span-7">
+                <ProductDetails product={product} />
+              </div>
             </div>
-            
-            <div className="bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border space-y-4">
-              <h2 className="text-xl font-bold tracking-tight text-primary">Product Information</h2>
-              <div className="w-full h-px bg-border"></div>
-              <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-                {product.description || "High quality printing service offering excellent results with vibrant colors and durability. Ideal for professional and personal use."}
-              </p>
-            </div>
-            
+
             <div id="flyer-pricing-portal"></div>
           </div>
-          
-          {/* ── RIGHT COLUMN: CONFIGURATOR (Sticky) ── */}
-          <div className="w-full lg:col-span-5 relative h-full">
-            <ProductDetails product={product} />
-          </div>
-        </div>
-      )}
 
-      <ProductSctions isLoading={isProductsPending} title="Related Products" products={relatedProducts} />
+          {/* ── Related Products ── */}
+          <ProductSctions isLoading={isProductsPending} title={label("Related Products", "Produk Berkaitan")} products={relatedProducts} />
+        </>
+      )}
     </div>
   );
 };
