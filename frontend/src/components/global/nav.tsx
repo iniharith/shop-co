@@ -382,12 +382,12 @@ const Nav = () => {
           "relative z-[70] w-full flex flex-col transition-all duration-300",
           isHomePage && !isScrolled
             ? "bg-transparent dark:bg-transparent"
-            : "shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+            : ""
         )}
         style={isHomePage && !isScrolled ? undefined : {
-          backgroundColor: isDark ? "rgba(10,10,10,0.7)" : "rgba(255,255,255,0.7)",
-          backdropFilter: "blur(16px) saturate(1.2)",
-          WebkitBackdropFilter: "blur(16px) saturate(1.2)",
+          backgroundColor: isDark ? "rgba(242,242,242,0.06)" : "rgba(242,242,242,0.06)",
+          WebkitBackdropFilter: "blur(6px)",
+          backdropFilter: "blur(6px)",
         }}
       >
         {/* ── MAIN HEADER ── */}
@@ -600,7 +600,7 @@ const Nav = () => {
             : "border-black/5 dark:border-white/10"
         )}
           style={isHomePage && !isScrolled ? undefined : {
-            backgroundColor: isDark ? "rgba(10,10,10,0.35)" : "rgba(255,255,255,0.35)",
+            backgroundColor: "rgba(242,242,242,0.04)",
           }}
         >
           <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
