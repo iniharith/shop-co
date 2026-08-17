@@ -362,7 +362,9 @@ const Nav = () => {
     }
   };
 
-  // ── Apply header-hidden class to parent .site-header element ──
+  const isHomePage = pathname === "/";
+
+  // ── Apply header-hidden + header-frosted class to parent .site-header element ──
   useEffect(() => {
     const headerEl = document.querySelector(".site-header");
     if (!headerEl) return;
@@ -371,9 +373,13 @@ const Nav = () => {
     } else {
       headerEl.classList.add("header-hidden");
     }
-  }, [isHeaderVisible]);
-
-  const isHomePage = pathname === "/";
+    // Frosted glass: active on non-homepage always, or on homepage when scrolled
+    if (!isHomePage || isScrolled) {
+      headerEl.classList.add("header-frosted");
+    } else {
+      headerEl.classList.remove("header-frosted");
+    }
+  }, [isHeaderVisible, isHomePage, isScrolled]);
 
   return (
     <>
@@ -384,12 +390,6 @@ const Nav = () => {
             ? "bg-transparent dark:bg-transparent"
             : ""
         )}
-        style={isHomePage && !isScrolled ? undefined : {
-          backgroundColor: isDark ? "rgba(242,242,242,0.06)" : "rgba(255,255,255,0.72)",
-          WebkitBackdropFilter: isDark ? "blur(6px)" : "blur(20px) saturate(180%)",
-          backdropFilter: isDark ? "blur(6px)" : "blur(20px) saturate(180%)",
-          boxShadow: isDark ? "none" : "0 1px 3px rgba(0,0,0,0.06)",
-        }}
       >
         {/* ── MAIN HEADER ── */}
         <div className={cn(

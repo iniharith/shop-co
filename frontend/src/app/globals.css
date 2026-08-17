@@ -183,8 +183,20 @@
     z-index: 50 !important;
     transform: translateY(0);
     opacity: 1;
-    transition: transform 0.4s ease, opacity 0.4s ease, background-color 0.3s ease;
+    transition: transform 0.4s ease, opacity 0.4s ease;
     will-change: transform, opacity;
+  }
+  .site-header.header-frosted {
+    background: rgba(242, 242, 242, 0.06);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+  .dark .site-header.header-frosted {
+    background: rgba(242, 242, 242, 0.06);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    box-shadow: none;
   }
   .site-header.header-hidden {
     transform: translateY(-100%);
