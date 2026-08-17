@@ -270,7 +270,7 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
             {/* Design & Artwork */}
             {product.category?.toLowerCase() !== "islamic khat" && (
               <div className="flex flex-col gap-2">
-                <label className="text-lg font-semibold text-foreground">
+                <label className="text-xl font-semibold text-foreground">
                   {label("Design & Artwork", "Reka Bentuk & Karya")}
                 </label>
                 {product.name?.toLowerCase() === "portrait" ? (
@@ -313,7 +313,7 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
             {step1Options.length > 0 &&
               step1Options.map((opt, i) => (
                 <div key={i} className="flex flex-col gap-2">
-                  <label className="text-lg font-semibold text-foreground">{opt.name}</label>
+                  <label className="text-xl font-semibold text-foreground">{opt.name}</label>
                   <div className="flex flex-wrap gap-1.5">
                     {opt.options.map((val, idx) => {
                       const isSelected = opt.isMultiSelect
@@ -347,7 +347,7 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
             {step2Options.length > 0 &&
               step2Options.map((opt, i) => (
                 <div key={i} className="flex flex-col gap-2">
-                  <label className="text-lg font-semibold text-foreground">{opt.name}</label>
+                  <label className="text-xl font-semibold text-foreground">{opt.name}</label>
                   <div className="flex flex-wrap gap-1.5">
                     {opt.options.map((val, idx) => {
                       const isSelected = opt.isMultiSelect
@@ -679,8 +679,15 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
         )}
       </div>
 
-      {/* ═══ Sticky CTA Footer — always visible at bottom of card ═══ */}
-      <div className="border-t border-border bg-card/95 flex flex-col gap-2 px-4 py-3 sm:px-5 sm:py-4 shrink-0">
+      {/* ═══ Sticky CTA Footer — Orbea-style with big price ═══ */}
+      <div className="border-t border-border bg-background flex flex-col gap-3 px-5 py-4 shrink-0">
+        {/* Price row — product name left, big price right */}
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="font-semibold text-base text-foreground truncate">{product.name}</span>
+          <span className="font-bold text-3xl tabular-nums text-foreground shrink-0">RM {total.toFixed(2)}</span>
+        </div>
+
+        {/* CTA Button */}
         <button
           onClick={
             step === "summary"
@@ -693,17 +700,14 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
           {step === "summary" ? (isPending ? label("Adding...", "Menambah...") : stepButtonLabel) : stepButtonLabel}
         </button>
 
-        <div className="flex items-center justify-center gap-2 flex-wrap">
-          <span className="font-medium truncate text-sm text-foreground">{product.name}</span>
-          <span className="text-muted-foreground text-xs">|</span>
-          <span className="font-bold text-sm text-primary">RM {total.toFixed(2)}</span>
+        {step !== "summary" && (
           <button
             onClick={() => onStepChange("summary")}
-            className="underline text-muted-foreground hover:text-foreground transition-colors duration-150 text-xs"
+            className="text-center text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
           >
             {label("View summary", "Lihat ringkasan")}
           </button>
-        </div>
+        )}
       </div>
     </div>
   );

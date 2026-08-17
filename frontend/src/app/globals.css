@@ -229,12 +229,11 @@
     .orbea-card-gap { padding: 1.25rem; }
   }
 
-  /* Orbea pill option selector — sized up to match Orbea's larger, more
-     spacious buttons (Orbea size selectors ~48-56px tall, generous text) */
+  /* Orbea pill option selector */
   .orbea-pill {
-    @apply relative inline-flex items-center justify-center px-4 py-3 text-sm font-medium rounded-lg;
+    @apply relative inline-flex items-center justify-center px-4 py-3 text-base font-medium rounded-lg;
     @apply border border-border bg-card transition-[background,border-color] duration-150;
-    @apply min-h-[3rem] min-w-[3rem];
+    @apply min-h-[3.25rem] min-w-[3.25rem];
   }
   .orbea-pill:hover {
     @apply border-muted-foreground/40;
@@ -252,10 +251,10 @@
     @apply bg-secondary border-foreground;
   }
 
-  /* Orbea primary button (exact: px-8 bg-surface-button-primary py-3 rounded-[2.5rem]) */
+  /* Orbea primary button — large, full-width, pill-shaped */
   .orbea-btn-primary {
-    @apply inline-flex items-center justify-center w-full px-8 py-3;
-    @apply bg-foreground text-background font-medium text-sm;
+    @apply inline-flex items-center justify-center w-full px-8 py-4;
+    @apply bg-foreground text-background font-semibold text-base;
     @apply rounded-[2.5rem] transition-colors duration-150;
     @apply hover:bg-foreground/90 active:scale-[0.98];
     @apply disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed;

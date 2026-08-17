@@ -7,7 +7,7 @@
 import { ProductDetails } from "@/components/page-sections/shop/product-details";
 import { ProductGallery } from "@/components/page-sections/shop/product-gallery";
 import ProductSctions from "@/components/page-sections/home/productSctions";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { useParams } from "next/navigation";
 import ProductDetailSkeleton from "@/components/loading/ProductDetailSkeleton";
@@ -29,27 +29,21 @@ const ProductDetailPage = () => {
   const product = data?.product as IProduct;
   const products = productsData?.products || [];
 
-  // ── Real available-height measurement ──
-  // The old `calc(100svh - var(--header-height))` relied on a CSS var that's
-  // never actually set anywhere, so it always fell back to a wrong constant
-  // and the bottom CTA/price row got pushed off-screen. Measure the real
-  // offset (site header + sticky step-nav) instead, so the two-pane area
-  // always fits the remaining viewport exactly, like Orbea's immersive
-  // no-page-scroll layout.
-  const detailRef = React.useRef<HTMLDivElement>(null);
-  const [detailHeight, setDetailHeight] = useState<number | null>(null);
+  // Measure the remaining viewport height below the subnav bar
+  const navRef = useRef<HTMLElement>(null);
+  const [canvasHeight, setCanvasHeight] = useState<number>(0);
 
   useEffect(() => {
-    const el = detailRef.current;
-    if (!el) return;
     const update = () => {
-      const top = el.getBoundingClientRect().top;
-      setDetailHeight(Math.max(320, window.innerHeight - top));
+      const navEl = navRef.current;
+      if (!navEl) return;
+      const navBottom = navEl.getBoundingClientRect().bottom;
+      setCanvasHeight(Math.max(400, window.innerHeight - navBottom));
     };
     update();
     window.addEventListener("resize", update);
     const ro = new ResizeObserver(update);
-    ro.observe(document.body);
+    ro.observe(document.documentElement);
     return () => {
       window.removeEventListener("resize", update);
       ro.disconnect();
@@ -78,17 +72,15 @@ const ProductDetailPage = () => {
       {isPending && <ProductDetailSkeleton />}
       {!isPending && product && (
         <>
-          {/* ═══ Sticky Subnav Bar ═══ */}
+          {/* ═══ Sticky Subnav Bar — sits below fixed main header ═══ */}
           <nav
-            className="sticky z-30 top-0 bg-background/95 backdrop-blur-md border-b border-border/80 grid grid-cols-3 items-center px-4 py-2.5 lg:px-8 lg:py-2.5 lg:flex transition-all duration-300"
+            ref={navRef}
+            className="sticky z-30 top-0 bg-background/95 backdrop-blur-md border-b border-border grid grid-cols-3 items-center px-4 py-3 lg:px-8 lg:flex transition-all duration-300 shadow-sm"
           >
-            {/* Left: back link (desktop) / back arrow (mobile) */}
+            {/* Left: back arrow (mobile) */}
             <div className="text-sm lg:hidden">
               {step !== "frame" ? (
-                <button
-                  onClick={() => setStep(prevStep)}
-                  className="flex gap-1 items-center"
-                >
+                <button onClick={() => setStep(prevStep)} className="flex gap-1 items-center text-foreground">
                   <ChevronLeft className="w-4 h-4 shrink-0" />
                   <span className="min-w-0 truncate">{prevStepLabel}</span>
                 </button>
@@ -97,13 +89,13 @@ const ProductDetailPage = () => {
               )}
             </div>
 
-            {/* Center/left: product name + "Change model" back-to-shop link (desktop) */}
+            {/* Left: product name + change model (desktop) */}
             <div className="hidden lg:flex items-center gap-2 mr-auto">
               <span className="text-base font-semibold text-foreground">{product.name}</span>
               <span className="text-muted-foreground">|</span>
               <Link
                 href="/home/shop"
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors duration-150"
+                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ChevronLeft className="w-4 h-4 shrink-0" />
                 {label("Change model", "Tukar Produk")}
@@ -111,17 +103,17 @@ const ProductDetailPage = () => {
             </div>
 
             {/* Center: current step label (mobile) */}
-            <span className="font-medium justify-self-center text-[.9375rem] lg:hidden">
+            <span className="font-semibold justify-self-center text-sm lg:hidden">
               {currentStepMeta.button_mobile}
             </span>
 
             {/* Right: desktop step links */}
-            <ul className="hidden lg:flex items-center gap-6 ml-auto">
+            <ul className="hidden lg:flex items-center gap-8 ml-auto">
               {stepLabels.map((s) => (
                 <li key={s.key}>
                   <button
                     onClick={() => setStep(s.key)}
-                    className={`text-sm transition-colors underline-offset-4 hover:text-foreground font-medium ${step === s.key ? "text-foreground underline font-bold" : "text-muted-foreground"}`}
+                    className={`text-sm font-medium transition-colors underline-offset-4 ${step === s.key ? "text-foreground underline font-bold" : "text-muted-foreground hover:text-foreground"}`}
                   >
                     {s.label}
                   </button>
@@ -130,39 +122,35 @@ const ProductDetailPage = () => {
             </ul>
 
             {/* Right: mobile next button */}
-            <div className="lg:hidden">
+            <div className="lg:hidden flex justify-end">
               {step !== "summary" && (
-                <button
-                  onClick={() => setStep(nextStep)}
-                  className="flex gap-1 items-center justify-self-end max-w-full"
-                >
-                  <span className="min-w-0 truncate">{nextStepLabel}</span>
+                <button onClick={() => setStep(nextStep)} className="flex gap-1 items-center text-foreground">
+                  <span className="min-w-0 truncate text-sm">{nextStepLabel}</span>
                   <ChevronRight className="w-4 h-4 shrink-0" />
                 </button>
               )}
             </div>
           </nav>
 
-          {/* ═══ Orbea product-detail: Full-screen two-column layout ═══ */}
+          {/* ═══ Two-column product canvas ═══ */}
           <div
-            className="product-detail flex flex-col overflow-hidden relative bg-neutral-950 text-foreground lg:flex-row w-full h-[calc(100vh-130px)] min-h-[540px]"
+            className="product-detail flex flex-col lg:flex-row bg-neutral-950 overflow-hidden"
+            style={{ height: canvasHeight > 0 ? `${canvasHeight}px` : "calc(100vh - 130px)" }}
           >
-            {/* ── Left: Full-Screen Background Image Area ── */}
-            <div className="grow relative w-full h-full lg:w-[65%] xl:w-[70%] max-lg:h-[45vh] overflow-hidden">
+            {/* ── Left: Full-bleed product image (takes remaining space) ── */}
+            <div className="relative flex-1 min-w-0 min-h-0 max-lg:h-[45%] overflow-hidden">
               <ProductGallery images={product.images} step={step} />
-              {/* Subtle scrim for smooth contrast on desktop */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/60 pointer-events-none hidden lg:block" />
+              {/* Right-edge fade blending into card */}
+              <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-neutral-950/60 to-transparent pointer-events-none hidden lg:block" />
             </div>
 
-            {/* ── Right: Floating Configurator Card ── */}
-            <div className="shrink-0 z-20 w-full lg:w-[35%] xl:w-[30%] max-w-lg h-full p-2 sm:p-4 lg:p-5 flex flex-col overflow-hidden">
-              <div className="bg-card/95 text-card-foreground border border-border/70 rounded-2xl shadow-2xl h-full flex flex-col overflow-hidden backdrop-blur-xl">
-                <ProductDetails
-                  product={product}
-                  step={step}
-                  onStepChange={setStep}
-                />
-              </div>
+            {/* ── Right: Configurator panel — fixed width BESIDE the image ── */}
+            <div className="shrink-0 w-full lg:w-[380px] xl:w-[420px] h-full flex flex-col bg-background border-t lg:border-t-0 lg:border-l border-border/50 overflow-hidden">
+              <ProductDetails
+                product={product}
+                step={step}
+                onStepChange={setStep}
+              />
             </div>
           </div>
 
