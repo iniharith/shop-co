@@ -3,7 +3,7 @@
  * Kampungcetak ®
  */
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter } from "nextjs-toploader/app";
@@ -37,6 +37,54 @@ export const useNav = () => {
         setCartCount(response.cart.items.length);
       }
     }, [response]);
+
+    // ── Scroll-based header visibility (ThrottleHaus + Arteriors style) ──
+    const [isScrolled, setIsScrolled] = useState(false);
+    const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+    const lastScrollY = useRef(0);
+    const ticking = useRef(false);
+
+    useEffect(() => {
+      const HEADER_HEIGHT = 120;
+
+      const updateHeaderVisibility = () => {
+        const currentScrollY = window.scrollY;
+
+        setIsScrolled(currentScrollY > 0);
+
+        // At top of page → always show
+        if (currentScrollY <= 0) {
+          setIsHeaderVisible(true);
+        }
+        // Scrolling up → show
+        else if (currentScrollY < lastScrollY.current) {
+          setIsHeaderVisible(true);
+        }
+        // Scrolling down → hide (only if past header height)
+        else if (currentScrollY > lastScrollY.current && currentScrollY > HEADER_HEIGHT) {
+          setIsHeaderVisible(false);
+        }
+
+        lastScrollY.current = currentScrollY;
+        ticking.current = false;
+      };
+
+      const onScroll = () => {
+        if (!ticking.current) {
+          requestAnimationFrame(updateHeaderVisibility);
+          ticking.current = true;
+        }
+      };
+
+      // Always show header when drawer is open
+      if (isOpen) {
+        setIsHeaderVisible(true);
+      }
+
+      window.addEventListener("scroll", onScroll, { passive: true });
+      return () => window.removeEventListener("scroll", onScroll);
+    }, [isOpen]);
+
     return {
         isOpen,
         setIsOpen,
@@ -51,6 +99,8 @@ export const useNav = () => {
         router,
         setIsAuthModalOpen,
         response,
+        isScrolled,
+        isHeaderVisible,
     }
 }
 

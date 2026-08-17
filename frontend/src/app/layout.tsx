@@ -87,9 +87,10 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${dmSans.variable} ${geistMono.variable} ${fonarto.variable} ${provicaliAmpersand.variable} bg-background text-foreground antialiased`}
       >
         <Provider session={session} initialLocale={locale}>
-          <div className="site-header sticky z-50 top-0">
+          <div className="site-header">
             <Nav />
           </div>
+          <div className="h-[140px] md:h-[170px]" aria-hidden="true" />
           <main className="w-full min-h-[50vh]">{children}</main>
           <div className="site-footer">
             <Cta />

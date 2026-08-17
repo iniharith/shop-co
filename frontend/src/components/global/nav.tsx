@@ -289,6 +289,8 @@ const Nav = () => {
     router,
     setIsAuthModalOpen,
     notification,
+    isScrolled,
+    isHeaderVisible,
   } = useNav();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -357,11 +359,36 @@ const Nav = () => {
     }
   };
 
+  // ── Apply header-hidden class to parent .site-header element ──
+  useEffect(() => {
+    const headerEl = document.querySelector(".site-header");
+    if (!headerEl) return;
+    if (isHeaderVisible) {
+      headerEl.classList.remove("header-hidden");
+    } else {
+      headerEl.classList.add("header-hidden");
+    }
+  }, [isHeaderVisible]);
+
+  const isHomePage = pathname === "/";
+
   return (
     <>
-      <div className="relative z-[70] w-full flex flex-col bg-muted dark:bg-background">
+      <div
+        className={cn(
+          "relative z-[70] w-full flex flex-col transition-colors duration-300",
+          isHomePage && !isScrolled
+            ? "bg-transparent dark:bg-transparent"
+            : "bg-muted dark:bg-background"
+        )}
+      >
         {/* ── MAIN HEADER ── */}
-        <div className="w-full px-4 md:px-7 py-3 md:py-4 flex justify-between items-center gap-3 md:gap-6 border-b border-transparent dark:border-border">
+        <div className={cn(
+          "w-full px-4 md:px-7 py-3 md:py-4 flex justify-between items-center gap-3 md:gap-6 border-b transition-colors duration-300",
+          isHomePage && !isScrolled
+            ? "border-white/10"
+            : "border-transparent dark:border-border"
+        )}>
 
           {/* Left: Hamburger + Logo */}
           <div className="flex items-center gap-2 shrink-0">
@@ -372,7 +399,7 @@ const Nav = () => {
               direction="left"
             >
               <Drawer.Trigger className="md:hidden block p-1">
-                <FaBars className="text-xl text-gray-700 dark:text-foreground" />
+                <FaBars className={cn("text-xl transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-gray-700 dark:text-foreground")} />
               </Drawer.Trigger>
               <MobileNavSheetContent
                 closeDrawer={closeDrawer}
@@ -397,7 +424,7 @@ const Nav = () => {
                 height={36}
                 className="object-contain rounded-full md:w-10 md:h-10"
               />
-              <h1 className="text-lg md:text-2xl font-bold tracking-tight text-primary">
+              <h1 className={cn("text-lg md:text-2xl font-bold tracking-tight transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-primary")}>
                 Kampung Cetak
               </h1>
             </Link>
@@ -406,11 +433,19 @@ const Nav = () => {
           {/* Center: Search (desktop only) */}
           <form 
             onSubmit={handleSearch}
-            className="z-[80] hidden md:flex flex-1 max-w-2xl mx-auto relative items-center bg-card rounded-full border border-border shadow-sm overflow-visible px-4 py-1"
+            className={cn(
+              "z-[80] hidden md:flex flex-1 max-w-2xl mx-auto relative items-center rounded-full border shadow-sm overflow-visible px-4 py-1 transition-colors duration-300",
+              isHomePage && !isScrolled
+                ? "bg-white/20 backdrop-blur-sm border-white/30"
+                : "bg-card border-border"
+            )}
           >
-            <IoSearch className="text-gray-500 dark:text-muted-foreground text-xl mr-2 shrink-0" />
+            <IoSearch className={cn("text-xl mr-2 shrink-0 transition-colors duration-300", isHomePage && !isScrolled ? "text-white/70" : "text-gray-500 dark:text-muted-foreground")} />
             <Input
-              className="w-full focus-visible:ring-0 text-md bg-transparent border-none shadow-none ring-0 focus-visible:ring-offset-0 px-0 h-10 dark:text-foreground"
+              className={cn(
+                "w-full focus-visible:ring-0 text-md bg-transparent border-none shadow-none ring-0 focus-visible:ring-offset-0 px-0 h-10 transition-colors duration-300",
+                isHomePage && !isScrolled ? "text-white placeholder:text-white/60" : "dark:text-foreground"
+              )}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -486,7 +521,7 @@ const Nav = () => {
                     variant="ghost"
                     className="rounded-full p-2 cursor-pointer hover:bg-gray-300 dark:hover:bg-muted transition-colors"
                   >
-                    <FaCartShopping className="text-xl text-gray-700 dark:text-foreground" />
+                    <FaCartShopping className={cn("text-xl transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-gray-700 dark:text-foreground")} />
                   </Button>
                   <Badge className="absolute top-0 right-0 bg-primary text-primary-foreground text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-muted">
                     {cartCount}
@@ -501,7 +536,7 @@ const Nav = () => {
                     variant="ghost"
                     className="rounded-full p-2 cursor-pointer hover:bg-gray-300 dark:hover:bg-muted transition-colors"
                   >
-                    <IoNotifications className="text-xl text-gray-700 dark:text-foreground" />
+                    <IoNotifications className={cn("text-xl transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-gray-700 dark:text-foreground")} />
                   </Button>
                   <Badge className="absolute top-0 right-0 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-muted">
                     {notification ? notification.filter((n) => !n.read).length : 0}
@@ -514,7 +549,7 @@ const Nav = () => {
                   variant="ghost"
                   className="rounded-full px-2 md:px-3 py-1 cursor-pointer hover:bg-gray-300 dark:hover:bg-muted transition-colors flex items-center gap-2"
                 >
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold shrink-0 overflow-hidden">
+                  <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 overflow-hidden transition-colors duration-300", isHomePage && !isScrolled ? "bg-white text-black" : "bg-primary text-primary-foreground")}>
                     {getAvatarUrl() ? (
                       <Image src={getAvatarUrl()} alt={session.user.name || "Profile"} width={32} height={32} className="object-cover w-full h-full" />
                     ) : session.user.name ? (
@@ -524,10 +559,10 @@ const Nav = () => {
                     )}
                   </div>
                   <div className="hidden sm:flex flex-col items-start leading-tight">
-                    <span className="text-sm font-semibold text-gray-800 dark:text-foreground max-w-[100px] truncate">
+                    <span className={cn("text-sm font-semibold max-w-[100px] truncate transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-gray-800 dark:text-foreground")}>
                       {session.user.name || t("nav.profile")}
                     </span>
-                    <span className="text-[10px] text-gray-500 dark:text-muted-foreground max-w-[100px] truncate">
+                    <span className={cn("text-[10px] max-w-[100px] truncate transition-colors duration-300", isHomePage && !isScrolled ? "text-white/70" : "text-gray-500 dark:text-muted-foreground")}>
                       {session.user.email || ""}
                     </span>
                   </div>
@@ -536,7 +571,12 @@ const Nav = () => {
             ) : (
               <Button
                 onPress={() => setIsAuthModalOpen(true)}
-                className="rounded-full px-4 md:px-6 font-semibold cursor-pointer border-primary border text-sm bg-primary hover:bg-primary/90 transition-all duration-300 text-primary-foreground"
+                className={cn(
+                  "rounded-full px-4 md:px-6 font-semibold cursor-pointer border text-sm transition-all duration-300",
+                  isHomePage && !isScrolled
+                    ? "border-white/40 bg-white/10 hover:bg-white/20 text-white"
+                    : "border-primary border bg-primary hover:bg-primary/90 text-primary-foreground"
+                )}
               >
                 {t("nav.login")}
               </Button>
@@ -545,18 +585,23 @@ const Nav = () => {
         </div>
 
         {/* ── DESKTOP CATEGORY NAV ── */}
-        <div className="w-full bg-card border-y border-border hidden md:block relative z-40">
+        <div className={cn(
+          "w-full border-y hidden md:block relative z-40 transition-colors duration-300",
+          isHomePage && !isScrolled
+            ? "bg-transparent border-white/10"
+            : "bg-card border-border"
+        )}>
           <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
             {printingCategories.map((item, index) => (
               <div key={index} className="relative group">
                 <div
-                  className="text-primary font-bold uppercase tracking-wide inline-block py-2 cursor-default"
+                  className={cn("font-bold uppercase tracking-wide inline-block py-2 cursor-default transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-primary")}
                 >
                   <p className="relative text-sm inline-block overflow-hidden transition-colors">
-                    <span className="inline-block transition-all duration-300 opacity-100 group-hover:-translate-y-6">
+                    <span className={cn("inline-block transition-all duration-300 opacity-100 group-hover:-translate-y-6", isHomePage && !isScrolled ? "text-white" : "text-primary")}>
                       {categoryLabels[locale][item.label] || item.label}
                     </span>
-                    <span className="absolute left-0 inline-block translate-y-5 transition-all duration-300 group-hover:scale-[.9] group-hover:translate-y-0">
+                    <span className={cn("absolute left-0 inline-block translate-y-5 transition-all duration-300 group-hover:scale-[.9] group-hover:translate-y-0", isHomePage && !isScrolled ? "text-white" : "text-primary")}>
                       {categoryLabels[locale][item.label] || item.label}
                     </span>
                   </p>
