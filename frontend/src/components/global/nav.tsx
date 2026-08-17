@@ -376,10 +376,10 @@ const Nav = () => {
     <>
       <div
         className={cn(
-          "relative z-[70] w-full flex flex-col transition-colors duration-300",
+          "relative z-[70] w-full flex flex-col transition-all duration-300",
           isHomePage && !isScrolled
             ? "bg-transparent dark:bg-transparent"
-            : "bg-muted dark:bg-background"
+            : "bg-white/70 dark:bg-background/70 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
         )}
       >
         {/* ── MAIN HEADER ── */}
@@ -387,7 +387,7 @@ const Nav = () => {
           "w-full px-4 md:px-7 py-3 md:py-4 flex justify-between items-center gap-3 md:gap-6 border-b transition-colors duration-300",
           isHomePage && !isScrolled
             ? "border-white/10"
-            : "border-transparent dark:border-border"
+            : "border-black/5 dark:border-white/10"
         )}>
 
           {/* Left: Hamburger + Logo */}
@@ -586,10 +586,10 @@ const Nav = () => {
 
         {/* ── DESKTOP CATEGORY NAV ── */}
         <div className={cn(
-          "w-full border-y hidden md:block relative z-40 transition-colors duration-300",
+          "w-full border-y hidden md:block relative z-40 transition-all duration-300",
           isHomePage && !isScrolled
             ? "bg-transparent border-white/10"
-            : "bg-card border-border"
+            : "bg-white/50 dark:bg-background/50 backdrop-blur-xl border-black/5 dark:border-white/10"
         )}>
           <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
             {printingCategories.map((item, index) => (
