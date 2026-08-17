@@ -216,69 +216,45 @@
 
   /* ── Orbea product detail layout ── */
   .product-detail {
-    height: calc(100svh - var(--header-height, 70px));
     overflow: hidden;
   }
-  .product-detail:not(.summary) {
-    height: calc(100svh - var(--header-height, 70px));
-  }
 
-  /* Orbea step nav text links */
-  .step-nav-link {
-    @apply text-sm text-muted-foreground transition-colors duration-150;
-    @apply hover:text-foreground;
-  }
-  .step-nav-link.active {
-    @apply text-foreground underline underline-offset-4;
-  }
-
-  /* Orbea thumbnail expand animation */
+  /* Orbea thumbnail expand animation (exact Orbea classes) */
   .orbea-thumb {
-    @apply relative overflow-hidden border border-border rounded-lg cursor-pointer;
-    @apply transition-all duration-500 ease-in-out;
+    @apply bg-secondary border border-border border-solid cursor-pointer relative overflow-hidden;
+    @apply transition-[border-color,height] duration-500;
     width: 3.625rem;
     height: 0;
-    background: oklch(0.964 0 0);
   }
   .orbea-thumb.active,
   .group:hover .orbea-thumb {
     height: 3.625rem;
     border-color: var(--foreground);
   }
-  .orbea-thumb:not(.active) {
-    border-color: oklch(0.894 0 0);
-  }
 
-  /* Orbea pill option selector */
+  /* Orbea pill option selector (exact Orbea: peer-checked pattern) */
   .orbea-pill {
     @apply relative inline-flex items-center justify-center px-3 py-2 text-xs font-medium rounded-lg;
-    @apply border border-border bg-card transition-all duration-150;
+    @apply border border-border bg-card transition-[background,border-color] duration-150;
     @apply min-h-[2.5rem] min-w-[2.5rem];
   }
   .orbea-pill:hover {
     @apply border-muted-foreground/40;
   }
   .orbea-pill.selected {
-    @apply bg-foreground text-background border-foreground;
+    @apply bg-secondary border-foreground;
   }
 
   /* Orbea color swatch */
   .orbea-swatch {
     @apply relative grid place-content-center p-1 rounded-lg cursor-pointer;
-    @apply border border-border bg-card transition-all duration-150;
+    @apply border border-border bg-card transition-[background,border-color] duration-150;
   }
   .orbea-swatch.selected {
     @apply bg-secondary border-foreground;
   }
 
-  /* Orbea bottom CTA bar */
-  .orbea-bottom-cta {
-    @apply sticky bottom-0 z-10 bg-background;
-    @apply border-t border-border px-4 py-3;
-    @apply shadow-[0px_0px_4px_0px_rgba(0,0,0,0.15)];
-  }
-
-  /* Orbea button style */
+  /* Orbea primary button (exact: px-8 bg-surface-button-primary py-3 rounded-[2.5rem]) */
   .orbea-btn-primary {
     @apply inline-flex items-center justify-center w-full px-8 py-3;
     @apply bg-foreground text-background font-medium text-sm;
