@@ -38,31 +38,42 @@ export const useNav = () => {
       }
     }, [response]);
 
-    // ── Scroll-based header visibility (ThrottleHaus + Arteriors style) ──
+    // ── Smooth Scroll-based header visibility without jitter ──
     const [isScrolled, setIsScrolled] = useState(false);
     const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const lastScrollY = useRef(0);
     const ticking = useRef(false);
 
     useEffect(() => {
-      const HEADER_HEIGHT = 120;
+      const isHomePage = pathname === "/";
+      const HEADER_HEIGHT = 150;
+      const SCROLL_DELTA_THRESHOLD = 12;
 
       const updateHeaderVisibility = () => {
         const currentScrollY = window.scrollY;
 
-        setIsScrolled(currentScrollY > 50);
+        // Smooth hysteresis threshold to avoid boundary fluttering
+        if (currentScrollY > 60) {
+          setIsScrolled(true);
+        } else if (currentScrollY <= 20) {
+          setIsScrolled(false);
+        }
 
-        // At top of page → always show
-        if (currentScrollY <= 0) {
+        // On Homepage: Header is always visible, fixed and stable (never flaps/hides)
+        if (isHomePage || currentScrollY <= 0) {
           setIsHeaderVisible(true);
-        }
-        // Scrolling up → show
-        else if (currentScrollY < lastScrollY.current) {
-          setIsHeaderVisible(true);
-        }
-        // Scrolling down → hide (only if past header height)
-        else if (currentScrollY > lastScrollY.current && currentScrollY > HEADER_HEIGHT) {
-          setIsHeaderVisible(false);
+        } else {
+          // On other pages: Only toggle if scroll delta exceeds threshold
+          const diff = currentScrollY - lastScrollY.current;
+          if (Math.abs(diff) > SCROLL_DELTA_THRESHOLD) {
+            if (diff < 0) {
+              // Scrolling up
+              setIsHeaderVisible(true);
+            } else if (diff > 0 && currentScrollY > HEADER_HEIGHT) {
+              // Scrolling down
+              setIsHeaderVisible(false);
+            }
+          }
         }
 
         lastScrollY.current = currentScrollY;
@@ -83,7 +94,7 @@ export const useNav = () => {
 
       window.addEventListener("scroll", onScroll, { passive: true });
       return () => window.removeEventListener("scroll", onScroll);
-    }, [isOpen]);
+    }, [isOpen, pathname]);
 
     return {
         isOpen,

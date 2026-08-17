@@ -65,19 +65,17 @@ const Hero = () => {
 
   return (
     <section className="hero-full-bleed relative w-full h-screen min-h-[640px] flex items-end justify-start overflow-hidden bg-black select-none">
-      {/* ── Background Video (Hardware-Accelerated & Stable) ── */}
+      {/* ── Background Video (Rock-solid, no scale/transform jitter) ── */}
       <video
         ref={videoRef}
-        className="absolute inset-0 w-full h-full object-cover scale-[1.01] transform-gpu will-change-transform opacity-80 pointer-events-none"
+        src="/hero-video.mp4"
+        className="absolute inset-0 w-full h-full object-cover opacity-85 pointer-events-none"
         autoPlay
         muted
         loop
         playsInline
         preload="auto"
-      >
-        <source src="/hero-video.mp4" type="video/mp4" />
-        <source src="/kampung-cetak-hero.mp4" type="video/mp4" />
-      </video>
+      />
 
       {/* ── Cinematic Orbea Vignette & Gradient Overlays ── */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-black/40 z-10 pointer-events-none" />
