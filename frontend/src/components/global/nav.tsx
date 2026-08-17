@@ -378,8 +378,8 @@ const Nav = () => {
         className={cn(
           "relative z-[70] w-full flex flex-col transition-all duration-300",
           isHomePage && !isScrolled
-            ? "bg-transparent dark:bg-transparent"
-            : "bg-white/70 dark:bg-background/70 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+            ? "nav-glass nav-glass--transparent"
+            : "nav-glass nav-glass--frosted"
         )}
       >
         {/* ── MAIN HEADER ── */}
@@ -436,9 +436,14 @@ const Nav = () => {
             className={cn(
               "z-[80] hidden md:flex flex-1 max-w-2xl mx-auto relative items-center rounded-full border shadow-sm overflow-visible px-4 py-1 transition-colors duration-300",
               isHomePage && !isScrolled
-                ? "bg-white/20 backdrop-blur-sm border-white/30"
-                : "bg-card dark:bg-white/10 border-border dark:border-white/10"
+                ? "border-white/30"
+                : "border-border dark:border-white/10"
             )}
+            style={
+              isHomePage && !isScrolled
+                ? { background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }
+                : { background: "var(--card)" }
+            }
           >
             <IoSearch className={cn("text-xl mr-2 shrink-0 transition-colors duration-300", isHomePage && !isScrolled ? "text-white/70" : "text-muted-foreground")} />
             <Input
@@ -588,9 +593,15 @@ const Nav = () => {
         <div className={cn(
           "w-full border-y hidden md:block relative z-40 transition-all duration-300",
           isHomePage && !isScrolled
-            ? "bg-transparent border-white/10"
-            : "bg-white/50 dark:bg-background/50 backdrop-blur-xl border-black/5 dark:border-white/10"
-        )}>
+            ? "border-white/10"
+            : "border-black/5 dark:border-white/10"
+        )}
+          style={
+            isHomePage && !isScrolled
+              ? { background: "transparent" }
+              : { background: "rgba(255,255,255,0.35)" }
+          }
+        >
           <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
             {printingCategories.map((item, index) => (
               <div key={index} className="relative group">

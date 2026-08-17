@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@config "../../tailwind.config.ts";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -183,7 +184,7 @@
     z-index: 50 !important;
     transform: translateY(0);
     opacity: 1;
-    transition: transform 0.4s ease, opacity 0.4s ease, background-color 0.3s ease;
+    transition: transform 0.4s ease, opacity 0.4s ease;
     will-change: transform, opacity;
   }
   .site-header.header-hidden {
@@ -204,5 +205,22 @@
   /* Homepage hero: hide spacer so the hero bleeds behind the fixed navbar */
   body:has(.hero-full-bleed) div[aria-hidden] {
     display: none !important;
+  }
+
+  /* ── Frosted glass navbar (Arteriors-style) ── */
+  .nav-glass {
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+  .nav-glass--frosted {
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+  }
+  .dark .nav-glass--frosted {
+    background: rgba(10, 10, 10, 0.72);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+  .nav-glass--transparent {
+    background: transparent;
   }
 }
