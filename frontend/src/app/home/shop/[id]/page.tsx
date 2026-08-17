@@ -29,6 +29,33 @@ const ProductDetailPage = () => {
   const product = data?.product as IProduct;
   const products = productsData?.products || [];
 
+  // ── Real available-height measurement ──
+  // The old `calc(100svh - var(--header-height))` relied on a CSS var that's
+  // never actually set anywhere, so it always fell back to a wrong constant
+  // and the bottom CTA/price row got pushed off-screen. Measure the real
+  // offset (site header + sticky step-nav) instead, so the two-pane area
+  // always fits the remaining viewport exactly, like Orbea's immersive
+  // no-page-scroll layout.
+  const detailRef = React.useRef<HTMLDivElement>(null);
+  const [detailHeight, setDetailHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = detailRef.current;
+    if (!el) return;
+    const update = () => {
+      const top = el.getBoundingClientRect().top;
+      setDetailHeight(Math.max(320, window.innerHeight - top));
+    };
+    update();
+    window.addEventListener("resize", update);
+    const ro = new ResizeObserver(update);
+    ro.observe(document.body);
+    return () => {
+      window.removeEventListener("resize", update);
+      ro.disconnect();
+    };
+  }, [isPending, product]);
+
   useEffect(() => {
     setRelatedProducts(
       products.filter((p) => p._id !== id).reverse().slice(0, 6)
@@ -47,16 +74,14 @@ const ProductDetailPage = () => {
   const nextStepLabel = stepLabels.find((s) => s.key === nextStep)?.button_mobile || "";
 
   return (
-    <div className="w-full orbea-product-page">
+    <div className="w-full">
       {isPending && <ProductDetailSkeleton />}
       {!isPending && product && (
         <>
           {/* ═══ Orbea nav-hero: sticky step nav bar ═══
               Orbea: sticky z-50 top-0 after:absolute after:border-b after:border-border-default
               after:bottom-0 after:inset-x-0 bg-surface-default grid grid-cols-3 items-center
-              px-s1000-narrow py-[.625rem] 1024:py-200 1024:flex transition-all duration-300
-              Real Orbea left side: "{ProductName} | ← Change model" — chromeless, no global
-              site nav visible on top (global header/footer are hidden via .orbea-product-page) */}
+              px-s1000-narrow py-[.625rem] 1024:py-200 1024:flex transition-all duration-300 */}
           <nav
             className="sticky z-50 top-0 after:absolute after:border-b after:border-border after:bottom-0 after:inset-x-0 bg-background grid grid-cols-3 items-center px-4 py-2.5 lg:px-5 lg:py-2 lg:flex transition-all duration-300"
           >
@@ -128,10 +153,13 @@ const ProductDetailPage = () => {
               .h-top/.h-scrolled: transition: height .3s ease-in-out
               overflow-hidden when not summary
               bg-secondary = the gray canvas Orbea's studio bg-image sits on — this is what
-              makes the white sidebar card "float" instead of reading as a flush edge panel */}
+              makes the white sidebar card "float" instead of reading as a flush edge panel
+              Height is measured live (see detailHeight above) instead of a broken CSS var,
+              so this always fills exactly what's left below the real site header + step nav. */}
           <div
+            ref={detailRef}
             className="product-detail flex flex-col overflow-hidden relative bg-secondary lg:flex-row"
-            style={{ height: "calc(100svh - var(--header-height, 0px))" }}
+            style={{ height: detailHeight ? `${detailHeight}px` : "calc(100svh - 170px)" }}
           >
             {/* ── Left: Image area ──
                 Orbea: grow relative 1024:w-[68%] 1280:w-[67.421875%] 1440:w-[70%] 1680:w-[71%] 1920:w-3/4 */}

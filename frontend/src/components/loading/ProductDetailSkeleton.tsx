@@ -9,7 +9,7 @@ import React from "react";
 
 const ProductDetailSkeleton = () => {
   return (
-    <div className="animate-pulse" style={{ height: "calc(100svh - var(--header-height, 56px))" }}>
+    <div className="animate-pulse" style={{ height: "calc(100svh - 170px)" }}>
       {/* Nav-hero skeleton */}
       <div className="sticky z-50 top-0 bg-background border-b border-border grid grid-cols-3 items-center px-4 py-2.5 lg:px-5 lg:py-2 lg:flex">
         <div />

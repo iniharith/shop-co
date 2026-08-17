@@ -705,12 +705,12 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
 
             {/* Product info row */}
             <div className="flex flex-col gap-y-1.5 items-center lg:flex-row lg:justify-center lg:flex-wrap">
-              <span className="font-medium truncate text-xs">{product.name}</span>
+              <span className="font-medium truncate text-sm">{product.name}</span>
               <span className="text-muted-foreground">|</span>
-              <span className="font-bold text-xs">RM {total.toFixed(2)}</span>
+              <span className="font-bold text-sm">RM {total.toFixed(2)}</span>
               <button
                 onClick={() => onStepChange("summary")}
-                className="underline text-muted-foreground hover:text-foreground transition-colors duration-150 text-xs"
+                className="underline text-muted-foreground hover:text-foreground transition-colors duration-150 text-sm"
               >
                 {label("View summary", "Lihat ringkasan")}
               </button>

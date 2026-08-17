@@ -145,16 +145,6 @@
   body:has(.mail-app) .site-footer {
     display: none;
   }
-  /* Orbea product page: chromeless edge-to-edge — no site header/footer/spacer,
-     the Orbea-style step nav sits at the true top of the viewport (matches
-     orbea.com/en-my/wild-lt-m-ltd-rs exactly — no global nav visible there). */
-  body:has(.orbea-product-page) .site-header,
-  body:has(.orbea-product-page) .site-footer {
-    display: none;
-  }
-  body:has(.orbea-product-page) div[aria-hidden] {
-    display: none !important;
-  }
 
   h1, h2 {
     font-family: var(--font-provicali-ampersand), "integral";

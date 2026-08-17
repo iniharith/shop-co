@@ -60,7 +60,7 @@ export function ProductGallery({ images, step }: ProductGalleryProps) {
             <img
               src={getImageUrl(img)}
               alt={`Product view ${index + 1}`}
-              className="w-full h-full object-contain p-8 lg:p-12"
+              className="w-full h-full object-contain p-3 lg:p-6"
               draggable={false}
             />
           </div>

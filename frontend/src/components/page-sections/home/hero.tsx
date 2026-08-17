@@ -1,141 +1,239 @@
 /**
  * Coded by Harith
  * Kampungcetak ®
+ * Orbea-style video hero banner with high-impact typography
  */
 "use client";
-import { Button } from "@heroui/button";
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { item_variants } from "@/constants/framer-motion";
-import { useRouter } from "nextjs-toploader/app";
 
-const images = [
-  "https://images.pexels.com/photos/1762851/pexels-photo-1762851.jpeg?auto=compress&cs=tinysrgb&w=800&q=75",
-  "https://images.pexels.com/photos/1109541/pexels-photo-1109541.jpeg?auto=compress&cs=tinysrgb&w=800&q=75",
-  "https://images.pexels.com/photos/6275/black-and-white-business-desk-computer.jpg?auto=compress&cs=tinysrgb&w=800&q=75"
-];
+import React, { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
+import { useRouter } from "nextjs-toploader/app";
+import { useLanguage } from "@/i18n/LanguageProvider";
+import { Volume2, VolumeX, Play, Pause, ChevronDown } from "lucide-react";
 
 const Hero = () => {
   const router = useRouter();
-  const text = "AFFORDABLE PRINTING SERVICES IN MALAYSIA";
-  const [currentImage, setCurrentImage] = useState(0);
+  const { locale } = useLanguage();
+  const label = (en: string, ms: string) => (locale === "ms" ? ms : en);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentImage((prev) => (prev + 1) % images.length);
-    }, 7000);
-    return () => clearInterval(timer);
+    const video = videoRef.current;
+    if (video) {
+      video.muted = true;
+      video.playsInline = true;
+      video.loop = true;
+
+      const attemptPlay = () => {
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              setIsPlaying(true);
+              setIsLoaded(true);
+            })
+            .catch(() => {
+              setIsPlaying(false);
+            });
+        }
+      };
+
+      attemptPlay();
+
+      const handleCanPlay = () => setIsLoaded(true);
+      const handlePlaying = () => {
+        setIsPlaying(true);
+        setIsLoaded(true);
+      };
+
+      video.addEventListener("canplay", handleCanPlay);
+      video.addEventListener("playing", handlePlaying);
+      video.addEventListener("loadeddata", handleCanPlay);
+
+      return () => {
+        video.removeEventListener("canplay", handleCanPlay);
+        video.removeEventListener("playing", handlePlaying);
+        video.removeEventListener("loadeddata", handleCanPlay);
+      };
+    }
   }, []);
 
-  useEffect(() => {
-    const nextIdx = (currentImage + 1) % images.length;
-    const img = new Image();
-    img.src = images[nextIdx];
-  }, [currentImage]);
+  const togglePlay = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      video.play().then(() => setIsPlaying(true)).catch(() => {});
+    } else {
+      video.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const toggleMute = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setIsMuted(video.muted);
+  };
+
+  const handleScrollDown = () => {
+    const target = document.getElementById("featured-section") || document.querySelector("main");
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth" });
+    } else {
+      window.scrollBy({ top: window.innerHeight * 0.85, behavior: "smooth" });
+    }
+  };
 
   return (
-    <div className="hero-full-bleed relative w-full h-[100dvh] min-h-[500px] flex items-center justify-center overflow-hidden bg-black">
-      {/* Background Slider */}
-      <AnimatePresence mode="popLayout">
-        <motion.img
-          key={currentImage}
-          src={images[currentImage]}
-          alt="Printing Background"
-          className="absolute inset-0 w-full h-full object-cover opacity-50"
-          initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ opacity: 0.5, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1.5 }}
-        />
-      </AnimatePresence>
+    <section className="hero-full-bleed relative w-full h-[100dvh] min-h-[640px] flex items-center justify-center overflow-hidden bg-black select-none">
+      {/* ── Background Video ── */}
+      <video
+        ref={videoRef}
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-out ${
+          isLoaded ? "opacity-75" : "opacity-0"
+        }`}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+      >
+        <source src="/hero-video.mp4" type="video/mp4" />
+        <source src="/kampung-cetak-hero.mp4" type="video/mp4" />
+      </video>
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+      {/* Fallback gradient background during loading */}
+      <div
+        className={`absolute inset-0 bg-neutral-950 transition-opacity duration-1000 ${
+          isLoaded ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`}
+      />
 
-      {/* Content Container */}
-      <div className="relative z-10 flex flex-col items-center justify-center text-center px-5 md:px-20 gap-6 w-full max-w-5xl mx-auto">
+      {/* ── Cinematic Orbea Vignette & Gradient Overlays ── */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/50 z-10 pointer-events-none" />
+      <div className="absolute inset-0 bg-radial-[circle_at_center,transparent_30%,rgba(0,0,0,0.6)_100%] z-10 pointer-events-none" />
+
+      {/* ── Main Banner Content (Centered, Bold, Orbea Hierarchy) ── */}
+      <div className="relative z-20 flex flex-col items-center justify-center text-center px-4 sm:px-6 md:px-8 lg:px-12 w-full max-w-5xl mx-auto -mt-4 sm:-mt-6">
+        {/* Orbea Pill Badge */}
         <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={item_variants}
-          className="bg-primary text-primary-foreground text-xs px-4 py-1.5 rounded-full font-bold tracking-wider uppercase shadow-lg shadow-primary/30"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/25 text-white/90 text-[10px] sm:text-[11px] font-semibold tracking-[0.25em] uppercase px-4 py-1.5 rounded-full shadow-[0_2px_12px_rgba(0,0,0,0.3)] mb-4 md:mb-6"
         >
-          🚀 Fast & On-Time Delivery
+          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+          {label("Kampung Cetak® · Bespoke Printing", "Kampung Cetak® · Cetakan Khas")}
         </motion.div>
 
+        {/* Main Headline - Orbea Large Impact Font */}
         <motion.h1
-          className="text-4xl md:text-5xl lg:text-7xl font-extrabold leading-tight text-white drop-shadow-xl"
-          initial="hidden"
-          animate="visible"
-          variants={{
-            hidden: {},
-            visible: { transition: { staggerChildren: 0.05 } },
-          }}
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[5.5rem] font-bold text-white tracking-[-0.03em] uppercase leading-[0.95] drop-shadow-[0_4px_24px_rgba(0,0,0,0.7)]"
         >
-          {text.split(" ").map((word, idx) => (
-            <motion.span key={idx} className="inline-block mr-2 md:mr-3" variants={item_variants}>
-              {word}
-            </motion.span>
-          ))}
+          {label("PRECISION PRINTING", "CETAKAN BERKUALITI")}
+          <br />
+          <span className="text-white/95 font-light">
+            {label("& BESPOKE FABRICATION", "& PEMBUATAN KHAS")}
+          </span>
         </motion.h1>
 
+        {/* Sub-headline Narrative */}
         <motion.p
-          initial="hidden"
-          animate="visible"
-          variants={item_variants}
-          className="text-gray-200 md:text-lg text-sm max-w-2xl drop-shadow-md"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="text-sm sm:text-base md:text-lg text-neutral-200/90 max-w-2xl font-normal leading-relaxed text-center drop-shadow-sm mt-4 md:mt-6"
         >
-          High-quality printing for business cards, flyers, stickers, banners and more.
-          Fast delivery across Malaysia with best price guarantee.
+          {label(
+            "Premium commercial printing, bespoke packaging, signs & apparel. Factory direct with 48-hour nationwide delivery.",
+            "Perkhidmatan percetakan premium untuk kad perniagaan, risalah, kain rentang, pakaian & pembungkusan khas. Buatan kilang terus dengan penghantaran 48 jam ke seluruh Malaysia."
+          )}
         </motion.p>
 
+        {/* Orbea Pill CTA Action Buttons */}
         <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={item_variants}
-          className="flex gap-4 mt-4 flex-wrap justify-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6 sm:mt-8 w-full sm:w-auto justify-center items-center"
         >
-          <Button
+          <button
             onClick={() => router.push("/home/shop")}
-            className="bg-primary text-primary-foreground font-bold px-10 py-6 rounded-full cursor-pointer active:scale-95 transition-all duration-300 text-lg shadow-xl shadow-primary/20"
+            className="w-full sm:w-auto min-w-[200px] inline-flex items-center justify-center px-8 py-3.5 sm:py-4 bg-white text-black font-semibold text-xs sm:text-sm uppercase tracking-wider rounded-full hover:bg-neutral-200 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-[0_8px_30px_rgba(0,0,0,0.4)] cursor-pointer"
           >
-            Order Now
-          </Button>
-          <Button
+            {label("Shop Now", "Beli Sekarang")}
+          </button>
+          <button
             onClick={() => router.push("/home/shop")}
-            className="bg-white/10 backdrop-blur-md border-2 border-white text-white font-bold px-10 py-6 rounded-full cursor-pointer active:scale-95 transition-all duration-300 text-lg hover:bg-white hover:text-black"
+            className="w-full sm:w-auto min-w-[200px] inline-flex items-center justify-center px-8 py-3.5 sm:py-4 bg-white/10 backdrop-blur-md border border-white/35 text-white font-semibold text-xs sm:text-sm uppercase tracking-wider rounded-full hover:bg-white/20 hover:border-white/60 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg cursor-pointer"
           >
-            View Products
-          </Button>
+            {label("Explore Products", "Jelajahi Produk")}
+          </button>
         </motion.div>
 
-        {/* Stats */}
-        <div className="flex gap-8 md:gap-16 items-center mt-12 justify-center flex-wrap pt-8 border-t border-white/20 w-full max-w-3xl">
+        {/* Trust Indicators / Minimal Specs Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 pt-6 sm:pt-8 mt-6 sm:mt-8 border-t border-white/15 w-full max-w-3xl"
+        >
           {[
-            { count: "50+", label: "Print Products" },
-            { count: "10K+", label: "Happy Customers" },
-            { count: "48hr", label: "Fast Delivery" },
+            { value: "48H", title: label("Express Delivery", "Penghantaran Pantas") },
+            { value: "50+", title: label("Product Lines", "Kategori Produk") },
+            { value: "100%", title: label("Quality Guarantee", "Jaminan Kualiti") },
+            { value: "★ 4.9", title: label("Customer Rating", "Penilaian Pelanggan") },
           ].map((item, index) => (
-            <div key={index} className="flex flex-col gap-1 items-center">
-              <p className="font-bold text-3xl md:text-4xl text-white">{item.count}</p>
-              <p className="text-gray-300 text-sm font-medium tracking-wide uppercase">{item.label}</p>
+            <div key={index} className="flex flex-col items-center">
+              <span className="font-bold text-xl sm:text-2xl text-white tracking-tight">
+                {item.value}
+              </span>
+              <span className="text-white/60 text-[10px] sm:text-[11px] font-medium uppercase tracking-wider mt-0.5">
+                {item.title}
+              </span>
             </div>
           ))}
-        </div>
+        </motion.div>
       </div>
 
-      {/* Slider Indicators */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-20">
-        {images.map((_, idx) => (
-          <button
-            key={idx}
-            onClick={() => setCurrentImage(idx)}
-            className={`transition-all duration-300 rounded-full ${
-              currentImage === idx ? "w-8 h-2 bg-primary" : "w-2 h-2 bg-white/50 hover:bg-white/80"
-            }`}
-          />
-        ))}
+      {/* ── Video Controls (Mute / Play Toggle) ── */}
+      <div className="absolute bottom-6 right-6 z-30 hidden sm:flex items-center gap-2">
+        <button
+          onClick={toggleMute}
+          aria-label={isMuted ? "Unmute video" : "Mute video"}
+          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-black/60 flex items-center justify-center transition-all duration-200 cursor-pointer"
+        >
+          {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+        </button>
+        <button
+          onClick={togglePlay}
+          aria-label={isPlaying ? "Pause video" : "Play video"}
+          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white/80 hover:text-white hover:bg-black/60 flex items-center justify-center transition-all duration-200 cursor-pointer"
+        >
+          {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
+        </button>
       </div>
-    </div>
+
+      {/* ── Animated Scroll Indicator ── */}
+      <button
+        onClick={handleScrollDown}
+        aria-label="Scroll to discover content"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 text-white/60 hover:text-white transition-colors duration-200 cursor-pointer"
+      >
+        <span className="text-[10px] font-medium uppercase tracking-[0.25em]">
+          {label("Scroll", "Gulung")}
+        </span>
+        <ChevronDown size={18} className="animate-bounce" />
+      </button>
+    </section>
   );
 };
 
