@@ -1,6 +1,7 @@
 /**
  * Coded by Harith
  * Kampungcetak ®
+ * Orbea-faithful configurator panel with step navigation
  */
 "use client";
 
@@ -13,17 +14,16 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { useUIStore } from "@/store/uiStore";
 import { useAddtoCart } from "@/hooks/useCart";
-import AnimatedButton from "@/components/animation/animatedButton";
 import { useLanguage } from "@/i18n/LanguageProvider";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
-import { ChevronDown, FileText, Package } from "lucide-react";
 
 interface ProductDetailsProps {
   product: IProduct;
+  step: "frame" | "components" | "summary";
+  onStepChange: (step: "frame" | "components" | "summary") => void;
 }
 
-export function ProductDetails({ product }: ProductDetailsProps) {
+export function ProductDetails({ product, step, onStepChange }: ProductDetailsProps) {
   const { locale } = useLanguage();
   const label = (english: string, malay: string) => locale === "ms" ? malay : english;
   const { id } = useParams();
@@ -38,6 +38,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   useEffect(() => {
     setPortalEl(document.getElementById("flyer-pricing-portal"));
   }, []);
+
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number | number[]>>({});
   const [designOption, setDesignOption] = useState<"upload" | "design">("upload");
 
@@ -87,15 +88,11 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   if (product.category === 'button-badge') {
     const typeName = options.find(o => o.name.toLowerCase() === 'type')?.name;
     const type = typeName && typeof selectedOptions[typeName] === 'number' ? options.find(o => o.name === typeName)?.options[selectedOptions[typeName] as number]?.label : "";
-    if (type === "BUTTON BADGE MAGNET TAG") {
-      minQuantity = 10;
-    }
+    if (type === "BUTTON BADGE MAGNET TAG") minQuantity = 10;
   }
 
   useEffect(() => {
-    if (quantity < minQuantity) {
-      setQuantity(minQuantity);
-    }
+    if (quantity < minQuantity) setQuantity(minQuantity);
   }, [minQuantity, quantity]);
 
   // ── Pricing logic (unchanged) ──
@@ -158,7 +155,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       matrixRow = product.matrixPricing.pricingData.find((row: any) => row.material === selectedMaterial && row.laminate === selectedLamination);
     }
     if (matrixRow) {
-      availableQuantities = Object.keys(matrixRow.quantityPrices).map(Number).sort((a,b) => a-b);
+      availableQuantities = Object.keys(matrixRow.quantityPrices).map(Number).sort((a, b) => a - b);
       let qPrices: any = matrixRow.quantityPrices[quantity] || matrixRow.quantityPrices[availableQuantities[0]];
       let exactPrice = 0;
       if (typeof qPrices === 'object') {
@@ -196,24 +193,99 @@ export function ProductDetails({ product }: ProductDetailsProps) {
   const step3Addons = options.filter(o => /addon/i.test(o.name));
   const stepTurnaround = options.filter(o => /turnaround/i.test(o.name));
 
-  // ── Orbea-style section renderer ──
-  const renderOptionSection = (opts: typeof options, sectionLabel: string, icon: React.ReactNode) => {
-    if (opts.length === 0) return null;
-    return (
-      <div className="border-b border-border">
-        <button
-          className="w-full flex items-center justify-between py-4 text-left group"
-        >
-          <div className="flex items-center gap-2.5">
-            {icon}
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em]">{sectionLabel}</span>
+  const stepLabels = [
+    { key: "frame" as const, label: label("Configure", "Konfigurasi") },
+    { key: "components" as const, label: label("Options", "Pilihan") },
+    { key: "summary" as const, label: label("Summary", "Ringkasan") },
+  ];
+
+  const nextStep = step === "frame" ? "components" : step === "components" ? "summary" : "summary";
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* ── Step Navigation (Orbea: text links with underline) ── */}
+      <div className="sticky top-0 z-10 bg-background border-b border-border">
+        <div className="flex items-center justify-between px-4 lg:px-5 py-2.5 lg:py-2">
+          {/* Product name */}
+          <h1 className="text-sm lg:text-base font-medium truncate mr-4">{product.name}</h1>
+
+          {/* Desktop: step links */}
+          <ul className="hidden lg:flex items-center gap-6 ml-auto">
+            {stepLabels.map((s) => (
+              <li key={s.key}>
+                <button
+                  onClick={() => onStepChange(s.key)}
+                  className={cn("step-nav-link", step === s.key && "active")}
+                >
+                  {s.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          {/* Mobile: current step + next */}
+          <div className="flex items-center gap-2 lg:hidden">
+            <span className="text-sm font-medium">{stepLabels.find(s => s.key === step)?.label}</span>
+            {step !== "summary" && (
+              <button
+                onClick={() => onStepChange(nextStep as any)}
+                className="text-sm text-muted-foreground flex items-center gap-0.5"
+              >
+                {stepLabels.find(s => s.key === nextStep)?.label}
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="shrink-0">
+                  <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
           </div>
-          <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-        </button>
-        <div className="pb-4 space-y-4">
-          {opts.map((opt, i) => (
-            <div key={i} className="space-y-2.5">
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{opt.name}</label>
+        </div>
+      </div>
+
+      {/* ── Scrollable content area ── */}
+      <div className="flex-1 overflow-y-auto overscroll-contain px-4 lg:px-5 py-4 space-y-4">
+
+        {/* ══════════════ STEP: FRAME ══════════════ */}
+        <div style={{ display: step === "frame" ? "block" : "none" }} className="transition-opacity duration-150">
+          {/* Design & Artwork */}
+          {product.category?.toLowerCase() !== "islamic khat" && (
+            <div className="space-y-2.5">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
+                {label("Design & Artwork", "Reka Bentuk & Karya")}
+              </label>
+              {product.name?.toLowerCase() === "portrait" ? (
+                <div className="p-3 border border-border text-center">
+                  <p className="text-[11px] font-bold text-foreground">{label("UPLOAD YOUR PICTURE AT PROFILE PAGE", "MUAT NAIK GAMBAR DI HALAMAN PROFIL")}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{label("AFTER YOU HAVE PLACED THE ORDER", "SELEPAS ANDA MEMBUAT PESANAN")}</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    onClick={() => setDesignOption("upload")}
+                    className={cn("orbea-pill text-left justify-start px-3", designOption === "upload" && "selected")}
+                  >
+                    <div>
+                      <span className="text-[11px] font-bold block">{label("Own Design", "Reka Sendiri")}</span>
+                      <span className="text-[9px] text-muted-foreground mt-0.5 block">{label("Upload at checkout", "Muat naik semasa checkout")}</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setDesignOption("design")}
+                    className={cn("orbea-pill text-left justify-start px-3", designOption === "design" && "selected")}
+                  >
+                    <div>
+                      <span className="text-[11px] font-bold block">{label("Design Service", "Perkhidmatan Reka")}</span>
+                      <span className="text-[9px] text-primary font-semibold block mt-0.5">+RM 100</span>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Format & Material */}
+          {step1Options.length > 0 && step1Options.map((opt, i) => (
+            <div key={i} className="space-y-2">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">{opt.name}</label>
               <div className="flex flex-wrap gap-1.5">
                 {opt.options.map((val, idx) => {
                   const isSelected = opt.isMultiSelect
@@ -223,12 +295,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                     <button
                       key={idx}
                       onClick={() => handleOptionChange(opt.name, idx, opt.isMultiSelect)}
-                      className={cn(
-                        "px-3 py-2 rounded-lg text-xs font-semibold border transition-all duration-150",
-                        isSelected
-                          ? "border-foreground bg-foreground text-background"
-                          : "border-border bg-card hover:border-foreground/30 text-foreground"
-                      )}
+                      className={cn("orbea-pill whitespace-nowrap", isSelected && "selected")}
                     >
                       {val.label}
                       {val.priceAdd !== 0 && (
@@ -243,95 +310,106 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             </div>
           ))}
         </div>
-      </div>
-    );
-  };
 
-  // ── Spec sections for accordion ──
-  const specSections: { title: string; content: string }[] = [
-    { title: label("Description", "Penerangan"), content: product.description || "High quality printing service offering excellent results with vibrant colors and durability. Ideal for professional and personal use." },
-    { title: label("Category", "Kategori"), content: product.category?.replace(/-/g, ' ') || "" },
-    { title: label("Size Guide", "Panduan Saiz"), content: label("Sizes vary by product. Select your preferred format in the configuration panel to see available options.", "Saiz berbeza mengikut produk. Pilih format pilihan anda dalam panel konfigurasi untuk melihat pilihan yang tersedia.") },
-    { title: label("Material Information", "Maklumat Bahan"), content: label("We use premium quality materials for all our printing services. Specific material options are available based on your product selection.", "Kami menggunakan bahan berkualiti premium untuk semua perkhidmatan percetakan kami. Pilihan bahan spesifik tersedia berdasarkan pilihan produk anda.") },
-    { title: label("Turnaround Time", "Tempoh Siap"), content: label("Standard turnaround is 3-5 business days. Express options may be available depending on the product. Check the pricing table for turnaround-specific pricing.", "Tempoh piawai ialah 3-5 hari bekerja. Pilihan ekspres mungkin tersedia bergantung pada produk. Semak jadual harga untuk harga mengikut tempoh.") },
-  ];
+        {/* ══════════════ STEP: COMPONENTS (Options) ══════════════ */}
+        <div style={{ display: step === "components" ? "block" : "none" }} className="transition-opacity duration-150">
+          {/* Printing Options */}
+          {step2Options.length > 0 && step2Options.map((opt, i) => (
+            <div key={i} className="space-y-2">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">{opt.name}</label>
+              <div className="flex flex-wrap gap-1.5">
+                {opt.options.map((val, idx) => {
+                  const isSelected = opt.isMultiSelect
+                    ? Array.isArray(selectedOptions[opt.name]) && (selectedOptions[opt.name] as number[]).includes(idx)
+                    : selectedOptions[opt.name] === idx;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => handleOptionChange(opt.name, idx, opt.isMultiSelect)}
+                      className={cn("orbea-pill whitespace-nowrap", isSelected && "selected")}
+                    >
+                      {val.label}
+                      {val.priceAdd !== 0 && (
+                        <span className={cn("ml-1", isSelected ? "text-background/70" : "text-muted-foreground")}>
+                          {val.priceAdd > 0 ? `+RM${val.priceAdd.toFixed(0)}` : `-RM${Math.abs(val.priceAdd).toFixed(0)}`}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* ── Product Header (Orbea: name + price at top) ── */}
-      <div className="mb-2">
-        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">{product.name}</h1>
-        <div className="flex items-center gap-2 mt-2">
-          <span className="text-2xl font-extrabold text-foreground">RM {product.price.toFixed(2)}</span>
-          {product.discount > 0 && product.originalPrice > product.price && (
-            <>
-              <span className="text-sm text-muted-foreground line-through">RM {product.originalPrice.toFixed(2)}</span>
-              <span className="text-[10px] font-bold bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded">-{product.discount}%</span>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* ── Configuration Sections (Orbea-style stacked) ── */}
-      <div className="flex-1 overflow-y-auto">
-        {/* Design & Artwork */}
-        {product.category?.toLowerCase() !== "islamic khat" && (
-          <div className="border-b border-border">
-            <div className="py-4 space-y-2.5">
-              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
-                {label("Design & Artwork", "Reka Bentuk & Karya")}
+          {/* Add-ons */}
+          {step3Addons.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
+                {label("Add-ons", "Tambahan")}
               </label>
-              {product.name?.toLowerCase() === "portrait" ? (
-                <div className="p-4 border-2 border-foreground bg-foreground/5 text-center">
-                  <p className="text-xs font-bold text-foreground">{label("UPLOAD YOUR PICTURE AT PROFILE PAGE", "MUAT NAIK GAMBAR DI HALAMAN PROFIL")}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">{label("AFTER YOU HAVE PLACED THE ORDER", "SELEPAS ANDA MEMBUAT PESANAN")}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {step3Addons.map((opt, i) => (
+                  opt.options.map((val, idx) => {
+                    const isSelected = opt.isMultiSelect
+                      ? Array.isArray(selectedOptions[opt.name]) && (selectedOptions[opt.name] as number[]).includes(idx)
+                      : selectedOptions[opt.name] === idx;
+                    return (
+                      <button
+                        key={`${i}-${idx}`}
+                        onClick={() => handleOptionChange(opt.name, idx, opt.isMultiSelect)}
+                        className={cn("orbea-pill whitespace-nowrap", isSelected && "selected")}
+                      >
+                        {val.label}
+                        {val.priceAdd !== 0 && (
+                          <span className={cn("ml-1", isSelected ? "text-background/70" : "text-muted-foreground")}>
+                            {val.priceAdd > 0 ? `+RM${val.priceAdd.toFixed(0)}` : `-RM${Math.abs(val.priceAdd).toFixed(0)}`}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quantity */}
+          {product.category !== "flyers" && (
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
+                {label("Quantity", "Kuantiti")}
+              </label>
+              {product.matrixPricing?.enabled && !product.matrixPricing.hideQuantityGrid && availableQuantities.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {availableQuantities.map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => setQuantity(q)}
+                      className={cn("orbea-pill", quantity === q && "selected")}
+                    >
+                      {q}
+                    </button>
+                  ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setDesignOption("upload")}
-                    className={cn(
-                      "p-3 rounded-lg border text-left transition-all duration-150",
-                      designOption === "upload"
-                        ? "border-foreground bg-foreground text-background"
-                        : "border-border hover:border-foreground/30"
-                    )}
-                  >
-                    <span className="text-xs font-bold block">{label("Own Design", "Reka Sendiri")}</span>
-                    <span className={cn("text-[10px] mt-0.5 block", designOption === "upload" ? "text-background/70" : "text-muted-foreground")}>{label("Upload at checkout", "Muat naik semasa checkout")}</span>
-                  </button>
-                  <button
-                    onClick={() => setDesignOption("design")}
-                    className={cn(
-                      "p-3 rounded-lg border text-left transition-all duration-150",
-                      designOption === "design"
-                        ? "border-foreground bg-foreground text-background"
-                        : "border-border hover:border-foreground/30"
-                    )}
-                  >
-                    <span className="text-xs font-bold block">{label("Design Service", "Perkhidmatan Reka")}</span>
-                    <span className={cn("text-[10px] font-semibold block mt-0.5", designOption === "design" ? "text-background/70" : "text-primary")}>+RM 100</span>
-                  </button>
+                <div className="flex items-center justify-between p-3 border border-border rounded-lg">
+                  <span className="text-xs font-medium">{label("Pieces", "Unit")}</span>
+                  <QuantityPicker
+                    quantity={quantity}
+                    onDecrement={() => setQuantity((q) => Math.max(minQuantity, q - 1))}
+                    onIncrement={() => setQuantity((q) => q + 1)}
+                    max={10000}
+                    onQuantityChange={setQuantity}
+                  />
                 </div>
               )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Format & Material */}
-        {renderOptionSection(step1Options, label("Format & Material", "Format & Bahan"), <Package className="w-3.5 h-3.5 text-muted-foreground" />)}
-
-        {/* Printing Options */}
-        {renderOptionSection(step2Options, label("Options", "Pilihan"), <FileText className="w-3.5 h-3.5 text-muted-foreground" />)}
-
-        {/* Add-ons */}
-        {renderOptionSection(step3Addons, label("Add-ons", "Tambahan"), <Package className="w-3.5 h-3.5 text-muted-foreground" />)}
-
-        {/* Turnaround & Pricing */}
-        {product.category !== "flyers" && stepTurnaround.length > 0 && (
-          <div className="border-b border-border">
-            <div className="py-4 space-y-2.5">
-              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
+          {/* Turnaround & Pricing */}
+          {product.category !== "flyers" && stepTurnaround.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
                 {label("Turnaround & Pricing", "Tempoh & Harga")}
               </label>
               {(() => {
@@ -351,19 +429,19 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 }
                 return (
                   <div className="overflow-x-auto rounded-lg border border-border">
-                    <table className="w-full text-xs text-center">
-                      <thead className="bg-muted/50 border-b border-border">
+                    <table className="w-full text-[11px] text-center">
+                      <thead className="bg-secondary border-b border-border">
                         <tr>
-                          <th className="p-2 text-left font-semibold text-foreground">{label("Qty", "Kuantiti")}</th>
+                          <th className="p-2 text-left font-semibold">{label("Qty", "Kuantiti")}</th>
                           {turnaroundOpt.options.map((opt, idx) => (
-                            <th key={idx} className="p-2 font-semibold text-foreground">{opt.label}</th>
+                            <th key={idx} className="p-2 font-semibold">{opt.label}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
                         {standardQuantities.map((q) => (
-                          <tr key={q} className="hover:bg-muted/30 transition-colors">
-                            <td className="p-2 text-left font-semibold text-foreground">{q}</td>
+                          <tr key={q} className="hover:bg-secondary/50 transition-colors duration-100">
+                            <td className="p-2 text-left font-semibold">{q}</td>
                             {turnaroundOpt.options.map((opt, idx) => {
                               const cellBasePrice = product.price + optionAddonsWithoutTurnaround + opt.priceAdd + (designOption === "design" ? 100 : 0);
                               const cellTotal = cellBasePrice * q * 1.07;
@@ -373,8 +451,8 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                                   key={idx}
                                   onClick={() => { setQuantity(q); handleOptionChange(turnaroundOpt.name, idx); }}
                                   className={cn(
-                                    "p-2 cursor-pointer transition-all border-l border-border",
-                                    isSelected ? "bg-foreground text-background font-bold" : "text-muted-foreground hover:bg-muted/30"
+                                    "p-2 cursor-pointer transition-all duration-100 border-l border-border",
+                                    isSelected ? "bg-foreground text-background font-bold" : "text-muted-foreground hover:bg-secondary/50"
                                   )}
                                 >
                                   RM {cellTotal.toFixed(2)}
@@ -389,162 +467,143 @@ export function ProductDetails({ product }: ProductDetailsProps) {
                 );
               })()}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Quantity */}
-        {product.category !== "flyers" && (
-          <div className="border-b border-border">
-            <div className="py-4 space-y-2.5">
-              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
-                {label("Quantity", "Kuantiti")}
-              </label>
-              {product.matrixPricing?.enabled && !product.matrixPricing.hideQuantityGrid && availableQuantities.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {availableQuantities.map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => setQuantity(q)}
-                      className={cn(
-                        "px-4 py-2 rounded-lg text-xs font-semibold border transition-all",
-                        quantity === q
-                          ? "border-foreground bg-foreground text-background"
-                          : "border-border bg-card hover:border-foreground/30 text-foreground"
+          {/* Flyers/Kad-kahwin Pricing Table */}
+          {(product.category === 'flyers' || product.category === 'kad-kahwin') && (() => {
+            let matrixRow: any = null;
+            if (product.matrixPricing?.enabled) {
+              const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format'))?.name;
+              const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides') || o.name.toLowerCase().includes('packaging'))?.name;
+              const selectedMaterial = materialOptName && typeof selectedOptions[materialOptName] === 'number' ? options.find(o => o.name === materialOptName)?.options[selectedOptions[materialOptName] as number]?.label : "";
+              const selectedLamination = laminationOptName && typeof selectedOptions[laminationOptName] === 'number' ? options.find(o => o.name === laminationOptName)?.options[selectedOptions[laminationOptName] as number]?.label : "";
+              matrixRow = product.matrixPricing.pricingData.find((row: any) => row.material === selectedMaterial && row.laminate === selectedLamination);
+            }
+            if (!matrixRow) return null;
+            const PricingTable = ({ className }: { className: string }) => (
+              <div className={`rounded-lg border border-border overflow-x-auto w-full ${className}`}>
+                <table className="w-full text-[11px] text-center border-collapse">
+                  <thead className="bg-secondary border-b border-border">
+                    <tr>
+                      <th className="p-2 text-left font-semibold border border-border">{label("Qty", "Kuantiti")}</th>
+                      {product.category === 'flyers' ? (
+                        <>
+                          <th className="p-2 font-semibold border border-border">A3</th>
+                          <th className="p-2 font-semibold border border-border">A4</th>
+                          <th className="p-2 font-semibold border border-border">A5</th>
+                        </>
+                      ) : (
+                        <th className="p-2 font-semibold border border-border">{label("Price", "Harga")} (RM)</th>
                       )}
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center justify-between p-3 border border-border rounded-lg">
-                  <span className="text-xs font-medium text-foreground">{label("Pieces", "Unit")}</span>
-                  <QuantityPicker
-                    quantity={quantity}
-                    onDecrement={() => setQuantity((q) => Math.max(minQuantity, q - 1))}
-                    onIncrement={() => setQuantity((q) => q + 1)}
-                    max={10000}
-                    onQuantityChange={setQuantity}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Flyers/Kad-kahwin Pricing Table */}
-        {(product.category === 'flyers' || product.category === 'kad-kahwin') && (() => {
-          let matrixRow: any = null;
-          if (product.matrixPricing?.enabled) {
-            const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format'))?.name;
-            const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides') || o.name.toLowerCase().includes('packaging'))?.name;
-            const selectedMaterial = materialOptName && typeof selectedOptions[materialOptName] === 'number' ? options.find(o => o.name === materialOptName)?.options[selectedOptions[materialOptName] as number]?.label : "";
-            const selectedLamination = laminationOptName && typeof selectedOptions[laminationOptName] === 'number' ? options.find(o => o.name === laminationOptName)?.options[selectedOptions[laminationOptName] as number]?.label : "";
-            matrixRow = product.matrixPricing.pricingData.find((row: any) => row.material === selectedMaterial && row.laminate === selectedLamination);
-          }
-          if (!matrixRow) return null;
-          const PricingTable = ({ className }: { className: string }) => (
-            <div className={`rounded-lg border border-border overflow-x-auto w-full ${className}`}>
-              <table className="w-full text-xs text-center border-collapse">
-                <thead className="bg-muted/50 border-b border-border">
-                  <tr>
-                    <th className="p-2 text-left font-semibold text-foreground border border-border">{label("Qty", "Kuantiti")}</th>
-                    {product.category === 'flyers' ? (
-                      <>
-                        <th className="p-2 font-semibold text-foreground border border-border">A3</th>
-                        <th className="p-2 font-semibold text-foreground border border-border">A4</th>
-                        <th className="p-2 font-semibold text-foreground border border-border">A5</th>
-                      </>
-                    ) : (
-                      <th className="p-2 font-semibold text-foreground border border-border">{label("Price", "Harga")} (RM)</th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {availableQuantities.map((q) => {
-                    const qPrices = matrixRow.quantityPrices[q];
-                    if (product.category === 'kad-kahwin') {
-                      const price = qPrices;
-                      const isSelected = quantity === q;
-                      return (
-                        <tr key={q} className="hover:bg-muted/30 transition-colors">
-                          <td className="p-2 text-left font-semibold text-foreground border border-border">{q}</td>
-                          <td
-                            onClick={() => { if (price) setQuantity(q); }}
-                            className={cn("p-2 border border-border transition-all", !price ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'cursor-pointer', isSelected ? 'bg-foreground text-background font-bold' : 'text-muted-foreground hover:bg-muted/30')}
-                          >
-                            {price ? `RM ${price.toFixed(2)}` : 'N/A'}
-                          </td>
-                        </tr>
-                      );
-                    }
-                    return (
-                      <tr key={q} className="hover:bg-muted/30 transition-colors">
-                        <td className="p-2 text-left font-semibold text-foreground border border-border">{q}</td>
-                        {['A3', 'A4', 'A5'].map((size) => {
-                          const price = qPrices ? qPrices[size] : null;
-                          const isSelected = quantity === q && selectedGridSize === size;
-                          return (
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {availableQuantities.map((q) => {
+                      const qPrices = matrixRow.quantityPrices[q];
+                      if (product.category === 'kad-kahwin') {
+                        const price = qPrices;
+                        const isSelected = quantity === q;
+                        return (
+                          <tr key={q} className="hover:bg-secondary/50 transition-colors duration-100">
+                            <td className="p-2 text-left font-semibold border border-border">{q}</td>
                             <td
-                              key={size}
-                              onClick={() => { if (price) { setQuantity(q); setSelectedGridSize(size); } }}
-                              className={cn("p-2 border border-border transition-all", !price ? 'bg-muted text-muted-foreground cursor-not-allowed' : 'cursor-pointer', isSelected ? 'bg-foreground text-background font-bold' : 'text-muted-foreground hover:bg-muted/30')}
+                              onClick={() => { if (price) setQuantity(q); }}
+                              className={cn("p-2 border border-border transition-all duration-100", !price ? 'bg-secondary text-muted-foreground cursor-not-allowed' : 'cursor-pointer', isSelected ? 'bg-foreground text-background font-bold' : 'text-muted-foreground hover:bg-secondary/50')}
                             >
                               {price ? `RM ${price.toFixed(2)}` : 'N/A'}
                             </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          );
-          return (
-            <>
-              <PricingTable className="lg:hidden" />
-              {portalEl && createPortal(<PricingTable className="hidden lg:block" />, portalEl)}
-            </>
-          );
-        })()}
+                          </tr>
+                        );
+                      }
+                      return (
+                        <tr key={q} className="hover:bg-secondary/50 transition-colors duration-100">
+                          <td className="p-2 text-left font-semibold border border-border">{q}</td>
+                          {['A3', 'A4', 'A5'].map((size) => {
+                            const price = qPrices ? qPrices[size] : null;
+                            const isSelected = quantity === q && selectedGridSize === size;
+                            return (
+                              <td
+                                key={size}
+                                onClick={() => { if (price) { setQuantity(q); setSelectedGridSize(size); } }}
+                                className={cn("p-2 border border-border transition-all duration-100", !price ? 'bg-secondary text-muted-foreground cursor-not-allowed' : 'cursor-pointer', isSelected ? 'bg-foreground text-background font-bold' : 'text-muted-foreground hover:bg-secondary/50')}
+                              >
+                                {price ? `RM ${price.toFixed(2)}` : 'N/A'}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            );
+            return (
+              <>
+                <PricingTable className="lg:hidden" />
+                {portalEl && createPortal(<PricingTable className="hidden lg:block" />, portalEl)}
+              </>
+            );
+          })()}
+        </div>
 
-        {/* ── Specs / Details (Orbea-style accordion) ── */}
-        <div className="border-b border-border">
-          <Accordion type="single" collapsible className="w-full">
-            {specSections.map((section, idx) => (
-              <AccordionItem key={idx} value={`spec-${idx}`} className="border-b border-border last:border-b-0">
-                <AccordionTrigger className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.15em] py-3 hover:no-underline">
-                  {section.title}
-                </AccordionTrigger>
-                <AccordionContent className="pb-3">
-                  <p className="text-xs text-muted-foreground leading-relaxed">{section.content}</p>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+        {/* ══════════════ STEP: SUMMARY ══════════════ */}
+        <div style={{ display: step === "summary" ? "block" : "none" }} className="transition-opacity duration-150">
+          <div className="space-y-3">
+            <h2 className="text-sm font-medium">{label("Summary", "Ringkasan")}</h2>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {product.description || "High quality printing service offering excellent results with vibrant colors and durability. Ideal for professional and personal use."}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-secondary rounded-lg">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">{label("Category", "Kategori")}</span>
+                <span className="text-xs font-semibold capitalize">{product.category?.replace(/-/g, ' ')}</span>
+              </div>
+              <div className="p-3 bg-secondary rounded-lg">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">{label("Rating", "Penilaian")}</span>
+                <span className="text-xs font-semibold">{product.rating > 0 ? `${product.rating} / 5` : label("No ratings yet", "Tiada penilaian lagi")}</span>
+              </div>
+            </div>
+            <div className="p-3 bg-secondary rounded-lg space-y-1">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">{label("Size Guide", "Panduan Saiz")}</span>
+              <p className="text-[11px] text-muted-foreground">{label("Sizes vary by product. Select your preferred format in the Configure tab.", "Saiz berbeza mengikut produk. Pilih format dalam tab Konfigurasi.")}</p>
+            </div>
+            <div className="p-3 bg-secondary rounded-lg space-y-1">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">{label("Turnaround Time", "Tempoh Siap")}</span>
+              <p className="text-[11px] text-muted-foreground">{label("Standard turnaround is 3-5 business days. Express options may be available.", "Tempoh piawai ialah 3-5 hari bekerja. Pilihan ekspres mungkin tersedia.")}</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ── Sticky Bottom CTA (Orbea: price + add to basket) ── */}
-      <div className="sticky bottom-0 bg-card border-t border-border pt-4 pb-5 mt-4 -mx-6 px-6 -mb-6 rounded-b-2xl z-10">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <span className="text-xs text-muted-foreground block">{label("Total", "Jumlah")}</span>
-            <span className="text-xl font-extrabold text-foreground">RM {total.toFixed(2)}</span>
-          </div>
-          <div className="text-right">
-            <span className="text-[10px] text-muted-foreground block">{label("Delivery", "Penghantaran")}</span>
-            <span className="text-xs font-semibold text-muted-foreground">{label("shown at checkout", "ditunjukkan semasa checkout")}</span>
+      {/* ── Sticky Bottom CTA (Orbea: target-bottom) ── */}
+      <div className="orbea-bottom-cta">
+        <div className="flex flex-col gap-2">
+          {/* CTA Button */}
+          <button
+            onClick={step === "summary" ? handleAddToCart : () => onStepChange(nextStep as any)}
+            disabled={isPending}
+            className="orbea-btn-primary"
+          >
+            {step === "summary"
+              ? isPending ? label("Adding...", "Menambah...") : label("Add to Cart", "Tambah ke Troli")
+              : step === "frame" ? label("Configure Options", "Konfigurasi Pilihan") : label("View Summary", "Lihat Ringkasan")
+            }
+          </button>
+
+          {/* Price + info row */}
+          <div className="flex items-center justify-center gap-3 text-xs">
+            <span className="font-medium">{label(product.name, product.name)}</span>
+            <span className="text-muted-foreground">|</span>
+            <span className="font-bold">RM {total.toFixed(2)}</span>
+            <button
+              onClick={() => onStepChange("summary")}
+              className="underline text-muted-foreground hover:text-foreground transition-colors duration-150"
+            >
+              {label("View summary", "Lihat ringkasan")}
+            </button>
           </div>
         </div>
-        <AnimatedButton
-          text={label("Add to Cart", "Tambah ke Troli")}
-          type="submit"
-          isLoading={isPending}
-          className="w-full bg-foreground text-background py-3.5 font-bold text-sm tracking-wide rounded-lg active:scale-[0.98] transition-all cursor-pointer hover:bg-foreground/90"
-          onClick={handleAddToCart}
-        />
       </div>
     </div>
   );

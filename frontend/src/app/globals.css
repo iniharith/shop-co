@@ -8,16 +8,37 @@
   src: url("/integrCf.ttf");
 }
 
+/* ── Orbea: neue-haas-grotesk-text (Helvetica Neue) + trumpgothicpro ── */
 @font-face {
-  font-family: "integral";
-  src: url("/integrCf.ttf");
+  font-family: "neue-haas-grotesk-text";
+  src: url("https://use.typekit.net/af/0230dd/00000000000000007735bb33/30/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3") format("woff2"),
+       url("https://use.typekit.net/af/0230dd/00000000000000007735bb33/30/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3") format("woff");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+}
+@font-face {
+  font-family: "neue-haas-grotesk-text";
+  src: url("https://use.typekit.net/af/160664/00000000000000007735bb32/30/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n5&v=3") format("woff2"),
+       url("https://use.typekit.net/af/160664/00000000000000007735bb32/30/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n5&v=3") format("woff");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 500;
+}
+@font-face {
+  font-family: "neue-haas-grotesk-text";
+  src: url("https://use.typekit.net/af/305037/00000000000000007735bb39/30/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3") format("woff2"),
+       url("https://use.typekit.net/af/305037/00000000000000007735bb39/30/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3") format("woff");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 700;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-provicali-ampersand), var(--font-geist-sans);
-  --font-mono: var(--font-provicali-ampersand), var(--font-geist-mono);
+  --font-sans: "neue-haas-grotesk-text", "integral", var(--font-geist-sans), sans-serif;
+  --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -61,7 +82,7 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: oklch(0.145 0 0);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -73,19 +94,6 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
 }
 
 .dark {
@@ -107,19 +115,6 @@
   --border: hsl(0, 0%, 15%);
   --input: hsl(0, 0%, 15%);
   --ring: hsl(45, 93%, 47%);
-  --chart-1: hsl(45, 93%, 47%);
-  --chart-2: hsl(0, 0%, 60%);
-  --chart-3: hsl(30, 80%, 55%);
-  --chart-4: hsl(280, 65%, 60%);
-  --chart-5: hsl(340, 75%, 55%);
-  --sidebar: hsl(0, 0%, 6%);
-  --sidebar-foreground: hsl(0, 0%, 98%);
-  --sidebar-primary: hsl(45, 93%, 47%);
-  --sidebar-primary-foreground: hsl(0, 0%, 9%);
-  --sidebar-accent: hsl(0, 0%, 12%);
-  --sidebar-accent-foreground: hsl(0, 0%, 98%);
-  --sidebar-border: hsl(0, 0%, 15%);
-  --sidebar-ring: hsl(45, 93%, 47%);
 }
 
 @layer base {
@@ -130,23 +125,34 @@
     @apply bg-background text-foreground;
   }
 
-  /* The invitation has its own intentional, print-inspired presentation. */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Hide scrollbar everywhere */
+  *::-webkit-scrollbar {
+    display: none;
+  }
+  * {
+    scrollbar-width: none;
+  }
+
   body:has(.rsvp-page) .site-header,
   body:has(.rsvp-page) .site-footer {
     display: none;
   }
-
-  /* The mail app is a standalone webmail dashboard. */
   body:has(.mail-app) .site-header,
   body:has(.mail-app) .site-footer {
     display: none;
   }
+
   h1, h2 {
     font-family: var(--font-provicali-ampersand), "integral";
   }
   p {
     font-family: var(--font-dm-sans);
   }
+
   .link {
     position: relative;
   }
@@ -163,7 +169,6 @@
     transform-origin: right;
     transition: transform 0.3s ease;
   }
-
   .link:hover::before {
     left: 0;
     height: 1.8px;
@@ -173,7 +178,7 @@
     transform-origin: left;
   }
 
-  /* ── Header scroll show/hide (ThrottleHaus + Arteriors style) ── */
+  /* ── Header scroll show/hide ── */
   .site-header {
     position: fixed !important;
     top: 0 !important;
@@ -203,18 +208,82 @@
     opacity: 0;
     pointer-events: none;
   }
-  @media (max-width: 768px) {
-    .site-header {
-      transition: transform 0.4s ease, opacity 0.4s ease;
-    }
-  }
-
-  *::-webkit-scrollbar {
-    display: none;
-  }
 
   /* Homepage hero: hide spacer so the hero bleeds behind the fixed navbar */
   body:has(.hero-full-bleed) div[aria-hidden] {
     display: none !important;
+  }
+
+  /* ── Orbea product detail layout ── */
+  .product-detail {
+    height: calc(100svh - var(--header-height, 70px));
+    overflow: hidden;
+  }
+  .product-detail:not(.summary) {
+    height: calc(100svh - var(--header-height, 70px));
+  }
+
+  /* Orbea step nav text links */
+  .step-nav-link {
+    @apply text-sm text-muted-foreground transition-colors duration-150;
+    @apply hover:text-foreground;
+  }
+  .step-nav-link.active {
+    @apply text-foreground underline underline-offset-4;
+  }
+
+  /* Orbea thumbnail expand animation */
+  .orbea-thumb {
+    @apply relative overflow-hidden border border-border rounded-lg cursor-pointer;
+    @apply transition-all duration-500 ease-in-out;
+    width: 3.625rem;
+    height: 0;
+    background: oklch(0.964 0 0);
+  }
+  .orbea-thumb.active,
+  .group:hover .orbea-thumb {
+    height: 3.625rem;
+    border-color: var(--foreground);
+  }
+  .orbea-thumb:not(.active) {
+    border-color: oklch(0.894 0 0);
+  }
+
+  /* Orbea pill option selector */
+  .orbea-pill {
+    @apply relative inline-flex items-center justify-center px-3 py-2 text-xs font-medium rounded-lg;
+    @apply border border-border bg-card transition-all duration-150;
+    @apply min-h-[2.5rem] min-w-[2.5rem];
+  }
+  .orbea-pill:hover {
+    @apply border-muted-foreground/40;
+  }
+  .orbea-pill.selected {
+    @apply bg-foreground text-background border-foreground;
+  }
+
+  /* Orbea color swatch */
+  .orbea-swatch {
+    @apply relative grid place-content-center p-1 rounded-lg cursor-pointer;
+    @apply border border-border bg-card transition-all duration-150;
+  }
+  .orbea-swatch.selected {
+    @apply bg-secondary border-foreground;
+  }
+
+  /* Orbea bottom CTA bar */
+  .orbea-bottom-cta {
+    @apply sticky bottom-0 z-10 bg-background;
+    @apply border-t border-border px-4 py-3;
+    @apply shadow-[0px_0px_4px_0px_rgba(0,0,0,0.15)];
+  }
+
+  /* Orbea button style */
+  .orbea-btn-primary {
+    @apply inline-flex items-center justify-center w-full px-8 py-3;
+    @apply bg-foreground text-background font-medium text-sm;
+    @apply rounded-[2.5rem] transition-colors duration-150;
+    @apply hover:bg-foreground/90 active:scale-[0.98];
+    @apply disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed;
   }
 }
