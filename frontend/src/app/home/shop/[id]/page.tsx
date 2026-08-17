@@ -14,6 +14,7 @@ import ProductDetailSkeleton from "@/components/loading/ProductDetailSkeleton";
 import { IProduct } from "@/types/IProduct";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 type Step = "frame" | "components" | "summary";
 
@@ -46,14 +47,16 @@ const ProductDetailPage = () => {
   const nextStepLabel = stepLabels.find((s) => s.key === nextStep)?.button_mobile || "";
 
   return (
-    <div className="w-full">
+    <div className="w-full orbea-product-page">
       {isPending && <ProductDetailSkeleton />}
       {!isPending && product && (
         <>
           {/* ═══ Orbea nav-hero: sticky step nav bar ═══
               Orbea: sticky z-50 top-0 after:absolute after:border-b after:border-border-default
               after:bottom-0 after:inset-x-0 bg-surface-default grid grid-cols-3 items-center
-              px-s1000-narrow py-[.625rem] 1024:py-200 1024:flex transition-all duration-300 */}
+              px-s1000-narrow py-[.625rem] 1024:py-200 1024:flex transition-all duration-300
+              Real Orbea left side: "{ProductName} | ← Change model" — chromeless, no global
+              site nav visible on top (global header/footer are hidden via .orbea-product-page) */}
           <nav
             className="sticky z-50 top-0 after:absolute after:border-b after:border-border after:bottom-0 after:inset-x-0 bg-background grid grid-cols-3 items-center px-4 py-2.5 lg:px-5 lg:py-2 lg:flex transition-all duration-300"
           >
@@ -72,10 +75,19 @@ const ProductDetailPage = () => {
               )}
             </div>
 
-            {/* Center: product name (desktop) — Orbea line 1122 */}
-            <h1 className="hidden lg:flex items-center after:content-['|'] after:mx-2 after:text-base after:font-sans">
+            {/* Center/left: product name + "Change model" back-to-shop link (desktop)
+                — Orbea line 1122: "{name} | ← Change model" */}
+            <div className="hidden lg:flex items-center gap-2 mr-auto">
               <span className="text-base font-medium">{product.name}</span>
-            </h1>
+              <span className="text-muted-foreground">|</span>
+              <Link
+                href="/home/shop"
+                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors duration-150"
+              >
+                <ChevronLeft className="w-4 h-4 shrink-0" />
+                {label("Change model", "Tukar Produk")}
+              </Link>
+            </div>
 
             {/* Center: current step label (mobile) — Orbea line 1197 */}
             <span className="font-medium justify-self-center text-[.9375rem] lg:hidden">
@@ -114,10 +126,12 @@ const ProductDetailPage = () => {
               Orbea: flex flex-col pt-[var(--header-height)] product-detail relative 1024:flex-row
               CSS: height: calc(100svh - var(--product-nav-height) + var(--header-height))
               .h-top/.h-scrolled: transition: height .3s ease-in-out
-              overflow-hidden when not summary */}
+              overflow-hidden when not summary
+              bg-secondary = the gray canvas Orbea's studio bg-image sits on — this is what
+              makes the white sidebar card "float" instead of reading as a flush edge panel */}
           <div
-            className="product-detail flex flex-col overflow-hidden relative lg:flex-row"
-            style={{ height: "calc(100svh - var(--header-height, 56px))" }}
+            className="product-detail flex flex-col overflow-hidden relative bg-secondary lg:flex-row"
+            style={{ height: "calc(100svh - var(--header-height, 0px))" }}
           >
             {/* ── Left: Image area ──
                 Orbea: grow relative 1024:w-[68%] 1280:w-[67.421875%] 1440:w-[70%] 1680:w-[71%] 1920:w-3/4 */}
@@ -127,16 +141,19 @@ const ProductDetailPage = () => {
 
             {/* ── Right: Sidebar ──
                 Orbea: h-1/3 shrink-0 transition-[height] z-[2] 1024:h-auto 1024:w-[32%]
-                Dynamic: h-[62%] when step !== 'summary' */}
-            <div className="shrink-0 transition-[height] z-[2] h-[62%] lg:h-auto lg:w-[32%] xl:w-[29%] 2xl:w-1/4">
+                Dynamic: h-[62%] when step !== 'summary'
+                orbea-card-gap = Orbea's --s-250-between-cards padding token (.5rem→1.25rem),
+                the gap that lets the gray canvas peek around the floating white card */}
+            <div className="shrink-0 transition-[height] z-[2] h-[62%] orbea-card-gap max-lg:!p-0 lg:h-auto lg:w-[32%] xl:w-[29%] 2xl:w-1/4">
               {/* ── Grid wrapper (Orbea: <div class="grid h-full">) ── */}
               <div className="grid h-full">
                 {/* ── Scrollable aside content (Orbea: #aside-content) ──
                     Orbea: bg-surface-default col-span-full grid no-scrollbar overscroll-contain
                     overflow-y-auto relative row-span-full transition-all 768:rounded-t-none 1280:rounded-lg
-                    Dynamic: rounded-t-lg when not summary */}
+                    Dynamic: rounded-t-lg when not summary
+                    shadow added to sell the floating-card look on desktop */}
                 <div
-                  className="bg-background col-span-full grid no-scrollbar overscroll-contain overflow-y-auto relative row-span-full transition-all rounded-t-lg lg:rounded-lg"
+                  className="bg-background col-span-full grid no-scrollbar overscroll-contain overflow-y-auto relative row-span-full transition-all rounded-t-lg lg:rounded-lg lg:shadow-[0px_0px_12px_0px_rgba(0,0,0,0.08)]"
                 >
                   <ProductDetails
                     product={product}
@@ -153,7 +170,7 @@ const ProductDetailPage = () => {
                     1280:w-[calc(100%-16px)] 1280:bottom-3 1280:left-2 1280:rounded-b-lg */}
                 <div
                   id="product-cta-portal"
-                  className="bottom-0 col-span-full row-span-full bg-background flex flex-col gap-2 pointer-events-auto px-4 py-3 rounded-t-lg self-end shadow-[0px_0px_4px_0px_rgba(0,0,0,0.15)] sticky z-[1] lg:px-3 lg:py-2 xl:py-3 xl:w-[calc(100%-16px)] xl:bottom-3 xl:left-2 xl:rounded-b-lg lg:relative"
+                  className="bottom-0 col-span-full row-span-full bg-background flex flex-col gap-2 pointer-events-auto px-4 py-3 rounded-t-lg self-end shadow-[0px_0px_4px_0px_rgba(0,0,0,0.15)] sticky z-[1] lg:px-3 lg:py-2 xl:py-3 lg:rounded-b-lg lg:relative"
                 />
               </div>
             </div>

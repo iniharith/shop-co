@@ -145,6 +145,16 @@
   body:has(.mail-app) .site-footer {
     display: none;
   }
+  /* Orbea product page: chromeless edge-to-edge — no site header/footer/spacer,
+     the Orbea-style step nav sits at the true top of the viewport (matches
+     orbea.com/en-my/wild-lt-m-ltd-rs exactly — no global nav visible there). */
+  body:has(.orbea-product-page) .site-header,
+  body:has(.orbea-product-page) .site-footer {
+    display: none;
+  }
+  body:has(.orbea-product-page) div[aria-hidden] {
+    display: none !important;
+  }
 
   h1, h2 {
     font-family: var(--font-provicali-ampersand), "integral";
@@ -232,11 +242,26 @@
     border-color: var(--foreground);
   }
 
-  /* Orbea pill option selector (exact Orbea: peer-checked pattern) */
+  /* Orbea "floating card" gap around the sidebar (exact Orbea token:
+     --s-250-between-cards → .5rem / 1rem / 1.25rem across breakpoints).
+     This is what makes the white sidebar read as a card floating on the
+     gray canvas instead of a flush edge-to-edge panel. */
+  .orbea-card-gap {
+    padding: 0.5rem;
+  }
+  @media (min-width: 1024px) {
+    .orbea-card-gap { padding: 1rem; }
+  }
+  @media (min-width: 1280px) {
+    .orbea-card-gap { padding: 1.25rem; }
+  }
+
+  /* Orbea pill option selector — sized up to match Orbea's larger, more
+     spacious buttons (Orbea size selectors ~48-56px tall, generous text) */
   .orbea-pill {
-    @apply relative inline-flex items-center justify-center px-3 py-2 text-xs font-medium rounded-lg;
+    @apply relative inline-flex items-center justify-center px-4 py-3 text-sm font-medium rounded-lg;
     @apply border border-border bg-card transition-[background,border-color] duration-150;
-    @apply min-h-[2.5rem] min-w-[2.5rem];
+    @apply min-h-[3rem] min-w-[3rem];
   }
   .orbea-pill:hover {
     @apply border-muted-foreground/40;
@@ -245,10 +270,10 @@
     @apply bg-secondary border-foreground;
   }
 
-  /* Orbea color swatch */
+  /* Orbea color swatch — larger circular swatch to match Orbea's ~48px size */
   .orbea-swatch {
-    @apply relative grid place-content-center p-1 rounded-lg cursor-pointer;
-    @apply border border-border bg-card transition-[background,border-color] duration-150;
+    @apply relative grid place-content-center p-1.5 rounded-full cursor-pointer size-12;
+    @apply border-2 border-border bg-card transition-[background,border-color] duration-150;
   }
   .orbea-swatch.selected {
     @apply bg-secondary border-foreground;

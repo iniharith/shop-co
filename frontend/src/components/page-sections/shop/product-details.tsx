@@ -274,7 +274,7 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
             {/* Design & Artwork */}
             {product.category?.toLowerCase() !== "islamic khat" && (
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
+                <label className="text-lg font-semibold text-foreground">
                   {label("Design & Artwork", "Reka Bentuk & Karya")}
                 </label>
                 {product.name?.toLowerCase() === "portrait" ? (
@@ -317,7 +317,7 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
             {step1Options.length > 0 &&
               step1Options.map((opt, i) => (
                 <div key={i} className="flex flex-col gap-2">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">{opt.name}</label>
+                  <label className="text-lg font-semibold text-foreground">{opt.name}</label>
                   <div className="flex flex-wrap gap-1.5">
                     {opt.options.map((val, idx) => {
                       const isSelected = opt.isMultiSelect
@@ -351,7 +351,7 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
             {step2Options.length > 0 &&
               step2Options.map((opt, i) => (
                 <div key={i} className="flex flex-col gap-2">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">{opt.name}</label>
+                  <label className="text-lg font-semibold text-foreground">{opt.name}</label>
                   <div className="flex flex-wrap gap-1.5">
                     {opt.options.map((val, idx) => {
                       const isSelected = opt.isMultiSelect
@@ -379,7 +379,7 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
             {/* Add-ons */}
             {step3Addons.length > 0 && (
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
+                <label className="text-lg font-semibold text-foreground">
                   {label("Add-ons", "Tambahan")}
                 </label>
                 <div className="flex flex-wrap gap-1.5">
@@ -411,7 +411,7 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
             {/* Quantity */}
             {product.category !== "flyers" && (
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
+                <label className="text-lg font-semibold text-foreground">
                   {label("Quantity", "Kuantiti")}
                 </label>
                 {product.matrixPricing?.enabled && !product.matrixPricing.hideQuantityGrid && availableQuantities.length > 0 ? (
@@ -440,7 +440,7 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
             {/* Turnaround & Pricing */}
             {product.category !== "flyers" && stepTurnaround.length > 0 && (
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
+                <label className="text-lg font-semibold text-foreground">
                   {label("Turnaround & Pricing", "Tempoh & Harga")}
                 </label>
                 {(() => {
