@@ -200,4 +200,9 @@
   *::-webkit-scrollbar {
     display: none;
   }
+
+  /* Homepage hero: hide spacer so the hero bleeds behind the fixed navbar */
+  body:has(.hero-full-bleed) > div[aria-hidden] {
+    display: none !important;
+  }
 }

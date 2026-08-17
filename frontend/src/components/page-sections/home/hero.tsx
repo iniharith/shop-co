@@ -34,7 +34,7 @@ const Hero = () => {
   }, [currentImage]);
 
   return (
-    <div className="relative w-full h-[80vh] min-h-[500px] flex items-center justify-center overflow-hidden bg-black">
+    <div className="hero-full-bleed relative w-full h-[100dvh] min-h-[500px] flex items-center justify-center overflow-hidden bg-black">
       {/* Background Slider */}
       <AnimatePresence mode="popLayout">
         <motion.img
