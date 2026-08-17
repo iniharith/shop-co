@@ -7,15 +7,13 @@
 import { ProductDetails } from "@/components/page-sections/shop/product-details";
 import { ProductGallery } from "@/components/page-sections/shop/product-gallery";
 import ProductSctions from "@/components/page-sections/home/productSctions";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { useParams } from "next/navigation";
 import ProductDetailSkeleton from "@/components/loading/ProductDetailSkeleton";
 import { IProduct } from "@/types/IProduct";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 type Step = "frame" | "components" | "summary";
 
@@ -29,27 +27,6 @@ const ProductDetailPage = () => {
   const [step, setStep] = useState<Step>("frame");
   const product = data?.product as IProduct;
   const products = productsData?.products || [];
-
-  // Measure the remaining viewport height below the subnav bar
-  const navRef = useRef<HTMLElement>(null);
-  const [canvasHeight, setCanvasHeight] = useState<number>(0);
-
-  useEffect(() => {
-    const update = () => {
-      const navEl = navRef.current;
-      if (!navEl) return;
-      const navBottom = navEl.getBoundingClientRect().bottom;
-      setCanvasHeight(Math.max(400, window.innerHeight - navBottom));
-    };
-    update();
-    window.addEventListener("resize", update);
-    const ro = new ResizeObserver(update);
-    ro.observe(document.documentElement);
-    return () => {
-      window.removeEventListener("resize", update);
-      ro.disconnect();
-    };
-  }, [isPending, product]);
 
   useEffect(() => {
     setRelatedProducts(
@@ -73,54 +50,45 @@ const ProductDetailPage = () => {
       {isPending && <ProductDetailSkeleton />}
       {!isPending && product && (
         <>
-          {/* ═══ Orbea Subnav Bar — sits cleanly below fixed header ═══ */}
+          {/* ═══ Orbea nav-hero: sticky step nav bar ═══
+              Orbea: sticky z-50 top-0 after:absolute after:border-b after:border-border-default
+              after:bottom-0 after:inset-x-0 bg-surface-default grid grid-cols-3 items-center
+              px-s1000-narrow py-[.625rem] 1024:py-200 1024:flex transition-all duration-300 */}
           <nav
-            ref={navRef}
-            className="sticky z-30 top-0 bg-background/95 backdrop-blur-md border-b border-border/80 grid grid-cols-3 items-center px-4 py-3 lg:px-8 lg:flex transition-all duration-200"
+            className="sticky z-50 top-0 after:absolute after:border-b after:border-border after:bottom-0 after:inset-x-0 bg-background grid grid-cols-3 items-center px-4 py-2.5 lg:px-5 lg:py-2 lg:flex transition-all duration-300"
           >
-            {/* Left: back arrow (mobile) / Change model (desktop) */}
+            {/* Left: back link (desktop) / back arrow (mobile) — Orbea line 1174 */}
             <div className="text-sm lg:hidden">
               {step !== "frame" ? (
-                <button type="button" onClick={() => setStep(prevStep)} className="flex gap-1.5 items-center text-foreground font-medium">
+                <button
+                  onClick={() => setStep(prevStep)}
+                  className="flex gap-1 items-center"
+                >
                   <ChevronLeft className="w-4 h-4 shrink-0" />
-                  <span className="min-w-0 truncate text-xs">{prevStepLabel}</span>
+                  <span className="min-w-0 truncate">{prevStepLabel}</span>
                 </button>
               ) : (
                 <span />
               )}
             </div>
 
-            {/* Left: Product Name + Change model link (desktop) */}
-            <div className="hidden lg:flex items-center gap-3 mr-auto">
-              <span className="text-base font-bold text-foreground">{product.name}</span>
-              <span className="text-muted-foreground/60">|</span>
-              <Link
-                href="/home/shop"
-                className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4 shrink-0" />
-                <span>{label("Change model", "Tukar Produk")}</span>
-              </Link>
-            </div>
+            {/* Center: product name (desktop) — Orbea line 1122 */}
+            <h1 className="hidden lg:flex items-center after:content-['|'] after:mx-2 after:text-base after:font-sans">
+              <span className="text-base font-medium">{product.name}</span>
+            </h1>
 
-            {/* Center: current step label (mobile) */}
-            <span className="font-bold justify-self-center text-sm lg:hidden text-foreground">
+            {/* Center: current step label (mobile) — Orbea line 1197 */}
+            <span className="font-medium justify-self-center text-[.9375rem] lg:hidden">
               {currentStepMeta.button_mobile}
             </span>
 
-            {/* Right: desktop step links */}
-            <ul className="hidden lg:flex items-center gap-8 ml-auto">
+            {/* Right: desktop step links — Orbea line 1135 */}
+            <ul className="hidden lg:flex items-center gap-6 ml-auto">
               {stepLabels.map((s) => (
                 <li key={s.key}>
                   <button
-                    type="button"
                     onClick={() => setStep(s.key)}
-                    className={cn(
-                      "text-sm font-medium transition-all duration-150 relative py-1 cursor-pointer",
-                      step === s.key
-                        ? "text-foreground font-bold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
+                    className={`body-l transition-colors underline-offset-4 hover:text-foreground ${step === s.key ? "text-foreground underline" : "text-muted-foreground"}`}
                   >
                     {s.label}
                   </button>
@@ -128,46 +96,66 @@ const ProductDetailPage = () => {
               ))}
             </ul>
 
-            {/* Right: mobile next button */}
-            <div className="lg:hidden flex justify-end">
+            {/* Right: mobile next button — Orbea line 1198 */}
+            <div className="lg:hidden">
               {step !== "summary" && (
-                <button type="button" onClick={() => setStep(nextStep)} className="flex gap-1 items-center text-foreground font-medium">
-                  <span className="min-w-0 truncate text-xs">{nextStepLabel}</span>
+                <button
+                  onClick={() => setStep(nextStep)}
+                  className="flex gap-1 items-center justify-self-end max-w-full"
+                >
+                  <span className="min-w-0 truncate">{nextStepLabel}</span>
                   <ChevronRight className="w-4 h-4 shrink-0" />
                 </button>
               )}
             </div>
           </nav>
 
-          {/* ═══ Orbea Canvas: Full-bleed product image with floating spec card ═══ */}
+          {/* ═══ Orbea product-detail: full-viewport two-column layout ═══
+              Orbea: flex flex-col pt-[var(--header-height)] product-detail relative 1024:flex-row
+              CSS: height: calc(100svh - var(--product-nav-height) + var(--header-height))
+              .h-top/.h-scrolled: transition: height .3s ease-in-out
+              overflow-hidden when not summary */}
           <div
-            className="product-detail relative overflow-hidden w-full bg-[#f6f6f8] dark:bg-neutral-950 flex flex-col lg:block"
-            style={{
-              height: canvasHeight > 0 ? `${canvasHeight}px` : "calc(100vh - 180px)",
-              minHeight: "560px",
-            }}
+            className="product-detail flex flex-col overflow-hidden relative lg:flex-row"
+            style={{ height: "calc(100svh - var(--header-height, 56px))" }}
           >
-            {/* ── Background Image Layer ── */}
-            <div className="relative w-full h-[45vh] lg:absolute lg:inset-0 lg:h-full flex items-center justify-center">
+            {/* ── Left: Image area ──
+                Orbea: grow relative 1024:w-[68%] 1280:w-[67.421875%] 1440:w-[70%] 1680:w-[71%] 1920:w-3/4 */}
+            <div className="grow relative w-full lg:w-[68%] xl:w-[71%] 2xl:w-3/4 max-lg:h-[48svh]">
               <ProductGallery images={product.images} step={step} />
             </div>
 
-            {/* ── Floating Configurator Card (Orbea 100% Match) ── */}
-            <div className="
-              relative lg:absolute lg:top-4 lg:right-4 lg:bottom-4
-              w-full lg:w-[410px] xl:w-[440px]
-              flex-1 lg:flex-initial
-              z-20 flex flex-col
-              bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl
-              border-t lg:border border-neutral-200/80 dark:border-neutral-800
-              lg:rounded-3xl shadow-2xl
-              overflow-hidden
-            ">
-              <ProductDetails
-                product={product}
-                step={step}
-                onStepChange={setStep}
-              />
+            {/* ── Right: Sidebar ──
+                Orbea: h-1/3 shrink-0 transition-[height] z-[2] 1024:h-auto 1024:w-[32%]
+                Dynamic: h-[62%] when step !== 'summary' */}
+            <div className="shrink-0 transition-[height] z-[2] h-[62%] lg:h-auto lg:w-[32%] xl:w-[29%] 2xl:w-1/4">
+              {/* ── Grid wrapper (Orbea: <div class="grid h-full">) ── */}
+              <div className="grid h-full">
+                {/* ── Scrollable aside content (Orbea: #aside-content) ──
+                    Orbea: bg-surface-default col-span-full grid no-scrollbar overscroll-contain
+                    overflow-y-auto relative row-span-full transition-all 768:rounded-t-none 1280:rounded-lg
+                    Dynamic: rounded-t-lg when not summary */}
+                <div
+                  className="bg-background col-span-full grid no-scrollbar overscroll-contain overflow-y-auto relative row-span-full transition-all rounded-t-lg lg:rounded-lg"
+                >
+                  <ProductDetails
+                    product={product}
+                    step={step}
+                    onStepChange={setStep}
+                  />
+                </div>
+
+                {/* ── CTA portal target (Orbea: #target-bottom) ──
+                    Orbea: bottom-0 col-span-full row-span-full bg-surface-default flex flex-col gap-200
+                    pointer-events-auto px-400 py-300 rounded-t-lg self-end
+                    shadow-[0px_0px_4px_0px_rgba(0,0,0,0.15)] sticky z-[1]
+                    1024:px-300 1024:py-200 1024:relative 1180:py-300
+                    1280:w-[calc(100%-16px)] 1280:bottom-3 1280:left-2 1280:rounded-b-lg */}
+                <div
+                  id="product-cta-portal"
+                  className="bottom-0 col-span-full row-span-full bg-background flex flex-col gap-2 pointer-events-auto px-4 py-3 rounded-t-lg self-end shadow-[0px_0px_4px_0px_rgba(0,0,0,0.15)] sticky z-[1] lg:px-3 lg:py-2 xl:py-3 xl:w-[calc(100%-16px)] xl:bottom-3 xl:left-2 xl:rounded-b-lg lg:relative"
+                />
+              </div>
             </div>
           </div>
 
@@ -188,4 +176,3 @@ const ProductDetailPage = () => {
 };
 
 export default ProductDetailPage;
-

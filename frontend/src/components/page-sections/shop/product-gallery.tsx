@@ -1,15 +1,14 @@
 /**
  * Coded by Harith
  * Kampungcetak ®
- * Orbea-faithful image carousel with floating controls & thumbnail strip
+ * Orbea-faithful image carousel with thumbnail strip
  */
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { getImageUrl } from "@/utils/getImageUrl";
-import { ChevronLeft, ChevronRight, Bookmark, Share2, Download, Maximize2, Sparkles, List } from "lucide-react";
-import { toast } from "sonner";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ProductGalleryProps {
   images: string[];
@@ -19,7 +18,6 @@ interface ProductGalleryProps {
 export function ProductGallery({ images, step }: ProductGalleryProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
 
   const displayImages = images?.length > 0 ? images : ["/logo.png"];
 
@@ -45,24 +43,15 @@ export function ProductGallery({ images, step }: ProductGalleryProps) {
     return () => window.removeEventListener("keydown", handler);
   }, [currentIndex, goTo]);
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({ title: "Kampung Cetak", url: window.location.href }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Link copied to clipboard");
-    }
-  };
-
   return (
-    <div className="relative w-full h-full select-none overflow-hidden group/img bg-[#f6f6f8] dark:bg-neutral-950 flex items-center justify-center">
+    <div className="relative w-full h-full select-none overflow-hidden group/img">
       {/* ── Main image carousel (Orbea: swiper-slide with fade) ── */}
-      <div className="relative w-full h-full flex items-center justify-center">
+      <div className="relative w-full h-full">
         {displayImages.map((img, index) => (
           <div
             key={index}
             className={cn(
-              "absolute inset-0 flex items-center justify-center p-6 lg:p-12 transition-opacity duration-300 ease-in-out",
+              "absolute inset-0 transition-opacity duration-300 ease-in-out",
               index === currentIndex
                 ? "opacity-100 z-10"
                 : "opacity-0 z-0 pointer-events-none"
@@ -71,129 +60,68 @@ export function ProductGallery({ images, step }: ProductGalleryProps) {
             <img
               src={getImageUrl(img)}
               alt={`Product view ${index + 1}`}
-              className="w-full h-full max-h-full object-contain object-center drop-shadow-xl"
+              className="w-full h-full object-contain p-8 lg:p-12"
               draggable={false}
             />
           </div>
         ))}
       </div>
 
-      {/* ── Top-Left Floating Controls (Orbea Style: View mode / Spec list) ── */}
-      <div className="absolute top-4 left-4 z-20 hidden sm:flex items-center gap-2">
-        <button
-          type="button"
-          title="3D Preview"
-          className="size-10 rounded-full bg-white/90 dark:bg-neutral-900/90 shadow-md border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-center text-foreground hover:scale-105 transition-all duration-150 backdrop-blur-xs"
-        >
-          <Sparkles className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          title="Specifications"
-          className="size-10 rounded-full bg-white/90 dark:bg-neutral-900/90 shadow-md border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-center text-foreground hover:scale-105 transition-all duration-150 backdrop-blur-xs"
-        >
-          <List className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* ── Top-Right Floating Control: Expand / Fullscreen ── */}
-      <div className="absolute top-4 right-4 lg:right-[430px] xl:right-[460px] z-20 hidden sm:flex items-center">
-        <button
-          type="button"
-          onClick={() => {
-            const currentImg = displayImages[currentIndex];
-            if (currentImg) window.open(getImageUrl(currentImg), "_blank");
-          }}
-          title="Expand View"
-          className="size-10 rounded-full bg-white/90 dark:bg-neutral-900/90 shadow-md border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-center text-foreground hover:scale-105 transition-all duration-150 backdrop-blur-xs"
-        >
-          <Maximize2 className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* ── Bottom-Left Floating Actions (Orbea: Bookmark, Share, Download) ── */}
-      <div className="absolute bottom-4 left-4 z-20 hidden sm:flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            setIsBookmarked(!isBookmarked);
-            toast.success(isBookmarked ? "Removed from saved" : "Saved to wishlist");
-          }}
-          title="Save Product"
-          className={cn(
-            "size-10 rounded-full bg-white/90 dark:bg-neutral-900/90 shadow-md border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-center hover:scale-105 transition-all duration-150 backdrop-blur-xs",
-            isBookmarked ? "text-primary fill-primary" : "text-foreground"
-          )}
-        >
-          <Bookmark className={cn("w-4 h-4", isBookmarked && "fill-current")} />
-        </button>
-        <button
-          type="button"
-          onClick={handleShare}
-          title="Share"
-          className="size-10 rounded-full bg-white/90 dark:bg-neutral-900/90 shadow-md border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-center text-foreground hover:scale-105 transition-all duration-150 backdrop-blur-xs"
-        >
-          <Share2 className="w-4 h-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            const currentImg = displayImages[currentIndex];
-            if (currentImg) {
-              const a = document.createElement("a");
-              a.href = getImageUrl(currentImg);
-              a.download = `product-view-${currentIndex + 1}.jpg`;
-              a.target = "_blank";
-              a.click();
-            }
-          }}
-          title="Download Image"
-          className="size-10 rounded-full bg-white/90 dark:bg-neutral-900/90 shadow-md border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-center text-foreground hover:scale-105 transition-all duration-150 backdrop-blur-xs"
-        >
-          <Download className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* ── Prev / Next arrows (Orbea style) ── */}
+      {/* ── Prev / Next arrows (Orbea: inside slider) ── */}
       {displayImages.length > 1 && (
         <>
           <button
-            type="button"
             onClick={() => goTo(currentIndex - 1)}
-            aria-label="Previous image"
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/90 dark:bg-neutral-900/90 shadow-md border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-center text-foreground opacity-0 group-hover/img:opacity-100 transition-opacity duration-200 hover:scale-105 backdrop-blur-xs"
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity duration-200 hover:bg-black/40"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
-            type="button"
             onClick={() => goTo(currentIndex + 1)}
-            aria-label="Next image"
-            className="absolute right-4 lg:right-[430px] xl:right-[460px] top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/90 dark:bg-neutral-900/90 shadow-md border border-neutral-200/80 dark:border-neutral-800 flex items-center justify-center text-foreground opacity-0 group-hover/img:opacity-100 transition-opacity duration-200 hover:scale-105 backdrop-blur-xs"
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity duration-200 hover:bg-black/40"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
         </>
       )}
 
-      {/* ── Pagination container: Orbea-style bottom dashes / thumbs ── */}
+      {/* ── Pagination container (Orbea: absolute bottom, flex center) ── */}
       {displayImages.length > 1 && (
-        <div className="absolute bottom-5 left-0 right-0 lg:right-[420px] xl:right-[450px] flex items-center justify-center z-20 pointer-events-auto">
-          {/* Dash line indicators */}
-          <div className="flex items-center gap-2 bg-white/80 dark:bg-neutral-900/80 px-4 py-2 rounded-full border border-neutral-200/60 dark:border-neutral-800 backdrop-blur-xs shadow-xs">
+        <div className="absolute bottom-2.5 min-h-[0.625rem] flex items-center justify-center w-full z-[2] lg:bottom-5 lg:min-h-[42px]">
+          {/* ── Mobile: dot indicators (Orbea: 1180:hidden) ── */}
+          <div className="flex flex-wrap gap-2 lg:hidden">
             {displayImages.map((_, index) => (
               <button
                 key={index}
-                type="button"
                 onClick={() => setCurrentIndex(index)}
-                aria-label={`Slide ${index + 1}`}
                 className={cn(
-                  "h-1 rounded-full transition-all duration-300 cursor-pointer",
+                  "h-1.5 rounded-full transition-all duration-300",
                   index === currentIndex
-                    ? "w-8 bg-neutral-950 dark:bg-white"
-                    : "w-4 bg-neutral-300 dark:bg-neutral-700 hover:bg-neutral-400"
+                    ? "w-6 bg-foreground"
+                    : "w-1.5 bg-muted-foreground/30"
                 )}
               />
+            ))}
+          </div>
+
+          {/* ── Desktop: thumbnail strip (Orbea: group with h-0→h-[58px] thumbs) ── */}
+          <div className="group hidden lg:flex flex-wrap gap-2 h-[58px] items-end justify-center pb-[21px] relative">
+            {displayImages.map((img, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={cn(
+                  "orbea-thumb",
+                  currentIndex === index && "active"
+                )}
+              >
+                <img
+                  src={getImageUrl(img)}
+                  alt={`Thumb ${index + 1}`}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  draggable={false}
+                />
+              </button>
             ))}
           </div>
         </div>
@@ -201,4 +129,3 @@ export function ProductGallery({ images, step }: ProductGalleryProps) {
     </div>
   );
 }
-

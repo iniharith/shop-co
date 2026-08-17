@@ -34,9 +34,11 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
   const [quantity, setQuantity] = useState(1);
   const [selectedGridSize, setSelectedGridSize] = useState<string>("A4");
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
+  const [ctaPortalEl, setCtaPortalEl] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     setPortalEl(document.getElementById("flyer-pricing-portal"));
+    setCtaPortalEl(document.getElementById("product-cta-portal"));
   }, []);
 
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number | number[]>>({});
@@ -260,71 +262,63 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
         : label("Add to Cart", "Tambah ke Troli");
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* ═══ Scrollable content ═══ */}
-      <div className="flex-1 overflow-y-auto no-scrollbar p-4 sm:p-5 space-y-5">
+    <>
+      {/* ═══ Scrollable content (Orbea: #sidebar-frame-scroll) ═══
+          col-span-full row-span-full flex flex-col gap-250 no-scrollbar overflow-x-hidden
+          overscroll-contain p-500 py-s800-wide 1024:px-400 1024:py-500 1440:px-500 */}
+      <div className="col-span-full row-span-full flex flex-col gap-4 no-scrollbar overflow-x-hidden overscroll-contain p-5 py-8 lg:px-4 lg:py-5 2xl:px-5">
 
         {/* ═══ STEP: FRAME ═══ */}
         {step === "frame" && (
-          <div className="flex flex-col gap-6">
-            {/* Design & Artwork — Segmented Pill Switcher (Orbea style) */}
+          <div className="flex flex-col gap-4">
+            {/* Design & Artwork */}
             {product.category?.toLowerCase() !== "islamic khat" && (
-              <div className="flex flex-col gap-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xl font-bold text-foreground">
-                    {label("Design & Artwork", "Reka Bentuk & Karya")}
-                  </label>
-                </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
+                  {label("Design & Artwork", "Reka Bentuk & Karya")}
+                </label>
                 {product.name?.toLowerCase() === "portrait" ? (
-                  <div className="p-4 border border-border rounded-xl text-center bg-secondary/30">
-                    <p className="text-xs font-bold text-foreground">
+                  <div className="p-3 border border-border text-center">
+                    <p className="text-[11px] font-bold text-foreground">
                       {label("UPLOAD YOUR PICTURE AT PROFILE PAGE", "MUAT NAIK GAMBAR DI HALAMAN PROFIL")}
                     </p>
-                    <p className="text-[11px] text-muted-foreground mt-1">
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
                       {label("AFTER YOU HAVE PLACED THE ORDER", "SELEPAS ANDA MEMBUAT PESANAN")}
                     </p>
                   </div>
                 ) : (
-                  <>
-                    <div className="orbea-switch-container">
-                      <button
-                        type="button"
-                        onClick={() => setDesignOption("upload")}
-                        className={cn("orbea-switch-item", designOption === "upload" && "selected")}
-                      >
-                        {label("Own Design", "Reka Sendiri")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDesignOption("design")}
-                        className={cn("orbea-switch-item", designOption === "design" && "selected")}
-                      >
-                        {label("Design Service (+RM 100)", "Perkhidmatan Reka (+RM 100)")}
-                      </button>
-                    </div>
-                    <p className="text-xs text-muted-foreground px-1 leading-relaxed">
-                      {designOption === "upload"
-                        ? label("Upload your print-ready artwork file at checkout.", "Muat naik fail karya anda semasa checkout.")
-                        : label("Our design specialists will craft a bespoke artwork for you (+RM 100).", "Pakar reka bentuk kami akan menghasilkan rekaan khas untuk anda (+RM 100).")}
-                    </p>
-                  </>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      onClick={() => setDesignOption("upload")}
+                      className={cn("orbea-pill text-left justify-start px-3", designOption === "upload" && "selected")}
+                    >
+                      <div>
+                        <span className="text-[11px] font-bold block">{label("Own Design", "Reka Sendiri")}</span>
+                        <span className="text-[9px] text-muted-foreground mt-0.5 block">
+                          {label("Upload at checkout", "Muat naik semasa checkout")}
+                        </span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setDesignOption("design")}
+                      className={cn("orbea-pill text-left justify-start px-3", designOption === "design" && "selected")}
+                    >
+                      <div>
+                        <span className="text-[11px] font-bold block">{label("Design Service", "Perkhidmatan Reka")}</span>
+                        <span className="text-[9px] text-primary font-semibold block mt-0.5">+RM 100</span>
+                      </div>
+                    </button>
+                  </div>
                 )}
               </div>
             )}
 
-            {/* Format & Material Options */}
+            {/* Format & Material */}
             {step1Options.length > 0 &&
               step1Options.map((opt, i) => (
-                <div key={i} className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xl font-bold text-foreground">{opt.name}</label>
-                    {/size|format/i.test(opt.name) && (
-                      <span className="text-xs font-medium text-muted-foreground hover:text-foreground underline cursor-pointer">
-                        {label("View size guide", "Panduan saiz")}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-2.5">
+                <div key={i} className="flex flex-col gap-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">{opt.name}</label>
+                  <div className="flex flex-wrap gap-1.5">
                     {opt.options.map((val, idx) => {
                       const isSelected = opt.isMultiSelect
                         ? Array.isArray(selectedOptions[opt.name]) && (selectedOptions[opt.name] as number[]).includes(idx)
@@ -332,13 +326,12 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
                       return (
                         <button
                           key={idx}
-                          type="button"
                           onClick={() => handleOptionChange(opt.name, idx, opt.isMultiSelect)}
-                          className={cn("orbea-pill", isSelected && "selected")}
+                          className={cn("orbea-pill whitespace-nowrap", isSelected && "selected")}
                         >
-                          <span>{val.label}</span>
+                          {val.label}
                           {val.priceAdd !== 0 && (
-                            <span className={cn("text-xs ml-1.5 font-medium", isSelected ? "opacity-80" : "text-muted-foreground")}>
+                            <span className={cn("ml-1", isSelected ? "text-background/70" : "text-muted-foreground")}>
                               {val.priceAdd > 0 ? `+RM${val.priceAdd.toFixed(0)}` : `-RM${Math.abs(val.priceAdd).toFixed(0)}`}
                             </span>
                           )}
@@ -353,13 +346,13 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
 
         {/* ═══ STEP: COMPONENTS (Options) ═══ */}
         {step === "components" && (
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4">
             {/* Printing Options */}
             {step2Options.length > 0 &&
               step2Options.map((opt, i) => (
-                <div key={i} className="flex flex-col gap-3">
-                  <label className="text-xl font-bold text-foreground">{opt.name}</label>
-                  <div className="flex flex-wrap gap-2.5">
+                <div key={i} className="flex flex-col gap-2">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">{opt.name}</label>
+                  <div className="flex flex-wrap gap-1.5">
                     {opt.options.map((val, idx) => {
                       const isSelected = opt.isMultiSelect
                         ? Array.isArray(selectedOptions[opt.name]) && (selectedOptions[opt.name] as number[]).includes(idx)
@@ -367,13 +360,12 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
                       return (
                         <button
                           key={idx}
-                          type="button"
                           onClick={() => handleOptionChange(opt.name, idx, opt.isMultiSelect)}
-                          className={cn("orbea-pill", isSelected && "selected")}
+                          className={cn("orbea-pill whitespace-nowrap", isSelected && "selected")}
                         >
-                          <span>{val.label}</span>
+                          {val.label}
                           {val.priceAdd !== 0 && (
-                            <span className={cn("text-xs ml-1.5 font-medium", isSelected ? "opacity-80" : "text-muted-foreground")}>
+                            <span className={cn("ml-1", isSelected ? "text-background/70" : "text-muted-foreground")}>
                               {val.priceAdd > 0 ? `+RM${val.priceAdd.toFixed(0)}` : `-RM${Math.abs(val.priceAdd).toFixed(0)}`}
                             </span>
                           )}
@@ -386,11 +378,11 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
 
             {/* Add-ons */}
             {step3Addons.length > 0 && (
-              <div className="flex flex-col gap-3">
-                <label className="text-xl font-bold text-foreground">
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
                   {label("Add-ons", "Tambahan")}
                 </label>
-                <div className="flex flex-wrap gap-2.5">
+                <div className="flex flex-wrap gap-1.5">
                   {step3Addons.map((opt, i) =>
                     opt.options.map((val, idx) => {
                       const isSelected = opt.isMultiSelect
@@ -399,13 +391,12 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
                       return (
                         <button
                           key={`${i}-${idx}`}
-                          type="button"
                           onClick={() => handleOptionChange(opt.name, idx, opt.isMultiSelect)}
-                          className={cn("orbea-pill", isSelected && "selected")}
+                          className={cn("orbea-pill whitespace-nowrap", isSelected && "selected")}
                         >
-                          <span>{val.label}</span>
+                          {val.label}
                           {val.priceAdd !== 0 && (
-                            <span className={cn("text-xs ml-1.5 font-medium", isSelected ? "opacity-80" : "text-muted-foreground")}>
+                            <span className={cn("ml-1", isSelected ? "text-background/70" : "text-muted-foreground")}>
                               {val.priceAdd > 0 ? `+RM${val.priceAdd.toFixed(0)}` : `-RM${Math.abs(val.priceAdd).toFixed(0)}`}
                             </span>
                           )}
@@ -419,21 +410,21 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
 
             {/* Quantity */}
             {product.category !== "flyers" && (
-              <div className="flex flex-col gap-3">
-                <label className="text-xl font-bold text-foreground">
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
                   {label("Quantity", "Kuantiti")}
                 </label>
                 {product.matrixPricing?.enabled && !product.matrixPricing.hideQuantityGrid && availableQuantities.length > 0 ? (
-                  <div className="flex flex-wrap gap-2.5">
+                  <div className="flex flex-wrap gap-1.5">
                     {availableQuantities.map((q) => (
-                      <button key={q} type="button" onClick={() => setQuantity(q)} className={cn("orbea-pill", quantity === q && "selected")}>
+                      <button key={q} onClick={() => setQuantity(q)} className={cn("orbea-pill", quantity === q && "selected")}>
                         {q}
                       </button>
                     ))}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between p-4 border border-border rounded-xl bg-card">
-                    <span className="text-sm font-semibold">{label("Pieces / Unit", "Kuantiti (Unit)")}</span>
+                  <div className="flex items-center justify-between p-3 border border-border rounded-lg">
+                    <span className="text-xs font-medium">{label("Pieces", "Unit")}</span>
                     <QuantityPicker
                       quantity={quantity}
                       onDecrement={() => setQuantity((q) => Math.max(minQuantity, q - 1))}
@@ -449,7 +440,7 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
             {/* Turnaround & Pricing */}
             {product.category !== "flyers" && stepTurnaround.length > 0 && (
               <div className="flex flex-col gap-2">
-                <label className="text-lg font-semibold text-foreground">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em]">
                   {label("Turnaround & Pricing", "Tempoh & Harga")}
                 </label>
                 {(() => {
@@ -692,36 +683,41 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
         )}
       </div>
 
-      {/* ═══ Sticky CTA Footer — Orbea-style with big price ═══ */}
-      <div className="border-t border-border bg-background flex flex-col gap-3 px-5 py-4 shrink-0">
-        {/* Price row — product name left, big price right */}
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="font-semibold text-base text-foreground truncate">{product.name}</span>
-          <span className="font-bold text-3xl tabular-nums text-foreground shrink-0">RM {total.toFixed(2)}</span>
-        </div>
+      {/* ═══ CTA portaled to #product-cta-portal (Orbea: #target-bottom) ═══
+          Inner content: button + product-info row
+          Orbea button: px-8 bg-surface-button-primary py-3 rounded-[2.5rem] body-m font-medium
+          Orbea info row: flex flex-col gap-y-[.375rem] items-center 1024:flex-row 1024:justify-center */}
+      {ctaPortalEl &&
+        createPortal(
+          <div className="flex flex-col gap-2">
+            {/* CTA Button */}
+            <button
+              onClick={
+                step === "summary"
+                  ? handleAddToCart
+                  : () => onStepChange(nextStep as "frame" | "components" | "summary")
+              }
+              disabled={isPending}
+              className="orbea-btn-primary"
+            >
+              {step === "summary" ? (isPending ? label("Adding...", "Menambah...") : stepButtonLabel) : stepButtonLabel}
+            </button>
 
-        {/* CTA Button */}
-        <button
-          onClick={
-            step === "summary"
-              ? handleAddToCart
-              : () => onStepChange(nextStep as "frame" | "components" | "summary")
-          }
-          disabled={isPending}
-          className="orbea-btn-primary"
-        >
-          {step === "summary" ? (isPending ? label("Adding...", "Menambah...") : stepButtonLabel) : stepButtonLabel}
-        </button>
-
-        {step !== "summary" && (
-          <button
-            onClick={() => onStepChange("summary")}
-            className="text-center text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
-          >
-            {label("View summary", "Lihat ringkasan")}
-          </button>
+            {/* Product info row */}
+            <div className="flex flex-col gap-y-1.5 items-center lg:flex-row lg:justify-center lg:flex-wrap">
+              <span className="font-medium truncate text-xs">{product.name}</span>
+              <span className="text-muted-foreground">|</span>
+              <span className="font-bold text-xs">RM {total.toFixed(2)}</span>
+              <button
+                onClick={() => onStepChange("summary")}
+                className="underline text-muted-foreground hover:text-foreground transition-colors duration-150 text-xs"
+              >
+                {label("View summary", "Lihat ringkasan")}
+              </button>
+            </div>
+          </div>,
+          ctaPortalEl
         )}
-      </div>
-    </div>
+    </>
   );
 }
