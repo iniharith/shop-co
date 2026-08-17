@@ -15,6 +15,7 @@ import { IProduct } from "@/types/IProduct";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 type Step = "frame" | "components" | "summary";
 
@@ -72,38 +73,38 @@ const ProductDetailPage = () => {
       {isPending && <ProductDetailSkeleton />}
       {!isPending && product && (
         <>
-          {/* ═══ Sticky Subnav Bar — sits below fixed main header ═══ */}
+          {/* ═══ Orbea Subnav Bar — sits cleanly below fixed header ═══ */}
           <nav
             ref={navRef}
-            className="sticky z-30 top-0 bg-background/95 backdrop-blur-md border-b border-border grid grid-cols-3 items-center px-4 py-3 lg:px-8 lg:flex transition-all duration-300 shadow-sm"
+            className="sticky z-30 top-0 bg-background/95 backdrop-blur-md border-b border-border/80 grid grid-cols-3 items-center px-4 py-3 lg:px-8 lg:flex transition-all duration-200"
           >
-            {/* Left: back arrow (mobile) */}
+            {/* Left: back arrow (mobile) / Change model (desktop) */}
             <div className="text-sm lg:hidden">
               {step !== "frame" ? (
-                <button onClick={() => setStep(prevStep)} className="flex gap-1 items-center text-foreground">
+                <button type="button" onClick={() => setStep(prevStep)} className="flex gap-1.5 items-center text-foreground font-medium">
                   <ChevronLeft className="w-4 h-4 shrink-0" />
-                  <span className="min-w-0 truncate">{prevStepLabel}</span>
+                  <span className="min-w-0 truncate text-xs">{prevStepLabel}</span>
                 </button>
               ) : (
                 <span />
               )}
             </div>
 
-            {/* Left: product name + change model (desktop) */}
-            <div className="hidden lg:flex items-center gap-2 mr-auto">
-              <span className="text-base font-semibold text-foreground">{product.name}</span>
-              <span className="text-muted-foreground">|</span>
+            {/* Left: Product Name + Change model link (desktop) */}
+            <div className="hidden lg:flex items-center gap-3 mr-auto">
+              <span className="text-base font-bold text-foreground">{product.name}</span>
+              <span className="text-muted-foreground/60">|</span>
               <Link
                 href="/home/shop"
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ChevronLeft className="w-4 h-4 shrink-0" />
-                {label("Change model", "Tukar Produk")}
+                <span>{label("Change model", "Tukar Produk")}</span>
               </Link>
             </div>
 
             {/* Center: current step label (mobile) */}
-            <span className="font-semibold justify-self-center text-sm lg:hidden">
+            <span className="font-bold justify-self-center text-sm lg:hidden text-foreground">
               {currentStepMeta.button_mobile}
             </span>
 
@@ -112,8 +113,14 @@ const ProductDetailPage = () => {
               {stepLabels.map((s) => (
                 <li key={s.key}>
                   <button
+                    type="button"
                     onClick={() => setStep(s.key)}
-                    className={`text-sm font-medium transition-colors underline-offset-4 ${step === s.key ? "text-foreground underline font-bold" : "text-muted-foreground hover:text-foreground"}`}
+                    className={cn(
+                      "text-sm font-medium transition-all duration-150 relative py-1 cursor-pointer",
+                      step === s.key
+                        ? "text-foreground font-bold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
                   >
                     {s.label}
                   </button>
@@ -124,28 +131,38 @@ const ProductDetailPage = () => {
             {/* Right: mobile next button */}
             <div className="lg:hidden flex justify-end">
               {step !== "summary" && (
-                <button onClick={() => setStep(nextStep)} className="flex gap-1 items-center text-foreground">
-                  <span className="min-w-0 truncate text-sm">{nextStepLabel}</span>
+                <button type="button" onClick={() => setStep(nextStep)} className="flex gap-1 items-center text-foreground font-medium">
+                  <span className="min-w-0 truncate text-xs">{nextStepLabel}</span>
                   <ChevronRight className="w-4 h-4 shrink-0" />
                 </button>
               )}
             </div>
           </nav>
 
-          {/* ═══ Two-column product canvas ═══ */}
+          {/* ═══ Orbea Canvas: Full-bleed product image with floating spec card ═══ */}
           <div
-            className="product-detail flex flex-col lg:flex-row bg-neutral-950 overflow-hidden"
-            style={{ height: canvasHeight > 0 ? `${canvasHeight}px` : "calc(100vh - 130px)" }}
+            className="product-detail relative overflow-hidden w-full bg-[#f6f6f8] dark:bg-neutral-950 flex flex-col lg:block"
+            style={{
+              height: canvasHeight > 0 ? `${canvasHeight}px` : "calc(100vh - 180px)",
+              minHeight: "560px",
+            }}
           >
-            {/* ── Left: Full-bleed product image (takes remaining space) ── */}
-            <div className="relative flex-1 min-w-0 min-h-0 max-lg:h-[45%] overflow-hidden">
+            {/* ── Background Image Layer ── */}
+            <div className="relative w-full h-[45vh] lg:absolute lg:inset-0 lg:h-full flex items-center justify-center">
               <ProductGallery images={product.images} step={step} />
-              {/* Right-edge fade blending into card */}
-              <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-neutral-950/60 to-transparent pointer-events-none hidden lg:block" />
             </div>
 
-            {/* ── Right: Configurator panel — fixed width BESIDE the image ── */}
-            <div className="shrink-0 w-full lg:w-[380px] xl:w-[420px] h-full flex flex-col bg-background border-t lg:border-t-0 lg:border-l border-border/50 overflow-hidden">
+            {/* ── Floating Configurator Card (Orbea 100% Match) ── */}
+            <div className="
+              relative lg:absolute lg:top-4 lg:right-4 lg:bottom-4
+              w-full lg:w-[410px] xl:w-[440px]
+              flex-1 lg:flex-initial
+              z-20 flex flex-col
+              bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl
+              border-t lg:border border-neutral-200/80 dark:border-neutral-800
+              lg:rounded-3xl shadow-2xl
+              overflow-hidden
+            ">
               <ProductDetails
                 product={product}
                 step={step}
@@ -171,3 +188,4 @@ const ProductDetailPage = () => {
 };
 
 export default ProductDetailPage;
+

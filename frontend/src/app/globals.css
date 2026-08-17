@@ -191,15 +191,9 @@
     pointer-events: none;
   }
 
-  /* Homepage hero / product detail page: hide the fixed-header spacer so content fills the viewport */
-  body:has(.hero-full-bleed) div[aria-hidden],
-  body:has(.product-detail) div[aria-hidden] {
+  /* Homepage hero only: hide fixed-header spacer so the hero bleeds behind the navbar */
+  body:has(.hero-full-bleed) div[aria-hidden] {
     display: none !important;
-  }
-
-  /* ── Orbea product detail layout ── */
-  .product-detail {
-    overflow: hidden;
   }
 
   /* Orbea thumbnail expand animation (exact Orbea classes) */
@@ -229,34 +223,49 @@
     .orbea-card-gap { padding: 1.25rem; }
   }
 
-  /* Orbea pill option selector */
+  /* Orbea pill option selector — 100% Orbea match */
   .orbea-pill {
-    @apply relative inline-flex items-center justify-center px-4 py-3 text-base font-medium rounded-lg;
-    @apply border border-border bg-card transition-[background,border-color] duration-150;
-    @apply min-h-[3.25rem] min-w-[3.25rem];
+    @apply relative inline-flex items-center justify-center px-5 py-3.5 text-sm font-semibold rounded-xl;
+    @apply border border-neutral-300 dark:border-neutral-700 bg-card text-foreground transition-all duration-150;
+    @apply min-h-[3.25rem] min-w-[3.5rem] text-center shadow-xs cursor-pointer select-none;
   }
   .orbea-pill:hover {
-    @apply border-muted-foreground/40;
+    @apply border-neutral-400 dark:border-neutral-500 bg-neutral-50 dark:bg-neutral-800/80;
   }
   .orbea-pill.selected {
-    @apply bg-secondary border-foreground;
+    @apply bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 border-neutral-950 dark:border-white shadow-md font-bold;
   }
 
-  /* Orbea color swatch — larger circular swatch to match Orbea's ~48px size */
+  /* Orbea segmented pill switch (like 'Our selection / You design') */
+  .orbea-switch-container {
+    @apply inline-flex p-1 bg-neutral-100 dark:bg-neutral-800/90 rounded-full w-full gap-1 border border-neutral-200/60 dark:border-neutral-700/60;
+  }
+  .orbea-switch-item {
+    @apply flex-1 py-3 px-4 rounded-full text-xs font-semibold transition-all duration-200 text-center flex items-center justify-center cursor-pointer text-neutral-600 dark:text-neutral-400;
+  }
+  .orbea-switch-item:hover {
+    @apply text-foreground;
+  }
+  .orbea-switch-item.selected {
+    @apply bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 shadow-md font-bold;
+  }
+
+  /* Orbea color swatch */
   .orbea-swatch {
     @apply relative grid place-content-center p-1.5 rounded-full cursor-pointer size-12;
-    @apply border-2 border-border bg-card transition-[background,border-color] duration-150;
+    @apply border-2 border-border bg-card transition-all duration-150;
   }
   .orbea-swatch.selected {
-    @apply bg-secondary border-foreground;
+    @apply border-foreground ring-2 ring-foreground/20 scale-105;
   }
 
   /* Orbea primary button — large, full-width, pill-shaped */
   .orbea-btn-primary {
     @apply inline-flex items-center justify-center w-full px-8 py-4;
-    @apply bg-foreground text-background font-semibold text-base;
-    @apply rounded-[2.5rem] transition-colors duration-150;
-    @apply hover:bg-foreground/90 active:scale-[0.98];
-    @apply disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed;
+    @apply bg-neutral-950 dark:bg-white text-white dark:text-neutral-950 font-bold text-base tracking-wide;
+    @apply rounded-[2.5rem] transition-all duration-200 shadow-md;
+    @apply hover:bg-neutral-800 dark:hover:bg-neutral-200 active:scale-[0.98];
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-neutral-950;
   }
 }
+
