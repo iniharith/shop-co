@@ -50,7 +50,7 @@ export const useNav = () => {
       const updateHeaderVisibility = () => {
         const currentScrollY = window.scrollY;
 
-        setIsScrolled(currentScrollY > 0);
+        setIsScrolled(currentScrollY > 50);
 
         // At top of page → always show
         if (currentScrollY <= 0) {

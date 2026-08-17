@@ -64,11 +64,11 @@ const Hero = () => {
   };
 
   return (
-    <section className="hero-full-bleed relative w-full h-screen min-h-[640px] flex items-center justify-center overflow-hidden bg-black select-none">
+    <section className="hero-full-bleed relative w-full h-screen min-h-[640px] flex items-end justify-start overflow-hidden bg-black select-none">
       {/* ── Background Video (Hardware-Accelerated & Stable) ── */}
       <video
         ref={videoRef}
-        className="absolute inset-0 w-full h-full object-cover scale-[1.01] transform-gpu will-change-transform opacity-75 pointer-events-none"
+        className="absolute inset-0 w-full h-full object-cover scale-[1.01] transform-gpu will-change-transform opacity-80 pointer-events-none"
         autoPlay
         muted
         loop
@@ -80,86 +80,60 @@ const Hero = () => {
       </video>
 
       {/* ── Cinematic Orbea Vignette & Gradient Overlays ── */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-black/50 z-10 pointer-events-none" />
-      <div className="absolute inset-0 bg-radial-[circle_at_center,transparent_35%,rgba(0,0,0,0.65)_100%] z-10 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-black/40 z-10 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent z-10 pointer-events-none" />
 
-      {/* ── Main Banner Content (Centered, Bold, Orbea Hierarchy) ── */}
-      <div className="relative z-20 flex flex-col items-center justify-center text-center px-4 sm:px-6 md:px-8 lg:px-12 w-full max-w-5xl mx-auto -mt-2 sm:-mt-4">
-        {/* Main Headline - Orbea Large Impact Font */}
+      {/* ── Main Banner Content: Bottom-Left Aligned (Exact Orbea Screenshot Layout) ── */}
+      <div className="relative z-20 flex flex-col items-start text-left px-6 sm:px-10 md:px-16 lg:px-20 pb-16 sm:pb-20 md:pb-24 w-full max-w-4xl">
+        {/* Main Headline - Stacked Bold (Matches "The Yes Machine") */}
         <motion.h1
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[5.5rem] font-bold text-white tracking-[-0.03em] uppercase leading-[0.95] drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)]"
+          className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white tracking-[-0.03em] leading-[0.95] drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)]"
         >
-          {label("PRECISION PRINTING", "CETAKAN BERKUALITI")}
+          {label("The Precision", "Cetakan")}
           <br />
-          <span className="text-white/95 font-light">
-            {label("& BESPOKE FABRICATION", "& PEMBUATAN KHAS")}
-          </span>
+          {label("Printing", "Berkualiti")}
         </motion.h1>
 
         {/* Sub-headline Narrative */}
         <motion.p
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="text-sm sm:text-base md:text-lg text-neutral-200/90 max-w-2xl font-normal leading-relaxed text-center drop-shadow-sm mt-4 md:mt-6"
+          className="text-sm sm:text-base md:text-lg text-neutral-200/90 max-w-xl font-normal leading-relaxed mt-4 md:mt-5 drop-shadow-sm"
         >
           {label(
-            "Premium commercial printing, bespoke packaging, signs & apparel. Factory direct with 48-hour nationwide delivery.",
-            "Perkhidmatan percetakan premium untuk kad perniagaan, risalah, kain rentang, pakaian & pembungkusan khas. Buatan kilang terus dengan penghantaran 48 jam ke seluruh Malaysia."
+            "Unlock your brand's potential. Direct factory printing, bespoke packaging & signs with 48-hour delivery across Malaysia.",
+            "Buka potensi jenama anda. Percetakan kilang terus, pembungkusan khas & papan tanda dengan penghantaran 48 jam ke seluruh Malaysia."
           )}
         </motion.p>
 
-        {/* Orbea Pill CTA Action Buttons */}
+        {/* Orbea Pill CTA Action Buttons (Matches "Discover Wild LT" & "Customise yours") */}
         <motion.div
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6 sm:mt-8 w-full sm:w-auto justify-center items-center"
+          className="flex flex-row flex-wrap gap-3 sm:gap-4 mt-6 sm:mt-8 items-center"
         >
           <button
             onClick={() => router.push("/home/shop")}
-            className="w-full sm:w-auto min-w-[200px] inline-flex items-center justify-center px-8 py-3.5 sm:py-4 bg-white text-black font-semibold text-xs sm:text-sm uppercase tracking-wider rounded-full hover:bg-neutral-200 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-[0_8px_30px_rgba(0,0,0,0.4)] cursor-pointer"
+            className="inline-flex items-center justify-center px-7 sm:px-8 py-3.5 sm:py-4 bg-white text-black font-semibold text-xs sm:text-sm tracking-normal rounded-full hover:bg-neutral-200 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg cursor-pointer"
           >
-            {label("Shop Now", "Beli Sekarang")}
+            {label("Discover Products", "Beli Sekarang")}
           </button>
           <button
             onClick={() => router.push("/home/shop")}
-            className="w-full sm:w-auto min-w-[200px] inline-flex items-center justify-center px-8 py-3.5 sm:py-4 bg-white/10 backdrop-blur-md border border-white/35 text-white font-semibold text-xs sm:text-sm uppercase tracking-wider rounded-full hover:bg-white/20 hover:border-white/60 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg cursor-pointer"
+            className="inline-flex items-center justify-center px-7 sm:px-8 py-3.5 sm:py-4 bg-black/40 backdrop-blur-md border border-white/30 text-white font-semibold text-xs sm:text-sm tracking-normal rounded-full hover:bg-white/20 hover:border-white/60 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg cursor-pointer"
           >
-            {label("Explore Products", "Jelajahi Produk")}
+            {label("Customise yours", "Tempahan khas")}
           </button>
-        </motion.div>
-
-        {/* Trust Indicators / Minimal Specs Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 pt-6 sm:pt-8 mt-6 sm:mt-8 border-t border-white/15 w-full max-w-3xl"
-        >
-          {[
-            { value: "48H", title: label("Express Delivery", "Penghantaran Pantas") },
-            { value: "50+", title: label("Product Lines", "Kategori Produk") },
-            { value: "100%", title: label("Quality Guarantee", "Jaminan Kualiti") },
-            { value: "★ 4.9", title: label("Customer Rating", "Penilaian Pelanggan") },
-          ].map((item, index) => (
-            <div key={index} className="flex flex-col items-center">
-              <span className="font-bold text-xl sm:text-2xl text-white tracking-tight">
-                {item.value}
-              </span>
-              <span className="text-white/60 text-[10px] sm:text-[11px] font-medium uppercase tracking-wider mt-0.5">
-                {item.title}
-              </span>
-            </div>
-          ))}
         </motion.div>
       </div>
 
       {/* ── Video Controls (Mute / Play Toggle) ── */}
-      <div className="absolute bottom-6 right-6 z-30 hidden sm:flex items-center gap-2">
+      <div className="absolute bottom-8 right-6 sm:right-10 z-30 hidden sm:flex items-center gap-2">
         <button
           onClick={toggleMute}
           aria-label={isMuted ? "Unmute video" : "Mute video"}
@@ -180,12 +154,9 @@ const Hero = () => {
       <button
         onClick={handleScrollDown}
         aria-label="Scroll to discover content"
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 text-white/60 hover:text-white transition-colors duration-200 cursor-pointer"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 text-white/60 hover:text-white transition-colors duration-200 cursor-pointer"
       >
-        <span className="text-[10px] font-medium uppercase tracking-[0.25em]">
-          {label("Scroll", "Gulung")}
-        </span>
-        <ChevronDown size={18} className="animate-bounce" />
+        <ChevronDown size={20} className="animate-bounce opacity-70" />
       </button>
     </section>
   );

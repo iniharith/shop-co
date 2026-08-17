@@ -27,6 +27,7 @@ import { useLanguage } from "@/i18n/LanguageProvider";
 import { useTheme } from "next-themes";
 import { categoryLabels } from "@/i18n/messages";
 import { AI_SEARCH_ENABLED, aiSemanticSearch, aiSearchSuggestions } from "@/utils/aiSearch";
+import { motion, AnimatePresence } from "framer-motion";
 
 // ── Mobile Drawer Content ────────────────────────────────────────────────────
 const MobileNavSheetContent = ({
@@ -362,7 +363,9 @@ const Nav = () => {
     }
   };
 
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const isHomePage = pathname === "/";
+  const showCenterSearch = !isHomePage || isScrolled || isSearchOpen;
 
   // ── Apply header-hidden + header-frosted class to parent .site-header element ──
   useEffect(() => {
@@ -393,14 +396,14 @@ const Nav = () => {
       >
         {/* ── MAIN HEADER ── */}
         <div className={cn(
-          "w-full px-4 md:px-7 py-3 md:py-4 flex justify-between items-center gap-3 md:gap-6 border-b transition-colors duration-300",
+          "w-full px-4 md:px-8 py-3.5 md:py-4 flex justify-between items-center gap-3 md:gap-6 border-b transition-colors duration-300",
           isHomePage && !isScrolled
             ? "border-white/10"
             : "border-black/5 dark:border-white/10"
         )}>
 
-          {/* Left: Hamburger + Logo */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Left: Either Category Menu (at top of homepage) or Logo + Hamburger (when scrolled) */}
+          <div className="flex items-center gap-3 shrink-0">
             <Drawer.Root
               shouldScaleBackground
               open={isOpen}
@@ -424,104 +427,203 @@ const Nav = () => {
               />
             </Drawer.Root>
 
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2">
-              <Image
-                src="/images/kampung-cetak-logo.png"
-                alt="Kampung Cetak"
-                width={36}
-                height={36}
-                className="object-contain rounded-full md:w-10 md:h-10"
-              />
-              <h1 className={cn("text-lg md:text-2xl font-bold tracking-tight transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-primary")}>
-                Kampung Cetak
-              </h1>
-            </Link>
+            <AnimatePresence mode="wait">
+              {showCenterSearch ? (
+                /* When scrolled or non-homepage: Logo sits on the Left */
+                <motion.div
+                  key="left-logo"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Link href="/" className="flex items-center gap-2">
+                    <Image
+                      src="/images/kampung-cetak-logo.png"
+                      alt="Kampung Cetak"
+                      width={36}
+                      height={36}
+                      className="object-contain rounded-full md:w-9 md:h-9"
+                    />
+                    <h1 className={cn("text-lg md:text-2xl font-bold tracking-tight transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-primary")}>
+                      Kampung Cetak
+                    </h1>
+                  </Link>
+                </motion.div>
+              ) : (
+                /* At top of homepage (Orbea layout): Category Menu on Left */
+                <motion.div
+                  key="left-menu"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="hidden md:flex items-center gap-6"
+                >
+                  <Link href="/" className="flex items-center gap-2 mr-2">
+                    <Image
+                      src="/images/kampung-cetak-logo.png"
+                      alt="Kampung Cetak"
+                      width={32}
+                      height={32}
+                      className="object-contain rounded-full"
+                    />
+                  </Link>
+                  {printingCategories.slice(0, 5).map((item, index) => (
+                    <div key={index} className="relative group">
+                      <Link
+                        href={item.href}
+                        className="text-xs lg:text-sm font-semibold tracking-wide uppercase text-white/90 hover:text-white transition-colors duration-200 py-2 inline-flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>{categoryLabels[locale][item.label] || item.label}</span>
+                        {item.subItems && item.subItems.length > 0 && (
+                          <FaChevronDown className="text-[8px] opacity-60 group-hover:opacity-100 group-hover:rotate-180 transition-transform duration-200" />
+                        )}
+                      </Link>
+
+                      {/* Dropdown Menu on Hover */}
+                      {item.subItems && item.subItems.length > 0 && (
+                        <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white dark:bg-popover border border-gray-200 dark:border-border shadow-xl rounded-xl min-w-[210px] py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                          {item.subItems.map((sub, idx) => (
+                            <Link
+                              key={idx}
+                              href={sub.href}
+                              className="px-4 py-2 text-xs text-foreground font-medium hover:bg-gray-100 dark:hover:bg-muted hover:text-primary transition-colors whitespace-nowrap"
+                            >
+                              {sub.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          {/* Center: Search (desktop only) */}
-          <form 
-            onSubmit={handleSearch}
-            className={cn(
-              "z-[80] hidden md:flex flex-1 max-w-2xl mx-auto relative items-center rounded-full border overflow-visible px-4 py-1 transition-colors duration-300",
-              isHomePage && !isScrolled
-                ? "border-white/30"
-                : "border-border dark:border-white/10"
-            )}
-            style={isHomePage && !isScrolled
-              ? { background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }
-              : { background: isDark ? "rgba(242,242,242,0.06)" : "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: isDark ? "none" : "0 1px 2px rgba(0,0,0,0.04)" }
-            }
-          >
-            <IoSearch className={cn("text-xl mr-2 shrink-0 transition-colors duration-300", isHomePage && !isScrolled ? "text-white/70" : "text-muted-foreground")} />
-            <Input
-              className={cn(
-                "w-full focus-visible:ring-0 text-md bg-transparent border-none shadow-none ring-0 focus-visible:ring-offset-0 px-0 h-10 transition-colors duration-300",
-                isHomePage && !isScrolled ? "text-white placeholder:text-white/60" : "text-foreground placeholder:text-muted-foreground"
+          {/* Center Section: Centered Logo at Top, OR Animated Search Bar when Scrolled */}
+          <div className="flex-1 flex justify-center items-center px-2 md:px-4">
+            <AnimatePresence mode="wait">
+              {!showCenterSearch ? (
+                /* Centered Brand Wordmark at Top of Homepage (Matches Orbea Screenshot Center Logo) */
+                <motion.div
+                  key="center-logo"
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                  className="hidden md:flex items-center justify-center"
+                >
+                  <Link href="/" className="text-xl lg:text-2xl font-extrabold tracking-widest text-white uppercase drop-shadow-md hover:opacity-90 transition-opacity">
+                    KAMPUNG CETAK
+                  </Link>
+                </motion.div>
+              ) : (
+                /* Animated Search Bar moving from Left to Center when Scrolling Down */
+                <motion.form
+                  key="center-search"
+                  initial={{ opacity: 0, scale: 0.95, x: -30 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, x: -30 }}
+                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                  onSubmit={handleSearch}
+                  className={cn(
+                    "z-[80] hidden md:flex flex-1 max-w-2xl mx-auto relative items-center rounded-full border overflow-visible px-4 py-1 transition-colors duration-300",
+                    isHomePage && !isScrolled
+                      ? "border-white/30"
+                      : "border-border dark:border-white/10"
+                  )}
+                  style={isHomePage && !isScrolled
+                    ? { background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }
+                    : { background: isDark ? "rgba(242,242,242,0.06)" : "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: isDark ? "none" : "0 1px 2px rgba(0,0,0,0.04)" }
+                  }
+                >
+                  <IoSearch className={cn("text-xl mr-2 shrink-0 transition-colors duration-300", isHomePage && !isScrolled ? "text-white/70" : "text-muted-foreground")} />
+                  <Input
+                    className={cn(
+                      "w-full focus-visible:ring-0 text-md bg-transparent border-none shadow-none ring-0 focus-visible:ring-offset-0 px-0 h-10 transition-colors duration-300",
+                      isHomePage && !isScrolled ? "text-white placeholder:text-white/60" : "text-foreground placeholder:text-muted-foreground"
+                    )}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                    placeholder={t("nav.searchPlaceholder")}
+                  />
+                  <Button type="submit" className="bg-primary text-primary-foreground rounded-full px-6 h-9 shrink-0 ml-2">
+                    {t("nav.search")}
+                  </Button>
+
+                  {/* Live Search Suggestions Dropdown */}
+                  {isSearchFocused && searchQuery.length > 1 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-popover text-popover-foreground border border-border shadow-xl rounded-xl max-h-[300px] overflow-y-auto z-[90] py-2">
+                      {searchResults.length > 0 ? (
+                        searchResults.map((prod: any) => (
+                          <div 
+                            key={prod._id}
+                            onClick={() => {
+                              setSearchQuery("");
+                              setIsSearchFocused(false);
+                              router.push(`/home/shop/${prod._id}`);
+                            }}
+                            className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-muted cursor-pointer transition-colors"
+                          >
+                            <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 shrink-0">
+                              <Image src={prod.images?.[0] || "/images/kampung-cetak-logo.png"} alt={prod.name} width={40} height={40} className="object-cover w-full h-full" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-semibold text-foreground">{prod.name}</span>
+                              <span className="text-xs text-primary font-bold">RM {prod.price}</span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-sm text-muted-foreground text-center">{t("nav.noProducts")} &quot;{searchQuery}&quot;</div>
+                      )}
+                      {aiSuggestions.length > 0 && (
+                        <div className="border-t border-border mt-1 pt-1">
+                          <p className="px-4 pt-2 pb-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">🤖 Cadangan AI</p>
+                          <div className="flex flex-wrap gap-2 px-4 pb-3 pt-1">
+                            {aiSuggestions.map((s) => (
+                              <button
+                                key={s}
+                                onClick={() => {
+                                  setSearchQuery("");
+                                  setIsSearchFocused(false);
+                                  router.push(`/home/shop?search=${encodeURIComponent(s)}`);
+                                }}
+                                className="text-xs bg-muted hover:bg-primary/10 text-foreground border border-border rounded-full px-3 py-1 transition-colors"
+                              >
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </motion.form>
               )}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-              placeholder={t("nav.searchPlaceholder")}
-            />
-            <Button type="submit" className="bg-primary text-primary-foreground rounded-full px-6 h-9 shrink-0 ml-2">
-              {t("nav.search")}
-            </Button>
+            </AnimatePresence>
+          </div>
 
-            {/* Live Search Suggestions Dropdown */}
-            {isSearchFocused && searchQuery.length > 1 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-popover text-popover-foreground border border-border shadow-xl rounded-xl max-h-[300px] overflow-y-auto z-[90] py-2">
-                {searchResults.length > 0 ? (
-                  searchResults.map((prod: any) => (
-                    <div 
-                      key={prod._id}
-                      onClick={() => {
-                        setSearchQuery("");
-                        setIsSearchFocused(false);
-                        router.push(`/home/shop/${prod._id}`);
-                      }}
-                      className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-muted cursor-pointer transition-colors"
-                    >
-                      <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 shrink-0">
-                        <Image src={prod.images?.[0] || "/images/kampung-cetak-logo.png"} alt={prod.name} width={40} height={40} className="object-cover w-full h-full" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-foreground">{prod.name}</span>
-                        <span className="text-xs text-primary font-bold">RM {prod.price}</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="px-4 py-3 text-sm text-muted-foreground text-center">{t("nav.noProducts")} &quot;{searchQuery}&quot;</div>
-                )}
-                {aiSuggestions.length > 0 && (
-                  <div className="border-t border-border mt-1 pt-1">
-                    <p className="px-4 pt-2 pb-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">🤖 Cadangan AI</p>
-                    <div className="flex flex-wrap gap-2 px-4 pb-3 pt-1">
-                      {aiSuggestions.map((s) => (
-                        <button
-                          key={s}
-                          onClick={() => {
-                            setSearchQuery("");
-                            setIsSearchFocused(false);
-                            router.push(`/home/shop?search=${encodeURIComponent(s)}`);
-                          }}
-                          className="text-xs bg-muted hover:bg-primary/10 text-foreground border border-border rounded-full px-3 py-1 transition-colors"
-                        >
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </form>
-
-          {/* Right: Icons & Auth */}
+          {/* Right: Icons & Auth (Matches Orbea Right Header) */}
           <div className="flex gap-2 md:gap-3 items-center shrink-0">
+            {/* Search Icon Trigger on Top of Homepage */}
+            {!showCenterSearch && (
+              <Button
+                onPress={() => setIsSearchOpen(true)}
+                isIconOnly
+                variant="ghost"
+                className="hidden md:flex rounded-full p-2 cursor-pointer hover:bg-white/15 transition-colors text-white"
+                aria-label="Search"
+              >
+                <IoSearch className="text-xl" />
+              </Button>
+            )}
+
             <LanguageSwitcher />
             <ThemeSwitcher />
             {session?.user?.id ? (
@@ -596,50 +698,6 @@ const Nav = () => {
             )}
           </div>
         </div>
-
-        {/* ── DESKTOP CATEGORY NAV ── */}
-        <div className={cn(
-          "w-full border-y hidden md:block relative z-40 transition-all duration-300",
-          isHomePage && !isScrolled
-            ? "border-white/10"
-            : "border-black/5 dark:border-white/10"
-        )}
-          style={isHomePage && !isScrolled ? undefined : {
-            backgroundColor: isDark ? "rgba(242,242,242,0.03)" : "rgba(255,255,255,0.4)",
-          }}
-        >
-          <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
-            {printingCategories.map((item, index) => (
-              <div key={index} className="relative group">
-                <div
-                  className={cn("font-bold uppercase tracking-wide inline-block py-2 cursor-default transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-primary")}
-                >
-                  <p className="relative text-sm inline-block overflow-hidden transition-colors">
-                    <span className={cn("inline-block transition-all duration-300 opacity-100 group-hover:-translate-y-6", isHomePage && !isScrolled ? "text-white" : "text-primary")}>
-                      {categoryLabels[locale][item.label] || item.label}
-                    </span>
-                    <span className={cn("absolute left-0 inline-block translate-y-5 transition-all duration-300 group-hover:scale-[.9] group-hover:translate-y-0", isHomePage && !isScrolled ? "text-white" : "text-primary")}>
-                      {categoryLabels[locale][item.label] || item.label}
-                    </span>
-                  </p>
-                </div>
-
-                {/* Dropdown */}
-                <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white dark:bg-popover border border-gray-200 dark:border-border shadow-xl rounded-md min-w-[220px] py-2 z-50">
-                  {item.subItems?.map((sub, idx) => (
-                    <Link
-                      key={idx}
-                      href={sub.href}
-                      className="px-4 py-2 text-sm text-foreground font-medium hover:bg-gray-100 dark:hover:bg-muted hover:text-primary transition-colors whitespace-nowrap"
-                    >
-                      {sub.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
       <AuthModal nowProp={"login"} />
@@ -653,3 +711,4 @@ const Nav = () => {
 };
 
 export default Nav;
+
