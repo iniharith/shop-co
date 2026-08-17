@@ -4,95 +4,124 @@
  */
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import Image from "next/image";
+import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { getImageUrl } from "@/utils/getImageUrl";
+import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 
 interface ProductGalleryProps {
   images: string[];
 }
 
 export function ProductGallery({ images }: ProductGalleryProps) {
-  const [selectedImage, setSelectedImage] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
   const [isZooming, setIsZooming] = useState(false);
-  const imageRef = useRef<HTMLDivElement>(null);
 
   const displayImages = images?.length > 0 ? images : ["/logo.png"];
 
+  const goTo = (idx: number) => {
+    if (idx < 0) setCurrentIndex(displayImages.length - 1);
+    else if (idx >= displayImages.length) setCurrentIndex(0);
+    else setCurrentIndex(idx);
+  };
+
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!imageRef.current) return;
-    const rect = imageRef.current.getBoundingClientRect();
+    const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     setZoomPosition({ x, y });
   }, []);
 
   return (
-    <div className="flex md:flex-row flex-col-reverse gap-3">
-      {/* Vertical thumbnail strip */}
+    <div className="relative flex flex-col gap-3">
+      {/* ── Main Image ── */}
+      <div
+        className="relative w-full aspect-square overflow-hidden rounded-2xl bg-white cursor-crosshair group"
+        onMouseMove={handleMouseMove}
+        onMouseEnter={() => setIsZooming(true)}
+        onMouseLeave={() => setIsZooming(false)}
+      >
+        {displayImages.map((img, index) => (
+          <div
+            key={index}
+            className={cn(
+              "absolute inset-0 transition-opacity duration-500",
+              index === currentIndex ? "opacity-100" : "opacity-0 pointer-events-none"
+            )}
+          >
+            <img
+              src={getImageUrl(img)}
+              alt={`Product ${index + 1}`}
+              className={cn(
+                "w-full h-full object-contain transition-transform duration-300",
+                isZooming && "scale-[1.8]"
+              )}
+              style={isZooming ? { transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%` } : undefined}
+            />
+          </div>
+        ))}
+
+        {/* Prev / Next arrows */}
+        {displayImages.length > 1 && (
+          <>
+            <button
+              onClick={() => goTo(currentIndex - 1)}
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/60"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => goTo(currentIndex + 1)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/60"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </>
+        )}
+
+        {/* Zoom hint */}
+        <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm text-white text-[10px] font-medium px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+          <ZoomIn className="w-3 h-3" />
+          Hover to zoom
+        </div>
+      </div>
+
+      {/* ── Thumbnail Strip ── */}
       {displayImages.length > 1 && (
-        <div className="flex md:flex-row flex-row md:flex-col gap-2 overflow-x-auto md:overflow-x-visible md:overflow-y-auto py-1 shrink-0">
-          {displayImages.map((image, index) => (
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {displayImages.map((img, index) => (
             <button
               key={index}
+              onClick={() => setCurrentIndex(index)}
               className={cn(
-                "relative cursor-pointer aspect-square h-16 md:h-20 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-200",
-                selectedImage === index
-                  ? "border-primary shadow-md"
-                  : "border-transparent hover:border-muted-foreground/30 opacity-60 hover:opacity-100"
+                "relative flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 transition-all duration-200",
+                currentIndex === index
+                  ? "border-foreground shadow-md"
+                  : "border-transparent opacity-50 hover:opacity-100"
               )}
-              onClick={() => setSelectedImage(index)}
             >
-              <img
-                src={getImageUrl(image)}
-                alt={`Thumbnail ${index + 1}`}
-                className="w-full h-full object-cover"
-              />
+              <img src={getImageUrl(img)} alt={`Thumb ${index + 1}`} className="w-full h-full object-cover" />
             </button>
           ))}
         </div>
       )}
 
-      {/* Main image with zoom */}
-      <div className="relative flex-1">
-        <div
-          ref={imageRef}
-          className="relative aspect-square w-full overflow-hidden rounded-xl bg-white cursor-crosshair"
-          onMouseMove={handleMouseMove}
-          onMouseEnter={() => setIsZooming(true)}
-          onMouseLeave={() => setIsZooming(false)}
-        >
-          <img
-            src={getImageUrl(displayImages[selectedImage])}
-            alt="Product image"
-            className={cn(
-              "w-full h-full object-contain transition-transform duration-200",
-              isZooming && "scale-150"
-            )}
-            style={
-              isZooming
-                ? { transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%` }
-                : undefined
-            }
-          />
+      {/* ── Dot indicators ── */}
+      {displayImages.length > 1 && (
+        <div className="flex justify-center gap-1.5">
+          {displayImages.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentIndex(index)}
+              className={cn(
+                "h-1.5 rounded-full transition-all duration-300",
+                currentIndex === index ? "w-6 bg-foreground" : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+              )}
+            />
+          ))}
         </div>
-
-        {/* Image counter */}
-        {displayImages.length > 1 && (
-          <div className="absolute bottom-3 left-3 bg-black/60 text-white text-xs font-medium px-3 py-1.5 rounded-full backdrop-blur-sm">
-            {selectedImage + 1} / {displayImages.length}
-          </div>
-        )}
-
-        {/* Zoom hint */}
-        {displayImages.length > 0 && (
-          <div className="absolute top-3 right-3 bg-black/60 text-white text-xs font-medium px-3 py-1.5 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
-            Hover to zoom
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

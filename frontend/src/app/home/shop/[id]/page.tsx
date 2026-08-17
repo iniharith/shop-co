@@ -6,7 +6,6 @@
 import Link from "next/link";
 import { ProductDetails } from "@/components/page-sections/shop/product-details";
 import { ProductGallery } from "@/components/page-sections/shop/product-gallery";
-import ProductHero from "@/components/page-sections/shop/ProductHero";
 import ProductSctions from "@/components/page-sections/home/productSctions";
 import React, { useEffect, useState } from "react";
 import { useProducts } from "@/hooks/useProducts";
@@ -31,52 +30,49 @@ const page = () => {
 
   return (
     <div className="w-full">
-      {/* ── Minimal Breadcrumbs ── */}
-      <div className="max-w-[1400px] mx-auto px-5 md:px-10 py-4">
-        <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Link href="/" className="hover:text-primary transition-colors">{label("Home", "Utama")}</Link>
-          <ChevronRight className="w-3 h-3" />
-          <Link href="/home/shop" className="hover:text-primary transition-colors">{label("Shop", "Kedai")}</Link>
-          {product && (
-            <>
-              <ChevronRight className="w-3 h-3" />
-              <Link href={`/home/shop?category=${product.category}`} className="hover:text-primary transition-colors capitalize">
-                {product.category.replace(/-/g, ' ')}
-              </Link>
-              <ChevronRight className="w-3 h-3" />
-              <span className="text-foreground font-medium truncate max-w-[200px] md:max-w-[400px]">{product.name}</span>
-            </>
-          )}
-        </nav>
-      </div>
-
       {isPending && <ProductDetailSkeleton />}
       {!isPending && product && (
         <>
-          {/* ── Full-width Hero Image ── */}
-          <div className="max-w-[1400px] mx-auto px-5 md:px-10 mb-8">
-            <ProductHero images={product.images} alt={product.name} />
-          </div>
+          {/* ── Orbea-style Two-Column Layout ── */}
+          <div className="max-w-[1600px] mx-auto">
+            {/* Breadcrumbs */}
+            <div className="px-5 md:px-10 lg:px-14 py-3">
+              <nav className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <Link href="/" className="hover:text-foreground transition-colors">{label("Home", "Utama")}</Link>
+                <ChevronRight className="w-3 h-3" />
+                <Link href="/home/shop" className="hover:text-foreground transition-colors">{label("Shop", "Kedai")}</Link>
+                {product && (
+                  <>
+                    <ChevronRight className="w-3 h-3" />
+                    <Link href={`/home/shop?category=${product.category}`} className="hover:text-foreground transition-colors capitalize">
+                      {product.category.replace(/-/g, ' ')}
+                    </Link>
+                  </>
+                )}
+              </nav>
+            </div>
 
-          {/* ── Two-column: Gallery + Configurator ── */}
-          <div className="max-w-[1400px] mx-auto px-5 md:px-10 pb-16">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              {/* Left: Gallery (sticky) */}
-              <div className="w-full lg:col-span-5 lg:sticky lg:top-28">
+            {/* Main two-column: Image carousel (left) + Configurator (right) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start">
+              {/* Left: Large Image Carousel — Orbea puts this as 55-60% */}
+              <div className="w-full lg:col-span-7 px-5 md:px-10 lg:pl-14 lg:pr-6 lg:sticky lg:top-24">
                 <ProductGallery images={product.images} />
               </div>
 
-              {/* Right: Configurator */}
-              <div className="w-full lg:col-span-7">
+              {/* Right: Configurator Panel — Orbea puts this as 40-45% */}
+              <div className="w-full lg:col-span-5 px-5 md:px-10 lg:pr-14 lg:pl-6 py-6 lg:py-0 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto scrollbar-none">
                 <ProductDetails product={product} />
               </div>
             </div>
-
-            <div id="flyer-pricing-portal"></div>
           </div>
 
+          {/* ── Flyer pricing portal ── */}
+          <div id="flyer-pricing-portal" className="max-w-[1600px] mx-auto px-5 md:px-10 lg:px-14" />
+
           {/* ── Related Products ── */}
-          <ProductSctions isLoading={isProductsPending} title={label("Related Products", "Produk Berkaitan")} products={relatedProducts} />
+          <div className="mt-12 border-t border-border pt-12">
+            <ProductSctions isLoading={isProductsPending} title={label("Related Products", "Produk Berkaitan")} products={relatedProducts} />
+          </div>
         </>
       )}
     </div>
