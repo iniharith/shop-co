@@ -24,6 +24,7 @@ import { CgProfile } from "react-icons/cg";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useLanguage } from "@/i18n/LanguageProvider";
+import { useTheme } from "next-themes";
 import { categoryLabels } from "@/i18n/messages";
 import { AI_SEARCH_ENABLED, aiSemanticSearch, aiSearchSuggestions } from "@/utils/aiSearch";
 
@@ -294,6 +295,8 @@ const Nav = () => {
   } = useNav();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
 
@@ -379,8 +382,13 @@ const Nav = () => {
           "relative z-[70] w-full flex flex-col transition-all duration-300",
           isHomePage && !isScrolled
             ? "bg-transparent dark:bg-transparent"
-            : "bg-white/70 dark:bg-background/70 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
+            : "shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
         )}
+        style={isHomePage && !isScrolled ? undefined : {
+          backgroundColor: isDark ? "rgba(10,10,10,0.7)" : "rgba(255,255,255,0.7)",
+          backdropFilter: "blur(16px) saturate(1.2)",
+          WebkitBackdropFilter: "blur(16px) saturate(1.2)",
+        }}
       >
         {/* ── MAIN HEADER ── */}
         <div className={cn(
@@ -588,9 +596,13 @@ const Nav = () => {
         <div className={cn(
           "w-full border-y hidden md:block relative z-40 transition-all duration-300",
           isHomePage && !isScrolled
-            ? "bg-transparent border-white/10"
-            : "bg-white/50 dark:bg-background/50 backdrop-blur-xl border-black/5 dark:border-white/10"
-        )}>
+            ? "border-white/10"
+            : "border-black/5 dark:border-white/10"
+        )}
+          style={isHomePage && !isScrolled ? undefined : {
+            backgroundColor: isDark ? "rgba(10,10,10,0.35)" : "rgba(255,255,255,0.35)",
+          }}
+        >
           <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
             {printingCategories.map((item, index) => (
               <div key={index} className="relative group">
