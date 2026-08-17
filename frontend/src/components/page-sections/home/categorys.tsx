@@ -5,18 +5,18 @@
 "use client";
 import { useRouter } from "nextjs-toploader/app";
 import React from "react";
+import Image from "next/image";
 import { printingCategories } from "@/constants";
 
-// Define some mapping for icons and colors based on the category name
-const categoryStyles: Record<string, { icon: string; color: string }> = {
-  "DIGITAL PRINTING": { icon: "🖨️", color: "bg-blue-50 dark:bg-blue-900/20" },
-  "DISPLAY ITEM": { icon: "🚩", color: "bg-red-50 dark:bg-red-900/20" },
-  "DIGITAL OFFSET": { icon: "📄", color: "bg-yellow-50 dark:bg-yellow-900/20" },
-  "PREMIUM GIFT": { icon: "🎁", color: "bg-green-50 dark:bg-green-900/20" },
-  "APPAREL": { icon: "👕", color: "bg-purple-50 dark:bg-purple-900/20" },
-  "FRAME": { icon: "🖼️", color: "bg-orange-50 dark:bg-orange-900/20" },
-  "WEDDING PRODUCT": { icon: "💍", color: "bg-pink-50 dark:bg-pink-900/20" },
-  "FOOD PACKAGING": { icon: "🍔", color: "bg-teal-50 dark:bg-teal-900/20" },
+const bannerImages: Record<string, string> = {
+  "DIGITAL PRINTING": "/images/banner-digital-printing.jpg",
+  "DISPLAY ITEM": "/images/banner-display-item.jpg",
+  "DIGITAL OFFSET": "/images/banner-digital-offset.jpg",
+  "PREMIUM GIFT": "/images/banner-premium-gift.jpg",
+  "APPAREL": "/images/banner-apparel.jpg",
+  "FRAME": "/images/banner-frame.jpg",
+  "WEDDING PRODUCT": "/images/banner-wedding-product.jpg",
+  "FOOD PACKAGING": "/images/banner-food-packaging.jpg",
 };
 
 const Categorys = () => {
@@ -31,29 +31,40 @@ const Categorys = () => {
         </div>
         <div className="grid md:grid-cols-4 sm:grid-cols-2 grid-cols-2 gap-4">
           {printingCategories.map((category, index) => {
-            const style = categoryStyles[category.label] || { icon: "🏷️", color: "bg-gray-50 dark:bg-card" };
+            const img = bannerImages[category.label];
             return (
               <div
                 key={index}
-                className={`${style.color} cursor-pointer hover:scale-95 transition-all duration-300 rounded-xl p-5 flex flex-col gap-2 border border-transparent dark:border-border/50 hover:shadow-lg`}
+                className="relative group cursor-pointer hover:scale-[1.02] transition-all duration-300 rounded-xl overflow-hidden aspect-[16/9] hover:shadow-xl"
                 onClick={() => router.push(category.href)}
               >
-                <span className="text-4xl drop-shadow-sm">{style.icon}</span>
-                <h2 className="font-bold text-sm dark:text-foreground">{category.label}</h2>
-                <p className="text-gray-500 dark:text-muted-foreground text-xs leading-relaxed z-10 relative">
-                  {category.subItems?.slice(0, 3).map((s, i) => (
-                    <span key={i}>
-                      <span 
-                        onClick={(e) => { e.stopPropagation(); router.push(s.href); }}
-                        className="hover:text-primary hover:underline transition-colors"
-                      >
-                        {s.label}
+                {img && (
+                  <Image
+                    src={img}
+                    alt={category.label}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-110"
+                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 50vw, 25vw"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col gap-1">
+                  <h2 className="font-bold text-sm text-white drop-shadow-md">{category.label}</h2>
+                  <p className="text-white/70 text-xs leading-relaxed">
+                    {category.subItems?.slice(0, 3).map((s, i) => (
+                      <span key={i}>
+                        <span
+                          onClick={(e) => { e.stopPropagation(); router.push(s.href); }}
+                          className="hover:text-white hover:underline transition-colors cursor-pointer"
+                        >
+                          {s.label}
+                        </span>
+                        {i < 2 && category.subItems && category.subItems.length > 1 ? ", " : ""}
                       </span>
-                      {i < 2 && category.subItems && category.subItems.length > 1 ? ", " : ""}
-                    </span>
-                  ))}
-                  {category.subItems && category.subItems.length > 3 ? ", and more." : "."}
-                </p>
+                    ))}
+                    {category.subItems && category.subItems.length > 3 ? ", and more." : "."}
+                  </p>
+                </div>
               </div>
             );
           })}
