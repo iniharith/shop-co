@@ -154,7 +154,7 @@ const MobileNavSheetContent = ({
                         <Image src={prod.images?.[0] || "/images/kampung-cetak-logo.png"} alt={prod.name} width={32} height={32} className="object-cover w-full h-full" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-xs font-semibold text-gray-900 dark:text-foreground">{prod.name}</span>
+                        <span className="text-foreground">{prod.name}</span>
                         <span className="text-[10px] text-primary font-bold">RM {prod.price}</span>
                       </div>
                     </div>
@@ -399,7 +399,7 @@ const Nav = () => {
               direction="left"
             >
               <Drawer.Trigger className="md:hidden block p-1">
-                <FaBars className={cn("text-xl transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-gray-700 dark:text-foreground")} />
+                <FaBars className={cn("text-xl transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-foreground")} />
               </Drawer.Trigger>
               <MobileNavSheetContent
                 closeDrawer={closeDrawer}
@@ -437,14 +437,14 @@ const Nav = () => {
               "z-[80] hidden md:flex flex-1 max-w-2xl mx-auto relative items-center rounded-full border shadow-sm overflow-visible px-4 py-1 transition-colors duration-300",
               isHomePage && !isScrolled
                 ? "bg-white/20 backdrop-blur-sm border-white/30"
-                : "bg-card border-border"
+                : "bg-card dark:bg-white/10 border-border dark:border-white/10"
             )}
           >
-            <IoSearch className={cn("text-xl mr-2 shrink-0 transition-colors duration-300", isHomePage && !isScrolled ? "text-white/70" : "text-gray-500 dark:text-muted-foreground")} />
+            <IoSearch className={cn("text-xl mr-2 shrink-0 transition-colors duration-300", isHomePage && !isScrolled ? "text-white/70" : "text-muted-foreground")} />
             <Input
               className={cn(
                 "w-full focus-visible:ring-0 text-md bg-transparent border-none shadow-none ring-0 focus-visible:ring-offset-0 px-0 h-10 transition-colors duration-300",
-                isHomePage && !isScrolled ? "text-white placeholder:text-white/60" : "dark:text-foreground"
+                isHomePage && !isScrolled ? "text-white placeholder:text-white/60" : "text-foreground placeholder:text-muted-foreground"
               )}
               type="text"
               value={searchQuery}
@@ -475,7 +475,7 @@ const Nav = () => {
                         <Image src={prod.images?.[0] || "/images/kampung-cetak-logo.png"} alt={prod.name} width={40} height={40} className="object-cover w-full h-full" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-foreground">{prod.name}</span>
+                        <span className="text-sm font-semibold text-foreground">{prod.name}</span>
                         <span className="text-xs text-primary font-bold">RM {prod.price}</span>
                       </div>
                     </div>
@@ -521,7 +521,7 @@ const Nav = () => {
                     variant="ghost"
                     className="rounded-full p-2 cursor-pointer hover:bg-gray-300 dark:hover:bg-muted transition-colors"
                   >
-                    <FaCartShopping className={cn("text-xl transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-gray-700 dark:text-foreground")} />
+                    <FaCartShopping className={cn("text-xl transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-foreground")} />
                   </Button>
                   <Badge className="absolute top-0 right-0 bg-primary text-primary-foreground text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-muted">
                     {cartCount}
@@ -536,7 +536,7 @@ const Nav = () => {
                     variant="ghost"
                     className="rounded-full p-2 cursor-pointer hover:bg-gray-300 dark:hover:bg-muted transition-colors"
                   >
-                    <IoNotifications className={cn("text-xl transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-gray-700 dark:text-foreground")} />
+                    <IoNotifications className={cn("text-xl transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-foreground")} />
                   </Button>
                   <Badge className="absolute top-0 right-0 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-muted">
                     {notification ? notification.filter((n) => !n.read).length : 0}
@@ -559,10 +559,10 @@ const Nav = () => {
                     )}
                   </div>
                   <div className="hidden sm:flex flex-col items-start leading-tight">
-                    <span className={cn("text-sm font-semibold max-w-[100px] truncate transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-gray-800 dark:text-foreground")}>
+                    <span className={cn("text-sm font-semibold max-w-[100px] truncate transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-foreground")}>
                       {session.user.name || t("nav.profile")}
                     </span>
-                    <span className={cn("text-[10px] max-w-[100px] truncate transition-colors duration-300", isHomePage && !isScrolled ? "text-white/70" : "text-gray-500 dark:text-muted-foreground")}>
+                    <span className={cn("text-[10px] max-w-[100px] truncate transition-colors duration-300", isHomePage && !isScrolled ? "text-white/70" : "text-muted-foreground")}>
                       {session.user.email || ""}
                     </span>
                   </div>
@@ -613,7 +613,7 @@ const Nav = () => {
                     <Link
                       key={idx}
                       href={sub.href}
-                      className="px-4 py-2 text-sm text-black dark:text-foreground font-medium hover:bg-gray-100 dark:hover:bg-muted hover:text-primary transition-colors whitespace-nowrap"
+                      className="px-4 py-2 text-sm text-foreground font-medium hover:bg-gray-100 dark:hover:bg-muted hover:text-primary transition-colors whitespace-nowrap"
                     >
                       {sub.label}
                     </Link>
