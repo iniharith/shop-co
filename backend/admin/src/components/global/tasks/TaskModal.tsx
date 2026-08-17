@@ -457,6 +457,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const lastTypingEmitRef = React.useRef(0);
   const descriptionFocusActiveRef = React.useRef(false);
   const typingKeepAliveRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const descriptionPendingSaveRef = React.useRef(false);
+  const pendingDescriptionHtmlRef = React.useRef<string>("");
 
   const emitTyping = React.useCallback((text: string, stopped?: boolean) => {
     const socket = session ? getSocket(session) : null;
@@ -545,6 +547,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     if (typingInfo) return;
     if (editingFieldRef.current === 'description') return;
     if (descriptionFocusActiveRef.current) return;
+    if (descriptionPendingSaveRef.current) return;
     if (descriptionRef.current && descriptionRef.current.dataset.descriptionInit) {
       const saved = fullTask.description || "";
       if (descriptionRef.current.innerHTML !== saved) {
@@ -572,7 +575,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   }, [fullTask.title]);
 
   React.useEffect(() => {
-    if (editingFieldRef.current !== 'description') {
+    if (editingFieldRef.current !== 'description' && !descriptionPendingSaveRef.current) {
       const html = fullTask.description || "";
       setDescription(html);
       if (descriptionRef.current) descriptionRef.current.innerHTML = html;
@@ -591,15 +594,27 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   React.useEffect(() => setAssignee(getAssigneeId(fullTask.assignee)), [fullTask.assignee]);
 
   const handleSaveDetails = (data: Record<string, any>) => {
+    if ('description' in data) {
+      descriptionPendingSaveRef.current = true;
+      pendingDescriptionHtmlRef.current = data.description;
+    }
     updateTask({
       id: task._id,
       data,
     }, {
-      onSuccess: () => toast.success("Task details updated!"),
+      onSuccess: () => {
+        if ('description' in data) {
+          descriptionPendingSaveRef.current = false;
+          pendingDescriptionHtmlRef.current = "";
+        }
+        toast.success("Task details updated!");
+      },
       onError: () => {
         if ('title' in data) setTitle(fullTask.title || "");
         if ('description' in data) {
+          descriptionPendingSaveRef.current = false;
           const fb = fullTask.description || "";
+          pendingDescriptionHtmlRef.current = "";
           setDescription(fb);
           if (descriptionRef.current) descriptionRef.current.innerHTML = fb;
         }
@@ -1194,9 +1209,24 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     );
   };
 
+  const flushPendingDescription = React.useCallback(() => {
+    const el = descriptionRef.current;
+    if (!el) return;
+    const html = el.innerHTML;
+    const original = descriptionOnFocusRef.current || fullTask.description || "";
+    if (html !== original) {
+      handleSaveDetails({ description: html });
+    }
+  }, [fullTask.description, handleSaveDetails]);
+
   return (
     <>
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        flushPendingDescription();
+        onClose();
+      }
+    }}>
       <DialogContent
         ref={attachDialogRef}
         className="task-modal-content top-1/2 left-1/2 max-w-[1200px] w-[95vw] md:w-[95vw] p-0 overflow-hidden bg-background border-border shadow-xl max-h-[85vh] flex flex-col will-change-transform"
@@ -1312,7 +1342,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                     const html = (e.currentTarget as HTMLDivElement).innerHTML;
                     if (html !== descriptionOnFocusRef.current) handleSaveDetails({ description: html });
                     else {
-                      const fb = fullTask.description || "";
+                      const fb = descriptionOnFocusRef.current || fullTask.description || "";
                       setDescription(fb);
                       e.currentTarget.innerHTML = fb;
                     }
@@ -1942,7 +1972,15 @@ return (
               </div>
             )}
             
-            <div className="pt-6 mt-auto border-t border-border/50">
+            <div className="pt-6 mt-auto border-t border-border/50 space-y-3">
+              <button
+                type="button"
+                onClick={() => { navigator.clipboard.writeText(task._id); toast.success("Task ID copied"); }}
+                className="w-full text-center text-[10px] font-mono text-muted-foreground/60 hover:text-muted-foreground transition-colors cursor-pointer truncate select-all"
+                title="Click to copy Task ID"
+              >
+                {task._id}
+              </button>
               <Button onClick={onClose} className="w-full font-bold">Done</Button>
             </div>
             
