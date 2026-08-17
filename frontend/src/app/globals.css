@@ -167,7 +167,7 @@
     left: 0 !important;
     right: 0 !important;
     width: 100% !important;
-    z-index: 50 !important;
+    z-index: 100 !important;
     transform: translateY(0);
     opacity: 1;
     transition: transform 0.4s ease, opacity 0.4s ease;
@@ -191,8 +191,9 @@
     pointer-events: none;
   }
 
-  /* Homepage hero: hide spacer so the hero bleeds behind the fixed navbar */
-  body:has(.hero-full-bleed) div[aria-hidden] {
+  /* Homepage hero / product detail page: hide the fixed-header spacer so content fills the viewport */
+  body:has(.hero-full-bleed) div[aria-hidden],
+  body:has(.product-detail) div[aria-hidden] {
     display: none !important;
   }
 

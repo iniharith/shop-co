@@ -34,11 +34,9 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
   const [quantity, setQuantity] = useState(1);
   const [selectedGridSize, setSelectedGridSize] = useState<string>("A4");
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
-  const [ctaPortalEl, setCtaPortalEl] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     setPortalEl(document.getElementById("flyer-pricing-portal"));
-    setCtaPortalEl(document.getElementById("product-cta-portal"));
   }, []);
 
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number | number[]>>({});
@@ -262,11 +260,9 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
         : label("Add to Cart", "Tambah ke Troli");
 
   return (
-    <>
-      {/* ═══ Scrollable content (Orbea: #sidebar-frame-scroll) ═══
-          col-span-full row-span-full flex flex-col gap-250 no-scrollbar overflow-x-hidden
-          overscroll-contain p-500 py-s800-wide 1024:px-400 1024:py-500 1440:px-500 */}
-      <div className="col-span-full row-span-full flex flex-col gap-4 no-scrollbar overflow-x-hidden overscroll-contain p-5 py-8 lg:px-4 lg:py-5 2xl:px-5">
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* ═══ Scrollable content ═══ */}
+      <div className="flex-1 overflow-y-auto no-scrollbar p-4 sm:p-5 space-y-5">
 
         {/* ═══ STEP: FRAME ═══ */}
         {step === "frame" && (
@@ -683,41 +679,32 @@ export function ProductDetails({ product, step, onStepChange }: ProductDetailsPr
         )}
       </div>
 
-      {/* ═══ CTA portaled to #product-cta-portal (Orbea: #target-bottom) ═══
-          Inner content: button + product-info row
-          Orbea button: px-8 bg-surface-button-primary py-3 rounded-[2.5rem] body-m font-medium
-          Orbea info row: flex flex-col gap-y-[.375rem] items-center 1024:flex-row 1024:justify-center */}
-      {ctaPortalEl &&
-        createPortal(
-          <div className="flex flex-col gap-2">
-            {/* CTA Button */}
-            <button
-              onClick={
-                step === "summary"
-                  ? handleAddToCart
-                  : () => onStepChange(nextStep as "frame" | "components" | "summary")
-              }
-              disabled={isPending}
-              className="orbea-btn-primary"
-            >
-              {step === "summary" ? (isPending ? label("Adding...", "Menambah...") : stepButtonLabel) : stepButtonLabel}
-            </button>
+      {/* ═══ Sticky CTA Footer — always visible at bottom of card ═══ */}
+      <div className="border-t border-border bg-card/95 flex flex-col gap-2 px-4 py-3 sm:px-5 sm:py-4 shrink-0">
+        <button
+          onClick={
+            step === "summary"
+              ? handleAddToCart
+              : () => onStepChange(nextStep as "frame" | "components" | "summary")
+          }
+          disabled={isPending}
+          className="orbea-btn-primary"
+        >
+          {step === "summary" ? (isPending ? label("Adding...", "Menambah...") : stepButtonLabel) : stepButtonLabel}
+        </button>
 
-            {/* Product info row */}
-            <div className="flex flex-col gap-y-1.5 items-center lg:flex-row lg:justify-center lg:flex-wrap">
-              <span className="font-medium truncate text-sm">{product.name}</span>
-              <span className="text-muted-foreground">|</span>
-              <span className="font-bold text-sm">RM {total.toFixed(2)}</span>
-              <button
-                onClick={() => onStepChange("summary")}
-                className="underline text-muted-foreground hover:text-foreground transition-colors duration-150 text-sm"
-              >
-                {label("View summary", "Lihat ringkasan")}
-              </button>
-            </div>
-          </div>,
-          ctaPortalEl
-        )}
-    </>
+        <div className="flex items-center justify-center gap-2 flex-wrap">
+          <span className="font-medium truncate text-sm text-foreground">{product.name}</span>
+          <span className="text-muted-foreground text-xs">|</span>
+          <span className="font-bold text-sm text-primary">RM {total.toFixed(2)}</span>
+          <button
+            onClick={() => onStepChange("summary")}
+            className="underline text-muted-foreground hover:text-foreground transition-colors duration-150 text-xs"
+          >
+            {label("View summary", "Lihat ringkasan")}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

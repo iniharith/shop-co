@@ -625,12 +625,12 @@ const Nav = () => {
                 </div>
 
                 {/* Dropdown */}
-                <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white dark:bg-popover border border-gray-200 dark:border-border shadow-xl rounded-md min-w-[220px] py-2 z-50">
+                <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white dark:bg-popover border border-gray-200 dark:border-border shadow-2xl rounded-xl min-w-[220px] max-h-[75vh] overflow-y-auto py-2 z-[110] animate-in fade-in slide-in-from-top-1 duration-150">
                   {item.subItems?.map((sub, idx) => (
                     <Link
                       key={idx}
                       href={sub.href}
-                      className="px-4 py-2 text-sm text-foreground font-medium hover:bg-gray-100 dark:hover:bg-muted hover:text-primary transition-colors whitespace-nowrap"
+                      className="px-4 py-2.5 text-xs lg:text-sm text-foreground font-medium hover:bg-gray-100 dark:hover:bg-muted hover:text-primary transition-colors whitespace-nowrap"
                     >
                       {sub.label}
                     </Link>

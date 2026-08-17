@@ -78,14 +78,11 @@ const ProductDetailPage = () => {
       {isPending && <ProductDetailSkeleton />}
       {!isPending && product && (
         <>
-          {/* ═══ Orbea nav-hero: sticky step nav bar ═══
-              Orbea: sticky z-50 top-0 after:absolute after:border-b after:border-border-default
-              after:bottom-0 after:inset-x-0 bg-surface-default grid grid-cols-3 items-center
-              px-s1000-narrow py-[.625rem] 1024:py-200 1024:flex transition-all duration-300 */}
+          {/* ═══ Sticky Subnav Bar ═══ */}
           <nav
-            className="sticky z-50 top-0 after:absolute after:border-b after:border-border after:bottom-0 after:inset-x-0 bg-background grid grid-cols-3 items-center px-4 py-2.5 lg:px-5 lg:py-2 lg:flex transition-all duration-300"
+            className="sticky z-30 top-0 bg-background/95 backdrop-blur-md border-b border-border/80 grid grid-cols-3 items-center px-4 py-2.5 lg:px-8 lg:py-2.5 lg:flex transition-all duration-300"
           >
-            {/* Left: back link (desktop) / back arrow (mobile) — Orbea line 1174 */}
+            {/* Left: back link (desktop) / back arrow (mobile) */}
             <div className="text-sm lg:hidden">
               {step !== "frame" ? (
                 <button
@@ -100,10 +97,9 @@ const ProductDetailPage = () => {
               )}
             </div>
 
-            {/* Center/left: product name + "Change model" back-to-shop link (desktop)
-                — Orbea line 1122: "{name} | ← Change model" */}
+            {/* Center/left: product name + "Change model" back-to-shop link (desktop) */}
             <div className="hidden lg:flex items-center gap-2 mr-auto">
-              <span className="text-base font-medium">{product.name}</span>
+              <span className="text-base font-semibold text-foreground">{product.name}</span>
               <span className="text-muted-foreground">|</span>
               <Link
                 href="/home/shop"
@@ -114,18 +110,18 @@ const ProductDetailPage = () => {
               </Link>
             </div>
 
-            {/* Center: current step label (mobile) — Orbea line 1197 */}
+            {/* Center: current step label (mobile) */}
             <span className="font-medium justify-self-center text-[.9375rem] lg:hidden">
               {currentStepMeta.button_mobile}
             </span>
 
-            {/* Right: desktop step links — Orbea line 1135 */}
+            {/* Right: desktop step links */}
             <ul className="hidden lg:flex items-center gap-6 ml-auto">
               {stepLabels.map((s) => (
                 <li key={s.key}>
                   <button
                     onClick={() => setStep(s.key)}
-                    className={`body-l transition-colors underline-offset-4 hover:text-foreground ${step === s.key ? "text-foreground underline" : "text-muted-foreground"}`}
+                    className={`text-sm transition-colors underline-offset-4 hover:text-foreground font-medium ${step === s.key ? "text-foreground underline font-bold" : "text-muted-foreground"}`}
                   >
                     {s.label}
                   </button>
@@ -133,7 +129,7 @@ const ProductDetailPage = () => {
               ))}
             </ul>
 
-            {/* Right: mobile next button — Orbea line 1198 */}
+            {/* Right: mobile next button */}
             <div className="lg:hidden">
               {step !== "summary" && (
                 <button
@@ -147,58 +143,24 @@ const ProductDetailPage = () => {
             </div>
           </nav>
 
-          {/* ═══ Orbea product-detail: full-viewport two-column layout ═══
-              Orbea: flex flex-col pt-[var(--header-height)] product-detail relative 1024:flex-row
-              CSS: height: calc(100svh - var(--product-nav-height) + var(--header-height))
-              .h-top/.h-scrolled: transition: height .3s ease-in-out
-              overflow-hidden when not summary
-              bg-secondary = the gray canvas Orbea's studio bg-image sits on — this is what
-              makes the white sidebar card "float" instead of reading as a flush edge panel
-              Height is measured live (see detailHeight above) instead of a broken CSS var,
-              so this always fills exactly what's left below the real site header + step nav. */}
+          {/* ═══ Orbea product-detail: Full-screen two-column layout ═══ */}
           <div
-            ref={detailRef}
-            className="product-detail flex flex-col overflow-hidden relative bg-secondary lg:flex-row"
-            style={{ height: detailHeight ? `${detailHeight}px` : "calc(100svh - 170px)" }}
+            className="product-detail flex flex-col overflow-hidden relative bg-neutral-950 text-foreground lg:flex-row w-full h-[calc(100vh-130px)] min-h-[540px]"
           >
-            {/* ── Left: Image area ──
-                Orbea: grow relative 1024:w-[68%] 1280:w-[67.421875%] 1440:w-[70%] 1680:w-[71%] 1920:w-3/4 */}
-            <div className="grow relative w-full lg:w-[68%] xl:w-[71%] 2xl:w-3/4 max-lg:h-[48svh]">
+            {/* ── Left: Full-Screen Background Image Area ── */}
+            <div className="grow relative w-full h-full lg:w-[65%] xl:w-[70%] max-lg:h-[45vh] overflow-hidden">
               <ProductGallery images={product.images} step={step} />
+              {/* Subtle scrim for smooth contrast on desktop */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/60 pointer-events-none hidden lg:block" />
             </div>
 
-            {/* ── Right: Sidebar ──
-                Orbea: h-1/3 shrink-0 transition-[height] z-[2] 1024:h-auto 1024:w-[32%]
-                Dynamic: h-[62%] when step !== 'summary'
-                orbea-card-gap = Orbea's --s-250-between-cards padding token (.5rem→1.25rem),
-                the gap that lets the gray canvas peek around the floating white card */}
-            <div className="shrink-0 transition-[height] z-[2] h-[62%] orbea-card-gap max-lg:!p-0 lg:h-auto lg:w-[32%] xl:w-[29%] 2xl:w-1/4">
-              {/* ── Grid wrapper (Orbea: <div class="grid h-full">) ── */}
-              <div className="grid h-full">
-                {/* ── Scrollable aside content (Orbea: #aside-content) ──
-                    Orbea: bg-surface-default col-span-full grid no-scrollbar overscroll-contain
-                    overflow-y-auto relative row-span-full transition-all 768:rounded-t-none 1280:rounded-lg
-                    Dynamic: rounded-t-lg when not summary
-                    shadow added to sell the floating-card look on desktop */}
-                <div
-                  className="bg-background col-span-full grid no-scrollbar overscroll-contain overflow-y-auto relative row-span-full transition-all rounded-t-lg lg:rounded-lg lg:shadow-[0px_0px_12px_0px_rgba(0,0,0,0.08)]"
-                >
-                  <ProductDetails
-                    product={product}
-                    step={step}
-                    onStepChange={setStep}
-                  />
-                </div>
-
-                {/* ── CTA portal target (Orbea: #target-bottom) ──
-                    Orbea: bottom-0 col-span-full row-span-full bg-surface-default flex flex-col gap-200
-                    pointer-events-auto px-400 py-300 rounded-t-lg self-end
-                    shadow-[0px_0px_4px_0px_rgba(0,0,0,0.15)] sticky z-[1]
-                    1024:px-300 1024:py-200 1024:relative 1180:py-300
-                    1280:w-[calc(100%-16px)] 1280:bottom-3 1280:left-2 1280:rounded-b-lg */}
-                <div
-                  id="product-cta-portal"
-                  className="bottom-0 col-span-full row-span-full bg-background flex flex-col gap-2 pointer-events-auto px-4 py-3 rounded-t-lg self-end shadow-[0px_0px_4px_0px_rgba(0,0,0,0.15)] sticky z-[1] lg:px-3 lg:py-2 xl:py-3 lg:rounded-b-lg lg:relative"
+            {/* ── Right: Floating Configurator Card ── */}
+            <div className="shrink-0 z-20 w-full lg:w-[35%] xl:w-[30%] max-w-lg h-full p-2 sm:p-4 lg:p-5 flex flex-col overflow-hidden">
+              <div className="bg-card/95 text-card-foreground border border-border/70 rounded-2xl shadow-2xl h-full flex flex-col overflow-hidden backdrop-blur-xl">
+                <ProductDetails
+                  product={product}
+                  step={step}
+                  onStepChange={setStep}
                 />
               </div>
             </div>
