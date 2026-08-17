@@ -385,9 +385,10 @@ const Nav = () => {
             : ""
         )}
         style={isHomePage && !isScrolled ? undefined : {
-          backgroundColor: isDark ? "rgba(242,242,242,0.06)" : "rgba(242,242,242,0.06)",
-          WebkitBackdropFilter: "blur(6px)",
-          backdropFilter: "blur(6px)",
+          backgroundColor: isDark ? "rgba(242,242,242,0.06)" : "rgba(255,255,255,0.72)",
+          WebkitBackdropFilter: isDark ? "blur(6px)" : "blur(20px) saturate(180%)",
+          backdropFilter: isDark ? "blur(6px)" : "blur(20px) saturate(180%)",
+          boxShadow: isDark ? "none" : "0 1px 3px rgba(0,0,0,0.06)",
         }}
       >
         {/* ── MAIN HEADER ── */}
@@ -442,11 +443,15 @@ const Nav = () => {
           <form 
             onSubmit={handleSearch}
             className={cn(
-              "z-[80] hidden md:flex flex-1 max-w-2xl mx-auto relative items-center rounded-full border shadow-sm overflow-visible px-4 py-1 transition-colors duration-300",
+              "z-[80] hidden md:flex flex-1 max-w-2xl mx-auto relative items-center rounded-full border overflow-visible px-4 py-1 transition-colors duration-300",
               isHomePage && !isScrolled
-                ? "bg-white/20 backdrop-blur-sm border-white/30"
-                : "bg-card dark:bg-white/10 border-border dark:border-white/10"
+                ? "border-white/30"
+                : "border-border dark:border-white/10"
             )}
+            style={isHomePage && !isScrolled
+              ? { background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }
+              : { background: isDark ? "rgba(242,242,242,0.06)" : "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: isDark ? "none" : "0 1px 2px rgba(0,0,0,0.04)" }
+            }
           >
             <IoSearch className={cn("text-xl mr-2 shrink-0 transition-colors duration-300", isHomePage && !isScrolled ? "text-white/70" : "text-muted-foreground")} />
             <Input
@@ -600,7 +605,7 @@ const Nav = () => {
             : "border-black/5 dark:border-white/10"
         )}
           style={isHomePage && !isScrolled ? undefined : {
-            backgroundColor: "rgba(242,242,242,0.04)",
+            backgroundColor: isDark ? "rgba(242,242,242,0.03)" : "rgba(255,255,255,0.4)",
           }}
         >
           <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
