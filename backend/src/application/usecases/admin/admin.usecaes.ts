@@ -115,6 +115,20 @@ export class AdminUsecase {
                 const manualItemCategory = String(data.productCategory || data.category || '').trim() || 'UNASSIGNED';
                 const manualItemDescription = String(data.productDescription || '').trim();
                 const manualItemProductId = String(data.productId || '').trim();
+                // Full product/category breakdown (1 or more items) sent from the
+                // Add External Order form's repeatable product picker. Falls back
+                // to a single-item array built from the primary fields above so
+                // older callers that only send productChoice/productCategory still work.
+                const rawLineItems = Array.isArray(data.lineItems) ? data.lineItems : [];
+                const lineItems = (rawLineItems.length > 0
+                    ? rawLineItems
+                    : (manualItemName ? [{ productId: manualItemProductId, productName: manualItemName, category: manualItemCategory }] : [])
+                ).map((item: any) => ({
+                    productId: String(item?.productId || '').trim() || undefined,
+                    productName: String(item?.productName || item?.productChoice || '').trim(),
+                    category: String(item?.category || item?.productCategory || '').trim() || 'UNASSIGNED',
+                    qty: Number(item?.qty) > 0 ? Number(item.qty) : 1,
+                })).filter((item: any) => item.productName || item.category !== 'UNASSIGNED');
                 const [createdOrder] = await OrderModel.create([{
                     ...data,
                     products: data.products || [],
@@ -128,11 +142,13 @@ export class AdminUsecase {
                     description: `Manual order task for Order ${createdOrder._id.toString()}.`,
                     orderId: createdOrder._id.toString(),
                     customerUsername: data.customerName,
-                    // Category now comes from the same catalog/category picker used in
-                    // "New Task", instead of the free-text product name.
+                    // Category/productId/productName stay as the primary/summary item so
+                    // existing board grouping and filters keep working unchanged.
                     category: manualItemCategory,
                     productId: manualItemProductId || undefined,
                     productName: manualItemName || undefined,
+                    // Full breakdown — lets one task cover more than one product/category.
+                    lineItems,
                     status: data.orderStatus || 'PLACED',
                 }], { session });
 

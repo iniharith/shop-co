@@ -30,6 +30,13 @@ export interface ITaskStatusTransition {
   estimated?: boolean;
 }
 
+export interface ITaskLineItem {
+  productId?: string;
+  productName?: string;
+  category?: string;
+  qty?: number;
+}
+
 export interface ITask extends Document {
   title: string;
   description?: string;
@@ -38,8 +45,14 @@ export interface ITask extends Document {
   orderId?: string; // Linked Order ID
   customerUsername?: string; // Linked Customer Username
   category?: string; // e.g. DIGITAL PRINTING, DISPLAY ITEM
-  productId?: string; // Linked catalog product ID
-  productName?: string; // Product name snapshot for task search/history
+  productId?: string; // Linked catalog product ID (primary item)
+  productName?: string; // Product name snapshot for task search/history (primary item)
+  // Full product/category breakdown for a task, so one task can cover more
+  // than one product type (e.g. an order bundling a banner + a sticker).
+  // `category`/`productId`/`productName` above stay as the primary/summary
+  // item for existing filters, board grouping, and search; `lineItems`
+  // holds every item including the primary one.
+  lineItems: ITaskLineItem[];
   status: 'PLACED' | 'IN_PROGRESS' | 'PENDING_ARTWORK' | 'ARTWORK_REVIEWED' | 'ARTWORK_REJECTED' | 'IN_DESIGN' | 'PEMBETULAN' | 'DONE_DESIGN' | 'IN_PRODUCTION' | 'PRINT_AWB' | 'DONE_PRINTING' | 'PACKAGING' | 'SHIPPED' | 'IN_TRANSIT' | 'DELIVERED' | 'CANCELLED' | 'FAILED' | 'RETURN';
   isDone?: boolean;
   isDeleted?: boolean;
@@ -78,6 +91,13 @@ const TaskStatusTransitionSchema = new Schema<ITaskStatusTransition>({
   estimated: { type: Boolean, default: false },
 }, { _id: false });
 
+const TaskLineItemSchema = new Schema<ITaskLineItem>({
+  productId: { type: String, default: '' },
+  productName: { type: String, default: '' },
+  category: { type: String, default: 'UNASSIGNED' },
+  qty: { type: Number, default: 1 },
+}, { _id: false });
+
 const TaskSchema = new Schema<ITask>(
   {
     title: { type: String, required: true },
@@ -89,6 +109,7 @@ const TaskSchema = new Schema<ITask>(
     category: { type: String, default: 'UNASSIGNED' },
     productId: { type: String, default: '' },
     productName: { type: String, default: '' },
+    lineItems: { type: [TaskLineItemSchema], default: [] },
     status: { type: String, enum: ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'PRINT_AWB', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED', 'RETURN'], default: 'PLACED' },
     isDone: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },

@@ -40,17 +40,28 @@ const initialFormData = {
   customerPhone: "",
   customerEmail: "",
   courier: "none",
-  productChoice: "",
   productDescription: "",
-  productCategory: "",
-  productId: "",
 };
+
+type OrderProductItem = { productChoice: string; productCategory: string; productId: string };
+const emptyProductItem = (): OrderProductItem => ({ productChoice: "", productCategory: "", productId: "" });
 
 export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpenChange }) => {
   const { mutate: createOrder, isPending } = useCreateManualOrder();
   const { data: session } = useSession();
-  const [openProductBox, setOpenProductBox] = useState(false);
-  const [productSearch, setProductSearch] = useState("");
+
+  // One task can now cover more than one product/category — each row here
+  // becomes an entry in the task's lineItems, with the first row staying the
+  // primary product/category (same fields the rest of the system expects).
+  const [items, setItems] = useState<OrderProductItem[]>([emptyProductItem()]);
+  const [openRowIndex, setOpenRowIndex] = useState<number | null>(null);
+  const [rowSearch, setRowSearch] = useState("");
+
+  const updateItem = (idx: number, patch: Partial<OrderProductItem>) => {
+    setItems(prev => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+  };
+  const addItemRow = () => setItems(prev => [...prev, emptyProductItem()]);
+  const removeItemRow = (idx: number) => setItems(prev => (prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev));
 
   const [formData, setFormData] = useState(initialFormData);
 
@@ -152,6 +163,15 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
       return;
     }
 
+    const primaryItem = items[0] || emptyProductItem();
+    const lineItems = items
+      .filter(it => it.productChoice.trim())
+      .map(it => ({
+        productId: it.productId || undefined,
+        productName: it.productChoice.trim(),
+        category: it.productCategory || undefined,
+      }));
+
     const payload = {
       userId: formData.userId,
       customerName: formData.customerName,
@@ -159,11 +179,14 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
       totalAmount: 0,
       orderStatus: formData.orderStatus,
       products: [],
-      productChoice: formData.productChoice || undefined,
+      productChoice: primaryItem.productChoice || undefined,
       productDescription: formData.productDescription || undefined,
-      productCategory: formData.productCategory || undefined,
-      productId: formData.productId || undefined,
-      orderNotes: formData.productChoice ? `Product: ${formData.productChoice}` : "",
+      productCategory: primaryItem.productCategory || undefined,
+      productId: primaryItem.productId || undefined,
+      // Full product/category breakdown — lets the auto-created task cover
+      // more than one product type in a single order.
+      lineItems,
+      orderNotes: primaryItem.productChoice ? `Product: ${primaryItem.productChoice}` : "",
       courier: formData.courier === "none" ? undefined : formData.courier,
       paymentMethod: "ONLINE",
       paymentStatus: "PAID",
@@ -184,6 +207,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
         toast.success("Manual order created successfully");
         onOpenChange(false);
         setFormData(initialFormData);
+        setItems([emptyProductItem()]);
         window.location.reload();
       },
       onError: (error: any) => {
@@ -224,112 +248,132 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
             </Select>
           </div>
           <div className="space-y-2 flex flex-col">
-            <Label>Product Choice</Label>
-            <Popover open={openProductBox} onOpenChange={setOpenProductBox}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={openProductBox}
-                  className="w-full justify-between font-normal"
+            <div className="flex items-center justify-between">
+              <Label>Product / Category</Label>
+              <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={addItemRow}>
+                <Plus className="mr-1 h-3.5 w-3.5" /> Add another product
+              </Button>
+            </div>
+            {items.map((item, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <Popover
+                  open={openRowIndex === idx}
+                  onOpenChange={(v) => { setOpenRowIndex(v ? idx : null); setRowSearch(""); }}
                 >
-                  {formData.productChoice
-                    ? formData.productChoice
-                    : "Select or type product..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[400px] p-0" align="start">
-                <Command>
-                  <CommandInput 
-                    placeholder="Search or type product..." 
-                    value={productSearch}
-                    onValueChange={setProductSearch}
-                  />
-                  <CommandList className="max-h-[250px] overflow-y-auto">
-                    <CommandEmpty>
-                       {productSearch ? (
-                         <div
-                           className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-muted rounded-sm text-sm"
-                           onClick={() => {
-                             setFormData({ ...formData, productChoice: productSearch, productCategory: "", productId: "" });
-                             setOpenProductBox(false);
-                             setProductSearch("");
-                           }}
-                         >
-                           <Plus className="h-4 w-4 text-primary" />
-                           Use "{productSearch}"
-                         </div>
-                       ) : (
-                         "No matching product found."
-                       )}
-                    </CommandEmpty>
-                    {productSearch && !TASK_CATEGORIES.some(c => c.toLowerCase() === productSearch.toLowerCase()) && (
-                      <CommandGroup>
-                        <CommandItem
-                          value={productSearch}
-                          onSelect={() => {
-                            setFormData({ ...formData, productChoice: productSearch, productCategory: "", productId: "" });
-                            setOpenProductBox(false);
-                            setProductSearch("");
-                          }}
-                        >
-                          <Plus className="mr-2 h-4 w-4 text-primary" />
-                          Use "{productSearch}"
-                        </CommandItem>
-                      </CommandGroup>
-                    )}
-                    <CommandGroup heading="Categories">
-                      {TASK_CATEGORIES.map((category) => (
-                        <CommandItem
-                          key={category}
-                          value={category}
-                          onSelect={() => {
-                            setFormData({ ...formData, productChoice: category, productCategory: category, productId: "" });
-                            setOpenProductBox(false);
-                            setProductSearch("");
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              formData.productChoice === category ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {category}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                    {taskProducts.length > 0 && (
-                      <CommandGroup heading="Products">
-                        {taskProducts.map((product: any) => (
-                          <CommandItem
-                            key={product.id}
-                            value={product.searchKey}
-                            onSelect={() => {
-                              setFormData({
-                                ...formData,
-                                productChoice: product.name,
-                                productCategory: product.category,
-                                productId: product.id,
-                              });
-                              setOpenProductBox(false);
-                              setProductSearch("");
-                            }}
-                          >
-                            <Package className="mr-2 h-4 w-4 text-muted-foreground" />
-                            {product.name}
-                            <span className="ml-auto text-xs text-muted-foreground">
-                              {product.sections.join(", ") || product.category}
-                            </span>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    )}
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openRowIndex === idx}
+                      className="w-full justify-between font-normal"
+                    >
+                      {item.productChoice || "Select or type product..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[400px] p-0" align="start">
+                    <Command>
+                      <CommandInput
+                        placeholder="Search or type product..."
+                        value={rowSearch}
+                        onValueChange={setRowSearch}
+                      />
+                      <CommandList className="max-h-[250px] overflow-y-auto">
+                        <CommandEmpty>
+                           {rowSearch ? (
+                             <div
+                               className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-muted rounded-sm text-sm"
+                               onClick={() => {
+                                 updateItem(idx, { productChoice: rowSearch, productCategory: "", productId: "" });
+                                 setOpenRowIndex(null);
+                                 setRowSearch("");
+                               }}
+                             >
+                               <Plus className="h-4 w-4 text-primary" />
+                               Use "{rowSearch}"
+                             </div>
+                           ) : (
+                             "No matching product found."
+                           )}
+                        </CommandEmpty>
+                        {rowSearch && !TASK_CATEGORIES.some(c => c.toLowerCase() === rowSearch.toLowerCase()) && (
+                          <CommandGroup>
+                            <CommandItem
+                              value={rowSearch}
+                              onSelect={() => {
+                                updateItem(idx, { productChoice: rowSearch, productCategory: "", productId: "" });
+                                setOpenRowIndex(null);
+                                setRowSearch("");
+                              }}
+                            >
+                              <Plus className="mr-2 h-4 w-4 text-primary" />
+                              Use "{rowSearch}"
+                            </CommandItem>
+                          </CommandGroup>
+                        )}
+                        <CommandGroup heading="Categories">
+                          {TASK_CATEGORIES.map((category) => (
+                            <CommandItem
+                              key={category}
+                              value={category}
+                              onSelect={() => {
+                                updateItem(idx, { productChoice: category, productCategory: category, productId: "" });
+                                setOpenRowIndex(null);
+                                setRowSearch("");
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  item.productChoice === category ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {category}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                        {taskProducts.length > 0 && (
+                          <CommandGroup heading="Products">
+                            {taskProducts.map((product: any) => (
+                              <CommandItem
+                                key={product.id}
+                                value={product.searchKey}
+                                onSelect={() => {
+                                  updateItem(idx, {
+                                    productChoice: product.name,
+                                    productCategory: product.category,
+                                    productId: product.id,
+                                  });
+                                  setOpenRowIndex(null);
+                                  setRowSearch("");
+                                }}
+                              >
+                                <Package className="mr-2 h-4 w-4 text-muted-foreground" />
+                                {product.name}
+                                <span className="ml-auto text-xs text-muted-foreground">
+                                  {product.sections.join(", ") || product.category}
+                                </span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        )}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                {items.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeItemRow(idx)}
+                  >
+                    ✕
+                  </Button>
+                )}
+              </div>
+            ))}
           </div>
           <div className="space-y-2">
             <Label>Courier (Optional)</Label>

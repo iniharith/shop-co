@@ -22,9 +22,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useOrders } from "@/hooks/useOrder";
-import { TASK_CATEGORIES } from "@/constants/taskCategories";
+import { useProducts } from "@/hooks/useProducts";
+import { TASK_CATEGORIES, productToTaskCategory } from "@/constants/taskCategories";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
-import { Check, ChevronsUpDown, Download as DownloadIcon, Copy } from "lucide-react";
+import { Check, ChevronsUpDown, Download as DownloadIcon, Copy, Package } from "lucide-react";
 import { cn, forceDownload } from "@/lib/utils";
 import { useCreateShareLink, useFilesByFolder, useResolveFileByPath, useFolders, useMoveFile } from "@/hooks/useAdminDashboard";
 import { useRouter } from "next/navigation";
@@ -441,6 +442,40 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const [orderId, setOrderId] = useState(task.orderId || "");
   const [customerUsername, setCustomerUsername] = useState(task.customerUsername || "");
   const [category, setCategory] = useState(task.category || "UNASSIGNED");
+  // Extra product/category items linked to this same task (so one task can
+  // cover more than one product type). `category` above stays the
+  // primary/summary field used by board grouping and filters.
+  const [lineItems, setLineItems] = useState<any[]>(task.lineItems || []);
+  const [lineItemRowOpen, setLineItemRowOpen] = useState<number | null>(null);
+  const [lineItemSearch, setLineItemSearch] = useState("");
+  const { data: productsData } = useProducts();
+  const taskProductOptions = React.useMemo(
+    () =>
+      ((productsData as any)?.products || [])
+        .filter((p: any) => p && p.name)
+        .map((p: any) => ({
+          id: p._id,
+          name: p.name,
+          category: productToTaskCategory(p),
+          sections: p.sections || [],
+          searchKey: `${p.name} ${p.category || ""} ${(p.sections || []).join(" ")} ${productToTaskCategory(p)}`.toLowerCase(),
+        })),
+    [productsData]
+  );
+  const addLineItem = () => {
+    const next = [...lineItems, { productId: "", productName: "", category: "UNASSIGNED", qty: 1 }];
+    setLineItems(next);
+  };
+  const updateLineItem = (idx: number, patch: any) => {
+    const next = lineItems.map((li, i) => (i === idx ? { ...li, ...patch } : li));
+    setLineItems(next);
+    handleSaveDetails({ lineItems: next });
+  };
+  const removeLineItem = (idx: number) => {
+    const next = lineItems.filter((_, i) => i !== idx);
+    setLineItems(next);
+    handleSaveDetails({ lineItems: next });
+  };
   const [status, setStatus] = useState(task.status || "PLACED");
   const [title, setTitle] = useState(task.title || "");
   const getAssigneeId = (val: any) => typeof val === 'object' && val !== null ? val._id : (val || "unassigned");
@@ -591,6 +626,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   React.useEffect(() => setOrderId(fullTask.orderId || ""), [fullTask.orderId]);
   React.useEffect(() => setCustomerUsername(fullTask.customerUsername || ""), [fullTask.customerUsername]);
   React.useEffect(() => setCategory(fullTask.category || "UNASSIGNED"), [fullTask.category]);
+  React.useEffect(() => setLineItems(fullTask.lineItems || []), [fullTask.lineItems]);
   React.useEffect(() => setAssignee(getAssigneeId(fullTask.assignee)), [fullTask.assignee]);
 
   const handleSaveDetails = (data: Record<string, any>) => {
@@ -622,6 +658,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
         if ('orderId' in data) setOrderId(fullTask.orderId || "");
         if ('customerUsername' in data) setCustomerUsername(fullTask.customerUsername || "");
         if ('category' in data) setCategory(fullTask.category || "UNASSIGNED");
+        if ('lineItems' in data) setLineItems(fullTask.lineItems || []);
         if ('status' in data) setStatus(fullTask.status || "PLACED");
         if ('assignee' in data) setAssignee(getAssigneeId(fullTask.assignee));
       },
@@ -1701,6 +1738,86 @@ return (
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2"><Package className="w-3.5 h-3.5" /> Additional Products</span>
+                  <Button type="button" variant="ghost" size="sm" className="h-6 px-1.5 text-xs" onClick={addLineItem}>
+                    + Add
+                  </Button>
+                </label>
+                {lineItems.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Link a second product/category to this task, e.g. an order bundling two item types.</p>
+                )}
+                {lineItems.map((li: any, idx: number) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Popover
+                      open={lineItemRowOpen === idx}
+                      onOpenChange={(v) => { setLineItemRowOpen(v ? idx : null); setLineItemSearch(""); }}
+                    >
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={lineItemRowOpen === idx}
+                          className="w-full justify-between font-normal h-9 bg-background shadow-sm border-border/50"
+                        >
+                          {li.productName || (li.category && li.category !== "UNASSIGNED" ? li.category : "Select product or category…")}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[360px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search or type product…" value={lineItemSearch} onValueChange={setLineItemSearch} />
+                          <CommandList className="max-h-[250px] overflow-y-auto">
+                            <CommandEmpty>
+                              {lineItemSearch ? (
+                                <div
+                                  className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-muted rounded-sm text-sm"
+                                  onClick={() => { updateLineItem(idx, { productName: lineItemSearch, productId: "", category: li.category || "UNASSIGNED" }); setLineItemRowOpen(null); setLineItemSearch(""); }}
+                                >
+                                  <Check className="h-4 w-4 opacity-0" /> Use "{lineItemSearch}"
+                                </div>
+                              ) : "No matching product found."}
+                            </CommandEmpty>
+                            <CommandGroup heading="Categories">
+                              {TASK_CATEGORIES.map(cat => (
+                                <CommandItem
+                                  key={cat}
+                                  value={cat}
+                                  onSelect={() => { updateLineItem(idx, { category: cat, productName: cat, productId: "" }); setLineItemRowOpen(null); setLineItemSearch(""); }}
+                                >
+                                  <Check className={cn("h-4 w-4", li.category === cat ? "opacity-100" : "opacity-0")} />
+                                  {cat}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                            {taskProductOptions.length > 0 && (
+                              <CommandGroup heading="Products">
+                                {taskProductOptions.map((product: any) => (
+                                  <CommandItem
+                                    key={product.id}
+                                    value={product.searchKey}
+                                    onSelect={() => { updateLineItem(idx, { productId: product.id, productName: product.name, category: product.category }); setLineItemRowOpen(null); setLineItemSearch(""); }}
+                                  >
+                                    <Package className="h-4 w-4 text-muted-foreground" />
+                                    {product.name}
+                                    <span className="ml-auto text-xs text-muted-foreground">{product.sections.join(", ") || product.category}</span>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            )}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeLineItem(idx)}>
+                      ✕
+                    </Button>
+                  </div>
+                ))}
               </div>
 
               <div className="space-y-1.5">

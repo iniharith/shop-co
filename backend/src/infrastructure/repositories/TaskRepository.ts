@@ -81,6 +81,8 @@ export class TaskRepository {
         { customerUsername: searchRegex },
         { category: searchRegex },
         { productName: searchRegex },
+        { "lineItems.productName": searchRegex },
+        { "lineItems.category": searchRegex },
       ];
       if (/^[a-f\d]{24}$/i.test(search)) (searchOr as any[]).push({ _id: search });
       if (unlinkedFilter) {
