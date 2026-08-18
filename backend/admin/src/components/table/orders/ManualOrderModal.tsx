@@ -16,6 +16,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { useCreateManualOrder } from "@/hooks/useOrder";
 import { useProducts } from "@/hooks/useProducts";
 import { getPublicShippingQuote } from "@/api/orders";
+import { TASK_CATEGORIES } from "@/constants/taskCategories";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Check, ChevronsUpDown, Loader2, Plus, Truck } from "lucide-react";
@@ -247,8 +248,8 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
                          "No matching product found."
                        )}
                     </CommandEmpty>
-                    <CommandGroup>
-                      {productSearch && !products.some((p: any) => p.name.toLowerCase() === productSearch.toLowerCase()) && (
+                    {productSearch && !TASK_CATEGORIES.some(c => c.toLowerCase() === productSearch.toLowerCase()) && !products.some((p: any) => p.name?.toLowerCase() === productSearch.toLowerCase()) && (
+                      <CommandGroup>
                         <CommandItem
                           value={productSearch}
                           onSelect={() => {
@@ -260,18 +261,15 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
                           <Plus className="mr-2 h-4 w-4 text-primary" />
                           Use "{productSearch}"
                         </CommandItem>
-                      )}
-                      {products.map((product: any) => (
+                      </CommandGroup>
+                    )}
+                    <CommandGroup heading="Categories">
+                      {TASK_CATEGORIES.map((category) => (
                         <CommandItem
-                          key={product._id}
-                          value={product.name}
+                          key={category}
+                          value={category}
                           onSelect={() => {
-                            setFormData({
-                              ...formData,
-                              productChoice: product.name,
-                              productDescription: product.description || "",
-                              productCategory: product.category || "",
-                            });
+                            setFormData({ ...formData, productChoice: category });
                             setOpenProductBox(false);
                             setProductSearch("");
                           }}
@@ -279,13 +277,42 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
                           <Check
                             className={cn(
                               "mr-2 h-4 w-4",
-                              formData.productChoice === product.name ? "opacity-100" : "opacity-0"
+                              formData.productChoice === category ? "opacity-100" : "opacity-0"
                             )}
                           />
-                          {product.name}
+                          {category}
                         </CommandItem>
                       ))}
                     </CommandGroup>
+                    {products.length > 0 && (
+                      <CommandGroup heading="Products">
+                        {products.map((product: any) => (
+                          <CommandItem
+                            key={product._id}
+                            value={product.name}
+                            onSelect={() => {
+                              setFormData({
+                                ...formData,
+                                productChoice: product.name,
+                                productDescription: product.description || "",
+                                productCategory: product.category || "",
+                              });
+                              setOpenProductBox(false);
+                              setProductSearch("");
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                formData.productChoice === product.name ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {product.name}
+                            {product.category && <span className="ml-auto text-xs text-muted-foreground">{product.category}</span>}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
                   </CommandList>
                 </Command>
               </PopoverContent>
