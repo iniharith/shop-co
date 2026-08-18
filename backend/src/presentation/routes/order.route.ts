@@ -18,6 +18,8 @@ router.post("/", authMiddilware, orderController.createOrder.bind(orderControlle
 
 router.get("/previous-address", authMiddilware, orderController.getDistintAddress.bind(orderController));
 
+router.post("/shipping/quote", authMiddilware, orderController.getPublicShippingQuotations.bind(orderController));
+
 
 router.get("/status/:status", authMiddilware, orderController.getOrdersByStatus.bind(orderController));
 

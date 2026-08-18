@@ -752,6 +752,49 @@ export class OrderUsecase {
         };
     }
 
+    async getPublicShippingQuotations(input: {
+        postalCode: string;
+        state: string;
+        country?: string;
+        weight: number;
+        width: number;
+        length: number;
+        height: number;
+    }): Promise<any[]> {
+        if (!input.postalCode?.trim()) throw new Error('postalCode is required');
+        if (!input.state?.trim()) throw new Error('state is required');
+        if (!Number.isFinite(input.weight) || input.weight <= 0) throw new Error('weight must be a positive number');
+        if (!Number.isFinite(input.width) || input.width <= 0) throw new Error('width must be a positive number');
+        if (!Number.isFinite(input.length) || input.length <= 0) throw new Error('length must be a positive number');
+        if (!Number.isFinite(input.height) || input.height <= 0) throw new Error('height must be a positive number');
+
+        const country = (input.country || 'MY').trim();
+        const countryCode = /^(my|malaysia)$/i.test(country) ? 'MY' : country.toUpperCase();
+        if (countryCode !== 'MY') throw new Error('Only Malaysian addresses are currently supported');
+
+        const sender = this.buildSender();
+        const receiver: EasyParcelParty = {
+            name: 'Customer',
+            phone: { countryCode: 'MY', number: '000000000' },
+            address1: input.postalCode,
+            postcode: input.postalCode.trim(),
+            city: '',
+            subdivisionCode: toMalaysianSubdivisionCode(input.state.trim()),
+            countryCode,
+        };
+
+        const shipment: EasyParcelShipment = {
+            sender,
+            receiver,
+            weight: input.weight,
+            width: input.width,
+            length: input.length,
+            height: input.height,
+        };
+
+        return easyParcelService.getQuotations([shipment]);
+    }
+
     private async invalidateOrderCaches(order: IOrderDocument): Promise<void> {
         await this.redisService.del(REDIS_KEYS.ORDERS);
         await this.redisService.del(REDIS_KEYS.ORDERS + order._id.toString());

@@ -203,6 +203,15 @@ export class OrderController {
      * @Access PRIVATE
      * @Route /api/orders/:orderId/tracking
      */
+    async getPublicShippingQuotations(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            const quotations = await this.orderUsecase.getPublicShippingQuotations(req.body);
+            res.status(statusCodes.OK).json({ message: "Shipping quotations fetched successfully", quotations });
+        } catch (error: any) {
+            next(error);
+        }
+    }
+
     async getTracking(req: AuthRequest, res: Response, next: NextFunction) {
         try {
             const result = await this.orderUsecase.getTracking(req.params.orderId, req.userId as string, req.role);
