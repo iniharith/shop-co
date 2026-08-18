@@ -82,16 +82,16 @@ const page = () => {
           weight,
           ...DEFAULT_DIMENSIONS,
         }, 30000);
-        const quotations = res?.quotations || [];
+        const groups = Array.isArray(res?.quotations) ? res.quotations : [];
+        const quotations = groups.flatMap((group: any) => Array.isArray(group?.quotations) ? group.quotations : Array.isArray(group) ? group : []);
         if (quotations.length > 0) {
+          const getQuotationPrice = (q: any) => Number(q?.pricing?.total_amount || q?.pricing?.shipment_price || q?.price || q?.total_amount || q?.shipping_price) || Infinity;
           const cheapest = quotations.reduce((min: any, q: any) => {
-            const price = Number(q.price || q.total_amount || q.shipping_price || q.service_price) || Infinity;
-            const minPrice = Number(min.price || min.total_amount || min.shipping_price || min.service_price) || Infinity;
-            return price < minPrice ? q : min;
+            return getQuotationPrice(q) < getQuotationPrice(min) ? q : min;
           });
-          const price = Number(cheapest.price || cheapest.total_amount || cheapest.shipping_price || cheapest.service_price) || 0;
-          setShippingFee(price);
-          setCourierName(cheapest.courier_name || cheapest.courier || cheapest.service_name || "");
+          const price = getQuotationPrice(cheapest);
+          setShippingFee(price === Infinity ? 0 : price);
+          setCourierName(cheapest?.courier?.courier_name || cheapest?.courier?.service_name || cheapest?.courier_name || "");
         } else {
           setShippingFee(null);
           setShippingError(res?.error || "No shipping options available for this address");
