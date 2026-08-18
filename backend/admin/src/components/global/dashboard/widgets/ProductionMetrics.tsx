@@ -41,8 +41,8 @@ export default function ProductionMetrics() {
   const createdToday = dailyThroughput[dailyThroughput.length - 1]?.created || 0;
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-bold">Production Queue</h3>
+    <div className="rounded-[28px] border border-white/10 bg-card/40 backdrop-blur-md p-5">
+      <h3 className="text-lg font-bold mb-4">Production Queue</h3>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="rounded-[28px] bg-cyan-500/10 border border-cyan-500/20 p-5">
           <Printer className="h-5 w-5 text-cyan-400 mb-3" />

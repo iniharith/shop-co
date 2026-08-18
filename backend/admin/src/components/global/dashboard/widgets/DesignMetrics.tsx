@@ -48,8 +48,8 @@ export default function DesignMetrics() {
   const overdue = summary.overdueTasks || 0;
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-bold">Design Queue</h3>
+    <div className="rounded-[28px] border border-white/10 bg-card/40 backdrop-blur-md p-5">
+      <h3 className="text-lg font-bold mb-4">Design Queue</h3>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="rounded-[28px] bg-violet-500/10 border border-violet-500/20 p-5">
           <Palette className="h-5 w-5 text-violet-400 mb-3" />
