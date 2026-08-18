@@ -94,7 +94,7 @@ const page = () => {
           setCourierName(cheapest.courier_name || cheapest.courier || cheapest.service_name || "");
         } else {
           setShippingFee(null);
-          setShippingError("No shipping options available for this address");
+          setShippingError(res?.error || "No shipping options available for this address");
         }
       } catch (err: any) {
         setShippingFee(null);

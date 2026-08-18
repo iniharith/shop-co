@@ -208,9 +208,12 @@ export class OrderController {
             const quotations = await this.orderUsecase.getPublicShippingQuotations(req.body);
             res.status(statusCodes.OK).json({ message: "Shipping quotations fetched successfully", quotations });
         } catch (error: any) {
-            const message = error?.message || 'Failed to fetch shipping quotations';
-            const isConfig = message.includes('configuration') || message.includes('not connected') || message.includes('not supported');
-            res.status(isConfig ? 503 : 400).json({ message });
+            console.error('Public shipping quotation failed:', error?.message || error);
+            res.status(statusCodes.OK).json({
+                message: "Shipping rates temporarily unavailable",
+                quotations: [],
+                error: error?.message || 'Shipping service error',
+            });
         }
     }
 
