@@ -77,6 +77,7 @@ router.get(
       status: req.query.status as string,
       assignee: req.query.assignee as string,
       orderId: req.query.orderId as string,
+      unlinked: req.query.unlinked === 'true',
       search: req.query.search as string,
     };
 

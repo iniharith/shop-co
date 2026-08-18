@@ -4,9 +4,9 @@
  */
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Calendar, IndianRupee, MapPin, Truck } from "lucide-react";
+import { Calendar, IndianRupee, MapPin, Truck, Link2, Unlink, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -23,12 +23,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import AnimatedButton from "../globalButton";
 import { useUpdateOrderStatus } from "@/hooks/useOrder";
+import { useTasks, useUpdateTask } from "@/hooks/useTasks";
 import { IOrder } from "@/types/IOrder";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { IUser, Roles } from "@/types/api";
+import { toast } from "sonner";
 
 interface OrderDetailsModalProps {
   order: IOrder;
@@ -315,10 +319,119 @@ const OrderInfo = ({ order }: OrderDetailsModalProps) => {
         </p>
       </div>
 
+      <div className="p-4 mb-2 bg-muted/20 rounded-lg">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Link2 size={16} /> Linked Tasks
+          </h3>
+          <LinkTaskPopover orderId={(order as any)._id} />
+        </div>
+        <LinkedTasksList orderId={(order as any)._id} />
+      </div>
+
       <p className="font-semibold text-lg flex items-center gap-1">
         Grand Total: RM{order.totalAmount}
       </p>
     </ScrollArea>
+  );
+};
+
+const LinkedTasksList = ({ orderId }: { orderId: string }) => {
+  const { data, isPending } = useTasks({ orderId }, true);
+  const { mutate: updateTask, isPending: unlinking } = useUpdateTask();
+  const tasks = (data as any)?.tasks || [];
+
+  const handleUnlink = (taskId: string) => {
+    updateTask(
+      { id: taskId, data: { orderId: "" } },
+      { onSuccess: () => toast.success("Task unlinked") }
+    );
+  };
+
+  if (isPending) return <p className="text-xs text-muted-foreground">Loading tasks...</p>;
+  if (tasks.length === 0) return <p className="text-xs text-muted-foreground">No tasks linked to this order yet.</p>;
+
+  return (
+    <div className="space-y-2">
+      {tasks.map((task: any) => (
+        <div key={task._id} className="flex items-center justify-between gap-2 p-2 bg-background rounded-md border">
+          <div className="flex items-center gap-2 min-w-0">
+            <Badge variant="outline" className="shrink-0 text-[10px]">{task.status}</Badge>
+            <span className="text-sm truncate">{task.title}</span>
+          </div>
+          <button
+            disabled={unlinking}
+            onClick={() => handleUnlink(task._id)}
+            className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+            title="Unlink task"
+          >
+            <Unlink size={14} />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const LinkTaskPopover = ({ orderId }: { orderId: string }) => {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const { data: session } = useSession();
+  const { data: unlinkedData, isPending } = useTasks({ unlinked: "true", search: search || undefined }, open);
+  const { mutate: updateTask, isPending: linking } = useUpdateTask();
+  const unlinkedTasks = (unlinkedData as any)?.tasks || [];
+
+  const handleLink = (taskId: string) => {
+    updateTask(
+      { id: taskId, data: { orderId } },
+      {
+        onSuccess: () => {
+          toast.success("Task linked to this order");
+          setOpen(false);
+          setSearch("");
+        },
+      }
+    );
+  };
+
+  return (
+    <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch(""); }}>
+      <PopoverTrigger asChild>
+        <button className="text-xs text-primary hover:underline flex items-center gap-1">
+          <Link2 size={12} /> Link Task
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[360px] p-0" align="end">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="Search unlinked tasks..."
+            value={search}
+            onValueChange={setSearch}
+          />
+          <CommandList className="max-h-[250px] overflow-y-auto">
+            <CommandEmpty>
+              {isPending ? "Searching..." : "No unlinked tasks found."}
+            </CommandEmpty>
+            <CommandGroup>
+              {unlinkedTasks.map((task: any) => (
+                <CommandItem
+                  key={task._id}
+                  value={task._id}
+                  onSelect={() => handleLink(task._id)}
+                  disabled={linking}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Badge variant="outline" className="shrink-0 text-[10px]">{task.status}</Badge>
+                    <span className="text-sm truncate">{task.title}</span>
+                  </div>
+                  {linking && <Loader2 size={12} className="animate-spin shrink-0" />}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 };
 

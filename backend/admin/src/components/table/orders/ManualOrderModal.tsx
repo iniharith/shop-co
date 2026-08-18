@@ -4,7 +4,7 @@
  */
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,8 +15,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useCreateManualOrder } from "@/hooks/useOrder";
 import { useProducts } from "@/hooks/useProducts";
+import { getPublicShippingQuote } from "@/api/orders";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2, Plus, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ManualOrderModalProps {
@@ -47,6 +49,7 @@ const initialFormData = {
 export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpenChange }) => {
   const { mutate: createOrder, isPending } = useCreateManualOrder();
   const { data: productsData } = useProducts();
+  const { data: session } = useSession();
   const fetchedProducts = (productsData as any)?.products || [];
   const defaultProducts = [
     { _id: 'dp-1', name: "Banner" }, { _id: 'dp-2', name: "Bunting" }, { _id: 'dp-3', name: "Car Sticker" },
@@ -65,6 +68,72 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
   const [productSearch, setProductSearch] = useState("");
 
   const [formData, setFormData] = useState(initialFormData);
+
+  // Shipping quote state
+  const [shippingQuote, setShippingQuote] = useState<{ courier: string; fee: number; serviceId?: string } | null>(null);
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingError, setShippingError] = useState<string | null>(null);
+  const quoteAbortRef = useRef<AbortController | null>(null);
+  const lastQuoteKey = useRef<string>("");
+
+  const postcodeValid = /^\d{5}$/.test(formData.postcode);
+  const stateValid = !!formData.state;
+
+  useEffect(() => {
+    if (!open) return;
+    const key = `${formData.postcode}|${formData.state}`;
+    if (key === lastQuoteKey.current) return;
+    if (!postcodeValid || !stateValid) {
+      setShippingQuote(null);
+      setShippingError(null);
+      lastQuoteKey.current = "";
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      lastQuoteKey.current = key;
+      setShippingLoading(true);
+      setShippingError(null);
+      quoteAbortRef.current?.abort();
+      const controller = new AbortController();
+      quoteAbortRef.current = controller;
+      try {
+        const token = session?.user?.token || "";
+        const data = await getPublicShippingQuote(token, {
+          postalCode: formData.postcode,
+          state: formData.state,
+          weight: 1,
+          width: 20,
+          length: 30,
+          height: 5,
+        });
+        if (cancelled || controller.signal.aborted) return;
+        const quotations = (data as any)?.quotations || [];
+        if (quotations.length === 0) {
+          setShippingQuote(null);
+          setShippingError((data as any)?.error || "No shipping options available for this address");
+        } else {
+          const cheapest = quotations.reduce((min: any, q: any) => {
+            const price = Number(q.pricing?.total_amount ?? q.total_amount ?? Infinity);
+            return price < Number(min.pricing?.total_amount ?? min.total_amount ?? Infinity) ? q : min;
+          }, quotations[0]);
+          setShippingQuote({
+            courier: cheapest.courier?.courier_name || cheapest.courier_name || "Unknown",
+            fee: Number(cheapest.pricing?.total_amount ?? cheapest.total_amount ?? 0),
+            serviceId: cheapest.service_id,
+          });
+        }
+      } catch (err: any) {
+        if (!cancelled && err?.name !== "CanceledError" && err?.name !== "AbortError") {
+          setShippingQuote(null);
+          setShippingError(err?.response?.data?.message || "Failed to calculate shipping");
+        }
+      } finally {
+        if (!cancelled) setShippingLoading(false);
+      }
+    }, 600);
+    return () => { cancelled = true; clearTimeout(timer); quoteAbortRef.current?.abort(); };
+  }, [formData.postcode, formData.state, open, session?.user?.token]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -325,6 +394,28 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
               </Select>
             </div>
           </div>
+
+          {(shippingLoading || shippingQuote || shippingError) && (
+            <div className="p-3 bg-muted/30 rounded-lg border">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Truck size={14} />
+                <span>Estimated Shipping Fee</span>
+              </div>
+              <div className="mt-1">
+                {shippingLoading ? (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Loader2 size={12} className="animate-spin" /> Calculating...</p>
+                ) : shippingQuote ? (
+                  <p className="text-sm">
+                    <span className="font-semibold">{shippingQuote.courier}</span>
+                    <span className="text-muted-foreground mx-1">—</span>
+                    <span className="font-bold">RM{shippingQuote.fee.toFixed(2)}</span>
+                  </p>
+                ) : shippingError ? (
+                  <p className="text-xs text-destructive">{shippingError}</p>
+                ) : null}
+              </div>
+            </div>
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={isPending}>

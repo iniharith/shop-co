@@ -73,3 +73,8 @@ export const reconcileShipment = async (token: string, orderId: string, shipment
     const response = await AxiosInstance(token).post(`${ORDER_URL}/${orderId}/shipping/reconcile`, { shipmentNumber });
     return response.data;
 }
+
+export const getPublicShippingQuote = async (token: string, data: { postalCode: string; state: string; weight: number; width: number; length: number; height: number }) => {
+    const response = await AxiosInstance(token).post(`${ORDER_URL}/shipping/quote`, data);
+    return response.data;
+}

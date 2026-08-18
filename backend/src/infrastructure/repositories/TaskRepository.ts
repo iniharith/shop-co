@@ -11,6 +11,7 @@ export interface TaskFilters {
   statuses?: string[];
   assignee?: string;
   orderId?: string;
+  unlinked?: boolean;
   customerUsername?: string;
   search?: string;
   isDeleted?: boolean;
@@ -66,13 +67,14 @@ export class TaskRepository {
       query.assignee = filters.assignee;
     }
     if (filters?.orderId) query.orderId = filters.orderId;
+    const unlinkedFilter = filters?.unlinked ? { $or: [{ orderId: { $in: [null, ''] } }, { orderId: { $exists: false } }] } : null;
     if (filters?.customerUsername) query.customerUsername = filters.customerUsername;
 
     const search = filters?.search?.trim();
     if (search) {
       const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const searchRegex = new RegExp(escapedSearch, 'i');
-      query.$or = [
+      const searchOr = [
         { title: searchRegex },
         { description: searchRegex },
         { orderId: searchRegex },
@@ -80,7 +82,14 @@ export class TaskRepository {
         { category: searchRegex },
         { productName: searchRegex },
       ];
-      if (/^[a-f\d]{24}$/i.test(search)) query.$or.push({ _id: search });
+      if (/^[a-f\d]{24}$/i.test(search)) (searchOr as any[]).push({ _id: search });
+      if (unlinkedFilter) {
+        query.$and = [...(query.$and || []), unlinkedFilter, { $or: searchOr }];
+      } else {
+        query.$or = searchOr;
+      }
+    } else if (unlinkedFilter) {
+      Object.assign(query, unlinkedFilter);
     }
     
     if (filters?.isDeleted === true) {
