@@ -13,6 +13,8 @@ import { useProducts } from "@/hooks/useProducts";
 import { useParams } from "next/navigation";
 import ProductDetailSkeleton from "@/components/loading/ProductDetailSkeleton";
 import { IProduct } from "@/types/IProduct";
+import { ProductReviews } from "@/components/global/ProductReviews";
+import { WishlistButton } from "@/components/global/WishlistButton";
 const page = () => {
   const { id } = useParams();
   const { data, isPending } = useProducts(id as string);
@@ -52,7 +54,10 @@ const page = () => {
         <div className="grid border-b border-border pb-10 grid-cols-1 mt-6 lg:grid-cols-12 gap-8 items-start">
           {/* ── LEFT COLUMN: IMAGES & DESCRIPTION ── */}
           <div className="w-full lg:col-span-7 space-y-8">
-            <div className="bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border">
+            <div className="bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border relative">
+              <div className="absolute top-4 right-4 z-10">
+                {product && <WishlistButton productId={product._id} />}
+              </div>
               <ProductGallery images={product.images} />
             </div>
             
@@ -66,6 +71,15 @@ const page = () => {
             
             <div id="flyer-pricing-portal"></div>
           </div>
+          
+          {/* ── REVIEWS SECTION ── */}
+          {product && (
+            <div className="w-full lg:col-span-7">
+              <div className="bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border">
+                <ProductReviews productId={product._id} />
+              </div>
+            </div>
+          )}
           
           {/* ── RIGHT COLUMN: CONFIGURATOR (Sticky) ── */}
           <div className="w-full lg:col-span-5 relative h-full">

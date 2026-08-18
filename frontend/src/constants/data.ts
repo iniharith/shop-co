@@ -356,6 +356,11 @@ export const profileLinks = [
     href: "/home/profile/upload",
   },
   {
+    id: 8,
+    name: "Wishlist",
+    href: "/home/profile/wishlist",
+  },
+  {
     id: 6,
     name: "Chat",
     href: "/home/profile/chat",

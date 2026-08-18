@@ -49,6 +49,7 @@ import {
   Sparkles,
   Shirt,
   Gauge,
+  CalendarDays,
 } from "lucide-react";
 
 import { FaCartShopping } from "react-icons/fa6";
@@ -122,6 +123,7 @@ export const Icons = {
   shirt: Shirt,
   gauge: Gauge,
   history: History,
+  calendar: CalendarDays,
   packageBox: Package,
   gitHub: ({ ...props }: LucideProps) => (
     <svg

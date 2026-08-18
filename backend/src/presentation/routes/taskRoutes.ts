@@ -711,4 +711,38 @@ router.delete(
   })
 );
 
+router.get('/gantt', authMiddilware, asyncHandler(async (req: Request, res: Response) => {
+  const { startDate, endDate, category, assignee } = req.query;
+
+  const filter: any = { isDeleted: { $ne: true } };
+  if (startDate || endDate) {
+    filter.createdAt = {};
+    if (startDate) filter.createdAt.$gte = new Date(startDate as string);
+    if (endDate) filter.createdAt.$lte = new Date(endDate as string);
+  }
+  if (category) filter.category = category;
+  if (assignee) filter.assignee = assignee;
+
+  const tasks = await require('../../domain/entities/Task').default
+    .find(filter)
+    .select('title status category assignee createdAt dueDate statusHistory files')
+    .sort({ createdAt: -1 })
+    .limit(500)
+    .lean();
+
+  const ganttData = tasks.map((task: any) => ({
+    id: task._id,
+    title: task.title,
+    status: task.status,
+    category: task.category,
+    assignee: task.assignee,
+    createdAt: task.createdAt,
+    dueDate: task.dueDate || null,
+    completedAt: task.statusHistory?.find((h: any) => h.status === 'COMPLETED')?.timestamp || null,
+    fileCount: task.files?.length || 0,
+  }));
+
+  res.json({ success: true, data: ganttData });
+}));
+
 export default router;

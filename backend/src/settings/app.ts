@@ -38,6 +38,9 @@ import easyParcelRoutes from '../presentation/routes/easyParcelRoutes';
 import webVitalsRoutes from '../presentation/routes/webVitalsRoutes';
 import mailRoutes from '../presentation/routes/mailRoutes';
 import aiRoutes from '../presentation/routes/aiRoutes';
+import reviewRoutes from '../presentation/routes/review.route';
+import wishlistRoutes from '../presentation/routes/wishlist.route';
+import invoiceRoutes from '../presentation/routes/invoice.route';
 import { auditMiddleware } from '../presentation/middlewares/audit.middleware';
 import { bandwidthMiddleware } from '../shared/utils/bandwidthTracker';
 import { randomUUID } from 'crypto';
@@ -141,6 +144,15 @@ app.use('/api/mail', mailRoutes);
 
 // ─── AI Engine (semantic search + file verification) ────────
 app.use('/api/ai', aiRoutes);
+
+// ─── Reviews & Ratings ────────
+app.use('/api/reviews', reviewRoutes);
+
+// ─── Wishlist ────────
+app.use('/api/wishlist', wishlistRoutes);
+
+// ─── Invoice PDF ────────
+app.use('/api/orders', invoiceRoutes);
 
 // ─── Admin Panel (served at admin.kampungcetak.com) ──────
 const adminPath = path.join(__dirname, '../../admin');

@@ -10,6 +10,7 @@ import SearchInput from '../global/searchInput';
 import SyncButton from '../global/sync-button';
 import { UserNav } from './user-nav';
 import ThemeToggle from './ThemeToggle/theme-toggle';
+import { LanguageSwitcher } from '../global/LanguageSwitcher';
 import { useNotifications } from '@/hooks/useNotification';
 import { useEffect } from 'react';
 import NotificationsPanel from '../global/notifications-drawer';
@@ -51,6 +52,7 @@ export default function Header() {
             <div className='hidden sm:block'><SyncButton /></div>
             <div className='hidden md:block'><UploadMonitor /></div>
             <NotificationsPanel notifications={notifications} />
+            <div className='block'><LanguageSwitcher /></div>
             <div className='block'><ThemeToggle /></div>
             <UserNav showDetails />
           </div>

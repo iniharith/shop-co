@@ -14,6 +14,8 @@ import { getServerSession } from "next-auth/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { WebVitalsTracker } from "@/components/global/webVitalsTracker";
+import { cookies } from "next/headers";
+import type { Locale } from "@/i18n/messages";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://admin.kampungcetak.com"),
@@ -56,8 +58,11 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const session = await getServerSession(authConfig);
+  const cookieStore = await cookies();
+  const savedLocale = cookieStore.get("kc_admin_locale")?.value;
+  const locale: Locale = savedLocale === "ms" ? "ms" : "en";
   return (
-    <html lang="en" className={`${jakarta.variable} ${spaceGrotesk.variable} ${jakarta.className} overflow-x-hidden`} suppressHydrationWarning>
+    <html lang={locale} className={`${jakarta.variable} ${spaceGrotesk.variable} ${jakarta.className} overflow-x-hidden`} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -72,7 +77,7 @@ export default async function RootLayout({
       <body suppressHydrationWarning>
         <NextTopLoader shadow="0 0 10px #10b981" color="#10b981" showSpinner={false} />
         <NuqsAdapter>
-          <Providers session={session}>
+          <Providers session={session} initialLocale={locale}>
             <Toaster theme="light" />
             <WebVitalsTracker />
             {children}

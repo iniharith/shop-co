@@ -64,7 +64,7 @@ export default function ToolsPage() {
 
   return (
     <PageContainer>
-      <div className="w-full space-y-8 rounded-3xl border border-white/10 bg-background/40 p-5 shadow-xl backdrop-blur-md md:p-8">
+      <div className="w-full space-y-8 rounded-[28px] border border-white/10 bg-card/40 backdrop-blur-md p-5 shadow-xl md:p-8">
         <div className="max-w-2xl">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary">Admin Utilities</p>
           <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Tools</h1>
@@ -80,7 +80,7 @@ export default function ToolsPage() {
               <Link
                 key={tool.href}
                 href={tool.href}
-                className="group relative min-h-56 overflow-hidden rounded-[28px] border border-white/10 bg-card/50 p-6 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl"
+                className="group relative min-h-56 overflow-hidden rounded-[28px] border border-white/10 bg-card/40 backdrop-blur-md p-6 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl"
               >
                 <div className={`absolute inset-0 bg-gradient-to-br opacity-80 ${tool.tone.split(" text-")[0]}`} />
                 <div className="relative flex h-full flex-col">

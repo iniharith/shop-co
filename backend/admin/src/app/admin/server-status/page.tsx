@@ -186,10 +186,10 @@ export default function ServerHealthPage() {
             <span className="text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-full flex items-center">
               <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mr-2"></div>Overview
             </span>
-            <span className="hover:text-white transition-colors cursor-pointer px-3 py-1.5">Notes</span>
-            <span className="hover:text-white transition-colors cursor-pointer px-3 py-1.5">Document</span>
-            <span className="hover:text-white transition-colors cursor-pointer px-3 py-1.5">Labs</span>
-            <span className="hover:text-white transition-colors cursor-pointer px-3 py-1.5">Settings</span>
+            <span className="text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer px-3 py-1.5 rounded-full">Notes</span>
+            <span className="text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer px-3 py-1.5 rounded-full">Document</span>
+            <span className="text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer px-3 py-1.5 rounded-full">Labs</span>
+            <span className="text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer px-3 py-1.5 rounded-full">Settings</span>
           </div>
         </div>
       </div>

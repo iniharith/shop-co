@@ -15,10 +15,15 @@ import OrderTracker from "@/components/page-sections/profile/orderTracker";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Send, MessageSquare, CalendarIcon } from "lucide-react";
+import { Send, MessageSquare, CalendarIcon, Star } from "lucide-react";
 import { format } from "date-fns";
 import { useCustomerTasks, useAddCustomerTaskComment } from "@/hooks/useTasks";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useOrderReview } from "@/hooks/useReview";
+import { ReviewDialog } from "./ReviewDialog";
+import { useReorder } from "@/hooks/useReorder";
+import { useDownloadInvoice } from "@/hooks/useInvoice";
+import { ShoppingCart, FileText } from "lucide-react";
 
 interface OrderItemProps {
   order: IOrder;
@@ -27,11 +32,16 @@ interface OrderItemProps {
 const OrderItem = ({ order }: OrderItemProps) => {
   const [expanded, setExpanded] = useState(false);
   const [showTracker, setShowTracker] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const { data: response } = useCustomerTasks();
   const tasks = (response as { tasks?: any[] })?.tasks?.filter((t: any) => t.orderId === order._id) || [];
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [commentText, setCommentText] = useState("");
   const { mutate: addComment, isPending: isCommenting } = useAddCustomerTaskComment();
+  const { data: reviewData } = useOrderReview(order._id);
+  const hasReviewed = !!reviewData?.review;
+  const { mutate: reorder, isPending: isReordering } = useReorder();
+  const { mutate: downloadInvoice, isPending: isDownloading } = useDownloadInvoice();
 
   const handleAddComment = () => {
     if (!commentText.trim() || !selectedTask) return;
@@ -129,6 +139,46 @@ const OrderItem = ({ order }: OrderItemProps) => {
             <Button size="sm" asChild>
               <Link href={`/home/profile/orders/${order._id}`}>View Order</Link>
             </Button>
+
+            {order.orderStatus === "DELIVERED" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => reorder(order)}
+                disabled={isReordering}
+                className="text-green-600 border-green-200 hover:bg-green-50"
+              >
+                <ShoppingCart size={14} className="mr-1" /> {isReordering ? "Adding..." : "Order Again"}
+              </Button>
+            )}
+
+            {(order.paymentStatus === "PAID" || order.orderStatus === "DELIVERED") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => downloadInvoice(order._id)}
+                disabled={isDownloading}
+                className="text-gray-500"
+              >
+                <FileText size={14} className="mr-1" /> {isDownloading ? "Downloading..." : "Invoice"}
+              </Button>
+            )}
+
+            {order.orderStatus === "DELIVERED" && !hasReviewed && order.products[0] && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setReviewOpen(true)}
+                className="text-yellow-600 border-yellow-200 hover:bg-yellow-50"
+              >
+                <Star size={14} className="mr-1" /> Rate
+              </Button>
+            )}
+            {hasReviewed && (
+              <span className="text-xs text-yellow-600 flex items-center gap-1">
+                <Star size={12} className="fill-yellow-400" /> Reviewed
+              </span>
+            )}
           </div>
         </div>
 
@@ -274,6 +324,14 @@ const OrderItem = ({ order }: OrderItemProps) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ReviewDialog
+        open={reviewOpen}
+        onOpenChange={setReviewOpen}
+        orderId={order._id}
+        productId={order.products[0]?.product?._id || ""}
+        productName={order.products[0]?.product?.name || "this product"}
+      />
     </div>
   );
 };

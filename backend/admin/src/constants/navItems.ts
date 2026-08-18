@@ -63,6 +63,13 @@ export const AdminNavItems: NavItem[] = [
         isActive: false,
     },
     {
+        title: 'Schedule',
+        url: '/admin/schedule',
+        icon: 'calendar',
+        shortcut: ['s', 'c'],
+        isActive: false,
+    },
+    {
         title: 'Chat',
         url: '/admin/chat',
         icon: 'message',
@@ -121,7 +128,7 @@ export const roleByNavItems = (role: string) => {
     } else if (role === "packaging") {
         allowedTitles = ['Orders', 'Tracking', 'Chat', 'Packaging', 'History'];
     } else if (role === "designer") {
-        allowedTitles = ['Projects', 'Artworks', 'Print Drafts', 'Tasks', 'Chat'];
+        allowedTitles = ['Projects', 'Artworks', 'Print Drafts', 'Tasks', 'Schedule', 'Chat'];
     } else if (role === "awapparel") {
         allowedTitles = ['Sublimation'];
     } else if (role !== "sysadmin" && role !== "admin" && role !== "boss") {

@@ -14,7 +14,7 @@ const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 type ActorOption = { value: string; name: string; role: string };
 type FilterOptions = { actors: ActorOption[]; actions: string[] };
 
-const DEFAULT_ACTIONS = ["create", "update", "delete", "file_add", "file_delete", "status_change"];
+const DEFAULT_ACTIONS = ["create", "update", "delete", "file_add", "file_delete", "status_change", "login", "login_failed", "register", "magic_login", "magic_link"];
 const formatAction = (value: string) => value.replace(/_/g, " ").replace(/\b\w/g, character => character.toUpperCase());
 
 export default function AuditLogPage() {

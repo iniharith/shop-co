@@ -8,6 +8,7 @@ import { statusCodes } from "../../shared/constants/api.constant";
 import JwtService from "../../shared/utils/jwt";
 import userSchema from "../../infrastructure/db/models/user.model";
 import { AuthRequest } from "../../domain/types/api";
+import { AuditLog } from "../../domain/entities/AuditLog";
 
 
 /**  @Controller */
@@ -19,6 +20,24 @@ export class AuthController {
 
     constructor() {
         this.authUsecase = new UserUsecase();
+    }
+
+    private logAuthEvent(req: Request, action: string, summary: string, actorId?: string, actorName?: string, actorRole?: string) {
+        void AuditLog.create({
+            actorId: actorId || '',
+            actorName: actorName || req.body?.email || 'Unknown',
+            actorRole: actorRole || 'public',
+            source: actorId ? 'admin' : 'public',
+            action,
+            entityType: 'auth',
+            entityId: actorId || undefined,
+            summary,
+            metadata: { email: req.body?.email },
+            method: req.method,
+            route: req.originalUrl.split('?')[0],
+            ip: req.ip,
+            userAgent: req.get('user-agent'),
+        }).catch(err => console.error('[AuditLog] Auth log failed:', err.message));
     }
 
 
@@ -45,6 +64,7 @@ export class AuthController {
             const { user, accessToken, refreshToken } = await this.authUsecase.loginUser(email, password);
             const safeUser = user.toObject();
             delete (safeUser as any).password;
+            this.logAuthEvent(req, 'login', `login: ${email}`, user._id.toString(), user.name, user.role);
             res.status(statusCodes.OK).json({
                 success: true,
                 message: "User logged in successfully",
@@ -53,6 +73,7 @@ export class AuthController {
                 refreshToken
             });
         } catch (error) {
+            this.logAuthEvent(req, 'login_failed', `login_failed: ${req.body?.email || 'unknown'} - ${(error as Error).message}`);
             next(error);
         }
 
@@ -82,6 +103,7 @@ export class AuthController {
             const { user, accessToken, refreshToken } = await this.authUsecase.registerUser({ email, password, name });
             const safeUser = user.toObject();
             delete (safeUser as any).password;
+            this.logAuthEvent(req, 'register', `register: ${email}`, user._id.toString(), user.name, 'client');
             res.status(statusCodes.CREATED).json({
                 success: true,
                 message: "User registered successfully",
@@ -159,6 +181,7 @@ export class AuthController {
                 "7d"
             );
 
+            this.logAuthEvent(req, 'magic_link', `magic_link: generated for ${user.email}`, req.userId, (req as any).user?.name, req.role);
             return res.status(statusCodes.OK).json({
                 success: true,
                 token,
@@ -197,6 +220,7 @@ export class AuthController {
             try {
                 decoded = jwtService.verifyToken(magicToken, "token");
             } catch (error) {
+                this.logAuthEvent(req, 'login_failed', `login_failed: invalid magic token from ${req.ip || 'unknown'}`);
                 return res.status(statusCodes.UNAUTHORIZED).json({
                     success: false,
                     message: "Invalid or expired login link"
@@ -204,6 +228,7 @@ export class AuthController {
             }
 
             if (decoded?.purpose !== "magic-login" || !decoded?.userId) {
+                this.logAuthEvent(req, 'login_failed', `login_failed: invalid magic link purpose from ${req.ip || 'unknown'}`);
                 return res.status(statusCodes.UNAUTHORIZED).json({
                     success: false,
                     message: "Invalid login link"
@@ -224,6 +249,7 @@ export class AuthController {
             const safeUser = user.toObject();
             delete (safeUser as any).password;
 
+            this.logAuthEvent(req, 'magic_login', `magic_login: ${user.email}`, user._id.toString(), user.name, user.role);
             return res.status(statusCodes.OK).json({
                 success: true,
                 message: "User logged in successfully",
