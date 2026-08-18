@@ -770,7 +770,7 @@ export class OrderUsecase {
 
         const status = await easyParcelService.getConnectionStatus().catch(() => null);
         if (!status?.connected) {
-            return [];
+            throw new Error('Shipping calculation is unavailable — EasyParcel needs to be reconnected. Please contact support.');
         }
 
         const country = (input.country || 'MY').trim();
@@ -780,8 +780,8 @@ export class OrderUsecase {
         let sender: EasyParcelParty;
         try {
             sender = this.buildSender();
-        } catch {
-            return [];
+        } catch (e: any) {
+            throw new Error('Shipping calculation is unavailable — sender configuration is missing.');
         }
 
         let subdivisionCode: string;
