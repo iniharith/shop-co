@@ -14,7 +14,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useCreateManualOrder } from "@/hooks/useOrder";
-import { useProducts } from "@/hooks/useProducts";
 import { getPublicShippingQuote } from "@/api/orders";
 import { TASK_CATEGORIES } from "@/constants/taskCategories";
 import { useSession } from "next-auth/react";
@@ -47,10 +46,7 @@ const initialFormData = {
 
 export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpenChange }) => {
   const { mutate: createOrder, isPending } = useCreateManualOrder();
-  const { data: productsData } = useProducts();
   const { data: session } = useSession();
-  const fetchedProducts = (productsData as any)?.products || [];
-  const products = fetchedProducts;
   const [openProductBox, setOpenProductBox] = useState(false);
   const [productSearch, setProductSearch] = useState("");
 
@@ -248,7 +244,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
                          "No matching product found."
                        )}
                     </CommandEmpty>
-                    {productSearch && !TASK_CATEGORIES.some(c => c.toLowerCase() === productSearch.toLowerCase()) && !products.some((p: any) => p.name?.toLowerCase() === productSearch.toLowerCase()) && (
+                    {productSearch && !TASK_CATEGORIES.some(c => c.toLowerCase() === productSearch.toLowerCase()) && (
                       <CommandGroup>
                         <CommandItem
                           value={productSearch}
@@ -284,35 +280,6 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
                         </CommandItem>
                       ))}
                     </CommandGroup>
-                    {products.length > 0 && (
-                      <CommandGroup heading="Products">
-                        {products.map((product: any) => (
-                          <CommandItem
-                            key={product._id}
-                            value={product.name}
-                            onSelect={() => {
-                              setFormData({
-                                ...formData,
-                                productChoice: product.name,
-                                productDescription: product.description || "",
-                                productCategory: product.category || "",
-                              });
-                              setOpenProductBox(false);
-                              setProductSearch("");
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                formData.productChoice === product.name ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {product.name}
-                            {product.category && <span className="ml-auto text-xs text-muted-foreground">{product.category}</span>}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    )}
                   </CommandList>
                 </Command>
               </PopoverContent>
