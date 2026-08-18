@@ -51,8 +51,9 @@ export const getShippingQuotations = async (token: string, data: {
     width: number;
     length: number;
     height: number;
-}) => {
-    const response = await AxiosInstance(token).post(`${ORDER_URL}/shipping/quote`, data);
+}, timeout?: number) => {
+    const instance = AxiosInstance(token);
+    const response = await instance.post(`${ORDER_URL}/shipping/quote`, data, timeout ? { timeout } : undefined);
     return response.data;
 };
 

@@ -208,7 +208,9 @@ export class OrderController {
             const quotations = await this.orderUsecase.getPublicShippingQuotations(req.body);
             res.status(statusCodes.OK).json({ message: "Shipping quotations fetched successfully", quotations });
         } catch (error: any) {
-            next(error);
+            const message = error?.message || 'Failed to fetch shipping quotations';
+            const isConfig = message.includes('configuration') || message.includes('not connected') || message.includes('not supported');
+            res.status(isConfig ? 503 : 400).json({ message });
         }
     }
 

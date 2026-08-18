@@ -81,7 +81,7 @@ const page = () => {
           country: "Malaysia",
           weight,
           ...DEFAULT_DIMENSIONS,
-        });
+        }, 30000);
         const quotations = res?.quotations || [];
         if (quotations.length > 0) {
           const cheapest = quotations.reduce((min: any, q: any) => {
