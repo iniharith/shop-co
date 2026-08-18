@@ -768,18 +768,36 @@ export class OrderUsecase {
         if (!Number.isFinite(input.length) || input.length <= 0) throw new Error('length must be a positive number');
         if (!Number.isFinite(input.height) || input.height <= 0) throw new Error('height must be a positive number');
 
+        const status = await easyParcelService.getConnectionStatus().catch(() => null);
+        if (!status?.connected) {
+            return [];
+        }
+
         const country = (input.country || 'MY').trim();
         const countryCode = /^(my|malaysia)$/i.test(country) ? 'MY' : country.toUpperCase();
         if (countryCode !== 'MY') throw new Error('Only Malaysian addresses are currently supported');
 
-        const sender = this.buildSender();
+        let sender: EasyParcelParty;
+        try {
+            sender = this.buildSender();
+        } catch {
+            return [];
+        }
+
+        let subdivisionCode: string;
+        try {
+            subdivisionCode = toMalaysianSubdivisionCode(input.state.trim());
+        } catch {
+            throw new Error(`Invalid state: ${input.state}`);
+        }
+
         const receiver: EasyParcelParty = {
             name: 'Customer',
             phone: { countryCode: 'MY', number: '000000000' },
             address1: input.postalCode,
             postcode: input.postalCode.trim(),
             city: '',
-            subdivisionCode: toMalaysianSubdivisionCode(input.state.trim()),
+            subdivisionCode,
             countryCode,
         };
 
@@ -792,7 +810,13 @@ export class OrderUsecase {
             height: input.height,
         };
 
-        return easyParcelService.getQuotations([shipment]);
+        const timeoutMs = 15_000;
+        return Promise.race([
+            easyParcelService.getQuotations([shipment]),
+            new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('Shipping rate request timed out')), timeoutMs)
+            ),
+        ]);
     }
 
     private async invalidateOrderCaches(order: IOrderDocument): Promise<void> {
