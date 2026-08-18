@@ -30,7 +30,6 @@ const initialFormData = {
   customerName: "",
   userId: "",
   platform: "WEB",
-  totalAmount: "",
   orderStatus: "PLACED",
   address1: "",
   address2: "",
@@ -39,7 +38,6 @@ const initialFormData = {
   state: "MY-01",
   customerPhone: "",
   customerEmail: "",
-  trackingNumber: "",
   courier: "none",
   productChoice: "",
   productDescription: "",
@@ -51,19 +49,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
   const { data: productsData } = useProducts();
   const { data: session } = useSession();
   const fetchedProducts = (productsData as any)?.products || [];
-  const defaultProducts = [
-    { _id: 'dp-1', name: "Banner" }, { _id: 'dp-2', name: "Bunting" }, { _id: 'dp-3', name: "Car Sticker" },
-    { _id: 'dp-4', name: "Board Printing" }, { _id: 'dp-5', name: "Wall Sticker" }, { _id: 'dp-6', name: "Glass Sticker" },
-    { _id: 'dp-7', name: "Personalised Flag" }, { _id: 'dp-8', name: "Popup Backdrop Display" }, { _id: 'dp-9', name: "Roll Up Stand" },
-    { _id: 'dp-10', name: "Name Card" }, { _id: 'dp-11', name: "Flyer / Brochure" }, { _id: 'dp-12', name: "Postcard" },
-    { _id: 'dp-13', name: "Greeting Card" }, { _id: 'dp-14', name: "Booklet" }, { _id: 'dp-15', name: "Letterhead" },
-    { _id: 'dp-16', name: "Envelope" }, { _id: 'dp-17', name: "Folded Business Card" }, { _id: 'dp-18', name: "Poster" },
-    { _id: 'dp-19', name: "Ticket" }, { _id: 'dp-20', name: "Wobbler" }, { _id: 'dp-21', name: "Tag" },
-    { _id: 'dp-22', name: "Paper Bag" }, { _id: 'dp-23', name: "Non Woven Bag" }, { _id: 'dp-24', name: "Canvas Bag" },
-    { _id: 'dp-25', name: "Label Sticker" }, { _id: 'dp-26', name: "Paper Box" }, { _id: 'dp-27', name: "Mug" },
-    { _id: 'dp-28', name: "T-Shirt" }, { _id: 'dp-29', name: "Uniform" }, { _id: 'dp-30', name: "Lanyard" }
-  ];
-  const products = fetchedProducts.length > 0 ? fetchedProducts : defaultProducts;
+  const products = fetchedProducts;
   const [openProductBox, setOpenProductBox] = useState(false);
   const [productSearch, setProductSearch] = useState("");
 
@@ -138,8 +124,8 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.customerName || !formData.totalAmount || !formData.customerPhone || !formData.address1 || !formData.postcode || !formData.city) {
-      toast.error("Customer, phone, amount and complete shipping address are required");
+    if (!formData.customerName || !formData.customerPhone || !formData.address1 || !formData.postcode || !formData.city) {
+      toast.error("Customer, phone and complete shipping address are required");
       return;
     }
     if (!/^\d{5}$/.test(formData.postcode)) {
@@ -151,14 +137,13 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
       userId: formData.userId,
       customerName: formData.customerName,
       platform: formData.platform,
-      totalAmount: parseFloat(formData.totalAmount),
+      totalAmount: 0,
       orderStatus: formData.orderStatus,
-      products: [], // Empty products for manual orders by default or can add items
+      products: [],
       productChoice: formData.productChoice || undefined,
       productDescription: formData.productDescription || undefined,
       productCategory: formData.productCategory || undefined,
       orderNotes: formData.productChoice ? `Product: ${formData.productChoice}` : "",
-      trackingNumber: formData.trackingNumber,
       courier: formData.courier === "none" ? undefined : formData.courier,
       paymentMethod: "ONLINE",
       paymentStatus: "PAID",
@@ -304,14 +289,6 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
             </Popover>
           </div>
           <div className="space-y-2">
-            <Label>Tracking Number (Optional)</Label>
-            <Input 
-              value={formData.trackingNumber} 
-              onChange={e => setFormData({ ...formData, trackingNumber: e.target.value })} 
-              placeholder="e.g. MY123456789" 
-            />
-          </div>
-          <div className="space-y-2">
             <Label>Courier (Optional)</Label>
             <Select value={formData.courier} onValueChange={v => setFormData({ ...formData, courier: v })}>
               <SelectTrigger>
@@ -331,16 +308,6 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
                 <SelectItem value="Others">Others</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Total Amount (RM) *</Label>
-            <Input 
-              type="number"
-              step="0.01"
-              value={formData.totalAmount} 
-              onChange={e => setFormData({ ...formData, totalAmount: e.target.value })} 
-              placeholder="0.00" 
-            />
           </div>
           <div className="space-y-2">
             <Label>Initial Status</Label>
