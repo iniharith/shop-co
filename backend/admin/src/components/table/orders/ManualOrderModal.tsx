@@ -14,11 +14,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useCreateManualOrder } from "@/hooks/useOrder";
+import { useProducts } from "@/hooks/useProducts";
 import { getPublicShippingQuote } from "@/api/orders";
-import { TASK_CATEGORIES } from "@/constants/taskCategories";
+import { TASK_CATEGORIES, productToTaskCategory } from "@/constants/taskCategories";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Check, ChevronsUpDown, Loader2, Plus, Truck } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2, Package, Plus, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ManualOrderModalProps {
@@ -42,6 +43,7 @@ const initialFormData = {
   productChoice: "",
   productDescription: "",
   productCategory: "",
+  productId: "",
 };
 
 export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpenChange }) => {
@@ -51,6 +53,23 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
   const [productSearch, setProductSearch] = useState("");
 
   const [formData, setFormData] = useState(initialFormData);
+
+  // Same catalog lookup + category mapping as the "New Task" dialog, so
+  // picking a real product here resolves to the exact same task category.
+  const { data: productsData } = useProducts();
+  const taskProducts = React.useMemo(
+    () =>
+      ((productsData as any)?.products || [])
+        .filter((p: any) => p && p.name)
+        .map((p: any) => ({
+          id: p._id,
+          name: p.name,
+          category: productToTaskCategory(p),
+          sections: p.sections || [],
+          searchKey: `${p.name} ${p.category || ""} ${(p.sections || []).join(" ")} ${productToTaskCategory(p)}`.toLowerCase(),
+        })),
+    [productsData]
+  );
 
   // Shipping quote state
   const [shippingQuote, setShippingQuote] = useState<{ courier: string; fee: number; serviceId?: string } | null>(null);
@@ -143,6 +162,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
       productChoice: formData.productChoice || undefined,
       productDescription: formData.productDescription || undefined,
       productCategory: formData.productCategory || undefined,
+      productId: formData.productId || undefined,
       orderNotes: formData.productChoice ? `Product: ${formData.productChoice}` : "",
       courier: formData.courier === "none" ? undefined : formData.courier,
       paymentMethod: "ONLINE",
@@ -232,7 +252,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
                          <div
                            className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-muted rounded-sm text-sm"
                            onClick={() => {
-                             setFormData({ ...formData, productChoice: productSearch });
+                             setFormData({ ...formData, productChoice: productSearch, productCategory: "", productId: "" });
                              setOpenProductBox(false);
                              setProductSearch("");
                            }}
@@ -249,7 +269,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
                         <CommandItem
                           value={productSearch}
                           onSelect={() => {
-                            setFormData({ ...formData, productChoice: productSearch });
+                            setFormData({ ...formData, productChoice: productSearch, productCategory: "", productId: "" });
                             setOpenProductBox(false);
                             setProductSearch("");
                           }}
@@ -265,7 +285,7 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
                           key={category}
                           value={category}
                           onSelect={() => {
-                            setFormData({ ...formData, productChoice: category });
+                            setFormData({ ...formData, productChoice: category, productCategory: category, productId: "" });
                             setOpenProductBox(false);
                             setProductSearch("");
                           }}
@@ -280,6 +300,32 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
                         </CommandItem>
                       ))}
                     </CommandGroup>
+                    {taskProducts.length > 0 && (
+                      <CommandGroup heading="Products">
+                        {taskProducts.map((product: any) => (
+                          <CommandItem
+                            key={product.id}
+                            value={product.searchKey}
+                            onSelect={() => {
+                              setFormData({
+                                ...formData,
+                                productChoice: product.name,
+                                productCategory: product.category,
+                                productId: product.id,
+                              });
+                              setOpenProductBox(false);
+                              setProductSearch("");
+                            }}
+                          >
+                            <Package className="mr-2 h-4 w-4 text-muted-foreground" />
+                            {product.name}
+                            <span className="ml-auto text-xs text-muted-foreground">
+                              {product.sections.join(", ") || product.category}
+                            </span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
                   </CommandList>
                 </Command>
               </PopoverContent>

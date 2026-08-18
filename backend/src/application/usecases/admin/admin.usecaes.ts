@@ -112,8 +112,9 @@ export class AdminUsecase {
         try {
             await session.withTransaction(async () => {
                 const manualItemName = String(data.productChoice || '').trim();
-                const manualItemCategory = String(data.productCategory || data.category || '').trim() || 'MANUAL';
+                const manualItemCategory = String(data.productCategory || data.category || '').trim() || 'UNASSIGNED';
                 const manualItemDescription = String(data.productDescription || '').trim();
+                const manualItemProductId = String(data.productId || '').trim();
                 const [createdOrder] = await OrderModel.create([{
                     ...data,
                     products: data.products || [],
@@ -127,7 +128,11 @@ export class AdminUsecase {
                     description: `Manual order task for Order ${createdOrder._id.toString()}.`,
                     orderId: createdOrder._id.toString(),
                     customerUsername: data.customerName,
-                    category: manualItemName || 'UNASSIGNED',
+                    // Category now comes from the same catalog/category picker used in
+                    // "New Task", instead of the free-text product name.
+                    category: manualItemCategory,
+                    productId: manualItemProductId || undefined,
+                    productName: manualItemName || undefined,
                     status: data.orderStatus || 'PLACED',
                 }], { session });
 
