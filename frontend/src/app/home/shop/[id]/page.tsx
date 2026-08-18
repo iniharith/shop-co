@@ -70,16 +70,14 @@ const page = () => {
             </div>
             
             <div id="flyer-pricing-portal"></div>
-          </div>
-          
-          {/* ── REVIEWS SECTION ── */}
-          {product && (
-            <div className="w-full lg:col-span-7">
+
+            {/* ── REVIEWS (inside left column) ── */}
+            {product && (
               <div className="bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border">
                 <ProductReviews productId={product._id} />
               </div>
-            </div>
-          )}
+            )}
+          </div>
           
           {/* ── RIGHT COLUMN: CONFIGURATOR (Sticky) ── */}
           <div className="w-full lg:col-span-5 relative h-full">
