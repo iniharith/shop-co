@@ -196,7 +196,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
       const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
       if (movedFolderIds.has(folderId)) return false; // optimistic removal
       if (group.orderStatus !== activeSubTab) return false;
-      if (activeTab !== "ALL" && group.category !== activeTab) return false;
+      if (activeTab !== "ALL" && !(Array.isArray(group.categories) ? group.categories.includes(activeTab) : group.category === activeTab)) return false;
       return true;
     });
   }, [groupedFromServer, activeTab, activeSubTab, movedFolderIds]);

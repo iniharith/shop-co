@@ -423,6 +423,22 @@ router.get(
 async function buildFolderGroups(taskStatusFilter: string[], q?: string): Promise<any[]> {
   const filterUpper = taskStatusFilter.map(s => s.toUpperCase());
 
+  // A task can now be tagged with more than one product/category via
+  // lineItems (e.g. an order bundling Apparel + Frame). This returns every
+  // distinct category the task should appear under — its primary `category`
+  // plus each lineItems entry's category — so it can be shown in every
+  // matching product section (Production / Artworks Manager tabs) instead
+  // of only its primary one.
+  const getTaskCategories = (task: any): string[] => {
+    const set = new Set<string>();
+    if (task?.category) set.add(task.category);
+    for (const item of (task?.lineItems || [])) {
+      if (item?.category && item.category !== 'UNASSIGNED') set.add(item.category);
+    }
+    if (set.size === 0) set.add('UNASSIGNED');
+    return Array.from(set);
+  };
+
   // Generate plain string variants for MongoDB queries ($in array)
   const statusQueryValues = Array.from(new Set([
     ...filterUpper,
@@ -453,11 +469,11 @@ async function buildFolderGroups(taskStatusFilter: string[], q?: string): Promis
   // 3. Load all tasks in this queue & all referenced tasks by ID
   const [tasks, orders, users, allReferencedTasks] = await Promise.all([
     Task.find({ status: { $in: statusQueryValues }, isDeleted: { $ne: true } })
-      .select('title status orderId category')
+      .select('title status orderId category lineItems')
       .lean(),
     orderIds.length ? OrderModel.find({ _id: { $in: orderIds } }).select('orderStatus userId easyparcelAwb easyparcelBookingStatus awbUrl awbUrlsByFormat').lean() : [],
     userIds.length ? User.find({ _id: { $in: userIds } }).select('name').lean() : [],
-    allTaskIds.length ? Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category isDeleted').lean() : [],
+    allTaskIds.length ? Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category lineItems isDeleted').lean() : [],
   ]);
 
   const taskMap = new Map(tasks.map((t: any) => [t._id.toString(), t]));
@@ -503,15 +519,15 @@ async function buildFolderGroups(taskStatusFilter: string[], q?: string): Promis
     }
 
     if (!groups[groupKey]) {
+      const groupTask = isTask ? (allTaskMap.get(file.taskId) || taskMap.get(file.taskId)) : null;
       groups[groupKey] = {
         folderName,
         orderId: file.orderId || '',
         taskId: file.taskId || '',
         userId: file.userId || '',
         isTask,
-        category: isTask
-          ? allTaskMap.get(file.taskId)?.category || taskMap.get(file.taskId)?.category
-          : file.category,
+        category: isTask ? groupTask?.category : file.category,
+        categories: isTask ? getTaskCategories(groupTask) : [file.category || 'UNASSIGNED'],
         files: [],
       };
     }
@@ -533,6 +549,7 @@ async function buildFolderGroups(taskStatusFilter: string[], q?: string): Promis
         userId: '',
         isTask: true,
         category: (task as any).category,
+        categories: getTaskCategories(task),
         files: [],
       };
     }
@@ -576,6 +593,8 @@ async function buildFolderGroups(taskStatusFilter: string[], q?: string): Promis
       userId: g.userId,
       isTask: g.isTask,
       category: g.category || '',
+      // Every product/category tab this folder should appear under.
+      categories: (g.categories && g.categories.length) ? g.categories : [g.category || 'UNASSIGNED'],
       orderStatus,
       orderAWB,
       fileCount: g.files.length,

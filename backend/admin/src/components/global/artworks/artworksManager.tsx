@@ -179,7 +179,7 @@ export default function ArtworksManager() {
     let result = groupedFromServer;
 
     if (activeTab !== "ALL") {
-      result = result.filter((g: any) => g.category === activeTab);
+      result = result.filter((g: any) => (Array.isArray(g.categories) ? g.categories.includes(activeTab) : g.category === activeTab));
     }
 
     if (!showEmptyFolders) {
