@@ -94,18 +94,21 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
           height: 5,
         });
         if (cancelled || controller.signal.aborted) return;
-        const quotations = (data as any)?.quotations || [];
+        const groups = Array.isArray((data as any)?.quotations) ? (data as any).quotations : [];
+        const quotations = groups.flatMap((group: any) =>
+          Array.isArray(group?.quotations) ? group.quotations : Array.isArray(group) ? group : []
+        );
         if (quotations.length === 0) {
           setShippingQuote(null);
           setShippingError((data as any)?.error || "No shipping options available for this address");
         } else {
+          const getQuotationPrice = (q: any) => Number(q?.pricing?.total_amount || q?.pricing?.shipment_price || q?.price || q?.total_amount || q?.shipping_price) || Infinity;
           const cheapest = quotations.reduce((min: any, q: any) => {
-            const price = Number(q.pricing?.total_amount ?? q.total_amount ?? Infinity);
-            return price < Number(min.pricing?.total_amount ?? min.total_amount ?? Infinity) ? q : min;
-          }, quotations[0]);
+            return getQuotationPrice(q) < getQuotationPrice(min) ? q : min;
+          });
           setShippingQuote({
-            courier: cheapest.courier?.courier_name || cheapest.courier_name || "Unknown",
-            fee: Number(cheapest.pricing?.total_amount ?? cheapest.total_amount ?? 0),
+            courier: cheapest?.courier?.courier_name || cheapest?.courier?.service_name || cheapest?.courier_name || "Unknown",
+            fee: getQuotationPrice(cheapest),
             serviceId: cheapest.service_id,
           });
         }
