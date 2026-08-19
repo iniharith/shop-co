@@ -10442,6 +10442,51 @@ export const dummyProducts: any[] = [
   },
 ];
 
-dummyProducts.forEach((product, index) => {
-  product.images = [productImages[index]];
+const websiteImageMap: Record<string, string> = {
+  "prod-100": "/images/products/BANNER.png",
+  "prod-101": "/images/products/BUNTING.png",
+  "prod-102": "/images/products/CAR STICKER.png",
+  "prod-103": "/images/products/BOARD PRINTING.png",
+  "prod-104": "/images/products/WALL STICKER.png",
+  "prod-105": "/images/products/GLASS STICKER.png",
+  "prod-106": "/images/products/PERSONALISED FLAG.png",
+  "prod-107": "/images/products/POPUP.png",
+  "prod-108": "/images/products/ROLL UP STAND.png",
+  "prod-109": "/images/products/WIND FLAG.png",
+  "prod-110": "/images/products/FLYERS.png",
+  "prod-111": "/images/products/BOOKLET.png",
+  "prod-112": "/images/products/BUSINESS CARD.png",
+  "prod-113": "/images/products/CORPORATE FOLDER.png",
+  "prod-115": "/images/products/CERTIFICATE.png",
+  "prod-116": "/images/products/MONEY PACKET.png",
+  "prod-117": "/images/products/STICKER.png",
+  "prod-118": "/images/products/CRYSTAL PLAQUE TROPHY.png",
+  "prod-119": "/images/products/ACRYLIC TROPHY.png",
+  "prod-120": "/images/products/ACRYLIC KEYCHAIN.png",
+  "prod-122": "/images/products/LANDYARD.png",
+  "prod-123": "/images/products/MUG.png",
+  "prod-124": "/images/products/PEN.png",
+  "prod-125": "/images/products/CALENDAR.png",
+  "prod-126": "/images/products/NOTEBOOK.jpg",
+  "prod-127": "/images/products/MONEY PACKET.png",
+  "prod-128": "/images/products/PREMIUM GIFT.png",
+  "prod-141": "/images/products/PAPER BAG.png",
+  "prod-149": "/images/products/HUMAN STANDEE.png",
+  "prod-150": "/images/products/TRIPOD STAND.png",
+  "prod-151": "/images/products/WATER BAG.png",
+  "prod-152": "/images/products/MINI X STAND.png",
+  "prod-259": "/images/products/PERSONALISED FLAG.png",
+  "prod-260": "/images/products/POPUP.png",
+  "prod-261": "/images/products/POPUP.png",
+  "prod-264": "/images/products/WIND FLAG.png",
+  "prod-265": "/images/products/HUMAN STANDEE.png",
+  "prod-266": "/images/products/TRIPOD STAND.png",
+  "prod-267": "/images/products/WATER BAG.png",
+};
+
+dummyProducts.forEach((product) => {
+  const mapped = websiteImageMap[product._id];
+  if (mapped) {
+    product.images = [mapped];
+  }
 });
