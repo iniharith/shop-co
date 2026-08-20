@@ -90,7 +90,7 @@ export default async function RootLayout({
           <div className="site-header">
             <Nav />
           </div>
-          <div className="h-[140px] md:h-[170px]" aria-hidden="true" />
+          <div className="site-header-spacer h-[140px] md:h-[170px]" aria-hidden="true" />
           <main className="w-full min-h-[50vh]">{children}</main>
           <div className="site-footer">
             <Cta />

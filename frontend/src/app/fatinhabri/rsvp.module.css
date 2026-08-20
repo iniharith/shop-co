@@ -175,7 +175,7 @@
 .opened .scrollCue { animation: coverTextFade 3s 1.75s both; }
 
 .floralCluster { position: absolute; z-index: 1; inset: 0; pointer-events: none; background: url("/images/wedding-floral-fh.png") center / 100% 100% no-repeat; filter: drop-shadow(0 .6rem .8rem rgba(28, 2, 6, .2)); animation: floralFrame 6s ease-in-out infinite alternate; }
-.heroFloralFrame { inset: .5rem 0 2.8rem; background-size: 100% 100%; background-position: center; animation: none; }
+.heroFloralFrame { inset: .5rem 0 2.8rem; background-size: 100% auto; background-position: center bottom; animation: none; }
 
 .countdownSection { position: relative; isolation: isolate; display: flex; padding: 2.2rem 1rem; flex-direction: column; justify-content: center; overflow: hidden; background: var(--batik-pattern) center top / var(--batik-size) repeat-y, var(--paper); color: var(--wine); text-align: center; }
 .countdownSection > :not(.floralCluster), .rsvpSection > :not(.floralCluster) { position: relative; z-index: 2; }

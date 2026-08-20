@@ -120,6 +120,7 @@
   }
 
   body:has(.rsvp-page) .site-header,
+  body:has(.rsvp-page) .site-header-spacer,
   body:has(.rsvp-page) .site-footer {
     display: none;
   }
