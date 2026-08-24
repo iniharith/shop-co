@@ -50,13 +50,13 @@ export const printingCategories = [
     href: "/home/shop",
     subItems: [
       { label: "CRYSTAL PLAQUE TROPHY", href: "/home/shop/prod-118" },
-      { label: "ARCYLIC TROPHY", href: "/home/shop/prod-119" },
-      { label: "ARCYLIC KEYCHAIN", href: "/home/shop/prod-120" },
+      { label: "ACRYLIC TROPHY", href: "/home/shop/prod-119" },
+      { label: "ACRYLIC KEYCHAIN", href: "/home/shop/prod-120" },
       { label: "FRIDGE MAGNET", href: "/home/shop/prod-121" },
-      { label: "LANDYARD", href: "/home/shop/prod-122" },
+      { label: "LANYARD", href: "/home/shop/prod-122" },
       { label: "MUG", href: "/home/shop/prod-123" },
       { label: "PEN", href: "/home/shop/prod-124" },
-      { label: "CALENDER", href: "/home/shop/prod-125" },
+      { label: "CALENDAR", href: "/home/shop/prod-125" },
       { label: "NOTEBOOK", href: "/home/shop/prod-126" },
       { label: "MONEY PACKET", href: "/home/shop/prod-127" },
       { label: "PREMIUM GIFT", href: "/home/shop/prod-128" }

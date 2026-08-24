@@ -3298,7 +3298,7 @@ export const dummyProducts: any[] = [
     ]
   },
   {
-      "_id": "prod-141",
+      "_id": "prod-114",
       "name": "Paper Bag",
       "description": "Premium paper bags with your custom design, perfect for retail, events, and corporate gifts. Available in various sizes and materials.",
       "price": 0,
@@ -4782,16 +4782,16 @@ export const dummyProducts: any[] = [
   },
   {
     "_id": "prod-116",
-    "name": "Money Packet",
-    "description": "High-quality Money Packet with premium materials and vibrant printing. Perfect for corporate gift needs.",
-    "price": 19,
-    "originalPrice": 121,
-    "discount": 19,
-    "rating": 4.3,
-    "reviews": 245,
-    "category": "money-packet",
+    "name": "Stamp",
+    "description": "High-quality Stamp with premium materials and vibrant printing. Perfect for digital offset needs.",
+    "price": 17,
+    "originalPrice": 147,
+    "discount": 11,
+    "rating": 3.7,
+    "reviews": 74,
+    "category": "stamp",
     "images": [
-      "/images/products/digital_printing.png"
+      "/images/products/STAMP.png"
     ],
     "colors": [
       "Red",
@@ -4804,7 +4804,7 @@ export const dummyProducts: any[] = [
       "Standard"
     ],
     "matrixPricing": {
-      "enabled": true,
+      "enabled": false,
       "pricingData": [
         {
           "material": "Portrait (Vertical)",
@@ -4960,32 +4960,91 @@ export const dummyProducts: any[] = [
     },
     "printingOptions": [
       {
-        "name": "Format",
+        "name": "Format & Size",
         "options": [
           {
-            "label": "Portrait (Vertical)",
+            "label": "A4 (210 x 297 mm)",
             "priceAdd": 0
           },
           {
-            "label": "Landscape (Horizontal)",
-            "priceAdd": 0
+            "label": "A5 (148 x 210 mm)",
+            "priceAdd": -5
+          },
+          {
+            "label": "A3 (297 x 420 mm)",
+            "priceAdd": 15
+          },
+          {
+            "label": "Custom Size",
+            "priceAdd": 10
           }
         ]
       },
       {
-        "name": "Packaging",
+        "name": "Material",
         "options": [
           {
-            "label": "5pcs/pack",
+            "label": "Art Paper 157g",
             "priceAdd": 0
           },
           {
-            "label": "8pcs/pack",
+            "label": "Art Card 260g",
+            "priceAdd": 5
+          },
+          {
+            "label": "Glossy Photo Paper",
+            "priceAdd": 8
+          },
+          {
+            "label": "Matte Premium Paper",
+            "priceAdd": 10
+          }
+        ]
+      },
+      {
+        "name": "Printing Sides",
+        "options": [
+          {
+            "label": "Single Sided",
             "priceAdd": 0
           },
           {
-            "label": "10pcs/pack",
+            "label": "Double Sided",
+            "priceAdd": 15
+          }
+        ]
+      },
+      {
+        "name": "Finishing Options",
+        "options": [
+          {
+            "label": "None",
             "priceAdd": 0
+          },
+          {
+            "label": "Matte Lamination",
+            "priceAdd": 8
+          },
+          {
+            "label": "Gloss Lamination",
+            "priceAdd": 8
+          },
+          {
+            "label": "Spot UV",
+            "priceAdd": 20
+          }
+        ]
+      },
+      {
+        "name": "Turnaround Time",
+        "options": [
+          {
+            "label": "Standard (3-4 Working Days)",
+            "priceAdd": 0
+          },
+          {
+            "label": "Express (1-2 Working Days)",
+            "priceAdd": 30
           }
         ]
       }
@@ -10458,7 +10517,8 @@ const websiteImageMap: Record<string, string> = {
   "prod-112": "/images/products/BUSINESS CARD.png",
   "prod-113": "/images/products/CORPORATE FOLDER.png",
   "prod-115": "/images/products/CERTIFICATE.png",
-  "prod-116": "/images/products/MONEY PACKET.png",
+  "prod-114": "/images/products/PAPER BAG.png",
+  "prod-116": "/images/products/STAMP.png",
   "prod-117": "/images/products/STICKER.png",
   "prod-118": "/images/products/CRYSTAL PLAQUE TROPHY.png",
   "prod-119": "/images/products/ACRYLIC TROPHY.png",
@@ -10470,7 +10530,7 @@ const websiteImageMap: Record<string, string> = {
   "prod-126": "/images/products/NOTEBOOK.jpg",
   "prod-127": "/images/products/MONEY PACKET.png",
   "prod-128": "/images/products/PREMIUM GIFT.png",
-  "prod-141": "/images/products/PAPER BAG.png",
+  "prod-141": "/images/catalog/042-prod-141.webp",
   "prod-149": "/images/products/HUMAN STANDEE.png",
   "prod-150": "/images/products/TRIPOD STAND.png",
   "prod-151": "/images/products/WATER BAG.png",
