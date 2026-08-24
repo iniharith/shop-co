@@ -8141,7 +8141,7 @@ export const dummyProducts: any[] = [
     "reviews": 219,
     "category": "welcome-board",
     "images": [
-      "/images/products/digital_printing.png"
+      "/images/products/WEDDING BOARD.png"
     ],
     "colors": [
       "Red",
