@@ -16,7 +16,16 @@ export default function BotLogsPage() {
   const { data: session, status } = useSession();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const endOfLogsRef = useRef<HTMLDivElement>(null);
+  const logContainerRef = useRef<HTMLDivElement>(null);
+  // Only auto-scroll when the user is already reading from the bottom;
+  // otherwise leave the viewport alone so old logs stay readable.
+  const stickToBottomRef = useRef(true);
+
+  const handleLogScroll = useCallback(() => {
+    const el = logContainerRef.current;
+    if (!el) return;
+    stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  }, []);
 
   const fetchLogs = useCallback(async () => {
     const token = session?.user?.token;
@@ -42,8 +51,10 @@ export default function BotLogsPage() {
   }, [fetchLogs]);
 
   useEffect(() => {
-    // Auto-scroll to bottom when new logs arrive
-    endOfLogsRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = logContainerRef.current;
+    if (el && stickToBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [logs]);
 
   // Restrict to sysadmin only (double-check on client side just in case)
@@ -93,7 +104,7 @@ export default function BotLogsPage() {
         </div>
 
         {/* Log Output Area */}
-        <div className="flex-1 overflow-y-auto p-4 font-mono text-sm leading-relaxed" style={{ scrollBehavior: 'smooth' }}>
+        <div ref={logContainerRef} onScroll={handleLogScroll} className="flex-1 overflow-y-auto p-4 font-mono text-sm leading-relaxed">
           {error && (
             <div className="text-red-400 mb-4 bg-red-900/20 p-4 rounded-md border border-red-900/50">
               [SYSTEM ERROR] {error}
@@ -128,7 +139,6 @@ export default function BotLogsPage() {
               );
             })
           )}
-          <div ref={endOfLogsRef} />
         </div>
       </div>
     </div>
