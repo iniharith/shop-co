@@ -24,7 +24,6 @@ import { CgProfile } from "react-icons/cg";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useLanguage } from "@/i18n/LanguageProvider";
-import { useTheme } from "next-themes";
 import { categoryLabels } from "@/i18n/messages";
 import { AI_SEARCH_ENABLED, aiSemanticSearch, aiSearchSuggestions } from "@/utils/aiSearch";
 
@@ -128,7 +127,7 @@ const MobileNavSheetContent = ({
             <div className="flex items-center w-full">
               <IoSearch className="text-gray-500 dark:text-muted-foreground text-lg mr-2 shrink-0" />
               <Input
-                className="w-full focus-visible:ring-0 text-sm bg-transparent border-none shadow-none ring-0 focus-visible:ring-offset-0 px-0 h-10 dark:text-foreground"
+                className="w-full focus-visible:ring-0 text-sm bg-transparent dark:bg-transparent border-none shadow-none ring-0 focus-visible:ring-offset-0 px-0 h-10 dark:text-foreground"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -295,8 +294,6 @@ const Nav = () => {
   } = useNav();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
 
@@ -445,18 +442,14 @@ const Nav = () => {
             className={cn(
               "z-[80] hidden md:flex flex-1 max-w-2xl mx-auto relative items-center rounded-full border overflow-visible px-4 py-1 transition-colors duration-300",
               isHomePage && !isScrolled
-                ? "border-white/30"
-                : "border-border dark:border-white/10"
+                ? "border-white/30 bg-white/20 backdrop-blur-[8px]"
+                : "border-border bg-[rgba(255,255,255,0.85)] shadow-[0_1px_2px_rgba(0,0,0,0.04)] backdrop-blur-[12px] dark:border-white/10 dark:bg-[rgba(242,242,242,0.06)] dark:shadow-none"
             )}
-            style={isHomePage && !isScrolled
-              ? { background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }
-              : { background: isDark ? "rgba(242,242,242,0.06)" : "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: isDark ? "none" : "0 1px 2px rgba(0,0,0,0.04)" }
-            }
           >
             <IoSearch className={cn("text-xl mr-2 shrink-0 transition-colors duration-300", isHomePage && !isScrolled ? "text-white/70" : "text-muted-foreground")} />
             <Input
               className={cn(
-                "w-full focus-visible:ring-0 text-md bg-transparent border-none shadow-none ring-0 focus-visible:ring-offset-0 px-0 h-10 transition-colors duration-300",
+                "w-full focus-visible:ring-0 text-md bg-transparent dark:bg-transparent border-none shadow-none ring-0 focus-visible:ring-offset-0 px-0 h-10 transition-colors duration-300",
                 isHomePage && !isScrolled ? "text-white placeholder:text-white/60" : "text-foreground placeholder:text-muted-foreground"
               )}
               type="text"
@@ -602,11 +595,8 @@ const Nav = () => {
           "w-full border-y hidden md:block relative z-40 transition-all duration-300",
           isHomePage && !isScrolled
             ? "border-white/10"
-            : "border-black/5 dark:border-white/10"
+            : "border-black/5 bg-white/40 dark:border-white/10 dark:bg-[rgba(242,242,242,0.03)]"
         )}
-          style={isHomePage && !isScrolled ? undefined : {
-            backgroundColor: isDark ? "rgba(242,242,242,0.03)" : "rgba(255,255,255,0.4)",
-          }}
         >
           <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
             {printingCategories.map((item, index) => (

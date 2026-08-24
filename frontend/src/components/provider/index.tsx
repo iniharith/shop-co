@@ -33,7 +33,7 @@ const Provider = ({
               showSpinner={false}
               zIndex={999999999999999}
             />
-            <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+            <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
               <LanguageProvider initialLocale={initialLocale}>
                 <HeroUIProvider>
                   <Toaster
