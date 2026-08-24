@@ -5478,7 +5478,7 @@ export const dummyProducts: any[] = [
     "reviews": 193,
     "category": "fridge-magnet",
     "images": [
-      "/images/products/corporate_gift.png"
+      "/images/products/FRIDGE MAGNET.png"
     ],
     "colors": [
       "Red",
@@ -6522,7 +6522,7 @@ export const dummyProducts: any[] = [
     "reviews": 293,
     "category": "non-woven-bag",
     "images": [
-      "/images/products/digital_printing.png"
+      "/images/products/NON WOVEN BAG.png"
     ],
     "colors": [
       "Red",
@@ -6641,7 +6641,7 @@ export const dummyProducts: any[] = [
     "reviews": 188,
     "category": "canvas-bag",
     "images": [
-      "/images/products/digital_printing.png"
+      "/images/products/CANVAS BAG.png"
     ],
     "colors": [
       "Red",
@@ -6760,7 +6760,7 @@ export const dummyProducts: any[] = [
     "reviews": 150,
     "category": "sublimation-tshirt",
     "images": [
-      "/images/products/apparel.png"
+      "/images/products/SUBLIMATION TSHIRT.png"
     ],
     "colors": [
       "Red",
@@ -6894,7 +6894,7 @@ export const dummyProducts: any[] = [
     "reviews": 21,
     "category": "cotton-t-shirt",
     "images": [
-      "/images/products/digital_printing.png"
+      "/images/products/COTTON TSHIRT.png"
     ],
     "colors": [
       "Red",
@@ -7013,7 +7013,7 @@ export const dummyProducts: any[] = [
     "reviews": 167,
     "category": "islamic-khat",
     "images": [
-      "/images/products/frame.png"
+      "/images/products/ISLAMIC KHAT.png"
     ],
     "colors": [
       "Red",
@@ -7132,7 +7132,7 @@ export const dummyProducts: any[] = [
     "reviews": 299,
     "category": "portrait",
     "images": [
-      "/images/products/frame.png"
+      "/images/products/PORTRAIT.png"
     ],
     "colors": [
       "Red",
@@ -7239,7 +7239,7 @@ export const dummyProducts: any[] = [
     "reviews": 171,
     "category": "clock",
     "images": [
-      "/images/products/frame.png"
+      "/images/products/CLOCK.png"
     ],
     "colors": [
       "Red",
@@ -7715,7 +7715,7 @@ export const dummyProducts: any[] = [
       "reviews": 41,
       "category": "button-badge",
       "images": [
-        "/images/products/digital_printing.png"
+        "/images/products/BUTTON BADGE.png"
       ],
       "printingOptions": [
         {
