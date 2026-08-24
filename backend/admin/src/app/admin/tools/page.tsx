@@ -179,11 +179,27 @@ export default function ToolsPage() {
       <div className="font-sans text-white h-[calc(100vh-theme(spacing.16))] overflow-y-auto">
         <div className="relative min-h-full rounded-3xl p-4 md:p-8">
           {/* Aurora backdrop — gives the frosted cards something to blur */}
-          <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-blue-600/20 blur-[120px]" />
-            <div className="absolute top-1/4 -right-32 h-[28rem] w-[28rem] rounded-full bg-violet-600/15 blur-[140px]" />
-            <div className="absolute -bottom-32 left-1/3 h-96 w-96 rounded-full bg-emerald-600/15 blur-[120px]" />
-            <div className="absolute bottom-1/4 right-1/4 h-72 w-72 rounded-full bg-rose-600/10 blur-[110px]" />
+          <div aria-hidden className="tools-aurora pointer-events-none absolute inset-0 overflow-hidden">
+            <div
+              className="animate-drift absolute -top-40 -left-40 h-[36rem] w-[36rem] rounded-full bg-blue-600/35 blur-[130px]"
+              style={{ animationDuration: "22s" }}
+            />
+            <div
+              className="animate-drift absolute top-1/4 -right-48 h-[38rem] w-[38rem] rounded-full bg-violet-600/30 blur-[150px]"
+              style={{ animationDuration: "26s", animationDelay: "-8s" }}
+            />
+            <div
+              className="animate-drift absolute -bottom-48 left-1/4 h-[34rem] w-[34rem] rounded-full bg-emerald-600/30 blur-[140px]"
+              style={{ animationDuration: "24s", animationDelay: "-14s" }}
+            />
+            <div
+              className="animate-drift absolute bottom-1/3 right-1/4 size-96 rounded-full bg-rose-500/25 blur-[120px]"
+              style={{ animationDuration: "20s", animationDelay: "-5s" }}
+            />
+            <div
+              className="animate-drift absolute top-10 left-1/2 size-80 rounded-full bg-cyan-500/25 blur-[110px]"
+              style={{ animationDuration: "28s", animationDelay: "-11s" }}
+            />
             {/* Subtle grid texture */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:44px_44px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]" />
           </div>
@@ -256,7 +272,7 @@ export default function ToolsPage() {
                         >
                           <Link
                             href={tool.href}
-                            className="group relative flex min-h-[210px] cursor-pointer flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-zinc-900/60 p-6 shadow-elevation-dark backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-white/25 hover:bg-white/[0.06] hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)]"
+                            className="group relative flex min-h-[210px] cursor-pointer flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-zinc-900/45 p-6 shadow-elevation-dark backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-white/25 hover:bg-white/[0.07] hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)]"
                           >
                             {/* Colored glow revealed on hover */}
                             <div
