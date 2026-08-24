@@ -7358,7 +7358,7 @@ export const dummyProducts: any[] = [
     "reviews": 252,
     "category": "wedding-bunting",
     "images": [
-      "/images/products/wedding_product.png"
+      "/images/products/WEDDING BUNTING.png"
     ],
     "colors": [
       "Red",
@@ -7477,7 +7477,7 @@ export const dummyProducts: any[] = [
     "reviews": 155,
     "category": "wedding-banner",
     "images": [
-      "/images/products/wedding_product.png"
+      "/images/products/WEDDING BANNER.png"
     ],
     "colors": [
       "Red",
@@ -7596,7 +7596,7 @@ export const dummyProducts: any[] = [
     "reviews": 234,
     "category": "arrow-bunting",
     "images": [
-      "/images/products/digital_printing.png"
+      "/images/products/ARROW BUNTING.png"
     ],
     "colors": [
       "Red",
@@ -7741,7 +7741,7 @@ export const dummyProducts: any[] = [
     "reviews": 260,
     "category": "cek-hantaran",
     "images": [
-      "/images/products/wedding_product.png"
+      "/images/products/CEK HANTARAN.png"
     ],
     "colors": [
       "Red",
@@ -7979,7 +7979,7 @@ export const dummyProducts: any[] = [
     "reviews": 312,
     "category": "kad-kahwin",
     "images": [
-      "/images/products/wedding_card.png"
+      "/images/products/WEDDING CARD.png"
     ],
     "colors": [
       "Standard"
@@ -8260,7 +8260,7 @@ export const dummyProducts: any[] = [
     "reviews": 241,
     "category": "menu-book",
     "images": [
-      "/images/products/food_packaging.png"
+      "/images/products/MENU BOOK.png"
     ],
     "colors": [
       "Red",
@@ -8379,7 +8379,7 @@ export const dummyProducts: any[] = [
     "reviews": 81,
     "category": "table-tent",
     "images": [
-      "/images/products/digital_printing.png"
+      "/images/products/TABLE TENT.png"
     ],
     "colors": [
       "Red",
@@ -8498,7 +8498,7 @@ export const dummyProducts: any[] = [
     "reviews": 177,
     "category": "table-display-stand",
     "images": [
-      "/images/products/display_item.png"
+      "/images/products/TABLE DISPLAY STAND.png"
     ],
     "colors": [
       "Red",
@@ -8617,7 +8617,7 @@ export const dummyProducts: any[] = [
     "reviews": 171,
     "category": "stand-pouch",
     "images": [
-      "/images/products/display_item.png"
+      "/images/products/STAND POUCH.png"
     ],
     "colors": [
       "Red",
@@ -8736,7 +8736,7 @@ export const dummyProducts: any[] = [
     "reviews": 210,
     "category": "food-sticker",
     "images": [
-      "/images/products/food_packaging.png"
+      "/images/products/FOOD STICKER.png"
     ],
     "colors": [
       "Red",
@@ -9007,7 +9007,7 @@ export const dummyProducts: any[] = [
     "reviews": 215,
     "category": "photobook",
     "images": [
-      "/images/products/photobook.png"
+      "/images/products/PHOTOBOOK.jpg"
     ],
     "colors": [
       "Standard"
