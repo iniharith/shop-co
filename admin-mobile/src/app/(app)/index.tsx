@@ -4,7 +4,7 @@ import {
   ActivityIndicator, RefreshControl, StyleSheet, StatusBar
 } from 'react-native';
 import AppBackground from '../../components/AppBackground';
-import { BlurView } from 'expo-blur';
+import FrostedView from '../../components/FrostedView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useRouter } from 'expo-router';
@@ -81,7 +81,7 @@ export default function DashboardScreen() {
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
       {/* Header */}
-      <View style={[s.header, { backgroundColor: theme === 'dark' ? 'rgb(15, 23, 42)' : '#ffffff', borderBottomColor: colors.glassBorder, paddingTop: insets.top + 10 }]}>
+      <FrostedView intensity={theme === 'dark' ? 48 : 65} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { backgroundColor: colors.navBg, borderBottomColor: colors.navBorder, paddingTop: insets.top + 10 }]}>
         <View>
           <Text style={[s.greeting, { color: colors.foreground }]}>Hi, Welcome back 👋</Text>
           <View style={s.liveRow}>
@@ -100,7 +100,7 @@ export default function DashboardScreen() {
             <Text style={[s.logoutText, { color: colors.foreground }]}>Logout</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </FrostedView>
 
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130, paddingTop: 12 }}
@@ -141,7 +141,7 @@ export default function DashboardScreen() {
 
             {/* Progression Chart (Pure React Native View approach) */}
             {healthData?.charts?.progression && healthData.charts.progression.length > 0 && (
-              <View style={[s.glassCard, { marginTop: 14, backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
+              <FrostedView intensity={52} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.glassCard, { marginTop: 14, backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
                 <Text style={[s.cardTitle, { color: colors.foreground }]}>7-Day Task Progression</Text>
                 <Text style={[s.cardSub, { color: colors.mutedForeground }]}>Number of tasks created over the last week</Text>
                 <View style={[s.divider, { backgroundColor: colors.glassBorder, marginBottom: 20 }]} />
@@ -165,12 +165,12 @@ export default function DashboardScreen() {
                   })()}
                 </View>
                 <View style={{ height: 15 }} />
-              </View>
+              </FrostedView>
             )}
 
             {/* Sysadmin Raw Server Health */}
             {showServerHealth && healthData?.server && (
-              <View style={[s.glassCard, { marginTop: 14, backgroundColor: colors.glass, borderColor: '#3b82f644' }]}>
+              <FrostedView intensity={52} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.glassCard, { marginTop: 14, backgroundColor: colors.glass, borderColor: '#3b82f644' }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Server size={18} color="#3b82f6" />
                   <View>
@@ -206,7 +206,7 @@ export default function DashboardScreen() {
                     <Text style={[s.healthValue, { color: colors.foreground }]}>{formatUptime(healthData.server.uptime)}</Text>
                   </View>
                 </View>
-              </View>
+              </FrostedView>
             )}
 
           </>
@@ -219,11 +219,11 @@ export default function DashboardScreen() {
 function GlassCard({ title, value, sub, icon, isString = false }: { title: string; value: number | string; sub: string; icon: React.ReactNode; isString?: boolean }) {
   const { theme, colors } = useTheme();
   return (
-    <View style={[s.statCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
+    <FrostedView intensity={52} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.statCard, { backgroundColor: colors.glass, borderColor: colors.glassBorder }]}>
       <View style={s.statHeader}><Text style={[s.statTitle, { color: colors.foreground }]}>{title}</Text>{icon}</View>
       <Text style={[s.statValue, { color: colors.foreground, fontSize: isString ? 20 : 26 }]}>{value}</Text>
       <Text style={[s.statSub, { color: colors.mutedForeground }]}>{sub}</Text>
-    </View>
+    </FrostedView>
   );
 }
 

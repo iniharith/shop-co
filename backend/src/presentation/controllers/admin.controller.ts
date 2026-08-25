@@ -78,9 +78,11 @@ export class AdminController {
                 throw new Error(messages.UNAUTHORIZED);
             }
             const user = await this.adminUsecase.createUser(req.body);
+            const safeUser = user.toObject();
+            delete (safeUser as any).password;
             res.status(statusCodes.CREATED).json({
                 message: "User created successfully",
-                user
+                user: safeUser
             });
         } catch (error) {
             next(error);
@@ -99,9 +101,11 @@ export class AdminController {
             }
             const { id } = req.params;
             const user = await this.adminUsecase.updateUser(id, req.body);
+            const safeUser = user?.toObject();
+            if (safeUser) delete (safeUser as any).password;
             res.status(statusCodes.OK).json({
                 message: "User updated successfully",
-                user
+                user: safeUser
             });
         } catch (error) {
             next(error);
@@ -240,4 +244,3 @@ export class AdminController {
 
 
 }
-

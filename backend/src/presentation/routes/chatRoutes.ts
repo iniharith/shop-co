@@ -29,15 +29,21 @@ router.get(
     // For admins, we might want to return ALL conversations, or just theirs + customer ones.
     // For simplicity, let's just return conversations they are part of, or all if admin?
     const role = authReq.role;
+    const requestedType = req.query.type;
     const { ConversationModel } = await import('../../infrastructure/db/models/conversation.model');
-    const conversationQuery = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(role)
-      ? {
+    let conversationQuery: any;
+    if (requestedType === 'admin_admin') {
+      conversationQuery = { type: 'admin_admin', participants: userId };
+    } else if (requestedType === 'admin_customer' && ADMIN_ROLES.includes(role)) {
+      conversationQuery = { type: 'admin_customer' };
+    } else {
+      conversationQuery = ADMIN_ROLES.includes(role) ? {
         $or: [
           { type: 'admin_customer' },
           { type: 'admin_admin', participants: userId }
         ]
-      }
-      : { participants: userId };
+      } : { participants: userId };
+    }
     const conversations = await ConversationModel.find(conversationQuery)
       .populate('participants', 'name email role')
       .sort({ lastMessageAt: -1 })
@@ -63,7 +69,25 @@ router.post(
   '/conversations',
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
-    const { participantIds, type, whatsappPhone, orderId } = req.body;
+    const authReq = req as any;
+    const userId = authReq.userId || authReq.user?.id;
+    let { participantIds, type, whatsappPhone, orderId } = req.body;
+    if (type === 'admin_admin') {
+      participantIds = [...new Set([userId, ...(Array.isArray(participantIds) ? participantIds : [])].filter(Boolean))];
+      if (participantIds.length < 2) {
+        res.status(400).json({ success: false, message: 'A teammate is required' });
+        return;
+      }
+      const { ConversationModel } = await import('../../infrastructure/db/models/conversation.model');
+      const existing = await ConversationModel.findOne({
+        type: 'admin_admin',
+        participants: { $all: participantIds, $size: participantIds.length },
+      }).populate('participants', 'name email role');
+      if (existing) {
+        res.json({ success: true, conversation: existing });
+        return;
+      }
+    }
     const conversation = await chatRepository.createConversation({
       participants: participantIds,
       type,

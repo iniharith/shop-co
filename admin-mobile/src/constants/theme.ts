@@ -2,36 +2,36 @@
 export const THEMES = {
   dark: {
     // Backgrounds
-    background:      '#0f172a',
-    gradientStart:   '#0f172a',
-    gradientEnd:     '#0f172a',
+    background:      '#000000',
+    gradientStart:   '#000000',
+    gradientEnd:     '#0a0a0a',
   
     // Glass cards
-    glass:           'rgba(30,41,59,0.7)',
-    glassBorder:     'rgba(255,255,255,0.08)',
-    glassHover:      'rgba(30,41,59,0.9)',
-    glassShadow:     'rgba(0,0,0,0.3)',
+    glass:           'rgba(15,15,15,0.72)',
+    glassBorder:     'rgba(255,255,255,0.10)',
+    glassHover:      'rgba(31,31,31,0.88)',
+    glassShadow:     'rgba(0,0,0,0.30)',
   
     // Navbar frosted
-    navBg:           'rgba(15,23,42,0.9)',
-    navBorder:       'rgba(255,255,255,0.08)',
+    navBg:           'rgba(10,10,10,0.74)',
+    navBorder:       'rgba(255,255,255,0.10)',
   
     // Text
-    foreground:      '#f8fafc',
-    mutedForeground: '#94a3b8',
+    foreground:      '#fafafa',
+    mutedForeground: '#a1a1a1',
   
     // Brand / accent
-    primary:         '#3b82f6',   // Matches website blue theme
-    primaryDark:     '#1d4ed8',
+    primary:         '#e7b008',
+    primaryDark:     '#b88906',
   
     // Semantic
-    card:            'rgba(30,41,59,0.7)',
-    border:          'rgba(255,255,255,0.08)',
-    secondary:       'rgba(255,255,255,0.05)',
+    card:            'rgba(15,15,15,0.72)',
+    border:          'rgba(255,255,255,0.10)',
+    secondary:       'rgba(31,31,31,0.72)',
     destructive:     '#ef4444',
     success:         '#10b981',
     warning:         '#f59e0b',
-    info:            '#3b82f6',
+    info:            '#e7b008',
   },
   light: {
     // Backgrounds
@@ -82,12 +82,12 @@ export const Colors = {
     tabIconSelected: '#3b82f6',
   },
   dark: {
-    text: '#f8fafc',
-    background: '#0f172a',
-    tint: '#3b82f6',
-    icon: '#94a3b8',
-    tabIconDefault: '#94a3b8',
-    tabIconSelected: '#3b82f6',
+    text: '#fafafa',
+    background: '#000000',
+    tint: '#e7b008',
+    icon: '#a1a1a1',
+    tabIconDefault: '#a1a1a1',
+    tabIconSelected: '#e7b008',
   },
 };
 
@@ -106,4 +106,3 @@ export const Spacing = {
 };
 
 export const MaxContentWidth = 1200;
-

@@ -2,18 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, StatusBar, Alert, ScrollView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppBackground from '../../components/AppBackground';
-import { BlurView } from 'expo-blur';
+import FrostedView from '../../components/FrostedView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
 import { THEME } from '../../constants/theme';
 import { ArrowLeft, User, Mail, Save, Lock, Image as ImageIcon, Palette } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/useAuthStore';
 
 export default function ProfileScreen() {
-  const { theme, colors, customBackground, setCustomBackground } = useTheme();
+  const { theme, colors, customBackground, hasImageBackground, setCustomBackground } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuthStore();
@@ -75,14 +76,33 @@ export default function ProfileScreen() {
   };
 
   const handlePickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setCustomBackground(result.assets[0].uri);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.85,
+      });
+      if (!result.canceled && result.assets?.length && FileSystem.documentDirectory) {
+        const asset = result.assets[0];
+        const extension = (asset.fileName?.split('.').pop() || asset.mimeType?.split('/').pop() || 'jpg').replace(/[^a-z0-9]/gi, '').toLowerCase();
+        const durableUri = `${FileSystem.documentDirectory}app-background-${Date.now()}.${extension || 'jpg'}`;
+        await FileSystem.copyAsync({ from: asset.uri, to: durableUri });
+        if (customBackground?.startsWith(FileSystem.documentDirectory)) {
+          await FileSystem.deleteAsync(customBackground, { idempotent: true }).catch(() => undefined);
+        }
+        setCustomBackground(durableUri);
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Background failed', 'Could not save the selected image.');
     }
+  };
+
+  const chooseBackground = async (background: string | null) => {
+    if (customBackground?.startsWith(FileSystem.documentDirectory || 'file://__never__')) {
+      await FileSystem.deleteAsync(customBackground, { idempotent: true }).catch(() => undefined);
+    }
+    setCustomBackground(background);
   };
 
   const PREDEFINED_COLORS = ['#000000', '#0a0a14', '#1e1e24', '#0f172a', '#171717', '#18181b', '#f8fafc', '#f1f5f9'];
@@ -97,7 +117,7 @@ export default function ProfileScreen() {
     <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
-      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { paddingTop: insets.top + 10 }]}>
+      <FrostedView intensity={theme === 'dark' ? 48 : 65} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { backgroundColor: colors.navBg, borderBottomColor: colors.navBorder, paddingTop: insets.top + 10 }]}>
         <View style={s.headerTop}>
           <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
             <ArrowLeft size={20} color={colors.foreground} />
@@ -107,10 +127,10 @@ export default function ProfileScreen() {
             <Text style={s.pageSub}>Update your personal details</Text>
           </View>
         </View>
-      </BlurView>
+      </FrostedView>
 
       <ScrollView style={s.content} contentContainerStyle={{ paddingBottom: 40, gap: 16 }}>
-        <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.formCard}>
+        <FrostedView intensity={theme === 'dark' ? 50 : 72} tint={theme === 'dark' ? 'dark' : 'light'} style={s.formCard}>
           <Text style={[s.sectionTitle, { color: colors.foreground }]}>Personal Details</Text>
           <View style={s.inputGroup}>
             <Text style={[s.label, { color: colors.foreground }]}>Full Name</Text>
@@ -165,16 +185,16 @@ export default function ProfileScreen() {
               </>
             )}
           </TouchableOpacity>
-        </BlurView>
+        </FrostedView>
 
-        <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={s.formCard}>
+        <FrostedView intensity={theme === 'dark' ? 50 : 72} tint={theme === 'dark' ? 'dark' : 'light'} style={s.formCard}>
           <Text style={[s.sectionTitle, { color: colors.foreground }]}>App Background</Text>
           <Text style={[s.pageSub, { marginTop: -10, marginBottom: 10 }]}>Customize your app experience</Text>
           
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, marginBottom: 16 }}>
             <TouchableOpacity 
               style={[s.colorCircle, !customBackground && s.colorCircleActive, { backgroundColor: colors.gradientStart }]}
-              onPress={() => setCustomBackground(null)}
+              onPress={() => void chooseBackground(null)}
             >
               {!customBackground && <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '700' }}>Default</Text>}
             </TouchableOpacity>
@@ -183,7 +203,7 @@ export default function ProfileScreen() {
               <TouchableOpacity 
                 key={c}
                 style={[s.colorCircle, customBackground === c && s.colorCircleActive, { backgroundColor: c }]}
-                onPress={() => setCustomBackground(c)}
+                onPress={() => void chooseBackground(c)}
               />
             ))}
           </ScrollView>
@@ -193,16 +213,16 @@ export default function ProfileScreen() {
             <Text style={[s.uploadBtnText, { color: colors.primary }]}>Upload Custom Image</Text>
           </TouchableOpacity>
           
-          {customBackground && customBackground.startsWith('file://') && (
+          {hasImageBackground && customBackground && (
             <View style={s.previewContainer}>
               <Text style={[s.label, { color: colors.foreground, marginBottom: 8 }]}>Image Preview</Text>
               <Image source={{ uri: customBackground }} style={s.previewImage} />
-              <TouchableOpacity style={s.removeBgBtn} onPress={() => setCustomBackground(null)}>
+              <TouchableOpacity style={s.removeBgBtn} onPress={() => void chooseBackground(null)}>
                 <Text style={s.removeBgText}>Remove Image</Text>
               </TouchableOpacity>
             </View>
           )}
-        </BlurView>
+        </FrostedView>
 
       </ScrollView>
     </AppBackground>

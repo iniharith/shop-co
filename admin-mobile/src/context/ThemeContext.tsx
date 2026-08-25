@@ -9,6 +9,7 @@ interface ThemeContextData {
   theme: ThemeType;
   colors: typeof THEMES.dark | typeof THEMES.light;
   customBackground: string | null;
+  hasImageBackground: boolean;
   toggleTheme: () => void;
   setTheme: (t: ThemeType) => void;
   setCustomBackground: (bg: string | null) => void;
@@ -32,6 +33,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const colors = THEMES[theme] || THEMES.dark;
+  const hasImageBackground = isBackgroundImage(customBackground);
 
   const toggleTheme = () => {
     setThemeState(prev => {
@@ -56,10 +58,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, colors, customBackground, toggleTheme, setTheme, setCustomBackground }}>
+    <ThemeContext.Provider value={{ theme, colors, customBackground, hasImageBackground, toggleTheme, setTheme, setCustomBackground }}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
 export const useTheme = () => useContext(ThemeContext);
+
+export function isBackgroundImage(background: string | null) {
+  if (!background || /^#[0-9a-f]{3,8}$/i.test(background)) return false;
+  return /^(file|content|ph|https?|data|blob):/i.test(background);
+}

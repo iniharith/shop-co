@@ -81,9 +81,11 @@ class AdminController {
                     throw new Error(api_constant_1.messages.UNAUTHORIZED);
                 }
                 const user = yield this.adminUsecase.createUser(req.body);
+                const safeUser = user.toObject();
+                delete safeUser.password;
                 res.status(api_constant_1.statusCodes.CREATED).json({
                     message: "User created successfully",
-                    user
+                    user: safeUser
                 });
             }
             catch (error) {
@@ -104,9 +106,12 @@ class AdminController {
                 }
                 const { id } = req.params;
                 const user = yield this.adminUsecase.updateUser(id, req.body);
+                const safeUser = user === null || user === void 0 ? void 0 : user.toObject();
+                if (safeUser)
+                    delete safeUser.password;
                 res.status(api_constant_1.statusCodes.OK).json({
                     message: "User updated successfully",
-                    user
+                    user: safeUser
                 });
             }
             catch (error) {

@@ -2,7 +2,7 @@
 import { View, Text, FlatList, ActivityIndicator, RefreshControl, TouchableOpacity, StyleSheet, StatusBar, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AppBackground from '../../components/AppBackground';
-import { BlurView } from 'expo-blur';
+import FrostedView from '../../components/FrostedView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../services/api';
 import socketService from '../../services/socket';
@@ -94,7 +94,7 @@ export default function OrdersScreen() {
     <AppBackground style={s.screen}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
 
-      <BlurView intensity={theme === 'dark' ? 20 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { paddingTop: insets.top + 10 }]}>
+      <FrostedView intensity={theme === 'dark' ? 48 : 65} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.header, { backgroundColor: colors.navBg, borderBottomColor: colors.navBorder, paddingTop: insets.top + 10 }]}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View>
             <Text style={s.pageTitle}>Orders</Text>
@@ -106,7 +106,7 @@ export default function OrdersScreen() {
           <Search size={14} color={colors.mutedForeground} />
           <TextInput placeholder="Search by name, ID, amount..." placeholderTextColor={colors.mutedForeground} value={search} onChangeText={setSearch} style={s.searchInput} />
         </View>
-      </BlurView>
+      </FrostedView>
 
       {/* Filter chips */}
       <FlatList
@@ -132,16 +132,16 @@ export default function OrdersScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefresh(true); fetchOrders(); }} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.glassCard, { alignItems: 'center', paddingVertical: 40 }]}>
+          <FrostedView intensity={theme === 'dark' ? 45 : 70} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.glassCard, { alignItems: 'center', paddingVertical: 40 }]}>
             <Text style={{ color: colors.mutedForeground }}>No orders found.</Text>
-          </BlurView>
+          </FrostedView>
         }
         renderItem={({ item }) => {
           const meta = STATUS_META[item.orderStatus] || { color: '#94a3b8', bg: '#1a1a1a', label: item.orderStatus };
           const isUpdating = updating === item._id;
           const canAdvance = STATUS_CYCLE[item.orderStatus] && STATUS_CYCLE[item.orderStatus] !== item.orderStatus;
           return (
-            <BlurView intensity={theme === 'dark' ? 15 : 60} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.glassCard, { backgroundColor: colors.glass }]}>
+            <FrostedView intensity={theme === 'dark' ? 45 : 70} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.glassCard, { backgroundColor: colors.glass }]}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <View style={{ flex: 1 }}>
                   <Text style={s.orderId}>#{item._id?.slice(-8).toUpperCase()}</Text>
@@ -180,7 +180,7 @@ export default function OrdersScreen() {
                   <Trash2 size={14} color="#ef4444" />
                 </TouchableOpacity>
               </View>
-            </BlurView>
+            </FrostedView>
           );
         }}
       />

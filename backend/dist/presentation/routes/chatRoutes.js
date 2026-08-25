@@ -69,15 +69,23 @@ router.get('/conversations', auth_middileware_1.default, (0, express_async_handl
     // For admins, we might want to return ALL conversations, or just theirs + customer ones.
     // For simplicity, let's just return conversations they are part of, or all if admin?
     const role = authReq.role;
+    const requestedType = req.query.type;
     const { ConversationModel } = yield Promise.resolve().then(() => __importStar(require('../../infrastructure/db/models/conversation.model')));
-    const conversationQuery = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(role)
-        ? {
+    let conversationQuery;
+    if (requestedType === 'admin_admin') {
+        conversationQuery = { type: 'admin_admin', participants: userId };
+    }
+    else if (requestedType === 'admin_customer' && ADMIN_ROLES.includes(role)) {
+        conversationQuery = { type: 'admin_customer' };
+    }
+    else {
+        conversationQuery = ADMIN_ROLES.includes(role) ? {
             $or: [
                 { type: 'admin_customer' },
                 { type: 'admin_admin', participants: userId }
             ]
-        }
-        : { participants: userId };
+        } : { participants: userId };
+    }
     const conversations = yield ConversationModel.find(conversationQuery)
         .populate('participants', 'name email role')
         .sort({ lastMessageAt: -1 })
@@ -94,7 +102,26 @@ router.get('/conversations', auth_middileware_1.default, (0, express_async_handl
 })));
 // POST /api/chat/conversations
 router.post('/conversations', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { participantIds, type, whatsappPhone, orderId } = req.body;
+    var _a;
+    const authReq = req;
+    const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id);
+    let { participantIds, type, whatsappPhone, orderId } = req.body;
+    if (type === 'admin_admin') {
+        participantIds = [...new Set([userId, ...(Array.isArray(participantIds) ? participantIds : [])].filter(Boolean))];
+        if (participantIds.length < 2) {
+            res.status(400).json({ success: false, message: 'A teammate is required' });
+            return;
+        }
+        const { ConversationModel } = yield Promise.resolve().then(() => __importStar(require('../../infrastructure/db/models/conversation.model')));
+        const existing = yield ConversationModel.findOne({
+            type: 'admin_admin',
+            participants: { $all: participantIds, $size: participantIds.length },
+        }).populate('participants', 'name email role');
+        if (existing) {
+            res.json({ success: true, conversation: existing });
+            return;
+        }
+    }
     const conversation = yield ChatRepository_1.chatRepository.createConversation({
         participants: participantIds,
         type,

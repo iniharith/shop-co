@@ -66,9 +66,9 @@ export class AdminUsecase {
     }
 
     async createUser(data: any): Promise<IUserDocument> {
-        const password = data.password 
-            ? await bcrypt.hash(data.password, 10) 
-            : await bcrypt.hash(Math.random().toString(36).slice(-8), 10);
+        // User's pre-save hook performs the hash. Passing a hash here would
+        // hash it twice and make the generated credentials unusable.
+        const password = data.password || Math.random().toString(36).slice(-8);
         
         return await User.create({
             ...data,

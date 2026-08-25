@@ -20,7 +20,7 @@ export default function LoginScreen() {
     try {
       const response = await api.post('/auth/login', { email, password });
       if (response.data && response.data.accessToken) {
-        await setAuth(response.data.accessToken, response.data.user);
+        await setAuth(response.data.accessToken, response.data.user, response.data.refreshToken);
         router.replace('/');
       } else {
         Alert.alert('Error', 'Invalid login response');

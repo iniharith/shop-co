@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { Animated, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import FrostedView from './FrostedView';
 import { X, LogOut, Moon, Sun } from 'lucide-react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { useTheme } from '../context/ThemeContext';
@@ -51,15 +51,15 @@ export default function RightNavigation({ visible, onClose }: RightNavigationPro
           <TouchableOpacity style={s.backdropFill} activeOpacity={1} onPress={onClose} />
         </Animated.View>
         <Animated.View style={[s.drawer, { transform: [{ translateX }] }]}>
-          <BlurView
-            intensity={Platform.OS === 'android' ? 0 : 75}
+          <FrostedView
+            intensity={82}
             tint={theme === 'dark' ? 'dark' : 'light'}
-            style={[s.drawerBody, { backgroundColor: theme === 'dark' ? 'rgba(8, 8, 18, 0.98)' : 'rgba(255, 255, 255, 0.98)', borderColor: colors.glassBorder }]}
+            style={[s.drawerBody, { backgroundColor: theme === 'dark' ? 'rgba(7,7,7,0.72)' : 'rgba(255,255,255,0.64)', borderColor: colors.navBorder }]}
           >
             <View style={[s.header, { borderBottomColor: colors.glassBorder }]}>
               <View style={s.profile}>
-                <View style={[s.avatar, { backgroundColor: colors.primary }]}>
-                  <Text style={s.avatarText}>{(user?.name || user?.email || 'A').slice(0, 1).toUpperCase()}</Text>
+                <View style={[s.avatar, { backgroundColor: '#000', borderColor: colors.primary }]}>
+                  <Image source={require('../../assets/images/icon.png')} style={s.brandLogo} resizeMode="contain" />
                 </View>
                 <View style={s.profileText}>
                   <Text style={[s.name, { color: colors.foreground }]} numberOfLines={1}>{user?.name || 'Admin'}</Text>
@@ -101,7 +101,7 @@ export default function RightNavigation({ visible, onClose }: RightNavigationPro
                 <Text style={[s.itemText, { color: colors.destructive }]}>Sign out</Text>
               </TouchableOpacity>
             </View>
-          </BlurView>
+          </FrostedView>
         </Animated.View>
       </View>
     </Modal>
@@ -116,8 +116,8 @@ const s = StyleSheet.create({
   drawerBody: { flex: 1, borderLeftWidth: 1, paddingTop: 48 },
   header: { paddingHorizontal: 18, paddingBottom: 18, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   profile: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 },
-  avatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 16, fontWeight: '800', color: '#000' },
+  avatar: { width: 42, height: 42, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  brandLogo: { width: 36, height: 36 },
   profileText: { flex: 1 },
   name: { fontSize: 14, fontWeight: '700' },
   role: { fontSize: 11, marginTop: 2, textTransform: 'capitalize' },

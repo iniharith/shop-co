@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LayoutDashboard, CheckSquare, ShoppingBag, ImageIcon, Menu } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import RightNavigation from './RightNavigation';
+import FrostedView from './FrostedView';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const TABS: Record<string, { label: string; icon: (color: string, focused: boolean) => React.ReactNode }> = {
   index:    { label: 'Dashboard', icon: (c, f) => <LayoutDashboard size={22} color={c} strokeWidth={f ? 2.5 : 1.8} /> },
@@ -14,11 +16,12 @@ const TABS: Record<string, { label: string; icon: (color: string, focused: boole
 
 export default function FloatingTabBar({ state, navigation }: any) {
   const { theme, colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [drawerOpen, setDrawerOpen] = useState(false);
   
   return (
-    <View style={s.wrapper} pointerEvents="box-none">
-      <View style={[s.blur, { borderColor: colors.glassBorder, backgroundColor: theme === 'dark' ? 'rgb(9, 9, 11)' : '#ffffff' }]}>
+    <View style={[s.wrapper, { bottom: insets.bottom + 12 }]} pointerEvents="box-none">
+      <FrostedView intensity={theme === 'dark' ? 72 : 82} tint={theme === 'dark' ? 'dark' : 'light'} style={[s.blur, { borderColor: colors.navBorder, backgroundColor: theme === 'dark' ? 'rgba(8,8,8,0.68)' : 'rgba(255,255,255,0.56)' }]}>
         <View style={s.inner}>
           {state.routes.map((route: any, index: number) => {
             const focused = state.index === index;
@@ -46,7 +49,7 @@ export default function FloatingTabBar({ state, navigation }: any) {
             );
           })}
         </View>
-      </View>
+      </FrostedView>
       <RightNavigation visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </View>
   );
@@ -55,14 +58,13 @@ export default function FloatingTabBar({ state, navigation }: any) {
 const s = StyleSheet.create({
   wrapper: {
     position: 'absolute',
-    bottom: 16,
     left: 16,
     right: 16,
     zIndex: 9999,
     elevation: 30,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.28,
     shadowRadius: 20,
   },
   blur: {

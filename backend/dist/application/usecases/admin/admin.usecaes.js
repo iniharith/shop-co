@@ -73,9 +73,9 @@ class AdminUsecase {
     }
     createUser(data) {
         return __awaiter(this, void 0, void 0, function* () {
-            const password = data.password
-                ? yield bcryptjs_1.default.hash(data.password, 10)
-                : yield bcryptjs_1.default.hash(Math.random().toString(36).slice(-8), 10);
+            // User's pre-save hook performs the hash. Passing a hash here would
+            // hash it twice and make the generated credentials unusable.
+            const password = data.password || Math.random().toString(36).slice(-8);
             return yield user_model_1.default.create(Object.assign(Object.assign({}, data), { password, verified: true // Automatically verify users created by admin
              }));
         });

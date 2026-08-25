@@ -2,14 +2,17 @@ import { Tabs } from 'expo-router';
 import { LayoutDashboard, CheckSquare, ShoppingBag, Image as ImageIcon } from 'lucide-react-native';
 import FloatingTabBar from '../../components/FloatingTabBar';
 import { ThemeProvider } from '../../context/ThemeContext';
+import { BlurRoot } from '../../components/FrostedView';
 
 export default function AppLayout() {
   return (
     <ThemeProvider>
+      <BlurRoot>
       <Tabs
         tabBar={(props) => <FloatingTabBar {...props} />}
         screenOptions={{
           headerShown: false,
+          sceneStyle: { backgroundColor: 'transparent' },
         }}
       >
         <Tabs.Screen
@@ -48,6 +51,7 @@ export default function AppLayout() {
           }}
         />
       </Tabs>
+      </BlurRoot>
     </ThemeProvider>
   );
 }
