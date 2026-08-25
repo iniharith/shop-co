@@ -2,7 +2,7 @@
   "expo": {
     "name": "KampungCetak Admin",
     "slug": "admin-mobile",
-    "version": "2.3.0",
+    "version": "2.3.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "adminmobile",
@@ -12,6 +12,7 @@
     },
     "android": {
       "package": "com.kampungcetak.admin",
+      "versionCode": 6,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#000000",

@@ -7,14 +7,14 @@ export const THEMES = {
     gradientEnd:     '#0a0a0a',
   
     // Glass cards
-    glass:           'rgba(15,15,15,0.72)',
-    glassBorder:     'rgba(255,255,255,0.10)',
-    glassHover:      'rgba(31,31,31,0.88)',
-    glassShadow:     'rgba(0,0,0,0.30)',
+    glass:           'rgba(8,8,8,0.46)',
+    glassBorder:     'rgba(255,255,255,0.12)',
+    glassHover:      'rgba(24,24,24,0.62)',
+    glassShadow:     'rgba(0,0,0,0.24)',
   
     // Navbar frosted
-    navBg:           'rgba(10,10,10,0.74)',
-    navBorder:       'rgba(255,255,255,0.10)',
+    navBg:           'rgba(8,8,8,0.40)',
+    navBorder:       'rgba(255,255,255,0.12)',
   
     // Text
     foreground:      '#fafafa',
@@ -25,9 +25,9 @@ export const THEMES = {
     primaryDark:     '#b88906',
   
     // Semantic
-    card:            'rgba(15,15,15,0.72)',
+    card:            'rgba(8,8,8,0.46)',
     border:          'rgba(255,255,255,0.10)',
-    secondary:       'rgba(31,31,31,0.72)',
+    secondary:       'rgba(24,24,24,0.50)',
     destructive:     '#ef4444',
     success:         '#10b981',
     warning:         '#f59e0b',
@@ -40,14 +40,14 @@ export const THEMES = {
     gradientEnd:     '#f8fafc',
   
     // Glass cards
-    glass:           'rgba(255,255,255,0.8)',
-    glassBorder:     'rgba(0,0,0,0.06)',
-    glassHover:      'rgba(255,255,255,0.95)',
+    glass:           'rgba(255,255,255,0.46)',
+    glassBorder:     'rgba(0,0,0,0.08)',
+    glassHover:      'rgba(255,255,255,0.66)',
     glassShadow:     'rgba(0,0,0,0.03)',
   
     // Navbar frosted
-    navBg:           'rgba(255,255,255,0.9)',
-    navBorder:       'rgba(0,0,0,0.06)',
+    navBg:           'rgba(255,255,255,0.46)',
+    navBorder:       'rgba(0,0,0,0.08)',
   
     // Text
     foreground:      '#0f172a',
@@ -58,7 +58,7 @@ export const THEMES = {
     primaryDark:     '#2563eb',
   
     // Semantic
-    card:            'rgba(255,255,255,0.8)',
+    card:            'rgba(255,255,255,0.46)',
     border:          'rgba(0,0,0,0.06)',
     secondary:       'rgba(0,0,0,0.03)',
     destructive:     '#ef4444',
