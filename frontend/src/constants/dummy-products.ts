@@ -10501,7 +10501,7 @@ export const dummyProducts: any[] = [
   },
 ];
 
-const websiteImageMap: Record<string, string> = {
+const websiteImageMap: Record<string, string | string[]> = {
   "prod-100": "/images/products/BANNER.png",
   "prod-101": "/images/products/BUNTING.png",
   "prod-102": "/images/products/CAR STICKER.png",
@@ -10547,6 +10547,6 @@ const websiteImageMap: Record<string, string> = {
 dummyProducts.forEach((product) => {
   const mapped = websiteImageMap[product._id];
   if (mapped) {
-    product.images = [mapped];
+    product.images = Array.isArray(mapped) ? mapped : [mapped];
   }
 });

@@ -19,9 +19,10 @@ import { useLanguage } from "@/i18n/LanguageProvider";
 
 interface ProductDetailsProps {
   product: IProduct;
+  onDesignImageChange?: (index: number) => void;
 }
 
-export function ProductDetails({ product }: ProductDetailsProps) {
+export function ProductDetails({ product, onDesignImageChange }: ProductDetailsProps) {
   const { locale } = useLanguage();
   const label = (english: string, malay: string) => locale === "ms" ? malay : english;
   const { id } = useParams();
@@ -64,6 +65,10 @@ export function ProductDetails({ product }: ProductDetailsProps) {
       }
       return { ...prev, [optionName]: index };
     });
+
+    if (!isMultiSelect && /\bdesigns?\b|reka bentuk/i.test(optionName)) {
+      onDesignImageChange?.(index);
+    }
   };
 
   const handleAddToCart = () => {

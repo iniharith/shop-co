@@ -20,8 +20,14 @@ const page = () => {
   const { data, isPending } = useProducts(id as string);
   const { data: productsData, isPending: isProductsPending } = useProducts();
   const [relatedProducts, setRelatedProducts] = useState<IProduct[]>([]);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const product = data?.product as IProduct;
   const products = productsData?.products || [];
+
+  useEffect(() => {
+    setSelectedImageIndex(0);
+  }, [id]);
+
   useEffect(() => {
     setRelatedProducts(products.filter((product) => product._id !== id).reverse().slice(0, 6));
   }, [products, id]);
@@ -58,7 +64,11 @@ const page = () => {
               <div className="absolute top-4 right-4 z-10">
                 {product && <WishlistButton productId={product._id} />}
               </div>
-              <ProductGallery images={product.images} />
+              <ProductGallery
+                images={product.images}
+                selectedIndex={selectedImageIndex}
+                onSelectedIndexChange={setSelectedImageIndex}
+              />
             </div>
             
             <div className="bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border space-y-4">
@@ -81,7 +91,10 @@ const page = () => {
           
           {/* ── RIGHT COLUMN: CONFIGURATOR (Sticky) ── */}
           <div className="w-full lg:col-span-5 relative h-full">
-            <ProductDetails product={product} />
+            <ProductDetails
+              product={product}
+              onDesignImageChange={setSelectedImageIndex}
+            />
           </div>
         </div>
       )}
