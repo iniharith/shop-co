@@ -9131,7 +9131,7 @@ export const dummyProducts: any[] = [
     "reviews": 100,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/kiswah/kiswah.jpg"
     ],
     "colors": [
       "Standard"
@@ -9151,7 +9151,13 @@ export const dummyProducts: any[] = [
     "reviews": 64,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/4qul-24x48/mockup-01.jpg",
+      "/images/products/4qul-24x48/mockup-02.jpg",
+      "/images/products/4qul-24x48/mockup-03.jpg",
+      "/images/products/4qul-24x48/mockup-04.jpg",
+      "/images/products/4qul-24x48/mockup-05.jpg",
+      "/images/products/4qul-24x48/mockup-06.jpg",
+      "/images/products/4qul-24x48/mockup-07.jpg"
     ],
     "colors": [
       "Standard"
@@ -9171,7 +9177,13 @@ export const dummyProducts: any[] = [
     "reviews": 15,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/4qul-24x48-2pcs/mockup-01.jpg",
+      "/images/products/4qul-24x48-2pcs/mockup-02.jpg",
+      "/images/products/4qul-24x48-2pcs/mockup-03.jpg",
+      "/images/products/4qul-24x48-2pcs/mockup-04.jpg",
+      "/images/products/4qul-24x48-2pcs/mockup-05.jpg",
+      "/images/products/4qul-24x48-2pcs/mockup-06.jpg",
+      "/images/products/4qul-24x48-2pcs/mockup-07.jpg"
     ],
     "colors": [
       "Standard"
@@ -9191,7 +9203,12 @@ export const dummyProducts: any[] = [
     "reviews": 97,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/ayat-kursi-masjid/mockup-01.jpg",
+      "/images/products/ayat-kursi-masjid/mockup-02.jpg",
+      "/images/products/ayat-kursi-masjid/mockup-03.jpg",
+      "/images/products/ayat-kursi-masjid/mockup-04.jpg",
+      "/images/products/ayat-kursi-masjid/mockup-05.jpg",
+      "/images/products/ayat-kursi-masjid/mockup-06.jpg"
     ],
     "colors": [
       "Standard"
