@@ -172,6 +172,7 @@ export default function CustomerUploadPortal() {
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [generatedLink, setGeneratedLink] = useState("");
+  const uploadInProgressRef = React.useRef(false);
 
   const addFilesToItem = (itemId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -334,6 +335,7 @@ export default function CustomerUploadPortal() {
   };
 
   const handleUpload = async () => {
+    if (uploadInProgressRef.current) return;
     if (!orderId.trim()) return toast.error(langDict.errOrderId);
     if (!username.trim()) return toast.error(langDict.errUsername);
     if (!phoneNumber.trim()) return toast.error(langDict.errPhone);
@@ -343,8 +345,10 @@ export default function CustomerUploadPortal() {
       if (!it.name.trim()) return toast.error(langDict.errItem);
     }
 
+    uploadInProgressRef.current = true;
     setUploading(true);
     const toastId = toast.loading("Uploading files...");
+    const uploadedByFile = new Map<string, NonNullable<FileState["uploaded"]>>();
 
     // Only upload files that aren't already "done" — a retry after a partial
     // failure won't re-upload files that already succeeded.
@@ -360,17 +364,23 @@ export default function CustomerUploadPortal() {
     async function worker() {
       while (cursor < pendingTasks.length) {
         const task = pendingTasks[cursor++];
-        await uploadOneFile(task.itemId, task.index);
+        const uploaded = await uploadOneFile(task.itemId, task.index);
+        if (uploaded) uploadedByFile.set(`${task.itemId}:${task.index}`, uploaded);
         completedCount++;
         toast.loading(`Uploading files (${completedCount}/${pendingTasks.length})...`, { id: toastId });
       }
     }
     await Promise.all(Array.from({ length: Math.min(UPLOAD_CONCURRENCY, pendingTasks.length) }, worker));
 
-    const allDone = items.every(item => item.files.every(f => f.status === "done"));
+    const finalizedItems = items.map(item => ({
+      name: item.name.trim(),
+      files: item.files.map((file, index) => file.uploaded || uploadedByFile.get(`${item.id}:${index}`))
+    }));
+    const allDone = finalizedItems.every(item => item.files.every(Boolean));
     if (!allDone) {
       toast.error("Some files failed to upload. Fix your connection and press Submit again; completed files won't be re-uploaded.", { id: toastId });
       setUploading(false);
+      uploadInProgressRef.current = false;
       return;
     }
 
@@ -380,8 +390,8 @@ export default function CustomerUploadPortal() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: items
-            .map(item => ({ name: item.name.trim(), files: item.files.map(f => f.uploaded).filter(Boolean) }))
+          items: finalizedItems
+            .map(item => ({ name: item.name, files: item.files.filter(Boolean) }))
             .filter(p => p.files.length > 0),
           orderId: orderId.trim(),
           username: username.trim(),
@@ -403,6 +413,7 @@ export default function CustomerUploadPortal() {
       toast.error(err.message || "Couldn't finalize your submission. Please press Submit again.", { id: toastId });
     } finally {
       setUploading(false);
+      uploadInProgressRef.current = false;
     }
   };
 
@@ -633,6 +644,7 @@ export default function CustomerUploadPortal() {
           </div>
 
           <Button 
+            type="button"
             className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold h-12 text-lg"
             onClick={handleUpload}
             disabled={uploading || items.every(i => i.files.length === 0)}
