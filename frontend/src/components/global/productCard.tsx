@@ -24,12 +24,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
       onClick={() => router.push(`/home/shop/${product._id}`)}
       className="bg-card text-card-foreground border border-border shrink-0 hover:bg-muted/60 transition-colors cursor-pointer rounded-lg overflow-hidden h-full flex flex-col"
     >
-      <div className="relative w-full aspect-square overflow-hidden">
+      <div className="relative w-full aspect-square overflow-hidden bg-muted/10 p-2">
         <Image
           src={image || "/placeholder.svg"}
           alt={product.name}
           fill
-          className="object-cover"
+          className="object-contain object-center p-2"
         />
       </div>
       <div className="w-full p-3 flex flex-1 flex-col">

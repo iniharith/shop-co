@@ -16,13 +16,15 @@ import { useUIStore } from "@/store/uiStore";
 import { useAddtoCart } from "@/hooks/useCart";
 import AnimatedButton from "@/components/animation/animatedButton";
 import { useLanguage } from "@/i18n/LanguageProvider";
+import { getImageUrl } from "@/utils/getImageUrl";
 
 interface ProductDetailsProps {
   product: IProduct;
-  onDesignImageChange?: (index: number) => void;
+  selectedImageIndex?: number;
+  onSelectedImageChange?: (index: number) => void;
 }
 
-export function ProductDetails({ product, onDesignImageChange }: ProductDetailsProps) {
+export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImageChange }: ProductDetailsProps) {
   const { locale } = useLanguage();
   const label = (english: string, malay: string) => locale === "ms" ? malay : english;
   const { id } = useParams();
@@ -67,7 +69,7 @@ export function ProductDetails({ product, onDesignImageChange }: ProductDetailsP
     });
 
     if (!isMultiSelect && /\bdesigns?\b|reka bentuk/i.test(optionName)) {
-      onDesignImageChange?.(index);
+      onSelectedImageChange?.(index);
     }
   };
 
@@ -78,15 +80,18 @@ export function ProductDetails({ product, onDesignImageChange }: ProductDetailsP
       return;
     }
     
-    // We can store the design option in the size field or metadata, but for now we append it to the size to pass it to the backend mock
     const baseSize = product.category === "flyers" ? selectedGridSize : "Standard";
-      const sizeWithDesign = `${baseSize} | Design: ${designOption === "upload" ? "Upload Artwork" : "Need Design Service"}`;
-    const artworkUrl = designOption === "upload" ? "https://example.com/mock-uploaded-artwork.pdf" : undefined; // Replace with actual uploaded file URL state if it exists
-    mutate({ productId: product._id, size: sizeWithDesign, quantity, artworkUrl });
+    const isIslamicKhat = product.category?.toLowerCase() === "islamic khat";
+    const selectedConfiguration = isIslamicKhat && product.images.length > 1
+      ? `${baseSize} | Variation: ${selectedImageIndex + 1}`
+      : `${baseSize} | Design: ${designOption === "upload" ? "Upload Artwork" : "Need Design Service"}`;
+    const artworkUrl = !isIslamicKhat && designOption === "upload" ? "https://example.com/mock-uploaded-artwork.pdf" : undefined; // Replace with actual uploaded file URL state if it exists
+    mutate({ productId: product._id, size: selectedConfiguration, quantity, artworkUrl });
     toast.success("Added to cart");
   };
 
   const options = product.printingOptions || [];
+  const hasImageVariations = product.category?.toLowerCase() === "islamic khat" && product.images.length > 1;
 
   let minQuantity = 1;
   if (product.category === 'button-badge') {
@@ -304,6 +309,7 @@ export function ProductDetails({ product, onDesignImageChange }: ProductDetailsP
   const formatStepNum = step1Options.length > 0 ? currentStep++ : 0;
   const printingStepNum = step2Options.length > 0 ? currentStep++ : 0;
   const addonsStepNum = step3Addons.length > 0 ? currentStep++ : 0;
+  const variationStepNum = hasImageVariations ? currentStep++ : 0;
   const quantityStepNum = currentStep++;
 
   return (
@@ -418,6 +424,48 @@ export function ProductDetails({ product, onDesignImageChange }: ProductDetailsP
               <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">{label("Add-ons", "Tambahan")}</h2>
             </div>
             {renderOptions(step3Addons)}
+          </div>
+        )}
+
+        {hasImageVariations && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 border-b border-gray-200 pb-2 dark:border-border">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                {variationStepNum}
+              </span>
+              <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">
+                {label("Choose Variation", "Pilih Variasi")}
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {product.images.map((image, index) => {
+                const isSelected = selectedImageIndex === index;
+                return (
+                  <button
+                    type="button"
+                    key={image}
+                    onClick={() => onSelectedImageChange?.(index)}
+                    aria-pressed={isSelected}
+                    className={`overflow-hidden rounded-xl border-2 text-left transition-all ${
+                      isSelected
+                        ? "border-primary bg-primary/10 shadow-sm"
+                        : "border-gray-200 hover:border-primary/50 dark:border-border"
+                    }`}
+                  >
+                    <span className="flex aspect-[4/3] items-center justify-center bg-muted/20 p-1">
+                      <img
+                        src={getImageUrl(image)}
+                        alt={`${label("Variation", "Variasi")} ${index + 1}`}
+                        className="h-full w-full object-contain object-center"
+                      />
+                    </span>
+                    <span className={`block px-2 py-2 text-center text-xs font-bold ${isSelected ? "text-primary" : "text-foreground"}`}>
+                      {label("Variation", "Variasi")} {index + 1}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 

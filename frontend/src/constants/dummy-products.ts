@@ -9131,7 +9131,7 @@ export const dummyProducts: any[] = [
     "reviews": 100,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/kiswah/kiswah.jpg"
+      "/images/products/kiswah/kiswah.webp"
     ],
     "colors": [
       "Standard"
@@ -9151,13 +9151,13 @@ export const dummyProducts: any[] = [
     "reviews": 64,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/4qul-24x48/mockup-01.jpg",
-      "/images/products/4qul-24x48/mockup-02.jpg",
-      "/images/products/4qul-24x48/mockup-03.jpg",
-      "/images/products/4qul-24x48/mockup-04.jpg",
-      "/images/products/4qul-24x48/mockup-05.jpg",
-      "/images/products/4qul-24x48/mockup-06.jpg",
-      "/images/products/4qul-24x48/mockup-07.jpg"
+      "/images/products/4qul-24x48/mockup-01.webp",
+      "/images/products/4qul-24x48/mockup-02.webp",
+      "/images/products/4qul-24x48/mockup-03.webp",
+      "/images/products/4qul-24x48/mockup-04.webp",
+      "/images/products/4qul-24x48/mockup-05.webp",
+      "/images/products/4qul-24x48/mockup-06.webp",
+      "/images/products/4qul-24x48/mockup-07.webp"
     ],
     "colors": [
       "Standard"
@@ -9177,13 +9177,13 @@ export const dummyProducts: any[] = [
     "reviews": 15,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/4qul-24x48-2pcs/mockup-01.jpg",
-      "/images/products/4qul-24x48-2pcs/mockup-02.jpg",
-      "/images/products/4qul-24x48-2pcs/mockup-03.jpg",
-      "/images/products/4qul-24x48-2pcs/mockup-04.jpg",
-      "/images/products/4qul-24x48-2pcs/mockup-05.jpg",
-      "/images/products/4qul-24x48-2pcs/mockup-06.jpg",
-      "/images/products/4qul-24x48-2pcs/mockup-07.jpg"
+      "/images/products/4qul-24x48-2pcs/mockup-01.webp",
+      "/images/products/4qul-24x48-2pcs/mockup-02.webp",
+      "/images/products/4qul-24x48-2pcs/mockup-03.webp",
+      "/images/products/4qul-24x48-2pcs/mockup-04.webp",
+      "/images/products/4qul-24x48-2pcs/mockup-05.webp",
+      "/images/products/4qul-24x48-2pcs/mockup-06.webp",
+      "/images/products/4qul-24x48-2pcs/mockup-07.webp"
     ],
     "colors": [
       "Standard"
@@ -9203,12 +9203,12 @@ export const dummyProducts: any[] = [
     "reviews": 97,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/ayat-kursi-masjid/mockup-01.jpg",
-      "/images/products/ayat-kursi-masjid/mockup-02.jpg",
-      "/images/products/ayat-kursi-masjid/mockup-03.jpg",
-      "/images/products/ayat-kursi-masjid/mockup-04.jpg",
-      "/images/products/ayat-kursi-masjid/mockup-05.jpg",
-      "/images/products/ayat-kursi-masjid/mockup-06.jpg"
+      "/images/products/ayat-kursi-masjid/mockup-01.webp",
+      "/images/products/ayat-kursi-masjid/mockup-02.webp",
+      "/images/products/ayat-kursi-masjid/mockup-03.webp",
+      "/images/products/ayat-kursi-masjid/mockup-04.webp",
+      "/images/products/ayat-kursi-masjid/mockup-05.webp",
+      "/images/products/ayat-kursi-masjid/mockup-06.webp"
     ],
     "colors": [
       "Standard"

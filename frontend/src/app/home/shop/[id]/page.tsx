@@ -93,7 +93,8 @@ const page = () => {
           <div className="w-full lg:col-span-5 relative h-full">
             <ProductDetails
               product={product}
-              onDesignImageChange={setSelectedImageIndex}
+              selectedImageIndex={selectedImageIndex}
+              onSelectedImageChange={setSelectedImageIndex}
             />
           </div>
         </div>
