@@ -39,14 +39,14 @@ export function QuantityPicker({
   return (
     <div
       className={cn(
-        "flex h-12 md:max-w-[120px] bg-gray-300/20  w-fullitems-center rounded-md border",
+        "flex h-12 w-full items-center rounded-xl border border-border bg-muted/40 md:max-w-[132px]",
         className
       )}
     >
       <button
       
         type="button"
-        className="flex cursor-pointer h-full w-12 items-center justify-center text-lg transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+        className="flex h-full w-12 cursor-pointer items-center justify-center rounded-l-xl text-lg transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
         onClick={onDecrement}
         disabled={quantity <= min || disabled}
         aria-label="Decrease quantity"
@@ -68,7 +68,7 @@ export function QuantityPicker({
 
       <button
         type="button"
-        className="flex cursor-pointer h-full w-12 items-center justify-center text-lg transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+        className="flex h-full w-12 cursor-pointer items-center justify-center rounded-r-xl text-lg transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
         onClick={onIncrement}
         disabled={quantity >= max || disabled}
         aria-label="Increase quantity"

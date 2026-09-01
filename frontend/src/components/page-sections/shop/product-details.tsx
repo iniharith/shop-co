@@ -17,6 +17,7 @@ import { useAddtoCart } from "@/hooks/useCart";
 import AnimatedButton from "@/components/animation/animatedButton";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { getImageUrl } from "@/utils/getImageUrl";
+import { Check } from "lucide-react";
 
 interface ProductDetailsProps {
   product: IProduct;
@@ -276,10 +277,10 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
           {opt.options.map((val, idx) => (
             <label 
               key={idx}
-              className={`flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+              className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 transition-all duration-200 ${
                 opt.isMultiSelect ? (Array.isArray(selectedOptions[opt.name]) && (selectedOptions[opt.name] as number[]).includes(idx)) : selectedOptions[opt.name] === idx
-                  ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-sm" 
-                  : "border-gray-200 dark:border-border hover:border-primary/50 dark:hover:border-primary/50"
+                  ? "border-primary bg-primary/5 ring-2 ring-primary/15 dark:bg-primary/10"
+                  : "border-gray-200 hover:border-primary/50 dark:border-border dark:hover:border-primary/50"
               }`}
             >
               <div className="flex items-center gap-3">
@@ -313,18 +314,21 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
   const quantityStepNum = currentStep++;
 
   return (
-    <div className="bg-white dark:bg-card rounded-2xl shadow-lg border border-gray-200 dark:border-border sticky top-24 overflow-hidden">
+    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-border dark:bg-card sm:rounded-3xl lg:sticky lg:top-[190px]">
       
       {/* Product Header inside configurator */}
-      <div className="p-6 bg-gray-50 dark:bg-black/20 border-b border-gray-200 dark:border-border">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-foreground">{product.name}</h1>
-        <div className="flex items-center gap-2 mt-2">
+      <div className="border-b border-gray-200 bg-gray-50/80 p-5 dark:border-border dark:bg-black/20 sm:p-6">
+        <span className="mb-3 inline-flex rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.15em] text-primary">
+          {product.category.replace(/-/g, " ")}
+        </span>
+        <h1 className="font-sans text-xl font-semibold leading-tight tracking-tight text-gray-900 dark:text-foreground sm:text-2xl">{product.name}</h1>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <StarRating rating={product.rating} maxRating={5} />
-          <span className="text-sm text-gray-500 dark:text-muted-foreground">({product.rating} / 5 {label("reviews", "ulasan")})</span>
+          <span className="text-sm font-medium text-gray-500 dark:text-muted-foreground">{product.rating.toFixed(1)} {label("rating", "penilaian")}</span>
         </div>
       </div>
 
-      <div className="p-6 space-y-8">
+      <div className="space-y-6 p-4 sm:space-y-8 sm:p-6">
         
         {/* STEP 1: Design Options */}
         {product.category?.toLowerCase() !== "islamic khat" && (
@@ -333,7 +337,7 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
             <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
               {designStepNum}
             </span>
-            <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">{label("Design & Artwork", "Reka Bentuk & Karya")}</h2>
+            <h2 className="font-sans text-base font-semibold text-gray-800 dark:text-foreground sm:text-lg">{label("Design & Artwork", "Reka Bentuk & Karya")}</h2>
           </div>
           
           <div className="grid grid-cols-1 gap-2">
@@ -348,9 +352,9 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
               </div>
             ) : (
               <>
-                <label className={`flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+                <label className={`flex cursor-pointer flex-col rounded-xl border p-4 transition-all duration-200 ${
                   designOption === "upload" 
-                    ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-sm" 
+                    ? "border-primary bg-primary/5 ring-2 ring-primary/15 dark:bg-primary/10"
                     : "border-gray-200 dark:border-border hover:border-primary/50"
                 }`}>
                   <div className="flex items-center gap-3">
@@ -366,9 +370,9 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
                   <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">{label("Upload your print-ready artwork (PDF, AI, PSD) during checkout or in your dashboard.", "Muat naik karya sedia cetak (PDF, AI, PSD) semasa checkout atau melalui dashboard.")}</p>
                 </label>
 
-                <label className={`flex flex-col p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+                <label className={`flex cursor-pointer flex-col rounded-xl border p-4 transition-all duration-200 ${
                   designOption === "design" 
-                    ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-sm" 
+                    ? "border-primary bg-primary/5 ring-2 ring-primary/15 dark:bg-primary/10"
                     : "border-gray-200 dark:border-border hover:border-primary/50"
                 }`}>
                   <div className="flex items-center justify-between">
@@ -397,7 +401,7 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
           <div className="space-y-4">
             <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">{formatStepNum}</span>
-              <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">{label("Format & Material", "Format & Bahan")}</h2>
+              <h2 className="font-sans text-base font-semibold text-gray-800 dark:text-foreground sm:text-lg">{label("Format & Material", "Format & Bahan")}</h2>
             </div>
             {renderOptions(step1Options)}
           </div>
@@ -408,7 +412,7 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
           <div className="space-y-4">
             <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">{printingStepNum}</span>
-              <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">{label("Printing & Options", "Cetakan & Pilihan")}</h2>
+              <h2 className="font-sans text-base font-semibold text-gray-800 dark:text-foreground sm:text-lg">{label("Printing & Options", "Cetakan & Pilihan")}</h2>
             </div>
             {renderOptions(step2Options)}
           </div>
@@ -421,21 +425,26 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
                 {addonsStepNum}
               </span>
-              <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">{label("Add-ons", "Tambahan")}</h2>
+              <h2 className="font-sans text-base font-semibold text-gray-800 dark:text-foreground sm:text-lg">{label("Add-ons", "Tambahan")}</h2>
             </div>
             {renderOptions(step3Addons)}
           </div>
         )}
 
         {hasImageVariations && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 border-b border-gray-200 pb-2 dark:border-border">
+          <div className="space-y-4 rounded-2xl border border-border bg-muted/20 p-4 sm:p-5">
+            <div className="flex items-center gap-3">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
                 {variationStepNum}
               </span>
-              <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">
-                {label("Choose Variation", "Pilih Variasi")}
-              </h2>
+              <div className="min-w-0">
+                <h2 className="font-sans text-base font-semibold text-gray-800 dark:text-foreground sm:text-lg">
+                  {label("Choose Variation", "Pilih Variasi")}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {label("Selected", "Dipilih")}: {label("Variation", "Variasi")} {selectedImageIndex + 1}
+                </p>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {product.images.map((image, index) => {
@@ -446,12 +455,17 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
                     key={image}
                     onClick={() => onSelectedImageChange?.(index)}
                     aria-pressed={isSelected}
-                    className={`overflow-hidden rounded-xl border-2 text-left transition-all ${
+                    className={`relative overflow-hidden rounded-xl border bg-card text-left transition-all ${
                       isSelected
-                        ? "border-primary bg-primary/10 shadow-sm"
-                        : "border-gray-200 hover:border-primary/50 dark:border-border"
+                        ? "border-primary ring-2 ring-primary/20"
+                        : "border-gray-200 opacity-75 hover:border-primary/50 hover:opacity-100 dark:border-border"
                     }`}
                   >
+                    {isSelected && (
+                      <span className="absolute right-2 top-2 z-10 flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                        <Check className="size-3.5" strokeWidth={3} />
+                      </span>
+                    )}
                     <span className="flex aspect-[4/3] items-center justify-center bg-muted/20 p-1">
                       <img
                         src={getImageUrl(image)}
@@ -459,7 +473,7 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
                         className="h-full w-full object-contain object-center"
                       />
                     </span>
-                    <span className={`block px-2 py-2 text-center text-xs font-bold ${isSelected ? "text-primary" : "text-foreground"}`}>
+                    <span className={`block px-2 py-2.5 text-center text-xs font-bold ${isSelected ? "text-primary" : "text-foreground"}`}>
                       {label("Variation", "Variasi")} {index + 1}
                     </span>
                   </button>
@@ -475,7 +489,7 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
             <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
               {quantityStepNum}
             </span>
-            <h2 className="text-lg font-bold text-gray-800 dark:text-foreground">{stepTurnaround.length > 0 ? label("Quantity & Turnaround", "Kuantiti & Tempoh Siap") : label("Quantity", "Kuantiti")}</h2>
+            <h2 className="font-sans text-base font-semibold text-gray-800 dark:text-foreground sm:text-lg">{stepTurnaround.length > 0 ? label("Quantity & Turnaround", "Kuantiti & Tempoh Siap") : label("Quantity", "Kuantiti")}</h2>
           </div>
           
           {stepTurnaround.length > 0 ? (() => {
@@ -561,7 +575,7 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
                 ))}
               </div>
             ) : (
-              <div className="p-4 border-2 border-gray-200 dark:border-border rounded-xl flex items-center justify-between">
+              <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-muted/20 p-4 dark:border-border">
                 <span className="text-sm font-medium dark:text-foreground">{label("Total Pieces", "Jumlah Unit")}</span>
                 <QuantityPicker
                   quantity={quantity}
@@ -682,16 +696,16 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
 
         {/* ── PRICE SUMMARY ── */}
         {/* End of conditional */}
-        <div className="bg-gray-100 dark:bg-black/40 rounded-xl p-5 space-y-3 mt-8 border border-gray-200 dark:border-border">
+        <div className="mt-8 space-y-3 rounded-2xl border border-gray-200 bg-gray-100/70 p-5 dark:border-border dark:bg-black/40">
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
             <span>{label("Subtotal", "Subjumlah")}</span>
             <span>RM {subtotal.toFixed(2)}</span>
           </div>
           <div className="w-full h-px bg-gray-300 dark:bg-border my-2"></div>
-          <div className="flex justify-between items-end">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <span className="text-base font-semibold text-gray-900 dark:text-foreground">{label("Total Price", "Jumlah Harga")}</span>
             <div className="text-right">
-              <span className="text-3xl font-extrabold text-primary">RM {total.toFixed(2)}</span>
+              <span className="text-2xl font-extrabold tabular-nums text-primary sm:text-3xl">RM {total.toFixed(2)}</span>
               <p className="text-xs text-gray-500 dark:text-muted-foreground mt-1">{label("Delivery price will be shown at checkout", "Caj penghantaran akan dipaparkan semasa checkout")}</p>
             </div>
           </div>
@@ -701,7 +715,7 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
           text={label("Add to Cart", "Tambah ke Troli")}
           type="submit"
           isLoading={isPending}
-          className="w-full bg-primary text-primary-foreground py-4 font-bold text-lg rounded-xl active:scale-95 transition-all cursor-pointer shadow-lg shadow-primary/20 hover:shadow-primary/40"
+          className="h-14 w-full cursor-pointer rounded-full bg-primary py-4 text-base font-bold text-primary-foreground shadow-md shadow-primary/15 transition-all hover:brightness-105 active:scale-[0.98] sm:text-lg"
           onClick={handleAddToCart}
         />
       </div>

@@ -36,32 +36,32 @@ const page = () => {
 
     
   return (
-    <div className="w-full py-5 md:px-10 px-5 max-w-[1400px] mx-auto">
+    <div className="mx-auto w-full max-w-[1480px] px-3 py-4 sm:px-6 sm:py-6 xl:px-8">
       {/* Custom Dynamic Breadcrumbs */}
-      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-muted-foreground mb-6 bg-white dark:bg-card p-3 rounded-xl border border-gray-200 dark:border-border shadow-sm">
-         <Link href="/" className="hover:text-primary transition-colors">Home</Link>
-         <span>/</span>
-         <Link href="/home/shop" className="hover:text-primary transition-colors">Shop</Link>
+      <nav className="mb-5 flex items-center gap-2 overflow-x-auto whitespace-nowrap border-b border-border px-1 pb-3 text-xs text-muted-foreground sm:mb-7 sm:text-sm" aria-label="Breadcrumb">
+         <Link href="/" className="transition-colors hover:text-primary">Home</Link>
+         <span className="text-border">/</span>
+         <Link href="/home/shop" className="transition-colors hover:text-primary">Shop</Link>
          {product && (
            <>
-             <span>/</span>
-             <Link href={`/home/shop?category=${product.category}`} className="hover:text-primary transition-colors capitalize">
-               {product.category.replace(/-/g, ' ')}
-             </Link>
-             <span>/</span>
-             <span className="text-gray-900 dark:text-foreground font-semibold truncate max-w-[200px] md:max-w-[400px]">
-               {product.name}
-             </span>
+              <span className="text-border">/</span>
+              <Link href={`/home/shop?category=${product.category}`} className="capitalize transition-colors hover:text-primary">
+                {product.category.replace(/-/g, ' ')}
+              </Link>
+              <span className="text-border">/</span>
+              <span className="font-semibold text-foreground">
+                {product.name}
+              </span>
            </>
          )}
-      </div>
+      </nav>
       {isPending && <ProductDetailSkeleton />}
       {!isPending && product && (
-        <div className="grid border-b border-border pb-10 grid-cols-1 mt-6 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 items-start gap-5 border-b border-border pb-10 lg:grid-cols-12 xl:gap-8">
           {/* ── LEFT COLUMN: IMAGES & DESCRIPTION ── */}
-          <div className="w-full lg:col-span-7 space-y-8">
-            <div className="bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border relative">
-              <div className="absolute top-4 right-4 z-10">
+          <div className="w-full space-y-5 lg:col-span-7 sm:space-y-6">
+            <div className="relative rounded-2xl border border-border bg-card p-3 text-card-foreground shadow-sm sm:rounded-3xl sm:p-5">
+              <div className="absolute right-5 top-5 z-20">
                 {product && <WishlistButton productId={product._id} />}
               </div>
               <ProductGallery
@@ -71,10 +71,10 @@ const page = () => {
               />
             </div>
             
-            <div className="bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border space-y-4">
-              <h2 className="text-xl font-bold tracking-tight text-primary">Product Information</h2>
-              <div className="w-full h-px bg-border"></div>
-              <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
+            <div className="space-y-3 rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-sm sm:rounded-3xl sm:p-6">
+              <span className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Product details</span>
+              <h2 className="font-sans text-xl font-semibold tracking-tight text-foreground">Product information</h2>
+              <p className="max-w-3xl text-sm leading-7 text-muted-foreground md:text-base">
                 {product.description || "High quality printing service offering excellent results with vibrant colors and durability. Ideal for professional and personal use."}
               </p>
             </div>
@@ -83,7 +83,7 @@ const page = () => {
 
             {/* ── REVIEWS (inside left column) ── */}
             {product && (
-              <div className="bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border">
+              <div className="rounded-2xl border border-border bg-card p-4 text-card-foreground shadow-sm sm:rounded-3xl sm:p-6">
                 <ProductReviews productId={product._id} />
               </div>
             )}
