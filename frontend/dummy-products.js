@@ -9584,8 +9584,8 @@ exports.dummyProducts = [
     },
     {
         "_id": "prod-226",
-        "name": "AL KHFI 36X36",
-        "description": "High-quality Islamic Khat - AL KHFI 36X36",
+        "name": "AL KAHFI 36X36",
+        "description": "High-quality Islamic Khat - AL KAHFI 36X36",
         "price": 148,
         "originalPrice": 168,
         "discount": 0,

@@ -78,7 +78,7 @@ const khatData = [
   ["JAM 3 PANEL 12X18", "135"],
   ["ZIKIR 3 PAEL 12X24", "128"],
   ["SURAH ALKAHFI 24X48", "248"],
-  ["AL KHFI 36X36", "148"],
+  ["AL KAHFI 36X36", "148"],
   ["4 QUL 4 PANEL 18X24", "239"],
   ["AYAT KURSI KAABAH 36X48", "189"],
   ["ASMAULHUSNA 36X48", "189"],
