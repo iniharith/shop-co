@@ -9475,8 +9475,8 @@ export const dummyProducts: any[] = [
   },
   {
     "_id": "prod-216",
-    "name": "PETA UNIA 36X36",
-    "description": "High-quality Islamic Khat - PETA UNIA 36X36",
+    "name": "PETA DUNIA 36X36",
+    "description": "High-quality Islamic Khat - PETA DUNIA 36X36",
     "price": 159,
     "originalPrice": 179,
     "discount": 0,
