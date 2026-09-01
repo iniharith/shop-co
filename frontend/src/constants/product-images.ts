@@ -80,7 +80,6 @@ export const productImages = [
   "/images/catalog/079-prod-224.webp",
   "/images/catalog/080-prod-225.webp",
   "/images/catalog/081-prod-226.webp",
-  "/images/catalog/082-prod-227.webp",
   "/images/catalog/083-prod-228.webp",
   "/images/catalog/084-prod-229.webp",
   "/images/catalog/085-prod-230.webp",

@@ -9694,26 +9694,6 @@ export const dummyProducts: any[] = [
     ]
   },
   {
-    "_id": "prod-227",
-    "name": "ASMAULHUSNA 36X36",
-    "description": "High-quality Islamic Khat - ASMAULHUSNA 36X36",
-    "price": 148,
-    "originalPrice": 168,
-    "discount": 0,
-    "rating": 5,
-    "reviews": 11,
-    "category": "Islamic Khat",
-    "images": [
-      "/images/products/logo-black.png"
-    ],
-    "colors": [
-      "Standard"
-    ],
-    "sizes": [
-      "Standard"
-    ]
-  },
-  {
     "_id": "prod-228",
     "name": "4 QUL 4 PANEL 18X24",
     "description": "High-quality Islamic Khat - 4 QUL 4 PANEL 18X24",
