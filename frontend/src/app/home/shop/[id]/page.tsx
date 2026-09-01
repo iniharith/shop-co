@@ -21,11 +21,13 @@ const page = () => {
   const { data: productsData, isPending: isProductsPending } = useProducts();
   const [relatedProducts, setRelatedProducts] = useState<IProduct[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedVariationIndex, setSelectedVariationIndex] = useState<number | null>(null);
   const product = data?.product as IProduct;
   const products = productsData?.products || [];
 
   useEffect(() => {
     setSelectedImageIndex(0);
+    setSelectedVariationIndex(null);
   }, [id]);
 
   useEffect(() => {
@@ -93,8 +95,12 @@ const page = () => {
           <div className="w-full lg:col-span-5 relative h-full">
             <ProductDetails
               product={product}
-              selectedImageIndex={selectedImageIndex}
+              selectedVariationIndex={selectedVariationIndex}
               onSelectedImageChange={setSelectedImageIndex}
+              onSelectedVariationChange={(index) => {
+                setSelectedVariationIndex(index);
+                setSelectedImageIndex(index);
+              }}
             />
           </div>
         </div>

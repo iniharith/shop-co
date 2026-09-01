@@ -17,15 +17,21 @@ import { useAddtoCart } from "@/hooks/useCart";
 import AnimatedButton from "@/components/animation/animatedButton";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { getImageUrl } from "@/utils/getImageUrl";
-import { Check } from "lucide-react";
+import { Check, Headphones, ShieldCheck, Truck } from "lucide-react";
 
 interface ProductDetailsProps {
   product: IProduct;
-  selectedImageIndex?: number;
+  selectedVariationIndex?: number | null;
   onSelectedImageChange?: (index: number) => void;
+  onSelectedVariationChange?: (index: number) => void;
 }
 
-export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImageChange }: ProductDetailsProps) {
+export function ProductDetails({
+  product,
+  selectedVariationIndex = null,
+  onSelectedImageChange,
+  onSelectedVariationChange
+}: ProductDetailsProps) {
   const { locale } = useLanguage();
   const label = (english: string, malay: string) => locale === "ms" ? malay : english;
   const { id } = useParams();
@@ -81,14 +87,18 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
       return;
     }
     
-    const baseSize = product.category === "flyers" ? selectedGridSize : "Standard";
     const isIslamicKhat = product.category?.toLowerCase() === "islamic khat";
+    if (isIslamicKhat && product.images.length > 1 && selectedVariationIndex === null) {
+      toast.error(label("Please choose a design before adding to cart", "Sila pilih reka bentuk sebelum menambah ke troli"));
+      return;
+    }
+
+    const baseSize = product.category === "flyers" ? selectedGridSize : "Standard";
     const selectedConfiguration = isIslamicKhat && product.images.length > 1
-      ? `${baseSize} | Variation: ${selectedImageIndex + 1}`
+      ? `${baseSize} | Design: ${String((selectedVariationIndex as number) + 1).padStart(2, "0")}`
       : `${baseSize} | Design: ${designOption === "upload" ? "Upload Artwork" : "Need Design Service"}`;
     const artworkUrl = !isIslamicKhat && designOption === "upload" ? "https://example.com/mock-uploaded-artwork.pdf" : undefined; // Replace with actual uploaded file URL state if it exists
     mutate({ productId: product._id, size: selectedConfiguration, quantity, artworkUrl });
-    toast.success("Added to cart");
   };
 
   const options = product.printingOptions || [];
@@ -326,6 +336,23 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
           <StarRating rating={product.rating} maxRating={5} />
           <span className="text-sm font-medium text-gray-500 dark:text-muted-foreground">{product.rating.toFixed(1)} {label("rating", "penilaian")}</span>
         </div>
+        <div className="mt-5 flex items-end justify-between gap-4 border-t border-border pt-4">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">{label("Current total", "Jumlah semasa")}</p>
+            <p className="mt-1 text-2xl font-extrabold tabular-nums text-primary">RM {total.toFixed(2)}</p>
+          </div>
+          {hasImageVariations && (
+            <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+              selectedVariationIndex === null
+                ? "bg-primary/10 text-primary"
+                : "bg-green-500/10 text-green-600 dark:text-green-400"
+            }`}>
+              {selectedVariationIndex === null
+                ? label("Design required", "Reka bentuk diperlukan")
+                : `${label("Design", "Reka bentuk")} ${String(selectedVariationIndex + 1).padStart(2, "0")}`}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="space-y-6 p-4 sm:space-y-8 sm:p-6">
@@ -441,19 +468,23 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
                 <h2 className="font-sans text-base font-semibold text-gray-800 dark:text-foreground sm:text-lg">
                   {label("Choose Variation", "Pilih Variasi")}
                 </h2>
-                <p className="text-xs text-muted-foreground">
-                  {label("Selected", "Dipilih")}: {label("Variation", "Variasi")} {selectedImageIndex + 1}
+                <p className={`text-xs ${selectedVariationIndex === null ? "font-medium text-primary" : "text-muted-foreground"}`}>
+                  {selectedVariationIndex === null
+                    ? label("Select one design to continue", "Pilih satu reka bentuk untuk teruskan")
+                    : `${label("Selected", "Dipilih")}: ${label("Design", "Reka bentuk")} ${selectedVariationIndex + 1}`}
                 </p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {product.images.map((image, index) => {
-                const isSelected = selectedImageIndex === index;
+                const isSelected = selectedVariationIndex === index;
                 return (
                   <button
                     type="button"
                     key={image}
-                    onClick={() => onSelectedImageChange?.(index)}
+                    onMouseEnter={() => onSelectedImageChange?.(index)}
+                    onFocus={() => onSelectedImageChange?.(index)}
+                    onClick={() => onSelectedVariationChange?.(index)}
                     aria-pressed={isSelected}
                     className={`relative overflow-hidden rounded-xl border bg-card text-left transition-all ${
                       isSelected
@@ -474,7 +505,7 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
                       />
                     </span>
                     <span className={`block px-2 py-2.5 text-center text-xs font-bold ${isSelected ? "text-primary" : "text-foreground"}`}>
-                      {label("Variation", "Variasi")} {index + 1}
+                      {label("Design", "Reka bentuk")} {String(index + 1).padStart(2, "0")}
                     </span>
                   </button>
                 );
@@ -715,13 +746,45 @@ export function ProductDetails({ product, selectedImageIndex = 0, onSelectedImag
           text={label("Add to Cart", "Tambah ke Troli")}
           type="submit"
           isLoading={isPending}
-          className="h-14 w-full cursor-pointer rounded-full bg-primary py-4 text-base font-bold text-primary-foreground shadow-md shadow-primary/15 transition-all hover:brightness-105 active:scale-[0.98] sm:text-lg"
+          className="hidden h-14 w-full cursor-pointer rounded-full bg-primary py-4 text-base font-bold text-primary-foreground shadow-md shadow-primary/15 transition-all hover:brightness-105 active:scale-[0.98] sm:text-lg lg:flex"
+          onClick={handleAddToCart}
+        />
+
+        <div className="grid gap-2 border-t border-border pt-5 text-xs text-muted-foreground sm:grid-cols-3">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="size-4 shrink-0 text-primary" />
+            <span>{label("Secure checkout", "Pembayaran selamat")}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Truck className="size-4 shrink-0 text-primary" />
+            <span>{label("Shipping at checkout", "Penghantaran semasa checkout")}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Headphones className="size-4 shrink-0 text-primary" />
+            <span>{label("Customer support", "Khidmat pelanggan")}</span>
+          </div>
+        </div>
+
+        <div className="h-20 lg:hidden" aria-hidden="true" />
+      </div>
+
+      <div className="fixed inset-x-3 bottom-3 z-50 flex items-center gap-3 rounded-2xl border border-border bg-card/95 p-3 shadow-2xl backdrop-blur-xl lg:hidden">
+        <div className="min-w-0 shrink-0">
+          <p className="text-[11px] font-medium text-muted-foreground">
+            {hasImageVariations && selectedVariationIndex === null
+              ? label("Choose a design", "Pilih reka bentuk")
+              : label("Total", "Jumlah")}
+          </p>
+          <p className="text-lg font-extrabold tabular-nums text-primary">RM {total.toFixed(2)}</p>
+        </div>
+        <AnimatedButton
+          text={label("Add to Cart", "Tambah ke Troli")}
+          type="button"
+          isLoading={isPending}
+          className="h-12 min-w-0 flex-1 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground shadow-md shadow-primary/15"
           onClick={handleAddToCart}
         />
       </div>
-
-      
-
     </div>
   );
 }
