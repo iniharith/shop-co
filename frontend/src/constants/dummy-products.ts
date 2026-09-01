@@ -9228,7 +9228,10 @@ export const dummyProducts: any[] = [
     "reviews": 104,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/kaabah-syahadah-48x48/mockup-01.webp",
+      "/images/products/kaabah-syahadah-48x48/mockup-02.webp",
+      "/images/products/kaabah-syahadah-48x48/mockup-03.webp",
+      "/images/products/kaabah-syahadah-48x48/mockup-04.webp"
     ],
     "colors": [
       "Standard"
@@ -9248,7 +9251,10 @@ export const dummyProducts: any[] = [
     "reviews": 13,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/kaabah-syahadah-36x36/mockup-01.webp",
+      "/images/products/kaabah-syahadah-36x36/mockup-02.webp",
+      "/images/products/kaabah-syahadah-36x36/mockup-03.webp",
+      "/images/products/kaabah-syahadah-36x36/mockup-04.webp"
     ],
     "colors": [
       "Standard"
@@ -9268,7 +9274,12 @@ export const dummyProducts: any[] = [
     "reviews": 35,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/frame-jam-24x24-2pcs/mockup-01.webp",
+      "/images/products/frame-jam-24x24-2pcs/mockup-02.webp",
+      "/images/products/frame-jam-24x24-2pcs/mockup-03.webp",
+      "/images/products/frame-jam-24x24-2pcs/mockup-04.webp",
+      "/images/products/frame-jam-24x24-2pcs/mockup-05.webp",
+      "/images/products/frame-jam-24x24-2pcs/mockup-06.webp"
     ],
     "colors": [
       "Standard"
@@ -9288,7 +9299,7 @@ export const dummyProducts: any[] = [
     "reviews": 83,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/asmalul-husna-24x48/product.webp"
     ],
     "colors": [
       "Standard"
@@ -9308,7 +9319,7 @@ export const dummyProducts: any[] = [
     "reviews": 75,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/kaabah-36x36-24x24-2pcs/product.webp"
     ],
     "colors": [
       "Standard"
@@ -9328,7 +9339,12 @@ export const dummyProducts: any[] = [
     "reviews": 90,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/kaabah-36x36-18x18-2pcs/mockup-01.webp",
+      "/images/products/kaabah-36x36-18x18-2pcs/mockup-02.webp",
+      "/images/products/kaabah-36x36-18x18-2pcs/mockup-03.webp",
+      "/images/products/kaabah-36x36-18x18-2pcs/mockup-04.webp",
+      "/images/products/kaabah-36x36-18x18-2pcs/mockup-05.webp",
+      "/images/products/kaabah-36x36-18x18-2pcs/mockup-06.webp"
     ],
     "colors": [
       "Standard"
@@ -9348,7 +9364,7 @@ export const dummyProducts: any[] = [
     "reviews": 42,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/kaabah-24x24-18x18-2pcs/product.webp"
     ],
     "colors": [
       "Standard"
@@ -9368,7 +9384,7 @@ export const dummyProducts: any[] = [
     "reviews": 104,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/kaabah-24x24-12x12-2pcs/product.webp"
     ],
     "colors": [
       "Standard"
@@ -9388,7 +9404,7 @@ export const dummyProducts: any[] = [
     "reviews": 68,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/peta-dunia-36x36-24x24-2pcs/product.webp"
     ],
     "colors": [
       "Standard"
@@ -9408,7 +9424,7 @@ export const dummyProducts: any[] = [
     "reviews": 36,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/peta-dunia-24x24-12x12-2pcs/product.webp"
     ],
     "colors": [
       "Standard"
@@ -9428,7 +9444,7 @@ export const dummyProducts: any[] = [
     "reviews": 81,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/peta-dunia-48x48/product.webp"
     ],
     "colors": [
       "Standard"
@@ -9448,7 +9464,7 @@ export const dummyProducts: any[] = [
     "reviews": 12,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/peta-dunia-36x48/product.webp"
     ],
     "colors": [
       "Standard"
@@ -9468,7 +9484,7 @@ export const dummyProducts: any[] = [
     "reviews": 52,
     "category": "Islamic Khat",
     "images": [
-      "/images/products/logo-black.png"
+      "/images/products/peta-dunia-36x36/product.webp"
     ],
     "colors": [
       "Standard"
