@@ -24,6 +24,8 @@ import { ReviewDialog } from "./ReviewDialog";
 import { useReorder } from "@/hooks/useReorder";
 import { useDownloadInvoice } from "@/hooks/useInvoice";
 import { ShoppingCart, FileText } from "lucide-react";
+import { getImageUrl } from "@/utils/getImageUrl";
+import { getConfiguredProductImage } from "@/utils/productConfiguration";
 
 interface OrderItemProps {
   order: IOrder;
@@ -207,16 +209,12 @@ const OrderItem = ({ order }: OrderItemProps) => {
               
               <TabsContent value="items" className="space-y-4">
                 {order.products.map((item) => (
-                  <div key={item.product._id} className="flex items-center gap-4">
+                  <div key={`${item.product._id}-${item.size}`} className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden">
                       <img
-                        src={
-                          item.product.images[0]?.startsWith("/")
-                            ? process.env.NEXT_PUBLIC_BACKEND_URL + item.product.images[0]
-                            : item.product.images[0]
-                        }
+                        src={getImageUrl(getConfiguredProductImage(item.product, item.size))}
                         alt={item.product.name}
-                        className="w-full h-full object-cover"
+                        className="h-full w-full object-contain"
                       />
                     </div>
                     <div className="flex-1">
@@ -224,6 +222,7 @@ const OrderItem = ({ order }: OrderItemProps) => {
                       <p className="text-sm text-gray-500">
                         Quantity: {item.quantity}
                       </p>
+                      <p className="text-xs text-muted-foreground">{item.size}</p>
                     </div>
                     <div className="font-medium">RM {item.price.toFixed(2)}</div>
                   </div>

@@ -50,6 +50,9 @@ export function ProductGallery({ images, selectedIndex, onSelectedIndexChange }:
         <img
           src={getImageUrl(displayImages[activeIndex])}
           alt={`Product variation ${activeIndex + 1}`}
+          loading="eager"
+          decoding="async"
+          draggable={false}
           className="h-full w-full object-contain object-center"
         />
 
@@ -106,6 +109,9 @@ export function ProductGallery({ images, selectedIndex, onSelectedIndexChange }:
               <img
                 src={getImageUrl(image)}
                 alt={`Variation ${index + 1}`}
+                loading="lazy"
+                decoding="async"
+                draggable={false}
                 className="h-full w-full object-contain object-center"
               />
               <span className={cn(
@@ -131,6 +137,7 @@ export function ProductGallery({ images, selectedIndex, onSelectedIndexChange }:
             type="button"
             aria-label="Close fullscreen image"
             onClick={() => setIsZoomOpen(false)}
+            autoFocus
             className="absolute right-4 top-4 z-10 flex size-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur transition hover:bg-white/20"
           >
             <X className="size-5" />
@@ -139,6 +146,8 @@ export function ProductGallery({ images, selectedIndex, onSelectedIndexChange }:
           <img
             src={getImageUrl(displayImages[activeIndex])}
             alt={`Fullscreen product design ${activeIndex + 1}`}
+            decoding="async"
+            draggable={false}
             className="max-h-full max-w-full object-contain"
             onClick={(event) => event.stopPropagation()}
           />

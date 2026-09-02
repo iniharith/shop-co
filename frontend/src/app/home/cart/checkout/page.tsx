@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { useOrder } from "@/hooks/useOrder";
 import { getShippingQuotations } from "@/api/order";
 import { useSession } from "next-auth/react";
+import { getImageUrl } from "@/utils/getImageUrl";
+import { getConfiguredProductImage } from "@/utils/productConfiguration";
 
 const DEFAULT_WEIGHT = 1;
 const DEFAULT_DIMENSIONS = { width: 20, length: 30, height: 5 };
@@ -139,20 +141,30 @@ const page = () => {
               <p className="text-lg text-primary/80 mt-2 font-medium border-b border-dashed">
                 Items
               </p>
-              {cartItems.map((item: any, index: number) => (
+              {cartItems.map((item: any) => (
                 <div
-                  key={index}
-                  className="w-full flex items-center justify-between"
+                  key={`${item.product._id}-${item.size}`}
+                  className="flex w-full items-center justify-between gap-3"
                 >
-                  <div className="flex flex-col pb-2">
-                    <p className="text-base text-muted-foreground font-medium">
-                      {item.product.name}
-                    </p>
-                    <p className="text-sm text-muted-foreground font-medium">
-                      RM {item.product.price}x{item.quantity}
-                    </p>
+                  <div className="flex min-w-0 items-center gap-3 pb-2">
+                    <div className="size-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted/30 p-1">
+                      <img
+                        src={getImageUrl(getConfiguredProductImage(item.product, item.size))}
+                        alt={item.product.name}
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-base text-muted-foreground font-medium">
+                        {item.product.name}
+                      </p>
+                      <p className="text-sm text-muted-foreground font-medium">
+                        RM {item.product.price}x{item.quantity}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{item.size}</p>
+                    </div>
                   </div>
-                  <p className="text-base text-muted-foreground font-medium">
+                  <p className="shrink-0 text-base text-muted-foreground font-medium tabular-nums">
                     RM {(item.product.price * item.quantity).toFixed(2)}
                   </p>
                 </div>

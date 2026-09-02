@@ -5,13 +5,13 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getImageUrl } from "@/utils/getImageUrl";
 
 import { QuantityPicker } from "../../global/quantity-picker";
 import { FaTrashAlt } from "react-icons/fa";
 import { IProduct } from "@/types";
 import { useAddtoCart, useRemoveFromCart } from "@/hooks/useCart";
+import { getConfiguredProductImage, getConfigurationParts, getDesignNumber } from "@/utils/productConfiguration";
 
 interface CartItemsProps {
   product: IProduct;
@@ -25,8 +25,12 @@ const CartItems = ({ product, qty, size }: CartItemsProps) => {
   const { mutate: cartUpdate, isPending } = useAddtoCart("update");
   const { mutate: removeFromCart, isPending: isRemoving } = useRemoveFromCart();
   useEffect(() => {
-    setDisabled(isPending);
-  }, [isPending]);
+    setDisabled(isPending || isRemoving);
+  }, [isPending, isRemoving]);
+
+  const configuration = getConfigurationParts(size);
+  const designNumber = getDesignNumber(size);
+  const selectedImage = getConfiguredProductImage(product, size);
   const handleQuantityChange = (qty: number) => {
     cartUpdate({
       productId: product._id,
@@ -42,25 +46,31 @@ const CartItems = ({ product, qty, size }: CartItemsProps) => {
     });
   };
   return (
-    <div className="w-full flex items-center ">
-      <div className="flex flex-1  w-full items-center gap-2">
-        <div className="w-[5rem] h-[5rem] bg-zinc-700  rounded-lg overflow-hidden">
+    <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-center">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-border bg-muted/30 p-1.5 sm:h-28 sm:w-28">
           <img
-            src={getImageUrl(product.images[0])}
-            alt=""
-            className="w-full h-full"
+            src={getImageUrl(selectedImage)}
+            alt={`${product.name}${designNumber ? ` design ${String(designNumber).padStart(2, "0")}` : ""}`}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-contain object-center"
           />
         </div>
-        <div className="flex  flex-col gap-1">
-          <p className="  font-semibold">{product.name}</p>
-          <p className="text-sm font-medium">
-            Size: <span className="font-normal text-zinc-500">{size}</span>
-          </p>
-          <p className="text-base font-medium">RM {product.price}</p>
+        <div className="flex min-w-0 flex-col gap-2">
+          <p className="font-sans text-sm font-semibold leading-snug sm:text-base">{product.name}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {configuration.map((part) => (
+              <span key={part} className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                {part}
+              </span>
+            ))}
+          </div>
+          <p className="text-sm font-bold tabular-nums text-primary">RM {product.price.toFixed(2)} each</p>
         </div>
       </div>
-      <div className="flex flex-col gap-2 h-full">
-        <div className="flex  flex-row  h-full gap-2 items-end md:justify-between justify-end">
+      <div className="flex flex-col gap-2 sm:items-end">
+        <div className="flex items-center justify-between gap-2 sm:justify-end">
           <QuantityPicker
             disabled={disabled}
             quantity={quantity}
@@ -78,24 +88,25 @@ const CartItems = ({ product, qty, size }: CartItemsProps) => {
                 ? (product.sizes.find((e: any) => e.size === size)?.stock || 10000)
                 : 10000
             }
-            onQuantityChange={handleQuantityChange}
-            className="md:w-auto w-1/2"
+            onQuantityChange={(nextQuantity) => {
+              setQuantity(nextQuantity);
+              handleQuantityChange(nextQuantity);
+            }}
+            className="w-[132px]"
           />
           <Button
             variant="outline"
-            className="py-6 md:text-base text-xs px-6 hover:text-red-800 active:scale-95 transition-all duration-300 cursor-pointer"
+            className="h-12 w-12 cursor-pointer rounded-xl border-border text-muted-foreground transition-all hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-500 active:scale-95"
             size="icon"
             onClick={handleRemoveFromCart}
           >
             <FaTrashAlt />
           </Button>
         </div>
-        <div className="w-full mt-1 flex items-center justify-end">
-          <p className="text-sm font-medium">
-            Total:{" "}
-            <span className="font-normal text-zinc-500">
-              RM {product.price * quantity}
-            </span>
+        <div className="flex items-center justify-between sm:justify-end sm:gap-2">
+          <p className="text-xs font-medium text-muted-foreground">Item total</p>
+          <p className="text-sm font-bold tabular-nums">
+            RM {(product.price * quantity).toFixed(2)}
           </p>
         </div>
       </div>

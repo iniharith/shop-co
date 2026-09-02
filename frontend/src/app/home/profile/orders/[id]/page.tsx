@@ -16,6 +16,7 @@ import { OrderProgressTracker } from "@/components/global/order-progress-tracker
 import { OrderStatusBadge } from "@/components/global/order-status-badge"
 import { getImageUrl } from "@/utils/getImageUrl"
 import { LiveTracking } from "@/components/global/LiveTracking"
+import { getConfiguredProductImage } from "@/utils/productConfiguration"
 
 const OrderDetail = () => {
   const { id } = useParams()
@@ -125,19 +126,20 @@ const OrderDetail = () => {
 
             <div className="space-y-6">
               {order.products.map((item) => (
-                <div key={item.product._id} className="flex items-center gap-4">
+                <div key={`${item.product._id}-${item.size}`} className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden">
                     <img
-                      src={getImageUrl(item.product.images[0])}
+                      src={getImageUrl(getConfiguredProductImage(item.product, item.size))}
                       alt={item.product.name}
-                      className="w-full h-full object-cover"
+                      className="h-full w-full object-contain"
                     />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-medium">{item.product.name}</h3>
                     <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+                    <p className="text-xs text-muted-foreground">{item.size}</p>
                   </div>
-                  <div className="font-medium">${item.product.price.toFixed(2)}</div>
+                  <div className="font-medium">RM {item.product.price.toFixed(2)}</div>
                 </div>
               ))}
             </div>
@@ -147,20 +149,20 @@ const OrderDetail = () => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-500">Subtotal</span>
-                <span>${order.totalAmount.toFixed(2)}</span>
+                <span>RM {order.totalAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Shipping</span>
-                <span>Free</span>
+                <span>Included in total</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Tax</span>
-                <span>$0.00</span>
+                <span>RM 0.00</span>
               </div>
               <Separator className="my-2" />
               <div className="flex justify-between font-bold">
                 <span>Total</span>
-                <span>${order.totalAmount.toFixed(2)}</span>
+                <span>RM {order.totalAmount.toFixed(2)}</span>
               </div>
             </div>
           </Card>

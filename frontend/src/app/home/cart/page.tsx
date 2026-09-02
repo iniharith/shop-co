@@ -21,35 +21,37 @@ const page = () => {
     router.push("/home/cart/checkout");
   };
   return (
-    <div className="w-full py-5 md:px-10 px-5">
+    <div className="mx-auto w-full max-w-[1280px] px-4 py-5 sm:px-6">
       <Breadcrumbs />
-      <div className="w-full flex items-center justify-between">
-        <h1 className="text-4xl mt-3 font-bold">Your Cart</h1>
-        <AnimatedButton
-          className="w-min text-xs rounded-md bg-gray-300/20 border-input border-1 text-muted-foreground"
-          size="sm"
-          isLoading={isPending}
-          onClick={() => {
-            clearCart({});
-          }}
-          text="Clear Cart"
-        />
+      <div className="flex w-full items-center justify-between gap-4">
+        <h1 className="mt-3 font-sans text-3xl font-semibold sm:text-4xl">Your cart</h1>
+        {cartItems.length > 0 && (
+          <AnimatedButton
+            className="w-min rounded-full border border-input bg-muted px-4 text-xs text-muted-foreground"
+            size="sm"
+            isLoading={isPending}
+            onClick={() => {
+              clearCart({});
+            }}
+            text="Clear cart"
+          />
+        )}
       </div>
       {isLoading ? (
         <CartPageSkeleton />
       ) : (
-        <div className="grid w-full grid-cols-1 gap-5 md:grid-cols-3">
-          <div className="w-full md:col-span-2 bg-gray-300/10 rounded-lg h-min border-input border-1 py-7 mt-4 flex flex-col gap-4 md:px-4 px-2">
+        <div className="grid w-full grid-cols-1 gap-5 lg:grid-cols-3">
+          <div className="mt-4 flex h-min w-full flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5 lg:col-span-2">
             {cartItems.length > 0 &&
               cartItems.map((item, index) => (
-                <div key={item.product._id + index + "cart"}>
+                <div key={`${item.product._id}-${item.size}`}>
                   <CartItems
                     product={item.product}
                     qty={item.quantity}
                     size={item.size}
                   />
                   {index < cartItems.length - 1 && (
-                    <div className="w-full h-1 border-input border-b"></div>
+                    <div className="mt-4 h-px w-full bg-border"></div>
                   )}
                 </div>
               ))}
@@ -64,41 +66,41 @@ const page = () => {
               </div>
             )}
           </div>
-          <div className="w-full rounded-lg bg-gray-300/10 border-input border-1 py-7 mt-4 flex flex-col gap-4 md:px-4 px-2">
+          <div className="mt-4 flex w-full flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm lg:sticky lg:top-[190px]">
             <div className="w-full">
-              <p className="text-lg font-medium border-b border-dashed">
-                Cart Summary
+              <p className="border-b border-border pb-3 font-sans text-lg font-semibold">
+                Cart summary
               </p>
 
               <div className="flex mt-2 flex-col gap-2">
                 <div className="w-full  flex items-center text-muted-foreground justify-between">
-                  <p className="text-lg text-muted-foreground font-medium">
+                  <p className="text-sm text-muted-foreground font-medium">
                     Subtotal
                   </p>
-                  <p className="text-lg text-muted-foreground font-medium">
-                    RM 
+                  <p className="text-sm text-muted-foreground font-medium tabular-nums">
+                    RM {" "}
                     {cartItems.reduce(
                       (acc, item) => acc + item.product.price * item.quantity,
                       0
-                    )}
+                    ).toFixed(2)}
                   </p>
                 </div>
                 <div className="w-full flex items-center justify-between">
-                  <p className="text-lg text-muted-foreground font-medium">
+                  <p className="text-sm text-muted-foreground font-medium">
                     Shipping
                   </p>
-                  <p className="text-lg text-muted-foreground font-medium">
-                    Free
+                  <p className="max-w-[160px] text-right text-sm text-muted-foreground font-medium">
+                    Calculated at checkout
                   </p>
                 </div>
-                <div className="w-full mt-3 border-t border-b border-dashed flex items-center justify-between">
-                  <p className="text-lg  font-medium">Total</p>
-                  <p className="text-lg   font-medium">
-                    RM 
+                <div className="mt-4 flex w-full items-center justify-between border-t border-border pt-4">
+                  <p className="text-lg font-semibold">Total</p>
+                  <p className="text-xl font-bold tabular-nums text-primary">
+                    RM {" "}
                     {cartItems.reduce(
                       (acc, item) => acc + item.product.price * item.quantity,
                       0
-                    )}
+                    ).toFixed(2)}
                   </p>
                 </div>
                 <Button
@@ -109,7 +111,7 @@ const page = () => {
                       router.push("/home/shop");
                     }
                   }}
-                  className="w-full active:scale-95 transition-all duration-300 hover:bg-primary/90 cursor-pointer mt-3 bg-primary text-primary-foreground rounded-lg"
+                  className="mt-4 h-12 w-full cursor-pointer rounded-full bg-primary font-bold text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98]"
                 >
                   {cartItems.length > 0 ? "Checkout" : "Go to shop"}
                 </Button>

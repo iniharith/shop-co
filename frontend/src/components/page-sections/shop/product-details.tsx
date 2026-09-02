@@ -501,6 +501,9 @@ export function ProductDetails({
                       <img
                         src={getImageUrl(image)}
                         alt={`${label("Variation", "Variasi")} ${index + 1}`}
+                        loading="lazy"
+                        decoding="async"
+                        draggable={false}
                         className="h-full w-full object-contain object-center"
                       />
                     </span>
@@ -543,8 +546,10 @@ export function ProductDetails({
             }
 
             return (
-              <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-border mt-4">
-                <table className="w-full text-sm text-center">
+              <>
+                <p className="mt-4 text-xs text-muted-foreground sm:hidden">Swipe horizontally to compare prices</p>
+                <div className="mt-2 overflow-x-auto rounded-xl border border-gray-200 dark:border-border sm:mt-4">
+                  <table className="w-full min-w-[560px] text-center text-sm">
                   <thead className="bg-gray-50 dark:bg-black/20 border-b border-gray-200 dark:border-border">
                     <tr>
                       <th className="p-3 text-left font-semibold text-gray-700 dark:text-gray-200">{label("Quantity", "Kuantiti")}</th>
@@ -579,8 +584,9 @@ export function ProductDetails({
                       </tr>
                     ))}
                   </tbody>
-                </table>
-              </div>
+                  </table>
+                </div>
+              </>
             );
           })() : null}
 
@@ -645,7 +651,8 @@ export function ProductDetails({
           const PricingTable = ({ className }: { className: string }) => (
             <div className={`bg-card text-card-foreground p-6 rounded-2xl shadow-sm border border-border mt-6 overflow-x-auto w-full mb-10 ${className}`}>
             <h2 className="text-xl font-bold tracking-tight text-primary mb-4">{product.category === 'kad-kahwin' ? label("Package Pricing", "Harga Pakej") : label("Format & Size Pricing", "Harga Format & Saiz")}</h2>
-            <table className="w-full text-sm text-center border-collapse">
+            <p className="mb-3 text-xs text-muted-foreground sm:hidden">{label("Swipe horizontally to compare prices", "Leret ke sisi untuk membandingkan harga")}</p>
+            <table className="w-full min-w-[620px] border-collapse text-center text-sm">
               <thead className="bg-muted border-b border-border">
                 <tr>
                   <th className="p-3 text-left font-semibold text-foreground border border-border">{label("Quantity", "Kuantiti")}</th>

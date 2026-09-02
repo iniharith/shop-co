@@ -24,6 +24,7 @@ const page = () => {
   const [selectedVariationIndex, setSelectedVariationIndex] = useState<number | null>(null);
   const product = data?.product as IProduct;
   const products = productsData?.products || [];
+  const dimensions = Array.from(new Set(product?.name.match(/\d+\s*[xX]\s*\d+/g) || []));
 
   useEffect(() => {
     setSelectedImageIndex(0);
@@ -79,6 +80,22 @@ const page = () => {
               <p className="max-w-3xl text-sm leading-7 text-muted-foreground md:text-base">
                 {product.description || "High quality printing service offering excellent results with vibrant colors and durability. Ideal for professional and personal use."}
               </p>
+              <dl className="grid gap-2 pt-2 sm:grid-cols-3">
+                <div className="rounded-xl border border-border bg-muted/25 p-3">
+                  <dt className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Category</dt>
+                  <dd className="mt-1 text-sm font-semibold capitalize">{product.category.replace(/-/g, " ")}</dd>
+                </div>
+                <div className="rounded-xl border border-border bg-muted/25 p-3">
+                  <dt className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Dimensions</dt>
+                  <dd className="mt-1 text-sm font-semibold">
+                    {dimensions.length > 0 ? dimensions.map((value) => value.toUpperCase().replace("X", " × ")).join(", ") : "Standard format"}
+                  </dd>
+                </div>
+                <div className="rounded-xl border border-border bg-muted/25 p-3">
+                  <dt className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Available designs</dt>
+                  <dd className="mt-1 text-sm font-semibold">{product.images.length}</dd>
+                </div>
+              </dl>
             </div>
             
             <div id="flyer-pricing-portal"></div>

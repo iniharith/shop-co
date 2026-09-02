@@ -29,31 +29,55 @@ const ShopContent = () => {
   const { t } = useLanguage();
   const { data, isPending, aiSummary, aiEnabled } = useFilterProducts();
   const products = data?.products || [];
+  const [sortBy, setSortBy] = useState("featured");
+  const sortedProducts = [...products].sort((a, b) => {
+    if (sortBy === "price-low") return a.price - b.price;
+    if (sortBy === "price-high") return b.price - a.price;
+    if (sortBy === "name") return a.name.localeCompare(b.name);
+    if (sortBy === "rating") return b.rating - a.rating;
+    return 0;
+  });
   
   const searchParams = useSearchParams();
   const pageParam = searchParams.get("page");
-  const currentPage = pageParam ? parseInt(pageParam) : 1;
-  const totalPages = Math.max(1, Math.ceil(products.length / ITEMS_PER_PAGE));
-  const paginatedProducts = products.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(sortedProducts.length / ITEMS_PER_PAGE));
+  const requestedPage = pageParam ? parseInt(pageParam) : 1;
+  const currentPage = Number.isFinite(requestedPage) ? Math.min(Math.max(requestedPage, 1), totalPages) : 1;
+  const paginatedProducts = sortedProducts.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
   return (
     <div
     
-      className="w-full py-5 md:px-8 px-5"
+      className="mx-auto w-full max-w-[1480px] px-4 py-5 sm:px-6 xl:px-8"
     >
       <Breadcrumbs />
-      <div className="w-full grid md:mt-0 mt-5 grid-cols-1 md:grid-cols-4">
+      <div className="mt-5 grid w-full grid-cols-1 gap-6 md:mt-0 md:grid-cols-4">
         <div className="col-span-1 md:block hidden">
           <FilterSidebar />
         </div>
         <div className="md:col-span-3 flex flex-col gap-5 col-span-4">
-          <div className="w-full flex justify-between items-center">
-            <h1 className="text-2xl font-bold">{t("shop.title")}</h1>
-            <div className="flex items-center gap-2">
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="font-sans text-2xl font-semibold">{t("shop.title")}</h1>
               <p className="text-sm text-muted-foreground">
                 {products?.length || 0}&nbsp;{t("shop.productsFound")}
               </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <label htmlFor="product-sort" className="sr-only">Sort products</label>
+              <select
+                id="product-sort"
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value)}
+                className="h-10 rounded-full border border-border bg-card px-4 text-sm font-medium outline-none transition focus:border-primary"
+              >
+                <option value="featured">Featured</option>
+                <option value="rating">Top rated</option>
+                <option value="price-low">Price: low to high</option>
+                <option value="price-high">Price: high to low</option>
+                <option value="name">Name: A to Z</option>
+              </select>
               <Drawer>
-                <DrawerTrigger className="bg-muted md:hidden flex cursor-pointer rounded-full hover:scale-105 transition-all duration-300 border-input border p-1">
+                <DrawerTrigger className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-input bg-muted transition-all hover:scale-105 md:hidden">
                   <CgOptions className="rotate-90" />
                 </DrawerTrigger>
                 <DrawerTitle className="hidden">Filters</DrawerTitle>
@@ -75,7 +99,7 @@ const ShopContent = () => {
             variants={container_variants}
             initial="hidden"
             animate="visible"
-            className="grid md:grid-cols-4 grid-cols-2 gap-5"
+            className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4"
           >
             {!isPending &&
               paginatedProducts.length > 0 &&
