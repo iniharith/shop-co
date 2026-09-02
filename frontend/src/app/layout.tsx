@@ -13,6 +13,7 @@ import Cta from "@/components/global/cta";
 import { getServerSession } from "next-auth";
 import { authConfig } from "@/config/auth.config";
 import { cookies } from "next/headers";
+import { headers } from "next/headers";
 import type { Locale } from "@/i18n/messages";
 
 const fonarto = localFont({
@@ -77,7 +78,9 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getServerSession(authConfig);
+  const requestHeaders = await headers();
+  const isTaskAccess = requestHeaders.get("x-kc-task-access") === "1";
+  const session = isTaskAccess ? null : await getServerSession(authConfig);
   const cookieStore = await cookies();
   const savedLocale = cookieStore.get("kc_locale")?.value;
   const locale: Locale = savedLocale === "ms" ? "ms" : "en";
@@ -87,16 +90,16 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${dmSans.variable} ${geistMono.variable} ${fonarto.variable} ${provicaliAmpersand.variable} bg-background text-foreground antialiased`}
       >
         <Provider session={session} initialLocale={locale}>
-          <div className="site-header">
-            <Nav />
-          </div>
-          <div className="site-header-spacer h-[140px] md:h-[170px]" aria-hidden="true" />
-          <main className="w-full min-h-[50vh]">{children}</main>
-          <div className="site-footer">
-            <Cta />
-            <Footer />
-            <FloatingChatWidget />
-          </div>
+          {isTaskAccess ? (
+            <main className="min-h-screen w-full">{children}</main>
+          ) : (
+            <>
+              <div className="site-header"><Nav /></div>
+              <div className="site-header-spacer h-[140px] md:h-[170px]" aria-hidden="true" />
+              <main className="w-full min-h-[50vh]">{children}</main>
+              <div className="site-footer"><Cta /><Footer /><FloatingChatWidget /></div>
+            </>
+          )}
         </Provider>
       </body>
     </html>

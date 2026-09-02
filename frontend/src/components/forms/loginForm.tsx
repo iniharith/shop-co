@@ -12,8 +12,8 @@ import { Button } from "../ui/button";
 import FormGeneratorV2 from "../global/formgenrator";
 import { FaEnvelope, FaLock } from "react-icons/fa6";
 import { useUIStore } from "@/store/uiStore";
-export function LoginForm({ callBack }: { callBack?: () => void }) {
-  const { form,control, errors, onFormSubmit, isPending, isSuccess } = useAuth();
+export function LoginForm({ callBack, redirectTo }: { callBack?: () => void; redirectTo?: string }) {
+  const { form,control, errors, onFormSubmit, isPending, isSuccess } = useAuth("login", redirectTo);
   const {previewsFunction} = useUIStore()
   const [err, seterr] = useState<string | null>(null);
   useEffect(() => {

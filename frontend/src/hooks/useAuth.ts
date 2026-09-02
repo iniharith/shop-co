@@ -14,7 +14,7 @@ import { IAuthSchema } from "@/types";
 import { signUp } from "@/api/auth";
 import { useEffect, useState } from "react";
 
-export const useAuth = (type: "login" | "signup" = "login") => {
+export const useAuth = (type: "login" | "signup" = "login", redirectTo = "/home/profile") => {
   const [isLoading, setIsLoading] = useState(false);
 
   const schema = (type !== "login" ? signUpSchema : loginSchema) as IAuthSchema;
@@ -52,7 +52,7 @@ export const useAuth = (type: "login" | "signup" = "login") => {
     try {
       const message = type === "login" ? "Login successful" : "Signup successful";
       toast.success(message);
-      router.push("/home/profile");
+      router.push(redirectTo);
       reset();
       setIsLoading(false);
     } catch (error) {

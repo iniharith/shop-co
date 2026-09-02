@@ -4,9 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { CalendarDays, ClipboardList, LoaderCircle, LockKeyhole, PackageCheck } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useUIStore } from "@/store/uiStore";
+import { LoginForm } from "@/components/forms/loginForm";
 import AxiosInstance from "@/utils/axios";
 
 type TaskDetails = {
@@ -24,13 +23,8 @@ const labelStatus = (status: string) => status.replace(/_/g, " ").toLowerCase().
 export default function TaskAccessPage() {
   const { token } = useParams<{ token: string }>();
   const { data: session, status: sessionStatus } = useSession();
-  const { setIsAuthModalOpen } = useUIStore();
   const [task, setTask] = useState<TaskDetails | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
-
-  useEffect(() => {
-    if (sessionStatus === "unauthenticated") setIsAuthModalOpen(true);
-  }, [sessionStatus, setIsAuthModalOpen]);
 
   useEffect(() => {
     if (sessionStatus !== "authenticated" || !session?.user?.token || !token) return;
@@ -57,7 +51,7 @@ export default function TaskAccessPage() {
         <Card className="w-full space-y-5 p-6 text-center sm:p-8">
           <LockKeyhole className="mx-auto h-10 w-10 text-primary" />
           <div><h1 className="text-2xl font-bold">Sign in to view this task</h1><p className="mt-2 text-sm text-muted-foreground">This QR code is linked to a customer account. Sign in and we will open the task automatically.</p></div>
-          <Button className="w-full" onClick={() => setIsAuthModalOpen(true)}>Sign In</Button>
+          <LoginForm redirectTo={`/task-access/${encodeURIComponent(token)}`} />
         </Card>
       </main>
     );

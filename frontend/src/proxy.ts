@@ -9,6 +9,11 @@ export default withAuth(
     function proxy(req) {
         const token = req.nextauth.token;
         const isLoggedIn = !!token;
+        if (req.nextUrl.pathname.startsWith("/task-access/")) {
+            const headers = new Headers(req.headers);
+            headers.set("x-kc-task-access", "1");
+            return NextResponse.next({ request: { headers } });
+        }
         const protectedRoutes = ["/home/cart", "/home/profile"];
         const isProtectedRoute = protectedRoutes.some((route) =>
             req.nextUrl.pathname === route || req.nextUrl.pathname.startsWith(`${route}/`)
@@ -46,5 +51,5 @@ export default withAuth(
 );
 
 export const config = {
-    matcher: ["/home/cart/:path*", "/home/profile/:path*", "/email/:path*"],
+    matcher: ["/home/cart/:path*", "/home/profile/:path*", "/email/:path*", "/task-access/:path*"],
 };
