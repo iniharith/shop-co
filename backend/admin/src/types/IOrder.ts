@@ -11,6 +11,23 @@ export interface IOrderedProduct {
     quantity: number;
     price: number;
     artworkUrl?: string;
+    unitPrice?: number;
+    fixedPrice?: number;
+    lineTotal?: number;
+    pricingVersion?: string;
+    configurationKey?: string;
+    configuration?: {
+        version: number;
+        fulfillmentSize: string;
+        selections: Array<{ name: string; values: Array<{ label: string; priceAdd?: number }> }>;
+        design?: {
+            type: 'upload' | 'service' | 'variation';
+            label: string;
+            priceAdd?: number;
+            variationIndex?: number;
+            image?: string;
+        };
+    };
 }
 
 
