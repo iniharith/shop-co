@@ -5,6 +5,31 @@
 import mongoose, { Schema } from 'mongoose';
 import { ICartDocument } from '../../../domain/interfaces/cart.interface';
 
+const ConfigurationSchema = new Schema(
+  {
+    version: { type: Number, default: 1 },
+    fulfillmentSize: { type: String, default: '' },
+    selections: [{
+      _id: false,
+      name: { type: String, required: true },
+      values: [{
+        _id: false,
+        label: { type: String, required: true },
+        priceAdd: { type: Number, default: 0 },
+      }],
+    }],
+    design: {
+      _id: false,
+      type: { type: String, enum: ['upload', 'service', 'variation'] },
+      label: { type: String },
+      priceAdd: { type: Number, default: 0 },
+      variationIndex: { type: Number },
+      image: { type: String },
+    },
+  },
+  { _id: false }
+);
+
 const CartItemSchema = new Schema(
   {
     product: {
@@ -25,6 +50,12 @@ const CartItemSchema = new Schema(
       type: String,
       default: '',
     },
+    configuration: { type: ConfigurationSchema },
+    configurationKey: { type: String, default: '' },
+    unitPrice: { type: Number, min: 0 },
+    fixedPrice: { type: Number, min: 0, default: 0 },
+    lineTotal: { type: Number, min: 0 },
+    pricingVersion: { type: String, default: '' },
   },
   { _id: false }
 );

@@ -15,7 +15,7 @@ import { useOrder } from "@/hooks/useOrder";
 import { getShippingQuotations } from "@/api/order";
 import { useSession } from "next-auth/react";
 import { getImageUrl } from "@/utils/getImageUrl";
-import { getConfiguredProductImage } from "@/utils/productConfiguration";
+import { getCartLineTotal, getCartUnitPrice, getConfiguredProductImage, getStructuredConfigurationParts } from "@/utils/productConfiguration";
 
 const DEFAULT_WEIGHT = 1;
 const DEFAULT_DIMENSIONS = { width: 20, length: 30, height: 5 };
@@ -112,7 +112,7 @@ const page = () => {
   }, [postalCode, state, cartItems, session?.user?.token]);
 
   const subtotal = cartItems.reduce(
-    (acc: number, item: any) => acc + item.product.price * item.quantity,
+    (acc: number, item: any) => acc + getCartLineTotal(item),
     0
   );
   const total = subtotal + (shippingFee || 0);
@@ -143,13 +143,13 @@ const page = () => {
               </p>
               {cartItems.map((item: any) => (
                 <div
-                  key={`${item.product._id}-${item.size}`}
+                  key={`${item.product._id}-${item.configurationKey || item.size}`}
                   className="flex w-full items-center justify-between gap-3"
                 >
                   <div className="flex min-w-0 items-center gap-3 pb-2">
                     <div className="size-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted/30 p-1">
                       <img
-                        src={getImageUrl(getConfiguredProductImage(item.product, item.size))}
+                        src={getImageUrl(getConfiguredProductImage(item.product, item.size, item.configuration))}
                         alt={item.product.name}
                         className="h-full w-full object-contain"
                       />
@@ -159,13 +159,13 @@ const page = () => {
                         {item.product.name}
                       </p>
                       <p className="text-sm text-muted-foreground font-medium">
-                        RM {item.product.price}x{item.quantity}
+                        RM {getCartUnitPrice(item).toFixed(2)} x {item.quantity}
                       </p>
-                      <p className="text-xs text-muted-foreground">{item.size}</p>
+                      <p className="text-xs text-muted-foreground">{getStructuredConfigurationParts(item).join(" | ")}</p>
                     </div>
                   </div>
                   <p className="shrink-0 text-base text-muted-foreground font-medium tabular-nums">
-                    RM {(item.product.price * item.quantity).toFixed(2)}
+                    RM {getCartLineTotal(item).toFixed(2)}
                   </p>
                 </div>
               ))}

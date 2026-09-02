@@ -5,13 +5,20 @@
 // domain/interfaces/order.interface.ts
 import { Document, Types } from 'mongoose';
 import { IUser } from './user.interface';
+import { IProductConfiguration } from './cart.interface';
 
 export interface IOrderedProduct {
   product: Types.ObjectId;
   size: string;
   quantity: number;
   price: number;
+  unitPrice?: number;
+  fixedPrice?: number;
+  lineTotal?: number;
+  pricingVersion?: string;
   artworkUrl?: string;
+  configuration?: IProductConfiguration;
+  configurationKey?: string;
   productNameSnapshot?: string;
   productDescriptionSnapshot?: string;
   productCategorySnapshot?: string;

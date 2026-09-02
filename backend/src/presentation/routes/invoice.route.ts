@@ -8,15 +8,19 @@ const router = Router();
 
 function generateInvoiceHtml(order: any): string {
   const orderIdShort = order._id.toString().slice(-6).toUpperCase();
-  const items = order.products.map((p: any) => `
+  const items = order.products.map((p: any) => {
+    const lineTotal = p.lineTotal ?? p.price;
+    const unitPrice = p.unitPrice ?? (p.quantity > 0 ? lineTotal / p.quantity : lineTotal);
+    return `
     <tr>
       <td style="padding:12px;border-bottom:1px solid #e5e7eb;">${p.productNameSnapshot || p.product?.name || 'Product'}</td>
       <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:center;">${p.size || '-'}</td>
       <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:center;">${p.quantity}</td>
-      <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:right;">RM ${p.price.toFixed(2)}</td>
-      <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:right;">RM ${(p.price * p.quantity).toFixed(2)}</td>
+      <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:right;">RM ${unitPrice.toFixed(2)}</td>
+      <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:right;">RM ${lineTotal.toFixed(2)}</td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 
   return `<!DOCTYPE html>
 <html>

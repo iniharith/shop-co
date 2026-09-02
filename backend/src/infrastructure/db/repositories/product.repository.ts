@@ -29,7 +29,14 @@ export class ProductRepository extends BaseRepository<IProductDocument> {
     }
 
     async findById(id: string) {
+        if (typeof id === 'string' && /^prod-/i.test(id)) {
+            return await this.model.findOne({ catalogId: id });
+        }
         return await this.model.findById(id);
+    }
+
+    async findByCatalogId(catalogId: string) {
+        return await this.model.findOne({ catalogId });
     }
 
 
@@ -53,10 +60,13 @@ export class ProductRepository extends BaseRepository<IProductDocument> {
     }
 
     async updateProductStockBySize(productId: string, size: string, quantityChange: number): Promise<IProductDocument | null> {
+        const sizeCondition = quantityChange < 0
+            ? { $elemMatch: { size, stock: { $gte: -quantityChange } } }
+            : { $elemMatch: { size } };
         return await this.model.findOneAndUpdate(
             {
                 _id: productId,
-                'sizes.size': size
+                sizes: sizeCondition,
             },
             {
                 $inc: { 'sizes.$.stock': quantityChange }

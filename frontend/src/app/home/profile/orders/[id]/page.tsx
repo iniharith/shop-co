@@ -16,7 +16,7 @@ import { OrderProgressTracker } from "@/components/global/order-progress-tracker
 import { OrderStatusBadge } from "@/components/global/order-status-badge"
 import { getImageUrl } from "@/utils/getImageUrl"
 import { LiveTracking } from "@/components/global/LiveTracking"
-import { getConfiguredProductImage } from "@/utils/productConfiguration"
+import { getConfiguredProductImage, getStructuredConfigurationParts } from "@/utils/productConfiguration"
 
 const OrderDetail = () => {
   const { id } = useParams()
@@ -129,7 +129,7 @@ const OrderDetail = () => {
                 <div key={`${item.product._id}-${item.size}`} className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden">
                     <img
-                      src={getImageUrl(getConfiguredProductImage(item.product, item.size))}
+                      src={getImageUrl(getConfiguredProductImage(item.product, item.size, item.configuration))}
                       alt={item.product.name}
                       className="h-full w-full object-contain"
                     />
@@ -137,9 +137,9 @@ const OrderDetail = () => {
                   <div className="flex-1">
                     <h3 className="font-medium">{item.product.name}</h3>
                     <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
-                    <p className="text-xs text-muted-foreground">{item.size}</p>
+                    <p className="text-xs text-muted-foreground">{getStructuredConfigurationParts(item).join(" | ")}</p>
                   </div>
-                  <div className="font-medium">RM {item.product.price.toFixed(2)}</div>
+                  <div className="font-medium">RM {(item.lineTotal ?? item.price).toFixed(2)}</div>
                 </div>
               ))}
             </div>

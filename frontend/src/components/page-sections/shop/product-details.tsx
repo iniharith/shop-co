@@ -98,7 +98,47 @@ export function ProductDetails({
       ? `${baseSize} | Design: ${String((selectedVariationIndex as number) + 1).padStart(2, "0")}`
       : `${baseSize} | Design: ${designOption === "upload" ? "Upload Artwork" : "Need Design Service"}`;
     const artworkUrl = !isIslamicKhat && designOption === "upload" ? "https://example.com/mock-uploaded-artwork.pdf" : undefined; // Replace with actual uploaded file URL state if it exists
-    mutate({ productId: product._id, size: selectedConfiguration, quantity, artworkUrl });
+    const selections = options.flatMap((option) => {
+      const selected = selectedOptions[option.name];
+      const indexes = Array.isArray(selected) ? selected : typeof selected === "number" ? [selected] : [];
+      const values = indexes
+        .map((index) => option.options[index])
+        .filter(Boolean)
+        .map((value) => ({ label: value.label, priceAdd: value.priceAdd }));
+      return values.length > 0 ? [{ name: option.name, values }] : [];
+    });
+    const configuration = {
+      version: 1,
+      fulfillmentSize: baseSize,
+      selections,
+      design: isIslamicKhat
+        ? {
+            type: "variation" as const,
+            label: `Design ${String((selectedVariationIndex as number) + 1).padStart(2, "0")}`,
+            variationIndex: selectedVariationIndex as number,
+            image: product.images[selectedVariationIndex as number],
+            priceAdd: 0,
+          }
+        : {
+            type: designOption === "upload" ? "upload" as const : "service" as const,
+            label: designOption === "upload" ? "Upload Artwork" : "Need Design Service",
+            priceAdd: designOption === "design" ? 100 : 0,
+          },
+    };
+    const fixedPrice = !isIslamicKhat && designOption === "design" ? 100 : 0;
+    const unitPrice = Math.max(0, (total - fixedPrice) / quantity);
+    mutate({
+      productId: product._id,
+      size: selectedConfiguration,
+      quantity,
+      artworkUrl,
+      configuration,
+      configurationKey: JSON.stringify(configuration),
+      unitPrice,
+      fixedPrice,
+      lineTotal: total,
+      pricingVersion: "storefront-v1",
+    });
   };
 
   const options = product.printingOptions || [];

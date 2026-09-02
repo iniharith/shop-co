@@ -4,7 +4,7 @@
  */
 import { useSession } from "next-auth/react";
 import { useMutationData } from "./useMutation";
-import { addToCart, clearCart, getCart, removeFromCart } from "@/api/cart";
+import { addToCart, CartLineInput, clearCart, getCart, removeFromCart } from "@/api/cart";
 import { toast } from "sonner";
 import { useQueryData } from "./useQueryData";
 import { ICart } from "@/types/ICart";
@@ -12,7 +12,7 @@ import { ICart } from "@/types/ICart";
 export const useAddtoCart = (type?: "update") => {
     const { data: session } = useSession()
 
-    const { mutate, isPending, isSuccess, error } = useMutationData(['cart'], (data: { productId: string, size: string, quantity: number, artworkUrl?: string }) => addToCart(data.productId, data.size, data.quantity, session?.user?.token || "", data.artworkUrl), ['cart'], () => {
+    const { mutate, isPending, isSuccess, error } = useMutationData(['cart'], (data: CartLineInput) => addToCart(data, session?.user?.token || "", type === "update"), ['cart'], () => {
         const message = type === "update" ? "Cart updated" : "Product added to cart"
         toast.success(message)
     })
@@ -32,7 +32,7 @@ export const useRemoveFromCart = () => {
     if(!session?.user){
         toast.error("Please login to remove from cart")
     }
-    const { mutate, isPending, isSuccess, error } = useMutationData(['cart'], (data: { productId: string, size: string }) => removeFromCart(data.productId, data.size, session?.user?.token || ""), ['cart'], () => {
+    const { mutate, isPending, isSuccess, error } = useMutationData(['cart'], (data: { productId: string, size: string, configurationKey?: string }) => removeFromCart(data.productId, data.size, session?.user?.token || "", data.configurationKey), ['cart'], () => {
         toast.success("Product removed from cart")
     })
     return { mutate, isPending, isSuccess, error }
@@ -46,7 +46,6 @@ export const useClearCart = () => {
     })
     return { mutate, isPending, isSuccess, error }
 }
-
 
 
 

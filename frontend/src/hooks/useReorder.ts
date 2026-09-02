@@ -15,7 +15,13 @@ export function useReorder() {
   return useMutation({
     mutationFn: async (order: IOrder) => {
       for (const item of order.products) {
-        await addToCart(item.product._id, item.size, item.quantity, token);
+        await addToCart({
+          productId: item.product._id,
+          size: item.size,
+          quantity: item.quantity,
+          configuration: item.configuration,
+          configurationKey: item.configurationKey,
+        }, token);
       }
       return { success: true };
     },

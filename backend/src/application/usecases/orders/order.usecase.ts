@@ -23,6 +23,7 @@ import { parcelRepository } from "../../../infrastructure/repositories/ParcelRep
 import { areWhatsAppCustomerUpdatesEnabled } from "../../../infrastructure/services/CustomerUpdateSettingsService";
 import { convergeOrderFromParcel } from "../../../infrastructure/services/EasyParcelTrackingSyncService";
 import { clearFolderGroupCache } from "../../../presentation/routes/fileUploadRoutes";
+import { computeProductPricing } from "../../../shared/pricing/product-pricing.service";
 
 interface ShipmentDimensions {
     weight: number;
@@ -106,44 +107,70 @@ export class OrderUsecase {
         if (!cart || !cart.items || !cart?.items?.length) {
             throw new Error("Cart did'nt have products , add Some Products In Cart");
         }
-        let totalAmount = 0;
+let totalAmount = 0;
         const orderItems = [];
+        const stockUpdates: Array<{ productId: string; size: string; quantity: number; productName: string }> = [];
         for (const item of cart.items) {
+            if (!Number.isInteger(item.quantity) || item.quantity < 1) throw new Error("Invalid cart quantity");
 
             const product = await this.productRepository.findById(item.product._id.toString());
             if (!product) throw new Error(`Product not found: ${item.product._id}`);
-            const sizePerProdut = product.sizes.find(e => e.size == item.size);
-            if (!sizePerProdut || sizePerProdut.stock <= 0) throw new Error(`Insufficient stock for product: ${product.name}`);
-            const updatedProduct = await this.productRepository.updateProductStockBySize(product._id.toString(), item.size, -item.quantity);
+            const fulfillmentSize = item.configuration?.fulfillmentSize || item.size.split('|')[0].trim();
+            const sizePerProdut = product.sizes.find(e => e.size == fulfillmentSize);
+            if (!sizePerProdut || sizePerProdut.stock < item.quantity) throw new Error(`Insufficient stock for product: ${product.name}`);
+            stockUpdates.push({ productId: product._id.toString(), size: fulfillmentSize, quantity: item.quantity, productName: product.name });
 
-            const productPrice = product.price * item.quantity;
+            const pricing = computeProductPricing(product, item.quantity, item.configuration);
+            const productPrice = pricing.lineTotal;
             orderItems.push({
-                product: item.product._id as Types.ObjectId,
+                product: product._id as Types.ObjectId,
                 quantity: item.quantity,
                 price: productPrice,
+                unitPrice: pricing.unitPrice,
+                fixedPrice: pricing.fixedPrice,
+                lineTotal: productPrice,
+                pricingVersion: pricing.pricingVersion,
                 size: item.size,
                 artworkUrl: item.artworkUrl,
+                configuration: item.configuration,
+                configurationKey: item.configurationKey,
                 productNameSnapshot: product.name || '',
                 productDescriptionSnapshot: product.description || '',
                 productCategorySnapshot: product.category || '',
             });
             totalAmount += productPrice;
         }
+
+        const decrementedStock: typeof stockUpdates = [];
+        let order: IOrderDocument;
+        try {
+            for (const update of stockUpdates) {
+                const updatedProduct = await this.productRepository.updateProductStockBySize(update.productId, update.size, -update.quantity);
+                if (!updatedProduct) throw new Error(`Insufficient stock for product: ${update.productName}`);
+                decrementedStock.push(update);
+            }
+            order = await this.orderRepository.createOrder({
+                userId,
+                customerName,
+                orderNotes,
+                address,
+                paymentMethod: "COD",
+                products: orderItems,
+                totalAmount
+            });
+        } catch (error) {
+            for (const update of decrementedStock.reverse()) {
+                await this.productRepository.updateProductStockBySize(update.productId, update.size, update.quantity).catch(() => undefined);
+            }
+            throw error;
+        }
+
         await this.redisService.del(REDIS_KEYS.ORDERS + userId);
         await this.redisService.del(REDIS_KEYS.CART + userId);
         await this.redisService.del(REDIS_KEYS.PRODUCTS);
         await this.redisService.del(REDIS_KEYS.CATEGORIES);
         await this.redisService.del(REDIS_KEYS.ADDRESS + userId);
 
-        const order = await this.orderRepository.createOrder({
-            userId,
-            customerName,
-            orderNotes,
-            address,
-            paymentMethod: "COD",
-            products: orderItems,
-            totalAmount
-        })
         await this.notificationUsecase.createNotification({
             userId: userId,
             title: "Order Placed",

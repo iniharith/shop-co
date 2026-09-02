@@ -12,12 +12,13 @@ import { MdShoppingCart } from "react-icons/md";
 import { useClearCart, useGetCart } from "@/hooks/useCart";
 import CartPageSkeleton from "@/components/loading/CartPageSkeleton";
 import AnimatedButton from "@/components/animation/animatedButton";
+import { getCartLineTotal } from "@/utils/productConfiguration";
 const page = () => {
   const router = useRouter();
   const { data: response, isLoading } = useGetCart();
   const { mutate: clearCart, isPending } = useClearCart();
   const cartItems = response?.cart?.items || [];
-  const handleCheckout = () => {
+const handleCheckout = () => {
     router.push("/home/cart/checkout");
   };
   return (
@@ -44,11 +45,15 @@ const page = () => {
           <div className="mt-4 flex h-min w-full flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5 lg:col-span-2">
             {cartItems.length > 0 &&
               cartItems.map((item, index) => (
-                <div key={`${item.product._id}-${item.size}`}>
+                <div key={`${item.product._id}-${item.configurationKey || item.size}`}>
                   <CartItems
                     product={item.product}
                     qty={item.quantity}
                     size={item.size}
+                    configuration={item.configuration}
+                    configurationKey={item.configurationKey}
+                    unitPrice={item.unitPrice}
+                    fixedPrice={item.fixedPrice}
                   />
                   {index < cartItems.length - 1 && (
                     <div className="mt-4 h-px w-full bg-border"></div>
@@ -80,7 +85,7 @@ const page = () => {
                   <p className="text-sm text-muted-foreground font-medium tabular-nums">
                     RM {" "}
                     {cartItems.reduce(
-                      (acc, item) => acc + item.product.price * item.quantity,
+                      (acc, item) => acc + getCartLineTotal(item),
                       0
                     ).toFixed(2)}
                   </p>
@@ -98,7 +103,7 @@ const page = () => {
                   <p className="text-xl font-bold tabular-nums text-primary">
                     RM {" "}
                     {cartItems.reduce(
-                      (acc, item) => acc + item.product.price * item.quantity,
+                      (acc, item) => acc + getCartLineTotal(item),
                       0
                     ).toFixed(2)}
                   </p>

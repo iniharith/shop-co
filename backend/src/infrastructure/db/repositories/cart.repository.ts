@@ -3,7 +3,7 @@
  * Kampungcetak ®
  */
 import { ICartDocument } from "../../../domain/interfaces/cart.interface";
-import { ICart } from "../../../domain/interfaces/cart.interface";
+import { ICart, IProductConfiguration } from "../../../domain/interfaces/cart.interface";
 import CartModel from "../models/cart.model";
 
 export class CartRepository {
@@ -11,8 +11,13 @@ export class CartRepository {
         return await CartModel.create(cart);
     }
 
-    async upsertCart(userId: string, productId: string, size: string, quantity: number, artworkUrl?: string): Promise<ICartDocument> {
-        return await CartModel.findOneAndUpdate({ userId }, { $push: { items: { product: productId, size, quantity, artworkUrl } } }, { upsert: true, new: true }).populate('items.product');
+    async upsertCart(userId: string, productId: string, size: string, quantity: number, artworkUrl: string | undefined, configuration: IProductConfiguration | undefined, configurationKey: string, unitPrice: number, fixedPrice = 0, lineTotal?: number, pricingVersion = 'catalog-v1'): Promise<ICartDocument> {
+        const resolvedLineTotal = lineTotal ?? unitPrice * quantity;
+        return await CartModel.findOneAndUpdate(
+            { userId },
+            { $push: { items: { product: productId, size, quantity, artworkUrl, configuration, configurationKey, unitPrice, fixedPrice, lineTotal: resolvedLineTotal, pricingVersion } } },
+            { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+        ).populate('items.product');
     }
 
     async getCartByUserId(userId: string): Promise<ICartDocument | null> {

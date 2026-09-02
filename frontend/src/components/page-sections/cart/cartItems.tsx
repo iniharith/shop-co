@@ -11,15 +11,20 @@ import { QuantityPicker } from "../../global/quantity-picker";
 import { FaTrashAlt } from "react-icons/fa";
 import { IProduct } from "@/types";
 import { useAddtoCart, useRemoveFromCart } from "@/hooks/useCart";
-import { getConfiguredProductImage, getConfigurationParts, getDesignNumber } from "@/utils/productConfiguration";
+import { getConfiguredProductImage, getDesignNumber, getStructuredConfigurationParts } from "@/utils/productConfiguration";
+import { IProductConfiguration } from "@/types/ICart";
 
 interface CartItemsProps {
   product: IProduct;
   qty: number;
   size: string;
+  configuration?: IProductConfiguration;
+  configurationKey?: string;
+  unitPrice?: number;
+  fixedPrice?: number;
 }
 
-const CartItems = ({ product, qty, size }: CartItemsProps) => {
+const CartItems = ({ product, qty, size, configuration: structuredConfiguration, configurationKey, unitPrice = product.price, fixedPrice = 0 }: CartItemsProps) => {
   const [quantity, setQuantity] = useState(qty);
   const [disabled, setDisabled] = useState(false);
   const { mutate: cartUpdate, isPending } = useAddtoCart("update");
@@ -28,14 +33,15 @@ const CartItems = ({ product, qty, size }: CartItemsProps) => {
     setDisabled(isPending || isRemoving);
   }, [isPending, isRemoving]);
 
-  const configuration = getConfigurationParts(size);
+  const configuration = getStructuredConfigurationParts({ size, configuration: structuredConfiguration });
   const designNumber = getDesignNumber(size);
-  const selectedImage = getConfiguredProductImage(product, size);
+  const selectedImage = getConfiguredProductImage(product, size, structuredConfiguration);
   const handleQuantityChange = (qty: number) => {
     cartUpdate({
       productId: product._id,
       size: size,
       quantity: qty,
+      configurationKey,
     });
   };
 
@@ -43,6 +49,7 @@ const CartItems = ({ product, qty, size }: CartItemsProps) => {
     removeFromCart({
       productId: product._id,
       size: size,
+      configurationKey,
     });
   };
   return (
@@ -66,7 +73,8 @@ const CartItems = ({ product, qty, size }: CartItemsProps) => {
               </span>
             ))}
           </div>
-          <p className="text-sm font-bold tabular-nums text-primary">RM {product.price.toFixed(2)} each</p>
+          <p className="text-sm font-bold tabular-nums text-primary">RM {unitPrice.toFixed(2)} each</p>
+          {fixedPrice > 0 && <p className="text-xs text-muted-foreground">Includes RM {fixedPrice.toFixed(2)} fixed service fee</p>}
         </div>
       </div>
       <div className="flex flex-col gap-2 sm:items-end">
@@ -85,7 +93,7 @@ const CartItems = ({ product, qty, size }: CartItemsProps) => {
             min={1}
             max={
               Array.isArray(product.sizes) && typeof product.sizes[0] === 'object'
-                ? (product.sizes.find((e: any) => e.size === size)?.stock || 10000)
+                ? (product.sizes.find((e: any) => e.size === (structuredConfiguration?.fulfillmentSize || size.split("|")[0].trim()))?.stock || 10000)
                 : 10000
             }
             onQuantityChange={(nextQuantity) => {
@@ -106,7 +114,7 @@ const CartItems = ({ product, qty, size }: CartItemsProps) => {
         <div className="flex items-center justify-between sm:justify-end sm:gap-2">
           <p className="text-xs font-medium text-muted-foreground">Item total</p>
           <p className="text-sm font-bold tabular-nums">
-            RM {(product.price * quantity).toFixed(2)}
+            RM {(unitPrice * quantity + fixedPrice).toFixed(2)}
           </p>
         </div>
       </div>

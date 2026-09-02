@@ -15,6 +15,36 @@ export interface IProduct {
     createdAt: Date;
     updatedAt: Date;
     rating?: number;
+    catalogId?: string;
+    originalPrice?: number;
+    discount?: number;
+    printingOptions?: IProductPrintingOption[];
+    matrixPricing?: IProductMatrixPricing;
+}
+
+export interface IProductPrintingOption {
+    name: string;
+    isMultiSelect?: boolean;
+    options: IProductOptionValue[];
+}
+
+export interface IProductOptionValue {
+    label: string;
+    priceAdd: number;
+}
+
+export interface IProductMatrixPricing {
+    enabled: boolean;
+    hideQuantityGrid?: boolean;
+    pricingData: IProductMatrixRow[];
+}
+
+export interface IProductMatrixRow {
+    material: string;
+    laminate?: string;
+    lamination?: string;
+    design?: string;
+    quantityPrices: Record<string, any>;
 }
 
 

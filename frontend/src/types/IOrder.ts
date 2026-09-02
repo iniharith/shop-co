@@ -3,12 +3,19 @@
  * Kampungcetak ®
  */
 import { IProduct } from ".";
+import { IProductConfiguration } from "./ICart";
 
 export interface IOrderedProduct {
     product: IProduct;
     size: string;
     quantity: number;
     price: number;
+    unitPrice?: number;
+    fixedPrice?: number;
+    lineTotal?: number;
+    pricingVersion?: string;
+    configuration?: IProductConfiguration;
+    configurationKey?: string;
 }
 
 

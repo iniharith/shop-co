@@ -59,6 +59,38 @@ const ProductSchema: Schema = new Schema(
             type: Number,
             default: 0,
         },
+        catalogId: {
+            type: String,
+            unique: true,
+            sparse: true,
+        },
+        originalPrice: {
+            type: Number,
+            default: 0,
+        },
+        discount: {
+            type: Number,
+            default: 0,
+        },
+        printingOptions: [{
+            name: { type: String },
+            isMultiSelect: { type: Boolean, default: false },
+            options: [{
+                label: { type: String },
+                priceAdd: { type: Number, default: 0 },
+            }],
+        }],
+        matrixPricing: {
+            enabled: { type: Boolean, default: false },
+            hideQuantityGrid: { type: Boolean, default: false },
+            pricingData: [{
+                material: { type: String },
+                laminate: { type: String },
+                lamination: { type: String },
+                design: { type: String },
+                quantityPrices: { type: Schema.Types.Mixed },
+            }],
+        },
         averageRating: {
             type: Number,
             default: 0,
