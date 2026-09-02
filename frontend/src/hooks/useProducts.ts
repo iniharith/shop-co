@@ -5,14 +5,13 @@
 "use client"
 import { ICategoryResponse, IProductByIdResponse, IProductResponse } from "@/types/api";
 import { useQueryData } from "./useQueryData"
-import { getProductByCategory, getProductById, getProducts, getAvailableCategories, filterProducts } from "@/api/product";
+import { getProductByCategory, getProductById, getProducts, getAvailableCategories, filterProducts, searchProducts } from "@/api/product";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFilterStore } from "@/store/filterStore";
 import { useSearchParams } from "next/navigation";
 import { AI_SEARCH_ENABLED, aiSemanticSearch } from "@/utils/aiSearch";
 
-import { dummyProducts } from "@/constants/dummy-products";
 
 const searchAliases: Record<string, string> = {
     "cetakan digital": "digital printing",
@@ -24,6 +23,17 @@ const searchAliases: Record<string, string> = {
     "produk perkahwinan": "wedding",
     "pembungkusan makanan": "food packaging",
     "khat islamik": "islamic khat",
+};
+
+const categorySections: Record<string, string> = {
+    "Digital Printing": "DIGITAL PRINTING",
+    "Display Item": "DISPLAY ITEM",
+    "Digital Offset": "DIGITAL OFFSET",
+    "Premium Gift": "PREMIUM GIFT",
+    Apparel: "APPAREL/SUBLIMATION",
+    "Wedding Product": "WEDDING PRODUCT",
+    "Food Packaging": "FOOD PACKAGING",
+    "Islamic Khat": "ISLAMIC KHAT",
 };
 
 const getSearchTerms = (query: string) => {
@@ -41,30 +51,9 @@ export const useProducts = (id?: string) => {
     const client = useQueryClient()
     const apiFn = !id ? getProducts : getProductById;
     const queryKey = !id ? "products" : "product";
-    const shouldFetch = Boolean(id && !id.startsWith('prod-'));
-    const { data, isPending } = useQueryData([queryKey, id], () => apiFn(id as string), { enabled: shouldFetch, staleTime: 5 * 60_000 });
+    const { data, isPending } = useQueryData([queryKey, id], () => apiFn(id as string), { enabled: true, staleTime: 5 * 60_000 });
     type type = IProductResponse & IProductByIdResponse;
     const response = data as type;
-
-    // FORCE return the new printing products, completely ignoring the old clothing items in the DB
-    if (!id) {
-        return { data: { ...response, products: dummyProducts }, isPending: false };
-    }
-
-    // Fallback for single product if it's a dummy id
-    
-    if (response?.product?.name) {
-        const dummy = dummyProducts.find(d => d.name === response.product.name);
-        if (dummy && dummy.matrixPricing?.enabled) {
-            return { data: { ...response, product: { ...response.product, matrixPricing: dummy.matrixPricing, printingOptions: dummy.printingOptions } }, isPending: false };
-        }
-    }
-
-    if (id?.startsWith('prod-')) {
-
-        const dummy = dummyProducts.find(d => d?._id === id);
-        return { data: { ...response, product: dummy }, isPending: false };
-    }
 
     return { data: response, isPending };
 }
@@ -72,7 +61,8 @@ export const useProducts = (id?: string) => {
 
 export const useSearchProducts = (query: string) => {
     const terms = getSearchTerms(query);
-    const keywordResults = terms[0]?.length < 2 ? [] : dummyProducts.filter((product) => matchesSearch(product, terms));
+    const { data: response, isPending } = useQueryData(["product-search", query], () => searchProducts(query), { enabled: terms[0]?.length >= 2, staleTime: 60_000 });
+    const keywordResults = (response as IProductResponse | undefined)?.products || [];
     const [ai, setAi] = useState<{ products: any[]; summary: string | null } | null>(null);
 
     useEffect(() => {
@@ -82,7 +72,7 @@ export const useSearchProducts = (query: string) => {
         const timer = window.setTimeout(async () => {
             const res = await aiSemanticSearch(query, { collections: ["products"], limit: 20 });
             if (!active || !res?.groups?.products?.length) return;
-            const nameIndex = new Map(dummyProducts.map((p) => [String(p?.name || "").toLowerCase(), p]));
+            const nameIndex = new Map(keywordResults.map((p) => [String(p?.name || "").toLowerCase(), p]));
             const ranked: any[] = [];
             const seen = new Set<string>();
             for (const hit of res.groups.products) {
@@ -103,13 +93,12 @@ export const useSearchProducts = (query: string) => {
         ? [...ai.products, ...keywordResults.filter((p) => !ai.products.some((ap) => String(ap._id) === String(p._id)))].slice(0, 20)
         : keywordResults;
 
-    return { data: { products: merged }, isPending: false, aiSummary: ai?.summary || null, aiEnabled: AI_SEARCH_ENABLED };
+    return { data: { products: merged }, isPending, aiSummary: ai?.summary || null, aiEnabled: AI_SEARCH_ENABLED };
 }
 
 export const useGetProductByCategory = (category: string) => {
-    // Force category mock
-    const filtered = dummyProducts.filter(p => p?.category === category);
-    return { data: { products: filtered.length > 0 ? filtered : dummyProducts.filter(p=>p) }, isPending: false };
+    const { data, isPending } = useQueryData(["products-category", category], () => getProductByCategory(category));
+    return { data: data as IProductResponse, isPending };
 }
 
 
@@ -126,8 +115,12 @@ export const useFilterProducts = () => {
     const searchQuery = searchParams.get('search') || '';
 
     const { serviceCategories, turnarounds, formats, materials, priceRange } = useFilterStore();
-    // FORCE return the new printing products, simulating frontend filtering
-    let filtered = [...dummyProducts.filter(p=>p)];
+    const { data: response, isPending } = useQueryData(
+        ["products-filter", searchQuery, serviceCategories, turnarounds, formats, materials, priceRange],
+        () => filterProducts({ minPrice: priceRange[0], maxPrice: priceRange[1], category: serviceCategories.map((category) => categorySections[category] || category.toUpperCase()), size: formats, limit: 1000, page: 1 }),
+        { staleTime: 60_000 }
+    );
+    let filtered = [...((response as IProductResponse | undefined)?.products || [])];
 
     const [aiRanked, setAiRanked] = useState<string[] | null>(null);
     const [aiSummary, setAiSummary] = useState<string | null>(null);
@@ -143,7 +136,7 @@ export const useFilterProducts = () => {
             const order: string[] = [];
             for (const hit of res.groups.products) {
                 const meta = hit.metadata || {};
-                const match = dummyProducts.find((p) => String(p?.name || "").toLowerCase() === String(meta.name || hit.title || "").toLowerCase());
+                const match = filtered.find((p) => String(p?.name || "").toLowerCase() === String(meta.name || hit.title || "").toLowerCase());
                 if (match) order.push(String(match._id));
             }
             setAiRanked(order);
@@ -177,11 +170,16 @@ export const useFilterProducts = () => {
     }
     
     if (formats && formats.length > 0) {
-        filtered = filtered.filter(p => p?.sizes && p.sizes.some((s: any) => formats.includes(s)));
+        filtered = filtered.filter(p => p?.sizes && p.sizes.some((s: any) => formats.includes(typeof s === "string" ? s : s.size)));
     }
-    
-    return { data: { products: filtered }, isPending: false, refetch: () => Promise.resolve(), aiSummary, aiEnabled: AI_SEARCH_ENABLED };
+
+    if (turnarounds.length > 0) {
+        filtered = filtered.filter(p => turnarounds.some(value => value.startsWith("Express") ? (p.productionTurnaround?.expressDays ?? 0) > 0 : (p.productionTurnaround?.standardDays ?? 0) > 0));
+    }
+
+    if (materials.length > 0) {
+        filtered = filtered.filter(p => materials.some(value => p.specifications?.material?.toLowerCase().includes(value.toLowerCase()) || p.printingOptions?.some(option => option.name.toLowerCase().includes(value.toLowerCase()))));
+    }
+
+    return { data: { products: filtered }, isPending, refetch: () => Promise.resolve(), aiSummary, aiEnabled: AI_SEARCH_ENABLED };
 }
-
-
-

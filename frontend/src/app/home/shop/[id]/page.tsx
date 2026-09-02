@@ -24,7 +24,7 @@ const page = () => {
   const [selectedVariationIndex, setSelectedVariationIndex] = useState<number | null>(null);
   const product = data?.product as IProduct;
   const products = productsData?.products || [];
-  const dimensions = Array.from(new Set(product?.name.match(/\d+\s*[xX]\s*\d+/g) || []));
+   const dimensions = Array.from(new Set(product?.name?.match(/\d+\s*[xX]\s*\d+/g) || []));
 
   useEffect(() => {
     setSelectedImageIndex(0);
@@ -79,7 +79,7 @@ const page = () => {
               <span className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Product details</span>
               <h2 className="font-sans text-xl font-semibold tracking-tight text-foreground">Product information</h2>
               <p className="max-w-3xl text-sm leading-7 text-muted-foreground md:text-base">
-                {product.description || "High quality printing service offering excellent results with vibrant colors and durability. Ideal for professional and personal use."}
+                 {product.description || "Product details will be confirmed by our team."}
               </p>
               <dl className="grid gap-2 pt-2 sm:grid-cols-3">
                 <div className="rounded-xl border border-border bg-muted/25 p-3">
@@ -97,6 +97,60 @@ const page = () => {
                   <dd className="mt-1 text-sm font-semibold">{product.images.length}</dd>
                 </div>
               </dl>
+              {(product.specifications || product.packageContents?.length || product.productionTurnaround || product.warrantyInfo || product.installationInstructions) && (
+                <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
+                  {product.specifications && (
+                    <section aria-labelledby="product-specifications">
+                      <h3 id="product-specifications" className="font-semibold text-foreground">Specifications</h3>
+                      <dl className="mt-2 space-y-1 text-sm text-muted-foreground">
+                        {Object.entries(product.specifications).filter(([key, value]) => key !== "customFields" && value).map(([key, value]) => (
+                          <div key={key} className="flex justify-between gap-3 border-b border-border/50 py-1">
+                            <dt className="capitalize">{key}</dt><dd className="text-right font-medium text-foreground">{String(value)}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </section>
+                  )}
+                  {product.packageContents?.length ? (
+                    <section aria-labelledby="package-contents">
+                      <h3 id="package-contents" className="font-semibold text-foreground">Included</h3>
+                      <ul className="mt-2 list-inside list-disc text-sm text-muted-foreground">
+                        {product.packageContents.map((item) => <li key={item}>{item}</li>)}
+                      </ul>
+                    </section>
+                  ) : null}
+                  {product.productionTurnaround && (
+                    <section aria-labelledby="production-time">
+                      <h3 id="production-time" className="font-semibold text-foreground">Production time</h3>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {product.productionTurnaround.standardDays ? `Standard: ${product.productionTurnaround.standardDays} days` : ""}
+                        {product.productionTurnaround.expressDays ? ` | Express: ${product.productionTurnaround.expressDays} days` : ""}
+                      </p>
+                      {product.productionTurnaround.notes && <p className="text-sm text-muted-foreground">{product.productionTurnaround.notes}</p>}
+                    </section>
+                  )}
+                  {product.warrantyInfo && (
+                    <section aria-labelledby="warranty-information">
+                      <h3 id="warranty-information" className="font-semibold text-foreground">Warranty</h3>
+                      <p className="mt-2 text-sm text-muted-foreground">{product.warrantyInfo}</p>
+                    </section>
+                  )}
+                  {product.installationInstructions && (
+                    <section aria-labelledby="installation-instructions" className="sm:col-span-2">
+                      <h3 id="installation-instructions" className="font-semibold text-foreground">Installation instructions</h3>
+                      <p className="mt-2 whitespace-pre-line text-sm leading-6 text-muted-foreground">{product.installationInstructions}</p>
+                    </section>
+                  )}
+                </div>
+              )}
+              {product.customerPhotos?.length ? (
+                <section aria-labelledby="customer-photos" className="border-t border-border pt-4">
+                  <h3 id="customer-photos" className="font-semibold text-foreground">Customer photos</h3>
+                  <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
+                    {product.customerPhotos.map((photo) => <img key={photo} src={photo} alt="Customer example" loading="lazy" className="aspect-square w-full rounded-lg object-cover" />)}
+                  </div>
+                </section>
+              ) : null}
             </div>
             
             <div id="flyer-pricing-portal"></div>

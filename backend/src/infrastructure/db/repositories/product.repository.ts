@@ -21,32 +21,33 @@ export class ProductRepository extends BaseRepository<IProductDocument> {
     }
 
     async findByName(name: string) {
-        return await this.model.findOne({ name });
+        return await this.model.findOne({ name, isDelete: false });
     }
 
     async findByCategory(category: string) {
-        return await this.model.find({ $or: [{ category }, { sections: category }] });
+        return await this.model.find({ isDelete: false, $or: [{ category }, { sections: category }] });
     }
 
     async findById(id: string) {
         if (typeof id === 'string' && /^prod-/i.test(id)) {
-            return await this.model.findOne({ catalogId: id });
+            return await this.model.findOne({ catalogId: id, isDelete: false });
         }
-        return await this.model.findById(id);
+        return await this.model.findOne({ _id: id, isDelete: false });
     }
 
     async findByCatalogId(catalogId: string) {
-        return await this.model.findOne({ catalogId });
+        return await this.model.findOne({ catalogId, isDelete: false });
     }
 
 
     async filterProducts(filter: FilterQuery<IProductDocument>, limit: number, page: number) {
-        return await this.model.find(filter).limit(limit).skip(limit * (page - 1));
+        return await this.model.find({ ...filter, isDelete: false }).limit(limit).skip(limit * (page - 1));
     }
 
 
     async searchProducts(query: string) {
         return await this.model.find({
+            isDelete: false,
             $or: [
                 { name: { $regex: query, $options: "i" } },
                 { description: { $regex: query, $options: "i" } },
@@ -56,7 +57,7 @@ export class ProductRepository extends BaseRepository<IProductDocument> {
     }
 
     async getCategories() {
-        return await this.model.find({}).distinct("category");
+        return await this.model.find({ isDelete: false }).distinct("category");
     }
 
     async updateProductStockBySize(productId: string, size: string, quantityChange: number): Promise<IProductDocument | null> {

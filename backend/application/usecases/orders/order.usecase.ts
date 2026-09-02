@@ -60,7 +60,7 @@ export class OrderUsecase {
         return order;
     }
 
-    async createOrder(address: IAddress, userId: string): Promise<IOrderDocument> {
+    async createOrder(address: IAddress, userId: string, customerName?: string, orderNotes?: string, shippingPrice?: number, courier?: string): Promise<IOrderDocument> {
 
         const cart = await this.cartRepository.getCartByUserId(userId);
         if (!cart || !cart.items || !cart?.items?.length) {
@@ -91,12 +91,17 @@ export class OrderUsecase {
         await this.redisService.del(REDIS_KEYS.CATEGORIES);
         await this.redisService.del(REDIS_KEYS.ADDRESS + userId);
 
+        const safeShippingPrice = Number.isFinite(shippingPrice) && (shippingPrice as number) >= 0 ? shippingPrice as number : 0;
         const order = await this.orderRepository.createOrder({
             userId,
             address,
+            customerName: customerName || "",
+            orderNotes: orderNotes || "",
             paymentMethod: "COD",
             products: orderItems,
-            totalAmount
+            totalAmount: totalAmount + safeShippingPrice,
+            shippingPrice: safeShippingPrice || undefined,
+            courier: courier || undefined,
         })
         await this.notificationUsecase.createNotification({
             userId: userId,

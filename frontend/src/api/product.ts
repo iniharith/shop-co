@@ -40,11 +40,12 @@ export const filterProducts = async (filters: {
     maxPrice: number;
     category: string[];
     size: string[];
+    limit?: number;
+    page?: number;
 }) => {
     const response = await AxiosInstance().get(`${PRODUCT_URL}/filter`, { params: filters });
     return response.data;
 };
-
 
 
 

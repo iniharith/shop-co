@@ -21,7 +21,7 @@ import { IOrder } from "@/types/IOrder";
 
 
 
-export const useOrder = () => {
+export const useOrder = (checkoutMeta?: { shippingPrice?: number | null; courier?: string | null }) => {
     const { data: session, update } = useSession();
     const [DisOpen,setDisOpen]=useState(false)
     const client = useQueryClient()
@@ -30,7 +30,7 @@ export const useOrder = () => {
     const { data: previousAddress, isLoading: previousAddressLoading } = useQueryData(['previousAddress'], () => getPreviousAddress(token));
     const { data: response, isLoading } = useGetCart();
     const formRef = useRef<HTMLFormElement>(null);
-    const { mutate: createOrderMutation, reset } = useMutationData(['order'], (data: any) => createOrder(data, token), ['cart'], async (data: any) => {
+    const { mutate: createOrderMutation, reset } = useMutationData(['order'], (data: any) => createOrder({ ...data, shippingPrice: checkoutMeta?.shippingPrice ?? undefined, courier: checkoutMeta?.courier ?? undefined }, token), ['cart'], async (data: any) => {
         await update({ ...session, user: { ...session?.user, orderSuccesPageAccess: true } });
         toast.success("Order created successfully");
         await client.invalidateQueries({ queryKey: ['products'], exact: true });

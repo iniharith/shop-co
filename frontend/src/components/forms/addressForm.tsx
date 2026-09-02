@@ -4,7 +4,6 @@
  */
 "use client";
 
-import { useOrder } from "@/hooks/useOrder";
 import React, { RefObject } from "react";
 import { FormField } from "../ui/form";
 import { Form } from "../ui/form";
@@ -16,13 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { recentAddresses } from "@/constants/data";
 import { FaAddressCard } from "react-icons/fa";
 import { FaMapLocationDot } from "react-icons/fa6";
 import { LuMapPinHouse } from "react-icons/lu";
 import { IoEarthSharp } from "react-icons/io5";
 import { FaFlag, FaUser, FaStickyNote } from "react-icons/fa";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Switch } from "@/components/ui/switch";
 import {
   Drawer,
@@ -41,17 +38,15 @@ const AddressForm = ({
   control,
   errors,
   formRef,
+  profile,
 }: {
   form: UseFormReturn<any>;
   onFormSubmit: (data: any) => void;
   control: Control<any>;
   errors: FieldErrors<any>;
   formRef: RefObject<HTMLFormElement>;
+  profile?: any;
 }) => {
-  const { previousAddressData, previousAddressLoading, DisOpen, setDisOpen, profile } =
-    useOrder();
-  const addresses = previousAddressData?.address || [];
-  const isMobile = useIsMobile();
   return (
     <div className="w-full   ">
       <div className="flex flex-row  md:pb-0 pb-5  justify-between w-full  md:items-center items-start">

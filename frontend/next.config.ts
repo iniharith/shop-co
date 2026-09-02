@@ -6,8 +6,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    // Images are already optimized via AWS S3 — skip Vercel's transformation pipeline
-    unoptimized: true,
+    // Let Next serve responsive sizes and modern formats for catalog imagery.
+    unoptimized: false,
     remotePatterns: [
       {
         hostname: "placehold.co",
@@ -32,6 +32,10 @@ const nextConfig: NextConfig = {
       },
       {
         hostname: "kampungcetak-storage.s3.ap-southeast-5.amazonaws.com",
+        protocol: "https",
+      },
+      {
+        hostname: "shop-co-production.up.railway.app",
         protocol: "https",
       },
     ],

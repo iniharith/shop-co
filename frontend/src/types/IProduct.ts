@@ -31,6 +31,38 @@ export interface IProduct {
             quantityPrices: Record<number, number>;
         }[];
     };
+    catalogId?: string;
+    sections?: string[];
+    averageRating?: number;
+    reviewCount?: number;
+    specifications?: {
+        material?: string;
+        frame?: string;
+        dimensions?: string;
+        weight?: string;
+        finish?: string;
+        color?: string;
+        customFields?: Record<string, string | number | boolean>;
+    };
+    packageContents?: string[];
+    installationInstructions?: string;
+    productionTurnaround?: {
+        standardDays?: number;
+        expressDays?: number;
+        notes?: string;
+    };
+    warrantyInfo?: string;
+    customerPhotos?: string[];
+    reviews?: Array<{
+        userId?: string;
+        userName?: string;
+        rating: number;
+        title?: string;
+        comment?: string;
+        images?: string[];
+        verifiedPurchase?: boolean;
+        createdAt?: string | Date;
+    }>;
 }
 
 export interface ISize {

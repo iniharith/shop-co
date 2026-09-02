@@ -6,16 +6,14 @@
 import type { IProduct } from "@/types/IProduct";
 import Image from "next/image";
 import Link from "next/link";
+import { getImageUrl } from "@/utils/getImageUrl";
 
 interface ProductCardProps {
   product: IProduct;
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
-  const image =
-    product.images?.length && product.images[0].startsWith("/") && !product.images[0].startsWith("/images/") && !product.images[0].startsWith("/placeholder")
-      ? process.env.NEXT_PUBLIC_BACKEND_URL + product.images[0]
-      : product.images[0];
+  const image = getImageUrl(product.images?.[0]);
   const hasDiscount = product.discount > 0 && product.originalPrice > product.price;
 
   return (
@@ -31,12 +29,19 @@ const ProductCard = ({ product }: ProductCardProps) => {
           </span>
         )}
         <Image
-          src={image || "/placeholder.svg"}
+          src={image}
           alt={product.name}
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           className="object-contain object-center p-2"
         />
+        {product.images?.length > 1 && (
+          <div className="absolute bottom-2 left-2 right-2 flex gap-1.5 rounded-md bg-card/85 p-1 backdrop-blur" aria-label={`${product.images.length} design previews`}>
+            {product.images.slice(0, 4).map((preview, index) => (
+              <img key={`${preview}-${index}`} src={getImageUrl(preview)} alt="" loading="lazy" className="size-8 rounded border border-border bg-muted object-contain" />
+            ))}
+          </div>
+        )}
       </div>
       <div className="w-full p-3 flex flex-1 flex-col">
         <h3 className="mb-2 font-sans text-sm font-semibold leading-snug sm:text-base md:text-lg">{product.name}</h3>

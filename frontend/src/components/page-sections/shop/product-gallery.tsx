@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { getImageUrl } from "@/utils/getImageUrl";
 import { ChevronLeft, ChevronRight, Maximize2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 
 interface ProductGalleryProps {
   images: string[];
@@ -88,12 +89,14 @@ export function ProductGallery({ images, productName, selectedIndex, onSelectedI
   return (
     <div className="space-y-4">
       <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-2xl bg-neutral-100 p-2 dark:bg-black/40 sm:p-4">
-        <img
+        <Image
           src={getImageUrl(displayImages[activeIndex])}
           alt={`${productName}, image ${activeIndex + 1} of ${displayImages.length}`}
           loading="eager"
           decoding="async"
           draggable={false}
+          fill
+          sizes="(max-width: 1024px) 100vw, 58vw"
           className="h-full w-full object-contain object-center"
         />
 
@@ -148,12 +151,14 @@ export function ProductGallery({ images, productName, selectedIndex, onSelectedI
               )}
               onClick={() => onSelectedIndexChange(index)}
             >
-              <img
+              <Image
                 src={getImageUrl(image)}
                 alt=""
                 loading="lazy"
                 decoding="async"
                 draggable={false}
+                fill
+                sizes="112px"
                 className="h-full w-full object-contain object-center"
               />
               <span className={cn(
@@ -192,14 +197,17 @@ export function ProductGallery({ images, productName, selectedIndex, onSelectedI
             <X aria-hidden="true" className="size-5" />
           </button>
 
-          <img
-            src={getImageUrl(displayImages[activeIndex])}
-            alt={`${productName}, fullscreen image ${activeIndex + 1} of ${displayImages.length}`}
-            decoding="async"
-            draggable={false}
-            className="max-h-full max-w-full object-contain"
-            onClick={(event) => event.stopPropagation()}
-          />
+          <div className="relative h-full w-full">
+            <Image
+              src={getImageUrl(displayImages[activeIndex])}
+              alt={`${productName}, fullscreen image ${activeIndex + 1} of ${displayImages.length}`}
+              fill
+              sizes="100vw"
+              draggable={false}
+              className="object-contain"
+              onClick={(event) => event.stopPropagation()}
+            />
+          </div>
 
           {displayImages.length > 1 && (
             <>

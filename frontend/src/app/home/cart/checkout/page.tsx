@@ -46,17 +46,17 @@ function estimateCartWeight(cartItems: any[]): number {
 }
 
 const page = () => {
-  const { form, onFormSubmit, control, errors, formRef, handleCheckout } = useOrder();
+  const [shippingFee, setShippingFee] = useState<number | null>(null);
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingError, setShippingError] = useState<string | null>(null);
+  const [courierName, setCourierName] = useState<string | null>(null);
+  const [configurationConfirmed, setConfigurationConfirmed] = useState(false);
+  const { form, onFormSubmit, control, errors, formRef, handleCheckout, profile } = useOrder({ shippingPrice: shippingFee, courier: courierName });
   const router = useRouter();
   const { data: session } = useSession();
 
   const { data: response, isLoading } = useGetCart();
   const cartItems = response?.cart?.items || [];
-
-  const [shippingFee, setShippingFee] = useState<number | null>(null);
-  const [shippingLoading, setShippingLoading] = useState(false);
-  const [shippingError, setShippingError] = useState<string | null>(null);
-  const [courierName, setCourierName] = useState<string | null>(null);
 
   const postalCode = form.watch("postalCode");
   const state = form.watch("state");
@@ -116,6 +116,7 @@ const page = () => {
     0
   );
   const total = subtotal + (shippingFee || 0);
+  const productionDays = cartItems.reduce((max: number, item: any) => Math.max(max, Number(item.product?.productionTurnaround?.standardDays) || 0), 0);
 
   return (
     <div className="w-full py-5 md:px-10 px-5">
@@ -129,6 +130,7 @@ const page = () => {
             control={control}
             errors={errors}
             formRef={formRef as any}
+            profile={profile}
           />
         </div>
         <div className="w-full rounded-lg bg-gray-300/10 border-input border-1 py-7 mt-4 flex flex-col gap-4 md:px-4 px-2">
@@ -195,10 +197,16 @@ const page = () => {
                   <p className="text-sm text-muted-foreground font-medium">Enter address</p>
                 )}
               </div>
-              <div className="w-full flex flex-col">
+               <div className="w-full flex flex-col">
                 <p className="text-lg  font-medium">Payment Method</p>
                 <p className="text-sm text-muted-foreground font-medium">
                   Cash on Delivery
+                </p>
+               </div>
+              <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm">
+                <p className="font-semibold text-foreground">Production estimate</p>
+                <p className="mt-1 text-muted-foreground">
+                  {productionDays > 0 ? `${productionDays} working days after artwork approval` : "Confirmed after artwork review"}
                 </p>
               </div>
               <div className="w-full mt-3 border-t border-b border-dashed flex items-center justify-between">
@@ -208,8 +216,12 @@ const page = () => {
                 </p>
               </div>
 
-              <AnimatedButton
-                disabled={cartItems.length === 0 || isLoading}
+               <label className="flex items-start gap-2 text-sm text-muted-foreground">
+                 <input type="checkbox" checked={configurationConfirmed} onChange={(event) => setConfigurationConfirmed(event.target.checked)} className="mt-0.5 size-4 accent-primary" />
+                 <span>I confirm that my product configuration and design selection are correct.</span>
+               </label>
+               <AnimatedButton
+                 disabled={cartItems.length === 0 || isLoading || !configurationConfirmed}
                 className="w-full hover:bg-primary/90 cursor-pointer mt-3 bg-primary text-primary-foreground rounded-lg"
                 isLoading={isLoading}
                 loadingText="Checking out..."

@@ -22,11 +22,13 @@ import ProductCardSkeleton from "@/components/loading/ProductCardSkeleton";
 import { motion } from "framer-motion";
 import { container_variants, item_variants } from "@/constants/framer-motion";
 import { useLanguage } from "@/i18n/LanguageProvider";
+import { useFilterStore } from "@/store/filterStore";
 
 const ITEMS_PER_PAGE = 8;
 
 const ShopContent = () => {
   const { t } = useLanguage();
+  const { serviceCategories, turnarounds, formats, materials, priceRange, resetFilters } = useFilterStore();
   const { data, isPending, aiSummary, aiEnabled } = useFilterProducts();
   const products = data?.products || [];
   const [sortBy, setSortBy] = useState("featured");
@@ -63,18 +65,18 @@ const ShopContent = () => {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <label htmlFor="product-sort" className="sr-only">Sort products</label>
+              <label htmlFor="product-sort" className="sr-only">{t("shop.sort")}</label>
               <select
                 id="product-sort"
                 value={sortBy}
                 onChange={(event) => setSortBy(event.target.value)}
                 className="h-10 rounded-full border border-border bg-card px-4 text-sm font-medium outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
-                <option value="featured">Featured</option>
-                <option value="rating">Top rated</option>
-                <option value="price-low">Price: low to high</option>
-                <option value="price-high">Price: high to low</option>
-                <option value="name">Name: A to Z</option>
+                 <option value="featured">{t("shop.featured")}</option>
+                 <option value="rating">{t("shop.topRated")}</option>
+                 <option value="price-low">{t("shop.priceLow")}</option>
+                 <option value="price-high">{t("shop.priceHigh")}</option>
+                 <option value="name">{t("shop.nameAZ")}</option>
               </select>
               <Drawer>
                 <DrawerTrigger aria-label={t("filters.title")} className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-input bg-muted transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 md:hidden">
@@ -87,7 +89,15 @@ const ShopContent = () => {
                   </ScrollArea>
                 </DrawerContent>
               </Drawer>
-            </div>
+           </div>
+           {(serviceCategories.length || turnarounds.length || formats.length || materials.length || priceRange[0] > 0 || priceRange[1] < 1000) ? (
+             <div className="flex flex-wrap items-center gap-2" aria-label="Active filters">
+               {[...serviceCategories, ...turnarounds, ...formats, ...materials, ...(priceRange[0] > 0 || priceRange[1] < 1000 ? [`RM ${priceRange[0]} - RM ${priceRange[1]}`] : [])].map((filter) => (
+                 <span key={filter} className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">{filter}</span>
+               ))}
+               <button type="button" onClick={resetFilters} className="rounded-full px-3 py-1 text-xs font-semibold text-primary underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("filters.clear")}</button>
+             </div>
+           ) : null}
           </div>
           {aiEnabled && aiSummary && (
             <div className="flex items-start gap-3 bg-primary/5 border border-primary/20 rounded-2xl px-4 py-3 text-sm text-foreground">
@@ -129,10 +139,14 @@ const ShopContent = () => {
             )}
           </motion.div>
           <div className="w-full border-t border-border pt-5">
-            <PaginationDemo
-              totalPages={totalPages}
-              currentPage={currentPage}
-              onPageChange={() => {}}
+             <PaginationDemo
+               totalPages={totalPages}
+               currentPage={currentPage}
+               onPageChange={(page) => {
+                 const params = new URLSearchParams(searchParams.toString());
+                 params.set("page", String(page));
+                 window.history.pushState(null, "", `/home/shop?${params.toString()}`);
+               }}
             />
           </div>
         </div>
