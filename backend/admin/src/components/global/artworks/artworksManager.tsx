@@ -859,7 +859,7 @@ export default function ArtworksManager() {
               <span>Folders</span>
               <div className="flex items-center gap-2">
                 <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs">{visibleGroupedFiles.length}</span>
-                <Button
+                         <Button
                   variant={bulkSelectMode ? "default" : "outline"}
                   size="sm"
                   className="h-7 px-2 text-xs"
@@ -1107,8 +1107,9 @@ export default function ArtworksManager() {
                               });
                             }}
                           >
-                          <Share2 className="w-4 h-4 mr-2" /> {isGeneratingLink ? "Generating..." : "Share Link"}
+                         <Share2 className="w-4 h-4 mr-2" /> {isGeneratingLink ? "Generating..." : "Share Link"}
                         </Button>
+                        {activeGroup.taskId && <TaskQrButton taskId={String(activeGroup.taskId)} taskTitle={activeGroup.folderName} />}
                         {activeGroup.taskId && (
                           <Button 
                             variant="outline" 

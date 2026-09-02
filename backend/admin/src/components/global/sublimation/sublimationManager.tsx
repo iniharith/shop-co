@@ -797,6 +797,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                         <Share2 className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">{isGeneratingLink ? "Generating..." : "Share"}</span>
                       </Button>
                       )}
+                      {activeGroup.taskId && <TaskQrButton taskId={String(activeGroup.taskId)} taskTitle={activeGroup.folderName} />}
                       <Button variant="secondary" onClick={(e) => handleDownloadAll({ ...activeGroup, files: visibleFiles }, e)} className="shadow-sm h-11 sm:h-10">
                         <Download className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Download</span>
                       </Button>
