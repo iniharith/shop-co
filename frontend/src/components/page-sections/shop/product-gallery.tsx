@@ -97,6 +97,9 @@ export function ProductGallery({ images, productName, selectedIndex, onSelectedI
           draggable={false}
           fill
           sizes="(max-width: 1024px) 100vw, 58vw"
+          priority
+          placeholder="blur"
+          blurDataURL="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Crect width='16' height='16' fill='%23e5e7eb'/%3E%3C/svg%3E"
           className="h-full w-full object-contain object-center"
         />
 

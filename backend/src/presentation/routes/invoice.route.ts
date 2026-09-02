@@ -7,14 +7,19 @@ import { AuthRequest } from '../../domain/types/api';
 const router = Router();
 
 function generateInvoiceHtml(order: any): string {
+  const escapeHtml = (value: unknown) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char] || char));
   const orderIdShort = order._id.toString().slice(-6).toUpperCase();
   const items = order.products.map((p: any) => {
     const lineTotal = p.lineTotal ?? p.price;
     const unitPrice = p.unitPrice ?? (p.quantity > 0 ? lineTotal / p.quantity : lineTotal);
+    const configuration = p.configuration;
+    const selections = configuration?.selections?.flatMap((selection: any) => selection.values?.map((value: any) => `${selection.name}: ${value.label}`) || []) || [];
+    const design = configuration?.design?.label ? [`Design: ${configuration.design.label}`] : [];
+    const details = [...selections, ...design].map(escapeHtml).join('<br>');
     return `
     <tr>
-      <td style="padding:12px;border-bottom:1px solid #e5e7eb;">${p.productNameSnapshot || p.product?.name || 'Product'}</td>
-      <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:center;">${p.size || '-'}</td>
+      <td style="padding:12px;border-bottom:1px solid #e5e7eb;"><strong>${escapeHtml(p.productNameSnapshot || p.product?.name || 'Product')}</strong>${details ? `<div style="font-size:11px;color:#6b7280;margin-top:4px;line-height:1.5;">${details}</div>` : ''}</td>
+      <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:center;">${escapeHtml(p.size || '-')}</td>
       <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:center;">${p.quantity}</td>
       <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:right;">RM ${unitPrice.toFixed(2)}</td>
       <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:right;">RM ${lineTotal.toFixed(2)}</td>
@@ -63,11 +68,11 @@ function generateInvoiceHtml(order: any): string {
       <div style="width:280px;">
         <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;">
           <span style="color:#6b7280;">Subtotal</span>
-          <span>RM ${order.totalAmount.toFixed(2)}</span>
+           <span>RM ${(order.totalAmount - (order.shippingPrice || 0)).toFixed(2)}</span>
         </div>
         <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:14px;">
           <span style="color:#6b7280;">Shipping</span>
-          <span>Free</span>
+           <span>${order.shippingPrice ? `RM ${Number(order.shippingPrice).toFixed(2)}${order.courier ? ` (${escapeHtml(order.courier)})` : ''}` : 'Free'}</span>
         </div>
         <div style="border-top:2px solid #e5e7eb;display:flex;justify-content:space-between;padding:12px 0 0;font-size:16px;font-weight:700;">
           <span>Total</span>

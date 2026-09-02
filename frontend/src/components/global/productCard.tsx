@@ -13,7 +13,11 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
-  const image = getImageUrl(product.images?.[0]);
+  const imagePath = product.images?.[0] || "/placeholder.svg";
+  const thumbnailPath = imagePath.startsWith("/images/catalog/") && imagePath.endsWith(".webp")
+    ? imagePath.replace("/images/catalog/", "/images/catalog/thumbs/")
+    : imagePath;
+  const image = getImageUrl(thumbnailPath);
   const hasDiscount = product.discount > 0 && product.originalPrice > product.price;
 
   return (
@@ -33,6 +37,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
           alt={product.name}
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          placeholder="blur"
+          blurDataURL="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Crect width='16' height='16' fill='%23e5e7eb'/%3E%3C/svg%3E"
           className="object-contain object-center p-2"
         />
         {product.images?.length > 1 && (

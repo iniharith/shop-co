@@ -124,7 +124,7 @@ class OrderUsecase {
             return order;
         });
     }
-    createOrder(address, userId, customerName, orderNotes) {
+    createOrder(address, userId, customerName, orderNotes, shippingPrice, courier) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a, _b;
             const cart = yield this.cartRepository.getCartByUserId(userId);
@@ -179,6 +179,7 @@ class OrderUsecase {
                         throw new Error(`Insufficient stock for product: ${update.productName}`);
                     decrementedStock.push(update);
                 }
+                const safeShippingPrice = Number.isFinite(shippingPrice) && shippingPrice >= 0 ? shippingPrice : 0;
                 order = yield this.orderRepository.createOrder({
                     userId,
                     customerName,
@@ -186,7 +187,9 @@ class OrderUsecase {
                     address,
                     paymentMethod: "COD",
                     products: orderItems,
-                    totalAmount
+                    totalAmount: totalAmount + safeShippingPrice,
+                    shippingPrice: safeShippingPrice || undefined,
+                    courier: courier || undefined,
                 });
             }
             catch (error) {

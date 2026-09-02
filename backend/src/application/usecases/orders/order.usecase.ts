@@ -102,7 +102,7 @@ export class OrderUsecase {
         return order;
     }
 
-    async createOrder(address: IAddress, userId: string, customerName: string, orderNotes: string): Promise<IOrderDocument> {
+    async createOrder(address: IAddress, userId: string, customerName: string, orderNotes: string, shippingPrice?: number, courier?: string): Promise<IOrderDocument> {
 
         const cart = await this.cartRepository.getCartByUserId(userId);
         if (!cart || !cart.items || !cart?.items?.length) {
@@ -154,6 +154,7 @@ let totalAmount = 0;
                 if (!updatedProduct) throw new Error(`Insufficient stock for product: ${update.productName}`);
                 decrementedStock.push(update);
             }
+            const safeShippingPrice = Number.isFinite(shippingPrice) && (shippingPrice as number) >= 0 ? shippingPrice as number : 0;
             order = await this.orderRepository.createOrder({
                 userId,
                 customerName,
@@ -161,7 +162,9 @@ let totalAmount = 0;
                 address,
                 paymentMethod: "COD",
                 products: orderItems,
-                totalAmount
+                totalAmount: totalAmount + safeShippingPrice,
+                shippingPrice: safeShippingPrice || undefined,
+                courier: courier || undefined,
             });
         } catch (error) {
             for (const update of decrementedStock.reverse()) {

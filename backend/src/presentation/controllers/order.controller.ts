@@ -75,8 +75,8 @@ export class OrderController {
      */ 
     async createOrder(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            const { address, customerName, orderNotes } = req.body;
-            const order = await this.orderUsecase.createOrder(address, req.userId as string, customerName, orderNotes);
+            const { address, customerName, orderNotes, shippingPrice, courier } = req.body;
+            const order = await this.orderUsecase.createOrder(address, req.userId as string, customerName, orderNotes, shippingPrice, courier);
             res.status(statusCodes.OK).json({ message: "Order created successfully", order });
         } catch (error: any) {
             next(error);
