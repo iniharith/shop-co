@@ -15,7 +15,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useFilterProducts } from "@/hooks/useProducts";
 import ProductCardSkeleton from "@/components/loading/ProductCardSkeleton";
@@ -28,7 +28,7 @@ const ITEMS_PER_PAGE = 8;
 
 const ShopContent = () => {
   const { t } = useLanguage();
-  const { serviceCategories, turnarounds, formats, materials, priceRange, resetFilters } = useFilterStore();
+  const { serviceCategories, turnarounds, formats, materials, priceRange, resetFilters, setServiceCategories } = useFilterStore();
   const { data, isPending, aiSummary, aiEnabled } = useFilterProducts();
   const products = data?.products || [];
   const [sortBy, setSortBy] = useState("featured");
@@ -41,6 +41,22 @@ const ShopContent = () => {
   });
   
   const searchParams = useSearchParams();
+  useEffect(() => {
+    const category = searchParams.get("category");
+    const categoryLabel: Record<string, string> = {
+      "DIGITAL PRINTING": "Digital Printing",
+      "DISPLAY ITEM": "Display Item",
+      "DIGITAL OFFSET": "Digital Offset",
+      "PREMIUM GIFT": "Premium Gift",
+      "APPAREL/SUBLIMATION": "Apparel",
+      "FRAME": "Frame",
+      "WEDDING PRODUCT": "Wedding Product",
+      "FOOD PACKAGING": "Food Packaging",
+      "ISLAMIC KHAT": "Islamic Khat",
+    };
+    const selected = categoryLabel[category?.toUpperCase() || ""] || category;
+    if (selected && !serviceCategories.includes(selected)) setServiceCategories([selected]);
+  }, [searchParams, serviceCategories, setServiceCategories]);
   const pageParam = searchParams.get("page");
   const totalPages = Math.max(1, Math.ceil(sortedProducts.length / ITEMS_PER_PAGE));
   const requestedPage = pageParam ? parseInt(pageParam) : 1;

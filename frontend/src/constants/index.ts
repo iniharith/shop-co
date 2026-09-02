@@ -7,7 +7,7 @@ export const navItems: { label: string; href: string }[] = [];
 export const printingCategories = [
   {
     label: "DIGITAL PRINTING",
-    href: "/home/shop",
+    href: "/home/shop?category=DIGITAL%20PRINTING",
     subItems: [
       { label: "BANNER", href: "/home/shop/prod-100" },
       { label: "BUNTING", href: "/home/shop/prod-101" },
@@ -19,7 +19,7 @@ export const printingCategories = [
   },
   {
     label: "DISPLAY ITEM",
-    href: "/home/shop",
+    href: "/home/shop?category=DISPLAY%20ITEM",
     subItems: [
       { label: "PERSONALISED FLAG", href: "/home/shop/prod-106" },
       { label: "POP UP", href: "/home/shop/prod-107" },
@@ -33,7 +33,7 @@ export const printingCategories = [
   },
   {
     label: "DIGITAL OFFSET",
-    href: "/home/shop",
+    href: "/home/shop?category=DIGITAL%20OFFSET",
     subItems: [
       { label: "FLYERS", href: "/home/shop/prod-110" },
       { label: "BOOKLET", href: "/home/shop/prod-111" },
@@ -47,7 +47,7 @@ export const printingCategories = [
   },
   {
     label: "PREMIUM GIFT",
-    href: "/home/shop",
+    href: "/home/shop?category=PREMIUM%20GIFT",
     subItems: [
       { label: "CRYSTAL PLAQUE TROPHY", href: "/home/shop/prod-118" },
       { label: "ACRYLIC TROPHY", href: "/home/shop/prod-119" },
@@ -64,7 +64,7 @@ export const printingCategories = [
   },
   {
     label: "APPAREL",
-    href: "/home/shop",
+    href: "/home/shop?category=APPAREL%2FSUBLIMATION",
     subItems: [
       { label: "NON WOVEN BAG", href: "/home/shop/prod-129" },
       { label: "CANVAS BAG", href: "/home/shop/prod-130" },
@@ -74,7 +74,7 @@ export const printingCategories = [
   },
   {
     label: "FRAME",
-    href: "/home/shop",
+    href: "/home/shop?category=FRAME",
     subItems: [
       { label: "ISLAMIC KHAT", href: "/home/islamic-khat" },
       { label: "PORTRAIT", href: "/home/shop/prod-134" },
@@ -83,7 +83,7 @@ export const printingCategories = [
   },
   {
     label: "WEDDING PRODUCT",
-    href: "/home/shop",
+    href: "/home/shop?category=WEDDING%20PRODUCT",
     subItems: [
       { label: "BUNTING", href: "/home/shop/prod-136" },
       { label: "BANNER", href: "/home/shop/prod-137" },
@@ -98,7 +98,7 @@ export const printingCategories = [
   },
   {
     label: "FOOD PACKAGING",
-    href: "/home/shop",
+    href: "/home/shop?category=FOOD%20PACKAGING",
     subItems: [
       { label: "MENU BOOK", href: "/home/shop/prod-144" },
       { label: "TABLE TENT", href: "/home/shop/prod-145" },

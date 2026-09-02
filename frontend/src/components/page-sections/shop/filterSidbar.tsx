@@ -49,7 +49,7 @@ export default function FilterSidebar() {
 
   const categoryList = [
     "Digital Printing", "Display Item", "Digital Offset",
-    "Premium Gift", "Apparel", "Wedding Product", "Food Packaging", "Islamic Khat"
+    "Premium Gift", "Apparel", "Frame", "Wedding Product", "Food Packaging", "Islamic Khat"
   ];
   const turnaroundList = ["Standard (3-4 Days)", "Express (1-2 Days)"];
   const formatList = ["A4", "A5", "A3", "Custom Size", "Large Format"];
@@ -62,6 +62,7 @@ export default function FilterSidebar() {
     Apparel: "Pakaian",
     "Wedding Product": "Produk Perkahwinan",
     "Food Packaging": "Pembungkusan Makanan",
+    Frame: "Bingkai",
     "Islamic Khat": "Khat Islamik",
     "Standard (3-4 Days)": "Standard (3-4 Hari)",
     "Express (1-2 Days)": "Ekspres (1-2 Hari)",

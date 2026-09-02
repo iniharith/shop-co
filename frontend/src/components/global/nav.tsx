@@ -224,6 +224,8 @@ const MobileNavSheetContent = ({
                   <div key={index} className="rounded-xl overflow-hidden">
                     {/* Category Header Row */}
                     <button
+                      type="button"
+                      aria-expanded={hasSubItems ? isOpen : undefined}
                       className={cn(
                         "w-full flex items-center justify-between px-3 py-2.5 text-sm font-semibold transition-colors rounded-xl",
                         isOpen
@@ -242,14 +244,15 @@ const MobileNavSheetContent = ({
                       <span>{categoryLabels[locale][item.label] || item.label}</span>
                       {hasSubItems && (
                         isOpen
-                          ? <FaChevronUp className="text-xs" />
-                          : <FaChevronDown className="text-xs opacity-50" />
+                           ? <FaChevronUp aria-hidden="true" className="text-xs" />
+                           : <FaChevronDown aria-hidden="true" className="text-xs opacity-50" />
                       )}
                     </button>
 
                     {/* Sub-items — only visible when accordion is open */}
                     {hasSubItems && isOpen && (
                       <div className="bg-white dark:bg-popover rounded-b-xl px-2 pb-2 flex flex-col gap-0.5 animate-in slide-in-from-top-1 duration-150">
+                        <Link href={item.href} onClick={() => closeDrawer()} className="px-3 py-2 text-xs font-semibold text-primary hover:bg-gray-50 dark:hover:bg-muted rounded-lg">View all</Link>
                         {item.subItems!.map((sub, idx) => (
                           <Link
                             key={idx}
@@ -601,7 +604,8 @@ const Nav = () => {
           <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
             {printingCategories.map((item, index) => (
               <div key={index} className="relative group">
-                <div
+                <Link
+                  href={item.href}
                   className={cn("font-bold uppercase tracking-wide inline-block py-2 cursor-default transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-primary")}
                 >
                   <p className="relative text-sm inline-block overflow-hidden transition-colors">
@@ -612,10 +616,10 @@ const Nav = () => {
                       {categoryLabels[locale][item.label] || item.label}
                     </span>
                   </p>
-                </div>
+                </Link>
 
                 {/* Dropdown */}
-                <div className="absolute left-0 top-full hidden group-hover:flex flex-col bg-white dark:bg-popover border border-gray-200 dark:border-border shadow-2xl rounded-xl min-w-[220px] max-h-[75vh] overflow-y-auto py-2 z-[110] animate-in fade-in slide-in-from-top-1 duration-150">
+                 <div className="absolute left-0 top-full hidden group-hover:flex group-focus-within:flex flex-col bg-white dark:bg-popover border border-gray-200 dark:border-border shadow-2xl rounded-xl min-w-[220px] max-h-[75vh] overflow-y-auto py-2 z-[110] animate-in fade-in slide-in-from-top-1 duration-150">
                   {item.subItems?.map((sub, idx) => (
                     <Link
                       key={idx}
