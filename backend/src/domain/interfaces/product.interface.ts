@@ -20,6 +20,41 @@ export interface IProduct {
     discount?: number;
     printingOptions?: IProductPrintingOption[];
     matrixPricing?: IProductMatrixPricing;
+    specifications?: IProductSpecifications;
+    packageContents?: string[];
+    installationInstructions?: string;
+    productionTurnaround?: IProductionTurnaround;
+    warrantyInfo?: string;
+    customerPhotos?: string[];
+    reviews?: IProductReview[];
+}
+
+export interface IProductSpecifications {
+    material?: string;
+    frame?: string;
+    dimensions?: string;
+    weight?: string;
+    finish?: string;
+    color?: string;
+    customFields?: Record<string, string>;
+}
+
+export interface IProductionTurnaround {
+    standardDays?: number;
+    expressDays?: number;
+    notes?: string;
+}
+
+export interface IProductReview {
+    userId: string;
+    userName?: string;
+    rating: number;
+    title?: string;
+    comment?: string;
+    images?: string[];
+    verifiedPurchase?: boolean;
+    createdAt: Date;
+    helpfulCount?: number;
 }
 
 export interface IProductPrintingOption {

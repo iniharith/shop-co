@@ -99,6 +99,46 @@ const ProductSchema: Schema = new Schema(
             type: Number,
             default: 0,
         },
+        specifications: {
+            material: { type: String, trim: true },
+            frame: { type: String, trim: true },
+            dimensions: { type: String, trim: true },
+            weight: { type: String, trim: true },
+            finish: { type: String, trim: true },
+            color: { type: String, trim: true },
+            customFields: { type: Schema.Types.Mixed, default: {} },
+        },
+        packageContents: [{
+            type: String,
+            trim: true,
+        }],
+        installationInstructions: {
+            type: String,
+            trim: true,
+        },
+        productionTurnaround: {
+            standardDays: { type: Number, min: 0 },
+            expressDays: { type: Number, min: 0 },
+            notes: { type: String, trim: true },
+        },
+        warrantyInfo: {
+            type: String,
+            trim: true,
+        },
+        customerPhotos: [{
+            type: String,
+        }],
+        reviews: [{
+            userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+            userName: { type: String, trim: true },
+            rating: { type: Number, required: true, min: 1, max: 5 },
+            title: { type: String, trim: true },
+            comment: { type: String, trim: true },
+            images: [{ type: String }],
+            verifiedPurchase: { type: Boolean, default: false },
+            createdAt: { type: Date, default: Date.now },
+            helpfulCount: { type: Number, default: 0 },
+        }],
 
     },
     {
