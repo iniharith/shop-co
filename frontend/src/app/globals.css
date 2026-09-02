@@ -90,23 +90,23 @@
 }
 
 .dark {
-  --background: oklch(0.16 0.025 230);
+  --background: oklch(0.11 0.02 230);
   --foreground: oklch(0.96 0.012 85);
-  --card: oklch(0.21 0.03 230);
+  --card: oklch(0.16 0.025 230);
   --card-foreground: oklch(0.96 0.012 85);
-  --popover: oklch(0.19 0.03 230);
+  --popover: oklch(0.14 0.025 230);
   --popover-foreground: oklch(0.96 0.012 85);
   --primary: oklch(0.78 0.16 78);
   --primary-foreground: oklch(0.18 0.03 230);
-  --secondary: oklch(0.28 0.04 230);
+  --secondary: oklch(0.22 0.035 230);
   --secondary-foreground: oklch(0.96 0.012 85);
-  --muted: oklch(0.255 0.035 230);
+  --muted: oklch(0.19 0.03 230);
   --muted-foreground: oklch(0.78 0.025 85);
   --accent: oklch(0.72 0.12 178);
   --accent-foreground: oklch(0.15 0.025 230);
   --destructive: oklch(0.68 0.18 25);
-  --border: oklch(0.38 0.045 230);
-  --input: oklch(0.42 0.05 230);
+  --border: oklch(0.3 0.04 230);
+  --input: oklch(0.34 0.045 230);
   --ring: oklch(0.78 0.16 78);
 }
 
@@ -295,4 +295,21 @@
     @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-neutral-950;
   }
 }
+
+/* Profile screens contain older utility colors; keep them tied to the active theme. */
+.profile-area .bg-white { background-color: var(--card) !important; }
+.profile-area .bg-gray-50,
+.profile-area .bg-gray-100 { background-color: var(--muted) !important; }
+.profile-area .text-black,
+.profile-area .text-gray-900,
+.profile-area .text-gray-800 { color: var(--foreground) !important; }
+.profile-area .text-gray-600,
+.profile-area .text-gray-500,
+.profile-area .text-gray-400 { color: var(--muted-foreground) !important; }
+.profile-area .border-gray-100,
+.profile-area .border-gray-200,
+.profile-area .border-gray-300 { border-color: var(--border) !important; }
+.profile-area input,
+.profile-area textarea,
+.profile-area select { background-color: var(--card); color: var(--foreground); border-color: var(--input); }
 

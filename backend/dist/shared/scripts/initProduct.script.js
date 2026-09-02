@@ -14,9 +14,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Kampungcetak ®
  */
 const product_repository_1 = require("../../infrastructure/db/repositories/product.repository");
-const data = [
-    { name: 'Yellow Jacket', description: 'Bold yellow jacket', price: 65, category: 'jacket', sizes: [{ size: 'L', stock: 4 }], images: ['/yellow-jacket.webp'], rating: 4 },
-];
+const data = [];
 const initProduct = () => __awaiter(void 0, void 0, void 0, function* () {
     const productRepository = new product_repository_1.ProductRepository();
     if (yield productRepository.hasAny()) {

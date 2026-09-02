@@ -8,6 +8,7 @@ const names = [
   'Brown Shirt',
   'Green Shirt',
   'Jacket',
+  'Yellow Jacket',
   'Liquid - TShirt',
   'Black Skull Pant',
   'Gray Skull Pant',

@@ -3,9 +3,9 @@
  * Kampungcetak ®
  */
 import { ProductRepository } from "../../infrastructure/db/repositories/product.repository";
+import { IProduct } from "../../domain/interfaces/product.interface";
 
-const data = [
-    { name: 'Yellow Jacket', description: 'Bold yellow jacket', price: 65, category: 'jacket', sizes: [{ size: 'L', stock: 4 }], images: ['/yellow-jacket.webp'], rating: 4 },
+const data: Partial<IProduct>[] = [
 ];
 
 
