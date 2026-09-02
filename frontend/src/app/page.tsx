@@ -41,7 +41,7 @@ export default function Home() {
     <>
       <Hero />
       {/* Features Bar */}
-      <div className="w-full bg-black text-white py-6">
+      <div className="w-full bg-[#101820] text-white py-7 dark:bg-[#0b1116]">
         <div className="md:w-[80%] w-[90%] mx-auto grid md:grid-cols-4 grid-cols-2 gap-4">
           {features.map((f, i) => (
             <div key={i} className="flex items-center gap-3">

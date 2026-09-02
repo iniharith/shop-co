@@ -8,6 +8,9 @@ import { FilterQuery } from "mongoose";
 import { CartRepository } from "../../../infrastructure/db/repositories/cart.repository";
 import { RedisService } from "../../../infrastructure/redis/redis";
 import { REDIS_KEYS } from "../../../shared/constants/redis.constant";
+
+const CATALOG_CACHE_KEY = `${REDIS_KEYS.PRODUCTS}:catalog-v2`;
+
 export class ProductUsecase {
     private readonly productRepository: ProductRepository;
     private readonly cartRepository: CartRepository;
@@ -20,13 +23,13 @@ export class ProductUsecase {
     }
 
     async getAllProducts() {
-        const cachedProducts = await this.redisService.get(REDIS_KEYS.PRODUCTS);
+        const cachedProducts = await this.redisService.get(CATALOG_CACHE_KEY);
         if (cachedProducts) {
             console.log("Products fetched from cache");
             return JSON.parse(cachedProducts).filter((product: IProductDocument) => !(product as any).isDelete);
         }
         const products = (await this.productRepository.findAll()).filter((product: IProductDocument) => !(product as any).isDelete);
-        await this.redisService.set(REDIS_KEYS.PRODUCTS, JSON.stringify(products), 60 * 60 * 24);
+        await this.redisService.set(CATALOG_CACHE_KEY, JSON.stringify(products), 60 * 60 * 24);
         return products;
     }
 

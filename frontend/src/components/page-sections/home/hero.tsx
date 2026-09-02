@@ -117,7 +117,7 @@ const Hero = () => {
         >
           <button
             onClick={() => router.push("/home/shop")}
-            className="inline-flex items-center justify-center px-7 sm:px-8 py-3.5 sm:py-4 bg-white text-black font-semibold text-xs sm:text-sm tracking-normal rounded-full hover:bg-neutral-200 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg cursor-pointer"
+            className="inline-flex items-center justify-center px-7 sm:px-8 py-3.5 sm:py-4 bg-[#f4b400] text-[#171717] font-semibold text-xs sm:text-sm tracking-normal rounded-full hover:bg-[#ffc52e] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg cursor-pointer"
           >
             {label("Discover Products", "Beli Sekarang")}
           </button>

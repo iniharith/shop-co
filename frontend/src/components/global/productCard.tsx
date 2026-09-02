@@ -24,7 +24,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
     <Link
       href={`/home/shop/${product._id}`}
       aria-label={`View ${product.name}, starting at RM ${product.price}`}
-      className="bg-card text-card-foreground border border-border shrink-0 hover:bg-muted/60 transition-colors cursor-pointer rounded-lg overflow-hidden h-full flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+      className="bg-card text-card-foreground border border-border shrink-0 hover:bg-muted/60 transition-colors cursor-pointer rounded-xl overflow-hidden h-full flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
     >
       <div className="relative w-full aspect-square overflow-hidden bg-muted/10 p-2">
         {product.images?.length > 1 && (

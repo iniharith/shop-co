@@ -23,7 +23,7 @@ const Categorys = () => {
   const router = useRouter();
 
   return (
-    <div className="w-full py-16 grid place-items-center bg-gray-50 dark:bg-background border-y border-gray-200 dark:border-border">
+    <div className="w-full py-16 grid place-items-center bg-[#f5f1e8] dark:bg-[#17232b] border-y border-[#d8d0c2] dark:border-border">
       <div className="md:w-[80%] w-[90%]">
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold dark:text-foreground">Explore Our Products</h1>

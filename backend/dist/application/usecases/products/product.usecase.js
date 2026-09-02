@@ -18,6 +18,7 @@ const product_repository_1 = require("../../../infrastructure/db/repositories/pr
 const cart_repository_1 = require("../../../infrastructure/db/repositories/cart.repository");
 const redis_1 = require("../../../infrastructure/redis/redis");
 const redis_constant_1 = require("../../../shared/constants/redis.constant");
+const CATALOG_CACHE_KEY = `${redis_constant_1.REDIS_KEYS.PRODUCTS}:catalog-v2`;
 class ProductUsecase {
     constructor() {
         this.productRepository = new product_repository_1.ProductRepository();
@@ -26,13 +27,13 @@ class ProductUsecase {
     }
     getAllProducts() {
         return __awaiter(this, void 0, void 0, function* () {
-            const cachedProducts = yield this.redisService.get(redis_constant_1.REDIS_KEYS.PRODUCTS);
+            const cachedProducts = yield this.redisService.get(CATALOG_CACHE_KEY);
             if (cachedProducts) {
                 console.log("Products fetched from cache");
                 return JSON.parse(cachedProducts).filter((product) => !product.isDelete);
             }
             const products = (yield this.productRepository.findAll()).filter((product) => !product.isDelete);
-            yield this.redisService.set(redis_constant_1.REDIS_KEYS.PRODUCTS, JSON.stringify(products), 60 * 60 * 24);
+            yield this.redisService.set(CATALOG_CACHE_KEY, JSON.stringify(products), 60 * 60 * 24);
             return products;
         });
     }
