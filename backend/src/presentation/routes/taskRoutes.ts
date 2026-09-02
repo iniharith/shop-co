@@ -23,6 +23,8 @@ import { decodeCursor } from '../../shared/utils/cursorPagination';
 import { indexTask, indexFile } from '../../application/ai/aiIndexService';
 import { pgVectorStore } from '../../infrastructure/vector/pgVectorStore';
 import { aiConfigured } from '../../infrastructure/ai/aiProvider';
+import { Task } from '../../domain/entities/Task';
+import { randomBytes } from 'crypto';
 
 const reindexTaskInBg = (task: any) => {
   if (!task || !aiConfigured()) return;
@@ -65,6 +67,67 @@ const taskStorage = multerS3({
 const taskUpload = multer({ storage: taskStorage });
 
 const router = Router();
+
+const STAFF_ROLES = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'];
+
+// A QR never exposes the task id. The token is resolved only after the user
+// is authenticated, and clients receive a deliberately small task payload.
+router.get(
+  '/qr/:token',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const task = await Task.findOne({ qrToken: req.params.token, isDeleted: { $ne: true } }).lean();
+    if (!task) {
+      res.status(404).json({ success: false, message: 'Task QR code not found' });
+      return;
+    }
+
+    const authReq = req as any;
+    const isStaff = STAFF_ROLES.includes(authReq.role);
+    const user = authReq.user || {};
+    const customerValues = [user.name, user.email].filter(Boolean).map((value) => String(value).toLowerCase());
+    const taskCustomer = String(task.customerUsername || '').toLowerCase();
+    if (!isStaff && (!taskCustomer || !customerValues.includes(taskCustomer))) {
+      res.status(403).json({ success: false, message: 'You do not have access to this task' });
+      return;
+    }
+
+    res.json({
+      success: true,
+      task: {
+        _id: task._id,
+        title: task.title,
+        orderId: task.orderId || null,
+        productName: task.productName || null,
+        lineItems: (task.lineItems || []).map((item: any) => ({ productName: item.productName, qty: item.qty })),
+        status: task.status,
+        statusUpdatedAt: task.statusUpdatedAt || null,
+        dueDate: task.dueDate || null,
+        createdAt: task.createdAt,
+      },
+    });
+  })
+);
+
+router.get(
+  '/:id/qr',
+  authMiddilware,
+  asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as any;
+    if (!STAFF_ROLES.includes(authReq.role)) {
+      res.status(403).json({ success: false, message: 'Only staff can create task QR codes' });
+      return;
+    }
+    const task = await Task.findById(req.params.id);
+    if (!task || task.isDeleted) {
+      res.status(404).json({ success: false, message: 'Task not found' });
+      return;
+    }
+    if (!task.qrToken) task.qrToken = randomBytes(24).toString('hex');
+    await task.save();
+    res.json({ success: true, token: task.qrToken });
+  })
+);
 
 
 router.get(

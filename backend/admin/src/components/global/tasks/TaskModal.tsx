@@ -34,6 +34,7 @@ import { AssigneeTag, AssigneeDot } from "@/lib/userColor";
 import { buildFileShareUrl, isPdfFile, preparePdfSharePreview } from "@/lib/fileSharePreview";
 import { getSocket } from "@/utils/socket";
 import { useTaskTypingStore } from "@/store/taskTypingStore";
+import { TaskQrButton } from "@/components/global/TaskQrButton";
 
 const TASK_MODAL_VIEW_KEY = "taskModalView:v1";
 
@@ -1314,7 +1315,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   <RotateCcw className="w-3.5 h-3.5" /> Reset
                 </button>
               </div>
-              <DialogHeader>
+              <div className="flex items-start gap-3">
+              <DialogHeader className="min-w-0 flex-1">
                 <DialogTitle className="sr-only">Task Details</DialogTitle>
                 <DialogDescription className="sr-only">Dialog Content</DialogDescription>
                   <Input 
@@ -1333,6 +1335,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   />
                 
               </DialogHeader>
+              <TaskQrButton taskId={String(fullTask._id)} taskTitle={fullTask.title} compact />
+              </div>
             </div>
             
             <div className="flex-none md:flex-1 p-4 md:p-6 space-y-6 md:overflow-y-auto">

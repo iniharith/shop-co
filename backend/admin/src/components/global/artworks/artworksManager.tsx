@@ -33,6 +33,7 @@ import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
 import { buildFileShareUrl, isPdfFile, preparePdfSharePreview } from "@/lib/fileSharePreview";
 import { Virtuoso } from "react-virtuoso";
 import SavedViewsControl from "@/components/global/SavedViewsControl";
+import { TaskQrButton } from "@/components/global/TaskQrButton";
 
 const categories = [
   "ALL",
@@ -946,13 +947,14 @@ export default function ArtworksManager() {
                       />
                     )}
                     {getFolderPreview(group, "w-10 h-10 rounded-lg")}
-                    <div className="flex-1 min-w-0">
+                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate" title={group.folderName}>{group.folderName}</p>
                       {group.orderId && <p className="text-[11px] font-bold text-foreground/70 truncate">Order: {group.orderId}</p>}
                       <p className="text-xs text-muted-foreground">{group.fileCount} file(s)</p>
-                    </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                      <Button
+                     </div>
+                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                       {group.taskId && <TaskQrButton taskId={String(group.taskId)} taskTitle={group.folderName} compact />}
+                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 hover:bg-blue-50 hover:text-blue-600"

@@ -3,6 +3,7 @@
  * Kampungcetak ®
  */
 import mongoose, { Document, Schema } from 'mongoose';
+import { randomBytes } from 'crypto';
 
 export interface ITaskComment {
   userId: string;
@@ -63,6 +64,7 @@ export interface ITask extends Document {
   statusUpdatedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  qrToken?: string;
 }
 
 const TaskCommentSchema = new Schema<ITaskComment>({
@@ -113,6 +115,7 @@ const TaskSchema = new Schema<ITask>(
     status: { type: String, enum: ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'PRINT_AWB', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED', 'RETURN'], default: 'PLACED' },
     isDone: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
+    qrToken: { type: String, unique: true, sparse: true, index: true, default: () => randomBytes(24).toString('hex') },
     statusUpdatedAt: { type: Date, default: Date.now },
     files: [{
       url: { type: String, required: true },

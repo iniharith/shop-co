@@ -30,6 +30,7 @@ import LoadingAnimation from "@/components/global/LoadingAnimation";
 import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
 import { Virtuoso } from "react-virtuoso";
 import SavedViewsControl from "@/components/global/SavedViewsControl";
+import { TaskQrButton } from "@/components/global/TaskQrButton";
 
 const categories = [
   "ALL",
@@ -732,8 +733,9 @@ export default function PackagingManager() {
                        <h3 className="font-semibold text-sm line-clamp-2 leading-tight" title={group.folderName}>{group.folderName}</h3>
                        {group.orderId && <p className="text-xs text-muted-foreground truncate font-medium mt-0.5">Order: {group.orderId}</p>}
                     </div>
-                    <div className="shrink-0 flex items-center gap-2">
-                      <span className="text-[10px] font-medium bg-background border px-1.5 py-0.5 rounded-full">{group.fileCount} file(s)</span>
+                     <div className="shrink-0 flex items-center gap-2">
+                       {group.taskId && <TaskQrButton taskId={String(group.taskId)} taskTitle={group.folderName} compact />}
+                       <span className="text-[10px] font-medium bg-background border px-1.5 py-0.5 rounded-full">{group.fileCount} file(s)</span>
                        <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-primary translate-x-1' : 'text-muted-foreground'}`} />
                        </div>
                      </div>
