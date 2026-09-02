@@ -734,7 +734,7 @@ export default function PackagingManager() {
                        {group.orderId && <p className="text-xs text-muted-foreground truncate font-medium mt-0.5">Order: {group.orderId}</p>}
                     </div>
                      <div className="shrink-0 flex items-center gap-2">
-                       {group.taskId && <TaskQrButton taskId={String(group.taskId)} taskTitle={group.folderName} />}
+                       {group.taskId && <TaskQrButton taskId={String(group.taskId)} taskTitle={group.folderName} compact />}
                        <span className="text-[10px] font-medium bg-background border px-1.5 py-0.5 rounded-full">{group.fileCount} file(s)</span>
                        <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-primary translate-x-1' : 'text-muted-foreground'}`} />
                        </div>
@@ -847,7 +847,7 @@ export default function PackagingManager() {
                       >
                         <Share2 className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">{isGeneratingLink ? "Generating..." : "Share"}</span>
                       </Button>
-                      {activeGroup.taskId && <TaskQrButton taskId={String(activeGroup.taskId)} taskTitle={activeGroup.folderName} />}
+                      {activeGroup.taskId && <TaskQrButton taskId={String(activeGroup.taskId)} taskTitle={activeGroup.folderName} compact />}
                       <Button variant="secondary" onClick={(e) => handleDownloadAll({ ...activeGroup, files: visibleFiles }, e)} className="shadow-sm h-11 sm:h-10">
                         <Download className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Download</span>
                       </Button>

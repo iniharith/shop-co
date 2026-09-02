@@ -752,7 +752,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                        {group.orderId && <p className="text-xs text-muted-foreground truncate font-medium mt-0.5">Order: {group.orderId}</p>}
                     </div>
                      <div className="shrink-0 flex items-center gap-2">
-                       {group.taskId && <TaskQrButton taskId={String(group.taskId)} taskTitle={group.folderName} />}
+                       {group.taskId && <TaskQrButton taskId={String(group.taskId)} taskTitle={group.folderName} compact />}
                        {activeSubTab === "PRINT_AWB" && group.orderAWB?.printUrl && (
                         <button
                           onClick={(e) => {
@@ -878,7 +878,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                        >
                         <Share2 className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">{isGeneratingLink ? "Generating..." : "Share"}</span>
                       </Button>
-                      {activeGroup.taskId && <TaskQrButton taskId={String(activeGroup.taskId)} taskTitle={activeGroup.folderName} />}
+                      {activeGroup.taskId && <TaskQrButton taskId={String(activeGroup.taskId)} taskTitle={activeGroup.folderName} compact />}
                       <Button variant="secondary" onClick={(e) => handleDownloadAll({ ...activeGroup, files: visibleFiles }, e)} className="shadow-sm h-11 sm:h-10">
                         <Download className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Download</span>
                       </Button>

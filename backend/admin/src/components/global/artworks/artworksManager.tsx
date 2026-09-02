@@ -953,7 +953,7 @@ export default function ArtworksManager() {
                       <p className="text-xs text-muted-foreground">{group.fileCount} file(s)</p>
                      </div>
                      <div className="flex items-center gap-1 shrink-0">
-                       {group.taskId && <TaskQrButton taskId={String(group.taskId)} taskTitle={group.folderName} />}
+                       {group.taskId && <TaskQrButton taskId={String(group.taskId)} taskTitle={group.folderName} compact />}
                        <Button
                         variant="ghost"
                         size="icon"
@@ -1109,7 +1109,7 @@ export default function ArtworksManager() {
                           >
                          <Share2 className="w-4 h-4 mr-2" /> {isGeneratingLink ? "Generating..." : "Share Link"}
                         </Button>
-                        {activeGroup.taskId && <TaskQrButton taskId={String(activeGroup.taskId)} taskTitle={activeGroup.folderName} />}
+                        {activeGroup.taskId && <TaskQrButton taskId={String(activeGroup.taskId)} taskTitle={activeGroup.folderName} compact />}
                         {activeGroup.taskId && (
                           <Button 
                             variant="outline" 
