@@ -69,6 +69,7 @@ const page = () => {
               </div>
               <ProductGallery
                 images={product.images}
+                productName={product.name}
                 selectedIndex={selectedImageIndex}
                 onSelectedIndexChange={setSelectedImageIndex}
               />

@@ -79,7 +79,7 @@ export default function FilterSidebar() {
     <div className="w-full md:max-w-[300px] p-4 md:border-input border-transparent border md:mt-5 rounded-lg bg-white dark:bg-card shadow-sm">
       <div className="flex items-center border-b border-border pb-3 justify-between mb-4">
         <h2 className="text-lg font-bold text-foreground">{t("filters.title")}</h2>
-        <button onClick={resetFilters} className="text-xs font-semibold text-primary hover:underline">
+        <button type="button" onClick={resetFilters} className="rounded text-xs font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
           {t("filters.clear")}
         </button>
       </div>
@@ -142,6 +142,7 @@ export default function FilterSidebar() {
                 min={0}
                 step={10}
                 onValueChange={handlePriceChange}
+                thumbLabels={locale === "ms" ? ["Harga minimum", "Harga maksimum"] : ["Minimum price", "Maximum price"]}
                 className="my-4 [&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary"
               />
               <div className="flex justify-between items-center mt-4">
@@ -161,10 +162,12 @@ export default function FilterSidebar() {
             <div className="flex flex-wrap gap-2 pt-2 pb-4">
               {formatList.map((format) => (
                 <button
+                  type="button"
                   key={format}
                   onClick={() => toggleArrayItem(format, formats, setFormats)}
+                  aria-pressed={formats.includes(format)}
                   className={cn(
-                    "px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                    "px-3 py-1.5 rounded-full text-xs font-semibold transition-all border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                     formats.includes(format)
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-transparent text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-primary hover:text-primary"

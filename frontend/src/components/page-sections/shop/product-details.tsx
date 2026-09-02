@@ -329,35 +329,37 @@ export function ProductDetails({
   const renderOptions = (opts: typeof options) => {
     return opts.map((opt, i) => (
       <div key={i} className="space-y-3">
-        <label className="text-sm font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide">{opt.name}</label>
-        <div className="grid grid-cols-1 gap-2">
-          {opt.options.map((val, idx) => (
-            <label 
-              key={idx}
-              className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 transition-all duration-200 ${
-                opt.isMultiSelect ? (Array.isArray(selectedOptions[opt.name]) && (selectedOptions[opt.name] as number[]).includes(idx)) : selectedOptions[opt.name] === idx
-                  ? "border-primary bg-primary/5 ring-2 ring-primary/15 dark:bg-primary/10"
-                  : "border-gray-200 hover:border-primary/50 dark:border-border dark:hover:border-primary/50"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <input 
-                  type={opt.isMultiSelect ? "checkbox" : "radio"} 
-                  name={opt.name} 
-                  className="w-4 h-4 text-primary focus:ring-primary accent-primary"
-                  checked={opt.isMultiSelect ? Array.isArray(selectedOptions[opt.name]) && (selectedOptions[opt.name] as number[]).includes(idx) : selectedOptions[opt.name] === idx}
-                  onChange={() => handleOptionChange(opt.name, idx, opt.isMultiSelect)}
-                />
-                <span className="text-sm font-medium text-gray-800 dark:text-foreground">{val.label}</span>
-              </div>
-              {val.priceAdd !== 0 && (
-                <span className={`text-sm font-semibold ${val.priceAdd > 0 ? "text-primary" : "text-green-500"}`}>
-                  {val.priceAdd > 0 ? "+" : ""}RM {val.priceAdd.toFixed(2)}
-                </span>
-              )}
-            </label>
-          ))}
-        </div>
+        <fieldset>
+          <legend className="text-sm font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide">{opt.name}</legend>
+          <div className="mt-3 grid grid-cols-1 gap-2">
+            {opt.options.map((val, idx) => (
+              <label
+                key={idx}
+                className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 transition-all duration-200 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
+                  opt.isMultiSelect ? (Array.isArray(selectedOptions[opt.name]) && (selectedOptions[opt.name] as number[]).includes(idx)) : selectedOptions[opt.name] === idx
+                    ? "border-primary bg-primary/5 ring-2 ring-primary/15 dark:bg-primary/10"
+                    : "border-gray-200 hover:border-primary/50 dark:border-border dark:hover:border-primary/50"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <input
+                    type={opt.isMultiSelect ? "checkbox" : "radio"}
+                    name={opt.name}
+                    className="w-4 h-4 text-primary focus:ring-primary accent-primary"
+                    checked={opt.isMultiSelect ? Array.isArray(selectedOptions[opt.name]) && (selectedOptions[opt.name] as number[]).includes(idx) : selectedOptions[opt.name] === idx}
+                    onChange={() => handleOptionChange(opt.name, idx, opt.isMultiSelect)}
+                  />
+                  <span className="text-sm font-medium text-gray-800 dark:text-foreground">{val.label}</span>
+                </div>
+                {val.priceAdd !== 0 && (
+                  <span className={`text-sm font-semibold ${val.priceAdd > 0 ? "text-primary" : "text-green-700 dark:text-green-400"}`}>
+                    {val.priceAdd > 0 ? "+" : ""}RM {val.priceAdd.toFixed(2)}
+                  </span>
+                )}
+              </label>
+            ))}
+          </div>
+        </fieldset>
       </div>
     ));
   };
@@ -386,13 +388,13 @@ export function ProductDetails({
         <div className="mt-5 flex items-end justify-between gap-4 border-t border-border pt-4">
           <div>
             <p className="text-xs font-medium text-muted-foreground">{label("Current total", "Jumlah semasa")}</p>
-            <p className="mt-1 text-2xl font-extrabold tabular-nums text-primary">RM {total.toFixed(2)}</p>
+            <p aria-live="polite" className="mt-1 text-2xl font-extrabold tabular-nums text-primary">RM {total.toFixed(2)}</p>
           </div>
           {hasImageVariations && (
             <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
               selectedVariationIndex === null
                 ? "bg-primary/10 text-primary"
-                : "bg-green-500/10 text-green-600 dark:text-green-400"
+                : "bg-green-500/10 text-green-700 dark:text-green-400"
             }`}>
               {selectedVariationIndex === null
                 ? label("Design required", "Reka bentuk diperlukan")
@@ -425,8 +427,8 @@ export function ProductDetails({
                 </p>
               </div>
             ) : (
-              <>
-                <label className={`flex cursor-pointer flex-col rounded-xl border p-4 transition-all duration-200 ${
+              <div role="radiogroup" aria-label={label("Artwork source", "Sumber karya")} className="contents">
+                <label className={`flex cursor-pointer flex-col rounded-xl border p-4 transition-all duration-200 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
                   designOption === "upload" 
                     ? "border-primary bg-primary/5 ring-2 ring-primary/15 dark:bg-primary/10"
                     : "border-gray-200 dark:border-border hover:border-primary/50"
@@ -444,7 +446,7 @@ export function ProductDetails({
                   <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">{label("Upload your print-ready artwork (PDF, AI, PSD) during checkout or in your dashboard.", "Muat naik karya sedia cetak (PDF, AI, PSD) semasa checkout atau melalui dashboard.")}</p>
                 </label>
 
-                <label className={`flex cursor-pointer flex-col rounded-xl border p-4 transition-all duration-200 ${
+                <label className={`flex cursor-pointer flex-col rounded-xl border p-4 transition-all duration-200 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
                   designOption === "design" 
                     ? "border-primary bg-primary/5 ring-2 ring-primary/15 dark:bg-primary/10"
                     : "border-gray-200 dark:border-border hover:border-primary/50"
@@ -464,7 +466,7 @@ export function ProductDetails({
                   </div>
                   <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">{label("Our professional designers will create a custom design for your brand.", "Pereka profesional kami akan menghasilkan reka bentuk khas untuk jenama anda.")}</p>
                 </label>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -515,14 +517,14 @@ export function ProductDetails({
                 <h2 className="font-sans text-base font-semibold text-gray-800 dark:text-foreground sm:text-lg">
                   {label("Choose Variation", "Pilih Variasi")}
                 </h2>
-                <p className={`text-xs ${selectedVariationIndex === null ? "font-medium text-primary" : "text-muted-foreground"}`}>
+                <p aria-live="polite" className={`text-xs ${selectedVariationIndex === null ? "font-medium text-primary" : "text-muted-foreground"}`}>
                   {selectedVariationIndex === null
                     ? label("Select one design to continue", "Pilih satu reka bentuk untuk teruskan")
                     : `${label("Selected", "Dipilih")}: ${getProductVariation(product, selectedVariationIndex).variantLabel}`}
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div role="group" aria-label={label("Artwork variations", "Variasi karya")} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {product.images.map((image, index) => {
                 const isSelected = selectedVariationIndex === index;
                 const variation = getProductVariation(product, index);
@@ -534,7 +536,8 @@ export function ProductDetails({
                     onFocus={() => onSelectedImageChange?.(index)}
                     onClick={() => onSelectedVariationChange?.(index)}
                     aria-pressed={isSelected}
-                    className={`relative overflow-hidden rounded-xl border bg-card text-left transition-all ${
+                    aria-label={`${label("Select artwork", "Pilih karya")} ${variation.variantLabel}`}
+                    className={`relative overflow-hidden rounded-xl border bg-card text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                       isSelected
                         ? "border-primary ring-2 ring-primary/20"
                         : "border-gray-200 opacity-75 hover:border-primary/50 hover:opacity-100 dark:border-border"
@@ -542,13 +545,13 @@ export function ProductDetails({
                   >
                     {isSelected && (
                       <span className="absolute right-2 top-2 z-10 flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
-                        <Check className="size-3.5" strokeWidth={3} />
+                        <Check aria-hidden="true" className="size-3.5" strokeWidth={3} />
                       </span>
                     )}
                     <span className="flex aspect-[4/3] items-center justify-center bg-muted/20 p-1">
                       <img
                         src={getImageUrl(image)}
-                        alt={`${label("Variation", "Variasi")} ${variation.variantLabel}`}
+                        alt=""
                         loading="lazy"
                         decoding="async"
                         draggable={false}
@@ -594,7 +597,7 @@ export function ProductDetails({
             }
 
             return (
-              <>
+              <div role="group" aria-label={label("Quantity and turnaround options", "Pilihan kuantiti dan tempoh siap")}>
                 <p className="mt-4 text-xs text-muted-foreground sm:hidden">Swipe horizontally to compare prices</p>
                 <div className="mt-2 overflow-x-auto rounded-xl border border-gray-200 dark:border-border sm:mt-4">
                   <table className="w-full min-w-[560px] text-center text-sm">
@@ -617,15 +620,22 @@ export function ProductDetails({
                           const isSelected = quantity === q && selectedOptions[turnaroundOpt.name] === idx;
                           
                           return (
-                            <td 
-                              key={idx} 
-                              onClick={() => {
-                                setQuantity(q);
-                                handleOptionChange(turnaroundOpt.name, idx);
-                              }}
-                              className={`p-3 cursor-pointer transition-all border-l border-gray-200 dark:border-border ${isSelected ? "bg-primary/10 border-2 border-primary font-bold text-primary shadow-inner" : "text-gray-600 dark:text-gray-400 hover:bg-primary/5"}`}
+                            <td
+                              key={idx}
+                              className={`border-l border-gray-200 p-1 transition-all dark:border-border ${isSelected ? "border-2 border-primary bg-primary/10 font-bold text-primary shadow-inner" : "text-gray-600 dark:text-gray-300"}`}
                             >
-                              RM {cellTotal.toFixed(2)}
+                              <button
+                                type="button"
+                                aria-pressed={isSelected}
+                                aria-label={`${q}, ${opt.label}, RM ${cellTotal.toFixed(2)}`}
+                                onClick={() => {
+                                  setQuantity(q);
+                                  handleOptionChange(turnaroundOpt.name, idx);
+                                }}
+                                className="w-full rounded-md p-2 transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                              >
+                                RM {cellTotal.toFixed(2)}
+                              </button>
                             </td>
                           );
                         })}
@@ -634,7 +644,7 @@ export function ProductDetails({
                   </tbody>
                   </table>
                 </div>
-              </>
+              </div>
             );
           })() : null}
 

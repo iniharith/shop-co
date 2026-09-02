@@ -5,14 +5,13 @@
 "use client";
 import type { IProduct } from "@/types/IProduct";
 import Image from "next/image";
-import { useRouter } from "nextjs-toploader/app";
+import Link from "next/link";
 
 interface ProductCardProps {
   product: IProduct;
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
-  const router = useRouter();
   const image =
     product.images?.length && product.images[0].startsWith("/") && !product.images[0].startsWith("/images/") && !product.images[0].startsWith("/placeholder")
       ? process.env.NEXT_PUBLIC_BACKEND_URL + product.images[0]
@@ -20,9 +19,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const hasDiscount = product.discount > 0 && product.originalPrice > product.price;
 
   return (
-    <div
-      onClick={() => router.push(`/home/shop/${product._id}`)}
-      className="bg-card text-card-foreground border border-border shrink-0 hover:bg-muted/60 transition-colors cursor-pointer rounded-lg overflow-hidden h-full flex flex-col"
+    <Link
+      href={`/home/shop/${product._id}`}
+      aria-label={`View ${product.name}, starting at RM ${product.price}`}
+      className="bg-card text-card-foreground border border-border shrink-0 hover:bg-muted/60 transition-colors cursor-pointer rounded-lg overflow-hidden h-full flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
     >
       <div className="relative w-full aspect-square overflow-hidden bg-muted/10 p-2">
         {product.images?.length > 1 && (
@@ -46,7 +46,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
               <span className="text-sm text-muted-foreground line-through">
                 RM {product.originalPrice}
               </span>
-              <span className="text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded">
+              <span className="text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-0.5 rounded">
                 -{product.discount}%
               </span>
             </div>
@@ -54,7 +54,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <div className="font-bold text-xl">RM {product.price}</div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
 

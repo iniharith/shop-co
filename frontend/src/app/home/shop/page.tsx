@@ -68,7 +68,7 @@ const ShopContent = () => {
                 id="product-sort"
                 value={sortBy}
                 onChange={(event) => setSortBy(event.target.value)}
-                className="h-10 rounded-full border border-border bg-card px-4 text-sm font-medium outline-none transition focus:border-primary"
+                className="h-10 rounded-full border border-border bg-card px-4 text-sm font-medium outline-none transition focus:border-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 <option value="featured">Featured</option>
                 <option value="rating">Top rated</option>
@@ -77,8 +77,8 @@ const ShopContent = () => {
                 <option value="name">Name: A to Z</option>
               </select>
               <Drawer>
-                <DrawerTrigger className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-input bg-muted transition-all hover:scale-105 md:hidden">
-                  <CgOptions className="rotate-90" />
+                <DrawerTrigger aria-label={t("filters.title")} className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-input bg-muted transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 md:hidden">
+                  <CgOptions aria-hidden="true" className="rotate-90" />
                 </DrawerTrigger>
                 <DrawerTitle className="hidden">Filters</DrawerTitle>
                 <DrawerContent>

@@ -8,6 +8,17 @@
   src: url("/integrCf.ttf");
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -111,12 +122,27 @@
     scroll-behavior: smooth;
   }
 
-  /* Hide scrollbar everywhere */
+  /* Keep scroll position and overflow discoverable for keyboard and pointer users. */
   *::-webkit-scrollbar {
-    display: none;
+    width: 10px;
+    height: 10px;
   }
   * {
-    scrollbar-width: none;
+    scrollbar-width: thin;
+    scrollbar-color: var(--muted-foreground) transparent;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background: var(--muted-foreground);
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--foreground);
+    background-clip: padding-box;
   }
 
   body:has(.rsvp-page) .site-header,
