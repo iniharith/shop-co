@@ -74,21 +74,10 @@ const STAFF_ROLES = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'pac
 // is authenticated, and clients receive a deliberately small task payload.
 router.get(
   '/qr/:token',
-  authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
     const task = await Task.findOne({ qrToken: req.params.token, isDeleted: { $ne: true } }).lean();
     if (!task) {
       res.status(404).json({ success: false, message: 'Task QR code not found' });
-      return;
-    }
-
-    const authReq = req as any;
-    const isStaff = STAFF_ROLES.includes(authReq.role);
-    const user = authReq.user || {};
-    const customerValues = [user.name, user.email].filter(Boolean).map((value) => String(value).toLowerCase());
-    const taskCustomer = String(task.customerUsername || '').toLowerCase();
-    if (!isStaff && (!taskCustomer || !customerValues.includes(taskCustomer))) {
-      res.status(403).json({ success: false, message: 'You do not have access to this task' });
       return;
     }
 
