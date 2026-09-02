@@ -55,7 +55,7 @@ export default function TaskAccessPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-8 font-[var(--font-dm-sans)] sm:py-12">
       <Card className="overflow-hidden">
-        <div className="border-b bg-primary/5 p-6 sm:p-8"><div className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary"><ClipboardList className="h-4 w-4" /> Task Details</div><h1 className="font-[var(--font-provicali-ampersand)] text-2xl font-bold sm:text-3xl">{task.title}</h1>{task.orderId && <p className="mt-2 text-sm text-muted-foreground">Order: {task.orderId}</p>}</div>
+        <div className="border-b bg-primary/5 p-6 sm:p-8"><div className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary"><ClipboardList className="h-4 w-4" /> Task Details</div><h1 className="font-[var(--font-dm-sans)] text-2xl font-bold sm:text-3xl">{task.title}</h1>{task.orderId && <p className="mt-2 text-sm text-muted-foreground">Order: {task.orderId}</p>}</div>
           <div className="grid gap-4 p-6 sm:grid-cols-2 sm:p-8">
           <div className="rounded-lg border p-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">Order ID</p><p className="mt-1 break-all font-semibold">{task.orderId || "-"}</p></div>
           <div className="rounded-lg border p-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">Username</p><p className="mt-1 break-all font-semibold">{task.username || "-"}</p></div>
