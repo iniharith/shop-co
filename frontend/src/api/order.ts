@@ -7,11 +7,13 @@ import AxiosInstance from "@/utils/axios";
 
 export const createOrder = async (data: any, token: string) => {
     console.log("ajja")
-    const { customerName, orderNotes, ...addressData } = data;
+    const { customerName, orderNotes, shippingPrice, courier, ...addressData } = data;
     const response = await AxiosInstance(token).post(ORDER_URL, {
         address: addressData,
         customerName,
-        orderNotes
+        orderNotes,
+        shippingPrice,
+        courier
     });
     return response.data;
 };
@@ -56,4 +58,3 @@ export const getShippingQuotations = async (token: string, data: {
     const response = await instance.post(`${ORDER_URL}/shipping/quote`, data, timeout ? { timeout } : undefined);
     return response.data;
 };
-
