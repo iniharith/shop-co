@@ -11,6 +11,7 @@
     "migrate:product-sections": "node ./dist/shared/scripts/migrate-product-sections.js",
     "seed:catalog": "node ./dist/shared/scripts/seedCatalog.js",
     "seed:content": "node ./dist/shared/scripts/seedProductContent.js",
+    "remove:legacy-apparel": "node ./dist/shared/scripts/removeLegacyApparel.js",
     "images:thumbnails": "node ./dist/shared/scripts/generateCatalogThumbnails.js",
     "start": "node ./dist/settings/server.js"
   },

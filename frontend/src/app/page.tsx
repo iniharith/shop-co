@@ -4,6 +4,8 @@
  */
 "use client";
 
+import { useEffect, useState } from "react";
+
 import Hero from "@/components/page-sections/home/hero";
 import ProductSctions from "@/components/page-sections/home/productSctions";
 import Categorys from "@/components/page-sections/home/categorys";
@@ -21,6 +23,19 @@ const features = [
 export default function Home() {
   const { data, isPending } = useProducts();
   const products = data?.products || [];
+  const [featuredProducts, setFeaturedProducts] = useState<typeof products>([]);
+  const [bestSellerProducts, setBestSellerProducts] = useState<typeof products>([]);
+
+  useEffect(() => {
+    const productsByType = new Map<string, typeof products[number]>();
+    for (const product of products) {
+      const type = String(product.category || product.sections?.[0] || "uncategorized");
+      if (!productsByType.has(type)) productsByType.set(type, product);
+    }
+    const byType = Array.from(productsByType.values());
+    setFeaturedProducts([...byType].sort(() => Math.random() - 0.5));
+    setBestSellerProducts([...byType].sort(() => Math.random() - 0.5));
+  }, [products]);
 
   return (
     <>
@@ -42,13 +57,13 @@ export default function Home() {
       <ProductSctions
         isLoading={isPending}
         title="Featured Products"
-        products={products.slice(0, 5)}
+        products={featuredProducts}
       />
       <Categorys />
       <ProductSctions
         isLoading={isPending}
         title="Best Sellers"
-        products={products.slice(5, 10)}
+        products={bestSellerProducts}
       />
       <Testimonials title="What Our Customers Say" testimonials={testimonials} />
     </>
