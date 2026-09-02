@@ -23,9 +23,9 @@ export class ProductUsecase {
         const cachedProducts = await this.redisService.get(REDIS_KEYS.PRODUCTS);
         if (cachedProducts) {
             console.log("Products fetched from cache");
-            return JSON.parse(cachedProducts);
+            return JSON.parse(cachedProducts).filter((product: IProductDocument) => !(product as any).isDelete);
         }
-        const products = await this.productRepository.findAll();
+        const products = (await this.productRepository.findAll()).filter((product: IProductDocument) => !(product as any).isDelete);
         await this.redisService.set(REDIS_KEYS.PRODUCTS, JSON.stringify(products), 60 * 60 * 24);
         return products;
     }

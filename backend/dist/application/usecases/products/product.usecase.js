@@ -29,9 +29,9 @@ class ProductUsecase {
             const cachedProducts = yield this.redisService.get(redis_constant_1.REDIS_KEYS.PRODUCTS);
             if (cachedProducts) {
                 console.log("Products fetched from cache");
-                return JSON.parse(cachedProducts);
+                return JSON.parse(cachedProducts).filter((product) => !product.isDelete);
             }
-            const products = yield this.productRepository.findAll();
+            const products = (yield this.productRepository.findAll()).filter((product) => !product.isDelete);
             yield this.redisService.set(redis_constant_1.REDIS_KEYS.PRODUCTS, JSON.stringify(products), 60 * 60 * 24);
             return products;
         });

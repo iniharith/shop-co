@@ -15,6 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv_1 = require("dotenv");
 const db_config_1 = __importDefault(require("../../config/db.config"));
 const product_model_1 = __importDefault(require("../../infrastructure/db/models/product.model"));
+const redis_1 = require("../../infrastructure/redis/redis");
+const redis_constant_1 = require("../constants/redis.constant");
 const names = [
     'Brown Shirt',
     'Green Shirt',
@@ -29,6 +31,9 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
     (0, dotenv_1.config)();
     yield (0, db_config_1.default)();
     const result = yield product_model_1.default.updateMany({ name: { $in: names } }, { $set: { isDelete: true } });
+    const redis = new redis_1.RedisService();
+    yield redis.delByPrefix(redis_constant_1.REDIS_KEYS.PRODUCTS);
+    yield redis.del(redis_constant_1.REDIS_KEYS.CATEGORIES);
     console.log(`Soft-deleted ${result.modifiedCount} legacy products.`);
     process.exit(0);
 });
