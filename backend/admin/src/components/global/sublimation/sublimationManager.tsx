@@ -678,7 +678,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                        {group.orderId && <p className="text-xs text-muted-foreground truncate font-medium mt-0.5">Order: {group.orderId}</p>}
                     </div>
                      <div className="shrink-0 flex items-center gap-2">
-                       {group.taskId && <TaskQrButton taskId={String(group.taskId)} taskTitle={group.folderName} compact />}
+                       {group.taskId && <TaskQrButton taskId={String(group.taskId)} taskTitle={group.folderName} />}
                        <span className="text-[10px] font-medium bg-background border px-1.5 py-0.5 rounded-full">{group.fileCount} file(s)</span>
                        <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-primary translate-x-1' : 'text-muted-foreground'}`} />
                        </div>

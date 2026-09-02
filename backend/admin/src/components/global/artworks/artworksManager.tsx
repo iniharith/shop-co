@@ -952,8 +952,8 @@ export default function ArtworksManager() {
                       {group.orderId && <p className="text-[11px] font-bold text-foreground/70 truncate">Order: {group.orderId}</p>}
                       <p className="text-xs text-muted-foreground">{group.fileCount} file(s)</p>
                      </div>
-                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                       {group.taskId && <TaskQrButton taskId={String(group.taskId)} taskTitle={group.folderName} compact />}
+                     <div className="flex items-center gap-1 shrink-0">
+                       {group.taskId && <TaskQrButton taskId={String(group.taskId)} taskTitle={group.folderName} />}
                        <Button
                         variant="ghost"
                         size="icon"

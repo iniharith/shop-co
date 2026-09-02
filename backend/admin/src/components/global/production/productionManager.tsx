@@ -752,7 +752,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                        {group.orderId && <p className="text-xs text-muted-foreground truncate font-medium mt-0.5">Order: {group.orderId}</p>}
                     </div>
                      <div className="shrink-0 flex items-center gap-2">
-                       {group.taskId && <TaskQrButton taskId={String(group.taskId)} taskTitle={group.folderName} compact />}
+                       {group.taskId && <TaskQrButton taskId={String(group.taskId)} taskTitle={group.folderName} />}
                        {activeSubTab === "PRINT_AWB" && group.orderAWB?.printUrl && (
                         <button
                           onClick={(e) => {
