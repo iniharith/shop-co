@@ -64,6 +64,8 @@ const ParcelRepository_1 = require("../../../infrastructure/repositories/ParcelR
 const CustomerUpdateSettingsService_1 = require("../../../infrastructure/services/CustomerUpdateSettingsService");
 const EasyParcelTrackingSyncService_1 = require("../../../infrastructure/services/EasyParcelTrackingSyncService");
 const fileUploadRoutes_1 = require("../../../presentation/routes/fileUploadRoutes");
+const product_pricing_service_1 = require("../../../shared/pricing/product-pricing.service");
+const productConfiguration_1 = require("../../../shared/catalog/productConfiguration");
 function requiredSenderEnv(name) {
     var _a;
     const value = (_a = process.env[name]) === null || _a === void 0 ? void 0 : _a.trim();
@@ -124,48 +126,80 @@ class OrderUsecase {
     }
     createOrder(address, userId, customerName, orderNotes) {
         return __awaiter(this, void 0, void 0, function* () {
-            var _a;
+            var _a, _b;
             const cart = yield this.cartRepository.getCartByUserId(userId);
             if (!cart || !cart.items || !((_a = cart === null || cart === void 0 ? void 0 : cart.items) === null || _a === void 0 ? void 0 : _a.length)) {
                 throw new Error("Cart did'nt have products , add Some Products In Cart");
             }
             let totalAmount = 0;
             const orderItems = [];
+            const stockUpdates = [];
             for (const item of cart.items) {
+                if (!Number.isInteger(item.quantity) || item.quantity < 1)
+                    throw new Error("Invalid cart quantity");
                 const product = yield this.productRepository.findById(item.product._id.toString());
                 if (!product)
                     throw new Error(`Product not found: ${item.product._id}`);
-                const sizePerProdut = product.sizes.find(e => e.size == item.size);
-                if (!sizePerProdut || sizePerProdut.stock <= 0)
+                if (product.catalogId && !item.configuration)
+                    throw new Error(`Product configuration is required: ${product.name}`);
+                const fulfillmentSize = ((_b = item.configuration) === null || _b === void 0 ? void 0 : _b.fulfillmentSize) || item.size.split('|')[0].trim();
+                const sizePerProdut = product.sizes.find(e => e.size == fulfillmentSize);
+                if (!sizePerProdut || sizePerProdut.stock < item.quantity)
                     throw new Error(`Insufficient stock for product: ${product.name}`);
-                const updatedProduct = yield this.productRepository.updateProductStockBySize(product._id.toString(), item.size, -item.quantity);
-                const productPrice = product.price * item.quantity;
+                stockUpdates.push({ productId: product._id.toString(), size: fulfillmentSize, quantity: item.quantity, productName: product.name });
+                const normalizedConfiguration = item.configuration
+                    ? (0, productConfiguration_1.normalizeProductConfiguration)(product, item.configuration, fulfillmentSize)
+                    : undefined;
+                const pricing = (0, product_pricing_service_1.computeProductPricing)(product, item.quantity, normalizedConfiguration);
+                const productPrice = pricing.lineTotal;
                 orderItems.push({
-                    product: item.product._id,
+                    product: product._id,
                     quantity: item.quantity,
                     price: productPrice,
+                    unitPrice: pricing.unitPrice,
+                    fixedPrice: pricing.fixedPrice,
+                    lineTotal: productPrice,
+                    pricingVersion: pricing.pricingVersion,
                     size: item.size,
                     artworkUrl: item.artworkUrl,
+                    configuration: normalizedConfiguration,
+                    configurationKey: normalizedConfiguration ? JSON.stringify(normalizedConfiguration) : item.configurationKey,
                     productNameSnapshot: product.name || '',
                     productDescriptionSnapshot: product.description || '',
                     productCategorySnapshot: product.category || '',
                 });
                 totalAmount += productPrice;
             }
+            const decrementedStock = [];
+            let order;
+            try {
+                for (const update of stockUpdates) {
+                    const updatedProduct = yield this.productRepository.updateProductStockBySize(update.productId, update.size, -update.quantity);
+                    if (!updatedProduct)
+                        throw new Error(`Insufficient stock for product: ${update.productName}`);
+                    decrementedStock.push(update);
+                }
+                order = yield this.orderRepository.createOrder({
+                    userId,
+                    customerName,
+                    orderNotes,
+                    address,
+                    paymentMethod: "COD",
+                    products: orderItems,
+                    totalAmount
+                });
+            }
+            catch (error) {
+                for (const update of decrementedStock.reverse()) {
+                    yield this.productRepository.updateProductStockBySize(update.productId, update.size, update.quantity).catch(() => undefined);
+                }
+                throw error;
+            }
             yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + userId);
             yield this.redisService.del(redis_constant_1.REDIS_KEYS.CART + userId);
             yield this.redisService.del(redis_constant_1.REDIS_KEYS.PRODUCTS);
             yield this.redisService.del(redis_constant_1.REDIS_KEYS.CATEGORIES);
             yield this.redisService.del(redis_constant_1.REDIS_KEYS.ADDRESS + userId);
-            const order = yield this.orderRepository.createOrder({
-                userId,
-                customerName,
-                orderNotes,
-                address,
-                paymentMethod: "COD",
-                products: orderItems,
-                totalAmount
-            });
             yield this.notificationUsecase.createNotification({
                 userId: userId,
                 title: "Order Placed",
@@ -768,6 +802,67 @@ class OrderUsecase {
             subdivisionCode: (0, EasyParcelUtils_1.toMalaysianSubdivisionCode)(state),
             countryCode,
         };
+    }
+    getPublicShippingQuotations(input) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            if (!((_a = input.postalCode) === null || _a === void 0 ? void 0 : _a.trim()))
+                throw new Error('postalCode is required');
+            if (!((_b = input.state) === null || _b === void 0 ? void 0 : _b.trim()))
+                throw new Error('state is required');
+            if (!Number.isFinite(input.weight) || input.weight <= 0)
+                throw new Error('weight must be a positive number');
+            if (!Number.isFinite(input.width) || input.width <= 0)
+                throw new Error('width must be a positive number');
+            if (!Number.isFinite(input.length) || input.length <= 0)
+                throw new Error('length must be a positive number');
+            if (!Number.isFinite(input.height) || input.height <= 0)
+                throw new Error('height must be a positive number');
+            const status = yield EasyParcelService_1.easyParcelService.getConnectionStatus().catch(() => null);
+            if (!(status === null || status === void 0 ? void 0 : status.connected)) {
+                throw new Error('Shipping calculation is unavailable — EasyParcel needs to be reconnected. Please contact support.');
+            }
+            const country = (input.country || 'MY').trim();
+            const countryCode = /^(my|malaysia)$/i.test(country) ? 'MY' : country.toUpperCase();
+            if (countryCode !== 'MY')
+                throw new Error('Only Malaysian addresses are currently supported');
+            let sender;
+            try {
+                sender = this.buildSender();
+            }
+            catch (e) {
+                throw new Error('Shipping calculation is unavailable — sender configuration is missing.');
+            }
+            let subdivisionCode;
+            try {
+                subdivisionCode = (0, EasyParcelUtils_1.toMalaysianSubdivisionCode)(input.state.trim());
+            }
+            catch (_c) {
+                throw new Error(`Invalid state: ${input.state}`);
+            }
+            const receiver = {
+                name: 'Customer',
+                phone: { countryCode: 'MY', number: '000000000' },
+                address1: input.postalCode,
+                postcode: input.postalCode.trim(),
+                city: '',
+                subdivisionCode,
+                countryCode,
+            };
+            const shipment = {
+                sender,
+                receiver,
+                weight: input.weight,
+                width: input.width,
+                length: input.length,
+                height: input.height,
+            };
+            const timeoutMs = 15000;
+            return Promise.race([
+                EasyParcelService_1.easyParcelService.getQuotations([shipment]),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Shipping rate request timed out')), timeoutMs)),
+            ]);
+        });
     }
     invalidateOrderCaches(order) {
         return __awaiter(this, void 0, void 0, function* () {

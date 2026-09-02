@@ -19,6 +19,9 @@ export interface IProductConfiguration {
     type: 'upload' | 'service' | 'variation';
     label: string;
     priceAdd?: number;
+    variantId?: string;
+    variantLabel?: string;
+    variantImage?: string;
     variationIndex?: number;
     image?: string;
   };

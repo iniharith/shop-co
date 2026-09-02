@@ -17,6 +17,7 @@ import { useAddtoCart } from "@/hooks/useCart";
 import AnimatedButton from "@/components/animation/animatedButton";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { getImageUrl } from "@/utils/getImageUrl";
+import { getProductVariation } from "@/utils/productConfiguration";
 import { Check, Headphones, ShieldCheck, Truck } from "lucide-react";
 
 interface ProductDetailsProps {
@@ -94,8 +95,11 @@ export function ProductDetails({
     }
 
     const baseSize = product.category === "flyers" ? selectedGridSize : "Standard";
+    const selectedVariation = isIslamicKhat && product.images.length > 1
+      ? getProductVariation(product, selectedVariationIndex as number)
+      : null;
     const selectedConfiguration = isIslamicKhat && product.images.length > 1
-      ? `${baseSize} | Design: ${String((selectedVariationIndex as number) + 1).padStart(2, "0")}`
+      ? baseSize
       : `${baseSize} | Design: ${designOption === "upload" ? "Upload Artwork" : "Need Design Service"}`;
     const artworkUrl = !isIslamicKhat && designOption === "upload" ? "https://example.com/mock-uploaded-artwork.pdf" : undefined; // Replace with actual uploaded file URL state if it exists
     const selections = options.flatMap((option) => {
@@ -114,9 +118,12 @@ export function ProductDetails({
       design: isIslamicKhat
         ? {
             type: "variation" as const,
-            label: `Design ${String((selectedVariationIndex as number) + 1).padStart(2, "0")}`,
+            label: selectedVariation?.variantLabel || "",
+            variantId: selectedVariation?.variantId,
+            variantLabel: selectedVariation?.variantLabel,
+            variantImage: selectedVariation?.variantImage,
             variationIndex: selectedVariationIndex as number,
-            image: product.images[selectedVariationIndex as number],
+            image: selectedVariation?.variantImage,
             priceAdd: 0,
           }
         : {
@@ -389,7 +396,7 @@ export function ProductDetails({
             }`}>
               {selectedVariationIndex === null
                 ? label("Design required", "Reka bentuk diperlukan")
-                : `${label("Design", "Reka bentuk")} ${String(selectedVariationIndex + 1).padStart(2, "0")}`}
+                : getProductVariation(product, selectedVariationIndex).variantLabel}
             </span>
           )}
         </div>
@@ -511,13 +518,14 @@ export function ProductDetails({
                 <p className={`text-xs ${selectedVariationIndex === null ? "font-medium text-primary" : "text-muted-foreground"}`}>
                   {selectedVariationIndex === null
                     ? label("Select one design to continue", "Pilih satu reka bentuk untuk teruskan")
-                    : `${label("Selected", "Dipilih")}: ${label("Design", "Reka bentuk")} ${selectedVariationIndex + 1}`}
+                    : `${label("Selected", "Dipilih")}: ${getProductVariation(product, selectedVariationIndex).variantLabel}`}
                 </p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {product.images.map((image, index) => {
                 const isSelected = selectedVariationIndex === index;
+                const variation = getProductVariation(product, index);
                 return (
                   <button
                     type="button"
@@ -540,7 +548,7 @@ export function ProductDetails({
                     <span className="flex aspect-[4/3] items-center justify-center bg-muted/20 p-1">
                       <img
                         src={getImageUrl(image)}
-                        alt={`${label("Variation", "Variasi")} ${index + 1}`}
+                        alt={`${label("Variation", "Variasi")} ${variation.variantLabel}`}
                         loading="lazy"
                         decoding="async"
                         draggable={false}
@@ -548,7 +556,7 @@ export function ProductDetails({
                       />
                     </span>
                     <span className={`block px-2 py-2.5 text-center text-xs font-bold ${isSelected ? "text-primary" : "text-foreground"}`}>
-                      {label("Design", "Reka bentuk")} {String(index + 1).padStart(2, "0")}
+                      {variation.variantLabel}
                     </span>
                   </button>
                 );

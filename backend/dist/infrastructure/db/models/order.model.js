@@ -38,6 +38,30 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Kampungcetak ®
  */
 const mongoose_1 = __importStar(require("mongoose"));
+const ConfigurationSchema = new mongoose_1.Schema({
+    version: { type: Number, default: 1 },
+    fulfillmentSize: { type: String, default: '' },
+    selections: [{
+            _id: false,
+            name: { type: String, required: true },
+            values: [{
+                    _id: false,
+                    label: { type: String, required: true },
+                    priceAdd: { type: Number, default: 0 },
+                }],
+        }],
+    design: {
+        _id: false,
+        type: { type: String, enum: ['upload', 'service', 'variation'] },
+        label: { type: String },
+        priceAdd: { type: Number, default: 0 },
+        variantId: { type: String },
+        variantLabel: { type: String },
+        variantImage: { type: String },
+        variationIndex: { type: Number },
+        image: { type: String },
+    },
+}, { _id: false });
 const OrderedProductSchema = new mongoose_1.Schema({
     product: {
         type: mongoose_1.Schema.Types.ObjectId,
@@ -58,10 +82,16 @@ const OrderedProductSchema = new mongoose_1.Schema({
         required: true,
         min: 0,
     },
+    unitPrice: { type: Number, min: 0 },
+    fixedPrice: { type: Number, min: 0, default: 0 },
+    lineTotal: { type: Number, min: 0 },
+    pricingVersion: { type: String, default: '' },
     artworkUrl: {
         type: String,
         default: '',
     },
+    configuration: { type: ConfigurationSchema },
+    configurationKey: { type: String, default: '' },
     productNameSnapshot: {
         type: String,
         default: '',

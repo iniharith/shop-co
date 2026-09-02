@@ -8,6 +8,7 @@ import { ProductRepository } from "../../../infrastructure/db/repositories/produ
 import { IProduct } from "../../../domain/interfaces/product.interface";
 import { IProductConfiguration } from "../../../domain/interfaces/cart.interface";
 import { computeProductPricing } from "../../../shared/pricing/product-pricing.service";
+import { normalizeProductConfiguration } from "../../../shared/catalog/productConfiguration";
 export class CartUsecase {
     private readonly cartRepository: CartRepository;
     private readonly productRepository: ProductRepository;
@@ -24,18 +25,24 @@ export class CartUsecase {
         if (!product) {
             throw new Error("Product not found");
         }
+        if (product.catalogId && !configuration) {
+            throw new Error("Product configuration is required");
+        }
         const fulfillmentSize = configuration?.fulfillmentSize || size.split('|')[0].trim();
         if (!product.sizes.some((candidate) => candidate.size === fulfillmentSize)) {
             throw new Error("Selected size is not available for this product");
         }
-        const normalizedConfiguration = configuration ? { ...configuration, fulfillmentSize } : undefined;
+        const normalizedConfiguration = configuration
+            ? normalizeProductConfiguration(product, configuration, fulfillmentSize)
+            : undefined;
+        const storedSize = normalizedConfiguration ? fulfillmentSize : size;
         const storedProductId = (product._id as unknown as Types.ObjectId).toString();
         const configurationKey = normalizedConfiguration ? JSON.stringify(normalizedConfiguration) : size;
         const pricing = computeProductPricing(product, quantity, normalizedConfiguration);
         const cart = await this.cartRepository.getCartByUserId(userId);
 
         if (!cart) {
-            return await this.cartRepository.upsertCart(userId, storedProductId, size, quantity, artworkUrl, normalizedConfiguration, configurationKey, pricing.unitPrice, pricing.fixedPrice, pricing.lineTotal, pricing.pricingVersion);
+            return await this.cartRepository.upsertCart(userId, storedProductId, storedSize, quantity, artworkUrl, normalizedConfiguration, configurationKey, pricing.unitPrice, pricing.fixedPrice, pricing.lineTotal, pricing.pricingVersion);
         }
 
         const productExist = cart.items.find((item) => item.product._id.toString() === storedProductId && (item.configurationKey || item.size) === configurationKey);
@@ -49,7 +56,7 @@ export class CartUsecase {
         } else {
             cart.items.push({
                 product: storedProductId as unknown as any,
-                size,
+                size: storedSize,
                 quantity,
                 artworkUrl,
                 configuration: normalizedConfiguration,
@@ -103,7 +110,12 @@ export class CartUsecase {
             item.lineTotal = fallbackUnitPrice * quantity + fallbackFixedPrice;
             return await cart.save();
         }
-        const pricing = computeProductPricing(product as IProduct, quantity, item.configuration);
+        const normalizedConfiguration = item.configuration
+            ? normalizeProductConfiguration(product as IProduct, item.configuration, item.configuration.fulfillmentSize)
+            : undefined;
+        const pricing = computeProductPricing(product as IProduct, quantity, normalizedConfiguration);
+        item.configuration = normalizedConfiguration;
+        if (normalizedConfiguration) item.configurationKey = JSON.stringify(normalizedConfiguration);
         item.unitPrice = pricing.unitPrice;
         item.fixedPrice = pricing.fixedPrice;
         item.lineTotal = pricing.lineTotal;

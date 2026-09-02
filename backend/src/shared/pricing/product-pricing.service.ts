@@ -63,8 +63,7 @@ const selectedLabel = (configuration: IProductConfiguration | undefined, matcher
     return values.length > 0 ? values[0].label : '';
 };
 
-// Fan out the priceAdd by looking the option/value up in the product's own printingOptions,
-// falling back to the priceAdd the client echoed (should virtually never apply).
+// Price add-ons only from the server-side product definition. Client prices are ignored.
 const sumAddons = (product: IProduct, configuration: IProductConfiguration | undefined, filter?: (name: string) => boolean): number => {
     const optionNames = new Set((product.printingOptions || []).map((option) => option.name));
     let total = 0;
@@ -75,7 +74,7 @@ const sumAddons = (product: IProduct, configuration: IProductConfiguration | und
         for (const value of selection.values || []) {
             if (value.label === undefined || value.label === null) continue;
             const match = option?.options?.find((candidate) => candidate.label === value.label);
-            total += match ? (Number(match.priceAdd) || 0) : (Number(value.priceAdd) || 0);
+            total += match ? (Number(match.priceAdd) || 0) : 0;
         }
     }
     return total;

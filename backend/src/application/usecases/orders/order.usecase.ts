@@ -24,6 +24,7 @@ import { areWhatsAppCustomerUpdatesEnabled } from "../../../infrastructure/servi
 import { convergeOrderFromParcel } from "../../../infrastructure/services/EasyParcelTrackingSyncService";
 import { clearFolderGroupCache } from "../../../presentation/routes/fileUploadRoutes";
 import { computeProductPricing } from "../../../shared/pricing/product-pricing.service";
+import { normalizeProductConfiguration } from "../../../shared/catalog/productConfiguration";
 
 interface ShipmentDimensions {
     weight: number;
@@ -115,12 +116,16 @@ let totalAmount = 0;
 
             const product = await this.productRepository.findById(item.product._id.toString());
             if (!product) throw new Error(`Product not found: ${item.product._id}`);
+            if (product.catalogId && !item.configuration) throw new Error(`Product configuration is required: ${product.name}`);
             const fulfillmentSize = item.configuration?.fulfillmentSize || item.size.split('|')[0].trim();
             const sizePerProdut = product.sizes.find(e => e.size == fulfillmentSize);
             if (!sizePerProdut || sizePerProdut.stock < item.quantity) throw new Error(`Insufficient stock for product: ${product.name}`);
             stockUpdates.push({ productId: product._id.toString(), size: fulfillmentSize, quantity: item.quantity, productName: product.name });
 
-            const pricing = computeProductPricing(product, item.quantity, item.configuration);
+            const normalizedConfiguration = item.configuration
+                ? normalizeProductConfiguration(product, item.configuration, fulfillmentSize)
+                : undefined;
+            const pricing = computeProductPricing(product, item.quantity, normalizedConfiguration);
             const productPrice = pricing.lineTotal;
             orderItems.push({
                 product: product._id as Types.ObjectId,
@@ -132,8 +137,8 @@ let totalAmount = 0;
                 pricingVersion: pricing.pricingVersion,
                 size: item.size,
                 artworkUrl: item.artworkUrl,
-                configuration: item.configuration,
-                configurationKey: item.configurationKey,
+                configuration: normalizedConfiguration,
+                configurationKey: normalizedConfiguration ? JSON.stringify(normalizedConfiguration) : item.configurationKey,
                 productNameSnapshot: product.name || '',
                 productDescriptionSnapshot: product.description || '',
                 productCategorySnapshot: product.category || '',
