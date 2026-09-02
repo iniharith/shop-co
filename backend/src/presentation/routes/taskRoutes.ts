@@ -102,6 +102,9 @@ router.get(
         productName: task.productName || null,
         category: task.category || null,
         lineItems: (task.lineItems || []).map((item: any) => ({ productName: item.productName, category: item.category, qty: item.qty })),
+        files: (task.files || [])
+          .filter((file: any) => file.tag === 'draft' || file.tag === 'for_print')
+          .map((file: any) => ({ name: file.name, url: file.url, tag: file.tag })),
         status: task.status,
         statusUpdatedAt: task.statusUpdatedAt || null,
         dueDate: task.dueDate || null,
