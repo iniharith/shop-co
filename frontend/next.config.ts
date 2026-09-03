@@ -38,6 +38,10 @@ const nextConfig: NextConfig = {
         hostname: "shop-co-production.up.railway.app",
         protocol: "https",
       },
+      {
+        hostname: "kampungcetak.com",
+        protocol: "https",
+      },
     ],
   },
   typescript: {
