@@ -19,7 +19,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
     : imagePath;
   const image = getImageUrl(thumbnailPath);
   const hasDiscount = product.discount > 0 && product.originalPrice > product.price;
-  const availableStock = product.sizes?.reduce((total, size) => total + Number(size.stock || 0), 0) ?? 0;
 
   return (
     <Link
@@ -63,12 +62,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
               </span>
             </div>
           )}
-          <div className="flex items-end justify-between gap-2">
-            <div className="font-bold text-xl">RM {product.price}</div>
-            <span className={`text-xs font-semibold ${availableStock > 0 ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
-              {availableStock > 0 ? `${availableStock} available` : "Out of stock"}
-            </span>
-          </div>
+          <div className="font-bold text-xl">RM {product.price}</div>
         </div>
       </div>
     </Link>
