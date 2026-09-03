@@ -404,8 +404,26 @@ router.get('/index', auth_middileware_1.default, (0, auth_middileware_1.authoriz
 // or any file name (search results are not cached).
 function buildFolderGroups(taskStatusFilter, q) {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c, _d;
+        var _a, _b;
         const filterUpper = taskStatusFilter.map(s => s.toUpperCase());
+        // A task can now be tagged with more than one product/category via
+        // lineItems (e.g. an order bundling Apparel + Frame). This returns every
+        // distinct category the task should appear under — its primary `category`
+        // plus each lineItems entry's category — so it can be shown in every
+        // matching product section (Production / Artworks Manager tabs) instead
+        // of only its primary one.
+        const getTaskCategories = (task) => {
+            const set = new Set();
+            if (task === null || task === void 0 ? void 0 : task.category)
+                set.add(task.category);
+            for (const item of ((task === null || task === void 0 ? void 0 : task.lineItems) || [])) {
+                if ((item === null || item === void 0 ? void 0 : item.category) && item.category !== 'UNASSIGNED')
+                    set.add(item.category);
+            }
+            if (set.size === 0)
+                set.add('UNASSIGNED');
+            return Array.from(set);
+        };
         // Generate plain string variants for MongoDB queries ($in array)
         const statusQueryValues = Array.from(new Set([
             ...filterUpper,
@@ -433,11 +451,11 @@ function buildFolderGroups(taskStatusFilter, q) {
         // 3. Load all tasks in this queue & all referenced tasks by ID
         const [tasks, orders, users, allReferencedTasks] = yield Promise.all([
             Task_1.Task.find({ status: { $in: statusQueryValues }, isDeleted: { $ne: true } })
-                .select('title status orderId category')
+                .select('title status orderId category lineItems')
                 .lean(),
             orderIds.length ? order_model_1.default.find({ _id: { $in: orderIds } }).select('orderStatus userId easyparcelAwb easyparcelBookingStatus awbUrl awbUrlsByFormat').lean() : [],
             userIds.length ? user_model_1.default.find({ _id: { $in: userIds } }).select('name').lean() : [],
-            allTaskIds.length ? Task_1.Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category isDeleted').lean() : [],
+            allTaskIds.length ? Task_1.Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category lineItems isDeleted').lean() : [],
         ]);
         const taskMap = new Map(tasks.map((t) => [t._id.toString(), t]));
         const allTaskMap = new Map(allReferencedTasks.map((t) => [t._id.toString(), t]));
@@ -484,15 +502,15 @@ function buildFolderGroups(taskStatusFilter, q) {
                 folderName = file._shareFolderName || ((_b = userMap.get(file.userId)) === null || _b === void 0 ? void 0 : _b.name) || file.userId || 'Unknown';
             }
             if (!groups[groupKey]) {
+                const groupTask = isTask ? (allTaskMap.get(file.taskId) || taskMap.get(file.taskId)) : null;
                 groups[groupKey] = {
                     folderName,
                     orderId: file.orderId || '',
                     taskId: file.taskId || '',
                     userId: file.userId || '',
                     isTask,
-                    category: isTask
-                        ? ((_c = allTaskMap.get(file.taskId)) === null || _c === void 0 ? void 0 : _c.category) || ((_d = taskMap.get(file.taskId)) === null || _d === void 0 ? void 0 : _d.category)
-                        : file.category,
+                    category: isTask ? groupTask === null || groupTask === void 0 ? void 0 : groupTask.category : file.category,
+                    categories: isTask ? getTaskCategories(groupTask) : [file.category || 'UNASSIGNED'],
                     files: [],
                 };
             }
@@ -514,6 +532,7 @@ function buildFolderGroups(taskStatusFilter, q) {
                     userId: '',
                     isTask: true,
                     category: task.category,
+                    categories: getTaskCategories(task),
                     files: [],
                 };
             }
@@ -554,6 +573,8 @@ function buildFolderGroups(taskStatusFilter, q) {
                 userId: g.userId,
                 isTask: g.isTask,
                 category: g.category || '',
+                // Every product/category tab this folder should appear under.
+                categories: (g.categories && g.categories.length) ? g.categories : [g.category || 'UNASSIGNED'],
                 orderStatus,
                 orderAWB,
                 fileCount: g.files.length,
@@ -919,7 +940,30 @@ router.post('/download-batch', auth_middileware_1.default, (0, express_async_han
     // Decrement counter when response finishes (whether success, error, or client abort)
     res.on('close', () => { activeDownloads = Math.max(0, activeDownloads - 1); });
     res.on('finish', () => { activeDownloads = Math.max(0, activeDownloads - 1); });
-    const result = yield (0, streamFilesAsZip_1.streamFilesAsZip)(res, files.map((f) => ({ originalName: f.originalName, path: f.path })), zipName || 'files', downloadId);
+    const folderIds = [...new Set(files.map((file) => file.folderId).filter(Boolean))];
+    const folders = folderIds.length
+        ? yield VirtualFolder_1.VirtualFolder.find({ _id: { $in: folderIds } }).select('_id name parentFolderId').lean()
+        : [];
+    const folderMap = new Map(folders.map((folder) => [String(folder._id), folder]));
+    const folderPath = (folderId) => {
+        const parts = [];
+        const visited = new Set();
+        let current = folderMap.get(folderId);
+        while (current && !visited.has(String(current._id))) {
+            visited.add(String(current._id));
+            if (current.name)
+                parts.unshift(String(current.name));
+            current = current.parentFolderId ? folderMap.get(String(current.parentFolderId)) : undefined;
+        }
+        return parts.join('/');
+    };
+    const result = yield (0, streamFilesAsZip_1.streamFilesAsZip)(res, files.map((f) => ({
+        originalName: f.originalName,
+        path: f.path,
+        zipPath: f.folderId && folderMap.has(String(f.folderId))
+            ? `${folderPath(String(f.folderId))}/${f.originalName}`
+            : f.originalName,
+    })), zipName || 'files', downloadId);
     if (!result.success) {
         res.status(502).json({
             success: false,

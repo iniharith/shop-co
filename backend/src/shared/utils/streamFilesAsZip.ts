@@ -15,7 +15,14 @@ import { setDownloadProgress } from './downloadProgress';
 interface StreamableFile {
   originalName: string;
   path: string;
+  zipPath?: string;
 }
+
+const safeZipPath = (value: string) => value
+  .split(/[\\/]+/)
+  .map(part => part.replace(/[^a-zA-Z0-9 _.-]/g, '_').trim())
+  .filter(part => part && part !== '.' && part !== '..')
+  .join('/');
 
 const resolveDownloadUrl = async (filePath: string): Promise<string> => {
   if (!filePath.includes('amazonaws.com')) return filePath;
@@ -82,7 +89,7 @@ export async function streamFilesAsZip(
   for (let i = 0; i < files.length; i += SIGN_CONCURRENCY) {
     const batch = files.slice(i, i + SIGN_CONCURRENCY);
     const results = await Promise.allSettled(
-      batch.map(f => resolveDownloadUrl(f.path).then(url => ({ name: f.originalName, url })))
+      batch.map(f => resolveDownloadUrl(f.path).then(url => ({ name: safeZipPath(f.zipPath || f.originalName), url })))
     );
     for (const r of results) {
       if (r.status === 'fulfilled') resolved.push(r.value);

@@ -11,6 +11,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.streamFilesAsZip = streamFilesAsZip;
 const downloadProgress_1 = require("./downloadProgress");
+const safeZipPath = (value) => value
+    .split(/[\\/]+/)
+    .map(part => part.replace(/[^a-zA-Z0-9 _.-]/g, '_').trim())
+    .filter(part => part && part !== '.' && part !== '..')
+    .join('/');
 const resolveDownloadUrl = (filePath) => __awaiter(void 0, void 0, void 0, function* () {
     if (!filePath.includes('amazonaws.com'))
         return filePath;
@@ -70,7 +75,7 @@ function streamFilesAsZip(res, files, zipName, downloadId) {
         const resolved = [];
         for (let i = 0; i < files.length; i += SIGN_CONCURRENCY) {
             const batch = files.slice(i, i + SIGN_CONCURRENCY);
-            const results = yield Promise.allSettled(batch.map(f => resolveDownloadUrl(f.path).then(url => ({ name: f.originalName, url }))));
+            const results = yield Promise.allSettled(batch.map(f => resolveDownloadUrl(f.path).then(url => ({ name: safeZipPath(f.zipPath || f.originalName), url }))));
             for (const r of results) {
                 if (r.status === 'fulfilled')
                     resolved.push(r.value);

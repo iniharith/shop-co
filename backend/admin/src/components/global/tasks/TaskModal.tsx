@@ -29,11 +29,12 @@ import { Check, ChevronsUpDown, Download as DownloadIcon, Copy, Package } from "
 import { cn, forceDownload } from "@/lib/utils";
 import { useCreateShareLink, useFilesByFolder, useResolveFileByPath, useFolders, useMoveFile } from "@/hooks/useAdminDashboard";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { getSession, useSession } from "next-auth/react";
 import { AssigneeTag, AssigneeDot } from "@/lib/userColor";
 import { buildFileShareUrl, isPdfFile, preparePdfSharePreview } from "@/lib/fileSharePreview";
 import { getSocket } from "@/utils/socket";
 import { useTaskTypingStore } from "@/store/taskTypingStore";
+import AxiosInstance from "@/utils/axios";
 import { TaskQrButton } from "@/components/global/TaskQrButton";
 
 const TASK_MODAL_VIEW_KEY = "taskModalView:v1";
@@ -429,14 +430,33 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     return `${backendBase}/api/files/proxy-download?url=${encodeURIComponent(awbPreviewUrl)}&name=${encodeURIComponent(awbFile.name || 'AWB')}&inline=true#toolbar=0`;
   }, [awbFile, awbPreviewUrl]);
 
-  const handleDownloadFiles = (files: any[], label: string) => {
+  const handleDownloadFiles = async (files: any[], label: string) => {
     if (files.length === 0) return;
+    const fileIds = files.map((file: any) => file._id).filter(Boolean);
+    const token = (await getSession())?.user?.token;
+    if (fileIds.length === files.length && token) {
+      try {
+        toast.loading(`Preparing ${label.toLowerCase()} ZIP...`, { id: `task-download-${task._id}` });
+        const response = await AxiosInstance(token).post("/api/files/download-batch", {
+          fileIds,
+          zipName: title || "task-files",
+        }, { responseType: "blob" });
+        const url = URL.createObjectURL(response.data);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${title || "task-files"}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        toast.success(`Downloaded ${files.length} ${label.toLowerCase()} file(s)`, { id: `task-download-${task._id}` });
+        return;
+      } catch {
+        toast.error("Could not create ZIP; downloading files individually", { id: `task-download-${task._id}` });
+      }
+    }
     toast.success(`Downloading ${files.length} ${label.toLowerCase()} file(s)...`);
-    files.forEach((file: any, index: number) => {
-      setTimeout(() => {
-        forceDownload(file.url, file.name);
-      }, index * 300);
-    });
+    files.forEach((file: any, index: number) => setTimeout(() => forceDownload(file.url, file.name), index * 300));
   };
 
   const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "");

@@ -1058,9 +1058,31 @@ router.post(
     res.on('close', () => { activeDownloads = Math.max(0, activeDownloads - 1); });
     res.on('finish', () => { activeDownloads = Math.max(0, activeDownloads - 1); });
 
+    const folderIds = [...new Set(files.map((file: any) => file.folderId).filter(Boolean))];
+    const folders = folderIds.length
+      ? await VirtualFolder.find({ _id: { $in: folderIds } }).select('_id name parentFolderId').lean()
+      : [];
+    const folderMap = new Map(folders.map((folder: any) => [String(folder._id), folder]));
+    const folderPath = (folderId: string) => {
+      const parts: string[] = [];
+      const visited = new Set<string>();
+      let current = folderMap.get(folderId);
+      while (current && !visited.has(String(current._id))) {
+        visited.add(String(current._id));
+        if (current.name) parts.unshift(String(current.name));
+        current = current.parentFolderId ? folderMap.get(String(current.parentFolderId)) : undefined;
+      }
+      return parts.join('/');
+    };
     const result = await streamFilesAsZip(
       res,
-      files.map((f: any) => ({ originalName: f.originalName, path: f.path })),
+      files.map((f: any) => ({
+        originalName: f.originalName,
+        path: f.path,
+        zipPath: f.folderId && folderMap.has(String(f.folderId))
+          ? `${folderPath(String(f.folderId))}/${f.originalName}`
+          : f.originalName,
+      })),
       zipName || 'files',
       downloadId
     );
