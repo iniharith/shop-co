@@ -27,7 +27,9 @@ const normalizeProduct = (body: any) => ({
   discount: body.discount === '' || body.discount == null ? 0 : Number(body.discount),
   category: String(body.category || '').trim(),
   images: Array.isArray(body.images) ? body.images.map(String).filter(Boolean) : [],
-  sizes: Array.isArray(body.sizes) ? body.sizes : [],
+  sizes: Array.isArray(body.sizes)
+    ? body.sizes.map((item: any) => ({ size: String(item?.size || '').trim(), stock: Number(item?.stock) })).filter((item: any) => item.size)
+    : [],
   printingOptions: Array.isArray(body.printingOptions) ? body.printingOptions : [],
   sections: Array.isArray(body.sections) ? body.sections.map(String).filter(Boolean) : [],
 });
@@ -36,6 +38,7 @@ const validateProduct = (product: ReturnType<typeof normalizeProduct>) => {
   if (!product.name || !product.description || !product.category) return 'Name, description, and category are required.';
   if (!Number.isFinite(product.price) || product.price < 0) return 'Price must be a valid positive number.';
   if (!Number.isFinite(product.originalPrice) || product.originalPrice < 0) return 'Original price must be valid.';
+  if (product.sizes.some((item: any) => !Number.isFinite(item.stock) || item.stock < 0)) return 'Stock must be zero or greater for every size.';
   return null;
 };
 

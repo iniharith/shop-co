@@ -149,6 +149,9 @@ export function ProductDetails({
   };
 
   const options = product.printingOptions || [];
+  const stockBySize = product.sizes || [];
+  const totalAvailableStock = stockBySize.reduce((total, size) => total + Number(size.stock || 0), 0);
+  const standardStock = stockBySize.find(size => size.size.toLowerCase() === "standard")?.stock;
   const hasImageVariations = product.category?.toLowerCase() === "islamic khat" && product.images.length > 1;
 
   let minQuantity = 1;
@@ -384,6 +387,9 @@ export function ProductDetails({
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <StarRating rating={product.rating} maxRating={5} />
           <span className="text-sm font-medium text-gray-500 dark:text-muted-foreground">{product.rating.toFixed(1)} {label("rating", "penilaian")}</span>
+          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${totalAvailableStock > 0 ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-red-500/10 text-red-700 dark:text-red-400"}`}>
+            {totalAvailableStock > 0 ? `${totalAvailableStock} ${label("available", "tersedia")}` : label("Out of stock", "Stok habis")}
+          </span>
         </div>
         <div className="mt-5 flex items-end justify-between gap-4 border-t border-border pt-4">
           <div>
@@ -676,7 +682,7 @@ export function ProductDetails({
                   quantity={quantity}
                   onDecrement={() => setQuantity((q) => Math.max(minQuantity, q - 1))}
                   onIncrement={() => setQuantity((q) => q + 1)}
-                  max={10000}
+                   max={stockBySize.length > 0 ? (standardStock ?? totalAvailableStock) : 10000}
                   onQuantityChange={setQuantity}
                 />
               </div>
