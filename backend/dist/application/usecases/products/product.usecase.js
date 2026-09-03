@@ -18,7 +18,9 @@ const product_repository_1 = require("../../../infrastructure/db/repositories/pr
 const cart_repository_1 = require("../../../infrastructure/db/repositories/cart.repository");
 const redis_1 = require("../../../infrastructure/redis/redis");
 const redis_constant_1 = require("../../../shared/constants/redis.constant");
-const CATALOG_CACHE_KEY = `${redis_constant_1.REDIS_KEYS.PRODUCTS}:catalog-v2`;
+const PRODUCT_CACHE_PREFIX = `${redis_constant_1.REDIS_KEYS.PRODUCTS}:catalog-v3:`;
+const CATALOG_CACHE_KEY = `${PRODUCT_CACHE_PREFIX}all`;
+const CATEGORIES_CACHE_KEY = `${PRODUCT_CACHE_PREFIX}categories`;
 class ProductUsecase {
     constructor() {
         this.productRepository = new product_repository_1.ProductRepository();
@@ -39,56 +41,56 @@ class ProductUsecase {
     }
     getProductById(id) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cachedProduct = yield this.redisService.get(redis_constant_1.REDIS_KEYS.PRODUCTS + id);
+            const cachedProduct = yield this.redisService.get(PRODUCT_CACHE_PREFIX + `id:${id}`);
             if (cachedProduct) {
                 return JSON.parse(cachedProduct);
             }
             const product = yield this.productRepository.findById(id);
-            yield this.redisService.set(redis_constant_1.REDIS_KEYS.PRODUCTS + id, JSON.stringify(product), 60 * 60 * 24);
+            yield this.redisService.set(PRODUCT_CACHE_PREFIX + `id:${id}`, JSON.stringify(product), 60 * 60 * 24);
             return product;
         });
     }
     filterProducts(filter_1) {
         return __awaiter(this, arguments, void 0, function* (filter, limit = 10, page = 1) {
-            const cachedProducts = yield this.redisService.get(redis_constant_1.REDIS_KEYS.PRODUCTS + filter.toString() + limit + page);
+            const cachedProducts = yield this.redisService.get(PRODUCT_CACHE_PREFIX + `filter:${filter.toString()}${limit}${page}`);
             if (cachedProducts) {
                 return JSON.parse(cachedProducts);
             }
             const products = yield this.productRepository.filterProducts(filter, limit, page);
-            yield this.redisService.set(redis_constant_1.REDIS_KEYS.PRODUCTS + filter.toString() + limit + page, JSON.stringify(products), 60 * 60 * 24);
+            yield this.redisService.set(PRODUCT_CACHE_PREFIX + `filter:${filter.toString()}${limit}${page}`, JSON.stringify(products), 60 * 60 * 24);
             return products;
         });
     }
     searchProducts(query) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cachedProducts = yield this.redisService.get(redis_constant_1.REDIS_KEYS.PRODUCTS + query);
+            const cachedProducts = yield this.redisService.get(PRODUCT_CACHE_PREFIX + `search:${query}`);
             if (cachedProducts) {
                 return JSON.parse(cachedProducts);
             }
             const products = yield this.productRepository.searchProducts(query);
-            yield this.redisService.set(redis_constant_1.REDIS_KEYS.PRODUCTS + query, JSON.stringify(products), 60 * 60 * 24);
+            yield this.redisService.set(PRODUCT_CACHE_PREFIX + `search:${query}`, JSON.stringify(products), 60 * 60 * 24);
             return products;
         });
     }
     getProductByCategory(category) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cachedProducts = yield this.redisService.get(redis_constant_1.REDIS_KEYS.PRODUCTS + category);
+            const cachedProducts = yield this.redisService.get(PRODUCT_CACHE_PREFIX + `category:${category}`);
             if (cachedProducts) {
                 return JSON.parse(cachedProducts);
             }
             const products = yield this.productRepository.findByCategory(category);
-            yield this.redisService.set(redis_constant_1.REDIS_KEYS.PRODUCTS + category, JSON.stringify(products), 60 * 60 * 24);
+            yield this.redisService.set(PRODUCT_CACHE_PREFIX + `category:${category}`, JSON.stringify(products), 60 * 60 * 24);
             return products;
         });
     }
     getAvailableCategories() {
         return __awaiter(this, void 0, void 0, function* () {
-            const cachedCategories = yield this.redisService.get(redis_constant_1.REDIS_KEYS.CATEGORIES);
+            const cachedCategories = yield this.redisService.get(CATEGORIES_CACHE_KEY);
             if (cachedCategories) {
                 return JSON.parse(cachedCategories);
             }
             const categories = yield this.productRepository.getCategories();
-            yield this.redisService.set(redis_constant_1.REDIS_KEYS.CATEGORIES, JSON.stringify(categories), 60 * 60 * 24);
+            yield this.redisService.set(CATEGORIES_CACHE_KEY, JSON.stringify(categories), 60 * 60 * 24);
             return categories;
         });
     }

@@ -151,13 +151,13 @@ const ProfileCard = () => {
   // Loading skeleton
   if (isLoading) {
     return (
-      <div className="w-full bg-white rounded-2xl border border-gray-200 shadow-sm p-8 animate-pulse">
+      <div className="w-full rounded-3xl border border-white/10 bg-[#151a1d] p-8 shadow-2xl animate-pulse">
         <div className="flex items-center gap-6">
-          <div className="w-24 h-24 rounded-full bg-gray-200" />
+          <div className="h-24 w-24 rounded-full bg-white/10" />
           <div className="flex flex-col gap-3 flex-1">
-            <div className="h-6 bg-gray-200 rounded-full w-40" />
-            <div className="h-4 bg-gray-100 rounded-full w-56" />
-            <div className="h-4 bg-gray-100 rounded-full w-32" />
+            <div className="h-6 w-40 rounded-full bg-white/10" />
+            <div className="h-4 w-56 rounded-full bg-white/5" />
+            <div className="h-4 w-32 rounded-full bg-white/5" />
           </div>
         </div>
       </div>
@@ -165,11 +165,11 @@ const ProfileCard = () => {
   }
 
   return (
-    <div className="w-full bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-0 overflow-hidden">
+    <div className="w-full overflow-hidden rounded-3xl border border-white/10 bg-[#151a1d] shadow-2xl shadow-black/20">
 
       {/* ── HEADER BANNER ── */}
-      <div className="h-24 bg-gradient-to-r from-primary/80 via-primary to-primary/60 relative">
-        <div className="absolute bottom-0 right-0 opacity-10 text-[120px] font-black text-white leading-none select-none pr-4">
+      <div className="relative h-32 bg-[radial-gradient(circle_at_80%_20%,rgba(214,162,29,0.42),transparent_30%),linear-gradient(120deg,#252b2d,#111517)]">
+        <div className="absolute bottom-0 right-0 select-none pr-4 text-[120px] font-black leading-none text-[#f2c14e]/10">
           KC
         </div>
       </div>
@@ -179,23 +179,20 @@ const ProfileCard = () => {
         {/* Avatar — overlapping the banner */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-12 mb-5">
           <div className="relative w-fit">
-            <div 
-              className="group w-24 h-24 rounded-full border-4 border-white bg-primary shadow-md flex items-center justify-center overflow-hidden cursor-pointer relative"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input 
+            <input
                 type="file" 
                 ref={fileInputRef} 
                 className="hidden" 
                 accept="image/*"
                 onChange={handleAvatarChange}
-              />
+            />
+            <button type="button" aria-label="Change profile photo / Tukar gambar profil" className="group relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-[#151a1d] bg-[#d6a21d] shadow-xl" onClick={() => fileInputRef.current?.click()}>
               {isUploadingAvatar && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
-                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50">
+                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                 </div>
               )}
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
                 <Edit2 size={20} className="text-white" />
               </div>
               {displayAvatar ? (
@@ -205,13 +202,13 @@ const ProfileCard = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-3xl font-bold text-white">
+                <span className="text-3xl font-bold text-[#111517]">
                   {displayInitial}
                 </span>
               )}
-            </div>
+            </button>
             {displayVerified && (
-              <div className="absolute bottom-0 right-0 bg-blue-600 text-white p-1 rounded-full shadow-md border-2 border-white">
+              <div className="absolute bottom-0 right-0 rounded-full border-2 border-[#151a1d] bg-[#d6a21d] p-1 text-[#111517] shadow-md">
                 <Shield size={12} />
               </div>
             )}
@@ -222,8 +219,8 @@ const ProfileCard = () => {
             {!isEditing && (
               <Button
                 onClick={() => setIsEditing(true)}
-                variant="outline"
-                className="gap-2 rounded-full px-5 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all"
+                 variant="outline"
+                 className="gap-2 rounded-full border-[#d6a21d]/60 px-5 text-[#f2c14e] hover:bg-[#d6a21d] hover:text-[#111517]"
               >
                 <Edit2 size={15} /> Edit Profile
               </Button>
@@ -232,8 +229,8 @@ const ProfileCard = () => {
               onClick={() => {
                 signOut({ callbackUrl: "/" });
               }}
-              variant="destructive"
-              className="gap-2 rounded-full px-5"
+               variant="destructive"
+               className="gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-5 text-red-200 hover:bg-red-500/20"
             >
               <LogOut size={15} /> Logout
             </Button>
@@ -243,7 +240,7 @@ const ProfileCard = () => {
         {/* ── NAME + BADGE ── */}
         <div className="mb-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-white">
               {displayName || "—"}
             </h2>
             {displayVerified && (
@@ -251,7 +248,7 @@ const ProfileCard = () => {
                 <CheckCircle2 size={11} /> Verified
               </span>
             )}
-            <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-2 py-0.5 rounded-full capitalize">
+              <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold capitalize text-white/60">
               {displayRole}
             </span>
           </div>
@@ -260,49 +257,49 @@ const ProfileCard = () => {
         {/* ── PROFILE DETAILS GRID ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
           {/* Email */}
-          <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Mail size={14} className="text-primary" />
+           <div className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.04] px-4 py-3">
+             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#d6a21d]/15">
+               <Mail size={14} className="text-[#f2c14e]" />
             </div>
             <div className="overflow-hidden">
-              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Email</p>
-              <p className="text-sm font-semibold text-gray-800 truncate">
+               <p className="text-[10px] font-medium uppercase tracking-wider text-white/40">Email / E-mel</p>
+               <p className="truncate text-sm font-semibold text-white/85">
                 {displayEmail || "—"}
               </p>
             </div>
           </div>
 
           {/* Phone */}
-          <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Phone size={14} className="text-primary" />
+           <div className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.04] px-4 py-3">
+             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#d6a21d]/15">
+               <Phone size={14} className="text-[#f2c14e]" />
             </div>
             <div className="overflow-hidden">
-              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Phone</p>
-              <p className="text-sm font-semibold text-gray-800 truncate">
+               <p className="text-[10px] font-medium uppercase tracking-wider text-white/40">Phone / Telefon</p>
+               <p className="truncate text-sm font-semibold text-white/85">
                 {displayPhone || (
-                  <span className="text-gray-400 italic font-normal">Not added yet</span>
+                   <span className="font-normal italic text-white/35">Not added yet / Belum ditambah</span>
                 )}
               </p>
             </div>
           </div>
 
           {/* Address */}
-          <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3 sm:col-span-2">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <MapPin size={14} className="text-primary" />
+           <div className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.04] px-4 py-3 sm:col-span-2">
+             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#d6a21d]/15">
+               <MapPin size={14} className="text-[#f2c14e]" />
             </div>
             <div className="overflow-hidden">
-              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Delivery Address</p>
+               <p className="text-[10px] font-medium uppercase tracking-wider text-white/40">Delivery address / Alamat penghantaran</p>
               {profile?.address?.street ? (
-                <p className="text-sm font-semibold text-gray-800">
+                 <p className="text-sm font-semibold text-white/85">
                   {profile.address.street}, {profile.address.city},{" "}
                   {profile.address.state} {profile.address.zip},{" "}
                   {profile.address.country}
                 </p>
               ) : (
-                <p className="text-sm text-gray-400 italic font-normal">
-                  No address saved — add one to speed up checkout
+                 <p className="font-normal italic text-white/35">
+                   No address saved / Tiada alamat — add one to speed up checkout
                 </p>
               )}
             </div>
@@ -311,13 +308,14 @@ const ProfileCard = () => {
 
         {/* ── EDIT FORM ── */}
         {isEditing && (
-          <div className="pt-6 border-t border-gray-100 animate-in slide-in-from-top-2">
-            <h3 className="text-base font-bold mb-4 text-gray-900">Kemaskini Profil</h3>
+          <div className="animate-in slide-in-from-top-2 border-t border-white/10 pt-6">
+             <h3 className="mb-1 text-base font-bold text-white">Edit profile / Kemaskini profil</h3>
+             <p className="mb-4 text-xs text-white/45">Keep your contact and delivery details ready for checkout.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Name */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Nama
+                   <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
+                   Name / Nama
                 </label>
                 <input
                   type="text"
@@ -325,13 +323,13 @@ const ProfileCard = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-gray-50 focus:bg-white transition-colors"
+                   className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-white/25 focus:border-[#d6a21d] focus:bg-white/10 focus:ring-2 focus:ring-[#d6a21d]/20"
                 />
               </div>
               {/* Phone */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Nombor Telefon
+                   <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
+                   Phone / Nombor telefon
                 </label>
                 <input
                   type="text"
@@ -340,18 +338,18 @@ const ProfileCard = () => {
                     setFormData({ ...formData, phoneNumber: e.target.value })
                   }
                   placeholder="+60123456789"
-                  className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-gray-50 focus:bg-white transition-colors"
+                   className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-white/25 focus:border-[#d6a21d] focus:bg-white/10 focus:ring-2 focus:ring-[#d6a21d]/20"
                 />
               </div>
 
               <div className="col-span-1 md:col-span-2">
-                <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">
-                  Alamat Penghantaran (EasyParcel)
+                 <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/60">
+                   Delivery address / Alamat penghantaran (EasyParcel)
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Street */}
                   <div className="flex flex-col gap-1.5 sm:col-span-2">
-                    <label className="text-xs text-gray-500">Alamat / Street</label>
+                     <label className="text-xs text-white/45">Street / Alamat</label>
                     <input
                       type="text"
                       value={formData.address.street}
@@ -361,12 +359,12 @@ const ProfileCard = () => {
                           address: { ...formData.address, street: e.target.value },
                         })
                       }
-                      className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-gray-50 focus:bg-white transition-colors"
+                       className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none transition-colors focus:border-[#d6a21d] focus:bg-white/10 focus:ring-2 focus:ring-[#d6a21d]/20"
                     />
                   </div>
                   {/* Postcode */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-gray-500">Poskod</label>
+                     <label className="text-xs text-white/45">Postcode / Poskod</label>
                     <input
                       type="text"
                       value={formData.address.zip}
@@ -376,12 +374,12 @@ const ProfileCard = () => {
                           address: { ...formData.address, zip: e.target.value },
                         })
                       }
-                      className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-gray-50 focus:bg-white transition-colors"
+                       className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none transition-colors focus:border-[#d6a21d] focus:bg-white/10 focus:ring-2 focus:ring-[#d6a21d]/20"
                     />
                   </div>
                   {/* City */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-gray-500">Bandar</label>
+                     <label className="text-xs text-white/45">City / Bandar</label>
                     <input
                       type="text"
                       value={formData.address.city}
@@ -391,12 +389,12 @@ const ProfileCard = () => {
                           address: { ...formData.address, city: e.target.value },
                         })
                       }
-                      className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-gray-50 focus:bg-white transition-colors"
+                       className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none transition-colors focus:border-[#d6a21d] focus:bg-white/10 focus:ring-2 focus:ring-[#d6a21d]/20"
                     />
                   </div>
                   {/* State */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-gray-500">Negeri</label>
+                     <label className="text-xs text-white/45">State / Negeri</label>
                     <input
                       type="text"
                       value={formData.address.state}
@@ -406,12 +404,12 @@ const ProfileCard = () => {
                           address: { ...formData.address, state: e.target.value },
                         })
                       }
-                      className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-gray-50 focus:bg-white transition-colors"
+                       className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none transition-colors focus:border-[#d6a21d] focus:bg-white/10 focus:ring-2 focus:ring-[#d6a21d]/20"
                     />
                   </div>
                   {/* Country */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-gray-500">Negara</label>
+                     <label className="text-xs text-white/45">Country / Negara</label>
                     <input
                       type="text"
                       value={formData.address.country}
@@ -421,7 +419,7 @@ const ProfileCard = () => {
                           address: { ...formData.address, country: e.target.value },
                         })
                       }
-                      className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-gray-50 focus:bg-white transition-colors"
+                       className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none transition-colors focus:border-[#d6a21d] focus:bg-white/10 focus:ring-2 focus:ring-[#d6a21d]/20"
                     />
                   </div>
                 </div>
@@ -432,7 +430,7 @@ const ProfileCard = () => {
               <Button
                 onClick={handleCancel}
                 variant="ghost"
-                className="gap-2 text-gray-500 rounded-full"
+                 className="gap-2 rounded-full text-white/55 hover:bg-white/5 hover:text-white"
               >
                 <X size={15} /> Batal
               </Button>

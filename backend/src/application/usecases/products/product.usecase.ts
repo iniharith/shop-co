@@ -9,7 +9,9 @@ import { CartRepository } from "../../../infrastructure/db/repositories/cart.rep
 import { RedisService } from "../../../infrastructure/redis/redis";
 import { REDIS_KEYS } from "../../../shared/constants/redis.constant";
 
-const CATALOG_CACHE_KEY = `${REDIS_KEYS.PRODUCTS}:catalog-v2`;
+const PRODUCT_CACHE_PREFIX = `${REDIS_KEYS.PRODUCTS}:catalog-v3:`;
+const CATALOG_CACHE_KEY = `${PRODUCT_CACHE_PREFIX}all`;
+const CATEGORIES_CACHE_KEY = `${PRODUCT_CACHE_PREFIX}categories`;
 
 export class ProductUsecase {
     private readonly productRepository: ProductRepository;
@@ -34,53 +36,53 @@ export class ProductUsecase {
     }
 
     async getProductById(id: string) {
-        const cachedProduct = await this.redisService.get(REDIS_KEYS.PRODUCTS + id);
+        const cachedProduct = await this.redisService.get(PRODUCT_CACHE_PREFIX + `id:${id}`);
         if (cachedProduct) {
             return JSON.parse(cachedProduct);
         }
         const product = await this.productRepository.findById(id);
-        await this.redisService.set(REDIS_KEYS.PRODUCTS + id, JSON.stringify(product), 60 * 60 * 24);
+        await this.redisService.set(PRODUCT_CACHE_PREFIX + `id:${id}`, JSON.stringify(product), 60 * 60 * 24);
         return product;
     }
 
     async filterProducts(filter: FilterQuery<IProductDocument>, limit: number = 10, page: number = 1) {
-        const cachedProducts = await this.redisService.get(REDIS_KEYS.PRODUCTS + filter.toString() + limit + page);
+        const cachedProducts = await this.redisService.get(PRODUCT_CACHE_PREFIX + `filter:${filter.toString()}${limit}${page}`);
         if (cachedProducts) {
             return JSON.parse(cachedProducts);
         }
         const products = await this.productRepository.filterProducts(filter, limit, page);
-        await this.redisService.set(REDIS_KEYS.PRODUCTS + filter.toString() + limit + page, JSON.stringify(products), 60 * 60 * 24);
+        await this.redisService.set(PRODUCT_CACHE_PREFIX + `filter:${filter.toString()}${limit}${page}`, JSON.stringify(products), 60 * 60 * 24);
         return products;
     }
 
     async searchProducts(query: string) {
-        const cachedProducts = await this.redisService.get(REDIS_KEYS.PRODUCTS + query);
+        const cachedProducts = await this.redisService.get(PRODUCT_CACHE_PREFIX + `search:${query}`);
         if (cachedProducts) {
             return JSON.parse(cachedProducts);
         }
         const products = await this.productRepository.searchProducts(query);
-        await this.redisService.set(REDIS_KEYS.PRODUCTS + query, JSON.stringify(products), 60 * 60 * 24);
+        await this.redisService.set(PRODUCT_CACHE_PREFIX + `search:${query}`, JSON.stringify(products), 60 * 60 * 24);
         return products;
     }
 
     async getProductByCategory(category: string) {
-        const cachedProducts = await this.redisService.get(REDIS_KEYS.PRODUCTS + category);
+        const cachedProducts = await this.redisService.get(PRODUCT_CACHE_PREFIX + `category:${category}`);
         if (cachedProducts) {
             
             return JSON.parse(cachedProducts);
         }
         const products = await this.productRepository.findByCategory(category);
-        await this.redisService.set(REDIS_KEYS.PRODUCTS + category, JSON.stringify(products), 60 * 60 * 24);
+        await this.redisService.set(PRODUCT_CACHE_PREFIX + `category:${category}`, JSON.stringify(products), 60 * 60 * 24);
         return products;
     }
 
     async getAvailableCategories() {
-        const cachedCategories = await this.redisService.get(REDIS_KEYS.CATEGORIES);
+        const cachedCategories = await this.redisService.get(CATEGORIES_CACHE_KEY);
         if (cachedCategories) {
             return JSON.parse(cachedCategories);
         }
         const categories = await this.productRepository.getCategories();
-        await this.redisService.set(REDIS_KEYS.CATEGORIES, JSON.stringify(categories), 60 * 60 * 24);
+        await this.redisService.set(CATEGORIES_CACHE_KEY, JSON.stringify(categories), 60 * 60 * 24);
         return categories;
     }
 
