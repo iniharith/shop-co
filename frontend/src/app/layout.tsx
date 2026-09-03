@@ -80,7 +80,7 @@ export default async function RootLayout({
 }>) {
   const requestHeaders = await headers();
   const isTaskAccess = requestHeaders.get("x-kc-task-access") === "1";
-  const session = isTaskAccess ? null : await getServerSession(authConfig);
+  const session = await getServerSession(authConfig);
   const cookieStore = await cookies();
   const savedLocale = cookieStore.get("kc_locale")?.value;
   const locale: Locale = savedLocale === "ms" ? "ms" : "en";

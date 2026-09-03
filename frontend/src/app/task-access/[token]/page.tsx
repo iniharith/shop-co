@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { CalendarDays, ClipboardList, LoaderCircle, PackageCheck } from "lucide-react";
+import { CalendarDays, Check, ClipboardList, LoaderCircle, LockKeyhole, PackageCheck } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { Card } from "@/components/ui/card";
+import { LoginForm } from "@/components/forms/loginForm";
 import AxiosInstance from "@/utils/axios";
 
 type TaskDetails = {
+  _id: string;
   title: string;
   orderId?: string | null;
   username?: string | null;
@@ -20,9 +23,11 @@ type TaskDetails = {
 };
 
 const labelStatus = (status: string) => status.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+const TASK_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_REVIEWED", "ARTWORK_REJECTED", "IN_DESIGN", "PEMBETULAN", "DONE_DESIGN", "IN_PRODUCTION", "PRINT_AWB", "DONE_PRINTING", "PACKAGING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "FAILED", "RETURN"];
 
 export default function TaskAccessPage() {
   const { token } = useParams<{ token: string }>();
+  const { data: session, status: sessionStatus } = useSession();
   const [task, setTask] = useState<TaskDetails | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
   const [activeFileTag, setActiveFileTag] = useState<"for_print" | "draft" | "awb">("for_print");
@@ -33,10 +38,10 @@ export default function TaskAccessPage() {
   }, [activeFileTag, taskFiles]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || sessionStatus !== "authenticated" || !session?.user?.token) return;
     let cancelled = false;
     setState("loading");
-    void AxiosInstance().get(`/api/tasks/qr/${encodeURIComponent(token)}`)
+    void AxiosInstance(session.user.token).get(`/api/tasks/qr/${encodeURIComponent(token)}`)
       .then(({ data }) => {
         if (!cancelled) {
           setTask(data?.task || null);
@@ -45,10 +50,14 @@ export default function TaskAccessPage() {
       })
       .catch(() => { if (!cancelled) setState("error"); });
     return () => { cancelled = true; };
-  }, [token]);
+  }, [token, sessionStatus, session?.user?.token]);
 
-  if (state === "loading") {
+  if (sessionStatus === "loading" || (sessionStatus === "authenticated" && state === "loading")) {
     return <div className="flex min-h-[60vh] items-center justify-center font-[var(--font-dm-sans)]"><LoaderCircle className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+
+  if (sessionStatus !== "authenticated") {
+    return <main className="mx-auto flex min-h-screen max-w-lg items-center px-4 py-8 font-[var(--font-dm-sans)]"><Card className="w-full space-y-5 p-6 sm:p-8"><div className="text-center"><LockKeyhole className="mx-auto mb-3 h-10 w-10 text-primary" /><h1 className="text-2xl font-bold">Staff sign in required</h1><p className="mt-2 text-sm text-muted-foreground">Sign in to open this internal production task.</p></div><LoginForm redirectTo={`/task-access/${encodeURIComponent(token)}`} /></Card></main>;
   }
 
   if (state === "error" || !task) {
@@ -58,6 +67,20 @@ export default function TaskAccessPage() {
   const items = task.lineItems?.length ? task.lineItems : [{ productName: task.productName || task.title, category: task.category, qty: 1 }];
   const fileUrl = (url: string) => url.startsWith("http") ? url : `${(process.env.NEXT_PUBLIC_BACKEND_URL || "").replace(/\/$/, "")}/${url.replace(/^\/+/, "")}`;
   const isImageFile = (name: string) => /\.(jpe?g|png|gif|webp|svg|bmp|avif)$/i.test(name);
+  const updateStatus = async (status: string) => {
+    if (!session?.user?.token || status === task.status) return;
+    const previousStatus = task.status;
+    setTask({ ...task, status });
+    setState("loading");
+    try {
+      await AxiosInstance(session.user.token).put(`/api/tasks/${task._id}`, { status });
+    } catch {
+      setTask({ ...task, status: previousStatus });
+      setState("error");
+      return;
+    }
+    setState("idle");
+  };
   return (
     <main className="mx-auto max-w-2xl px-4 py-8 font-[var(--font-dm-sans)] sm:py-12">
       <Card className="overflow-hidden">
@@ -66,7 +89,7 @@ export default function TaskAccessPage() {
           <div className="rounded-lg border p-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">Order ID</p><p className="mt-1 break-all font-semibold">{task.orderId || "-"}</p></div>
           <div className="rounded-lg border p-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">Username</p><p className="mt-1 break-all font-semibold">{task.username || "-"}</p></div>
           <div className="rounded-lg border p-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">Category</p><p className="mt-1 font-semibold">{task.category?.replace(/_/g, " ") || "-"}</p></div>
-          <div className="rounded-lg border p-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">Current Status</p><p className="mt-1 font-semibold">{labelStatus(task.status)}</p></div>
+           <div className="rounded-lg border p-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">Current Status</p><div className="mt-2 flex items-center gap-2"><select value={task.status} onChange={(event) => void updateStatus(event.target.value)} className="min-w-0 flex-1 rounded-md border bg-background px-2 py-1.5 text-sm font-semibold"><option value={task.status}>{labelStatus(task.status)}</option>{TASK_STATUSES.filter((status) => status !== task.status).map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select><Check className="h-4 w-4 shrink-0 text-primary" /></div></div>
           <div className="rounded-lg border p-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">Created</p><p className="mt-1 font-semibold">{task.createdAt ? new Date(task.createdAt).toLocaleDateString() : "-"}</p></div>
           {task.dueDate && <div className="flex items-center gap-3 rounded-lg border p-4 sm:col-span-2"><CalendarDays className="h-5 w-5 text-primary" /><div><p className="text-xs uppercase tracking-wide text-muted-foreground">Expected Date</p><p className="font-semibold">{new Date(task.dueDate).toLocaleDateString()}</p></div></div>}
         </div>

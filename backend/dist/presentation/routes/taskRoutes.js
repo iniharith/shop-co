@@ -69,6 +69,8 @@ const cursorPagination_1 = require("../../shared/utils/cursorPagination");
 const aiIndexService_1 = require("../../application/ai/aiIndexService");
 const pgVectorStore_1 = require("../../infrastructure/vector/pgVectorStore");
 const aiProvider_1 = require("../../infrastructure/ai/aiProvider");
+const Task_1 = require("../../domain/entities/Task");
+const crypto_1 = require("crypto");
 const reindexTaskInBg = (task) => {
     if (!task || !(0, aiProvider_1.aiConfigured)())
         return;
@@ -110,6 +112,56 @@ const taskStorage = (0, multer_s3_1.default)({
 });
 const taskUpload = (0, multer_1.default)({ storage: taskStorage });
 const router = (0, express_1.Router)();
+const STAFF_ROLES = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'];
+// A QR never exposes the task id. The token is resolved only after the user
+// is authenticated, and clients receive a deliberately small task payload.
+router.get('/qr/:token', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const authReq = req;
+    if (!STAFF_ROLES.includes(authReq.role)) {
+        res.status(403).json({ success: false, message: 'Staff login is required' });
+        return;
+    }
+    const task = yield Task_1.Task.findOne({ qrToken: req.params.token, isDeleted: { $ne: true } }).lean();
+    if (!task) {
+        res.status(404).json({ success: false, message: 'Task QR code not found' });
+        return;
+    }
+    res.json({
+        success: true,
+        task: {
+            _id: task._id,
+            title: task.title,
+            orderId: task.orderId || null,
+            username: task.customerUsername || null,
+            productName: task.productName || null,
+            category: task.category || null,
+            lineItems: (task.lineItems || []).map((item) => ({ productName: item.productName, category: item.category, qty: item.qty })),
+            files: (task.files || [])
+                .filter((file) => file.tag === 'draft' || file.tag === 'for_print' || file.tag === 'awb')
+                .map((file) => ({ name: file.name, url: file.url, tag: file.tag })),
+            status: task.status,
+            statusUpdatedAt: task.statusUpdatedAt || null,
+            dueDate: task.dueDate || null,
+            createdAt: task.createdAt,
+        },
+    });
+})));
+router.get('/:id/qr', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const authReq = req;
+    if (!STAFF_ROLES.includes(authReq.role)) {
+        res.status(403).json({ success: false, message: 'Only staff can create task QR codes' });
+        return;
+    }
+    const task = yield Task_1.Task.findById(req.params.id);
+    if (!task || task.isDeleted) {
+        res.status(404).json({ success: false, message: 'Task not found' });
+        return;
+    }
+    if (!task.qrToken)
+        task.qrToken = (0, crypto_1.randomBytes)(24).toString('hex');
+    yield task.save();
+    res.json({ success: true, token: task.qrToken });
+})));
 router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     const authReq = req;
@@ -118,6 +170,7 @@ router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)
         status: req.query.status,
         assignee: req.query.assignee,
         orderId: req.query.orderId,
+        unlinked: req.query.unlinked === 'true',
         search: req.query.search,
     };
     if (req.query.cursor !== undefined) {
@@ -644,5 +697,41 @@ router.delete('/:id/files/:fileId', auth_middileware_1.default, (0, express_asyn
     const freshTask = yield TaskRepository_1.taskRepository.findById(id);
     res.json({ success: true, message: 'File deleted from task', task: freshTask });
     void (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: freshTask });
+})));
+router.get('/gantt', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { startDate, endDate, category, assignee } = req.query;
+    const filter = { isDeleted: { $ne: true } };
+    if (startDate || endDate) {
+        filter.createdAt = {};
+        if (startDate)
+            filter.createdAt.$gte = new Date(startDate);
+        if (endDate)
+            filter.createdAt.$lte = new Date(endDate);
+    }
+    if (category)
+        filter.category = category;
+    if (assignee)
+        filter.assignee = assignee;
+    const tasks = yield require('../../domain/entities/Task').default
+        .find(filter)
+        .select('title status category assignee createdAt dueDate statusHistory files')
+        .sort({ createdAt: -1 })
+        .limit(500)
+        .lean();
+    const ganttData = tasks.map((task) => {
+        var _a, _b, _c;
+        return ({
+            id: task._id,
+            title: task.title,
+            status: task.status,
+            category: task.category,
+            assignee: task.assignee,
+            createdAt: task.createdAt,
+            dueDate: task.dueDate || null,
+            completedAt: ((_b = (_a = task.statusHistory) === null || _a === void 0 ? void 0 : _a.find((h) => h.status === 'COMPLETED')) === null || _b === void 0 ? void 0 : _b.timestamp) || null,
+            fileCount: ((_c = task.files) === null || _c === void 0 ? void 0 : _c.length) || 0,
+        });
+    });
+    res.json({ success: true, data: ganttData });
 })));
 exports.default = router;

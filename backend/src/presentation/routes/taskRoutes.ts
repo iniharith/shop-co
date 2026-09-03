@@ -68,13 +68,19 @@ const taskUpload = multer({ storage: taskStorage });
 
 const router = Router();
 
-const STAFF_ROLES = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'];
+const STAFF_ROLES = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'];
 
 // A QR never exposes the task id. The token is resolved only after the user
 // is authenticated, and clients receive a deliberately small task payload.
 router.get(
   '/qr/:token',
+  authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
+    const authReq = req as any;
+    if (!STAFF_ROLES.includes(authReq.role)) {
+      res.status(403).json({ success: false, message: 'Staff login is required' });
+      return;
+    }
     const task = await Task.findOne({ qrToken: req.params.token, isDeleted: { $ne: true } }).lean();
     if (!task) {
       res.status(404).json({ success: false, message: 'Task QR code not found' });
