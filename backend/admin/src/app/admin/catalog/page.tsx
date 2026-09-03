@@ -17,6 +17,8 @@ type Product = {
 };
 
 const emptyProduct: Product = { _id: '', name: '', description: '', category: '', price: 0, originalPrice: 0, discount: 0, images: [] };
+const storefrontUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://kampungcetak.com';
+const resolveImageUrl = (image: string) => image.startsWith('/') ? `${storefrontUrl}${image}` : image;
 
 export default function CatalogPage() {
   const { data: session } = useSession();
@@ -32,7 +34,7 @@ export default function CatalogPage() {
   const load = async () => {
     if (!token) return;
     setLoading(true);
-    try { const result = await getCatalog(token); setProducts(result.products || []); setSelected([]); }
+    try { const result = await getCatalog(token); setProducts((result.products || []).map((product: Product) => ({ ...product, images: (product.images || []).map(resolveImageUrl) }))); setSelected([]); }
     catch (error: any) { toast.error(error?.response?.data?.message || 'Could not load catalog'); }
     finally { setLoading(false); }
   };

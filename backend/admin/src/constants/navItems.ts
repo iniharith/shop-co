@@ -37,7 +37,7 @@ export const AdminNavItems: NavItem[] = [
     {
         title: 'Catalog',
         url: '/admin/catalog',
-        icon: 'box',
+        icon: 'store',
         shortcut: ['c', 'a'],
         isActive: false,
     },
@@ -132,8 +132,8 @@ export const roleByNavItems = (role: string) => {
     } else if (role === "awapparel") {
         allowedTitles = ['Sublimation'];
     } else if (role !== "sysadmin" && role !== "admin" && role !== "boss") {
-        // Only sysadmin, admin, and boss can access the administrative tools.
-        allowedTitles = allowedTitles.filter(title => title !== 'Server Status' && title !== 'Tools' && title !== 'Monitoring');
+        // Only sysadmin, admin, and boss can access administrative tools and catalog.
+        allowedTitles = allowedTitles.filter(title => title !== 'Server Status' && title !== 'Tools' && title !== 'Monitoring' && title !== 'Catalog');
     }
 
     // Route and implementation remain available; only hide it from navigation for now.
