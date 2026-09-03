@@ -151,13 +151,13 @@ const ProfileCard = () => {
   // Loading skeleton
   if (isLoading) {
     return (
-      <div className="w-full rounded-3xl border border-white/10 bg-[#151a1d] p-8 shadow-2xl animate-pulse">
+      <div className="w-full rounded-3xl border border-border bg-card p-8 shadow-xl animate-pulse">
         <div className="flex items-center gap-6">
-          <div className="h-24 w-24 rounded-full bg-white/10" />
+          <div className="h-24 w-24 rounded-full bg-muted" />
           <div className="flex flex-col gap-3 flex-1">
-            <div className="h-6 w-40 rounded-full bg-white/10" />
-            <div className="h-4 w-56 rounded-full bg-white/5" />
-            <div className="h-4 w-32 rounded-full bg-white/5" />
+            <div className="h-6 w-40 rounded-full bg-muted" />
+            <div className="h-4 w-56 rounded-full bg-muted/70" />
+            <div className="h-4 w-32 rounded-full bg-muted/70" />
           </div>
         </div>
       </div>
@@ -165,7 +165,7 @@ const ProfileCard = () => {
   }
 
   return (
-    <div className="w-full overflow-hidden rounded-3xl border border-white/10 bg-[#151a1d] shadow-2xl shadow-black/20">
+    <div className="w-full overflow-hidden rounded-3xl border border-border bg-card shadow-xl">
 
       {/* ── HEADER BANNER ── */}
       <div className="relative h-32 bg-[radial-gradient(circle_at_80%_20%,rgba(214,162,29,0.42),transparent_30%),linear-gradient(120deg,#252b2d,#111517)]">
@@ -186,7 +186,7 @@ const ProfileCard = () => {
                 accept="image/*"
                 onChange={handleAvatarChange}
             />
-            <button type="button" aria-label="Change profile photo / Tukar gambar profil" className="group relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-[#151a1d] bg-[#d6a21d] shadow-xl" onClick={() => fileInputRef.current?.click()}>
+            <button type="button" aria-label="Change profile photo / Tukar gambar profil" className="group relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-card bg-amber-500 shadow-xl" onClick={() => fileInputRef.current?.click()}>
               {isUploadingAvatar && (
                 <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50">
                   <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -202,13 +202,13 @@ const ProfileCard = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-3xl font-bold text-[#111517]">
+                <span className="text-3xl font-bold text-amber-950">
                   {displayInitial}
                 </span>
               )}
             </button>
             {displayVerified && (
-              <div className="absolute bottom-0 right-0 rounded-full border-2 border-[#151a1d] bg-[#d6a21d] p-1 text-[#111517] shadow-md">
+              <div className="absolute bottom-0 right-0 rounded-full border-2 border-card bg-amber-500 p-1 text-amber-950 shadow-md">
                 <Shield size={12} />
               </div>
             )}
@@ -220,7 +220,7 @@ const ProfileCard = () => {
               <Button
                 onClick={() => setIsEditing(true)}
                  variant="outline"
-                 className="gap-2 rounded-full border-[#d6a21d]/60 px-5 text-[#f2c14e] hover:bg-[#d6a21d] hover:text-[#111517]"
+                 className="gap-2 rounded-full border-amber-600/60 px-5 text-amber-700 hover:bg-amber-500 hover:text-amber-950 dark:text-[#f2c14e]"
               >
                 <Edit2 size={15} /> Edit Profile
               </Button>
@@ -230,7 +230,7 @@ const ProfileCard = () => {
                 signOut({ callbackUrl: "/" });
               }}
                variant="destructive"
-               className="gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-5 text-red-200 hover:bg-red-500/20"
+               className="gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-5 text-red-600 hover:bg-red-500/20 dark:text-red-200"
             >
               <LogOut size={15} /> Logout
             </Button>
@@ -240,7 +240,7 @@ const ProfileCard = () => {
         {/* ── NAME + BADGE ── */}
         <div className="mb-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-2xl font-bold text-white">
+            <h2 className="text-2xl font-bold text-foreground">
               {displayName || "—"}
             </h2>
             {displayVerified && (
@@ -248,7 +248,7 @@ const ProfileCard = () => {
                 <CheckCircle2 size={11} /> Verified
               </span>
             )}
-              <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold capitalize text-white/60">
+              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold capitalize text-muted-foreground">
               {displayRole}
             </span>
           </div>
@@ -257,48 +257,48 @@ const ProfileCard = () => {
         {/* ── PROFILE DETAILS GRID ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
           {/* Email */}
-           <div className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.04] px-4 py-3">
-             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#d6a21d]/15">
-               <Mail size={14} className="text-[#f2c14e]" />
+           <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3">
+             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
+               <Mail size={14} className="text-amber-700 dark:text-[#f2c14e]" />
             </div>
             <div className="overflow-hidden">
-               <p className="text-[10px] font-medium uppercase tracking-wider text-white/40">Email / E-mel</p>
-               <p className="truncate text-sm font-semibold text-white/85">
+               <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Email / E-mel</p>
+               <p className="truncate text-sm font-semibold text-foreground">
                 {displayEmail || "—"}
               </p>
             </div>
           </div>
 
           {/* Phone */}
-           <div className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.04] px-4 py-3">
-             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#d6a21d]/15">
-               <Phone size={14} className="text-[#f2c14e]" />
+           <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3">
+             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
+               <Phone size={14} className="text-amber-700 dark:text-[#f2c14e]" />
             </div>
             <div className="overflow-hidden">
-               <p className="text-[10px] font-medium uppercase tracking-wider text-white/40">Phone / Telefon</p>
-               <p className="truncate text-sm font-semibold text-white/85">
+               <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Phone / Telefon</p>
+               <p className="truncate text-sm font-semibold text-foreground">
                 {displayPhone || (
-                   <span className="font-normal italic text-white/35">Not added yet / Belum ditambah</span>
+                   <span className="font-normal italic text-muted-foreground">Not added yet / Belum ditambah</span>
                 )}
               </p>
             </div>
           </div>
 
           {/* Address */}
-           <div className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.04] px-4 py-3 sm:col-span-2">
-             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#d6a21d]/15">
-               <MapPin size={14} className="text-[#f2c14e]" />
+           <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3 sm:col-span-2">
+             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
+               <MapPin size={14} className="text-amber-700 dark:text-[#f2c14e]" />
             </div>
             <div className="overflow-hidden">
-               <p className="text-[10px] font-medium uppercase tracking-wider text-white/40">Delivery address / Alamat penghantaran</p>
+               <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Delivery address / Alamat penghantaran</p>
               {profile?.address?.street ? (
-                 <p className="text-sm font-semibold text-white/85">
+                 <p className="text-sm font-semibold text-foreground">
                   {profile.address.street}, {profile.address.city},{" "}
                   {profile.address.state} {profile.address.zip},{" "}
                   {profile.address.country}
                 </p>
               ) : (
-                 <p className="font-normal italic text-white/35">
+                 <p className="font-normal italic text-muted-foreground">
                    No address saved / Tiada alamat — add one to speed up checkout
                 </p>
               )}
@@ -308,9 +308,9 @@ const ProfileCard = () => {
 
         {/* ── EDIT FORM ── */}
         {isEditing && (
-          <div className="animate-in slide-in-from-top-2 border-t border-white/10 pt-6">
-             <h3 className="mb-1 text-base font-bold text-white">Edit profile / Kemaskini profil</h3>
-             <p className="mb-4 text-xs text-white/45">Keep your contact and delivery details ready for checkout.</p>
+          <div className="animate-in slide-in-from-top-2 border-t border-border pt-6">
+             <h3 className="mb-1 text-base font-bold text-foreground">Edit profile / Kemaskini profil</h3>
+             <p className="mb-4 text-xs text-muted-foreground">Keep your contact and delivery details ready for checkout.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Name */}
               <div className="flex flex-col gap-1.5">

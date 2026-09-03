@@ -47,6 +47,7 @@ const navTitleKey: Record<string, string> = {
   Projects: "nav.projects",
   Users: "nav.users",
   Orders: "nav.orders",
+  Catalog: "Catalog",
   Artworks: "nav.artworks",
   "Print Drafts": "nav.printDrafts",
   Tracking: "nav.tracking",

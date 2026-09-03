@@ -136,13 +136,13 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6 w-full">
       
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-100 rounded-3xl p-8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 text-[120px] opacity-10 leading-none select-none">🖨️</div>
+      <div className="relative overflow-hidden rounded-3xl border border-amber-600/20 bg-gradient-to-br from-amber-50 to-orange-50 p-8 dark:from-[#282219] dark:to-[#1b1710]">
+        <div className="absolute right-0 top-0 select-none text-[120px] leading-none opacity-10">🖨️</div>
         <div className="relative">
-          <h1 className="text-3xl font-extrabold text-black mb-2">
+          <h1 className="mb-2 text-3xl font-extrabold text-gray-950 dark:text-[#fff8e8]">
             Selamat Datang! 👋
           </h1>
-          <p className="text-gray-600 text-base max-w-lg">
+          <p className="max-w-lg text-base text-gray-700 dark:text-[#f7e8c5]/75">
             Urus pesanan, hantar fail cetak, dan jejak penghantaran anda — semuanya di sini.
           </p>
           <div className="flex gap-4 mt-6 flex-wrap">
@@ -154,7 +154,7 @@ export default function DashboardPage() {
             </Link>
             <Link
               href="/home/profile/orders"
-              className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-black px-5 py-2.5 rounded-xl font-semibold text-sm transition-all border border-gray-200"
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-950 transition-all hover:bg-gray-50 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
             >
               🛒 Pesanan Saya
             </Link>
@@ -169,7 +169,7 @@ export default function DashboardPage() {
           { icon: '🚚', value: stats?.activeDeliveries ?? '—', label: 'Penghantaran Aktif', color: 'text-purple-600' },
           { icon: '🔔', value: stats?.pendingReview ?? '—', label: 'Fail Belum Disemak', color: 'text-yellow-600' },
         ].map((s, i) => (
-          <div key={i} className="bg-white border border-gray-200 rounded-2xl p-5 text-center shadow-sm">
+          <div key={i} className="rounded-2xl border border-border bg-card p-5 text-center shadow-sm">
             <div className="text-3xl mb-2">{s.icon}</div>
             <div className={`text-2xl font-extrabold ${s.color} ${loading ? 'animate-pulse' : ''}`}>{s.value}</div>
             <div className="text-xs text-gray-500 mt-1 font-medium">{s.label}</div>
@@ -178,28 +178,28 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <h2 className="text-lg font-bold">Tindakan Pantas</h2>
+       <h2 className="text-lg font-bold text-foreground">Tindakan Pantas</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {QUICK_ACTIONS.filter(a => a.title !== 'Jejak Parcel').map((a) => (
           <Link
             key={a.href}
             href={a.href}
-            className="bg-white border border-gray-200 rounded-2xl p-5 group transition-all hover:shadow-md"
+             className="group rounded-2xl border border-border bg-card p-5 transition-all hover:shadow-md"
           >
             <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
               {a.icon}
             </div>
-            <div className="font-bold text-black text-base mb-1">{a.title}</div>
-            <div className="text-sm text-gray-500">{a.desc}</div>
+             <div className="mb-1 text-base font-bold text-foreground">{a.title}</div>
+             <div className="text-sm text-muted-foreground">{a.desc}</div>
           </Link>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Files */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-base text-black">📁 Fail Terkini</h3>
+             <h3 className="text-base font-bold text-foreground">📁 Fail Terkini</h3>
             <Link href="/home/profile/upload" className="text-xs text-primary hover:underline">
               Lihat semua →
             </Link>
@@ -216,13 +216,13 @@ export default function DashboardPage() {
           ) : (
             <div className="space-y-2">
               {recentFiles.map(f => (
-                <div key={f._id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-colors">
+                 <div key={f._id} className="flex items-center gap-3 rounded-xl border border-transparent p-2.5 transition-colors hover:border-border hover:bg-muted">
                   <div className="text-xl flex-shrink-0">
                     {f.mimetype.startsWith('image/') ? '🖼️' : '📄'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-black truncate">{f.originalName}</p>
-                    <p className="text-xs text-gray-500">{formatSize(f.size)} · {formatDate(f.uploadedAt)}</p>
+                     <p className="truncate text-sm font-medium text-foreground">{f.originalName}</p>
+                     <p className="text-xs text-muted-foreground">{formatSize(f.size)} · {formatDate(f.uploadedAt)}</p>
                   </div>
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                     f.adminReviewed ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
@@ -236,9 +236,9 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Parcels */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-base text-black">📦 Penghantaran Terkini</h3>
+             <h3 className="text-base font-bold text-foreground">📦 Penghantaran Terkini</h3>
             <Link href="/home/profile/orders" className="text-xs text-primary hover:underline">
               Semua Pesanan →
             </Link>
@@ -258,14 +258,14 @@ export default function DashboardPage() {
                 <Link
                   key={p._id}
                   href={`/home/profile/orders`}
-                  className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-colors group"
+                   className="group flex items-center gap-3 rounded-xl border border-transparent p-2.5 transition-colors hover:border-border hover:bg-muted"
                 >
                   <div className="text-xl flex-shrink-0">📦</div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-mono font-medium text-black truncate group-hover:text-primary transition-colors">
+                     <p className="truncate font-mono text-sm font-medium text-foreground transition-colors group-hover:text-primary">
                       {p.trackingNumber}
                     </p>
-                    <p className="text-xs text-gray-500">{formatDate(p.updatedAt)}</p>
+                     <p className="text-xs text-muted-foreground">{formatDate(p.updatedAt)}</p>
                   </div>
                   {statusBadge(p.status)}
                 </Link>

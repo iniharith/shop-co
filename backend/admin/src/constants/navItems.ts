@@ -35,6 +35,13 @@ export const AdminNavItems: NavItem[] = [
         isActive: false,
     },
     {
+        title: 'Catalog',
+        url: '/admin/catalog',
+        icon: 'box',
+        shortcut: ['c', 'a'],
+        isActive: false,
+    },
+    {
         title: 'Artworks',
         url: '/admin/artworks',
         icon: 'object',
