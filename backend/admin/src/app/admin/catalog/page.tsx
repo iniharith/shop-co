@@ -17,8 +17,13 @@ type Product = {
 };
 
 const emptyProduct: Product = { _id: '', name: '', description: '', category: '', price: 0, originalPrice: 0, discount: 0, images: [] };
-const storefrontUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://kampungcetak.com';
-const resolveImageUrl = (image: string) => image.startsWith('/') ? `${storefrontUrl}${image}` : image;
+const storefrontUrl = 'https://kampungcetak.com';
+const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+const resolveImageUrl = (image: string) => {
+  if (image.startsWith('/images/')) return `${storefrontUrl}${encodeURI(image)}`;
+  if (image.startsWith('/') && backendUrl) return `${backendUrl}${encodeURI(image)}`;
+  return image;
+};
 
 export default function CatalogPage() {
   const { data: session } = useSession();
