@@ -26,6 +26,7 @@ router.get("/categories", ProductController.getAvailableCategories.bind(ProductC
 
 router.get("/filter", ProductController.filterProducts.bind(ProductController));
 
+router.get("/slug/:slug", ProductController.getProductBySlug.bind(ProductController));
 
 router.get("/:id", ProductController.getProductById.bind(ProductController));
 

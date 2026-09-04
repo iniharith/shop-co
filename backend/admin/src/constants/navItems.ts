@@ -42,6 +42,13 @@ export const AdminNavItems: NavItem[] = [
         isActive: false,
     },
     {
+        title: 'Catalog Analytics',
+        url: '/admin/catalog/analytics',
+        icon: 'category',
+        shortcut: ['c', 'p'],
+        isActive: false,
+    },
+    {
         title: 'Artworks',
         url: '/admin/artworks',
         icon: 'object',

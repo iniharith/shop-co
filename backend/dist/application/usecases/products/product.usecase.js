@@ -32,9 +32,9 @@ class ProductUsecase {
             const cachedProducts = yield this.redisService.get(CATALOG_CACHE_KEY);
             if (cachedProducts) {
                 console.log("Products fetched from cache");
-                return JSON.parse(cachedProducts).filter((product) => !product.isDelete);
+                return JSON.parse(cachedProducts).filter((product) => !product.isDelete && product.status !== 'draft');
             }
-            const products = (yield this.productRepository.findAll()).filter((product) => !product.isDelete);
+            const products = (yield this.productRepository.findAll()).filter((product) => !product.isDelete && product.status !== 'draft');
             yield this.redisService.set(CATALOG_CACHE_KEY, JSON.stringify(products), 60 * 60 * 24);
             return products;
         });
@@ -43,10 +43,34 @@ class ProductUsecase {
         return __awaiter(this, void 0, void 0, function* () {
             const cachedProduct = yield this.redisService.get(PRODUCT_CACHE_PREFIX + `id:${id}`);
             if (cachedProduct) {
-                return JSON.parse(cachedProduct);
+                const product = JSON.parse(cachedProduct);
+                if ((product === null || product === void 0 ? void 0 : product.isDelete) || (product === null || product === void 0 ? void 0 : product.status) === 'draft')
+                    return null;
+                void this.productRepository.incrementViewCount(String(product._id));
+                return product;
             }
             const product = yield this.productRepository.findById(id);
+            if (product)
+                void this.productRepository.incrementViewCount(String(product._id));
             yield this.redisService.set(PRODUCT_CACHE_PREFIX + `id:${id}`, JSON.stringify(product), 60 * 60 * 24);
+            return product;
+        });
+    }
+    getProductBySlug(slug) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const cacheKey = PRODUCT_CACHE_PREFIX + `slug:${slug}`;
+            const cachedProduct = yield this.redisService.get(cacheKey);
+            if (cachedProduct) {
+                const product = JSON.parse(cachedProduct);
+                if ((product === null || product === void 0 ? void 0 : product.isDelete) || (product === null || product === void 0 ? void 0 : product.status) === 'draft')
+                    return null;
+                void this.productRepository.incrementViewCount(String(product._id));
+                return product;
+            }
+            const product = yield this.productRepository.findBySlug(slug);
+            if (product)
+                void this.productRepository.incrementViewCount(String(product._id));
+            yield this.redisService.set(cacheKey, JSON.stringify(product), 60 * 60 * 24);
             return product;
         });
     }

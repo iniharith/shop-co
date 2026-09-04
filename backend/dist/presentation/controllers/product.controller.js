@@ -60,6 +60,19 @@ class ProductController {
             }
         });
     }
+    getProductBySlug(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const product = yield this.productUsecase.getProductBySlug(req.params.slug);
+                if (!product)
+                    return res.status(api_constant_1.statusCodes.NOT_FOUND).json({ message: "Product not found" });
+                res.status(api_constant_1.statusCodes.OK).json({ message: "Product fetched successfully", product });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
     /**
      * @description Search products
      * @Route /api/products/search
@@ -133,6 +146,8 @@ class ProductController {
                 const page = Number(req.query.page) || 1;
                 const filter = {
                     price: { $gte: minPrice, $lte: maxPrice },
+                    isDelete: false,
+                    status: { $ne: 'draft' },
                 };
                 if (category) {
                     // support comma-separated categories
@@ -160,6 +175,7 @@ class ProductController {
                     images: 1,
                     rating: 1,
                     isDelete: 1,
+                    slug: 1,
                     createdAt: 1,
                     updatedAt: 1,
                 })

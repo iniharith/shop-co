@@ -86,6 +86,11 @@ const ProductSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false
     },
+    archivedAt: {
+        type: Date,
+        default: null,
+        index: true,
+    },
     rating: {
         type: Number,
         default: 0,
@@ -94,6 +99,29 @@ const ProductSchema = new mongoose_1.Schema({
         type: String,
         unique: true,
         sparse: true,
+    },
+    slug: {
+        type: String,
+        unique: true,
+        sparse: true,
+        trim: true,
+        lowercase: true,
+    },
+    status: {
+        type: String,
+        enum: ['draft', 'published'],
+        default: 'published',
+        index: true,
+    },
+    seoTitle: {
+        type: String,
+        trim: true,
+        maxlength: 70,
+    },
+    seoDescription: {
+        type: String,
+        trim: true,
+        maxlength: 160,
     },
     originalPrice: {
         type: Number,
@@ -129,6 +157,11 @@ const ProductSchema = new mongoose_1.Schema({
     reviewCount: {
         type: Number,
         default: 0,
+    },
+    viewCount: {
+        type: Number,
+        default: 0,
+        min: 0,
     },
     specifications: {
         material: { type: String, trim: true },

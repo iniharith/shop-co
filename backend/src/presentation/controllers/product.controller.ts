@@ -51,6 +51,16 @@ export class ProductController {
         }
     }
 
+    async getProductBySlug(req: Request, res: Response, next: NextFunction) {
+        try {
+            const product = await this.productUsecase.getProductBySlug(req.params.slug);
+            if (!product) return res.status(statusCodes.NOT_FOUND).json({ message: "Product not found" });
+            res.status(statusCodes.OK).json({ message: "Product fetched successfully", product });
+        } catch (error) {
+            next(error);
+        }
+    }
+
 
     /**
      * @description Search products
@@ -122,6 +132,8 @@ export class ProductController {
     
             const filter: any = {
                 price: { $gte: minPrice, $lte: maxPrice },
+                isDelete: false,
+                status: { $ne: 'draft' },
             };
     
             if (category) {
@@ -154,6 +166,7 @@ export class ProductController {
                     images: 1,
                     rating: 1,
                     isDelete: 1,
+                    slug: 1,
                     createdAt: 1,
                     updatedAt: 1,
                 }

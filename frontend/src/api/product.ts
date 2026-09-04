@@ -13,7 +13,8 @@ export const getProducts = async (): Promise<IProductResponse> => {
 };
 
 export const getProductById = async (id: string) => {
-    const response = await AxiosInstance().get(`${PRODUCT_URL}/${id}`);
+    const path = /^[a-f\d]{24}$/i.test(id) ? id : `slug/${encodeURIComponent(id)}`;
+    const response = await AxiosInstance().get(`${PRODUCT_URL}/${path}`);
     return response.data;
 };
 
@@ -46,7 +47,6 @@ export const filterProducts = async (filters: {
     const response = await AxiosInstance().get(`${PRODUCT_URL}/filter`, { params: filters });
     return response.data;
 };
-
 
 
 

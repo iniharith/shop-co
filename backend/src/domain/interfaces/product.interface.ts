@@ -16,6 +16,12 @@ export interface IProduct {
     updatedAt: Date;
     rating?: number;
     catalogId?: string;
+    slug?: string;
+    status?: 'draft' | 'published';
+    seoTitle?: string;
+    seoDescription?: string;
+    isDelete?: boolean;
+    archivedAt?: Date | null;
     originalPrice?: number;
     discount?: number;
     printingOptions?: IProductPrintingOption[];

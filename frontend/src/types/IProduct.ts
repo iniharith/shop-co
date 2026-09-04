@@ -32,6 +32,9 @@ export interface IProduct {
         }[];
     };
     catalogId?: string;
+    slug?: string;
+    seoTitle?: string;
+    seoDescription?: string;
     sections?: string[];
     averageRating?: number;
     reviewCount?: number;

@@ -32,36 +32,47 @@ class ProductRepository extends base_repository_1.BaseRepository {
     }
     findByName(name) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.model.findOne({ name, isDelete: false });
+            return yield this.model.findOne({ name, isDelete: false, status: { $ne: 'draft' } });
         });
     }
     findByCategory(category) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.model.find({ isDelete: false, $or: [{ category }, { sections: category }] });
+            return yield this.model.find({ isDelete: false, status: { $ne: 'draft' }, $or: [{ category }, { sections: category }] });
         });
     }
     findById(id) {
         return __awaiter(this, void 0, void 0, function* () {
             if (typeof id === 'string' && /^prod-/i.test(id)) {
-                return yield this.model.findOne({ catalogId: id, isDelete: false });
+                return yield this.model.findOne({ catalogId: id, isDelete: false, status: { $ne: 'draft' } });
             }
-            return yield this.model.findOne({ _id: id, isDelete: false });
+            return yield this.model.findOne({ _id: id, isDelete: false, status: { $ne: 'draft' } });
+        });
+    }
+    findBySlug(slug) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.model.findOne({ slug, isDelete: false, status: { $ne: 'draft' } });
+        });
+    }
+    incrementViewCount(productId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.model.updateOne({ _id: productId, isDelete: false, status: { $ne: 'draft' } }, { $inc: { viewCount: 1 } });
         });
     }
     findByCatalogId(catalogId) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.model.findOne({ catalogId, isDelete: false });
+            return yield this.model.findOne({ catalogId, isDelete: false, status: { $ne: 'draft' } });
         });
     }
     filterProducts(filter, limit, page) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.model.find(Object.assign(Object.assign({}, filter), { isDelete: false })).limit(limit).skip(limit * (page - 1));
+            return yield this.model.find(Object.assign(Object.assign({}, filter), { isDelete: false, status: { $ne: 'draft' } })).limit(limit).skip(limit * (page - 1));
         });
     }
     searchProducts(query) {
         return __awaiter(this, void 0, void 0, function* () {
             return yield this.model.find({
                 isDelete: false,
+                status: { $ne: 'draft' },
                 $or: [
                     { name: { $regex: query, $options: "i" } },
                     { description: { $regex: query, $options: "i" } },
@@ -72,7 +83,7 @@ class ProductRepository extends base_repository_1.BaseRepository {
     }
     getCategories() {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.model.find({ isDelete: false }).distinct("category");
+            return yield this.model.find({ isDelete: false, status: { $ne: 'draft' } }).distinct("category");
         });
     }
     updateProductStockBySize(productId, size, quantityChange, context) {
@@ -94,6 +105,22 @@ class ProductRepository extends base_repository_1.BaseRepository {
                 if (typeof afterStock === 'number') {
                     yield StockAdjustment_1.StockAdjustment.create(Object.assign({ productId: product._id, productName: product.name, size, delta: quantityChange, beforeStock: afterStock - quantityChange, afterStock }, context)).catch(error => console.error('Failed to record stock adjustment:', error));
                 }
+            }
+            return product;
+        });
+    }
+    setProductStockBySize(productId, size, stock, context) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            const current = yield this.model.findOne({ _id: productId, sizes: { $elemMatch: { size } } }).select({ name: 1, sizes: 1 });
+            const beforeStock = (_a = current === null || current === void 0 ? void 0 : current.sizes.find(item => item.size === size)) === null || _a === void 0 ? void 0 : _a.stock;
+            if (typeof beforeStock !== 'number')
+                return null;
+            const product = yield this.model.findOneAndUpdate({ _id: productId, sizes: { $elemMatch: { size, stock: beforeStock } } }, { $set: { 'sizes.$.stock': stock } }, { new: true });
+            if (!product)
+                return null;
+            if (stock !== beforeStock) {
+                yield StockAdjustment_1.StockAdjustment.create(Object.assign({ productId: product._id, productName: product.name, size, delta: stock - beforeStock, beforeStock, afterStock: stock }, context)).catch(error => console.error('Failed to record stock adjustment:', error));
             }
             return product;
         });

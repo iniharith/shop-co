@@ -32,5 +32,6 @@ router.get("/search", product_controller_1.default.searchProducts.bind(product_c
 router.get("/category/:category", product_controller_1.default.getProductByCategory.bind(product_controller_1.default));
 router.get("/categories", product_controller_1.default.getAvailableCategories.bind(product_controller_1.default));
 router.get("/filter", product_controller_1.default.filterProducts.bind(product_controller_1.default));
+router.get("/slug/:slug", product_controller_1.default.getProductBySlug.bind(product_controller_1.default));
 router.get("/:id", product_controller_1.default.getProductById.bind(product_controller_1.default));
 exports.default = router;
