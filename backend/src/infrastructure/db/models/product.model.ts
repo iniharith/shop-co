@@ -35,8 +35,9 @@ const ProductSchema: Schema = new Schema(
             trim: true,
         }],
         sizes: [{
-            stock: Number,
-            size: String,
+            stock: { type: Number, min: 0, default: 0 },
+            size: { type: String, trim: true },
+            lowStockThreshold: { type: Number, min: 0, default: 10 },
         }],
 
         images: [{

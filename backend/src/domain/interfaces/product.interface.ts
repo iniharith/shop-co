@@ -86,8 +86,8 @@ export interface IProductMatrixRow {
 export interface ISize {
     stock: number;
     size: string;
+    lowStockThreshold?: number;
 }
 
 
 export interface IProductDocument extends IProduct, Document { }
-

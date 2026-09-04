@@ -21,6 +21,7 @@ export interface ICatalogProduct {
 export interface ICatalogSize {
     size: string;
     stock: number;
+    lowStockThreshold?: number;
 }
 
 export interface ICatalogPrintingOption {

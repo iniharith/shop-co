@@ -7,3 +7,5 @@ export const archiveCatalogProduct = async (token: string, id: string, archived:
 export const bulkArchiveCatalog = async (token: string, ids: string[], archived: boolean) => (await AxiosInstance(token).post('/api/admin/catalog/bulk/archive', { ids, archived })).data;
 export const bulkDeleteCatalog = async (token: string, ids: string[]) => (await AxiosInstance(token).delete('/api/admin/catalog/bulk', { data: { ids } })).data;
 export const getCatalogImageUploadUrl = async (token: string, fileName: string, contentType: string) => (await AxiosInstance(token).post('/api/admin/catalog/image-upload-url', { fileName, contentType })).data;
+export const adjustCatalogStock = async (token: string, id: string, payload: { size: string; delta: number; reason: string }) => (await AxiosInstance(token).post(`/api/admin/catalog/${id}/stock-adjustments`, payload)).data;
+export const getCatalogStockAdjustments = async (token: string, id: string, page = 1) => (await AxiosInstance(token).get(`/api/admin/catalog/${id}/stock-adjustments`, { params: { page, limit: 50 } })).data;

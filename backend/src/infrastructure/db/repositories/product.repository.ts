@@ -6,6 +6,15 @@ import { FilterQuery } from "mongoose";
 import { IProduct, IProductDocument } from "../../../domain/interfaces/product.interface";
 import ProductModel from "../models/product.model";
 import { BaseRepository } from "./base.repository";
+import { StockAdjustment } from "../../../domain/entities/StockAdjustment";
+
+export interface StockAdjustmentContext {
+    reason: string;
+    source: 'admin' | 'order' | 'rollback' | 'initial';
+    actorId?: string;
+    actorName?: string;
+    referenceId?: string;
+}
 
 export class ProductRepository extends BaseRepository<IProductDocument> {
     constructor() {
@@ -60,11 +69,11 @@ export class ProductRepository extends BaseRepository<IProductDocument> {
         return await this.model.find({ isDelete: false }).distinct("category");
     }
 
-    async updateProductStockBySize(productId: string, size: string, quantityChange: number): Promise<IProductDocument | null> {
+    async updateProductStockBySize(productId: string, size: string, quantityChange: number, context?: StockAdjustmentContext): Promise<IProductDocument | null> {
         const sizeCondition = quantityChange < 0
             ? { $elemMatch: { size, stock: { $gte: -quantityChange } } }
             : { $elemMatch: { size } };
-        return await this.model.findOneAndUpdate(
+        const product = await this.model.findOneAndUpdate(
             {
                 _id: productId,
                 sizes: sizeCondition,
@@ -76,6 +85,21 @@ export class ProductRepository extends BaseRepository<IProductDocument> {
                 new: true
             }
         );
+        if (product && quantityChange !== 0 && context) {
+            const afterStock = product.sizes.find(item => item.size === size)?.stock;
+            if (typeof afterStock === 'number') {
+                await StockAdjustment.create({
+                    productId: product._id,
+                    productName: product.name,
+                    size,
+                    delta: quantityChange,
+                    beforeStock: afterStock - quantityChange,
+                    afterStock,
+                    ...context,
+                }).catch(error => console.error('Failed to record stock adjustment:', error));
+            }
+        }
+        return product;
     }
 
 

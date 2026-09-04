@@ -174,7 +174,13 @@ class OrderUsecase {
             let order;
             try {
                 for (const update of stockUpdates) {
-                    const updatedProduct = yield this.productRepository.updateProductStockBySize(update.productId, update.size, -update.quantity);
+                    const updatedProduct = yield this.productRepository.updateProductStockBySize(update.productId, update.size, -update.quantity, {
+                        source: 'order',
+                        reason: 'Reserved for customer order',
+                        actorId: userId,
+                        actorName: customerName || 'Customer',
+                        referenceId: userId,
+                    });
                     if (!updatedProduct)
                         throw new Error(`Insufficient stock for product: ${update.productName}`);
                     decrementedStock.push(update);
@@ -194,7 +200,13 @@ class OrderUsecase {
             }
             catch (error) {
                 for (const update of decrementedStock.reverse()) {
-                    yield this.productRepository.updateProductStockBySize(update.productId, update.size, update.quantity).catch(() => undefined);
+                    yield this.productRepository.updateProductStockBySize(update.productId, update.size, update.quantity, {
+                        source: 'rollback',
+                        reason: 'Order creation failed; reserved stock restored',
+                        actorId: userId,
+                        actorName: 'System',
+                        referenceId: userId,
+                    }).catch(() => undefined);
                 }
                 throw error;
             }
