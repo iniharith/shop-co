@@ -28,6 +28,7 @@ export default function CatalogPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [query, setQuery] = useState('');
+  const [section, setSection] = useState<'all' | 'published' | 'archived'>('all');
   const [editing, setEditing] = useState<Product | null>(null);
   const [preview, setPreview] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,7 +47,13 @@ export default function CatalogPage() {
 
   useEffect(() => { void load(); }, [token]);
 
-  const filtered = useMemo(() => products.filter(product => `${product.name} ${product.category}`.toLowerCase().includes(query.toLowerCase())), [products, query]);
+  const filtered = useMemo(() => products.filter(product => {
+    const matchesQuery = `${product.name} ${product.category}`.toLowerCase().includes(query.toLowerCase());
+    const matchesSection = section === 'all' || (section === 'archived' ? product.isDelete : !product.isDelete);
+    return matchesQuery && matchesSection;
+  }), [products, query, section]);
+  const publishedCount = products.filter(product => !product.isDelete).length;
+  const archivedCount = products.filter(product => product.isDelete).length;
   const allSelected = filtered.length > 0 && filtered.every(product => selected.includes(product._id));
   const totalStock = (product: Product) => (product.sizes || []).reduce((total, item) => total + Number(item.stock || 0), 0);
 
@@ -89,7 +96,7 @@ export default function CatalogPage() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"><CardTitle>All products <span className="text-sm font-normal text-muted-foreground">({filtered.length})</span></CardTitle><div className="relative w-full md:w-72"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search name or category" className="pl-9" /></div></CardHeader>
+        <CardHeader className="space-y-4"><div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"><CardTitle>{section === 'archived' ? 'Archived products' : section === 'published' ? 'Published products' : 'All products'} <span className="text-sm font-normal text-muted-foreground">({filtered.length})</span></CardTitle><div className="relative w-full md:w-72"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search name or category" className="pl-9" /></div></div><div className="flex flex-wrap gap-2"><Button size="sm" variant={section === 'all' ? 'default' : 'outline'} onClick={() => { setSection('all'); setSelected([]); }}>All ({products.length})</Button><Button size="sm" variant={section === 'published' ? 'default' : 'outline'} onClick={() => { setSection('published'); setSelected([]); }}>Published ({publishedCount})</Button><Button size="sm" variant={section === 'archived' ? 'default' : 'outline'} onClick={() => { setSection('archived'); setSelected([]); }}><Archive className="mr-1 h-4 w-4" /> Archived ({archivedCount})</Button></div></CardHeader>
         <CardContent>
           {selected.length > 0 && <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-muted p-3 text-sm"><strong>{selected.length} selected</strong><Button size="sm" variant="outline" onClick={() => void bulkArchive(false)}><Check className="mr-1 h-4 w-4" /> Restore</Button><Button size="sm" variant="outline" onClick={() => void bulkArchive(true)}><Archive className="mr-1 h-4 w-4" /> Archive</Button><Button size="sm" variant="destructive" onClick={() => void bulkDelete()}><Trash2 className="mr-1 h-4 w-4" /> Delete permanently</Button></div>}
           <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left text-muted-foreground"><th className="w-10 p-3"><input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : filtered.map(product => product._id))} /></th><th className="p-3">Product</th><th className="p-3">Category</th><th className="p-3">Price</th><th className="p-3">Stock</th><th className="p-3">Status</th><th className="p-3 text-right">Actions</th></tr></thead><tbody>{loading ? <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Loading catalog...</td></tr> : filtered.map(product => <tr key={product._id} className="border-b last:border-0 hover:bg-muted/40"><td className="p-3"><input type="checkbox" checked={selected.includes(product._id)} onChange={() => toggleSelection(product._id)} /></td><td className="p-3"><div className="flex items-center gap-3"><div className="h-11 w-11 overflow-hidden rounded-lg bg-muted">{product.images?.[0] && <img src={product.images[0]} alt="" className="h-full w-full object-cover" />}</div><div><p className="font-semibold">{product.name}</p><p className="max-w-xs truncate text-xs text-muted-foreground">{product.description}</p></div></div></td><td className="p-3 text-muted-foreground">{product.category}</td><td className="p-3 font-semibold">RM {Number(product.price || 0).toFixed(2)}</td><td className="p-3 font-medium">{totalStock(product)} <span className="text-xs text-muted-foreground">units</span></td><td className="p-3">{product.isDelete ? <Badge variant="secondary">Archived</Badge> : <Badge className="bg-emerald-600">Published</Badge>}</td><td className="p-3"><div className="flex justify-end gap-1"><Button variant="ghost" size="icon" title="Preview" onClick={() => setPreview(product)}><Eye className="h-4 w-4" /></Button><Button variant="ghost" size="icon" title="Edit" onClick={() => setEditing({ ...product, images: [...(product.images || [])], sizes: [...(product.sizes || [])] })}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" title={product.isDelete ? 'Restore' : 'Archive'} onClick={async () => { await archiveCatalogProduct(token, product._id, !product.isDelete); await load(); }}><Archive className="h-4 w-4" /></Button></div></td></tr>)}</tbody></table></div>
