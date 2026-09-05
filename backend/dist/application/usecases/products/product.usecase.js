@@ -18,7 +18,7 @@ const product_repository_1 = require("../../../infrastructure/db/repositories/pr
 const cart_repository_1 = require("../../../infrastructure/db/repositories/cart.repository");
 const redis_1 = require("../../../infrastructure/redis/redis");
 const redis_constant_1 = require("../../../shared/constants/redis.constant");
-const PRODUCT_CACHE_PREFIX = `${redis_constant_1.REDIS_KEYS.PRODUCTS}:catalog-v4:`;
+const PRODUCT_CACHE_PREFIX = `${redis_constant_1.REDIS_KEYS.PRODUCTS}:catalog-v5:`;
 const CATALOG_CACHE_KEY = `${PRODUCT_CACHE_PREFIX}all`;
 const CATEGORIES_CACHE_KEY = `${PRODUCT_CACHE_PREFIX}categories`;
 class ProductUsecase {
