@@ -67,7 +67,10 @@ class ProductUsecase {
                 void this.productRepository.incrementViewCount(String(product._id));
                 return product;
             }
-            const product = yield this.productRepository.findBySlug(slug);
+            let product = yield this.productRepository.findBySlug(slug);
+            if (!product && /^prod-/i.test(slug)) {
+                product = yield this.productRepository.findByCatalogId(slug);
+            }
             if (product)
                 void this.productRepository.incrementViewCount(String(product._id));
             yield this.redisService.set(cacheKey, JSON.stringify(product), 60 * 60 * 24);

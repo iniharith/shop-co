@@ -13,7 +13,7 @@ export const getProducts = async (): Promise<IProductResponse> => {
 };
 
 export const getProductById = async (id: string) => {
-    const path = /^[a-f\d]{24}$/i.test(id) ? id : `slug/${encodeURIComponent(id)}`;
+    const path = /^[a-f\d]{24}$/i.test(id) || /^prod-?/i.test(id) ? id : `slug/${encodeURIComponent(id)}`;
     const response = await AxiosInstance().get(`${PRODUCT_URL}/${path}`);
     return response.data;
 };

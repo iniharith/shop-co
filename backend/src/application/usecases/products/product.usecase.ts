@@ -58,7 +58,10 @@ export class ProductUsecase {
             void this.productRepository.incrementViewCount(String(product._id));
             return product;
         }
-        const product = await this.productRepository.findBySlug(slug);
+        let product = await this.productRepository.findBySlug(slug);
+        if (!product && /^prod-/i.test(slug)) {
+            product = await this.productRepository.findByCatalogId(slug);
+        }
         if (product) void this.productRepository.incrementViewCount(String(product._id));
         await this.redisService.set(cacheKey, JSON.stringify(product), 60 * 60 * 24);
         return product;
