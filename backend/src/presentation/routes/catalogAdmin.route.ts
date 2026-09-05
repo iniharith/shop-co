@@ -34,6 +34,18 @@ type NormalizedProduct = {
   status: 'draft' | 'published';
   seoTitle: string;
   seoDescription: string;
+  specifications?: {
+    material?: string;
+    frame?: string;
+    dimensions?: string;
+    weight?: string;
+    finish?: string;
+    color?: string;
+    customFields?: Record<string, string>;
+  };
+  packageContents: string[];
+  productionTurnaround?: { standardDays?: number; expressDays?: number; notes?: string };
+  warrantyInfo: string;
 };
 
 const invalidateCatalog = async () => {
@@ -63,6 +75,30 @@ const normalizeProduct = (body: any): NormalizedProduct => ({
     : [] as NormalizedSize[],
   printingOptions: Array.isArray(body.printingOptions) ? body.printingOptions : [],
   sections: getProductSections(String(body.category || '')),
+  specifications: (() => {
+    const specs = body.specifications && typeof body.specifications === 'object' ? body.specifications : {};
+    const customFields = specs.customFields && typeof specs.customFields === 'object'
+      ? Object.fromEntries(Object.entries(specs.customFields).filter(([, value]) => value !== '' && value != null)) as Record<string, string>
+      : undefined;
+    return {
+      material: String(specs.material || '').trim() || undefined,
+      frame: String(specs.frame || '').trim() || undefined,
+      dimensions: String(specs.dimensions || '').trim() || undefined,
+      weight: String(specs.weight || '').trim() || undefined,
+      finish: String(specs.finish || '').trim() || undefined,
+      color: String(specs.color || '').trim() || undefined,
+      customFields,
+    };
+  })(),
+  packageContents: Array.isArray(body.packageContents) ? body.packageContents.map((item: any) => String(item)).filter(Boolean) : [],
+  productionTurnaround: body.productionTurnaround && typeof body.productionTurnaround === 'object'
+    ? {
+        standardDays: body.productionTurnaround.standardDays === '' || body.productionTurnaround.standardDays == null ? undefined : Number(body.productionTurnaround.standardDays),
+        expressDays: body.productionTurnaround.expressDays === '' || body.productionTurnaround.expressDays == null ? undefined : Number(body.productionTurnaround.expressDays),
+        notes: String(body.productionTurnaround.notes || '').trim(),
+      }
+    : undefined,
+  warrantyInfo: String(body.warrantyInfo || '').trim(),
 });
 
 const slugify = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
