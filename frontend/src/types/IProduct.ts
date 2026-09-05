@@ -71,4 +71,5 @@ export interface IProduct {
 export interface ISize {
     stock: number;
     size: string;
+    images?: string[];
 }

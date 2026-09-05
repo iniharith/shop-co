@@ -18,7 +18,7 @@ const redis = new RedisService();
 const roles = authorizeRoles('admin', 'sysadmin', 'boss');
 const cachePrefix = `${REDIS_KEYS.PRODUCTS}:`;
 const ARCHIVE_RETENTION_DAYS = 30;
-type NormalizedSize = { size: string; stock: number; lowStockThreshold: number };
+type NormalizedSize = { size: string; stock: number; lowStockThreshold: number; images: string[] };
 type NormalizedProduct = {
   name: string;
   description: string;
@@ -58,6 +58,7 @@ const normalizeProduct = (body: any): NormalizedProduct => ({
         size: String(item?.size || '').trim(),
         stock: Number(item?.stock),
         lowStockThreshold: item?.lowStockThreshold === '' || item?.lowStockThreshold == null ? 10 : Number(item.lowStockThreshold),
+        images: Array.isArray(item?.images) ? item.images.map(String).filter(Boolean) : [],
       })).filter((item: NormalizedSize) => item.size)
     : [] as NormalizedSize[],
   printingOptions: Array.isArray(body.printingOptions) ? body.printingOptions : [],
