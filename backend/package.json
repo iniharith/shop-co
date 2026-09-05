@@ -9,6 +9,7 @@
     "ai:backfill": "node ./dist/shared/scripts/aiIndexBackfill.js",
     "ai:backfill:dev": "ts-node ./src/shared/scripts/aiIndexBackfill.ts",
     "migrate:product-sections": "node ./dist/shared/scripts/migrate-product-sections.js",
+    "backfill:products": "node ./dist/shared/scripts/backfill-product-lifecycle.js",
     "seed:catalog": "node ./dist/shared/scripts/seedCatalog.js",
     "seed:content": "node ./dist/shared/scripts/seedProductContent.js",
     "images:thumbnails": "node ./dist/shared/scripts/generateCatalogThumbnails.js",

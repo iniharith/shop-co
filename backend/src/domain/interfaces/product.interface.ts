@@ -15,6 +15,7 @@ export interface IProduct {
     createdAt: Date;
     updatedAt: Date;
     rating?: number;
+    viewCount?: number;
     catalogId?: string;
     slug?: string;
     status?: 'draft' | 'published';
