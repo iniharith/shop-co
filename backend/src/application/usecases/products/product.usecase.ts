@@ -9,7 +9,7 @@ import { CartRepository } from "../../../infrastructure/db/repositories/cart.rep
 import { RedisService } from "../../../infrastructure/redis/redis";
 import { REDIS_KEYS } from "../../../shared/constants/redis.constant";
 
-const PRODUCT_CACHE_PREFIX = `${REDIS_KEYS.PRODUCTS}:catalog-v3:`;
+const PRODUCT_CACHE_PREFIX = `${REDIS_KEYS.PRODUCTS}:catalog-v4:`;
 const CATALOG_CACHE_KEY = `${PRODUCT_CACHE_PREFIX}all`;
 const CATEGORIES_CACHE_KEY = `${PRODUCT_CACHE_PREFIX}categories`;
 
