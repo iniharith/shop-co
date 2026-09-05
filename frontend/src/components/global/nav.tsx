@@ -3,10 +3,11 @@
  * Kampungcetak ®
  */
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { navItems, printingCategories } from "@/constants";
+import { useProducts } from "@/hooks/useProducts";
 import { Input } from "../ui/input";
 import { IoCloseCircle, IoNotifications, IoSearch } from "react-icons/io5";
 import { IoIosArrowDroprightCircle } from "react-icons/io";
@@ -27,6 +28,56 @@ import { useLanguage } from "@/i18n/LanguageProvider";
 import { categoryLabels } from "@/i18n/messages";
 import { AI_SEARCH_ENABLED, aiSemanticSearch, aiSearchSuggestions } from "@/utils/aiSearch";
 
+// ── Dynamic Nav Categories ──────────────────────────────────────────────────
+interface NavSubItem {
+  label: string;
+  href: string;
+}
+interface NavCategory {
+  label: string;
+  href: string;
+  subItems?: NavSubItem[];
+}
+
+const NAV_SECTION_BY_LABEL: Record<string, string> = {
+  "DIGITAL PRINTING": "DIGITAL PRINTING",
+  "DISPLAY ITEM": "DISPLAY ITEM",
+  "DIGITAL OFFSET": "DIGITAL OFFSET",
+  "PREMIUM GIFT": "PREMIUM GIFT",
+  APPAREL: "APPAREL/SUBLIMATION",
+  FRAME: "FRAME",
+  "WEDDING PRODUCT": "WEDDING PRODUCT",
+  "FOOD PACKAGING": "FOOD PACKAGING",
+};
+
+const EXTRA_NAV_SUB_ITEMS: Record<string, NavSubItem[]> = {
+  FRAME: [{ label: "ISLAMIC KHAT", href: "/home/islamic-khat" }],
+};
+
+const buildNavCategories = (products: { name: string; slug?: string; catalogId?: string; _id: string; sections?: string[] }[]): NavCategory[] =>
+  printingCategories.map((item) => {
+    const section = (NAV_SECTION_BY_LABEL[item.label] || item.label).toUpperCase();
+    const extras = EXTRA_NAV_SUB_ITEMS[item.label] || [];
+    const dynamic: NavSubItem[] = (products || [])
+      .filter((product) =>
+        (product.sections || []).some((s) => String(s).trim().toUpperCase() === section)
+      )
+      .map((product) => ({
+        label: product.name,
+        href: `/home/shop/${product.slug || product.catalogId || product._id}`,
+      }));
+
+    const merged: NavSubItem[] = [];
+    const seen = new Set<string>();
+    for (const sub of [...extras, ...dynamic]) {
+      const key = `${sub.label}|${sub.href}`.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(sub);
+    }
+    return { ...item, subItems: merged.sort((a, b) => a.label.localeCompare(b.label)) };
+  });
+
 // ── Mobile Drawer Content ────────────────────────────────────────────────────
 const MobileNavSheetContent = ({
   closeDrawer,
@@ -39,6 +90,7 @@ const MobileNavSheetContent = ({
   setIsSearchFocused,
   handleSearch,
   aiSuggestions,
+  categories,
 }: {
   closeDrawer: Function;
   session: any;
@@ -50,6 +102,7 @@ const MobileNavSheetContent = ({
   setIsSearchFocused: (val: boolean) => void;
   handleSearch: (e: React.FormEvent) => void;
   aiSuggestions: string[];
+  categories: NavCategory[];
 }) => {
   const pathname = usePathname();
   const { locale, t } = useLanguage();
@@ -216,7 +269,7 @@ const MobileNavSheetContent = ({
               {t("nav.categories")}
             </p>
             <div className="flex flex-col gap-1">
-              {printingCategories.map((item, index) => {
+              {categories.map((item, index) => {
                 const hasSubItems = item.subItems && item.subItems.length > 0;
                 const isOpen = openCategory === index;
 
@@ -299,6 +352,13 @@ const Nav = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+
+  const { data: productsData } = useProducts();
+  const allProducts = (productsData?.products as any[]) || [];
+  const navCategories = useMemo(
+    () => (allProducts.length ? buildNavCategories(allProducts) : printingCategories),
+    [allProducts]
+  );
 
   const getAvatarUrl = () => {
     const avatar = (session?.user as any)?.avatar || (session?.user as any)?.image;
@@ -421,6 +481,7 @@ const Nav = () => {
                 setIsSearchFocused={setIsSearchFocused}
                 handleSearch={handleSearch}
                 aiSuggestions={aiSuggestions}
+                categories={navCategories}
               />
             </Drawer.Root>
 
@@ -602,7 +663,7 @@ const Nav = () => {
         )}
         >
           <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
-            {printingCategories.map((item, index) => (
+            {navCategories.map((item, index) => (
               <div key={index} className="relative group">
                 <Link
                   href={item.href}
