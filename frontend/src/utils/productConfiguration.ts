@@ -31,6 +31,13 @@ export function getDesignNumber(configuration = ""): number | null {
   return match ? Number(match[1]) : null;
 }
 
+export function getVariationImagesForSize(product: IProduct, sizeLabel?: string | null): string[] | null {
+  if (!sizeLabel) return null;
+  const target = String(sizeLabel).trim().toLowerCase();
+  const size = (product.sizes || []).find(item => String(item.size || "").trim().toLowerCase() === target);
+  return size?.images?.length ? size.images : null;
+}
+
 export function getConfiguredProductImage(product: IProduct, configuration = "", structured?: IProductConfiguration): string {
   if (structured?.design?.variantImage) return structured.design.variantImage;
   if (structured?.design?.image) return structured.design.image;

@@ -17,7 +17,7 @@ import { useAddtoCart } from "@/hooks/useCart";
 import AnimatedButton from "@/components/animation/animatedButton";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { getImageUrl } from "@/utils/getImageUrl";
-import { getProductVariation } from "@/utils/productConfiguration";
+import { getProductVariation, getVariationImagesForSize } from "@/utils/productConfiguration";
 import { Check, Headphones, ShieldCheck, Truck } from "lucide-react";
 
 interface ProductDetailsProps {
@@ -25,13 +25,15 @@ interface ProductDetailsProps {
   selectedVariationIndex?: number | null;
   onSelectedImageChange?: (index: number) => void;
   onSelectedVariationChange?: (index: number) => void;
+  onSelectedSizeImagesChange?: (images: string[] | null) => void;
 }
 
 export function ProductDetails({
   product,
   selectedVariationIndex = null,
   onSelectedImageChange,
-  onSelectedVariationChange
+  onSelectedVariationChange,
+  onSelectedSizeImagesChange
 }: ProductDetailsProps) {
   const { locale } = useLanguage();
   const label = (english: string, malay: string) => locale === "ms" ? malay : english;
@@ -80,6 +82,18 @@ export function ProductDetails({
       onSelectedImageChange?.(index);
     }
   };
+
+  useEffect(() => {
+    const isKhat = product.category?.toLowerCase() === "islamic khat" && product.images.length > 1;
+    let images: string[] | null = null;
+    if (!isKhat) {
+      const sizeOption = (product.printingOptions || []).find(opt => /format|size/i.test(opt.name) && opt.options.length > 0 && !opt.isMultiSelect);
+      const selected = sizeOption ? selectedOptions[sizeOption.name] : undefined;
+      const sizeLabel = sizeOption && typeof selected === "number" ? sizeOption.options[selected]?.label : null;
+      images = getVariationImagesForSize(product, sizeLabel);
+    }
+    onSelectedSizeImagesChange?.(images);
+  }, [product, selectedOptions, onSelectedSizeImagesChange]);
 
   const handleAddToCart = () => {
     if (!session) {

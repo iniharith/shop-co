@@ -8,7 +8,7 @@ import { ProductDetails } from "@/components/page-sections/shop/product-details"
 import { ProductGallery } from "@/components/page-sections/shop/product-gallery";
 import ProductSctions from "@/components/page-sections/home/productSctions";
 import { mockProduct, products } from "@/constants/data";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { useParams } from "next/navigation";
 import ProductDetailSkeleton from "@/components/loading/ProductDetailSkeleton";
@@ -22,13 +22,26 @@ const page = () => {
   const [relatedProducts, setRelatedProducts] = useState<IProduct[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedVariationIndex, setSelectedVariationIndex] = useState<number | null>(null);
+  const [selectedSizeImages, setSelectedSizeImages] = useState<string[] | null>(null);
+  const activeSizeImagesRef = useRef<string[] | null>(null);
   const product = data?.product as IProduct;
   const products = productsData?.products || [];
    const dimensions = Array.from(new Set(product?.name?.match(/\d+\s*[xX]\s*\d+/g) || []));
 
+  const handleSelectedSizeImagesChange = useCallback((images: string[] | null) => {
+    const active = images?.length ? images : null;
+    if (active !== activeSizeImagesRef.current) {
+      activeSizeImagesRef.current = active;
+      setSelectedImageIndex(0);
+    }
+    setSelectedSizeImages(active);
+  }, []);
+
   useEffect(() => {
     setSelectedImageIndex(0);
     setSelectedVariationIndex(null);
+    setSelectedSizeImages(null);
+    activeSizeImagesRef.current = null;
   }, [id]);
 
   useEffect(() => {
@@ -68,7 +81,7 @@ const page = () => {
                 {product && <WishlistButton productId={product._id} />}
               </div>
               <ProductGallery
-                images={product.images}
+                images={selectedSizeImages?.length ? selectedSizeImages : product.images}
                 productName={product.name}
                 selectedIndex={selectedImageIndex}
                 onSelectedIndexChange={setSelectedImageIndex}
@@ -169,6 +182,7 @@ const page = () => {
               product={product}
               selectedVariationIndex={selectedVariationIndex}
               onSelectedImageChange={setSelectedImageIndex}
+              onSelectedSizeImagesChange={handleSelectedSizeImagesChange}
               onSelectedVariationChange={(index) => {
                 setSelectedVariationIndex(index);
                 setSelectedImageIndex(index);
