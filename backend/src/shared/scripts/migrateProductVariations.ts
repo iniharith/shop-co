@@ -20,9 +20,15 @@
  *   npm run migrate:variations -- --dry   # preview only
  *   npm run migrate:variations -- --category "ISLAMIC KHAT"
  *   npm run migrate:variations -- --all-categories
+ *
+ * Connection: uses MONGO_URI from backend/.env by default. Override locally
+ * with a direct-connection string when the SRV host is unreachable:
+ *   $env:MONGO_URI="mongodb://<user>:<pass>@<host>.mongodb.net:27017/?ssl=true&directConnection=true&authSource=admin"
+ * NOTE: directConnection pins to one node; if it is a secondary, the writes
+ * fail with "not primary". Prefer running via Railway where the full URI works.
  */
+import mongoose from 'mongoose';
 import { config } from 'dotenv';
-import connectDB from '../../config/db.config';
 import ProductModel from '../../infrastructure/db/models/product.model';
 
 const variationLabelFromImage = (image: string, index: number) => {
@@ -39,7 +45,22 @@ const variationLabelFromImage = (image: string, index: number) => {
 
 const main = async () => {
   config();
-  await connectDB();
+
+  const uri = process.env.MONGO_URI;
+  if (!uri) {
+    console.error('MONGO_URI is not set. Run from the backend directory or set MONGO_URI first.');
+    process.exit(1);
+  }
+  if (uri.startsWith('mongodb+srv://')) {
+    console.warn(
+      '[WARN] Using SRV URI directly (no directConnection strip). If connection fails locally, override MONGO_URI with the direct-connection string.',
+    );
+  }
+  await mongoose.connect(uri, {
+    dbName: 'shop-co',
+    authSource: 'admin',
+    serverSelectionTimeoutMS: 15000,
+  });
 
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry') || args.includes('--dry-run');
