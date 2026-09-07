@@ -40,6 +40,8 @@ export const messages = {
     "footer.delivery": "Delivery Details",
     "footer.terms": "Terms & Conditions",
     "footer.privacy": "Privacy Policy",
+    "footer.cookies": "Cookie Policy",
+    "footer.refund": "Returns & Refund Policy",
     "footer.faq": "FAQ",
     "footer.account": "Account",
     "footer.deliveries": "Manage Deliveries",
@@ -51,6 +53,9 @@ export const messages = {
     "cta.subscribe": "Subscribe to our newsletter",
     "cta.success": "Email subscribed successfully",
     "cta.successDescription": "You will receive our latest offers and news in your inbox",
+    "cta.consentRequired": "Please agree to receive newsletters.",
+    "cta.consent": "I agree to receive newsletters and have read the ",
+    "cta.consentPrivacy": "Privacy Policy",
   },
   ms: {
     "nav.searchPlaceholder": "Cari produk, servis atau kategori...",
@@ -91,6 +96,8 @@ export const messages = {
     "footer.delivery": "Maklumat Penghantaran",
     "footer.terms": "Terma & Syarat",
     "footer.privacy": "Dasar Privasi",
+    "footer.cookies": "Dasar Kuki",
+    "footer.refund": "Dasar Pemulangan & Bayaran Balik",
     "footer.faq": "Soalan Lazim",
     "footer.account": "Akaun",
     "footer.deliveries": "Urus Penghantaran",
@@ -102,6 +109,9 @@ export const messages = {
     "cta.subscribe": "Langgan surat berita kami",
     "cta.success": "E-mel berjaya dilanggan",
     "cta.successDescription": "Anda akan menerima tawaran dan berita terkini melalui e-mel",
+    "cta.consentRequired": "Sila bersetuju untuk menerima surat berita.",
+    "cta.consent": "Saya bersetuju menerima surat berita dan telah membaca ",
+    "cta.consentPrivacy": "Dasar Privasi",
   },
 } as const;
 

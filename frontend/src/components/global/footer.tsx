@@ -107,6 +107,8 @@ export function Footer() {
                 <li><FooterLink href="/delivery-details">{t("footer.delivery")}</FooterLink></li>
                 <li><FooterLink href="/terms">{t("footer.terms")}</FooterLink></li>
                 <li><FooterLink href="/privacy">{t("footer.privacy")}</FooterLink></li>
+                <li><FooterLink href="/cookies">{t("footer.cookies")}</FooterLink></li>
+                <li><FooterLink href="/refund-policy">{t("footer.refund")}</FooterLink></li>
               </ul>
             </div>
 
