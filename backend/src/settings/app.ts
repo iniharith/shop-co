@@ -39,6 +39,7 @@ import webVitalsRoutes from '../presentation/routes/webVitalsRoutes';
 import mailRoutes from '../presentation/routes/mailRoutes';
 import aiRoutes from '../presentation/routes/aiRoutes';
 import catalogAdminRoutes from '../presentation/routes/catalogAdmin.route';
+import catalogMediaRoutes from '../presentation/routes/catalogMedia.route';
 import reviewRoutes from '../presentation/routes/review.route';
 import wishlistRoutes from '../presentation/routes/wishlist.route';
 import invoiceRoutes from '../presentation/routes/invoice.route';
@@ -119,6 +120,7 @@ app.use('/api/webhooks', webhookRouter);
 app.use('/api/easyparcel', easyParcelRoutes);
 app.use(apiRoutes.ADMIN, adminRoutes);
 app.use('/api/admin/reports', monthlyReportsRoutes);
+app.use('/api/admin/catalog-media', catalogMediaRoutes);
 app.use('/api/admin/catalog', catalogAdminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/folders', virtualFolderRoutes);
@@ -134,7 +136,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/sysadmin', sysadminRoutes);
 app.use('/api/web-vitals', webVitalsRoutes);
 
-// ─── WhatsApp Webhook (Meta callback verification) ───────
+// ─── WhatsApp Webhook (Meta callback verification) ────────
 // Callback URL: https://admin.kampungcetak.com/api/webhooks/whatsapp
 app.use('/api/webhooks/whatsapp', whatsappWebhook);
 
