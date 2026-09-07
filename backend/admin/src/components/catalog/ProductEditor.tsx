@@ -277,6 +277,45 @@ images: resolveImages(current.images),
       variations: [...(current.variations || []), { name: '', stock: 0, lowStockThreshold: 10, images: [] }],
     }));
 
+  const variationLabelFromImage = (image: string, index: number) => {
+    const pathParts = image.split('/').filter(Boolean);
+    const folder = pathParts[pathParts.length - 2] || '';
+    const filename = (pathParts[pathParts.length - 1] || `variation-${index + 1}`).replace(/\.[^.]+$/, '');
+    const sequence = filename.match(/(\d+)$/)?.[1] || String(index + 1).padStart(2, '0');
+    const productCode = folder
+      .replace(/[^a-z0-9]+/gi, '-')
+      .replace(/^-|-$/g, '')
+      .toUpperCase();
+    return `${productCode || 'DESIGN'}-M${sequence.padStart(2, '0')}`;
+  };
+
+  const generateVariationsFromImages = () => {
+    const images = product.images || [];
+    if (images.length === 0) {
+      toast.error('Upload gallery images first.');
+      return;
+    }
+
+    setProduct(current => {
+      const existing = current.variations || [];
+      const existingImages = new Set(
+        existing.flatMap(variation => (variation.images || []).map(image => image.trim())),
+      );
+      const seeded: DesignVariation[] = images
+        .filter(image => !existingImages.has(image.trim()))
+        .slice(0, Math.max(0, MAX_VARIATION_IMAGES - existing.length))
+        .map((image, offset) => ({
+          name: variationLabelFromImage(image, existing.length + offset),
+          stock: 0,
+          lowStockThreshold: 10,
+          images: [image],
+        }));
+      return { ...current, variations: [...existing, ...seeded] };
+    });
+
+    toast.success('Variations generated from gallery images.');
+  };
+
   const removeVariation = (index: number) =>
     setProduct(current => ({
       ...current,
@@ -695,6 +734,19 @@ images: resolveImages(current.images),
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={generateVariationsFromImages}
+                disabled={!product.images.length}
+                title={
+                  product.images.length
+                    ? 'Create one variation per gallery image so each design can be renamed and edited.'
+                    : 'Upload gallery images first.'
+                }
+              >
+                Generate from images
+              </Button>
               <Button type="button" variant="outline" onClick={toggleSelectAllVariations}>
                 {allSelected ? 'Clear selection' : 'Select all'}
               </Button>
@@ -707,7 +759,24 @@ images: resolveImages(current.images),
           <div className="space-y-3">
             {(product.variations || []).length === 0 && (
               <div className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground">
-                No variations yet. Add one to show a selectable design grid on the storefront.
+                {product.images.length > 1 ? (
+                  <>
+                    <p className="font-medium text-foreground">
+                      Your {product.images.length} gallery images appear as selectable designs on the
+                      storefront, but they aren&apos;t saved as variations yet.
+                    </p>
+                    <p className="mt-1">
+                      Click <span className="font-semibold text-foreground">Generate from images</span> to turn
+                      each image into an editable variation (name, stock, images), then adjust and save.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    No variations yet. Add one to show a selectable design grid on the storefront.
+                    {product.images.length === 1 &&
+                      ' Upload more gallery images to seed variations from them.'}
+                  </>
+                )}
               </div>
             )}
             {(product.variations || []).map((variation, index) => {
