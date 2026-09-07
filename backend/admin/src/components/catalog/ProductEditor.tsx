@@ -1,1264 +1,148 @@
 'use client';
-
-import { DragEvent, useEffect, useMemo, useState } from 'react';
+import { DragEvent, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import {
-  ArrowLeft,
-  CheckCircle2,
-  GripVertical,
-  ImagePlus,
-  Link2,
-  Loader2,
-  Pencil,
-  Save,
-  Send,
-  Trash2,
-  Upload,
-  X,
-} from 'lucide-react';
+import { ArrowLeft, Check, Eye, GripVertical, ImageIcon, Loader2, Pencil, Plus, Tag, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import {
-  createCatalogProduct,
-  getCatalogImageUploadUrl,
-  getCatalogProduct,
-  updateCatalogProduct,
-} from '@/api/catalog';
+import { createCatalogProduct, getCatalogImageUploadUrl, getCatalogProduct, updateCatalogProduct } from '@/api/catalog';
 
-type SizeStock = {
-  size: string;
-  stock: number;
-  lowStockThreshold?: number;
-  images?: string[];
-};
-
+type Size = { size: string; stock: number; lowStockThreshold?: number; images?: string[] };
 type Product = {
-  _id: string;
-  name: string;
-  description: string;
-  category: string;
-  price: number;
-  originalPrice?: number;
-  discount?: number;
-  images: string[];
-  sizes: SizeStock[];
-  slug?: string;
-  status?: 'draft' | 'published';
-  seoTitle?: string;
-  seoDescription?: string;
-  specifications?: {
-    material?: string;
-    frame?: string;
-    dimensions?: string;
-    weight?: string;
-    finish?: string;
-    color?: string;
-    customFields?: Record<string, string>;
-  };
-  packageContents?: string[];
-  productionTurnaround?: {
-    standardDays?: number;
-    expressDays?: number;
-    notes?: string;
-  };
-  warrantyInfo?: string;
-  [key: string]: unknown;
+  _id: string; name: string; description: string; category: string; price: number; images: string[]; sizes: Size[];
+  slug?: string; status?: 'draft' | 'published'; specifications?: { customFields?: Record<string, string>; [k: string]: unknown };
+  [k: string]: unknown;
 };
-
-const MAX_VARIATION_IMAGES = 8;
-
-const categories = [
-  'DIGITAL PRINTING',
-  'DISPLAY ITEM',
-  'DIGITAL OFFSET',
-  'PREMIUM GIFT',
-  'APPAREL/SUBLIMATION',
-  'FRAME',
-  'WEDDING PRODUCT',
-  'FOOD PACKAGING',
-  'ISLAMIC KHAT',
-  'ACRYLIC',
-  'BUNTING & BANNER',
-  'PHOTOBOOK',
-  'MAGNET',
-  'MENU BOOK',
-  'ALAMAT RUMAH',
-  'NO PLAT',
-  'STICKER',
-  'WEDDING CARD',
-  'NOTEBOOK',
-];
-
-const emptyProduct: Product = {
-  _id: '',
-  name: '',
-  description: '',
-  category: 'DIGITAL PRINTING',
-  price: 0,
-  originalPrice: 0,
-  discount: 0,
-  images: [],
-  sizes: [{ size: 'Standard', stock: 0, lowStockThreshold: 10, images: [] }],
-  status: 'draft',
-  slug: '',
-  seoTitle: '',
-  seoDescription: '',
-  specifications: undefined,
-  packageContents: [],
-  productionTurnaround: undefined,
-  warrantyInfo: '',
-};
-
-const slugify = (value: string) =>
-  value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-async function validateImage(file: File): Promise<void> {
-  if (!file.type.startsWith('image/')) throw new Error('Only image files are supported.');
-  if (file.size > 20 * 1024 * 1024) throw new Error('Images must be 20MB or smaller.');
-
-  const url = URL.createObjectURL(file);
-  try {
-    const image = new Image();
-    await new Promise<void>((resolve, reject) => {
-      image.onload = () => resolve();
-      image.onerror = () => reject(new Error('Image could not be read.'));
-      image.src = url;
-    });
-    if (image.width < 200 || image.height < 200) {
-      throw new Error('Images must be at least 200 x 200 pixels.');
-    }
-  } finally {
-    URL.revokeObjectURL(url);
-  }
-}
+const emptyProduct: Product = { _id: '', name: '', description: '', category: 'DIGITAL PRINTING', price: 0, images: [], sizes: [{ size: 'Standard', stock: 0, lowStockThreshold: 10, images: [] }], status: 'draft', specifications: { customFields: {} } };
+const slugify = (v: string) => v.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const skuKey = (v: string) => `variation-sku:${v.trim().toLowerCase()}`;
 
 export function ProductEditor({ productId }: { productId?: string }) {
   const router = useRouter();
   const { data: session } = useSession();
   const token = session?.user?.token || '';
-
   const [product, setProduct] = useState<Product>(emptyProduct);
   const [loading, setLoading] = useState(Boolean(productId));
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState<Record<string, number>>({});
-  const [draggedImage, setDraggedImage] = useState<number | null>(null);
-  const [sizeLinkPicker, setSizeLinkPicker] = useState<number | null>(null);
-  const [sizeLinkUrl, setSizeLinkUrl] = useState('');
-  const [selectedVariations, setSelectedVariations] = useState<number[]>([]);
-  const [editingVariation, setEditingVariation] = useState<number | null>(0);
-  const [newCustomField, setNewCustomField] = useState({ key: '', value: '' });
+  const [selected, setSelected] = useState<number[]>([]);
+  const [imageError, setImageError] = useState(false);
+  const [dragged, setDragged] = useState<number | null>(null);
+  const loaded = useRef(false);
+  const saved = useRef('');
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!productId || !token) return;
-
     void (async () => {
-      setLoading(true);
       try {
         const result = await getCatalogProduct(token, productId);
         const current = result.product as Product;
-        setProduct({
-          ...emptyProduct,
-          ...current,
-          images: current.images || [],
-          sizes: (current.sizes || []).map(size => ({
-            ...size,
-            images: Array.isArray(size.images) ? size.images.slice(0, MAX_VARIATION_IMAGES) : [],
-          })),
-        });
-      } catch (error: any) {
-        toast.error(error?.response?.data?.message || 'Could not load product');
-        router.replace('/admin/catalog');
-      } finally {
-        setLoading(false);
-      }
+        const main = current.images?.[0] || '';
+        const next = { ...emptyProduct, ...current, images: current.images || [], specifications: current.specifications || { customFields: {} }, sizes: (current.sizes || []).map(s => ({ ...s, images: main ? [main] : [] })) };
+        setProduct(next); saved.current = JSON.stringify(next); loaded.current = true;
+      } catch (e: any) { toast.error(e?.response?.data?.message || 'Could not load product'); router.replace('/admin/catalog'); }
+      finally { setLoading(false); }
     })();
-  }, [productId, router, token]);
+  }, [productId, token, router]);
 
-  const updateSize = (index: number, patch: Partial<SizeStock>) =>
-    setProduct(current => ({
-      ...current,
-      sizes: current.sizes.map((size, sizeIndex) =>
-        sizeIndex === index ? { ...size, ...patch } : size,
-      ),
-    }));
-
-  const appendSizeImage = (index: number, imageUrl: string) => {
-    const url = String(imageUrl || '').trim();
-    if (!url) return;
-
-    setProduct(current => ({
-      ...current,
-      sizes: current.sizes.map((size, sizeIndex) => {
-        if (sizeIndex !== index) return size;
-
-        const images = size.images || [];
-        if (images.includes(url) || images.length >= MAX_VARIATION_IMAGES) return size;
-
-        return { ...size, images: [...images, url] };
-      }),
-    }));
+  const persist = async (next: Product, announce = false) => {
+    if (!token) return;
+    const main = next.images[0] || '';
+    const payload = { ...next, slug: slugify(next.name), sizes: next.sizes.map(s => ({ ...s, images: main ? [main] : [] })) };
+    setSaving(true);
+    try {
+      const result = productId ? await updateCatalogProduct(token, productId, payload) : await createCatalogProduct(token, payload);
+      saved.current = JSON.stringify(next); if (announce) toast.success('Changes saved');
+      if (!productId && result?.product?._id) router.replace(`/admin/catalog/${result.product._id}`);
+    } catch (e: any) { toast.error(e?.response?.data?.message || 'Could not save changes'); }
+    finally { setSaving(false); }
   };
 
-  const moveImage = (from: number, to: number) =>
-    setProduct(current => {
-      const images = [...current.images];
-      const [image] = images.splice(from, 1);
-      images.splice(to, 0, image);
-      return { ...current, images };
-    });
+  useEffect(() => {
+    if (!loaded.current || !productId || !token) return;
+    const json = JSON.stringify(product); if (json === saved.current) return;
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => void persist(product), 800);
+    return () => { if (timer.current) clearTimeout(timer.current); };
+  }, [product, productId, token]);
 
-  const handleDrop = (event: DragEvent<HTMLDivElement>, to: number) => {
-    event.preventDefault();
-    if (draggedImage !== null && draggedImage !== to) moveImage(draggedImage, to);
-    setDraggedImage(null);
-  };
-
-  const uploadFileToStorage = async (file: File, uploadKey: string) => {
-    await validateImage(file);
-    setUploading(current => ({ ...current, [uploadKey]: 0 }));
-
+  const upload = async (file: File) => {
+    if (!file.type.startsWith('image/')) throw new Error('Only image files are supported.');
+    if (file.size > 20 * 1024 * 1024) throw new Error('Images must be 20MB or smaller.');
     const signed = await getCatalogImageUploadUrl(token, file.name, file.type);
-
-    await new Promise<void>((resolve, reject) => {
-      const request = new XMLHttpRequest();
-      request.open('PUT', signed.uploadUrl);
-      request.setRequestHeader('Content-Type', file.type);
-      request.upload.onprogress = event => {
-        if (event.lengthComputable) {
-          setUploading(current => ({
-            ...current,
-            [uploadKey]: Math.round((event.loaded / event.total) * 100),
-          }));
-        }
-      };
-      request.onload = () =>
-        request.status >= 200 && request.status < 300
-          ? resolve()
-          : reject(new Error('Image upload failed.'));
-      request.onerror = () => reject(new Error('Image upload failed.'));
-      request.send(file);
-    });
-
+    const response = await fetch(signed.uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+    if (!response.ok) throw new Error('Image upload failed.');
     return signed.imageUrl as string;
   };
 
-  const clearUpload = (uploadKey: string) =>
-    setUploading(current => {
-      const next = { ...current };
-      delete next[uploadKey];
-      return next;
-    });
-
-  const uploadFiles = async (files: FileList | File[]) => {
-    for (const file of Array.from(files)) {
-      const uploadKey = `${file.name}-${file.size}`;
-      try {
-        const imageUrl = await uploadFileToStorage(file, uploadKey);
-        setProduct(current => ({ ...current, images: [...current.images, imageUrl] }));
-      } catch (error: any) {
-        toast.error(error?.message || 'Could not upload image');
-      } finally {
-        clearUpload(uploadKey);
-      }
-    }
-  };
-
-  const uploadSizeFiles = async (index: number, files: FileList | File[]) => {
-    const currentCount = product.sizes[index]?.images?.length || 0;
-    const availableSlots = Math.max(0, MAX_VARIATION_IMAGES - currentCount);
-    const selectedFiles = Array.from(files);
-    const filesToUpload = selectedFiles.slice(0, availableSlots);
-
-    if (availableSlots === 0) {
-      toast.error(`This variation already has ${MAX_VARIATION_IMAGES} images.`);
-      return;
-    }
-
-    if (filesToUpload.length < selectedFiles.length) {
-      toast.info(`Only ${availableSlots} more variation image${availableSlots === 1 ? '' : 's'} can be added.`);
-    }
-
-    for (const file of filesToUpload) {
-      const uploadKey = `variation-${index}-${file.name}-${file.size}`;
-      try {
-        const imageUrl = await uploadFileToStorage(file, uploadKey);
-        appendSizeImage(index, imageUrl);
-      } catch (error: any) {
-        toast.error(error?.message || 'Could not upload image');
-      } finally {
-        clearUpload(uploadKey);
-      }
-    }
-  };
-
-  const removeSizeImage = (index: number, imageIndex: number) =>
-    setProduct(current => ({
-      ...current,
-      sizes: current.sizes.map((size, sizeIndex) =>
-        sizeIndex === index
-          ? { ...size, images: (size.images || []).filter((_, i) => i !== imageIndex) }
-          : size,
-      ),
-    }));
-
-  const addSizeImage = (index: number, imageUrl: string) => appendSizeImage(index, imageUrl);
-
-  const updateSpec = (patch: Partial<NonNullable<Product['specifications']>>) =>
-    setProduct(current => ({
-      ...current,
-      specifications: { ...(current.specifications || {}), ...patch },
-    }));
-
-  const addCustomField = (key: string, value: string) =>
-    setProduct(current => ({
-      ...current,
-      specifications: {
-        ...(current.specifications || {}),
-        customFields: {
-          ...(current.specifications?.customFields || {}),
-          [key.trim()]: value,
-        },
-      },
-    }));
-
-  const updateCustomField = (oldKey: string, newKey: string, value: string) =>
-    setProduct(current => {
-      const customFields = { ...(current.specifications?.customFields || {}) };
-      if (oldKey !== newKey) delete customFields[oldKey];
-      if (newKey.trim()) customFields[newKey.trim()] = value;
-      return {
-        ...current,
-        specifications: { ...(current.specifications || {}), customFields },
-      };
-    });
-
-  const removeCustomField = (key: string) =>
-    setProduct(current => {
-      const customFields = { ...(current.specifications?.customFields || {}) };
-      delete customFields[key];
-      return {
-        ...current,
-        specifications: { ...(current.specifications || {}), customFields },
-      };
-    });
-
-  const updatePackageItem = (index: number, value: string) =>
-    setProduct(current => ({
-      ...current,
-      packageContents: (current.packageContents || []).map((item, i) =>
-        i === index ? value : item,
-      ),
-    }));
-
-  const addPackageItem = () =>
-    setProduct(current => ({
-      ...current,
-      packageContents: [...(current.packageContents || []), ''],
-    }));
-
-  const removePackageItem = (index: number) =>
-    setProduct(current => ({
-      ...current,
-      packageContents: (current.packageContents || []).filter((_, i) => i !== index),
-    }));
-
-  const updateTurnaround = (
-    patch: Partial<NonNullable<Product['productionTurnaround']>>,
-  ) =>
-    setProduct(current => ({
-      ...current,
-      productionTurnaround: { ...(current.productionTurnaround || {}), ...patch },
-    }));
-
-  const save = async (status?: 'draft' | 'published') => {
-    const payload = {
-      ...product,
-      sizes: product.sizes.map(size => ({
-        ...size,
-        images: (size.images || []).slice(0, MAX_VARIATION_IMAGES),
-      })),
-      status: status || product.status,
-      slug: slugify(product.name),
-    };
-
-    setSaving(true);
+  const replaceMain = async (files: FileList | File[]) => {
+    const file = Array.from(files)[0]; if (!file) return;
     try {
-      const result = productId
-        ? await updateCatalogProduct(token, productId, payload)
-        : await createCatalogProduct(token, payload);
+      const url = await upload(file); setImageError(false);
+      setProduct(p => ({ ...p, images: [url, ...p.images.slice(1)], sizes: p.sizes.map(s => ({ ...s, images: [url] })) }));
+    } catch (e: any) { toast.error(e?.message || 'Could not upload image'); }
+  };
 
-      toast.success(payload.status === 'draft' ? 'Draft saved' : 'Product published');
-      router.push(`/admin/catalog/${productId || result.product._id}`);
-      router.refresh();
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Could not save product');
-    } finally {
-      setSaving(false);
+  const uploadMore = async (files: FileList | File[]) => {
+    for (const file of Array.from(files)) {
+      try {
+        const url = await upload(file);
+        setProduct(p => p.images.length ? { ...p, images: [...p.images, url] } : { ...p, images: [url], sizes: p.sizes.map(s => ({ ...s, images: [url] })) });
+      } catch (e: any) { toast.error(e?.message || 'Could not upload image'); }
     }
   };
 
-  const toggleVariationSelection = (index: number) => {
-    setSelectedVariations(current =>
-      current.includes(index) ? current.filter(item => item !== index) : [...current, index],
-    );
-  };
+  const updateSize = (i: number, patch: Partial<Size>) => setProduct(p => {
+    const old = p.sizes[i]; const sizes = p.sizes.map((s, x) => x === i ? { ...s, ...patch } : s);
+    if (patch.size === undefined || !old) return { ...p, sizes };
+    const fields = { ...(p.specifications?.customFields || {}) }; const from = skuKey(old.size); const to = skuKey(patch.size);
+    if (fields[from] && from !== to) { fields[to] = fields[from]; delete fields[from]; }
+    return { ...p, sizes, specifications: { ...(p.specifications || {}), customFields: fields } };
+  });
+  const getSku = (s: string) => product.specifications?.customFields?.[skuKey(s)] || '';
+  const setSku = (i: number, value: string) => setProduct(p => ({ ...p, specifications: { ...(p.specifications || {}), customFields: { ...(p.specifications?.customFields || {}), [skuKey(p.sizes[i]?.size || String(i))]: value } } }));
+  const toggle = (i: number) => setSelected(s => s.includes(i) ? s.filter(x => x !== i) : [...s, i]);
+  const remove = (i: number) => { setProduct(p => ({ ...p, sizes: p.sizes.filter((_, x) => x !== i) })); setSelected([]); };
+  const move = (from: number, to: number) => setProduct(p => { const sizes = [...p.sizes]; const [item] = sizes.splice(from, 1); sizes.splice(to, 0, item); return { ...p, sizes }; });
+  const addVariation = () => setProduct(p => ({ ...p, sizes: [...p.sizes, { size: `Variation ${p.sizes.length + 1}`, stock: 0, lowStockThreshold: 10, images: p.images[0] ? [p.images[0]] : [] }] }));
+  const bulkStock = () => { if (!selected.length) return toast.error('Select at least one variation.'); const v = window.prompt('Set stock for selected variations:'); if (v == null) return; const n = Number(v); if (!Number.isFinite(n) || n < 0) return toast.error('Enter a valid stock amount.'); setProduct(p => ({ ...p, sizes: p.sizes.map((s, i) => selected.includes(i) ? { ...s, stock: n } : s) })); };
+  const bulkSku = () => { if (!selected.length) return toast.error('Select at least one variation.'); const v = window.prompt('SKU prefix:', 'SKU'); if (v == null) return; setProduct(p => { const f = { ...(p.specifications?.customFields || {}) }; p.sizes.forEach((s, i) => { if (selected.includes(i)) f[skuKey(s.size)] = `${v}-${s.size.replace(/\s+/g, '-').toUpperCase()}`; }); return { ...p, specifications: { ...(p.specifications || {}), customFields: f } }; }); };
+  const bulkActive = () => { if (!selected.length) return toast.error('Select at least one variation.'); setProduct(p => ({ ...p, sizes: p.sizes.map((s, i) => selected.includes(i) && s.stock <= 0 ? { ...s, stock: 1 } : s) })); };
+  const bulkDelete = () => { if (!selected.length) return toast.error('Select at least one variation.'); setProduct(p => ({ ...p, sizes: p.sizes.filter((_, i) => !selected.includes(i)) })); setSelected([]); };
 
-  const toggleSelectAllVariations = () => {
-    setSelectedVariations(current =>
-      current.length === product.sizes.length ? [] : product.sizes.map((_, index) => index),
-    );
-  };
+  if (loading) return <main className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-primary" /></main>;
+  const main = product.images[0] || ''; const all = product.sizes.length > 0 && selected.length === product.sizes.length;
 
-  const bulkApplyMainImage = () => {
-    const mainImage = product.images[0];
-    if (!mainImage) {
-      toast.error('Upload a main product image first.');
-      return;
-    }
+  return <main className="mx-auto max-w-[1480px] space-y-5 p-4 md:p-7">
+    <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div><Button asChild variant="ghost" size="sm" className="-ml-3 mb-1"><Link href="/admin/catalog"><ArrowLeft className="mr-1 h-4 w-4" />Catalog</Link></Button><h1 className="text-4xl font-bold">Product Images</h1><p className="mt-1 text-base text-muted-foreground">Manage your main image and variations together. Changes will apply across all linked variations.</p></div>
+      <div className="flex gap-3"><Button asChild variant="outline" className="h-12 px-6"><a href={`https://kampungcetak.com/home/shop/${product.slug || slugify(product.name)}`} target="_blank" rel="noreferrer"><Eye className="mr-2 h-5 w-5" />Preview Storefront</a></Button><label><Button asChild className="h-12 px-7"><span><Upload className="mr-2 h-5 w-5" />Upload Images<input hidden type="file" accept="image/*" multiple onChange={e => { if (e.target.files) void uploadMore(e.target.files); e.target.value = ''; }} /></span></Button></label></div>
+    </header>
 
-    if (selectedVariations.length === 0) {
-      toast.error('Select at least one variation.');
-      return;
-    }
-
-    setProduct(current => ({
-      ...current,
-      sizes: current.sizes.map((size, index) => {
-        if (!selectedVariations.includes(index)) return size;
-        const images = size.images || [];
-        if (images.includes(mainImage)) return size;
-        return { ...size, images: [mainImage, ...images].slice(0, MAX_VARIATION_IMAGES) };
-      }),
-    }));
-
-    toast.success('Main image linked to selected variations.');
-  };
-
-  const bulkClearVariationImages = () => {
-    if (selectedVariations.length === 0) {
-      toast.error('Select at least one variation.');
-      return;
-    }
-
-    setProduct(current => ({
-      ...current,
-      sizes: current.sizes.map((size, index) =>
-        selectedVariations.includes(index) ? { ...size, images: [] } : size,
-      ),
-    }));
-
-    toast.success('Variation images cleared.');
-  };
-
-  const bulkDeleteSelected = () => {
-    if (selectedVariations.length === 0) {
-      toast.error('Select at least one variation.');
-      return;
-    }
-
-    setProduct(current => ({
-      ...current,
-      sizes: current.sizes.filter((_, index) => !selectedVariations.includes(index)),
-    }));
-    setSelectedVariations([]);
-    setEditingVariation(null);
-    setSizeLinkPicker(null);
-    toast.success('Selected variations deleted.');
-  };
-
-  const linkedVariationCount = useMemo(() => {
-    const mainImage = product.images[0];
-    if (!mainImage) return 0;
-    return product.sizes.filter(size => (size.images || []).includes(mainImage)).length;
-  }, [product.images, product.sizes]);
-
-  if (loading) {
-    return (
-      <main className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-7 w-7 animate-spin text-primary" />
-      </main>
-    );
-  }
-
-  const mainImage = product.images[0] || '';
-  const thumbnailImages = product.images.slice(1);
-  const allSelected = product.sizes.length > 0 && selectedVariations.length === product.sizes.length;
-
-  return (
-    <main className="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
-      <div className="flex flex-col justify-between gap-4 border-b pb-5 md:flex-row md:items-center">
-        <div>
-          <Button asChild variant="ghost" size="sm" className="-ml-3">
-            <Link href="/admin/catalog">
-              <ArrowLeft className="mr-1" /> Catalog
-            </Link>
-          </Button>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">Product Images</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage your main image and linked variations together for{' '}
-            <span className="font-medium text-foreground">{product.name || 'this product'}</span>.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge variant={product.status === 'published' ? 'default' : 'secondary'}>
-            {product.status === 'published' ? 'Published' : 'Draft'}
-          </Badge>
-          <Button variant="outline" disabled={saving} onClick={() => void save('draft')}>
-            <Save className="mr-2" /> Save draft
-          </Button>
-          <label className="cursor-pointer">
-            <Button type="button" asChild>
-              <span>
-                <Upload className="mr-2" /> Upload images
-                <input
-                  className="hidden"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={event => {
-                    if (event.target.files) void uploadFiles(event.target.files);
-                    event.target.value = '';
-                  }}
-                />
-              </span>
-            </Button>
-          </label>
-          <Button disabled={saving} onClick={() => void save('published')}>
-            <Send className="mr-2" /> Publish
-          </Button>
-        </div>
+    <section className="grid gap-4 xl:grid-cols-[440px_minmax(0,1fr)]">
+      <div className="rounded-2xl border bg-card/95 p-5 shadow-xl"><h2 className="mb-4 text-2xl font-semibold">Main Image <span className="text-sm text-muted-foreground">ⓘ</span></h2>
+        <div className="relative overflow-hidden rounded-xl border border-primary/50 bg-black/40">{main && !imageError ? <img src={main} alt={`${product.name} main image`} onError={() => setImageError(true)} className="aspect-[1.05/1] w-full object-cover" /> : <div className="flex aspect-[1.05/1] flex-col items-center justify-center gap-2 text-muted-foreground"><ImageIcon className="h-12 w-12" /><b>Image preview unavailable</b><span className="text-xs">Replace this image to create a fresh preview.</span></div>}<Badge className="absolute left-3 top-3 px-4 py-1">Primary</Badge><label className="absolute right-3 top-3"><Button asChild size="sm" variant="secondary"><span><Pencil className="mr-1 h-4 w-4" />Edit<input hidden type="file" accept="image/*" onChange={e => { if (e.target.files) void replaceMain(e.target.files); e.target.value = ''; }} /></span></Button></label></div>
+        <label onDragOver={e => e.preventDefault()} onDrop={(e: DragEvent<HTMLLabelElement>) => { e.preventDefault(); if (e.dataTransfer.files.length) void replaceMain(e.dataTransfer.files); }} className="mt-4 flex cursor-pointer items-center justify-center rounded-xl border border-dashed px-5 py-7 text-center"><ImageIcon className="mr-3 h-8 w-8" /><span><b>Click to replace or drag & drop</b><small className="block text-muted-foreground">JPG, PNG, WebP (Max 20MB)</small></span><input hidden type="file" accept="image/*" onChange={e => { if (e.target.files) void replaceMain(e.target.files); e.target.value = ''; }} /></label>
+        <Button type="button" variant="outline" className="mt-3 h-11 w-full" onClick={() => main && window.open(main, '_blank')} disabled={!main}>Crop / Adjust</Button>
       </div>
 
-      <section className="grid gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
-        <div className="rounded-2xl border bg-card p-5 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-2xl font-semibold">Main Image</h2>
-              <p className="text-sm text-muted-foreground">
-                The first image is primary and can be reused by all linked variations.
-              </p>
-            </div>
-            <Badge variant="secondary">Primary media</Badge>
-          </div>
-
-          <div
-            onDragOver={event => event.preventDefault()}
-            onDrop={event => {
-              event.preventDefault();
-              if (event.dataTransfer.files.length) void uploadFiles(event.dataTransfer.files);
-            }}
-            className="mt-5 rounded-2xl border border-dashed p-4"
-          >
-            {mainImage ? (
-              <div className="space-y-4">
-                <div className="group relative overflow-hidden rounded-2xl border bg-muted">
-                  <img
-                    src={mainImage}
-                    alt={`${product.name || 'Product'} primary image`}
-                    className="aspect-square w-full object-cover"
-                  />
-                  <Badge className="absolute left-3 top-3">Primary</Badge>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    className="absolute right-3 top-3"
-                  >
-                    <Pencil className="mr-1 h-4 w-4" /> Edit
-                  </Button>
-                </div>
-
-                {thumbnailImages.length > 0 && (
-                  <div className="grid grid-cols-4 gap-2">
-                    {thumbnailImages.map((image, index) => (
-                      <div
-                        key={`${image}-${index}`}
-                        draggable
-                        onDragStart={() => setDraggedImage(index + 1)}
-                        onDragEnd={() => setDraggedImage(null)}
-                        onDragOver={event => event.preventDefault()}
-                        onDrop={event => handleDrop(event, index + 1)}
-                        className="group relative overflow-hidden rounded-xl border bg-muted"
-                      >
-                        <img
-                          src={image}
-                          alt={`${product.name || 'Product'} image ${index + 2}`}
-                          className="aspect-square h-full w-full object-cover"
-                        />
-                        <GripVertical className="absolute bottom-1 left-1 rounded bg-black/60 p-1 text-white" />
-                        <button
-                          type="button"
-                          className="absolute right-1 top-1 rounded bg-black/70 p-1 text-white"
-                          onClick={() =>
-                            setProduct(current => ({
-                              ...current,
-                              images: current.images.filter((_, imageIndex) => imageIndex !== index + 1),
-                            }))
-                          }
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex aspect-square items-center justify-center rounded-2xl border bg-muted/40 text-center text-sm text-muted-foreground">
-                Upload a main product image to begin linking variations.
-              </div>
-            )}
-
-            <label className="mt-4 flex cursor-pointer items-center justify-center rounded-2xl border border-dashed bg-muted/20 px-4 py-6 text-center">
-              <span>
-                <ImagePlus className="mx-auto mb-2 h-6 w-6" />
-                <span className="block font-medium">Click to replace or drag &amp; drop</span>
-                <span className="mt-1 block text-xs text-muted-foreground">
-                  JPG, PNG, WebP (max 20MB)
-                </span>
-                <input
-                  className="hidden"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={event => {
-                    if (event.target.files) void uploadFiles(event.target.files);
-                    event.target.value = '';
-                  }}
-                />
-              </span>
-            </label>
-
-            <div className="mt-3 grid gap-2">
-              <Button type="button" variant="outline" disabled={product.images.length < 2}>
-                <GripVertical className="mr-2 h-4 w-4" /> Reorder gallery
-              </Button>
-            </div>
-          </div>
-
-          {Object.entries(uploading)
-            .filter(([name]) => !name.startsWith('variation-'))
-            .map(([name, progress]) => (
-              <div key={name} className="mt-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="truncate">{name}</span>
-                  <span>{progress}%</span>
-                </div>
-                <div className="mt-1 h-1.5 overflow-hidden rounded bg-muted">
-                  <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
-                </div>
-              </div>
-            ))}
-        </div>
-
-        <div className="space-y-4 rounded-2xl border bg-card p-5 shadow-sm">
-          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold">Variations</h2>
-              <p className="text-sm text-muted-foreground">
-                Keep each size together with stock and the images shown when that variation is selected.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" onClick={toggleSelectAllVariations}>
-                {allSelected ? 'Clear selection' : 'Select all'}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  setProduct(current => ({
-                    ...current,
-                    sizes: [
-                      ...current.sizes,
-                      { size: '', stock: 0, lowStockThreshold: 10, images: [] },
-                    ],
-                  }))
-                }
-              >
-                Add variation
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            {product.sizes.map((size, index) => {
-              const variationImages = size.images || [];
-              const rowPreview = variationImages[0] || mainImage;
-              const isSelected = selectedVariations.includes(index);
-              const isEditing = editingVariation === index;
-              const imageLimitReached = variationImages.length >= MAX_VARIATION_IMAGES;
-              const variationUploads = Object.entries(uploading).filter(([name]) =>
-                name.startsWith(`variation-${index}-`),
-              );
-
-              return (
-                <div key={index} className="overflow-hidden rounded-2xl border bg-background">
-                  <div className="grid gap-3 p-4 xl:grid-cols-[auto_72px_minmax(160px,1fr)_130px_130px_auto] xl:items-center">
-                    <button
-                      type="button"
-                      onClick={() => toggleVariationSelection(index)}
-                      className={`flex h-7 w-7 items-center justify-center rounded-md border ${
-                        isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-border'
-                      }`}
-                      aria-label={`Select ${size.size || `variation ${index + 1}`}`}
-                    >
-                      {isSelected && <CheckCircle2 className="h-4 w-4" />}
-                    </button>
-
-                    <div className="overflow-hidden rounded-xl border bg-muted">
-                      {rowPreview ? (
-                        <img src={rowPreview} alt="Variation preview" className="h-[72px] w-[72px] object-cover" />
-                      ) : (
-                        <div className="flex h-[72px] w-[72px] items-center justify-center text-[11px] text-muted-foreground">
-                          No image
-                        </div>
-                      )}
-                    </div>
-
-                    <label className="space-y-1 text-xs font-medium text-muted-foreground">
-                      Size / format
-                      <Input
-                        value={size.size}
-                        placeholder="e.g. Standard, A4, Large"
-                        onChange={event => updateSize(index, { size: event.target.value })}
-                      />
-                    </label>
-
-                    <label className="space-y-1 text-xs font-medium text-muted-foreground">
-                      Stock
-                      <Input
-                        type="number"
-                        min="0"
-                        value={size.stock}
-                        onChange={event => updateSize(index, { stock: Number(event.target.value) })}
-                      />
-                    </label>
-
-                    <label className="space-y-1 text-xs font-medium text-muted-foreground">
-                      Low stock at
-                      <Input
-                        type="number"
-                        min="0"
-                        value={size.lowStockThreshold ?? 10}
-                        onChange={event =>
-                          updateSize(index, { lowStockThreshold: Number(event.target.value) })
-                        }
-                      />
-                    </label>
-
-                    <div className="flex flex-wrap items-center gap-2 justify-self-end">
-                      <Badge variant={size.stock > 0 ? 'default' : 'secondary'}>
-                        {size.stock > 0 ? 'Active' : 'Out of stock'}
-                      </Badge>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setEditingVariation(isEditing ? null : index);
-                          setSizeLinkPicker(null);
-                          setSizeLinkUrl('');
-                        }}
-                      >
-                        <Pencil className="mr-1 h-4 w-4" /> Edit
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => {
-                          setProduct(current => ({
-                            ...current,
-                            sizes: current.sizes.filter((_, sizeIndex) => sizeIndex !== index),
-                          }));
-                          setSelectedVariations(current => current.filter(item => item !== index));
-                          setEditingVariation(current => (current === index ? null : current));
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {isEditing && (
-                    <div className="border-t bg-muted/20 p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-medium">Variation images</p>
-                          <p className="text-xs text-muted-foreground">
-                            These images are linked only to this variation.
-                          </p>
-                        </div>
-                        <Badge variant="secondary">
-                          {variationImages.length}/{MAX_VARIATION_IMAGES} images
-                        </Badge>
-                      </div>
-
-                      {variationImages.length > 0 ? (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {variationImages.map((image, imageIndex) => (
-                            <div
-                              key={`${image}-${imageIndex}`}
-                              className="group relative h-20 w-20 overflow-hidden rounded-xl border bg-muted"
-                            >
-                              <img
-                                src={image}
-                                alt={`${size.size || 'Variation'} image ${imageIndex + 1}`}
-                                className="h-full w-full object-cover"
-                              />
-                              {imageIndex === 0 && (
-                                <Badge className="absolute bottom-1 left-1 text-[9px]">Primary</Badge>
-                              )}
-                              <button
-                                type="button"
-                                className="absolute right-1 top-1 rounded bg-black/70 p-1 text-white"
-                                onClick={() => removeSizeImage(index, imageIndex)}
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="mt-3 rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground">
-                          No images linked yet. Reuse the main image, upload variation-specific images,
-                          or link one from the gallery.
-                        </div>
-                      )}
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={!mainImage || variationImages.includes(mainImage) || imageLimitReached}
-                          onClick={() => appendSizeImage(index, mainImage)}
-                        >
-                          Use main image
-                        </Button>
-                        <label className={imageLimitReached ? 'pointer-events-none opacity-50' : 'cursor-pointer'}>
-                          <Button type="button" variant="outline" size="sm" asChild disabled={imageLimitReached}>
-                            <span>
-                              <ImagePlus className="mr-1 h-4 w-4" /> Upload images
-                              <input
-                                className="hidden"
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={event => {
-                                  if (event.target.files) void uploadSizeFiles(index, event.target.files);
-                                  event.target.value = '';
-                                }}
-                              />
-                            </span>
-                          </Button>
-                        </label>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={imageLimitReached}
-                          onClick={() => {
-                            setSizeLinkPicker(sizeLinkPicker === index ? null : index);
-                            setSizeLinkUrl('');
-                          }}
-                        >
-                          <Link2 className="mr-1 h-4 w-4" /> Link image
-                        </Button>
-                      </div>
-
-                      {sizeLinkPicker === index && (
-                        <div className="mt-3 rounded-xl border bg-background p-3">
-                          <p className="mb-2 text-xs text-muted-foreground">
-                            Pick from main product images or paste another image URL.
-                          </p>
-                          {product.images.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {product.images.map((productImage, productImageIndex) => {
-                                const isLinked = variationImages.includes(productImage);
-                                return (
-                                  <button
-                                    key={`${productImage}-${productImageIndex}`}
-                                    type="button"
-                                    disabled={isLinked || imageLimitReached}
-                                    onClick={() => addSizeImage(index, productImage)}
-                                    className={`relative h-12 w-12 overflow-hidden rounded-lg border ${
-                                      isLinked ? 'border-primary opacity-50' : 'hover:border-primary'
-                                    }`}
-                                  >
-                                    <img src={productImage} alt="" className="h-full w-full object-cover" />
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                          <div className="mt-3 flex gap-2">
-                            <Input
-                              className="h-8 text-xs"
-                              value={sizeLinkUrl}
-                              onChange={event => setSizeLinkUrl(event.target.value)}
-                              placeholder="Paste an image URL..."
-                            />
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              disabled={!sizeLinkUrl.trim() || imageLimitReached}
-                              onClick={() => {
-                                const url = sizeLinkUrl.trim();
-                                if (!url) return;
-                                addSizeImage(index, url);
-                                setSizeLinkUrl('');
-                              }}
-                            >
-                              Add
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-
-                      {variationUploads.map(([name, progress]) => (
-                        <div key={name} className="mt-3 text-xs">
-                          <div className="flex justify-between gap-3">
-                            <span className="truncate">{name.replace(`variation-${index}-`, '')}</span>
-                            <span>{progress}%</span>
-                          </div>
-                          <div className="mt-1 h-1.5 overflow-hidden rounded bg-muted">
-                            <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="rounded-2xl border bg-muted/10 p-4">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-              <div>
-                <h3 className="font-semibold">Bulk Actions</h3>
-                <p className="text-sm text-muted-foreground">
-                  Apply changes to multiple variations at once.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" variant="outline" onClick={bulkApplyMainImage}>
-                  Update images
-                </Button>
-                <Button type="button" variant="outline" onClick={bulkClearVariationImages}>
-                  Clear images
-                </Button>
-                <Button type="button" variant="destructive" onClick={bulkDeleteSelected}>
-                  Delete selected
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card px-5 py-4 shadow-sm">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-          All changes are saved when you press Save draft or Publish.
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-md border bg-muted">
-            <Link2 className="h-4 w-4" />
-          </span>
-          <span>{linkedVariationCount} variation{linkedVariationCount === 1 ? '' : 's'} linked to the main image</span>
-        </div>
-      </section>
-
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-6">
-          <section className="rounded-2xl border bg-card p-5">
-            <h2 className="font-semibold">Product details</h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <label className="space-y-1 text-sm font-medium md:col-span-2">
-                Product name
-                <Input
-                  value={product.name}
-                  maxLength={160}
-                  onChange={event => setProduct({ ...product, name: event.target.value })}
-                />
-              </label>
-              <label className="space-y-1 text-sm font-medium">
-                Main product section
-                <select
-                  value={product.category}
-                  onChange={event => setProduct({ ...product, category: event.target.value })}
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  {categories.map(category => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="space-y-1 text-sm font-medium">
-                Storefront URL <Badge variant="secondary">Auto</Badge>
-                <div className="rounded-lg bg-muted p-3 font-mono text-xs break-all">
-                  shop-co/...{' '}
-                  <span className="font-medium text-foreground">
-                    {slugify(product.name) || 'product-slug'}
-                  </span>
-                </div>
-              </label>
-              <label className="space-y-1 text-sm font-medium">
-                Price (RM)
-                <Input
-                  type="number"
-                  min="0"
-                  value={product.price}
-                  onChange={event => setProduct({ ...product, price: Number(event.target.value) })}
-                />
-              </label>
-              <label className="space-y-1 text-sm font-medium">
-                Original price (RM)
-                <Input
-                  type="number"
-                  min="0"
-                  value={product.originalPrice || 0}
-                  onChange={event =>
-                    setProduct({ ...product, originalPrice: Number(event.target.value) })
-                  }
-                />
-              </label>
-            </div>
-            <label className="mt-4 block space-y-1 text-sm font-medium">
-              Description
-              <Textarea
-                value={product.description}
-                rows={6}
-                onChange={event => setProduct({ ...product, description: event.target.value })}
-              />
-            </label>
-          </section>
-
-          <section className="rounded-2xl border bg-card p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="font-semibold">Details &amp; content</h2>
-                <p className="text-sm text-muted-foreground">
-                  Shown in the product information panel on the storefront.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-6">
-              <section>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  Specifications
-                </h3>
-                <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                  {(
-                    ['material', 'frame', 'dimensions', 'weight', 'finish', 'color'] as const
-                  ).map(key => (
-                    <label key={key} className="space-y-1 text-sm font-medium capitalize">
-                      {key}
-                      <Input
-                        value={product.specifications?.[key] || ''}
-                        onChange={event => updateSpec({ [key]: event.target.value })}
-                      />
-                    </label>
-                  ))}
-                </div>
-                <div className="mt-3 space-y-2">
-                  <p className="text-sm font-medium">Custom fields</p>
-                  {Object.entries(product.specifications?.customFields || {}).map(([key, value]) => (
-                    <div key={key} className="flex items-center gap-2">
-                      <Input
-                        className="h-8 text-xs"
-                        value={key}
-                        onChange={event => updateCustomField(key, event.target.value, String(value))}
-                      />
-                      <Input
-                        className="h-8 text-xs"
-                        value={String(value)}
-                        onChange={event => updateCustomField(key, key, event.target.value)}
-                      />
-                      <Button type="button" variant="ghost" size="icon" onClick={() => removeCustomField(key)}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  <div className="flex items-center gap-2">
-                    <Input
-                      className="h-8 text-xs"
-                      value={newCustomField.key}
-                      onChange={event =>
-                        setNewCustomField(current => ({ ...current, key: event.target.value }))
-                      }
-                      placeholder="Field name"
-                    />
-                    <Input
-                      className="h-8 text-xs"
-                      value={newCustomField.value}
-                      onChange={event =>
-                        setNewCustomField(current => ({ ...current, value: event.target.value }))
-                      }
-                      placeholder="Value"
-                    />
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={!newCustomField.key.trim()}
-                      onClick={() => {
-                        addCustomField(newCustomField.key, newCustomField.value);
-                        setNewCustomField({ key: '', value: '' });
-                      }}
-                    >
-                      Add field
-                    </Button>
-                  </div>
-                </div>
-              </section>
-
-              <section>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  Included
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  What the customer receives with the product.
-                </p>
-                <div className="mt-2 space-y-2">
-                  {product.packageContents?.map((item, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <Input
-                        className="h-8 text-xs"
-                        value={item}
-                        onChange={event => updatePackageItem(index, event.target.value)}
-                      />
-                      <Button type="button" variant="ghost" size="icon" onClick={() => removePackageItem(index)}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button type="button" variant="outline" size="sm" onClick={addPackageItem}>
-                    Add item
-                  </Button>
-                </div>
-              </section>
-
-              <section>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  Production time
-                </h3>
-                <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                  <label className="space-y-1 text-sm font-medium">
-                    Standard days
-                    <Input
-                      type="number"
-                      min="0"
-                      value={product.productionTurnaround?.standardDays ?? ''}
-                      onChange={event => updateTurnaround({ standardDays: Number(event.target.value) })}
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm font-medium">
-                    Express days
-                    <Input
-                      type="number"
-                      min="0"
-                      value={product.productionTurnaround?.expressDays ?? ''}
-                      onChange={event => updateTurnaround({ expressDays: Number(event.target.value) })}
-                    />
-                  </label>
-                </div>
-                <label className="mt-3 block space-y-1 text-sm font-medium">
-                  Notes
-                  <Textarea
-                    rows={2}
-                    value={product.productionTurnaround?.notes || ''}
-                    onChange={event => updateTurnaround({ notes: event.target.value })}
-                  />
-                </label>
-              </section>
-
-              <label className="mt-6 block space-y-1 text-sm font-medium">
-                Warranty
-                <Textarea
-                  rows={2}
-                  value={product.warrantyInfo || ''}
-                  onChange={event => setProduct({ ...product, warrantyInfo: event.target.value })}
-                  placeholder="e.g. 1 year frame; 6 months banner outdoor"
-                />
-              </label>
-            </div>
-          </section>
-        </div>
-
-        <aside className="space-y-6">
-          <section className="rounded-2xl border bg-card p-5">
-            <h2 className="font-semibold">Publishing</h2>
-            <label className="mt-4 block space-y-1 text-sm font-medium">
-              Status
-              <select
-                value={product.status || 'draft'}
-                onChange={event =>
-                  setProduct({
-                    ...product,
-                    status: event.target.value as 'draft' | 'published',
-                  })
-                }
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-              </select>
-            </label>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Drafts remain hidden from the storefront and public product API.
-            </p>
-          </section>
-
-          <section className="rounded-2xl border bg-card p-5">
-            <h2 className="font-semibold">Search preview</h2>
-            <label className="mt-4 block space-y-1 text-sm font-medium">
-              SEO title <span className="font-normal text-muted-foreground">({(product.seoTitle || '').length}/70)</span>
-              <Input
-                maxLength={70}
-                value={product.seoTitle || ''}
-                placeholder={product.name}
-                onChange={event => setProduct({ ...product, seoTitle: event.target.value })}
-              />
-            </label>
-            <label className="mt-4 block space-y-1 text-sm font-medium">
-              SEO description <span className="font-normal text-muted-foreground">({(product.seoDescription || '').length}/160)</span>
-              <Textarea
-                maxLength={160}
-                rows={5}
-                value={product.seoDescription || ''}
-                placeholder={product.description}
-                onChange={event => setProduct({ ...product, seoDescription: event.target.value })}
-              />
-            </label>
-            <div className="mt-4 rounded-lg bg-muted p-3">
-              <p className="truncate text-sm text-emerald-700">
-                kampungcetak.com/home/shop/{slugify(product.name) || 'product-slug'}
-              </p>
-              <p className="mt-1 font-medium">{product.seoTitle || product.name || 'Product title'}</p>
-              <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">
-                {product.seoDescription || product.description || 'Product description'}
-              </p>
-            </div>
-          </section>
-        </aside>
+      <div className="rounded-2xl border bg-card/95 p-5 shadow-xl"><div className="flex items-start justify-between gap-3"><div><h2 className="text-2xl font-semibold">Variations <span className="text-base">(All linked to this image)</span> <span className="text-sm text-muted-foreground">ⓘ</span></h2><p className="mt-1 text-sm text-muted-foreground">Each variation below will use the same image. Update once, apply to all.</p></div><div className="flex gap-2"><Button variant="outline" onClick={() => setProduct(p => ({ ...p, sizes: [...p.sizes].reverse() }))}><GripVertical className="mr-2 h-4 w-4" />Reorder</Button><Button variant="outline" onClick={addVariation}><Plus className="mr-2 h-4 w-4" />Add Variation</Button></div></div>
+        <div className="mt-5 space-y-3">{product.sizes.map((s, i) => <div key={`${s.size}-${i}`} draggable onDragStart={() => setDragged(i)} onDragEnd={() => setDragged(null)} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); if (dragged !== null) move(dragged, i); setDragged(null); }} className={`grid gap-3 rounded-xl border bg-background/75 p-3 xl:grid-cols-[36px_72px_minmax(150px,1fr)_130px_170px_100px_96px_48px] xl:items-center ${dragged === i ? 'opacity-50' : ''}`}>
+          <button onClick={() => toggle(i)} className={`flex h-7 w-7 items-center justify-center rounded-md border ${selected.includes(i) ? 'border-primary bg-primary text-primary-foreground' : ''}`}>{selected.includes(i) && <Check className="h-4 w-4" />}</button>
+          <div className="overflow-hidden rounded-lg border bg-muted">{main && !imageError ? <img src={main} alt="Variation preview" onError={() => setImageError(true)} className="h-[68px] w-[68px] object-cover" /> : <div className="flex h-[68px] w-[68px] items-center justify-center"><ImageIcon className="h-5 w-5" /></div>}</div>
+          <label className="space-y-1 text-sm"><span className="text-muted-foreground">Size</span><Input data-size-index={i} value={s.size} onChange={e => updateSize(i, { size: e.target.value })} /></label>
+          <label className="space-y-1 text-sm"><span className="text-muted-foreground">Stock</span><Input type="number" min="0" value={s.stock} onChange={e => updateSize(i, { stock: Number(e.target.value) })} /></label>
+          <label className="space-y-1 text-sm"><span className="text-muted-foreground">SKU (optional)</span><Input value={getSku(s.size)} placeholder={`SKU-${s.size.toUpperCase().replace(/\s+/g, '-')}`} onChange={e => setSku(i, e.target.value)} /></label>
+          <Badge className="justify-self-start bg-emerald-950 px-4 py-2 text-emerald-300 hover:bg-emerald-950">Active</Badge><Button variant="outline" size="sm" onClick={() => document.querySelector<HTMLInputElement>(`[data-size-index='${i}']`)?.focus()}><Pencil className="mr-1 h-4 w-4" />Edit</Button><Button variant="ghost" size="icon" className="text-destructive" onClick={() => remove(i)}><Trash2 className="h-5 w-5" /></Button>
+        </div>)}</div>
       </div>
-    </main>
-  );
+    </section>
+
+    <section className="ml-auto rounded-2xl border bg-card/95 p-4 shadow-lg xl:w-[calc(100%-456px)]"><div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"><div><h3 className="text-lg font-semibold">Bulk Actions</h3><p className="text-sm text-muted-foreground">Apply changes to multiple variations at once.</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setSelected(all ? [] : product.sizes.map((_, i) => i))}>{all ? 'Clear selection' : 'Select all'}</Button><Button variant="outline" onClick={bulkStock}>Update Stock</Button><Button variant="outline" onClick={bulkSku}><Tag className="mr-2 h-4 w-4" />Update SKU</Button><Button variant="outline" onClick={bulkActive}><Check className="mr-2 h-4 w-4" />Set as Active</Button><Button variant="destructive" onClick={bulkDelete}><Trash2 className="mr-2 h-4 w-4" />Delete Selected</Button></div></div></section>
+
+    <footer className="flex flex-wrap items-center justify-between border-t pt-4 text-sm text-muted-foreground"><span className="flex items-center gap-2"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400"><Check className="h-4 w-4" /></span>{saving ? 'Saving changes…' : 'All changes are automatically saved'}</span><span className="font-medium">{product.sizes.length} variation{product.sizes.length === 1 ? '' : 's'} linked to this image</span></footer>
+  </main>;
 }
