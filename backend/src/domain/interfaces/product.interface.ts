@@ -95,6 +95,8 @@ export interface ISize {
     size: string;
     lowStockThreshold?: number;
     images?: string[];
+    sku?: string;
+    active?: boolean;
 }
 
 
