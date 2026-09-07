@@ -1,10 +1,23 @@
 'use client';
 
-import { DragEvent, useEffect, useState } from 'react';
+import { DragEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, GripVertical, ImagePlus, Link2, Loader2, Save, Send, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  GripVertical,
+  ImagePlus,
+  Link2,
+  Loader2,
+  Pencil,
+  Save,
+  Send,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -140,6 +153,8 @@ export function ProductEditor({ productId }: { productId?: string }) {
   const [draggedImage, setDraggedImage] = useState<number | null>(null);
   const [sizeLinkPicker, setSizeLinkPicker] = useState<number | null>(null);
   const [sizeLinkUrl, setSizeLinkUrl] = useState('');
+  const [selectedVariations, setSelectedVariations] = useState<number[]>([]);
+  const [editingVariation, setEditingVariation] = useState<number | null>(0);
   const [newCustomField, setNewCustomField] = useState({ key: '', value: '' });
 
   useEffect(() => {
@@ -391,6 +406,81 @@ export function ProductEditor({ productId }: { productId?: string }) {
     }
   };
 
+  const toggleVariationSelection = (index: number) => {
+    setSelectedVariations(current =>
+      current.includes(index) ? current.filter(item => item !== index) : [...current, index],
+    );
+  };
+
+  const toggleSelectAllVariations = () => {
+    setSelectedVariations(current =>
+      current.length === product.sizes.length ? [] : product.sizes.map((_, index) => index),
+    );
+  };
+
+  const bulkApplyMainImage = () => {
+    const mainImage = product.images[0];
+    if (!mainImage) {
+      toast.error('Upload a main product image first.');
+      return;
+    }
+
+    if (selectedVariations.length === 0) {
+      toast.error('Select at least one variation.');
+      return;
+    }
+
+    setProduct(current => ({
+      ...current,
+      sizes: current.sizes.map((size, index) => {
+        if (!selectedVariations.includes(index)) return size;
+        const images = size.images || [];
+        if (images.includes(mainImage)) return size;
+        return { ...size, images: [mainImage, ...images].slice(0, MAX_VARIATION_IMAGES) };
+      }),
+    }));
+
+    toast.success('Main image linked to selected variations.');
+  };
+
+  const bulkClearVariationImages = () => {
+    if (selectedVariations.length === 0) {
+      toast.error('Select at least one variation.');
+      return;
+    }
+
+    setProduct(current => ({
+      ...current,
+      sizes: current.sizes.map((size, index) =>
+        selectedVariations.includes(index) ? { ...size, images: [] } : size,
+      ),
+    }));
+
+    toast.success('Variation images cleared.');
+  };
+
+  const bulkDeleteSelected = () => {
+    if (selectedVariations.length === 0) {
+      toast.error('Select at least one variation.');
+      return;
+    }
+
+    setProduct(current => ({
+      ...current,
+      sizes: current.sizes.filter((_, index) => !selectedVariations.includes(index)),
+    }));
+    setSelectedVariations([]);
+    setEditingVariation(null);
+    setSizeLinkPicker(null);
+    toast.success('Selected variations deleted.');
+  };
+
+  const linkedVariationCount = useMemo(() => {
+    const mainImage = product.images[0];
+    if (!mainImage) return 0;
+    return product.sizes.filter(size => (size.images || []).includes(mainImage)).length;
+  }, [product.images, product.sizes]);
+
   if (loading) {
     return (
       <main className="flex min-h-[60vh] items-center justify-center">
@@ -399,8 +489,12 @@ export function ProductEditor({ productId }: { productId?: string }) {
     );
   }
 
+  const mainImage = product.images[0] || '';
+  const thumbnailImages = product.images.slice(1);
+  const allSelected = product.sizes.length > 0 && selectedVariations.length === product.sizes.length;
+
   return (
-    <main className="mx-auto max-w-6xl space-y-6 p-4 md:p-8">
+    <main className="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
       <div className="flex flex-col justify-between gap-4 border-b pb-5 md:flex-row md:items-center">
         <div>
           <Button asChild variant="ghost" size="sm" className="-ml-3">
@@ -408,11 +502,10 @@ export function ProductEditor({ productId }: { productId?: string }) {
               <ArrowLeft className="mr-1" /> Catalog
             </Link>
           </Button>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">
-            {productId ? product.name || 'Edit product' : 'Create product'}
-          </h1>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">Product Images</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Build the product page, storefront URL, and publishing state in one workspace.
+            Manage your main image and linked variations together for{' '}
+            <span className="font-medium text-foreground">{product.name || 'this product'}</span>.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -422,191 +515,163 @@ export function ProductEditor({ productId }: { productId?: string }) {
           <Button variant="outline" disabled={saving} onClick={() => void save('draft')}>
             <Save className="mr-2" /> Save draft
           </Button>
+          <label className="cursor-pointer">
+            <Button type="button" asChild>
+              <span>
+                <Upload className="mr-2" /> Upload images
+                <input
+                  className="hidden"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={event => {
+                    if (event.target.files) void uploadFiles(event.target.files);
+                    event.target.value = '';
+                  }}
+                />
+              </span>
+            </Button>
+          </label>
           <Button disabled={saving} onClick={() => void save('published')}>
             <Send className="mr-2" /> Publish
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-6">
-          <section className="rounded-2xl border bg-card p-5">
-            <h2 className="font-semibold">Product details</h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <label className="space-y-1 text-sm font-medium md:col-span-2">
-                Product name
-                <Input
-                  value={product.name}
-                  maxLength={160}
-                  onChange={event => setProduct({ ...product, name: event.target.value })}
-                />
-              </label>
-
-              <label className="space-y-1 text-sm font-medium">
-                Main product section
-                <select
-                  value={product.category}
-                  onChange={event => setProduct({ ...product, category: event.target.value })}
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  {categories.map(category => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-1 text-sm font-medium">
-                Storefront URL <Badge variant="secondary">Auto</Badge>
-                <div className="rounded-lg bg-muted p-3 font-mono text-xs break-all">
-                  shop-co/...{' '}
-                  <span className="font-medium text-foreground">
-                    {slugify(product.name) || 'product-slug'}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Generated automatically from the product name — you don&apos;t need to set it.
-                  If the name is taken, a number is appended.
-                </p>
-              </label>
-
-              <label className="space-y-1 text-sm font-medium">
-                Price (RM)
-                <Input
-                  type="number"
-                  min="0"
-                  value={product.price}
-                  onChange={event => setProduct({ ...product, price: Number(event.target.value) })}
-                />
-              </label>
-
-              <label className="space-y-1 text-sm font-medium">
-                Original price (RM)
-                <Input
-                  type="number"
-                  min="0"
-                  value={product.originalPrice || 0}
-                  onChange={event =>
-                    setProduct({ ...product, originalPrice: Number(event.target.value) })
-                  }
-                />
-              </label>
+      <section className="grid gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
+        <div className="rounded-2xl border bg-card p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-semibold">Main Image</h2>
+              <p className="text-sm text-muted-foreground">
+                The first image is primary and can be reused by all linked variations.
+              </p>
             </div>
+            <Badge variant="secondary">Primary media</Badge>
+          </div>
 
-            <label className="mt-4 block space-y-1 text-sm font-medium">
-              Description
-              <Textarea
-                value={product.description}
-                rows={6}
-                onChange={event => setProduct({ ...product, description: event.target.value })}
-              />
-            </label>
-          </section>
-
-          <section className="rounded-2xl border bg-card p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="font-semibold">Main product images</h2>
-                <p className="text-sm text-muted-foreground">
-                  Drag cards to set the storefront image order. The first image is primary.
-                </p>
-              </div>
-              <label className="cursor-pointer">
-                <Button type="button" variant="outline" asChild>
-                  <span>
-                    <ImagePlus className="mr-2" /> Upload
-                    <input
-                      className="hidden"
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={event => {
-                        if (event.target.files) void uploadFiles(event.target.files);
-                        event.target.value = '';
-                      }}
-                    />
-                  </span>
-                </Button>
-              </label>
-            </div>
-
-            <div
-              onDragOver={event => event.preventDefault()}
-              onDrop={event => {
-                event.preventDefault();
-                if (event.dataTransfer.files.length) void uploadFiles(event.dataTransfer.files);
-              }}
-              className="mt-4 grid min-h-32 grid-cols-2 gap-3 rounded-xl border border-dashed p-3 sm:grid-cols-3"
-            >
-              {product.images.map((image, index) => (
-                <div
-                  key={`${image}-${index}`}
-                  draggable
-                  onDragStart={() => setDraggedImage(index)}
-                  onDragEnd={() => setDraggedImage(null)}
-                  onDragOver={event => event.preventDefault()}
-                  onDrop={event => handleDrop(event, index)}
-                  className={`group relative aspect-square overflow-hidden rounded-lg border bg-muted ${
-                    draggedImage === index ? 'opacity-50' : ''
-                  }`}
-                >
+          <div
+            onDragOver={event => event.preventDefault()}
+            onDrop={event => {
+              event.preventDefault();
+              if (event.dataTransfer.files.length) void uploadFiles(event.dataTransfer.files);
+            }}
+            className="mt-5 rounded-2xl border border-dashed p-4"
+          >
+            {mainImage ? (
+              <div className="space-y-4">
+                <div className="group relative overflow-hidden rounded-2xl border bg-muted">
                   <img
-                    src={image}
-                    alt={`${product.name || 'Product'} image ${index + 1}`}
-                    onError={event => {
-                      event.currentTarget.style.display = 'none';
-                    }}
-                    className="h-full w-full object-cover"
+                    src={mainImage}
+                    alt={`${product.name || 'Product'} primary image`}
+                    className="aspect-square w-full object-cover"
                   />
-                  {index === 0 && <Badge className="absolute left-2 top-2">Primary</Badge>}
-                  <GripVertical className="absolute bottom-2 left-2 rounded bg-black/60 p-1 text-white" />
-                  <button
+                  <Badge className="absolute left-3 top-3">Primary</Badge>
+                  <Button
                     type="button"
-                    className="absolute right-2 top-2 rounded bg-black/70 p-1 text-white"
-                    onClick={() =>
-                      setProduct(current => ({
-                        ...current,
-                        images: current.images.filter((_, imageIndex) => imageIndex !== index),
-                      }))
-                    }
+                    size="sm"
+                    variant="secondary"
+                    className="absolute right-3 top-3"
                   >
-                    <X className="h-4 w-4" />
-                  </button>
+                    <Pencil className="mr-1 h-4 w-4" /> Edit
+                  </Button>
                 </div>
-              ))}
 
-              {product.images.length === 0 && (
-                <div className="col-span-full flex items-center justify-center text-sm text-muted-foreground">
-                  Drop images here or use Upload.
-                </div>
-              )}
-            </div>
-
-            {Object.entries(uploading)
-              .filter(([name]) => !name.startsWith('variation-'))
-              .map(([name, progress]) => (
-                <div key={name} className="mt-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="truncate">{name}</span>
-                    <span>{progress}%</span>
+                {thumbnailImages.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2">
+                    {thumbnailImages.map((image, index) => (
+                      <div
+                        key={`${image}-${index}`}
+                        draggable
+                        onDragStart={() => setDraggedImage(index + 1)}
+                        onDragEnd={() => setDraggedImage(null)}
+                        onDragOver={event => event.preventDefault()}
+                        onDrop={event => handleDrop(event, index + 1)}
+                        className="group relative overflow-hidden rounded-xl border bg-muted"
+                      >
+                        <img
+                          src={image}
+                          alt={`${product.name || 'Product'} image ${index + 2}`}
+                          className="aspect-square h-full w-full object-cover"
+                        />
+                        <GripVertical className="absolute bottom-1 left-1 rounded bg-black/60 p-1 text-white" />
+                        <button
+                          type="button"
+                          className="absolute right-1 top-1 rounded bg-black/70 p-1 text-white"
+                          onClick={() =>
+                            setProduct(current => ({
+                              ...current,
+                              images: current.images.filter((_, imageIndex) => imageIndex !== index + 1),
+                            }))
+                          }
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                  <div className="mt-1 h-1.5 overflow-hidden rounded bg-muted">
-                    <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
-                  </div>
-                </div>
-              ))}
-          </section>
-
-          <section className="rounded-2xl border bg-card p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 className="font-semibold">Variations &amp; images</h2>
-                <p className="text-sm text-muted-foreground">
-                  Keep each size or format together with its stock and the images customers should
-                  see when they select it.
-                </p>
+                )}
               </div>
+            ) : (
+              <div className="flex aspect-square items-center justify-center rounded-2xl border bg-muted/40 text-center text-sm text-muted-foreground">
+                Upload a main product image to begin linking variations.
+              </div>
+            )}
+
+            <label className="mt-4 flex cursor-pointer items-center justify-center rounded-2xl border border-dashed bg-muted/20 px-4 py-6 text-center">
+              <span>
+                <ImagePlus className="mx-auto mb-2 h-6 w-6" />
+                <span className="block font-medium">Click to replace or drag &amp; drop</span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  JPG, PNG, WebP (max 20MB)
+                </span>
+                <input
+                  className="hidden"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={event => {
+                    if (event.target.files) void uploadFiles(event.target.files);
+                    event.target.value = '';
+                  }}
+                />
+              </span>
+            </label>
+
+            <div className="mt-3 grid gap-2">
+              <Button type="button" variant="outline" disabled={product.images.length < 2}>
+                <GripVertical className="mr-2 h-4 w-4" /> Reorder gallery
+              </Button>
+            </div>
+          </div>
+
+          {Object.entries(uploading)
+            .filter(([name]) => !name.startsWith('variation-'))
+            .map(([name, progress]) => (
+              <div key={name} className="mt-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="truncate">{name}</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="mt-1 h-1.5 overflow-hidden rounded bg-muted">
+                  <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
+                </div>
+              </div>
+            ))}
+        </div>
+
+        <div className="space-y-4 rounded-2xl border bg-card p-5 shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold">Variations</h2>
+              <p className="text-sm text-muted-foreground">
+                Keep each size together with stock and the images shown when that variation is selected.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" onClick={toggleSelectAllVariations}>
+                {allSelected ? 'Clear selection' : 'Select all'}
+              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -620,89 +685,118 @@ export function ProductEditor({ productId }: { productId?: string }) {
                   }))
                 }
               >
-                Add size / format
+                Add variation
               </Button>
             </div>
+          </div>
 
-            <div className="mt-4 space-y-4">
-              {product.sizes.map((size, index) => {
-                const variationImages = size.images || [];
-                const mainProductImage = product.images[0] || '';
-                const mainImageAlreadyLinked =
-                  Boolean(mainProductImage) && variationImages.includes(mainProductImage);
-                const imageLimitReached = variationImages.length >= MAX_VARIATION_IMAGES;
-                const variationUploads = Object.entries(uploading).filter(([name]) =>
-                  name.startsWith(`variation-${index}-`),
-                );
+          <div className="space-y-3">
+            {product.sizes.map((size, index) => {
+              const variationImages = size.images || [];
+              const rowPreview = variationImages[0] || mainImage;
+              const isSelected = selectedVariations.includes(index);
+              const isEditing = editingVariation === index;
+              const imageLimitReached = variationImages.length >= MAX_VARIATION_IMAGES;
+              const variationUploads = Object.entries(uploading).filter(([name]) =>
+                name.startsWith(`variation-${index}-`),
+              );
 
-                return (
-                  <div key={index} className="overflow-hidden rounded-xl border bg-muted/10">
-                    <div className="flex flex-wrap items-start justify-between gap-3 p-4">
-                      <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-[minmax(180px,1fr)_130px_150px]">
-                        <label className="space-y-1 text-xs font-medium text-muted-foreground">
-                          Size / format
-                          <Input
-                            value={size.size}
-                            placeholder="e.g. A4, Standard, Large"
-                            onChange={event => updateSize(index, { size: event.target.value })}
-                          />
-                        </label>
+              return (
+                <div key={index} className="overflow-hidden rounded-2xl border bg-background">
+                  <div className="grid gap-3 p-4 xl:grid-cols-[auto_72px_minmax(160px,1fr)_130px_130px_auto] xl:items-center">
+                    <button
+                      type="button"
+                      onClick={() => toggleVariationSelection(index)}
+                      className={`flex h-7 w-7 items-center justify-center rounded-md border ${
+                        isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-border'
+                      }`}
+                      aria-label={`Select ${size.size || `variation ${index + 1}`}`}
+                    >
+                      {isSelected && <CheckCircle2 className="h-4 w-4" />}
+                    </button>
 
-                        <label className="space-y-1 text-xs font-medium text-muted-foreground">
-                          Stock
-                          <Input
-                            type="number"
-                            min="0"
-                            value={size.stock}
-                            aria-label={`Stock quantity for ${
-                              size.size || `variation ${index + 1}`
-                            }`}
-                            onChange={event =>
-                              updateSize(index, { stock: Number(event.target.value) })
-                            }
-                          />
-                        </label>
+                    <div className="overflow-hidden rounded-xl border bg-muted">
+                      {rowPreview ? (
+                        <img src={rowPreview} alt="Variation preview" className="h-[72px] w-[72px] object-cover" />
+                      ) : (
+                        <div className="flex h-[72px] w-[72px] items-center justify-center text-[11px] text-muted-foreground">
+                          No image
+                        </div>
+                      )}
+                    </div>
 
-                        <label className="space-y-1 text-xs font-medium text-muted-foreground">
-                          Low stock at
-                          <Input
-                            type="number"
-                            min="0"
-                            value={size.lowStockThreshold ?? 10}
-                            aria-label={`Low-stock warning for ${
-                              size.size || `variation ${index + 1}`
-                            }`}
-                            onChange={event =>
-                              updateSize(index, {
-                                lowStockThreshold: Number(event.target.value),
-                              })
-                            }
-                          />
-                        </label>
-                      </div>
+                    <label className="space-y-1 text-xs font-medium text-muted-foreground">
+                      Size / format
+                      <Input
+                        value={size.size}
+                        placeholder="e.g. Standard, A4, Large"
+                        onChange={event => updateSize(index, { size: event.target.value })}
+                      />
+                    </label>
 
+                    <label className="space-y-1 text-xs font-medium text-muted-foreground">
+                      Stock
+                      <Input
+                        type="number"
+                        min="0"
+                        value={size.stock}
+                        onChange={event => updateSize(index, { stock: Number(event.target.value) })}
+                      />
+                    </label>
+
+                    <label className="space-y-1 text-xs font-medium text-muted-foreground">
+                      Low stock at
+                      <Input
+                        type="number"
+                        min="0"
+                        value={size.lowStockThreshold ?? 10}
+                        onChange={event =>
+                          updateSize(index, { lowStockThreshold: Number(event.target.value) })
+                        }
+                      />
+                    </label>
+
+                    <div className="flex flex-wrap items-center gap-2 justify-self-end">
+                      <Badge variant={size.stock > 0 ? 'default' : 'secondary'}>
+                        {size.stock > 0 ? 'Active' : 'Out of stock'}
+                      </Badge>
                       <Button
                         type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Remove ${size.size || `variation ${index + 1}`}`}
-                        onClick={() =>
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingVariation(isEditing ? null : index);
+                          setSizeLinkPicker(null);
+                          setSizeLinkUrl('');
+                        }}
+                      >
+                        <Pencil className="mr-1 h-4 w-4" /> Edit
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
                           setProduct(current => ({
                             ...current,
                             sizes: current.sizes.filter((_, sizeIndex) => sizeIndex !== index),
-                          }))
-                        }
+                          }));
+                          setSelectedVariations(current => current.filter(item => item !== index));
+                          setEditingVariation(current => (current === index ? null : current));
+                        }}
                       >
-                        <X />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
+                  </div>
 
+                  {isEditing && (
                     <div className="border-t bg-muted/20 p-4">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div>
                           <p className="text-sm font-medium">Variation images</p>
                           <p className="text-xs text-muted-foreground">
-                            Images linked here belong to this variation only.
+                            These images are linked only to this variation.
                           </p>
                         </div>
                         <Badge variant="secondary">
@@ -715,25 +809,19 @@ export function ProductEditor({ productId }: { productId?: string }) {
                           {variationImages.map((image, imageIndex) => (
                             <div
                               key={`${image}-${imageIndex}`}
-                              className="group relative h-20 w-20 overflow-hidden rounded-lg border bg-muted"
+                              className="group relative h-20 w-20 overflow-hidden rounded-xl border bg-muted"
                             >
                               <img
                                 src={image}
                                 alt={`${size.size || 'Variation'} image ${imageIndex + 1}`}
-                                onError={event => {
-                                  event.currentTarget.style.display = 'none';
-                                }}
                                 className="h-full w-full object-cover"
                               />
                               {imageIndex === 0 && (
-                                <Badge className="absolute bottom-1 left-1 text-[9px]">
-                                  Variation primary
-                                </Badge>
+                                <Badge className="absolute bottom-1 left-1 text-[9px]">Primary</Badge>
                               )}
                               <button
                                 type="button"
-                                className="absolute right-1 top-1 rounded bg-black/70 p-1 text-white opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100"
-                                aria-label={`Remove variation image ${imageIndex + 1}`}
+                                className="absolute right-1 top-1 rounded bg-black/70 p-1 text-white"
                                 onClick={() => removeSizeImage(index, imageIndex)}
                               >
                                 <X className="h-3.5 w-3.5" />
@@ -742,61 +830,39 @@ export function ProductEditor({ productId }: { productId?: string }) {
                           ))}
                         </div>
                       ) : (
-                        <div className="mt-3 rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
-                          No images linked yet. Use the main product image, upload new images, or
-                          link an existing image.
+                        <div className="mt-3 rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground">
+                          No images linked yet. Reuse the main image, upload variation-specific images,
+                          or link one from the gallery.
                         </div>
                       )}
 
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <div className="mt-4 flex flex-wrap gap-2">
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          disabled={!mainProductImage || mainImageAlreadyLinked || imageLimitReached}
-                          title={
-                            !mainProductImage
-                              ? 'Upload a main product image first'
-                              : mainImageAlreadyLinked
-                                ? 'Main image is already linked'
-                                : undefined
-                          }
-                          onClick={() => appendSizeImage(index, mainProductImage)}
+                          disabled={!mainImage || variationImages.includes(mainImage) || imageLimitReached}
+                          onClick={() => appendSizeImage(index, mainImage)}
                         >
                           Use main image
                         </Button>
-
-                        <label
-                          className={
-                            imageLimitReached ? 'pointer-events-none opacity-50' : 'cursor-pointer'
-                          }
-                        >
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={imageLimitReached}
-                            asChild
-                          >
+                        <label className={imageLimitReached ? 'pointer-events-none opacity-50' : 'cursor-pointer'}>
+                          <Button type="button" variant="outline" size="sm" asChild disabled={imageLimitReached}>
                             <span>
-                              <ImagePlus className="mr-1" /> Upload images
+                              <ImagePlus className="mr-1 h-4 w-4" /> Upload images
                               <input
                                 className="hidden"
                                 type="file"
                                 accept="image/*"
                                 multiple
-                                disabled={imageLimitReached}
                                 onChange={event => {
-                                  if (event.target.files) {
-                                    void uploadSizeFiles(index, event.target.files);
-                                  }
+                                  if (event.target.files) void uploadSizeFiles(index, event.target.files);
                                   event.target.value = '';
                                 }}
                               />
                             </span>
                           </Button>
                         </label>
-
                         <Button
                           type="button"
                           variant="outline"
@@ -807,16 +873,15 @@ export function ProductEditor({ productId }: { productId?: string }) {
                             setSizeLinkUrl('');
                           }}
                         >
-                          <Link2 className="mr-1" /> Link image
+                          <Link2 className="mr-1 h-4 w-4" /> Link image
                         </Button>
                       </div>
 
                       {sizeLinkPicker === index && (
-                        <div className="mt-3 rounded-lg border bg-background p-3">
+                        <div className="mt-3 rounded-xl border bg-background p-3">
                           <p className="mb-2 text-xs text-muted-foreground">
-                            Pick one of the main product images or paste another image URL.
+                            Pick from main product images or paste another image URL.
                           </p>
-
                           {product.images.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                               {product.images.map((productImage, productImageIndex) => {
@@ -826,32 +891,23 @@ export function ProductEditor({ productId }: { productId?: string }) {
                                     key={`${productImage}-${productImageIndex}`}
                                     type="button"
                                     disabled={isLinked || imageLimitReached}
-                                    title={isLinked ? 'Already linked' : 'Link this image'}
                                     onClick={() => addSizeImage(index, productImage)}
-                                    className={`relative h-12 w-12 overflow-hidden rounded border transition-colors ${
-                                      isLinked
-                                        ? 'cursor-default border-primary opacity-50'
-                                        : 'border-border hover:border-primary'
+                                    className={`relative h-12 w-12 overflow-hidden rounded-lg border ${
+                                      isLinked ? 'border-primary opacity-50' : 'hover:border-primary'
                                     }`}
                                   >
-                                    <img
-                                      src={productImage}
-                                      alt=""
-                                      className="h-full w-full object-cover"
-                                    />
+                                    <img src={productImage} alt="" className="h-full w-full object-cover" />
                                   </button>
                                 );
                               })}
                             </div>
                           )}
-
-                          <div className="mt-3 flex items-center gap-2">
+                          <div className="mt-3 flex gap-2">
                             <Input
                               className="h-8 text-xs"
                               value={sizeLinkUrl}
                               onChange={event => setSizeLinkUrl(event.target.value)}
                               placeholder="Paste an image URL..."
-                              aria-label="Variation image URL"
                             />
                             <Button
                               type="button"
@@ -874,30 +930,123 @@ export function ProductEditor({ productId }: { productId?: string }) {
                       {variationUploads.map(([name, progress]) => (
                         <div key={name} className="mt-3 text-xs">
                           <div className="flex justify-between gap-3">
-                            <span className="truncate">
-                              {name.replace(`variation-${index}-`, '')}
-                            </span>
+                            <span className="truncate">{name.replace(`variation-${index}-`, '')}</span>
                             <span>{progress}%</span>
                           </div>
                           <div className="mt-1 h-1.5 overflow-hidden rounded bg-muted">
-                            <div
-                              className="h-full bg-primary"
-                              style={{ width: `${progress}%` }}
-                            />
+                            <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
                           </div>
                         </div>
                       ))}
                     </div>
-                  </div>
-                );
-              })}
-
-              {product.sizes.length === 0 && (
-                <div className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground">
-                  No variations yet. Add a size or format to start linking stock and images.
+                  )}
                 </div>
-              )}
+              );
+            })}
+          </div>
+
+          <div className="rounded-2xl border bg-muted/10 p-4">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <div>
+                <h3 className="font-semibold">Bulk Actions</h3>
+                <p className="text-sm text-muted-foreground">
+                  Apply changes to multiple variations at once.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="outline" onClick={bulkApplyMainImage}>
+                  Update images
+                </Button>
+                <Button type="button" variant="outline" onClick={bulkClearVariationImages}>
+                  Clear images
+                </Button>
+                <Button type="button" variant="destructive" onClick={bulkDeleteSelected}>
+                  Delete selected
+                </Button>
+              </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card px-5 py-4 shadow-sm">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+          All changes are saved when you press Save draft or Publish.
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-md border bg-muted">
+            <Link2 className="h-4 w-4" />
+          </span>
+          <span>{linkedVariationCount} variation{linkedVariationCount === 1 ? '' : 's'} linked to the main image</span>
+        </div>
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="space-y-6">
+          <section className="rounded-2xl border bg-card p-5">
+            <h2 className="font-semibold">Product details</h2>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <label className="space-y-1 text-sm font-medium md:col-span-2">
+                Product name
+                <Input
+                  value={product.name}
+                  maxLength={160}
+                  onChange={event => setProduct({ ...product, name: event.target.value })}
+                />
+              </label>
+              <label className="space-y-1 text-sm font-medium">
+                Main product section
+                <select
+                  value={product.category}
+                  onChange={event => setProduct({ ...product, category: event.target.value })}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  {categories.map(category => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-1 text-sm font-medium">
+                Storefront URL <Badge variant="secondary">Auto</Badge>
+                <div className="rounded-lg bg-muted p-3 font-mono text-xs break-all">
+                  shop-co/...{' '}
+                  <span className="font-medium text-foreground">
+                    {slugify(product.name) || 'product-slug'}
+                  </span>
+                </div>
+              </label>
+              <label className="space-y-1 text-sm font-medium">
+                Price (RM)
+                <Input
+                  type="number"
+                  min="0"
+                  value={product.price}
+                  onChange={event => setProduct({ ...product, price: Number(event.target.value) })}
+                />
+              </label>
+              <label className="space-y-1 text-sm font-medium">
+                Original price (RM)
+                <Input
+                  type="number"
+                  min="0"
+                  value={product.originalPrice || 0}
+                  onChange={event =>
+                    setProduct({ ...product, originalPrice: Number(event.target.value) })
+                  }
+                />
+              </label>
+            </div>
+            <label className="mt-4 block space-y-1 text-sm font-medium">
+              Description
+              <Textarea
+                value={product.description}
+                rows={6}
+                onChange={event => setProduct({ ...product, description: event.target.value })}
+              />
+            </label>
           </section>
 
           <section className="rounded-2xl border bg-card p-5">
@@ -915,7 +1064,6 @@ export function ProductEditor({ productId }: { productId?: string }) {
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                   Specifications
                 </h3>
-
                 <div className="mt-2 grid gap-3 sm:grid-cols-2">
                   {(
                     ['material', 'frame', 'dimensions', 'weight', 'finish', 'color'] as const
@@ -929,39 +1077,25 @@ export function ProductEditor({ productId }: { productId?: string }) {
                     </label>
                   ))}
                 </div>
-
                 <div className="mt-3 space-y-2">
                   <p className="text-sm font-medium">Custom fields</p>
-
-                  {Object.entries(product.specifications?.customFields || {}).map(
-                    ([key, value]) => (
-                      <div key={key} className="flex items-center gap-2">
-                        <Input
-                          className="h-8 text-xs"
-                          value={key}
-                          onChange={event =>
-                            updateCustomField(key, event.target.value, String(value))
-                          }
-                          aria-label="Custom field name"
-                        />
-                        <Input
-                          className="h-8 text-xs"
-                          value={String(value)}
-                          onChange={event => updateCustomField(key, key, event.target.value)}
-                          aria-label="Custom field value"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeCustomField(key)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ),
-                  )}
-
+                  {Object.entries(product.specifications?.customFields || {}).map(([key, value]) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <Input
+                        className="h-8 text-xs"
+                        value={key}
+                        onChange={event => updateCustomField(key, event.target.value, String(value))}
+                      />
+                      <Input
+                        className="h-8 text-xs"
+                        value={String(value)}
+                        onChange={event => updateCustomField(key, key, event.target.value)}
+                      />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeCustomField(key)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
                   <div className="flex items-center gap-2">
                     <Input
                       className="h-8 text-xs"
@@ -970,7 +1104,6 @@ export function ProductEditor({ productId }: { productId?: string }) {
                         setNewCustomField(current => ({ ...current, key: event.target.value }))
                       }
                       placeholder="Field name"
-                      aria-label="New custom field name"
                     />
                     <Input
                       className="h-8 text-xs"
@@ -979,7 +1112,6 @@ export function ProductEditor({ productId }: { productId?: string }) {
                         setNewCustomField(current => ({ ...current, value: event.target.value }))
                       }
                       placeholder="Value"
-                      aria-label="New custom field value"
                     />
                     <Button
                       type="button"
@@ -1011,14 +1143,8 @@ export function ProductEditor({ productId }: { productId?: string }) {
                         className="h-8 text-xs"
                         value={item}
                         onChange={event => updatePackageItem(index, event.target.value)}
-                        aria-label={`Included item ${index + 1}`}
                       />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removePackageItem(index)}
-                      >
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removePackageItem(index)}>
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
@@ -1040,9 +1166,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
                       type="number"
                       min="0"
                       value={product.productionTurnaround?.standardDays ?? ''}
-                      onChange={event =>
-                        updateTurnaround({ standardDays: Number(event.target.value) })
-                      }
+                      onChange={event => updateTurnaround({ standardDays: Number(event.target.value) })}
                     />
                   </label>
                   <label className="space-y-1 text-sm font-medium">
@@ -1051,13 +1175,10 @@ export function ProductEditor({ productId }: { productId?: string }) {
                       type="number"
                       min="0"
                       value={product.productionTurnaround?.expressDays ?? ''}
-                      onChange={event =>
-                        updateTurnaround({ expressDays: Number(event.target.value) })
-                      }
+                      onChange={event => updateTurnaround({ expressDays: Number(event.target.value) })}
                     />
                   </label>
                 </div>
-
                 <label className="mt-3 block space-y-1 text-sm font-medium">
                   Notes
                   <Textarea
@@ -1107,12 +1228,8 @@ export function ProductEditor({ productId }: { productId?: string }) {
 
           <section className="rounded-2xl border bg-card p-5">
             <h2 className="font-semibold">Search preview</h2>
-
             <label className="mt-4 block space-y-1 text-sm font-medium">
-              SEO title{' '}
-              <span className="font-normal text-muted-foreground">
-                ({(product.seoTitle || '').length}/70)
-              </span>
+              SEO title <span className="font-normal text-muted-foreground">({(product.seoTitle || '').length}/70)</span>
               <Input
                 maxLength={70}
                 value={product.seoTitle || ''}
@@ -1120,30 +1237,21 @@ export function ProductEditor({ productId }: { productId?: string }) {
                 onChange={event => setProduct({ ...product, seoTitle: event.target.value })}
               />
             </label>
-
             <label className="mt-4 block space-y-1 text-sm font-medium">
-              SEO description{' '}
-              <span className="font-normal text-muted-foreground">
-                ({(product.seoDescription || '').length}/160)
-              </span>
+              SEO description <span className="font-normal text-muted-foreground">({(product.seoDescription || '').length}/160)</span>
               <Textarea
                 maxLength={160}
                 rows={5}
                 value={product.seoDescription || ''}
                 placeholder={product.description}
-                onChange={event =>
-                  setProduct({ ...product, seoDescription: event.target.value })
-                }
+                onChange={event => setProduct({ ...product, seoDescription: event.target.value })}
               />
             </label>
-
             <div className="mt-4 rounded-lg bg-muted p-3">
               <p className="truncate text-sm text-emerald-700">
                 kampungcetak.com/home/shop/{slugify(product.name) || 'product-slug'}
               </p>
-              <p className="mt-1 font-medium">
-                {product.seoTitle || product.name || 'Product title'}
-              </p>
+              <p className="mt-1 font-medium">{product.seoTitle || product.name || 'Product title'}</p>
               <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">
                 {product.seoDescription || product.description || 'Product description'}
               </p>
