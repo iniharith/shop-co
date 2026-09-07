@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { DragEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -29,6 +29,7 @@ import {
   getCatalogProduct,
   updateCatalogProduct,
 } from '@/api/catalog';
+import { resolveImages } from '@/utils/productImage';
 
 type SizeStock = {
   size: string;
@@ -168,10 +169,10 @@ export function ProductEditor({ productId }: { productId?: string }) {
         setProduct({
           ...emptyProduct,
           ...current,
-          images: current.images || [],
+images: resolveImages(current.images),
           sizes: (current.sizes || []).map(size => ({
             ...size,
-            images: Array.isArray(size.images) ? size.images.slice(0, MAX_VARIATION_IMAGES) : [],
+            images: Array.isArray(size.images) ? resolveImages(size.images.slice(0, MAX_VARIATION_IMAGES)) : [],
           })),
         });
       } catch (error: any) {
@@ -183,7 +184,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
     })();
   }, [productId, router, token]);
 
-  const updateSize = (index: number, patch: Partial<SizeStock>) =>
+const updateSize = (index: number, patch: Partial<SizeStock>) =>
     setProduct(current => ({
       ...current,
       sizes: current.sizes.map((size, sizeIndex) =>
@@ -215,7 +216,6 @@ export function ProductEditor({ productId }: { productId?: string }) {
       images.splice(to, 0, image);
       return { ...current, images };
     });
-
   const handleDrop = (event: DragEvent<HTMLDivElement>, to: number) => {
     event.preventDefault();
     if (draggedImage !== null && draggedImage !== to) moveImage(draggedImage, to);

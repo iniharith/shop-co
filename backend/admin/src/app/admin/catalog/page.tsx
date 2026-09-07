@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { adjustCatalogStock, archiveCatalogProduct, bulkArchiveCatalog, bulkDeleteCatalog, getCatalog, getCatalogStockAdjustments } from '@/api/catalog';
+import { resolveImages } from '@/utils/productImage';
 
 type SizeStock = { size: string; stock: number; lowStockThreshold?: number };
 type Product = { _id: string; name: string; description: string; category: string; price: number; images?: string[]; isDelete?: boolean; status?: 'draft' | 'published'; slug?: string; sizes?: SizeStock[] };
@@ -18,8 +19,6 @@ type StockAdjustment = { _id: string; size: string; delta: number; beforeStock: 
 type CatalogSection = 'published' | 'drafts' | 'low-stock' | 'archived' | 'all';
 
 const storefrontUrl = 'https://kampungcetak.com';
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-const resolveImageUrl = (image: string) => image.startsWith('/images/') ? `${storefrontUrl}${encodeURI(image)}` : image.startsWith('/') && backendUrl ? `${backendUrl}${encodeURI(image)}` : image;
 const thresholdFor = (size: SizeStock) => Number(size.lowStockThreshold ?? 10);
 const isLowSize = (size: SizeStock) => Number(size.stock || 0) <= thresholdFor(size);
 const needsStock = (product: Product) => !product.isDelete && product.status !== 'draft' && (product.sizes || []).some(isLowSize);
@@ -45,7 +44,7 @@ export default function CatalogPage() {
     setLoading(true);
     try {
       const result = await getCatalog(token);
-      setProducts((result.products || []).map((product: Product) => ({ ...product, images: (product.images || []).map(resolveImageUrl) })));
+      setProducts((result.products || []).map((product: Product) => ({ ...product, images: resolveImages(product.images) })));
       setSelected([]);
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Could not load catalog');
