@@ -22,4 +22,5 @@ export interface ISize {
     stock: number;
     size: string;
     lowStockThreshold?: number;
+    images?: string[];
 }
