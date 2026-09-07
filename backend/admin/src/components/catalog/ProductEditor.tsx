@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { DragEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -161,9 +161,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
   const [loading, setLoading] = useState(Boolean(productId));
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<Record<string, number>>({});
-  const [draggedImage, setDraggedImage] = useState<number | null>(null);
-  const [sizeLinkPicker, setSizeLinkPicker] = useState<number | null>(null);
-  const [sizeLinkUrl, setSizeLinkUrl] = useState('');
+const [draggedImage, setDraggedImage] = useState<number | null>(null);
   const [selectedVariations, setSelectedVariations] = useState<number[]>([]);
   const [editingVariation, setEditingVariation] = useState<number | null>(0);
   const [newCustomField, setNewCustomField] = useState({ key: '', value: '' });
@@ -201,31 +199,6 @@ images: resolveImages(current.images),
       }
     })();
   }, [productId, router, token]);
-
-const updateSize = (index: number, patch: Partial<SizeStock>) =>
-    setProduct(current => ({
-      ...current,
-      sizes: current.sizes.map((size, sizeIndex) =>
-        sizeIndex === index ? { ...size, ...patch } : size,
-      ),
-    }));
-
-  const appendSizeImage = (index: number, imageUrl: string) => {
-    const url = String(imageUrl || '').trim();
-    if (!url) return;
-
-    setProduct(current => ({
-      ...current,
-      sizes: current.sizes.map((size, sizeIndex) => {
-        if (sizeIndex !== index) return size;
-
-        const images = size.images || [];
-        if (images.includes(url) || images.length >= MAX_VARIATION_IMAGES) return size;
-
-        return { ...size, images: [...images, url] };
-      }),
-    }));
-  };
 
   const moveImage = (from: number, to: number) =>
     setProduct(current => {
@@ -290,46 +263,6 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
     }
   };
 
-  const uploadSizeFiles = async (index: number, files: FileList | File[]) => {
-    const currentCount = product.sizes[index]?.images?.length || 0;
-    const availableSlots = Math.max(0, MAX_VARIATION_IMAGES - currentCount);
-    const selectedFiles = Array.from(files);
-    const filesToUpload = selectedFiles.slice(0, availableSlots);
-
-    if (availableSlots === 0) {
-      toast.error(`This variation already has ${MAX_VARIATION_IMAGES} images.`);
-      return;
-    }
-
-    if (filesToUpload.length < selectedFiles.length) {
-      toast.info(`Only ${availableSlots} more variation image${availableSlots === 1 ? '' : 's'} can be added.`);
-    }
-
-    for (const file of filesToUpload) {
-      const uploadKey = `variation-${index}-${file.name}-${file.size}`;
-      try {
-        const imageUrl = await uploadFileToStorage(file, uploadKey);
-        appendSizeImage(index, imageUrl);
-      } catch (error: any) {
-        toast.error(error?.message || 'Could not upload image');
-      } finally {
-        clearUpload(uploadKey);
-      }
-    }
-  };
-
-  const removeSizeImage = (index: number, imageIndex: number) =>
-    setProduct(current => ({
-      ...current,
-      sizes: current.sizes.map((size, sizeIndex) =>
-        sizeIndex === index
-          ? { ...size, images: (size.images || []).filter((_, i) => i !== imageIndex) }
-          : size,
-      ),
-    }));
-
-  const addSizeImage = (index: number, imageUrl: string) => appendSizeImage(index, imageUrl);
-
   const updateVariation = (index: number, patch: Partial<DesignVariation>) =>
     setProduct(current => ({
       ...current,
@@ -380,7 +313,7 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
     }
 
     for (const file of filesToUpload) {
-      const uploadKey = `design-${variationIndex}-${file.name}-${file.size}`;
+      const uploadKey = `variation-${variationIndex}-${file.name}-${file.size}`;
       try {
         const imageUrl = await uploadFileToStorage(file, uploadKey);
         appendVariationImage(variationIndex, imageUrl);
@@ -503,8 +436,9 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
   };
 
   const toggleSelectAllVariations = () => {
+    const variations = product.variations || [];
     setSelectedVariations(current =>
-      current.length === product.sizes.length ? [] : product.sizes.map((_, index) => index),
+      current.length === variations.length ? [] : variations.map((_, index) => index),
     );
   };
 
@@ -522,11 +456,11 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
 
     setProduct(current => ({
       ...current,
-      sizes: current.sizes.map((size, index) => {
-        if (!selectedVariations.includes(index)) return size;
-        const images = size.images || [];
-        if (images.includes(mainImage)) return size;
-        return { ...size, images: [mainImage, ...images].slice(0, MAX_VARIATION_IMAGES) };
+      variations: (current.variations || []).map((variation, index) => {
+        if (!selectedVariations.includes(index)) return variation;
+        const images = variation.images || [];
+        if (images.includes(mainImage)) return variation;
+        return { ...variation, images: [mainImage, ...images].slice(0, MAX_VARIATION_IMAGES) };
       }),
     }));
 
@@ -541,8 +475,8 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
 
     setProduct(current => ({
       ...current,
-      sizes: current.sizes.map((size, index) =>
-        selectedVariations.includes(index) ? { ...size, images: [] } : size,
+      variations: (current.variations || []).map((variation, index) =>
+        selectedVariations.includes(index) ? { ...variation, images: [] } : variation,
       ),
     }));
 
@@ -557,19 +491,19 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
 
     setProduct(current => ({
       ...current,
-      sizes: current.sizes.filter((_, index) => !selectedVariations.includes(index)),
+      variations: (current.variations || []).filter((_, index) => !selectedVariations.includes(index)),
     }));
     setSelectedVariations([]);
     setEditingVariation(null);
-    setSizeLinkPicker(null);
+    setVariationLinkPicker(null);
     toast.success('Selected variations deleted.');
   };
 
   const linkedVariationCount = useMemo(() => {
     const mainImage = product.images[0];
     if (!mainImage) return 0;
-    return product.sizes.filter(size => (size.images || []).includes(mainImage)).length;
-  }, [product.images, product.sizes]);
+    return (product.variations || []).filter(variation => (variation.images || []).includes(mainImage)).length;
+  }, [product.images, product.variations]);
 
   if (loading) {
     return (
@@ -581,7 +515,8 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
 
   const mainImage = product.images[0] || '';
   const thumbnailImages = product.images.slice(1);
-  const allSelected = product.sizes.length > 0 && selectedVariations.length === product.sizes.length;
+  const allSelected = (product.variations || []).length > 0
+    && selectedVariations.length === (product.variations || []).length;
 
   return (
     <main className="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
@@ -755,34 +690,28 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
             <div>
               <h2 className="text-2xl font-semibold">Variations</h2>
               <p className="text-sm text-muted-foreground">
-                Keep each size together with stock and the images shown when that variation is selected.
+                Product is the same size — each variation is a selectable design with its own name, stock,
+                and the images shown when that variation is selected.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button type="button" variant="outline" onClick={toggleSelectAllVariations}>
                 {allSelected ? 'Clear selection' : 'Select all'}
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  setProduct(current => ({
-                    ...current,
-                    sizes: [
-                      ...current.sizes,
-                      { size: '', stock: 0, lowStockThreshold: 10, images: [] },
-                    ],
-                  }))
-                }
-              >
+              <Button type="button" variant="outline" onClick={addVariation}>
                 Add variation
               </Button>
             </div>
           </div>
 
           <div className="space-y-3">
-            {product.sizes.map((size, index) => {
-              const variationImages = size.images || [];
+            {(product.variations || []).length === 0 && (
+              <div className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground">
+                No variations yet. Add one to show a selectable design grid on the storefront.
+              </div>
+            )}
+            {(product.variations || []).map((variation, index) => {
+              const variationImages = variation.images || [];
               const rowPreview = variationImages[0] || mainImage;
               const isSelected = selectedVariations.includes(index);
               const isEditing = editingVariation === index;
@@ -800,7 +729,7 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
                       className={`flex h-7 w-7 items-center justify-center rounded-md border ${
                         isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-border'
                       }`}
-                      aria-label={`Select ${size.size || `variation ${index + 1}`}`}
+                      aria-label={`Select ${variation.name || `variation ${index + 1}`}`}
                     >
                       {isSelected && <CheckCircle2 className="h-4 w-4" />}
                     </button>
@@ -816,11 +745,11 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
                     </div>
 
                     <label className="space-y-1 text-xs font-medium text-muted-foreground">
-                      Size / format
+                      Name
                       <Input
-                        value={size.size}
-                        placeholder="e.g. Standard, A4, Large"
-                        onChange={event => updateSize(index, { size: event.target.value })}
+                        value={variation.name}
+                        placeholder="e.g. Design A, Kufi C"
+                        onChange={event => updateVariation(index, { name: event.target.value })}
                       />
                     </label>
 
@@ -829,8 +758,8 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
                       <Input
                         type="number"
                         min="0"
-                        value={size.stock}
-                        onChange={event => updateSize(index, { stock: Number(event.target.value) })}
+                        value={variation.stock}
+                        onChange={event => updateVariation(index, { stock: Number(event.target.value) })}
                       />
                     </label>
 
@@ -839,16 +768,16 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
                       <Input
                         type="number"
                         min="0"
-                        value={size.lowStockThreshold ?? 10}
+                        value={variation.lowStockThreshold ?? 10}
                         onChange={event =>
-                          updateSize(index, { lowStockThreshold: Number(event.target.value) })
+                          updateVariation(index, { lowStockThreshold: Number(event.target.value) })
                         }
                       />
                     </label>
 
                     <div className="flex flex-wrap items-center gap-2 justify-self-end">
-                      <Badge variant={size.stock > 0 ? 'default' : 'secondary'}>
-                        {size.stock > 0 ? 'Active' : 'Out of stock'}
+                      <Badge variant={variation.stock > 0 ? 'default' : 'secondary'}>
+                        {variation.stock > 0 ? 'Active' : 'Out of stock'}
                       </Badge>
                       <Button
                         type="button"
@@ -856,8 +785,8 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
                         size="sm"
                         onClick={() => {
                           setEditingVariation(isEditing ? null : index);
-                          setSizeLinkPicker(null);
-                          setSizeLinkUrl('');
+                          setVariationLinkPicker(null);
+                          setVariationLinkUrl('');
                         }}
                       >
                         <Pencil className="mr-1 h-4 w-4" /> Edit
@@ -867,10 +796,7 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
                         variant="destructive"
                         size="sm"
                         onClick={() => {
-                          setProduct(current => ({
-                            ...current,
-                            sizes: current.sizes.filter((_, sizeIndex) => sizeIndex !== index),
-                          }));
+                          removeVariation(index);
                           setSelectedVariations(current => current.filter(item => item !== index));
                           setEditingVariation(current => (current === index ? null : current));
                         }}
@@ -903,7 +829,7 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
                             >
                               <img
                                 src={image}
-                                alt={`${size.size || 'Variation'} image ${imageIndex + 1}`}
+                                alt={`${variation.name || 'Variation'} image ${imageIndex + 1}`}
                                 className="h-full w-full object-cover"
                               />
                               {imageIndex === 0 && (
@@ -912,7 +838,7 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
                               <button
                                 type="button"
                                 className="absolute right-1 top-1 rounded bg-black/70 p-1 text-white"
-                                onClick={() => removeSizeImage(index, imageIndex)}
+                                onClick={() => removeVariationImage(index, imageIndex)}
                               >
                                 <X className="h-3.5 w-3.5" />
                               </button>
@@ -932,7 +858,7 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
                           variant="outline"
                           size="sm"
                           disabled={!mainImage || variationImages.includes(mainImage) || imageLimitReached}
-                          onClick={() => appendSizeImage(index, mainImage)}
+                          onClick={() => appendVariationImage(index, mainImage)}
                         >
                           Use main image
                         </Button>
@@ -946,7 +872,7 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
                                 accept="image/*"
                                 multiple
                                 onChange={event => {
-                                  if (event.target.files) void uploadSizeFiles(index, event.target.files);
+                                  if (event.target.files) void uploadVariationFiles(index, event.target.files);
                                   event.target.value = '';
                                 }}
                               />
@@ -959,15 +885,15 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
                           size="sm"
                           disabled={imageLimitReached}
                           onClick={() => {
-                            setSizeLinkPicker(sizeLinkPicker === index ? null : index);
-                            setSizeLinkUrl('');
+                            setVariationLinkPicker(variationLinkPicker === index ? null : index);
+                            setVariationLinkUrl('');
                           }}
                         >
                           <Link2 className="mr-1 h-4 w-4" /> Link image
                         </Button>
                       </div>
 
-                      {sizeLinkPicker === index && (
+                      {variationLinkPicker === index && (
                         <div className="mt-3 rounded-xl border bg-background p-3">
                           <p className="mb-2 text-xs text-muted-foreground">
                             Pick from main product images or paste another image URL.
@@ -981,7 +907,7 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
                                     key={`${productImage}-${productImageIndex}`}
                                     type="button"
                                     disabled={isLinked || imageLimitReached}
-                                    onClick={() => addSizeImage(index, productImage)}
+                                    onClick={() => appendVariationImage(index, productImage)}
                                     className={`relative h-12 w-12 overflow-hidden rounded-lg border ${
                                       isLinked ? 'border-primary opacity-50' : 'hover:border-primary'
                                     }`}
@@ -995,20 +921,20 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
                           <div className="mt-3 flex gap-2">
                             <Input
                               className="h-8 text-xs"
-                              value={sizeLinkUrl}
-                              onChange={event => setSizeLinkUrl(event.target.value)}
+                              value={variationLinkUrl}
+                              onChange={event => setVariationLinkUrl(event.target.value)}
                               placeholder="Paste an image URL..."
                             />
                             <Button
                               type="button"
                               size="sm"
                               variant="outline"
-                              disabled={!sizeLinkUrl.trim() || imageLimitReached}
+                              disabled={!variationLinkUrl.trim() || imageLimitReached}
                               onClick={() => {
-                                const url = sizeLinkUrl.trim();
+                                const url = variationLinkUrl.trim();
                                 if (!url) return;
-                                addSizeImage(index, url);
-                                setSizeLinkUrl('');
+                                appendVariationImage(index, url);
+                                setVariationLinkUrl('');
                               }}
                             >
                               Add
@@ -1140,181 +1066,6 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
           </section>
 
           <section className="rounded-2xl border bg-card p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="font-semibold">Design Variations</h2>
-                <p className="text-sm text-muted-foreground">
-                  Product is the same size — each variation is a selectable design with its own name, stock, and mockup images shown on the storefront design grid.
-                </p>
-              </div>
-              <Button type="button" variant="outline" onClick={addVariation}>
-                <Plus className="mr-2" /> Add variation
-              </Button>
-            </div>
-            <div className="mt-4 space-y-3">
-              {(product.variations || []).map((variation, variationIndex) => {
-                const variationImages = variation.images || [];
-                const imageLimitReached = variationImages.length >= MAX_VARIATION_IMAGES;
-                return (
-                  <div key={variationIndex} className="rounded-xl border p-3">
-                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_110px_auto]">
-                      <Input
-                        value={variation.name}
-                        placeholder="e.g. Design A, Motif B, Kufi C..."
-                        onChange={event => updateVariation(variationIndex, { name: event.target.value })}
-                      />
-                      <Input
-                        type="number"
-                        min="0"
-                        value={variation.stock}
-                        aria-label={`Stock for ${variation.name || `variation ${variationIndex + 1}`}`}
-                        onChange={event => updateVariation(variationIndex, { stock: Number(event.target.value) })}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeVariation(variationIndex)}
-                      >
-                        <X />
-                      </Button>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {variationImages.length}/{MAX_VARIATION_IMAGES} images — {variationImages[0] ? variationImages[0] === product.images[0] ? 'using the main image' : `${variationImages.length} linked image${variationImages.length === 1 ? '' : 's'}` : 'no images yet (falls back to the main image)'}
-                    </p>
-                    <label className="mt-3 block space-y-2 text-sm font-medium">
-                      <span className="sr-only">Variation images</span>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <label className="cursor-pointer">
-                          <Button type="button" variant="outline" size="sm" asChild>
-                            <span>
-                              <ImagePlus className="mr-1" /> Upload
-                              <input
-                                className="hidden"
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={event => {
-                                  if (event.target.files) void uploadVariationFiles(variationIndex, event.target.files);
-                                  event.target.value = '';
-                                }}
-                              />
-                            </span>
-                          </Button>
-                        </label>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setVariationLinkPicker(variationLinkPicker === variationIndex ? null : variationIndex)}
-                        >
-                          <Link2 className="mr-1" /> Link image
-                        </Button>
-                        {product.images.length > 0 && !variationImages.includes(product.images[0]) && !imageLimitReached && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => appendVariationImage(variationIndex, product.images[0])}
-                          >
-                            Use main image
-                          </Button>
-                        )}
-                      </div>
-                      {variationLinkPicker === variationIndex && (
-                        <div className="w-full rounded-lg border bg-muted/30 p-2">
-                          <p className="mb-2 text-xs text-muted-foreground">
-                            Link an image for this variation — pick one already uploaded above or paste a URL.
-                          </p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {product.images.map(productImage => {
-                              const alreadyLinked = variationImages.includes(productImage);
-                              return (
-                                <button
-                                  key={productImage}
-                                  type="button"
-                                  disabled={alreadyLinked || imageLimitReached}
-                                  title={alreadyLinked ? 'Already linked' : 'Use this image for the variation'}
-                                  onClick={() => appendVariationImage(variationIndex, productImage)}
-                                  className="h-10 w-10 overflow-hidden rounded border border-border transition-colors hover:border-primary disabled:opacity-40"
-                                >
-                                  <img src={productImage} alt="" className="h-full w-full object-cover" />
-                                </button>
-                              );
-                            })}
-                          </div>
-                          <div className="mt-2 flex items-center gap-2">
-                            <Input
-                              className="h-8 text-xs"
-                              value={variationLinkUrl}
-                              onChange={event => setVariationLinkUrl(event.target.value)}
-                              placeholder="Paste an image URL..."
-                              aria-label="Variation image URL"
-                            />
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              disabled={imageLimitReached}
-                              onClick={() => {
-                                const url = variationLinkUrl.trim();
-                                if (url) {
-                                  appendVariationImage(variationIndex, url);
-                                  setVariationLinkUrl('');
-                                }
-                              }}
-                            >
-                              Add
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                      {variationImages.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {variationImages.map((image, imageIndex) => (
-                            <div key={`${image}-${imageIndex}`} className="group relative h-16 w-16 overflow-hidden rounded-lg border bg-muted">
-                              <img
-                                src={image}
-                                alt={`${variation.name || 'Variation'} image ${imageIndex + 1}`}
-                                onError={event => { event.currentTarget.style.display = 'none'; }}
-                                className="h-full w-full object-cover"
-                              />
-                              {imageIndex === 0 && <Badge className="absolute left-1 top-1 text-[9px]">Main</Badge>}
-                              <button
-                                type="button"
-                                className="absolute right-1 top-1 rounded bg-black/70 p-0.5 text-white"
-                                onClick={() => removeVariationImage(variationIndex, imageIndex)}
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </label>
-                  </div>
-                );
-              })}
-              {(product.variations || []).length === 0 && (
-                <div className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground">
-                  No design variations yet. Add one to show a selectable design grid on the storefront.
-                </div>
-              )}
-            </div>
-            {Object.entries(uploading).map(([name, progress]) => (
-              <div key={name} className="mt-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="truncate">{name}</span>
-                  <span>{progress}%</span>
-                </div>
-                <div className="mt-1 h-1.5 overflow-hidden rounded bg-muted">
-                  <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
-                </div>
-              </div>
-            ))}
-          </section>
-
-          <section className="rounded-2xl border bg-card p-5">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="font-semibold">Details &amp; content</h2>
@@ -1325,6 +1076,30 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
             </div>
 
             <div className="mt-4 space-y-6">
+              <section>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  Size
+                </h3>
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  <label className="space-y-1 text-sm font-medium">
+                    Size (same size for every variation)
+                    <Input
+                      value={product.sizes?.[0]?.size || 'Standard'}
+                      onChange={event => {
+                        const value = event.target.value;
+                        setProduct(current => ({
+                          ...current,
+                          sizes: current.sizes.length
+                            ? current.sizes.map((size, sizeIndex) =>
+                                sizeIndex === 0 ? { ...size, size: value } : size,
+                              )
+                            : [{ size: value, stock: 0, lowStockThreshold: 10, images: [] }],
+                        }));
+                      }}
+                    />
+                  </label>
+                </div>
+              </section>
               <section>
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                   Specifications
