@@ -39,6 +39,7 @@ exports.Task = void 0;
  * Kampungcetak ®
  */
 const mongoose_1 = __importStar(require("mongoose"));
+const crypto_1 = require("crypto");
 const TaskCommentSchema = new mongoose_1.Schema({
     userId: { type: String, required: true },
     userName: { type: String, required: true },
@@ -62,6 +63,12 @@ const TaskStatusTransitionSchema = new mongoose_1.Schema({
     changedAt: { type: Date, required: true },
     estimated: { type: Boolean, default: false },
 }, { _id: false });
+const TaskLineItemSchema = new mongoose_1.Schema({
+    productId: { type: String, default: '' },
+    productName: { type: String, default: '' },
+    category: { type: String, default: 'UNASSIGNED' },
+    qty: { type: Number, default: 1 },
+}, { _id: false });
 const TaskSchema = new mongoose_1.Schema({
     title: { type: String, required: true },
     description: { type: String, default: '' },
@@ -72,9 +79,11 @@ const TaskSchema = new mongoose_1.Schema({
     category: { type: String, default: 'UNASSIGNED' },
     productId: { type: String, default: '' },
     productName: { type: String, default: '' },
+    lineItems: { type: [TaskLineItemSchema], default: [] },
     status: { type: String, enum: ['PLACED', 'IN_PROGRESS', 'PENDING_ARTWORK', 'ARTWORK_REVIEWED', 'ARTWORK_REJECTED', 'IN_DESIGN', 'PEMBETULAN', 'DONE_DESIGN', 'IN_PRODUCTION', 'PRINT_AWB', 'DONE_PRINTING', 'PACKAGING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED', 'FAILED', 'RETURN'], default: 'PLACED' },
     isDone: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
+    qrToken: { type: String, unique: true, sparse: true, index: true, default: () => (0, crypto_1.randomBytes)(24).toString('hex') },
     statusUpdatedAt: { type: Date, default: Date.now },
     files: [{
             url: { type: String, required: true },

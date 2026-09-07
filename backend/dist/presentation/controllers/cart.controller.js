@@ -33,8 +33,8 @@ class CartController {
                 if (!req.userId) {
                     throw new Error('User ID is required');
                 }
-                const { productId, size, quantity, artworkUrl } = req.body;
-                const cart = yield this.cartUsecase.addProductToCart(req.userId, productId, size, quantity, artworkUrl);
+                const { productId, size, quantity, artworkUrl, configuration, configurationKey } = req.body;
+                const cart = yield this.cartUsecase.addProductToCart(req.userId, productId, size, quantity, artworkUrl, configuration, configurationKey);
                 res.status(api_constant_1.statusCodes.OK).json({ message: "Product added to cart successfully", cart });
             }
             catch (error) {
@@ -58,8 +58,8 @@ class CartController {
                 if (!req.userId) {
                     throw new Error('User ID is required');
                 }
-                const { productId, size } = req.body;
-                const cart = yield this.cartUsecase.removeProductFromCart(req.userId, productId, size);
+                const { productId, size, configurationKey } = req.body;
+                const cart = yield this.cartUsecase.removeProductFromCart(req.userId, productId, size, configurationKey);
                 res.status(api_constant_1.statusCodes.OK).json({ message: "Product removed from cart successfully", cart });
             }
             catch (error) {
@@ -127,8 +127,8 @@ class CartController {
                 if (!req.userId) {
                     throw new Error('User ID is required');
                 }
-                const { productId, size, quantity } = req.body;
-                const cart = yield this.cartUsecase.updateCartItem(req.userId, productId, size, quantity);
+                const { productId, size, quantity, configurationKey } = req.body;
+                const cart = yield this.cartUsecase.updateCartItem(req.userId, productId, size, quantity, configurationKey);
                 res.status(api_constant_1.statusCodes.OK).json({ message: "Cart item updated successfully", cart });
             }
             catch (error) {

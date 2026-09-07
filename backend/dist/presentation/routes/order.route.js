@@ -13,6 +13,7 @@ router.get("/", auth_middileware_1.authMiddilware, orderController.getOrders.bin
 router.get("/user/", auth_middileware_1.authMiddilware, orderController.getOrdersByUserId.bind(orderController));
 router.post("/", auth_middileware_1.authMiddilware, orderController.createOrder.bind(orderController));
 router.get("/previous-address", auth_middileware_1.authMiddilware, orderController.getDistintAddress.bind(orderController));
+router.post("/shipping/quote", auth_middileware_1.authMiddilware, orderController.getPublicShippingQuotations.bind(orderController));
 router.get("/status/:status", auth_middileware_1.authMiddilware, orderController.getOrdersByStatus.bind(orderController));
 router.get("/:orderId", auth_middileware_1.authMiddilware, orderController.getOrderById.bind(orderController));
 router.put("/:orderId", auth_middileware_1.authMiddilware, orderController.updateOrderStatus.bind(orderController));

@@ -20,9 +20,10 @@ class CartRepository {
             return yield cart_model_1.default.create(cart);
         });
     }
-    upsertCart(userId, productId, size, quantity, artworkUrl) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield cart_model_1.default.findOneAndUpdate({ userId }, { $push: { items: { product: productId, size, quantity, artworkUrl } } }, { upsert: true, new: true }).populate('items.product');
+    upsertCart(userId_1, productId_1, size_1, quantity_1, artworkUrl_1, configuration_1, configurationKey_1, unitPrice_1) {
+        return __awaiter(this, arguments, void 0, function* (userId, productId, size, quantity, artworkUrl, configuration, configurationKey, unitPrice, fixedPrice = 0, lineTotal, pricingVersion = 'catalog-v1') {
+            const resolvedLineTotal = lineTotal !== null && lineTotal !== void 0 ? lineTotal : unitPrice * quantity;
+            return yield cart_model_1.default.findOneAndUpdate({ userId }, { $push: { items: { product: productId, size, quantity, artworkUrl, configuration, configurationKey, unitPrice, fixedPrice, lineTotal: resolvedLineTotal, pricingVersion } } }, { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }).populate('items.product');
         });
     }
     getCartByUserId(userId) {

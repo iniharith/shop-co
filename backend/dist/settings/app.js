@@ -42,6 +42,10 @@ const easyParcelRoutes_1 = __importDefault(require("../presentation/routes/easyP
 const webVitalsRoutes_1 = __importDefault(require("../presentation/routes/webVitalsRoutes"));
 const mailRoutes_1 = __importDefault(require("../presentation/routes/mailRoutes"));
 const aiRoutes_1 = __importDefault(require("../presentation/routes/aiRoutes"));
+const catalogAdmin_route_1 = __importDefault(require("../presentation/routes/catalogAdmin.route"));
+const review_route_1 = __importDefault(require("../presentation/routes/review.route"));
+const wishlist_route_1 = __importDefault(require("../presentation/routes/wishlist.route"));
+const invoice_route_1 = __importDefault(require("../presentation/routes/invoice.route"));
 const audit_middleware_1 = require("../presentation/middlewares/audit.middleware");
 const bandwidthTracker_1 = require("../shared/utils/bandwidthTracker");
 const crypto_1 = require("crypto");
@@ -105,6 +109,7 @@ app.use('/api/webhooks', webhook_route_1.default);
 app.use('/api/easyparcel', easyParcelRoutes_1.default);
 app.use(api_constant_1.apiRoutes.ADMIN, admin_route_1.default);
 app.use('/api/admin/reports', monthlyReports_route_1.default);
+app.use('/api/admin/catalog', catalogAdmin_route_1.default);
 app.use('/api/notifications', notification_route_1.default);
 app.use('/api/folders', virtualFolderRoutes_1.default);
 // ─── Kampung Cetak: Parcel Tracking & File Upload ────────
@@ -126,6 +131,12 @@ app.use('/api/app', appRoutes_1.default);
 app.use('/api/mail', mailRoutes_1.default);
 // ─── AI Engine (semantic search + file verification) ────────
 app.use('/api/ai', aiRoutes_1.default);
+// ─── Reviews & Ratings ────────
+app.use('/api/reviews', review_route_1.default);
+// ─── Wishlist ────────
+app.use('/api/wishlist', wishlist_route_1.default);
+// ─── Invoice PDF ────────
+app.use('/api/orders', invoice_route_1.default);
 // ─── Admin Panel (served at admin.kampungcetak.com) ──────
 const adminPath = path_1.default.join(__dirname, '../../admin');
 app.use('/admin', express_1.default.static(adminPath));

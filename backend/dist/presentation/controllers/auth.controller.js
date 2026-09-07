@@ -17,10 +17,29 @@ const user_usecase_1 = require("../../application/usecases/user/user.usecase");
 const api_constant_1 = require("../../shared/constants/api.constant");
 const jwt_1 = __importDefault(require("../../shared/utils/jwt"));
 const user_model_1 = __importDefault(require("../../infrastructure/db/models/user.model"));
+const AuditLog_1 = require("../../domain/entities/AuditLog");
 /**  @Controller */
 class AuthController {
     constructor() {
         this.authUsecase = new user_usecase_1.UserUsecase();
+    }
+    logAuthEvent(req, action, summary, actorId, actorName, actorRole) {
+        var _a, _b;
+        void AuditLog_1.AuditLog.create({
+            actorId: actorId || '',
+            actorName: actorName || ((_a = req.body) === null || _a === void 0 ? void 0 : _a.email) || 'Unknown',
+            actorRole: actorRole || 'public',
+            source: actorId ? 'admin' : 'public',
+            action,
+            entityType: 'auth',
+            entityId: actorId || undefined,
+            summary,
+            metadata: { email: (_b = req.body) === null || _b === void 0 ? void 0 : _b.email },
+            method: req.method,
+            route: req.originalUrl.split('?')[0],
+            ip: req.ip,
+            userAgent: req.get('user-agent'),
+        }).catch(err => console.error('[AuditLog] Auth log failed:', err.message));
     }
     /**
      * @description Login user
@@ -34,6 +53,7 @@ class AuthController {
      */
     login(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
+            var _a;
             try {
                 const { email, password } = req.body;
                 if (!email || !password) {
@@ -45,6 +65,7 @@ class AuthController {
                 const { user, accessToken, refreshToken } = yield this.authUsecase.loginUser(email, password);
                 const safeUser = user.toObject();
                 delete safeUser.password;
+                this.logAuthEvent(req, 'login', `login: ${email}`, user._id.toString(), user.name, user.role);
                 res.status(api_constant_1.statusCodes.OK).json({
                     success: true,
                     message: "User logged in successfully",
@@ -54,6 +75,7 @@ class AuthController {
                 });
             }
             catch (error) {
+                this.logAuthEvent(req, 'login_failed', `login_failed: ${((_a = req.body) === null || _a === void 0 ? void 0 : _a.email) || 'unknown'} - ${error.message}`);
                 next(error);
             }
         });
@@ -81,6 +103,7 @@ class AuthController {
                 const { user, accessToken, refreshToken } = yield this.authUsecase.registerUser({ email, password, name });
                 const safeUser = user.toObject();
                 delete safeUser.password;
+                this.logAuthEvent(req, 'register', `register: ${email}`, user._id.toString(), user.name, 'client');
                 res.status(api_constant_1.statusCodes.CREATED).json({
                     success: true,
                     message: "User registered successfully",
@@ -138,6 +161,7 @@ class AuthController {
      */
     generateMagicLink(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
+            var _a;
             try {
                 const { userId, email } = req.body;
                 if (!userId && !email) {
@@ -155,6 +179,7 @@ class AuthController {
                 }
                 const jwtService = new jwt_1.default();
                 const token = jwtService.generateToken({ userId: user._id.toString(), purpose: "magic-login" }, "7d");
+                this.logAuthEvent(req, 'magic_link', `magic_link: generated for ${user.email}`, req.userId, (_a = req.user) === null || _a === void 0 ? void 0 : _a.name, req.role);
                 return res.status(api_constant_1.statusCodes.OK).json({
                     success: true,
                     token,
@@ -195,12 +220,14 @@ class AuthController {
                     decoded = jwtService.verifyToken(magicToken, "token");
                 }
                 catch (error) {
+                    this.logAuthEvent(req, 'login_failed', `login_failed: invalid magic token from ${req.ip || 'unknown'}`);
                     return res.status(api_constant_1.statusCodes.UNAUTHORIZED).json({
                         success: false,
                         message: "Invalid or expired login link"
                     });
                 }
                 if ((decoded === null || decoded === void 0 ? void 0 : decoded.purpose) !== "magic-login" || !(decoded === null || decoded === void 0 ? void 0 : decoded.userId)) {
+                    this.logAuthEvent(req, 'login_failed', `login_failed: invalid magic link purpose from ${req.ip || 'unknown'}`);
                     return res.status(api_constant_1.statusCodes.UNAUTHORIZED).json({
                         success: false,
                         message: "Invalid login link"
@@ -217,6 +244,7 @@ class AuthController {
                 const refreshToken = jwtService.generateRefreshToken({ userId: user._id });
                 const safeUser = user.toObject();
                 delete safeUser.password;
+                this.logAuthEvent(req, 'magic_login', `magic_login: ${user.email}`, user._id.toString(), user.name, user.role);
                 return res.status(api_constant_1.statusCodes.OK).json({
                     success: true,
                     message: "User logged in successfully",

@@ -82,8 +82,8 @@ class OrderController {
     createOrder(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const { address, customerName, orderNotes } = req.body;
-                const order = yield this.orderUsecase.createOrder(address, req.userId, customerName, orderNotes);
+                const { address, customerName, orderNotes, shippingPrice, courier } = req.body;
+                const order = yield this.orderUsecase.createOrder(address, req.userId, customerName, orderNotes, shippingPrice, courier);
                 res.status(api_constant_1.statusCodes.OK).json({ message: "Order created successfully", order });
             }
             catch (error) {
@@ -221,6 +221,22 @@ class OrderController {
      * @Access PRIVATE
      * @Route /api/orders/:orderId/tracking
      */
+    getPublicShippingQuotations(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const quotations = yield this.orderUsecase.getPublicShippingQuotations(req.body);
+                res.status(api_constant_1.statusCodes.OK).json({ message: "Shipping quotations fetched successfully", quotations });
+            }
+            catch (error) {
+                console.error('Public shipping quotation failed:', (error === null || error === void 0 ? void 0 : error.message) || error);
+                res.status(api_constant_1.statusCodes.OK).json({
+                    message: "Shipping rates temporarily unavailable",
+                    quotations: [],
+                    error: (error === null || error === void 0 ? void 0 : error.message) || 'Shipping service error',
+                });
+            }
+        });
+    }
     getTracking(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {

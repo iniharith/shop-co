@@ -62,22 +62,34 @@ class TaskRepository {
         }
         if (filters === null || filters === void 0 ? void 0 : filters.orderId)
             query.orderId = filters.orderId;
+        const unlinkedFilter = (filters === null || filters === void 0 ? void 0 : filters.unlinked) ? { $or: [{ orderId: { $in: [null, ''] } }, { orderId: { $exists: false } }] } : null;
         if (filters === null || filters === void 0 ? void 0 : filters.customerUsername)
             query.customerUsername = filters.customerUsername;
         const search = (_a = filters === null || filters === void 0 ? void 0 : filters.search) === null || _a === void 0 ? void 0 : _a.trim();
         if (search) {
             const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const searchRegex = new RegExp(escapedSearch, 'i');
-            query.$or = [
+            const searchOr = [
                 { title: searchRegex },
                 { description: searchRegex },
                 { orderId: searchRegex },
                 { customerUsername: searchRegex },
                 { category: searchRegex },
                 { productName: searchRegex },
+                { "lineItems.productName": searchRegex },
+                { "lineItems.category": searchRegex },
             ];
             if (/^[a-f\d]{24}$/i.test(search))
-                query.$or.push({ _id: search });
+                searchOr.push({ _id: search });
+            if (unlinkedFilter) {
+                query.$and = [...(query.$and || []), unlinkedFilter, { $or: searchOr }];
+            }
+            else {
+                query.$or = searchOr;
+            }
+        }
+        else if (unlinkedFilter) {
+            Object.assign(query, unlinkedFilter);
         }
         if ((filters === null || filters === void 0 ? void 0 : filters.isDeleted) === true) {
             query.isDeleted = true;

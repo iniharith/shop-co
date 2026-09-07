@@ -118,8 +118,22 @@ class AdminUsecase {
                 yield session.withTransaction(() => __awaiter(this, void 0, void 0, function* () {
                     var _a, _b;
                     const manualItemName = String(data.productChoice || '').trim();
-                    const manualItemCategory = String(data.productCategory || data.category || '').trim() || 'MANUAL';
+                    const manualItemCategory = String(data.productCategory || data.category || '').trim() || 'UNASSIGNED';
                     const manualItemDescription = String(data.productDescription || '').trim();
+                    const manualItemProductId = String(data.productId || '').trim();
+                    // Full product/category breakdown (1 or more items) sent from the
+                    // Add External Order form's repeatable product picker. Falls back
+                    // to a single-item array built from the primary fields above so
+                    // older callers that only send productChoice/productCategory still work.
+                    const rawLineItems = Array.isArray(data.lineItems) ? data.lineItems : [];
+                    const lineItems = (rawLineItems.length > 0
+                        ? rawLineItems
+                        : (manualItemName ? [{ productId: manualItemProductId, productName: manualItemName, category: manualItemCategory }] : [])).map((item) => ({
+                        productId: String((item === null || item === void 0 ? void 0 : item.productId) || '').trim() || undefined,
+                        productName: String((item === null || item === void 0 ? void 0 : item.productName) || (item === null || item === void 0 ? void 0 : item.productChoice) || '').trim(),
+                        category: String((item === null || item === void 0 ? void 0 : item.category) || (item === null || item === void 0 ? void 0 : item.productCategory) || '').trim() || 'UNASSIGNED',
+                        qty: Number(item === null || item === void 0 ? void 0 : item.qty) > 0 ? Number(item.qty) : 1,
+                    })).filter((item) => item.productName || item.category !== 'UNASSIGNED');
                     const [createdOrder] = yield order_model_1.default.create([Object.assign(Object.assign({}, data), { products: data.products || [], manualItemName,
                             manualItemDescription,
                             manualItemCategory })], { session });
@@ -129,7 +143,13 @@ class AdminUsecase {
                             description: `Manual order task for Order ${createdOrder._id.toString()}.`,
                             orderId: createdOrder._id.toString(),
                             customerUsername: data.customerName,
-                            category: manualItemName || 'UNASSIGNED',
+                            // Category/productId/productName stay as the primary/summary item so
+                            // existing board grouping and filters keep working unchanged.
+                            category: manualItemCategory,
+                            productId: manualItemProductId || undefined,
+                            productName: manualItemName || undefined,
+                            // Full breakdown — lets one task cover more than one product/category.
+                            lineItems,
                             status: data.orderStatus || 'PLACED',
                         }], { session });
                     if (data.trackingNumber) {

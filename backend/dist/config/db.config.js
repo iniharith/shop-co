@@ -45,7 +45,7 @@ const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
             authSource: "admin",
             family: 4, // Force IPv4 to bypass dual-stack DNS issues
             serverSelectionTimeoutMS: 5000,
-            readPreference: 'secondaryPreferred',
+            readPreference: 'secondaryPreferred', // reads from secondaries, writes always hit the primary
         });
         console.log("MongoDB connected");
     }
