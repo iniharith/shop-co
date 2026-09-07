@@ -5,6 +5,7 @@ export const getCatalogAnalytics = async (token: string) => (await AxiosInstance
 export const getCatalogProduct = async (token: string, id: string) => (await AxiosInstance(token).get(`/api/admin/catalog/${id}`)).data;
 export const createCatalogProduct = async (token: string, payload: unknown) => (await AxiosInstance(token).post('/api/admin/catalog', payload)).data;
 export const updateCatalogProduct = async (token: string, id: string, payload: unknown) => (await AxiosInstance(token).patch(`/api/admin/catalog/${id}`, payload)).data;
+export const syncCatalogMedia = async (token: string, id: string, payload: { images: string[]; sizes: unknown[] }) => (await AxiosInstance(token).patch(`/api/admin/catalog-media/${id}/sync`, payload)).data;
 export const archiveCatalogProduct = async (token: string, id: string, archived: boolean) => (await AxiosInstance(token).patch(`/api/admin/catalog/${id}/archive`, { archived })).data;
 export const bulkArchiveCatalog = async (token: string, ids: string[], archived: boolean) => (await AxiosInstance(token).post('/api/admin/catalog/bulk/archive', { ids, archived })).data;
 export const bulkDeleteCatalog = async (token: string, ids: string[], confirmation: string) => (await AxiosInstance(token).delete('/api/admin/catalog/bulk', { data: { ids, confirmation } })).data;
