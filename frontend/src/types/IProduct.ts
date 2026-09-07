@@ -15,6 +15,7 @@ export interface IProduct {
     price: number; // Base price
     category: string;
     sizes: ISize[]; // Keep for legacy
+    variations?: IVariation[];
     printingOptions?: IPrintingOption[];
     images: string[];
     createdAt: Date;
@@ -71,5 +72,12 @@ export interface IProduct {
 export interface ISize {
     stock: number;
     size: string;
+    images?: string[];
+}
+
+export interface IVariation {
+    name: string;
+    stock: number;
+    lowStockThreshold?: number;
     images?: string[];
 }

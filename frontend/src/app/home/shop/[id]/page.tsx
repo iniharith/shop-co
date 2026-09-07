@@ -106,8 +106,8 @@ const page = () => {
                   </dd>
                 </div>
                 <div className="rounded-xl border border-border bg-muted/25 p-3">
-                  <dt className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Available designs</dt>
-                  <dd className="mt-1 text-sm font-semibold">{product.images.length}</dd>
+<dt className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Available designs</dt>
+                  <dd className="mt-1 text-sm font-semibold">{product.variations?.length ?? product.images.length}</dd>
                 </div>
               </dl>
               {(product.specifications || product.packageContents?.length || product.productionTurnaround || product.warrantyInfo || product.installationInstructions) && (

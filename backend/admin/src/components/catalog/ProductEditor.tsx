@@ -12,6 +12,7 @@ import {
   Link2,
   Loader2,
   Pencil,
+  Plus,
   Save,
   Send,
   Trash2,
@@ -38,6 +39,13 @@ type SizeStock = {
   images?: string[];
 };
 
+type DesignVariation = {
+  name: string;
+  stock: number;
+  lowStockThreshold?: number;
+  images?: string[];
+};
+
 type Product = {
   _id: string;
   name: string;
@@ -48,6 +56,7 @@ type Product = {
   discount?: number;
   images: string[];
   sizes: SizeStock[];
+  variations?: DesignVariation[];
   slug?: string;
   status?: 'draft' | 'published';
   seoTitle?: string;
@@ -105,6 +114,7 @@ const emptyProduct: Product = {
   discount: 0,
   images: [],
   sizes: [{ size: 'Standard', stock: 0, lowStockThreshold: 10, images: [] }],
+  variations: [],
   status: 'draft',
   slug: '',
   seoTitle: '',
@@ -157,6 +167,8 @@ export function ProductEditor({ productId }: { productId?: string }) {
   const [selectedVariations, setSelectedVariations] = useState<number[]>([]);
   const [editingVariation, setEditingVariation] = useState<number | null>(0);
   const [newCustomField, setNewCustomField] = useState({ key: '', value: '' });
+  const [variationLinkPicker, setVariationLinkPicker] = useState<number | null>(null);
+  const [variationLinkUrl, setVariationLinkUrl] = useState('');
 
   useEffect(() => {
     if (!productId || !token) return;
@@ -173,6 +185,12 @@ images: resolveImages(current.images),
           sizes: (current.sizes || []).map(size => ({
             ...size,
             images: Array.isArray(size.images) ? resolveImages(size.images.slice(0, MAX_VARIATION_IMAGES)) : [],
+          })),
+          variations: (current.variations || []).map(variation => ({
+            name: variation.name || '',
+            stock: Number(variation.stock) || 0,
+            lowStockThreshold: variation.lowStockThreshold ?? 10,
+            images: Array.isArray(variation.images) ? resolveImages(variation.images.slice(0, MAX_VARIATION_IMAGES)) : [],
           })),
         });
       } catch (error: any) {
@@ -311,6 +329,78 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
     }));
 
   const addSizeImage = (index: number, imageUrl: string) => appendSizeImage(index, imageUrl);
+
+  const updateVariation = (index: number, patch: Partial<DesignVariation>) =>
+    setProduct(current => ({
+      ...current,
+      variations: (current.variations || []).map((variation, variationIndex) =>
+        variationIndex === index ? { ...variation, ...patch } : variation,
+      ),
+    }));
+
+  const addVariation = () =>
+    setProduct(current => ({
+      ...current,
+      variations: [...(current.variations || []), { name: '', stock: 0, lowStockThreshold: 10, images: [] }],
+    }));
+
+  const removeVariation = (index: number) =>
+    setProduct(current => ({
+      ...current,
+      variations: (current.variations || []).filter((_, variationIndex) => variationIndex !== index),
+    }));
+
+  const appendVariationImage = (variationIndex: number, imageUrl: string) => {
+    const url = String(imageUrl || '').trim();
+    if (!url) return;
+
+    setProduct(current => ({
+      ...current,
+      variations: (current.variations || []).map((variation, index) => {
+        if (index !== variationIndex) return variation;
+        const images = variation.images || [];
+        if (images.includes(url) || images.length >= MAX_VARIATION_IMAGES) return variation;
+        return { ...variation, images: [...images, url] };
+      }),
+    }));
+  };
+
+  const uploadVariationFiles = async (variationIndex: number, files: FileList | File[]) => {
+    const currentCount = product.variations?.[variationIndex]?.images?.length || 0;
+    const availableSlots = Math.max(0, MAX_VARIATION_IMAGES - currentCount);
+    const selectedFiles = Array.from(files);
+    const filesToUpload = selectedFiles.slice(0, availableSlots);
+
+    if (availableSlots === 0) {
+      toast.error(`This variation already has ${MAX_VARIATION_IMAGES} images.`);
+      return;
+    }
+    if (filesToUpload.length < selectedFiles.length) {
+      toast.info(`Only ${availableSlots} more variation image${availableSlots === 1 ? '' : 's'} can be added.`);
+    }
+
+    for (const file of filesToUpload) {
+      const uploadKey = `design-${variationIndex}-${file.name}-${file.size}`;
+      try {
+        const imageUrl = await uploadFileToStorage(file, uploadKey);
+        appendVariationImage(variationIndex, imageUrl);
+      } catch (error: any) {
+        toast.error(error?.message || 'Could not upload image');
+      } finally {
+        clearUpload(uploadKey);
+      }
+    }
+  };
+
+  const removeVariationImage = (variationIndex: number, imageIndex: number) =>
+    setProduct(current => ({
+      ...current,
+      variations: (current.variations || []).map((variation, index) =>
+        index === variationIndex
+          ? { ...variation, images: (variation.images || []).filter((_, i) => i !== imageIndex) }
+          : variation,
+      ),
+    }));
 
   const updateSpec = (patch: Partial<NonNullable<Product['specifications']>>) =>
     setProduct(current => ({
@@ -1047,6 +1137,181 @@ const updateSize = (index: number, patch: Partial<SizeStock>) =>
                 onChange={event => setProduct({ ...product, description: event.target.value })}
               />
             </label>
+          </section>
+
+          <section className="rounded-2xl border bg-card p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="font-semibold">Design Variations</h2>
+                <p className="text-sm text-muted-foreground">
+                  Product is the same size — each variation is a selectable design with its own name, stock, and mockup images shown on the storefront design grid.
+                </p>
+              </div>
+              <Button type="button" variant="outline" onClick={addVariation}>
+                <Plus className="mr-2" /> Add variation
+              </Button>
+            </div>
+            <div className="mt-4 space-y-3">
+              {(product.variations || []).map((variation, variationIndex) => {
+                const variationImages = variation.images || [];
+                const imageLimitReached = variationImages.length >= MAX_VARIATION_IMAGES;
+                return (
+                  <div key={variationIndex} className="rounded-xl border p-3">
+                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_110px_auto]">
+                      <Input
+                        value={variation.name}
+                        placeholder="e.g. Design A, Motif B, Kufi C..."
+                        onChange={event => updateVariation(variationIndex, { name: event.target.value })}
+                      />
+                      <Input
+                        type="number"
+                        min="0"
+                        value={variation.stock}
+                        aria-label={`Stock for ${variation.name || `variation ${variationIndex + 1}`}`}
+                        onChange={event => updateVariation(variationIndex, { stock: Number(event.target.value) })}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeVariation(variationIndex)}
+                      >
+                        <X />
+                      </Button>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {variationImages.length}/{MAX_VARIATION_IMAGES} images — {variationImages[0] ? variationImages[0] === product.images[0] ? 'using the main image' : `${variationImages.length} linked image${variationImages.length === 1 ? '' : 's'}` : 'no images yet (falls back to the main image)'}
+                    </p>
+                    <label className="mt-3 block space-y-2 text-sm font-medium">
+                      <span className="sr-only">Variation images</span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <label className="cursor-pointer">
+                          <Button type="button" variant="outline" size="sm" asChild>
+                            <span>
+                              <ImagePlus className="mr-1" /> Upload
+                              <input
+                                className="hidden"
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={event => {
+                                  if (event.target.files) void uploadVariationFiles(variationIndex, event.target.files);
+                                  event.target.value = '';
+                                }}
+                              />
+                            </span>
+                          </Button>
+                        </label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setVariationLinkPicker(variationLinkPicker === variationIndex ? null : variationIndex)}
+                        >
+                          <Link2 className="mr-1" /> Link image
+                        </Button>
+                        {product.images.length > 0 && !variationImages.includes(product.images[0]) && !imageLimitReached && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => appendVariationImage(variationIndex, product.images[0])}
+                          >
+                            Use main image
+                          </Button>
+                        )}
+                      </div>
+                      {variationLinkPicker === variationIndex && (
+                        <div className="w-full rounded-lg border bg-muted/30 p-2">
+                          <p className="mb-2 text-xs text-muted-foreground">
+                            Link an image for this variation — pick one already uploaded above or paste a URL.
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {product.images.map(productImage => {
+                              const alreadyLinked = variationImages.includes(productImage);
+                              return (
+                                <button
+                                  key={productImage}
+                                  type="button"
+                                  disabled={alreadyLinked || imageLimitReached}
+                                  title={alreadyLinked ? 'Already linked' : 'Use this image for the variation'}
+                                  onClick={() => appendVariationImage(variationIndex, productImage)}
+                                  className="h-10 w-10 overflow-hidden rounded border border-border transition-colors hover:border-primary disabled:opacity-40"
+                                >
+                                  <img src={productImage} alt="" className="h-full w-full object-cover" />
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <div className="mt-2 flex items-center gap-2">
+                            <Input
+                              className="h-8 text-xs"
+                              value={variationLinkUrl}
+                              onChange={event => setVariationLinkUrl(event.target.value)}
+                              placeholder="Paste an image URL..."
+                              aria-label="Variation image URL"
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={imageLimitReached}
+                              onClick={() => {
+                                const url = variationLinkUrl.trim();
+                                if (url) {
+                                  appendVariationImage(variationIndex, url);
+                                  setVariationLinkUrl('');
+                                }
+                              }}
+                            >
+                              Add
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      {variationImages.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {variationImages.map((image, imageIndex) => (
+                            <div key={`${image}-${imageIndex}`} className="group relative h-16 w-16 overflow-hidden rounded-lg border bg-muted">
+                              <img
+                                src={image}
+                                alt={`${variation.name || 'Variation'} image ${imageIndex + 1}`}
+                                onError={event => { event.currentTarget.style.display = 'none'; }}
+                                className="h-full w-full object-cover"
+                              />
+                              {imageIndex === 0 && <Badge className="absolute left-1 top-1 text-[9px]">Main</Badge>}
+                              <button
+                                type="button"
+                                className="absolute right-1 top-1 rounded bg-black/70 p-0.5 text-white"
+                                onClick={() => removeVariationImage(variationIndex, imageIndex)}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                );
+              })}
+              {(product.variations || []).length === 0 && (
+                <div className="rounded-xl border border-dashed p-5 text-center text-sm text-muted-foreground">
+                  No design variations yet. Add one to show a selectable design grid on the storefront.
+                </div>
+              )}
+            </div>
+            {Object.entries(uploading).map(([name, progress]) => (
+              <div key={name} className="mt-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="truncate">{name}</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="mt-1 h-1.5 overflow-hidden rounded bg-muted">
+                  <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
+                </div>
+              </div>
+            ))}
           </section>
 
           <section className="rounded-2xl border bg-card p-5">

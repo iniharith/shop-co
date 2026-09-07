@@ -85,20 +85,36 @@ export function ProductDetails({
   };
 
   useEffect(() => {
-    const isKhat = product.category?.toLowerCase() === "islamic khat" && product.images.length > 1;
+    if ((product.variations || []).length > 0) {
+      const variation =
+        selectedVariationIndex !== null && selectedVariationIndex != null
+          ? product.variations![selectedVariationIndex]
+          : undefined;
+      onSelectedSizeImagesChange?.(variation?.images?.length ? variation.images : null);
+      return;
+    }
+
+    const sizes = product.sizes || [];
     let images: string[] | null = null;
-    if (!isKhat && (product.sizes || []).length <= 1) {
+
+    const activeSize = selectedSize ? sizes.find(size => size.size === selectedSize) : null;
+    if (activeSize?.images?.length) {
+      images = activeSize.images;
+    }
+
+    if (!images && sizes.length <= 1) {
       const sizeOption = (product.printingOptions || []).find(opt => /format|size/i.test(opt.name) && opt.options.length > 0 && !opt.isMultiSelect);
       const selected = sizeOption ? selectedOptions[sizeOption.name] : undefined;
       const sizeLabel = sizeOption && typeof selected === "number" ? sizeOption.options[selected]?.label : null;
       images = getVariationImagesForSize(product, sizeLabel);
     }
+
     onSelectedSizeImagesChange?.(images);
-  }, [product, selectedOptions, onSelectedSizeImagesChange]);
+  }, [product, selectedVariationIndex, selectedSize, selectedOptions, onSelectedSizeImagesChange]);
 
   useEffect(() => {
     const sizes = product.sizes || [];
-    if (product.category?.toLowerCase() === "islamic khat" || sizes.length <= 1) {
+    if (!sizes.length) {
       setSelectedSize(null);
       return;
     }
@@ -109,13 +125,6 @@ export function ProductDetails({
     );
   }, [product]);
 
-  useEffect(() => {
-    const sizes = product.sizes || [];
-    if (product.category?.toLowerCase() === "islamic khat" || sizes.length <= 1 || !selectedSize) return;
-    const size = sizes.find(item => item.size === selectedSize);
-    onSelectedSizeImagesChange?.(size?.images?.length ? size.images : null);
-  }, [selectedSize, product, onSelectedSizeImagesChange]);
-
   const handleAddToCart = () => {
     if (!session) {
       toast.error("Please login to add to cart");
@@ -123,19 +132,37 @@ export function ProductDetails({
       return;
     }
     
+const hasDesignVariations = (product.variations || []).length > 0;
     const isIslamicKhat = product.category?.toLowerCase() === "islamic khat";
-    if (isIslamicKhat && product.images.length > 1 && selectedVariationIndex === null) {
+    if ((hasDesignVariations || (isIslamicKhat && product.images.length > 1)) && selectedVariationIndex === null) {
       toast.error(label("Please choose a design before adding to cart", "Sila pilih reka bentuk sebelum menambah ke troli"));
       return;
     }
 
-    const baseSize = product.category === "flyers" ? selectedGridSize : (selectedSize || "Standard");
+    const baseSize = hasDesignVariations ? "Standard" : (product.category === "flyers" ? selectedGridSize : (selectedSize || "Standard"));
     const selectedVariation = isIslamicKhat && product.images.length > 1
       ? getProductVariation(product, selectedVariationIndex as number)
+      : hasDesignVariations && selectedVariationIndex !== null && selectedVariationIndex != null
+        ? product.variations![selectedVariationIndex]
+        : null;
+    const selectedVariationInfo = selectedVariation
+      ? "variantLabel" in selectedVariation
+        ? {
+            label: selectedVariation.variantLabel,
+            image: selectedVariation.variantImage,
+            id: selectedVariation.variantId,
+          }
+        : {
+            label: selectedVariation.name || "",
+            image: selectedVariation.images?.[0],
+            id: undefined as string | undefined,
+          }
       : null;
     const selectedConfiguration = isIslamicKhat && product.images.length > 1
       ? baseSize
-      : `${baseSize} | Design: ${designOption === "upload" ? "Upload Artwork" : "Need Design Service"}`;
+      : hasDesignVariations
+        ? `${baseSize} | Design: ${selectedVariationInfo?.label || "Not selected"}`
+        : `${baseSize} | Design: ${designOption === "upload" ? "Upload Artwork" : "Need Design Service"}`;
     const artworkUrl = !isIslamicKhat && designOption === "upload" ? "https://example.com/mock-uploaded-artwork.pdf" : undefined; // Replace with actual uploaded file URL state if it exists
     const selections = options.flatMap((option) => {
       const selected = selectedOptions[option.name];
@@ -146,19 +173,22 @@ export function ProductDetails({
         .map((value) => ({ label: value.label, priceAdd: value.priceAdd }));
       return values.length > 0 ? [{ name: option.name, values }] : [];
     });
+const configVariationLabel = selectedVariationInfo?.label || "";
+    const configVariationImage = selectedVariationInfo?.image;
+    const configVariationId = selectedVariationInfo?.id || `${product._id}:${String(selectedVariationIndex)}`;
     const configuration = {
       version: 1,
       fulfillmentSize: baseSize,
       selections,
-      design: isIslamicKhat
+      design: isIslamicKhat || hasDesignVariations
         ? {
             type: "variation" as const,
-            label: selectedVariation?.variantLabel || "",
-            variantId: selectedVariation?.variantId,
-            variantLabel: selectedVariation?.variantLabel,
-            variantImage: selectedVariation?.variantImage,
+            label: configVariationLabel,
+            variantId: configVariationId,
+            variantLabel: configVariationLabel,
+            variantImage: configVariationImage,
             variationIndex: selectedVariationIndex as number,
-            image: selectedVariation?.variantImage,
+            image: configVariationImage,
             priceAdd: 0,
           }
         : {
@@ -185,14 +215,23 @@ export function ProductDetails({
 
   const options = product.printingOptions || [];
 const stockBySize = product.sizes || [];
-  const totalAvailableStock = stockBySize.reduce((total, size) => total + Number(size.stock || 0), 0);
+  const designVariations = product.variations || [];
+  const hasDesignVariations = designVariations.length > 0;
+  const totalAvailableStock = hasDesignVariations
+    ? designVariations.reduce((total, variation) => total + Number(variation.stock || 0), 0)
+    : stockBySize.reduce((total, size) => total + Number(size.stock || 0), 0);
   const standardStock = stockBySize.find(size => size.size.toLowerCase() === "standard")?.stock;
   const hasImageVariations = product.category?.toLowerCase() === "islamic khat" && product.images.length > 1;
-  const hasSizeVariations = stockBySize.length > 1 && product.category?.toLowerCase() !== "islamic khat";
+  const hasSizeVariations = !hasDesignVariations && stockBySize.length > 1 && product.category?.toLowerCase() !== "islamic khat";
   const activeSize = stockBySize.find(size => size.size === selectedSize);
-  const maxQuantity = activeSize && Number(activeSize.stock) > 0
-    ? Number(activeSize.stock)
-    : hasSizeVariations ? 1 : (stockBySize.length > 0 ? (standardStock ?? totalAvailableStock) : 10000);
+  const activeVariation = selectedVariationIndex !== null && selectedVariationIndex != null ? designVariations[selectedVariationIndex] : undefined;
+  const maxQuantity = hasDesignVariations
+    ? activeVariation && Number(activeVariation.stock) > 0
+      ? Number(activeVariation.stock)
+      : 1
+    : activeSize && Number(activeSize.stock) > 0
+      ? Number(activeSize.stock)
+      : hasSizeVariations ? 1 : (stockBySize.length > 0 ? (standardStock ?? totalAvailableStock) : 10000);
 
   let minQuantity = 1;
   if (product.category === 'button-badge') {
@@ -412,7 +451,7 @@ const stockBySize = product.sizes || [];
   const formatStepNum = step1Options.length > 0 ? currentStep++ : 0;
   const printingStepNum = step2Options.length > 0 ? currentStep++ : 0;
   const addonsStepNum = step3Addons.length > 0 ? currentStep++ : 0;
-const variationStepNum = hasImageVariations ? currentStep++ : 0;
+const variationStepNum = (hasImageVariations || hasDesignVariations) ? currentStep++ : 0;
   const sizeStepNum = hasSizeVariations ? currentStep++ : 0;
   const quantityStepNum = currentStep++;
 
@@ -437,7 +476,7 @@ const variationStepNum = hasImageVariations ? currentStep++ : 0;
             <p className="text-xs font-medium text-muted-foreground">{label("Current total", "Jumlah semasa")}</p>
             <p aria-live="polite" className="mt-1 text-2xl font-extrabold tabular-nums text-primary">RM {total.toFixed(2)}</p>
           </div>
-          {hasImageVariations && (
+{(hasImageVariations || hasDesignVariations) && (
             <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
               selectedVariationIndex === null
                 ? "bg-primary/10 text-primary"
@@ -445,7 +484,9 @@ const variationStepNum = hasImageVariations ? currentStep++ : 0;
             }`}>
               {selectedVariationIndex === null
                 ? label("Design required", "Reka bentuk diperlukan")
-                : getProductVariation(product, selectedVariationIndex).variantLabel}
+                : hasDesignVariations
+                  ? designVariations[selectedVariationIndex]?.name || "Selected"
+                  : getProductVariation(product, selectedVariationIndex).variantLabel}
             </span>
           )}
         </div>
@@ -554,7 +595,7 @@ const variationStepNum = hasImageVariations ? currentStep++ : 0;
           </div>
         )}
 
-        {hasImageVariations && (
+{(hasImageVariations || hasDesignVariations) && (
           <div className="space-y-4 rounded-2xl border border-border bg-muted/20 p-4 sm:p-5">
             <div className="flex items-center gap-3">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
@@ -567,12 +608,66 @@ const variationStepNum = hasImageVariations ? currentStep++ : 0;
                 <p aria-live="polite" className={`text-xs ${selectedVariationIndex === null ? "font-medium text-primary" : "text-muted-foreground"}`}>
                   {selectedVariationIndex === null
                     ? label("Select one design to continue", "Pilih satu reka bentuk untuk teruskan")
-                    : `${label("Selected", "Dipilih")}: ${getProductVariation(product, selectedVariationIndex).variantLabel}`}
+                    : `${label("Selected", "Dipilih")}: ${
+                        hasDesignVariations
+                          ? designVariations[selectedVariationIndex]?.name || ""
+                          : getProductVariation(product, selectedVariationIndex).variantLabel
+                      }`}
                 </p>
               </div>
             </div>
             <div role="group" aria-label={label("Artwork variations", "Variasi karya")} className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {product.images.map((image, index) => {
+              {hasDesignVariations
+                ? designVariations.map((variation, index) => {
+                    const isSelected = selectedVariationIndex === index;
+                    const isOut = Number(variation.stock) <= 0;
+                    return (
+                      <button
+                        type="button"
+                        key={index}
+                        disabled={isOut}
+                        onFocus={() => onSelectedImageChange?.(index)}
+                        onClick={() => {
+                          onSelectedVariationChange?.(index);
+                          onSelectedSizeImagesChange?.(variation.images?.length ? variation.images : null);
+                        }}
+                        aria-pressed={isSelected}
+                        aria-label={`${label("Select artwork", "Pilih karya")} ${variation.name || ""}`}
+                        className={`relative overflow-hidden rounded-xl border bg-card text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40 ${
+                          isSelected
+                            ? "border-primary ring-2 ring-primary/20"
+                            : "border-gray-200 opacity-75 hover:border-primary/50 hover:opacity-100 dark:border-border"
+                        }`}
+                      >
+                        {isSelected && (
+                          <span className="absolute right-2 top-2 z-10 flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                            <Check aria-hidden="true" className="size-3.5" strokeWidth={3} />
+                          </span>
+                        )}
+                        {isOut && (
+                          <span className="absolute inset-x-0 top-2 z-10 flex justify-center">
+                            <span className="rounded-full bg-red-600/90 px-2 py-0.5 text-[10px] font-bold text-white">
+                              {label("Out of stock", "Stok habis")}
+                            </span>
+                          </span>
+                        )}
+                        <span className="flex aspect-[4/3] items-center justify-center bg-muted/20 p-1">
+                          <img
+                            src={getImageUrl(variation.images?.[0] || product.images[0])}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            draggable={false}
+                            className="h-full w-full object-contain object-center"
+                          />
+                        </span>
+                        <span className={`block px-2 py-2.5 text-center text-xs font-bold ${isSelected ? "text-primary" : "text-foreground"}`}>
+                          {variation.name || `${label("Variation", "Variasi")} ${index + 1}`}
+                        </span>
+                      </button>
+                    );
+                  })
+                : product.images.map((image, index) => {
                 const isSelected = selectedVariationIndex === index;
                 const variation = getProductVariation(product, index);
                 return (
@@ -918,7 +1013,7 @@ const variationStepNum = hasImageVariations ? currentStep++ : 0;
       <div className="fixed inset-x-3 bottom-3 z-50 flex items-center gap-3 rounded-2xl border border-border bg-card/95 p-3 shadow-2xl backdrop-blur-xl lg:hidden">
         <div className="min-w-0 shrink-0">
           <p className="text-[11px] font-medium text-muted-foreground">
-            {hasImageVariations && selectedVariationIndex === null
+{(hasImageVariations || hasDesignVariations) && selectedVariationIndex === null
               ? label("Choose a design", "Pilih reka bentuk")
               : label("Total", "Jumlah")}
           </p>

@@ -12,6 +12,7 @@ export interface IProduct {
     sections?: string[];
     sizes: ISize[];
     images: string[];
+    variations?: IProductVariation[];
     createdAt: Date;
     updatedAt: Date;
     rating?: number;
@@ -93,6 +94,13 @@ export interface IProductMatrixRow {
 export interface ISize {
     stock: number;
     size: string;
+    lowStockThreshold?: number;
+    images?: string[];
+}
+
+export interface IProductVariation {
+    name: string;
+    stock: number;
     lowStockThreshold?: number;
     images?: string[];
 }

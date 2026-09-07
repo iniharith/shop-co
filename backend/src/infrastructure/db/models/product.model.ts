@@ -40,6 +40,15 @@ const ProductSchema: Schema = new Schema(
             lowStockThreshold: { type: Number, min: 0, default: 10 },
             images: [{ type: String }],
         }],
+        // Design variations for a same-size product: the product is the same
+        // physical size; the variable is the design option. Each variation has
+        // its own editable name, stock, and optional mockup images.
+        variations: [{
+            name: { type: String, trim: true },
+            stock: { type: Number, min: 0, default: 0 },
+            lowStockThreshold: { type: Number, min: 0, default: 10 },
+            images: [{ type: String }],
+        }],
 
         images: [{
             type: String,

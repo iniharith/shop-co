@@ -19,6 +19,7 @@ const roles = authorizeRoles('admin', 'sysadmin', 'boss');
 const cachePrefix = `${REDIS_KEYS.PRODUCTS}:`;
 const ARCHIVE_RETENTION_DAYS = 30;
 type NormalizedSize = { size: string; stock: number; lowStockThreshold: number; images: string[] };
+type NormalizedVariation = { name: string; stock: number; lowStockThreshold: number; images: string[] };
 type NormalizedProduct = {
   name: string;
   description: string;
@@ -28,6 +29,7 @@ type NormalizedProduct = {
   category: string;
   images: string[];
   sizes: NormalizedSize[];
+  variations: NormalizedVariation[];
   printingOptions: any[];
   sections: string[];
   slug: string;
@@ -100,8 +102,19 @@ const withResolvedCatalogImages = (req: any, product: any) => {
         };
       })
     : [];
+  const variations = Array.isArray(product?.variations)
+    ? product.variations.map((variation: any) => {
+        const variationImages = Array.isArray(variation?.images)
+          ? variation.images.map((image: unknown) => resolveCatalogImageUrl(req, String(image))).filter(Boolean)
+          : [];
+        return {
+          ...variation,
+          images: variationImages.length > 0 || !mainImage ? variationImages : [mainImage],
+        };
+      })
+    : [];
 
-  return { ...product, images, sizes };
+  return { ...product, images, sizes, variations };
 };
 
 const normalizeProduct = (body: any): NormalizedProduct => {
@@ -142,6 +155,24 @@ const normalizeProduct = (body: any): NormalizedProduct => {
     seoDescription: String(body.seoDescription || '').trim(),
     images,
     sizes,
+    variations: Array.isArray(body.variations)
+      ? body.variations
+          .map((item: any): NormalizedVariation => {
+            const variationImages = Array.isArray(item?.images)
+              ? item.images.map(String).filter(Boolean)
+              : [];
+            return {
+              name: String(item?.name || '').trim(),
+              stock: Number(item?.stock),
+              lowStockThreshold:
+                item?.lowStockThreshold === '' || item?.lowStockThreshold == null
+                  ? 10
+                  : Number(item.lowStockThreshold),
+              images: variationImages.length > 0 ? variationImages : [mainImage],
+            };
+          })
+          .filter((item: NormalizedVariation) => item.name)
+      : ([] as NormalizedVariation[]),
     printingOptions: Array.isArray(body.printingOptions) ? body.printingOptions : [],
     sections: getProductSections(String(body.category || '')),
     specifications: (() => {
