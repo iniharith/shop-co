@@ -44,6 +44,7 @@ export function ProductDetails({
 
   const [quantity, setQuantity] = useState(1);
   const [selectedGridSize, setSelectedGridSize] = useState<string>("A4");
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -86,7 +87,7 @@ export function ProductDetails({
   useEffect(() => {
     const isKhat = product.category?.toLowerCase() === "islamic khat" && product.images.length > 1;
     let images: string[] | null = null;
-    if (!isKhat) {
+    if (!isKhat && (product.sizes || []).length <= 1) {
       const sizeOption = (product.printingOptions || []).find(opt => /format|size/i.test(opt.name) && opt.options.length > 0 && !opt.isMultiSelect);
       const selected = sizeOption ? selectedOptions[sizeOption.name] : undefined;
       const sizeLabel = sizeOption && typeof selected === "number" ? sizeOption.options[selected]?.label : null;
@@ -94,6 +95,26 @@ export function ProductDetails({
     }
     onSelectedSizeImagesChange?.(images);
   }, [product, selectedOptions, onSelectedSizeImagesChange]);
+
+  useEffect(() => {
+    const sizes = product.sizes || [];
+    if (product.category?.toLowerCase() === "islamic khat" || sizes.length <= 1) {
+      setSelectedSize(null);
+      return;
+    }
+    setSelectedSize(
+      sizes.find(size => String(size.size).trim().toLowerCase() === "standard")?.size
+      || sizes.find(size => Number(size.stock) > 0)?.size
+      || sizes[0].size
+    );
+  }, [product]);
+
+  useEffect(() => {
+    const sizes = product.sizes || [];
+    if (product.category?.toLowerCase() === "islamic khat" || sizes.length <= 1 || !selectedSize) return;
+    const size = sizes.find(item => item.size === selectedSize);
+    onSelectedSizeImagesChange?.(size?.images?.length ? size.images : null);
+  }, [selectedSize, product, onSelectedSizeImagesChange]);
 
   const handleAddToCart = () => {
     if (!session) {
@@ -108,7 +129,7 @@ export function ProductDetails({
       return;
     }
 
-    const baseSize = product.category === "flyers" ? selectedGridSize : "Standard";
+    const baseSize = product.category === "flyers" ? selectedGridSize : (selectedSize || "Standard");
     const selectedVariation = isIslamicKhat && product.images.length > 1
       ? getProductVariation(product, selectedVariationIndex as number)
       : null;
@@ -163,10 +184,15 @@ export function ProductDetails({
   };
 
   const options = product.printingOptions || [];
-  const stockBySize = product.sizes || [];
+const stockBySize = product.sizes || [];
   const totalAvailableStock = stockBySize.reduce((total, size) => total + Number(size.stock || 0), 0);
   const standardStock = stockBySize.find(size => size.size.toLowerCase() === "standard")?.stock;
   const hasImageVariations = product.category?.toLowerCase() === "islamic khat" && product.images.length > 1;
+  const hasSizeVariations = stockBySize.length > 1 && product.category?.toLowerCase() !== "islamic khat";
+  const activeSize = stockBySize.find(size => size.size === selectedSize);
+  const maxQuantity = activeSize && Number(activeSize.stock) > 0
+    ? Number(activeSize.stock)
+    : hasSizeVariations ? 1 : (stockBySize.length > 0 ? (standardStock ?? totalAvailableStock) : 10000);
 
   let minQuantity = 1;
   if (product.category === 'button-badge') {
@@ -386,7 +412,8 @@ export function ProductDetails({
   const formatStepNum = step1Options.length > 0 ? currentStep++ : 0;
   const printingStepNum = step2Options.length > 0 ? currentStep++ : 0;
   const addonsStepNum = step3Addons.length > 0 ? currentStep++ : 0;
-  const variationStepNum = hasImageVariations ? currentStep++ : 0;
+const variationStepNum = hasImageVariations ? currentStep++ : 0;
+  const sizeStepNum = hasSizeVariations ? currentStep++ : 0;
   const quantityStepNum = currentStep++;
 
   return (
@@ -588,6 +615,41 @@ export function ProductDetails({
           </div>
         )}
 
+        {/* SIZE VARIATIONS */}
+        {hasSizeVariations && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">{sizeStepNum}</span>
+              <h2 className="font-sans text-base font-semibold text-gray-800 dark:text-foreground sm:text-lg">{label("Choose Size", "Pilih Saiz")}</h2>
+            </div>
+            <div role="group" aria-label={label("Product size", "Saiz produk")} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {stockBySize.map((size) => {
+                const isSelected = selectedSize === size.size;
+                const isOut = Number(size.stock) <= 0;
+                return (
+                  <button
+                    key={size.size}
+                    type="button"
+                    disabled={isOut}
+                    onClick={() => { setSelectedSize(size.size); setQuantity(current => Math.min(current, Math.max(1, Number(size.stock) || 1))); }}
+                    aria-pressed={isSelected}
+                    className={`rounded-xl border p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-45 ${
+                      isSelected
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/15 dark:bg-primary/10"
+                        : "border-gray-200 hover:border-primary/50 dark:border-border"
+                    }`}
+                  >
+                    <span className="block text-sm font-semibold text-gray-800 dark:text-foreground">{size.size}</span>
+                    <span className={`mt-0.5 block text-xs font-medium ${isOut ? "text-red-600" : "text-muted-foreground"}`}>
+                      {isOut ? label("Out of stock", "Stok habis") : `${size.stock} ${label("available", "tersedia")}`}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* QUANTITY / TURNAROUND */}
         {product.category !== "flyers" && (<div className="space-y-4">
           <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
@@ -696,7 +758,7 @@ export function ProductDetails({
                   quantity={quantity}
                   onDecrement={() => setQuantity((q) => Math.max(minQuantity, q - 1))}
                   onIncrement={() => setQuantity((q) => q + 1)}
-                   max={stockBySize.length > 0 ? (standardStock ?? totalAvailableStock) : 10000}
+                   max={maxQuantity}
                   onQuantityChange={setQuantity}
                 />
               </div>
