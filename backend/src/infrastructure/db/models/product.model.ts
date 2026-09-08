@@ -183,6 +183,10 @@ const ProductSchema: Schema = new Schema(
             createdAt: { type: Date, default: Date.now },
             helpfulCount: { type: Number, default: 0 },
         }],
+        updatedBy: {
+            type: String,
+            trim: true,
+        },
 
     },
     {

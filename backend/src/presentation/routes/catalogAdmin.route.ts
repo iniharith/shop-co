@@ -375,7 +375,7 @@ router.get('/analytics', async (_req, res, next) => {
       ProductModel.find(activeProducts)
         .sort({ updatedAt: -1 })
         .limit(10)
-        .select('name category slug images updatedAt viewCount')
+        .select('name category slug images updatedAt viewCount status updatedBy')
         .lean(),
     ]);
     const productById = new Map(
@@ -504,7 +504,7 @@ router.patch('/:id', async (req, res, next) => {
     });
     const updated = await ProductModel.findByIdAndUpdate(
       req.params.id,
-      { $set: { ...product, slug } },
+      { $set: { ...product, slug, updatedBy: actor(req).actorName } },
       { new: true, runValidators: true },
     ).lean();
     if (!updated)

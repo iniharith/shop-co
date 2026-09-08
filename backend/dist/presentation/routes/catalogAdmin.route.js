@@ -354,7 +354,7 @@ router.get('/analytics', (_req, res, next) => __awaiter(void 0, void 0, void 0, 
             product_model_1.default.find(activeProducts)
                 .sort({ updatedAt: -1 })
                 .limit(10)
-                .select('name category slug images updatedAt viewCount')
+                .select('name category slug images updatedAt viewCount status updatedBy')
                 .lean(),
         ]);
         const productById = new Map((yield product_model_1.default.find({ _id: { $in: sales.map(row => row._id) } })
@@ -451,7 +451,7 @@ router.patch('/:id', (req, res, next) => __awaiter(void 0, void 0, void 0, funct
             if (currentSize)
                 item.stock = Number(currentSize.stock || 0);
         });
-        const updated = yield product_model_1.default.findByIdAndUpdate(req.params.id, { $set: Object.assign(Object.assign({}, product), { slug }) }, { new: true, runValidators: true }).lean();
+        const updated = yield product_model_1.default.findByIdAndUpdate(req.params.id, { $set: Object.assign(Object.assign({}, product), { slug, updatedBy: actor(req).actorName }) }, { new: true, runValidators: true }).lean();
         if (!updated)
             return res.status(404).json({ success: false, message: 'Product not found.' });
         const beforeBySize = new Map(existing.sizes.map(item => [item.size, Number(item.stock || 0)]));

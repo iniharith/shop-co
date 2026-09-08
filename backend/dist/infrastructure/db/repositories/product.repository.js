@@ -116,7 +116,7 @@ class ProductRepository extends base_repository_1.BaseRepository {
             const beforeStock = (_a = current === null || current === void 0 ? void 0 : current.sizes.find(item => item.size === size)) === null || _a === void 0 ? void 0 : _a.stock;
             if (typeof beforeStock !== 'number')
                 return null;
-            const product = yield this.model.findOneAndUpdate({ _id: productId, sizes: { $elemMatch: { size, stock: beforeStock } } }, { $set: { 'sizes.$.stock': stock } }, { new: true });
+            const product = yield this.model.findOneAndUpdate({ _id: productId, sizes: { $elemMatch: { size, stock: beforeStock } } }, { $set: { 'sizes.$.stock': stock, updatedBy: context.actorName } }, { new: true });
             if (!product)
                 return null;
             if (stock !== beforeStock) {

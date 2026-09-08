@@ -35,6 +35,7 @@ export interface IProduct {
     warrantyInfo?: string;
     customerPhotos?: string[];
     reviews?: IProductReview[];
+    updatedBy?: string;
 }
 
 export interface IProductSpecifications {

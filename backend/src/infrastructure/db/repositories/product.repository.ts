@@ -117,7 +117,7 @@ export class ProductRepository extends BaseRepository<IProductDocument> {
         if (typeof beforeStock !== 'number') return null;
         const product = await this.model.findOneAndUpdate(
             { _id: productId, sizes: { $elemMatch: { size, stock: beforeStock } } },
-            { $set: { 'sizes.$.stock': stock } },
+            { $set: { 'sizes.$.stock': stock, updatedBy: context.actorName } },
             { new: true },
         );
         if (!product) return null;
