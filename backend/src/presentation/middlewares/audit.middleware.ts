@@ -11,7 +11,10 @@ const describeRequest = (req: Request) => {
   const entityId = parts.find((part, index) => index > apiIndex + 1 && /^[a-f\d]{24}$/i.test(part));
   const isFile = parts.some(part => ['file', 'files', 'upload', 'upload-url'].includes(part));
   const isStatus = typeof req.body?.status === 'string' || parts.includes('status');
-  const action = req.method === 'DELETE'
+  const isDatabaseBackup = parts.includes('database-backup');
+  const action = isDatabaseBackup
+    ? 'database_backup_download'
+    : req.method === 'DELETE'
     ? (isFile ? 'file_delete' : 'delete')
     : isFile
       ? 'file_add'

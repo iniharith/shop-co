@@ -13,6 +13,25 @@
 
 MongoDB credentials were previously committed to this public repository. Removing them from current files does not remove them from Git history. Rotate the exposed MongoDB user/password immediately, revoke the old credentials, and update `MONGO_URI` in every deployment environment before the next release.
 
+## Manual Database Backup
+
+Users with the `admin`, `sysadmin`, or `boss` role can download a compressed
+MongoDB archive from **Admin > Tools > Database Backup**. Treat the archive as
+sensitive customer data and store it on encrypted storage. The archive contains
+the `shop-co` database and its settings, but not files stored in S3. This is a
+logical export taken while the application is live, not a point-in-time Atlas
+snapshot, so managed Atlas backups should remain enabled where available.
+
+Restore a downloaded archive into a disposable database first to verify it:
+
+```bash
+mongorestore --uri "$RESTORE_TEST_MONGO_URI" --archive="shop-co-backup-TIMESTAMP.archive.gz" --gzip --drop --nsFrom="shop-co.*" --nsTo="shop-co-restore-test-UNIQUE-ID.*"
+```
+
+Use a non-production `RESTORE_TEST_MONGO_URI`, verify collection counts and
+indexes, then remove the disposable database. Do not restore over production
+without a tested rollback plan.
+
 ## Legacy Task History
 
 Preview the number of legacy tasks that need an initial history entry:

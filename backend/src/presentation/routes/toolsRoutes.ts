@@ -9,8 +9,14 @@
 import { Router, Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import multer from 'multer';
+import { finished } from 'stream/promises';
 import authMiddilware, { authorizeRoles } from '../middlewares/auth.middileware';
 import { upscaleImageLocally, UpscaleBusyError } from '../../infrastructure/services/LocalUpscaleService';
+import {
+  createDatabaseBackupFilename,
+  DatabaseBackupBusyError,
+  startDatabaseBackup,
+} from '../../infrastructure/services/DatabaseBackupService';
 
 const router = Router();
 
@@ -20,6 +26,62 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 });
+
+// ─── POST /api/tools/database-backup ───────────────────────
+// Streams a restorable gzip-compressed MongoDB archive. The archive never
+// touches Railway's filesystem; only the temporary credentials file does.
+router.post(
+  '/database-backup',
+  authMiddilware,
+  authorizeRoles('sysadmin', 'admin', 'boss'),
+  asyncHandler(async (req: Request, res: Response) => {
+    let backup;
+    try {
+      backup = await startDatabaseBackup(process.env.MONGO_URI || '');
+    } catch (error) {
+      if (error instanceof DatabaseBackupBusyError) {
+        res.status(429).json({ success: false, message: error.message });
+        return;
+      }
+      console.error('[Tools/DatabaseBackup] Could not start:', error instanceof Error ? error.message : error);
+      res.status(500).json({ success: false, message: 'Database backup could not be started.' });
+      return;
+    }
+
+    const cancelOnDisconnect = () => {
+      if (!res.writableEnded) backup.cancel();
+    };
+    req.once('aborted', cancelOnDisconnect);
+    res.once('close', cancelOnDisconnect);
+
+    res.set({
+      'Cache-Control': 'private, no-store',
+      'Content-Type': 'application/gzip',
+      'Content-Disposition': `attachment; filename="${createDatabaseBackupFilename()}"`,
+      'X-Content-Type-Options': 'nosniff',
+    });
+    // Do not end the HTTP response until mongodump has exited successfully.
+    backup.stream.pipe(res, { end: false });
+
+    try {
+      await Promise.all([finished(backup.stream), backup.completion]);
+      req.off('aborted', cancelOnDisconnect);
+      res.off('close', cancelOnDisconnect);
+      res.end();
+    } catch (error) {
+      backup.cancel();
+      console.error('[Tools/DatabaseBackup] Failed:', error instanceof Error ? error.message : error);
+      if (!res.headersSent) {
+        res.status(500).json({ success: false, message: 'Database backup failed.' });
+      } else {
+        res.destroy();
+      }
+    } finally {
+      req.off('aborted', cancelOnDisconnect);
+      res.off('close', cancelOnDisconnect);
+    }
+  })
+);
 
 // ─── POST /api/tools/upscale ────────────────────────────────
 // Local high-quality image upscaler (Sharp/Lanczos, no API cost).

@@ -12,13 +12,16 @@ const describeRequest = (req) => {
     const entityId = parts.find((part, index) => index > apiIndex + 1 && /^[a-f\d]{24}$/i.test(part));
     const isFile = parts.some(part => ['file', 'files', 'upload', 'upload-url'].includes(part));
     const isStatus = typeof ((_a = req.body) === null || _a === void 0 ? void 0 : _a.status) === 'string' || parts.includes('status');
-    const action = req.method === 'DELETE'
-        ? (isFile ? 'file_delete' : 'delete')
-        : isFile
-            ? 'file_add'
-            : isStatus
-                ? 'status_change'
-                : req.method === 'POST' ? 'create' : 'update';
+    const isDatabaseBackup = parts.includes('database-backup');
+    const action = isDatabaseBackup
+        ? 'database_backup_download'
+        : req.method === 'DELETE'
+            ? (isFile ? 'file_delete' : 'delete')
+            : isFile
+                ? 'file_add'
+                : isStatus
+                    ? 'status_change'
+                    : req.method === 'POST' ? 'create' : 'update';
     const label = ((_b = req.body) === null || _b === void 0 ? void 0 : _b.title) || ((_c = req.body) === null || _c === void 0 ? void 0 : _c.fileName) || ((_d = req.body) === null || _d === void 0 ? void 0 : _d.originalName) || ((_e = req.body) === null || _e === void 0 ? void 0 : _e.name) || entityId || entityType;
     return { entityType, entityId, action, summary: `${action.replace(/_/g, ' ')}: ${String(label).slice(0, 300)}` };
 };

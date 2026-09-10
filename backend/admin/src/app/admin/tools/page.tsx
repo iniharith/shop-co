@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { Activity, ArrowUpRight, Bot, CalendarRange, ChartNoAxesCombined, ClipboardList, Cloud, Layers3, Sparkles } from "lucide-react";
+import { Activity, ArrowUpRight, Bot, CalendarRange, ChartNoAxesCombined, ClipboardList, Cloud, Database, Download, Layers3, Loader2, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import PageContainer from "@/components/layout/page-container";
+import { Button } from "@/components/ui/button";
+import AxiosInstance from "@/utils/axios";
 
 type Tool = {
   title: string;
@@ -115,13 +119,50 @@ const colorMap: Record<string, string> = {
 
 export default function ToolsPage() {
   const { data: session } = useSession();
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const token = (session?.user as any)?.token || (typeof window !== "undefined" && localStorage.getItem("token")) || "";
   const visibleSections = toolSections
     .map(section => ({
       ...section,
       tools: section.tools.filter(tool => !tool.sysadminOnly || session?.user?.role === "sysadmin"),
     }))
     .filter(section => section.tools.length > 0);
-  const totalTools = visibleSections.reduce((sum, s) => sum + s.tools.length, 0);
+  const totalTools = visibleSections.reduce((sum, s) => sum + s.tools.length, 0) + 1;
+
+  const downloadDatabaseBackup = async () => {
+    if (isBackingUp) return;
+    setIsBackingUp(true);
+    const toastId = toast.loading("Preparing database backup...");
+
+    try {
+      const response = await AxiosInstance(token).post("/api/tools/database-backup", undefined, {
+        responseType: "blob",
+        timeout: 600000,
+      });
+      const url = URL.createObjectURL(response.data as Blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `shop-co-backup-${new Date().toISOString().replace(/[:.]/g, "-")}.archive.gz`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1_000);
+      toast.success("Database backup downloaded", { id: toastId });
+    } catch (error: any) {
+      let message = error?.message || "Database backup failed";
+      if (error?.response?.data instanceof Blob) {
+        try {
+          const payload = JSON.parse(await error.response.data.text());
+          message = payload.message || message;
+        } catch {}
+      } else if (error?.response?.data?.message) {
+        message = error.response.data.message;
+      }
+      toast.error(message, { id: toastId });
+    } finally {
+      setIsBackingUp(false);
+    }
+  };
 
   return (
     <PageContainer>
@@ -193,6 +234,41 @@ export default function ToolsPage() {
             </section>
           );
         })}
+
+        <section>
+          <div className="mb-4 flex items-center gap-3">
+            <span className="flex size-7 items-center justify-center rounded-lg border border-teal-400/20 bg-teal-500/10 text-teal-300">
+              <Database className="size-3.5" />
+            </span>
+            <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Data Protection</h2>
+            <span className="text-[11px] tabular-nums text-muted-foreground">1</span>
+            <div aria-hidden className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <div className="flex min-h-[230px] flex-col justify-between overflow-hidden rounded-[28px] border border-white/10 bg-card/60 p-6 shadow-lg">
+              <div>
+                <div className="mb-5 flex size-12 items-center justify-center rounded-2xl border border-teal-400/20 bg-gradient-to-br from-teal-500/25 to-teal-500/[0.03] text-teal-300">
+                  <Database className="size-5" />
+                </div>
+                <h3 className="mb-2 text-lg font-semibold">Database Backup</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Download a compressed logical copy of the database and stored settings.
+                </p>
+                <p className="mt-3 text-xs leading-relaxed text-amber-300/80">
+                  Sensitive data. Store the downloaded file securely. S3 uploads are not included.
+                </p>
+              </div>
+
+              <div className="mt-6 border-t border-white/10 pt-4">
+                <Button className="w-full" onClick={downloadDatabaseBackup} disabled={isBackingUp || !token}>
+                  {isBackingUp ? <Loader2 className="animate-spin" /> : <Download />}
+                  {isBackingUp ? "Preparing backup..." : "Download backup"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </PageContainer>
   );

@@ -23,6 +23,7 @@ export default withAuth(
     const isVerified = (token?.verified as unknown) === true;
       const isSuperAdminPage = path.startsWith("/admin/superAdmin");
       const isMonitoringPage = path.startsWith("/admin/monitoring");
+      const isToolsPage = path.startsWith("/admin/tools");
       const hasAdminAccess = [Roles.ADMIN, Roles.SYSADMIN, Roles.BOSS].includes(token?.role as Roles);
 
     if (path == "/auth/signout") {
@@ -73,6 +74,10 @@ export default withAuth(
       }
 
       if (isMonitoringPage && !hasAdminAccess) {
+        return NextResponse.redirect(new URL("/admin/dashboard", req.url))
+      }
+
+      if (isToolsPage && !hasAdminAccess) {
         return NextResponse.redirect(new URL("/admin/dashboard", req.url))
       }
     }
