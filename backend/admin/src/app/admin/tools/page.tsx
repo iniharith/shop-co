@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Activity, ArrowUpRight, Bot, CalendarRange, ChartNoAxesCombined, ClipboardList, Cloud, Database, Download, Layers3, Loader2, Sparkles } from "lucide-react";
+import { Activity, ArrowUpRight, Bot, CalendarRange, ChartNoAxesCombined, ClipboardList, Cloud, Database, Download, Globe2, Layers3, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import PageContainer from "@/components/layout/page-container";
 import { Button } from "@/components/ui/button";
@@ -124,6 +124,9 @@ const colorMap: Record<string, string> = {
 export default function ToolsPage() {
   const { data: session } = useSession();
   const [isBackingUp, setIsBackingUp] = useState(false);
+  const [serverIp, setServerIp] = useState<{ ip: string; checkedAt: string } | null>(null);
+  const [serverIpLoading, setServerIpLoading] = useState(true);
+  const [serverIpError, setServerIpError] = useState(false);
   const token = (session?.user as any)?.token || (typeof window !== "undefined" && localStorage.getItem("token")) || "";
   const visibleSections = toolSections
     .map(section => ({
@@ -132,6 +135,27 @@ export default function ToolsPage() {
     }))
     .filter(section => section.tools.length > 0);
   const totalTools = visibleSections.reduce((sum, s) => sum + s.tools.length, 0) + 1;
+
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    const detectServerIp = async () => {
+      try {
+        const response = await AxiosInstance(token).get<{ success: boolean; data: { ip: string; checkedAt: string } }>("/api/tools/server-ip", { timeout: 10_000 });
+        if (active) {
+          setServerIp(response.data.data);
+          setServerIpError(false);
+        }
+      } catch {
+        if (active) setServerIpError(true);
+      } finally {
+        if (active) setServerIpLoading(false);
+      }
+    };
+    void detectServerIp();
+    const interval = setInterval(() => { if (!document.hidden) void detectServerIp(); }, 60_000);
+    return () => { active = false; clearInterval(interval); };
+  }, [token]);
 
   const downloadDatabaseBackup = async () => {
     if (isBackingUp) return;
@@ -242,6 +266,16 @@ export default function ToolsPage() {
                 {isBackingUp ? <Loader2 className="animate-spin" /> : <Download />}
                 {isBackingUp ? "Preparing backup..." : "Download backup"}
               </Button>
+            </div>
+          </section>
+
+          <section aria-labelledby="server-ip-title" className="relative overflow-hidden rounded-2xl border border-border/70 bg-card/45 shadow-sm">
+            <div className="relative flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+              <div className="flex min-w-0 items-center gap-4">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary"><Globe2 className="size-5" /></div>
+                <div className="min-w-0"><p className="font-mono text-[10px] uppercase tracking-[0.22em] text-primary">Live network identity</p><h2 id="server-ip-title" className="mt-1 font-display text-lg font-bold">Current server IP</h2><p className="mt-1 text-xs text-muted-foreground">Automatically detected from the production backend and refreshed every minute.</p></div>
+              </div>
+              <div className="text-left sm:text-right">{serverIpLoading ? <p className="font-mono text-sm text-muted-foreground">Detecting...</p> : serverIp ? <><p className="font-mono text-2xl font-bold tracking-wider text-primary">{serverIp.ip}</p><p className="mt-1 font-mono text-[10px] uppercase text-muted-foreground">Updated {new Date(serverIp.checkedAt).toLocaleTimeString()}</p></> : <p className="font-mono text-sm text-amber-600 dark:text-amber-300">{serverIpError ? "Detection unavailable" : "No IP detected"}</p>}</div>
             </div>
           </section>
 

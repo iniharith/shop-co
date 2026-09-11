@@ -124,6 +124,28 @@ router.post('/database-backup', auth_middileware_1.default, (0, auth_middileware
         res.off('close', cancelOnDisconnect);
     }
 })));
+// ─── GET /api/tools/server-ip ──────────────────────────────
+// Detects the backend's current public egress IP. Railway can change this
+// value, so the Tools page polls this endpoint instead of storing it in code.
+router.get('/server-ip', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('sysadmin', 'admin', 'boss'), (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const response = yield fetch('https://api.ipify.org?format=json', {
+            signal: AbortSignal.timeout(5000),
+        });
+        if (!response.ok)
+            throw new Error(`IP detection returned ${response.status}`);
+        const payload = yield response.json();
+        if (!payload.ip || !/^\d{1,3}(?:\.\d{1,3}){3}$/.test(payload.ip)) {
+            throw new Error('IP detection returned an invalid address');
+        }
+        res.set('Cache-Control', 'private, no-store');
+        res.json({ success: true, data: { ip: payload.ip, checkedAt: new Date().toISOString(), source: 'ipify' } });
+    }
+    catch (error) {
+        console.error('[Tools/ServerIP] Detection failed:', error instanceof Error ? error.message : error);
+        res.status(503).json({ success: false, message: 'Could not detect the server IP right now.' });
+    }
+})));
 // ─── POST /api/tools/upscale ────────────────────────────────
 // Local high-quality image upscaler (Sharp/Lanczos, no API cost).
 // Accepts a single image file + desired scale, returns the upscaled
