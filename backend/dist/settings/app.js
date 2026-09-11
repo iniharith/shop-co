@@ -50,6 +50,7 @@ const audit_middleware_1 = require("../presentation/middlewares/audit.middleware
 const bandwidthTracker_1 = require("../shared/utils/bandwidthTracker");
 const crypto_1 = require("crypto");
 const mongoose_1 = __importDefault(require("mongoose"));
+const requestTelemetry_1 = require("../shared/utils/requestTelemetry");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const corsOptions = {
@@ -84,6 +85,7 @@ app.use((req, res, next) => {
     res.setHeader('X-Request-ID', req.requestId);
     next();
 });
+app.use(requestTelemetry_1.requestTelemetryMiddleware);
 app.use((0, cors_1.default)(corsOptions));
 app.use(bandwidthTracker_1.bandwidthMiddleware);
 app.use((0, cookie_parser_1.default)());

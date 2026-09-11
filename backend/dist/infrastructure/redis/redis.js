@@ -31,6 +31,17 @@ class RedisService {
         var _a;
         return ((_a = this.redis) === null || _a === void 0 ? void 0 : _a.status) === 'ready';
     }
+    getStatus() {
+        var _a;
+        return ((_a = this.redis) === null || _a === void 0 ? void 0 : _a.status) || 'disabled';
+    }
+    ping() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.redis)
+                return false;
+            return (yield this.redis.ping()) === 'PONG';
+        });
+    }
     set(key, value, ttl) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.redis)

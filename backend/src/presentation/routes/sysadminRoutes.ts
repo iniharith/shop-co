@@ -14,6 +14,7 @@ import fs from 'fs/promises';
 import { Task } from '../../domain/entities/Task';
 import { FileUpload } from '../../domain/entities/FileUpload';
 import { bandwidthHistory } from '../../shared/utils/bandwidthTracker';
+import { getOperationalTelemetry } from '../../shared/utils/requestTelemetry';
 import path from 'path';
 import OrderModel from '../../infrastructure/db/models/order.model';
 import { parcelRepository } from '../../infrastructure/repositories/ParcelRepository';
@@ -24,17 +25,87 @@ import User from '../../infrastructure/db/models/user.model';
 import { aggregateCompletionAnalytics, COMPLETION_STATUSES } from '../../shared/utils/queueAnalytics';
 
 import { getOnlineUsersCount } from '../../infrastructure/socket/socketHandler';
+import { RedisService } from '../../infrastructure/redis/redis';
 
 const router = Router();
+const redisService = new RedisService();
 
-router.get('/online-users', (req: Request, res: Response) => {
+type OpsState = 'healthy' | 'degraded' | 'down' | 'stale' | 'not_configured';
+type OpsStatus = {
+  configured: boolean;
+  state: OpsState;
+  checkedAt: string | null;
+  latencyMs: number | null;
+  detail?: Record<string, string | number | boolean | null>;
+};
+
+const probeCache = new Map<string, {
+  value?: OpsStatus;
+  expiresAt: number;
+  pending?: Promise<OpsStatus>;
+  hasSuccessfulResult?: boolean;
+}>();
+const PROBE_TTL_MS = 30_000;
+const PROBE_TIMEOUT_MS = 6_000;
+
+const cachedProbe = async (
+  name: string,
+  configured: boolean,
+  probe: () => Promise<{ state?: Exclude<OpsState, 'stale' | 'not_configured'>; detail?: OpsStatus['detail'] }>,
+): Promise<OpsStatus> => {
+  if (!configured) return { configured: false, state: 'not_configured', checkedAt: null, latencyMs: null };
+  const now = Date.now();
+  const cached = probeCache.get(name);
+  if (cached?.value && cached.expiresAt > now) return cached.value;
+  if (cached?.pending) return cached.pending;
+
+  const pending = (async () => {
+    const started = process.hrtime.bigint();
     try {
-        const count = getOnlineUsersCount();
-        res.status(200).json({ count });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch online users count' });
+      let timeout: NodeJS.Timeout | undefined;
+      const result = await Promise.race([
+        probe(),
+        new Promise<never>((_resolve, reject) => {
+          timeout = setTimeout(() => reject(new Error('Probe timed out')), PROBE_TIMEOUT_MS);
+          timeout.unref();
+        }),
+      ]).finally(() => {
+        if (timeout) clearTimeout(timeout);
+      });
+      const value: OpsStatus = {
+        configured: true,
+        state: result.state || 'healthy',
+        checkedAt: new Date().toISOString(),
+        latencyMs: Math.round(Number(process.hrtime.bigint() - started) / 1_000_000),
+        ...(result.detail ? { detail: result.detail } : {}),
+      };
+      probeCache.set(name, { value, expiresAt: Date.now() + PROBE_TTL_MS, hasSuccessfulResult: true });
+      return value;
+    } catch {
+      const value: OpsStatus = cached?.value && cached.hasSuccessfulResult
+        ? { ...cached.value, state: 'stale' }
+        : {
+            configured: true,
+            state: 'down',
+            checkedAt: new Date().toISOString(),
+            latencyMs: Math.round(Number(process.hrtime.bigint() - started) / 1_000_000),
+          };
+      probeCache.set(name, {
+        value,
+        expiresAt: Date.now() + PROBE_TTL_MS,
+        hasSuccessfulResult: Boolean(cached?.hasSuccessfulResult),
+      });
+      return value;
     }
-});
+  })();
+  probeCache.set(name, {
+    value: cached?.value,
+    expiresAt: cached?.expiresAt || 0,
+    pending,
+    hasSuccessfulResult: cached?.hasSuccessfulResult,
+  });
+  return pending;
+};
 
 // Middleware to restrict to sysadmin, admin, boss role
 const requireSysadmin = (req: any, res: Response, next: any) => {
@@ -47,6 +118,84 @@ const requireSysadmin = (req: any, res: Response, next: any) => {
 
 router.use(authMiddilware);
 router.use(requireSysadmin);
+
+router.get('/online-users', (_req: Request, res: Response) => {
+  res.status(200).json({ count: getOnlineUsersCount() });
+});
+
+// Normalized, bounded operational data for the Monitoring dashboard.
+router.get(
+  '/ops-overview',
+  asyncHandler(async (_req: Request, res: Response) => {
+    const mongoConfigured = Boolean(process.env.MONGO_URI);
+    const redisConfigured = Boolean(process.env.REDIS_URL || process.env.REDIS_PUBLIC_URL || process.env.REDIS_HOST);
+    const s3Configured = Boolean(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && S3_BUCKET_NAME);
+    const vercelConfigured = Boolean(process.env.VERCEL_ACCESS_TOKEN && process.env.VERCEL_PROJECT_ID);
+    const railwayConfigured = Boolean(process.env.RAILWAY_API_TOKEN);
+
+    const [mongo, redis, s3, vercel, railway] = await Promise.all([
+      cachedProbe('mongo', mongoConfigured, async () => {
+        if (mongoose.connection.readyState !== 1 || !mongoose.connection.db) throw new Error('Mongo unavailable');
+        await mongoose.connection.db.admin().command({ ping: 1 });
+        return { detail: { connectionState: 'connected' } };
+      }),
+      cachedProbe('redis', redisConfigured, async () => {
+        if (!(await redisService.ping())) throw new Error('Redis unavailable');
+        return { detail: { connectionState: redisService.getStatus() } };
+      }),
+      cachedProbe('s3', s3Configured, async () => {
+        await s3Client.send(new HeadBucketCommand({ Bucket: S3_BUCKET_NAME }));
+        return { detail: { reachable: true } };
+      }),
+      cachedProbe('vercel', vercelConfigured, async () => {
+        const response = await axios.get('https://api.vercel.com/v6/deployments', {
+          params: { projectId: process.env.VERCEL_PROJECT_ID, limit: 1 },
+          headers: { Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}` },
+          timeout: 5_000,
+        });
+        const latest = response.data?.deployments?.[0];
+        const deploymentState = typeof latest?.readyState === 'string' ? latest.readyState : 'UNKNOWN';
+        const state = deploymentState === 'READY'
+          ? 'healthy'
+          : ['BUILDING', 'QUEUED', 'INITIALIZING'].includes(deploymentState) ? 'degraded' : 'down';
+        return {
+          state,
+          detail: {
+            deploymentState,
+            deployedAt: latest?.createdAt ? new Date(latest.createdAt).toISOString() : null,
+          },
+        };
+      }),
+      cachedProbe('railway', railwayConfigured, async () => {
+        const response = await axios.post(
+          'https://backboard.railway.app/graphql/v2',
+          { query: 'query { me { name } }' },
+          { headers: { Authorization: `Bearer ${process.env.RAILWAY_API_TOKEN}` }, timeout: 5_000 },
+        );
+        if (response.data?.errors || !response.data?.data?.me) throw new Error('Railway unavailable');
+        return {
+          detail: {
+            environment: process.env.RAILWAY_ENVIRONMENT_NAME || 'unknown',
+            runtimeDetected: Boolean(process.env.RAILWAY_ENVIRONMENT_ID || process.env.RAILWAY_PROJECT_ID),
+          },
+        };
+      }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        generatedAt: new Date().toISOString(),
+        telemetry: getOperationalTelemetry(),
+        dependencies: { mongo, redis, s3, vercel, railway },
+        network: {
+          sampleIntervalSeconds: 5,
+          bandwidth: bandwidthHistory.slice(-60),
+        },
+      },
+    });
+  }),
+);
 
 // ─── GET /api/sysadmin/health ─────────────────────────
 router.get(

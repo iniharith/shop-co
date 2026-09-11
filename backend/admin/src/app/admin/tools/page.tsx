@@ -22,6 +22,7 @@ type Section = {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   accentChip: string;
+  code: string;
   tools: Tool[];
 };
 
@@ -29,7 +30,8 @@ const toolSections: Section[] = [
   {
     label: "Reports & Analytics",
     icon: ChartNoAxesCombined,
-    accentChip: "border-blue-400/20 bg-blue-500/10 text-blue-300",
+    accentChip: "border-blue-500/25 bg-blue-500/10 text-blue-700 dark:text-blue-300",
+    code: "01 / INSIGHT",
     tools: [
       {
         title: "Staff Reports",
@@ -57,7 +59,8 @@ const toolSections: Section[] = [
   {
     label: "Logs & Monitoring",
     icon: Activity,
-    accentChip: "border-emerald-400/20 bg-emerald-500/10 text-emerald-300",
+    accentChip: "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    code: "02 / OBSERVE",
     tools: [
       {
         title: "Website Logs",
@@ -86,7 +89,8 @@ const toolSections: Section[] = [
   {
     label: "Media & Production",
     icon: Sparkles,
-    accentChip: "border-violet-400/20 bg-violet-500/10 text-violet-300",
+    accentChip: "border-violet-500/25 bg-violet-500/10 text-violet-700 dark:text-violet-300",
+    code: "03 / CREATE",
     tools: [
       {
         title: "Image Upscale",
@@ -107,14 +111,14 @@ const toolSections: Section[] = [
 ];
 
 const colorMap: Record<string, string> = {
-  rose: "border-rose-400/20 bg-gradient-to-br from-rose-500/25 to-rose-500/[0.03] text-rose-300",
-  blue: "border-blue-400/20 bg-gradient-to-br from-blue-500/25 to-blue-500/[0.03] text-blue-300",
-  indigo: "border-indigo-400/20 bg-gradient-to-br from-indigo-500/25 to-indigo-500/[0.03] text-indigo-300",
-  cyan: "border-cyan-400/20 bg-gradient-to-br from-cyan-500/25 to-cyan-500/[0.03] text-cyan-300",
-  violet: "border-violet-400/20 bg-gradient-to-br from-violet-500/25 to-violet-500/[0.03] text-violet-300",
-  emerald: "border-emerald-400/20 bg-gradient-to-br from-emerald-500/25 to-emerald-500/[0.03] text-emerald-300",
-  amber: "border-amber-400/20 bg-gradient-to-br from-amber-500/25 to-amber-500/[0.03] text-amber-300",
-  green: "border-green-400/20 bg-gradient-to-br from-green-500/25 to-green-500/[0.03] text-green-300",
+  rose: "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+  blue: "border-blue-500/25 bg-blue-500/10 text-blue-700 dark:text-blue-300",
+  indigo: "border-indigo-500/25 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300",
+  cyan: "border-cyan-500/25 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
+  violet: "border-violet-500/25 bg-violet-500/10 text-violet-700 dark:text-violet-300",
+  emerald: "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  amber: "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  green: "border-green-500/25 bg-green-500/10 text-green-700 dark:text-green-300",
 };
 
 export default function ToolsPage() {
@@ -166,110 +170,145 @@ export default function ToolsPage() {
 
   return (
     <PageContainer>
-      <div className="w-full space-y-7 rounded-3xl border border-white/10 bg-background/40 p-5 shadow-xl backdrop-blur-md md:p-8">
-        {/* Header */}
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary">Workspace Tools</p>
-            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Admin Utilities</h1>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-              Operational utilities, infrastructure monitoring and internal reports — all in one place.
-            </p>
-          </div>
-          <div className="shrink-0 rounded-2xl border border-white/10 bg-card/60 px-6 py-4 text-right">
-            <p className="text-3xl font-bold tabular-nums">{totalTools}</p>
-            <p className="mt-0.5 text-xs uppercase tracking-wider text-muted-foreground">tools available</p>
-          </div>
-        </div>
+      <main className="relative w-full min-w-0 overflow-hidden rounded-[28px] border border-border/70 bg-background/55 shadow-xl backdrop-blur-sm">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-[0.16] [background-image:linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] [background-size:34px_34px] [mask-image:linear-gradient(to_bottom,black,transparent_48%)]"
+        />
 
-        {/* Tool sections */}
-        {visibleSections.map(section => {
-          const SectionIcon = section.icon;
-          return (
-            <section key={section.label}>
-              <div className="mb-4 flex items-center gap-3">
-                <span className={`flex size-7 items-center justify-center rounded-lg border ${section.accentChip}`}>
-                  <SectionIcon className="size-3.5" />
-                </span>
-                <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                  {section.label}
-                </h2>
-                <span className="text-[11px] tabular-nums text-muted-foreground">{section.tools.length}</span>
-                <div aria-hidden className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
+        <header className="relative grid min-h-[290px] border-b border-border/70 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.55fr)]">
+          <div className="flex flex-col justify-between gap-12 p-5 sm:p-7 lg:p-10">
+            <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
+              <span className="relative flex size-2">
+                <span className="absolute inline-flex size-full rounded-full bg-emerald-500/35" />
+                <span className="relative inline-flex size-2 rounded-full bg-emerald-600 dark:bg-emerald-400" />
+              </span>
+              Workspace index / available
+            </div>
+
+            <div>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-primary">Admin workspace</p>
+              <h1 className="max-w-3xl [font-family:var(--font-space-grotesk)] text-4xl font-bold leading-[0.96] tracking-[-0.04em] sm:text-5xl lg:text-6xl">
+                Tools &amp; utilities
+              </h1>
+              <p className="mt-5 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                Operational utilities, infrastructure monitoring and internal reports, organized for quick access.
+              </p>
+            </div>
+          </div>
+
+          <div className="relative flex min-h-48 items-center justify-center overflow-hidden border-t border-border/70 bg-card/35 p-6 lg:min-h-0 lg:border-l lg:border-t-0">
+            <div aria-hidden="true" className="absolute size-64 rounded-full border border-primary/10" />
+            <div aria-hidden="true" className="absolute size-44 rounded-full border border-dashed border-primary/20" />
+            <div aria-hidden="true" className="absolute size-24 rounded-full border border-primary/25 bg-primary/[0.03]" />
+            <div aria-hidden="true" className="absolute h-px w-full bg-border/60" />
+            <div aria-hidden="true" className="absolute h-full w-px bg-border/60" />
+            <div className="relative z-10 rounded-2xl border border-border/80 bg-background/80 px-8 py-6 text-center shadow-lg">
+              <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Available modules</p>
+              <p className="mt-2 [font-family:var(--font-space-grotesk)] text-5xl font-bold tabular-nums tracking-tight">{String(totalTools).padStart(2, "0")}</p>
+              <div className="mx-auto mt-3 h-px w-10 bg-primary" />
+              <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.2em] text-primary">Role-filtered view</p>
+            </div>
+          </div>
+        </header>
+
+        <div className="relative space-y-9 p-4 sm:p-6 lg:p-8">
+          <section aria-labelledby="backup-title" className="relative overflow-hidden rounded-2xl border border-teal-600/25 bg-gradient-to-r from-teal-500/10 via-card/70 to-card/45 shadow-sm">
+            <div aria-hidden="true" className="absolute -right-16 -top-24 size-64 rounded-full border border-teal-500/15" />
+            <div aria-hidden="true" className="absolute -right-6 -top-14 size-44 rounded-full border border-dashed border-teal-500/20" />
+            <div className="relative grid gap-6 p-5 sm:p-7 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center">
+              <div className="flex size-14 items-center justify-center rounded-xl border border-teal-500/25 bg-teal-500/10 text-teal-700 shadow-sm dark:text-teal-300">
+                <Database className="size-6" />
               </div>
-
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                {section.tools.map(tool => {
-                  const Icon = tool.icon;
-                  const chip = colorMap[tool.color] || colorMap.blue;
-                  return (
-                    <div key={tool.href}>
-                      <Link
-                        href={tool.href}
-                        className="group relative flex min-h-[210px] cursor-pointer flex-col justify-between overflow-hidden rounded-[28px] border border-white/10 bg-card/60 p-6 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-2xl"
-                      >
-                        <div className="relative">
-                          <div
-                            className={`mb-5 flex size-12 items-center justify-center rounded-2xl border transition-transform duration-300 group-hover:scale-110 ${chip}`}
-                          >
-                            <Icon className="size-5" />
-                          </div>
-                          <h3 className="mb-2 text-lg font-semibold">{tool.title}</h3>
-                          <p className="text-sm leading-relaxed text-muted-foreground">{tool.description}</p>
-                        </div>
-
-                        <div className="relative mt-6 flex items-center justify-between border-t border-white/10 pt-4">
-                          <span className="text-xs font-semibold tracking-wide text-primary transition-opacity duration-300 group-hover:opacity-80">
-                            Launch tool
-                          </span>
-                          <span className="flex size-8 items-center justify-center rounded-full border border-white/10 bg-card/60 text-muted-foreground transition-all duration-300 group-hover:border-primary/40 group-hover:text-primary">
-                            <ArrowUpRight className="size-3.5 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-                          </span>
-                        </div>
-                      </Link>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          );
-        })}
-
-        <section>
-          <div className="mb-4 flex items-center gap-3">
-            <span className="flex size-7 items-center justify-center rounded-lg border border-teal-400/20 bg-teal-500/10 text-teal-300">
-              <Database className="size-3.5" />
-            </span>
-            <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Data Protection</h2>
-            <span className="text-[11px] tabular-nums text-muted-foreground">1</span>
-            <div aria-hidden className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
-          </div>
-
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            <div className="flex min-h-[230px] flex-col justify-between overflow-hidden rounded-[28px] border border-white/10 bg-card/60 p-6 shadow-lg">
-              <div>
-                <div className="mb-5 flex size-12 items-center justify-center rounded-2xl border border-teal-400/20 bg-gradient-to-br from-teal-500/25 to-teal-500/[0.03] text-teal-300">
-                  <Database className="size-5" />
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-teal-700 dark:text-teal-300">Featured secure action</p>
+                  <span className="rounded-full border border-border/70 bg-background/60 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-muted-foreground">Archive .gz</span>
                 </div>
-                <h3 className="mb-2 text-lg font-semibold">Database Backup</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">
+                <h2 id="backup-title" className="mt-2 [font-family:var(--font-space-grotesk)] text-2xl font-bold tracking-tight">Database Backup</h2>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
                   Download a compressed logical copy of the database and stored settings.
                 </p>
-                <p className="mt-3 text-xs leading-relaxed text-amber-300/80">
+                <p className="mt-3 text-xs leading-5 text-amber-700 dark:text-amber-300">
                   Sensitive data. Store the downloaded file securely. S3 uploads are not included.
                 </p>
               </div>
-
-              <div className="mt-6 border-t border-white/10 pt-4">
-                <Button className="w-full" onClick={downloadDatabaseBackup} disabled={isBackingUp || !token}>
-                  {isBackingUp ? <Loader2 className="animate-spin" /> : <Download />}
-                  {isBackingUp ? "Preparing backup..." : "Download backup"}
-                </Button>
-              </div>
+              <Button
+                size="lg"
+                className="min-h-12 w-full rounded-xl px-6 shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 lg:w-auto"
+                onClick={downloadDatabaseBackup}
+                disabled={isBackingUp || !token}
+              >
+                {isBackingUp ? <Loader2 className="animate-spin" /> : <Download />}
+                {isBackingUp ? "Preparing backup..." : "Download backup"}
+              </Button>
             </div>
+          </section>
+
+          <div className="space-y-10">
+            {visibleSections.map(section => {
+              const SectionIcon = section.icon;
+              return (
+                <section key={section.label} aria-labelledby={`section-${section.code.slice(0, 2)}`}>
+                  <div className="mb-4 grid grid-cols-[auto_1fr_auto] items-center gap-3">
+                    <span className={`flex size-9 items-center justify-center rounded-lg border ${section.accentChip}`}>
+                      <SectionIcon className="size-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">{section.code}</p>
+                      <h2 id={`section-${section.code.slice(0, 2)}`} className="truncate [font-family:var(--font-space-grotesk)] text-base font-bold tracking-tight sm:text-lg">
+                        {section.label}
+                      </h2>
+                    </div>
+                    <span className="rounded-full border border-border/70 bg-card/55 px-2.5 py-1 font-mono text-[10px] tabular-nums text-muted-foreground">
+                      {String(section.tools.length).padStart(2, "0")}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-border/70 bg-border/70 sm:grid-cols-2 xl:grid-cols-3">
+                    {section.tools.map((tool, index) => {
+                      const Icon = tool.icon;
+                      const chip = colorMap[tool.color] || colorMap.blue;
+                      return (
+                        <Link
+                          key={tool.href}
+                          href={tool.href}
+                          className="group relative flex min-h-52 touch-manipulation flex-col justify-between bg-card/85 p-5 transition-colors hover:bg-accent/70 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:p-6"
+                        >
+                          <div>
+                            <div className="mb-7 flex items-start justify-between gap-4">
+                              <span className={`flex size-11 items-center justify-center rounded-xl border ${chip}`}>
+                                <Icon className="size-5" />
+                              </span>
+                              <span className="font-mono text-[9px] tabular-nums tracking-[0.18em] text-muted-foreground/70">
+                                {section.code.slice(0, 2)}.{String(index + 1).padStart(2, "0")}
+                              </span>
+                            </div>
+                            <h3 className="[font-family:var(--font-space-grotesk)] text-lg font-bold tracking-tight transition-colors group-hover:text-primary">{tool.title}</h3>
+                            <p className="mt-2 text-sm leading-6 text-muted-foreground">{tool.description}</p>
+                          </div>
+
+                          <div className="mt-7 flex items-center justify-between border-t border-border/70 pt-4">
+                            <span className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-primary">Open module</span>
+                            <span className="flex size-8 items-center justify-center rounded-full border border-border bg-background/50 text-muted-foreground transition-colors group-hover:border-primary/35 group-hover:text-primary">
+                              <ArrowUpRight className="size-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                            </span>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
           </div>
-        </section>
-      </div>
+
+          <footer className="flex flex-col gap-2 border-t border-border/70 pt-5 font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+            <span>Workspace tools / {String(totalTools).padStart(2, "0")} available</span>
+            <span>Visibility follows account role</span>
+          </footer>
+        </div>
+      </main>
     </PageContainer>
   );
 }

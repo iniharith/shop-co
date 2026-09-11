@@ -61,6 +61,7 @@ const promises_1 = __importDefault(require("fs/promises"));
 const Task_1 = require("../../domain/entities/Task");
 const FileUpload_1 = require("../../domain/entities/FileUpload");
 const bandwidthTracker_1 = require("../../shared/utils/bandwidthTracker");
+const requestTelemetry_1 = require("../../shared/utils/requestTelemetry");
 const order_model_1 = __importDefault(require("../../infrastructure/db/models/order.model"));
 const ParcelRepository_1 = require("../../infrastructure/repositories/ParcelRepository");
 const FileUploadRepository_1 = require("../../infrastructure/repositories/FileUploadRepository");
@@ -69,15 +70,62 @@ const TaskRepository_1 = require("../../infrastructure/repositories/TaskReposito
 const user_model_1 = __importDefault(require("../../infrastructure/db/models/user.model"));
 const queueAnalytics_1 = require("../../shared/utils/queueAnalytics");
 const socketHandler_1 = require("../../infrastructure/socket/socketHandler");
+const redis_1 = require("../../infrastructure/redis/redis");
 const router = (0, express_1.Router)();
-router.get('/online-users', (req, res) => {
-    try {
-        const count = (0, socketHandler_1.getOnlineUsersCount)();
-        res.status(200).json({ count });
-    }
-    catch (error) {
-        res.status(500).json({ error: 'Failed to fetch online users count' });
-    }
+const redisService = new redis_1.RedisService();
+const probeCache = new Map();
+const PROBE_TTL_MS = 30000;
+const PROBE_TIMEOUT_MS = 6000;
+const cachedProbe = (name, configured, probe) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!configured)
+        return { configured: false, state: 'not_configured', checkedAt: null, latencyMs: null };
+    const now = Date.now();
+    const cached = probeCache.get(name);
+    if ((cached === null || cached === void 0 ? void 0 : cached.value) && cached.expiresAt > now)
+        return cached.value;
+    if (cached === null || cached === void 0 ? void 0 : cached.pending)
+        return cached.pending;
+    const pending = (() => __awaiter(void 0, void 0, void 0, function* () {
+        const started = process.hrtime.bigint();
+        try {
+            let timeout;
+            const result = yield Promise.race([
+                probe(),
+                new Promise((_resolve, reject) => {
+                    timeout = setTimeout(() => reject(new Error('Probe timed out')), PROBE_TIMEOUT_MS);
+                    timeout.unref();
+                }),
+            ]).finally(() => {
+                if (timeout)
+                    clearTimeout(timeout);
+            });
+            const value = Object.assign({ configured: true, state: result.state || 'healthy', checkedAt: new Date().toISOString(), latencyMs: Math.round(Number(process.hrtime.bigint() - started) / 1000000) }, (result.detail ? { detail: result.detail } : {}));
+            probeCache.set(name, { value, expiresAt: Date.now() + PROBE_TTL_MS, hasSuccessfulResult: true });
+            return value;
+        }
+        catch (_a) {
+            const value = (cached === null || cached === void 0 ? void 0 : cached.value) && cached.hasSuccessfulResult
+                ? Object.assign(Object.assign({}, cached.value), { state: 'stale' }) : {
+                configured: true,
+                state: 'down',
+                checkedAt: new Date().toISOString(),
+                latencyMs: Math.round(Number(process.hrtime.bigint() - started) / 1000000),
+            };
+            probeCache.set(name, {
+                value,
+                expiresAt: Date.now() + PROBE_TTL_MS,
+                hasSuccessfulResult: Boolean(cached === null || cached === void 0 ? void 0 : cached.hasSuccessfulResult),
+            });
+            return value;
+        }
+    }))();
+    probeCache.set(name, {
+        value: cached === null || cached === void 0 ? void 0 : cached.value,
+        expiresAt: (cached === null || cached === void 0 ? void 0 : cached.expiresAt) || 0,
+        pending,
+        hasSuccessfulResult: cached === null || cached === void 0 ? void 0 : cached.hasSuccessfulResult,
+    });
+    return pending;
 });
 // Middleware to restrict to sysadmin, admin, boss role
 const requireSysadmin = (req, res, next) => {
@@ -90,6 +138,78 @@ const requireSysadmin = (req, res, next) => {
 };
 router.use(auth_middileware_1.default);
 router.use(requireSysadmin);
+router.get('/online-users', (_req, res) => {
+    res.status(200).json({ count: (0, socketHandler_1.getOnlineUsersCount)() });
+});
+// Normalized, bounded operational data for the Monitoring dashboard.
+router.get('/ops-overview', (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const mongoConfigured = Boolean(process.env.MONGO_URI);
+    const redisConfigured = Boolean(process.env.REDIS_URL || process.env.REDIS_PUBLIC_URL || process.env.REDIS_HOST);
+    const s3Configured = Boolean(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && s3_1.S3_BUCKET_NAME);
+    const vercelConfigured = Boolean(process.env.VERCEL_ACCESS_TOKEN && process.env.VERCEL_PROJECT_ID);
+    const railwayConfigured = Boolean(process.env.RAILWAY_API_TOKEN);
+    const [mongo, redis, s3, vercel, railway] = yield Promise.all([
+        cachedProbe('mongo', mongoConfigured, () => __awaiter(void 0, void 0, void 0, function* () {
+            if (mongoose_1.default.connection.readyState !== 1 || !mongoose_1.default.connection.db)
+                throw new Error('Mongo unavailable');
+            yield mongoose_1.default.connection.db.admin().command({ ping: 1 });
+            return { detail: { connectionState: 'connected' } };
+        })),
+        cachedProbe('redis', redisConfigured, () => __awaiter(void 0, void 0, void 0, function* () {
+            if (!(yield redisService.ping()))
+                throw new Error('Redis unavailable');
+            return { detail: { connectionState: redisService.getStatus() } };
+        })),
+        cachedProbe('s3', s3Configured, () => __awaiter(void 0, void 0, void 0, function* () {
+            yield s3_1.s3Client.send(new client_s3_1.HeadBucketCommand({ Bucket: s3_1.S3_BUCKET_NAME }));
+            return { detail: { reachable: true } };
+        })),
+        cachedProbe('vercel', vercelConfigured, () => __awaiter(void 0, void 0, void 0, function* () {
+            var _a, _b;
+            const response = yield axios_1.default.get('https://api.vercel.com/v6/deployments', {
+                params: { projectId: process.env.VERCEL_PROJECT_ID, limit: 1 },
+                headers: { Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}` },
+                timeout: 5000,
+            });
+            const latest = (_b = (_a = response.data) === null || _a === void 0 ? void 0 : _a.deployments) === null || _b === void 0 ? void 0 : _b[0];
+            const deploymentState = typeof (latest === null || latest === void 0 ? void 0 : latest.readyState) === 'string' ? latest.readyState : 'UNKNOWN';
+            const state = deploymentState === 'READY'
+                ? 'healthy'
+                : ['BUILDING', 'QUEUED', 'INITIALIZING'].includes(deploymentState) ? 'degraded' : 'down';
+            return {
+                state,
+                detail: {
+                    deploymentState,
+                    deployedAt: (latest === null || latest === void 0 ? void 0 : latest.createdAt) ? new Date(latest.createdAt).toISOString() : null,
+                },
+            };
+        })),
+        cachedProbe('railway', railwayConfigured, () => __awaiter(void 0, void 0, void 0, function* () {
+            var _a, _b, _c;
+            const response = yield axios_1.default.post('https://backboard.railway.app/graphql/v2', { query: 'query { me { name } }' }, { headers: { Authorization: `Bearer ${process.env.RAILWAY_API_TOKEN}` }, timeout: 5000 });
+            if (((_a = response.data) === null || _a === void 0 ? void 0 : _a.errors) || !((_c = (_b = response.data) === null || _b === void 0 ? void 0 : _b.data) === null || _c === void 0 ? void 0 : _c.me))
+                throw new Error('Railway unavailable');
+            return {
+                detail: {
+                    environment: process.env.RAILWAY_ENVIRONMENT_NAME || 'unknown',
+                    runtimeDetected: Boolean(process.env.RAILWAY_ENVIRONMENT_ID || process.env.RAILWAY_PROJECT_ID),
+                },
+            };
+        })),
+    ]);
+    res.json({
+        success: true,
+        data: {
+            generatedAt: new Date().toISOString(),
+            telemetry: (0, requestTelemetry_1.getOperationalTelemetry)(),
+            dependencies: { mongo, redis, s3, vercel, railway },
+            network: {
+                sampleIntervalSeconds: 5,
+                bandwidth: bandwidthTracker_1.bandwidthHistory.slice(-60),
+            },
+        },
+    });
+})));
 // ─── GET /api/sysadmin/health ─────────────────────────
 router.get('/health', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;

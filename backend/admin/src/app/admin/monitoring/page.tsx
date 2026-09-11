@@ -1,336 +1,90 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Activity,
-  Gauge,
-  LayoutDashboard,
-  RefreshCw,
-  Smartphone,
-  Monitor,
-} from "lucide-react";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import type { WebVitalsDays, WebVitalsStats, WebVitalsSummaryItem } from "@/api/webVitals";
+import { useEffect, useMemo, useState } from "react";
+import { Activity, AlertTriangle, CheckCircle2, Clock3, Database, Gauge, Globe2, HardDrive, Monitor, RefreshCw, Server, Smartphone, Wifi, XCircle, Zap } from "lucide-react";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { WebVitalsDays, WebVitalsStats, WebVitalsSummaryItem } from "@/api/webVitals";
+import { OpsStatus } from "@/api/ops";
 import PageContainer from "@/components/layout/page-container";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useOpsOverview } from "@/hooks/useOpsOverview";
 import { useWebVitalsStats } from "@/hooks/useWebVitals";
 
 const dayOptions: WebVitalsDays[] = [7, 14, 30, 60, 90];
-
-const METRIC_CONFIG: Record<string, { label: string; unit: string; good: number; poor: number; description: string }> = {
-  lcp: { label: "LCP", unit: "ms", good: 2500, poor: 4000, description: "Largest Contentful Paint" },
-  inp: { label: "INP", unit: "ms", good: 200, poor: 500, description: "Interaction to Next Paint" },
-  cls: { label: "CLS", unit: "", good: 0.1, poor: 0.25, description: "Cumulative Layout Shift" },
-  fcp: { label: "FCP", unit: "ms", good: 1800, poor: 3000, description: "First Contentful Paint" },
-  ttfb: { label: "TTFB", unit: "ms", good: 800, poor: 1800, description: "Time to First Byte" },
+const metrics: Record<string, { label: string; unit: string; good: number; poor: number }> = {
+  lcp: { label: "LCP", unit: "ms", good: 2500, poor: 4000 }, inp: { label: "INP", unit: "ms", good: 200, poor: 500 },
+  cls: { label: "CLS", unit: "", good: 0.1, poor: 0.25 }, fcp: { label: "FCP", unit: "ms", good: 1800, poor: 3000 }, ttfb: { label: "TTFB", unit: "ms", good: 800, poor: 1800 },
 };
 
-const ratingFor = (metric: string, value: number | null) => {
-  if (value === null) return "none";
-  const config = METRIC_CONFIG[metric];
-  if (value <= config.good) return "good";
-  if (value <= config.poor) return "needs-improvement";
-  return "poor";
+const formatBytes = (value = 0) => {
+  if (!value) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const index = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1);
+  return `${(value / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`;
 };
+const formatUptime = (seconds = 0) => `${Math.floor(seconds / 86400)}d ${Math.floor(seconds / 3600) % 24}h ${Math.floor(seconds / 60) % 60}m`;
+const statusLabel = (state: OpsStatus["state"]) => state === "not_configured" ? "Not configured" : state.replace("_", " ");
+const statusClass = (state: OpsStatus["state"]) => ({ healthy: "text-emerald-600 dark:text-emerald-300", degraded: "text-amber-600 dark:text-amber-300", down: "text-red-600 dark:text-red-300", stale: "text-amber-600 dark:text-amber-300", not_configured: "text-muted-foreground" }[state]);
+const statusIcon = (state: OpsStatus["state"]) => state === "healthy" ? CheckCircle2 : state === "not_configured" ? Clock3 : state === "down" ? XCircle : AlertTriangle;
+const ratingFor = (metric: string, value: number | null) => { const config = metrics[metric]; if (value === null || !config) return "none"; return value <= config.good ? "good" : value <= config.poor ? "needs-improvement" : "poor"; };
+const formatMetric = (metric: string, value: number | null) => value === null ? "—" : metric === "cls" ? value.toFixed(3) : `${Math.round(value)} ms`;
 
-const formatValue = (metric: string, value: number | null) => {
-  if (value === null) return "—";
-  const config = METRIC_CONFIG[metric];
-  if (metric === "cls") return value.toFixed(3);
-  return config.unit === "ms" ? `${Math.round(value)} ms` : String(value);
-};
+function GlassCard({ className = "", children }: { className?: string; children: React.ReactNode }) {
+  return <Card className={`overflow-hidden border-border/70 bg-card/55 shadow-sm backdrop-blur-md ${className}`}>{children}</Card>;
+}
 
-const ratingBadge = (rating: string) => {
-  if (rating === "good") return <Badge className="bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/15">Good</Badge>;
-  if (rating === "needs-improvement") return <Badge className="bg-amber-500/15 text-amber-600 hover:bg-amber-500/15">Needs Improvement</Badge>;
-  if (rating === "poor") return <Badge className="bg-red-500/15 text-red-600 hover:bg-red-500/15">Poor</Badge>;
-  return <Badge variant="outline">No data</Badge>;
-};
+function DependencyCard({ name, status, icon: Icon }: { name: string; status?: OpsStatus; icon: React.ComponentType<{ className?: string }> }) {
+  const state = status?.state || "not_configured";
+  const StateIcon = statusIcon(state);
+  return <div className="min-w-0 border-r border-border/60 p-4 last:border-r-0">
+    <div className="flex items-center justify-between gap-2"><span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground"><Icon className="size-3.5" />{name}</span><StateIcon className={`size-4 ${statusClass(state)}`} /></div>
+    <p className={`mt-3 truncate font-display text-lg font-bold capitalize ${statusClass(state)}`}>{statusLabel(state)}</p>
+    <p className="mt-1 font-mono text-[10px] text-muted-foreground">{status?.latencyMs !== null && status?.latencyMs !== undefined ? `${status.latencyMs}ms probe` : "awaiting probe"}</p>
+  </div>;
+}
 
-const RATING_COLORS = {
-  good: "#10b981",
-  "needs-improvement": "#f59e0b",
-  poor: "#ef4444",
-};
-
-const isEmpty = (data: WebVitalsStats) => data.totalSamples === 0;
-
-function SummaryCard({ item }: { item: WebVitalsSummaryItem }) {
-  const config = METRIC_CONFIG[item.metric] || { label: item.metric.toUpperCase(), unit: "", good: 0, poor: 0, description: "" };
+function VitalCard({ item }: { item: WebVitalsSummaryItem }) {
+  const config = metrics[item.metric];
+  if (!config) return null;
   const rating = ratingFor(item.metric, item.p75);
-  const p75Bar = Math.min(100, item.p75 !== null && config.good > 0 ? (item.p75 / config.poor) * 100 : 0);
-
-  return (
-    <Card className="shadow-sm">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{config.label}</span>
-          </div>
-          {ratingBadge(rating)}
-        </div>
-        <div className="mt-3 text-2xl font-bold tabular-nums tracking-tight">
-          {formatValue(item.metric, item.p75)}
-          <span className="ml-1 text-sm font-medium text-muted-foreground">p75</span>
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">{config.description}</p>
-        <div className="mt-3">
-          <div className="h-1.5 w-full rounded-full bg-muted">
-            <div
-              className={`h-full rounded-full ${rating === "good" ? "bg-emerald-500" : rating === "needs-improvement" ? "bg-amber-500" : rating === "poor" ? "bg-red-500" : "bg-muted-foreground/30"}`}
-              style={{ width: `${p75Bar}%` }}
-            />
-          </div>
-        </div>
-        <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-          <span>{item.count} samples</span>
-          <span>{item.goodRate !== null ? `${item.goodRate}% good` : "—"}</span>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  return <div className="rounded-2xl border border-border/70 bg-background/45 p-4"><div className="flex items-center justify-between"><span className="font-mono text-xs font-bold tracking-[0.2em] text-muted-foreground">{config.label}</span><Badge variant="outline" className={rating === "good" ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-300" : rating === "poor" ? "border-red-500/30 text-red-600 dark:text-red-300" : "border-amber-500/30 text-amber-600 dark:text-amber-300"}>{rating === "none" ? "No data" : rating}</Badge></div><p className="mt-3 font-display text-2xl font-bold tabular-nums">{formatMetric(item.metric, item.p75)}</p><p className="mt-1 text-xs text-muted-foreground">p75 · {item.count} samples</p><div className="mt-3 h-1 rounded-full bg-muted"><div className={`h-full rounded-full ${rating === "good" ? "bg-emerald-500" : rating === "poor" ? "bg-red-500" : "bg-amber-500"}`} style={{ width: `${Math.min(100, item.goodRate || 0)}%` }} /></div></div>;
 }
 
 export default function MonitoringPage() {
   const [days, setDays] = useState<WebVitalsDays>(30);
-  const [selectedMetric, setSelectedMetric] = useState<string>("lcp");
-  const { data, isPending, isError, isFetching, refetch } = useWebVitalsStats(days);
+  const [selectedMetric, setSelectedMetric] = useState("lcp");
+  const [now, setNow] = useState(new Date());
+  const ops = useOpsOverview();
+  const vitals = useWebVitalsStats(days);
+  useEffect(() => { const timer = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(timer); }, []);
+  const overview = ops.data;
+  const vitalData = vitals.data;
+  const selected = vitalData?.summary.find(item => item.metric === selectedMetric);
+  const trend = useMemo(() => (vitalData?.trend || []).map(row => ({ date: row.date, value: (row as any)[selectedMetric] })), [vitalData, selectedMetric]);
+  const bandwidth = (overview?.network.bandwidth || []).slice(-30).map(row => ({ time: new Date(row.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), inbound: Math.round(row.bytesIn / 1024), outbound: Math.round(row.bytesOut / 1024) }));
+  const request = overview?.telemetry.requests;
+  const process = overview?.telemetry.process;
+  const dependencies = overview?.dependencies;
 
-  const summary = data?.summary || [];
-  const selectedSummary = summary.find(item => item.metric === selectedMetric);
-  const config = METRIC_CONFIG[selectedMetric] || METRIC_CONFIG.lcp;
+  return <PageContainer><main className="relative w-full min-w-0 overflow-hidden rounded-[28px] border border-border/70 bg-background/55 shadow-xl backdrop-blur-sm">
+    <div aria-hidden className="pointer-events-none absolute inset-0 opacity-[0.13] [background-image:linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] [background-size:34px_34px] [mask-image:linear-gradient(to_bottom,black,transparent_60%)]" />
+    <header className="relative border-b border-border/70 p-5 sm:p-7 lg:p-9"><div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"><div><div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground"><span className="size-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,.8)]" />Live observability / production</div><p className="mt-6 text-xs font-semibold uppercase tracking-[0.28em] text-primary">System telemetry</p><h1 className="mt-2 font-display text-4xl font-bold tracking-[-0.04em] sm:text-5xl">Monitoring command center</h1><p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">Real-time application, infrastructure and customer experience signals from this deployment.</p></div><div className="flex flex-wrap items-center gap-2"><span className="rounded-xl border border-border/70 bg-card/55 px-3 py-2 font-mono text-xs tabular-nums text-muted-foreground">{now.toLocaleTimeString([], { hour12: false })}</span><Select value={String(days)} onValueChange={value => setDays(Number(value) as WebVitalsDays)}><SelectTrigger className="w-28 bg-background/60" aria-label="Monitoring time range"><SelectValue /></SelectTrigger><SelectContent>{dayOptions.map(day => <SelectItem key={day} value={String(day)}>{day} days</SelectItem>)}</SelectContent></Select><Button variant="outline" size="icon" onClick={() => { void ops.refetch(); void vitals.refetch(); }} disabled={ops.isFetching || vitals.isFetching} title="Refresh"><RefreshCw className={`size-4 ${(ops.isFetching || vitals.isFetching) ? "animate-spin" : ""}`} /></Button></div></div></header>
 
-  const ratingDistribution = selectedSummary
-    ? [
-        { name: "Good", value: selectedSummary.good, color: RATING_COLORS.good },
-        { name: "Needs Improvement", value: selectedSummary.needsImprovement, color: RATING_COLORS["needs-improvement"] },
-        { name: "Poor", value: selectedSummary.poor, color: RATING_COLORS.poor },
-      ]
-    : [];
+    {ops.isPending ? <div className="grid gap-px bg-border/60 sm:grid-cols-2 lg:grid-cols-5">{[1, 2, 3, 4, 5].map(item => <Skeleton key={item} className="h-28 rounded-none" />)}</div> : ops.isError ? <div className="relative m-5 flex items-center justify-between rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-300"><span>Live telemetry is unavailable. Retry to reconnect.</span><Button size="sm" variant="outline" onClick={() => void ops.refetch()}>Retry</Button></div> : <>
+      <section className="relative grid gap-px border-b border-border/70 bg-border/60 sm:grid-cols-2 lg:grid-cols-5"><DependencyCard name="Vercel" status={dependencies?.vercel} icon={Globe2} /><DependencyCard name="Railway" status={dependencies?.railway} icon={Server} /><DependencyCard name="MongoDB" status={dependencies?.mongo} icon={Database} /><DependencyCard name="Redis" status={dependencies?.redis} icon={Zap} /><DependencyCard name="AWS S3" status={dependencies?.s3} icon={HardDrive} /></section>
+      <div className="relative space-y-5 p-4 sm:p-6 lg:p-8">
+        <section className="grid gap-5 lg:grid-cols-[1.35fr_.65fr]"><GlassCard className="relative min-h-[250px] bg-primary/[0.04]"><CardHeader><div className="flex items-center justify-between"><div><p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary">Signal map / live</p><CardTitle className="mt-2 font-display text-xl">Service fabric</CardTitle></div><Badge variant="outline" className="gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-300"><span className="size-1.5 rounded-full bg-emerald-500" />Connected</Badge></div></CardHeader><CardContent><div className="relative flex h-32 items-center justify-center"><div className="absolute size-32 rounded-full border border-primary/15" /><div className="absolute size-24 rounded-full border border-dashed border-primary/25" /><div className="absolute h-px w-4/5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" /><div className="absolute h-4/5 w-px bg-gradient-to-b from-transparent via-primary/30 to-transparent" /><div className="z-10 rounded-xl border border-primary/30 bg-primary/10 px-5 py-3 text-center"><p className="font-mono text-[9px] uppercase tracking-widest text-primary">API core</p><p className="mt-1 font-display text-lg font-bold">Operational</p></div><span className="absolute left-[12%] top-3 rounded-lg border border-border/70 bg-card/75 px-3 py-2 font-mono text-[9px] text-muted-foreground">VERCEL</span><span className="absolute right-[10%] top-3 rounded-lg border border-border/70 bg-card/75 px-3 py-2 font-mono text-[9px] text-muted-foreground">RAILWAY</span><span className="absolute bottom-2 left-[22%] rounded-lg border border-border/70 bg-card/75 px-3 py-2 font-mono text-[9px] text-muted-foreground">MONGODB</span><span className="absolute bottom-2 right-[22%] rounded-lg border border-border/70 bg-card/75 px-3 py-2 font-mono text-[9px] text-muted-foreground">S3 / REDIS</span></div></CardContent></GlassCard><GlassCard><CardHeader><p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary">Request pulse</p><CardTitle className="mt-2 font-display text-xl">Traffic health</CardTitle></CardHeader><CardContent><p className="font-display text-5xl font-bold tabular-nums">{request?.requestsPerMinute?.toFixed(1) || "0.0"}<span className="ml-2 text-base font-medium text-muted-foreground">req/min</span></p><div className="mt-6 grid grid-cols-2 gap-3 text-xs"><div className="rounded-xl bg-muted/50 p-3"><p className="text-muted-foreground">p95 latency</p><p className="mt-1 font-mono text-lg font-bold">{request?.latencyMs.p95 || 0}ms</p></div><div className="rounded-xl bg-muted/50 p-3"><p className="text-muted-foreground">5xx errors</p><p className={`mt-1 font-mono text-lg font-bold ${request?.serverErrors ? "text-red-500" : "text-emerald-500"}`}>{request?.serverErrors || 0}</p></div></div></CardContent></GlassCard></section>
 
-  const trendData = (data?.trend || []).map(row => ({
-    date: row.date,
-    value: (row as any)[selectedMetric],
-  }));
+        <section className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]"><GlassCard><CardHeader className="flex flex-row items-start justify-between"><div><p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary">Runtime / 5 minute window</p><CardTitle className="mt-2 font-display text-xl">Infrastructure telemetry</CardTitle></div><Activity className="size-5 text-primary" /></CardHeader><CardContent><div className="grid grid-cols-2 gap-3 sm:grid-cols-4"><div><p className="text-xs text-muted-foreground">CPU</p><p className="mt-1 font-display text-2xl font-bold">{process?.cpuPercent || 0}%</p></div><div><p className="text-xs text-muted-foreground">RSS memory</p><p className="mt-1 font-display text-2xl font-bold">{formatBytes(process?.memoryBytes.rss)}</p></div><div><p className="text-xs text-muted-foreground">Event lag p95</p><p className="mt-1 font-display text-2xl font-bold">{process?.eventLoopLagMs.p95 || 0}<span className="text-sm">ms</span></p></div><div><p className="text-xs text-muted-foreground">Process age</p><p className="mt-1 font-display text-2xl font-bold">{formatUptime(process?.uptimeSeconds)}</p></div></div><div className="mt-6 h-40"><ResponsiveContainer width="100%" height="100%"><AreaChart data={bandwidth}><defs><linearGradient id="bandwidthFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity=".28" /><stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" /></linearGradient></defs><CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" /><XAxis dataKey="time" hide /><YAxis hide /><Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12 }} /><Area type="monotone" dataKey="outbound" stroke="hsl(var(--primary))" fill="url(#bandwidthFill)" strokeWidth={2} name="KB out" /></AreaChart></ResponsiveContainer></div><div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-muted-foreground"><span className="flex items-center gap-2"><Wifi className="size-3" />Application bandwidth</span><span>{formatBytes(overview?.network.bandwidth.at(-1)?.bytesOut || 0)} latest sample</span></div></CardContent></GlassCard><GlassCard><CardHeader><p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary">Runtime traces</p><CardTitle className="mt-2 font-display text-xl">Recent activity</CardTitle></CardHeader><CardContent><div className="space-y-3">{(overview?.telemetry.recentTraces || []).slice(0, 6).map(trace => <div key={`${trace.timestamp}-${trace.requestId}`} className="flex items-center gap-3 border-b border-border/60 pb-3 last:border-0"><span className={`size-2 shrink-0 rounded-full ${trace.status >= 500 ? "bg-red-500" : trace.status >= 400 ? "bg-amber-500" : "bg-emerald-500"}`} /><div className="min-w-0 flex-1"><p className="truncate font-mono text-xs">{trace.method} {trace.route}</p><p className="mt-1 font-mono text-[10px] text-muted-foreground">{trace.status} · {trace.durationMs}ms · {new Date(trace.timestamp).toLocaleTimeString()}</p></div></div>)}{!overview?.telemetry.recentTraces.length && <p className="py-8 text-center text-sm text-muted-foreground">No request traces yet.</p>}</div></CardContent></GlassCard></section>
 
-  const totalDevice = (data?.devices.mobile || 0) + (data?.devices.desktop || 0);
-  const deviceData = [
-    { name: "Desktop", value: data?.devices.desktop || 0, color: "#3b82f6" },
-    { name: "Mobile", value: data?.devices.mobile || 0, color: "#8b5cf6" },
-  ];
+        <section><div className="mb-3 flex items-center justify-between"><div><p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary">Customer experience</p><h2 className="mt-1 font-display text-xl font-bold">Web vitals</h2></div><span className="font-mono text-[10px] text-muted-foreground">{vitalData?.totalSamples || 0} samples / {days} days</span></div>{vitals.isPending ? <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{[1, 2, 3, 4, 5].map(item => <Skeleton key={item} className="h-36 rounded-2xl" />)}</div> : vitalData && vitalData.totalSamples > 0 ? <><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{vitalData.summary.map(item => <VitalCard key={item.metric} item={item} />)}</div><GlassCard className="mt-4"><CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3"><div><CardTitle className="font-display">{metrics[selectedMetric]?.label || selectedMetric.toUpperCase()} trend</CardTitle><p className="mt-1 text-xs text-muted-foreground">Daily p75 performance</p></div><div className="flex flex-wrap gap-1">{Object.keys(metrics).map(metric => <button key={metric} onClick={() => setSelectedMetric(metric)} className={`rounded-lg px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider ${selectedMetric === metric ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>{metrics[metric].label}</button>)}</div></CardHeader><CardContent><div className="h-56"><ResponsiveContainer width="100%" height="100%"><AreaChart data={trend}><CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" /><XAxis dataKey="date" tickLine={false} axisLine={false} fontSize={10} /><YAxis tickLine={false} axisLine={false} fontSize={10} /><Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12 }} /><Area type="monotone" dataKey="value" stroke="hsl(var(--primary))" fill="url(#bandwidthFill)" strokeWidth={2} connectNulls /></AreaChart></ResponsiveContainer></div></CardContent></GlassCard></> : <GlassCard><CardContent className="p-8 text-center"><Gauge className="mx-auto size-10 text-muted-foreground/40" /><p className="mt-3 font-display font-bold">No Web Vitals yet</p><p className="mt-1 text-sm text-muted-foreground">Browse the admin to collect real performance samples.</p></CardContent></GlassCard>}</section>
 
-  return (
-    <PageContainer>
-      <main className="w-full min-w-0 space-y-5 pb-8">
-        <header className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-card/55 p-5 shadow-sm backdrop-blur-md sm:flex-row sm:items-end sm:justify-between md:p-6">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Speed Insights</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Monitoring</h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Core Web Vitals collected from real admin sessions — a self-hosted view like the Vercel Speed Insights dashboard.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">Time range</span>
-            <Select value={String(days)} onValueChange={value => setDays(Number(value) as WebVitalsDays)}>
-              <SelectTrigger className="w-32 bg-background/70" aria-label="Monitoring time range">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {dayOptions.map(option => (
-                  <SelectItem key={option} value={String(option)}>{option} days</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching} className="shrink-0" title="Refresh">
-              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-            </Button>
-          </div>
-        </header>
-
-        {isPending ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <Skeleton key={index} className="h-40 rounded-2xl" />
-            ))}
-          </div>
-        ) : isError || !data ? (
-          <Card>
-            <CardContent className="flex flex-col items-center gap-3 p-10 text-center">
-              <Activity className="h-10 w-10 text-muted-foreground/40" />
-              <p className="text-sm font-medium">Could not load monitoring data</p>
-              <Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button>
-            </CardContent>
-          </Card>
-        ) : isEmpty(data) ? (
-          <Card>
-            <CardContent className="flex flex-col items-center gap-3 p-12 text-center">
-              <Gauge className="h-12 w-12 text-muted-foreground/40" />
-              <h3 className="text-lg font-semibold">No data yet</h3>
-              <p className="max-w-md text-sm text-muted-foreground">
-                Web vitals are collected as you browse the admin. Visit a few pages — LCP, CLS, INP, FCP and TTFB will
-                appear here within minutes.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              {summary.map(item => (
-                <SummaryCard key={item.metric} item={item} />
-              ))}
-            </div>
-
-            <div className="grid gap-5 lg:grid-cols-3">
-              {/* Ratings + devices */}
-              <Card className="lg:col-span-1 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-base">{config.label} ratings</CardTitle>
-                  <CardDescription>Distribution of the last {days} days</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={ratingDistribution} layout="vertical" margin={{ left: 8, right: 16 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
-                        <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} fontSize={12} />
-                        <YAxis type="category" dataKey="name" width={110} tickLine={false} axisLine={false} fontSize={12} />
-                        <Tooltip cursor={{ fill: "var(--muted)", opacity: 0.4 }} />
-                        <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-                          {ratingDistribution.map((entry, index) => (
-                            <Cell key={index} fill={entry.color} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  <div className="mt-4 border-t pt-4">
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Devices</p>
-                    {deviceData.map(device => {
-                      const pct = totalDevice > 0 ? Math.round((device.value / totalDevice) * 100) : 0;
-                      return (
-                        <div key={device.name} className="mb-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="flex items-center gap-1.5">
-                              {device.name === "Mobile" ? <Smartphone className="h-3.5 w-3.5" /> : <Monitor className="h-3.5 w-3.5" />}
-                              {device.name}
-                            </span>
-                            <span className="tabular-nums text-muted-foreground">{device.value} ({pct}%)</span>
-                          </div>
-                          <div className="mt-1 h-1.5 w-full rounded-full bg-muted">
-                            <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: device.color }} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Trend */}
-              <Card className="lg:col-span-2 shadow-sm">
-                <CardHeader className="flex flex-row items-start justify-between gap-2">
-                  <div>
-                    <CardTitle className="text-base">{config.label} trend (p75)</CardTitle>
-                    <CardDescription>Median of the 75th percentile per day</CardDescription>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {Object.keys(METRIC_CONFIG).map(metric => (
-                      <button
-                        key={metric}
-                        onClick={() => setSelectedMetric(metric)}
-                        className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
-                          selectedMetric === metric
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        {METRIC_CONFIG[metric].label}
-                      </button>
-                    ))}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={trendData} margin={{ left: 0, right: 8, top: 8 }}>
-                        <defs>
-                          <linearGradient id="metricFill" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.25} />
-                            <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                        <XAxis dataKey="date" tickFormatter={value => {
-                          const parts = String(value).split("-");
-                          return `${parts[1]}/${parts[2]}`;
-                        }} tickLine={false} axisLine={false} fontSize={11} minTickGap={24} />
-                        <YAxis tickLine={false} axisLine={false} fontSize={11} />
-                        <Tooltip formatter={value => [value === null ? "—" : String(value), `${config.label} p75`]} />
-                        <Area type="monotone" dataKey="value" stroke="var(--primary)" strokeWidth={2} fill="url(#metricFill)" connectNulls />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Top routes */}
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
-                  Top routes
-                </CardTitle>
-                <CardDescription>Most visited admin pages and their overall p75</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {data.topRoutes.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-muted-foreground">No route data in this range.</p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Route</TableHead>
-                        <TableHead className="text-right">Samples</TableHead>
-                        <TableHead className="text-right">p75</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {data.topRoutes.map(route => (
-                        <TableRow key={route.route}>
-                          <TableCell className="font-mono text-xs">{route.route}</TableCell>
-                          <TableCell className="text-right tabular-nums">{route.count}</TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {route.p75 === null ? "—" : `${Math.round(route.p75)} ms`}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </>
-        )}
-      </main>
-    </PageContainer>
-  );
+        <GlassCard><CardHeader><CardTitle className="flex items-center gap-2 font-display"><Monitor className="size-4 text-primary" />Route activity</CardTitle><p className="text-xs text-muted-foreground">Web Vitals sample volume by route. Values may contain mixed metric units.</p></CardHeader><CardContent><div className="overflow-x-auto"><table className="w-full min-w-[520px] text-sm"><thead><tr className="border-b border-border/70 text-left font-mono text-[10px] uppercase tracking-wider text-muted-foreground"><th className="pb-3">Route</th><th className="pb-3 text-right">Samples</th><th className="pb-3 text-right">Mixed p75</th></tr></thead><tbody>{(vitalData?.topRoutes || []).map(route => <tr key={route.route} className="border-b border-border/50 last:border-0"><td className="py-3 font-mono text-xs">{route.route}</td><td className="py-3 text-right tabular-nums">{route.count}</td><td className="py-3 text-right font-mono text-xs text-muted-foreground">{route.p75 === null ? "—" : "mixed units"}</td></tr>)}</tbody></table></div>{!vitalData?.topRoutes.length && <p className="py-6 text-center text-sm text-muted-foreground">No route data in this range.</p>}</CardContent></GlassCard>
+      </div></>}
+    <footer className="relative flex flex-col gap-2 border-t border-border/70 px-5 py-4 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><span>Telemetry is application-level and provider-aware</span><span>Last snapshot: {overview?.generatedAt ? new Date(overview.generatedAt).toLocaleTimeString() : "pending"}</span></footer>
+  </main></PageContainer>;
 }

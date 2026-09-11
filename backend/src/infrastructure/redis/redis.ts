@@ -28,6 +28,15 @@ export class RedisService {
         return this.redis?.status === 'ready';
     }
 
+    getStatus() {
+        return this.redis?.status || 'disabled';
+    }
+
+    async ping() {
+        if (!this.redis) return false;
+        return (await this.redis.ping()) === 'PONG';
+    }
+
 
     async set(key: string, value: string, ttl?: number) {
         if (!this.redis) return;

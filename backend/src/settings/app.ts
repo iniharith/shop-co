@@ -46,6 +46,7 @@ import { auditMiddleware } from '../presentation/middlewares/audit.middleware';
 import { bandwidthMiddleware } from '../shared/utils/bandwidthTracker';
 import { randomUUID } from 'crypto';
 import mongoose from 'mongoose';
+import { requestTelemetryMiddleware } from '../shared/utils/requestTelemetry';
 
 declare global {
     namespace Express {
@@ -90,6 +91,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('X-Request-ID', req.requestId);
     next();
 });
+app.use(requestTelemetryMiddleware);
 app.use(cors(corsOptions));
 app.use(bandwidthMiddleware);
 app.use(cookieParser());
