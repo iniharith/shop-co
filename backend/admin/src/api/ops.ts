@@ -12,8 +12,8 @@ export type OpsStatus = {
 export type OpsOverview = {
   generatedAt: string;
   telemetry: {
-    requests: { windowSeconds: number; requests: number; requestsPerMinute: number; serverErrors: number; errorRatePercent: number; latencyMs: { p50: number; p95: number } };
-    process: { uptimeSeconds: number; cpuPercent: number; memoryBytes: { heapUsed: number; heapTotal: number; rss: number }; eventLoopLagMs: { mean: number; p95: number } };
+    requests: { observedAt: string; windowSeconds: number; requests: number; requestsPerMinute: number; serverErrors: number; errorRatePercent: number; latencyMs: { p50: number; p95: number } };
+    process: { observedAt: string; uptimeSeconds: number; cpuPercent: number; memoryBytes: { heapUsed: number; heapTotal: number; rss: number }; eventLoopLagMs: { mean: number; p95: number } };
     recentTraces: Array<{ requestId: string; method: string; route: string; status: number; durationMs: number; timestamp: string }>;
     traceCapacity: number;
   };

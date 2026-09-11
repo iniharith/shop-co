@@ -64,6 +64,7 @@ const summarizeTraces = (traces, nowMs, windowMs = 5 * 60000) => {
     const durations = recent.map(trace => trace.durationMs);
     const serverErrors = recent.filter(trace => trace.status >= 500).length;
     return {
+        observedAt: new Date(nowMs).toISOString(),
         windowSeconds: Math.round(windowMs / 1000),
         requests: recent.length,
         requestsPerMinute: round(recent.length / (windowMs / 60000)),
@@ -113,10 +114,12 @@ const getOperationalTelemetry = () => {
     const memory = process.memoryUsage();
     const lagMean = Number.isFinite(eventLoopDelay.mean) ? eventLoopDelay.mean / 1000000 : 0;
     const lagP95 = eventLoopDelay.percentile(95) / 1000000;
+    eventLoopDelay.reset();
     const values = traces.values();
     return {
         requests: (0, exports.summarizeTraces)(values, now),
         process: {
+            observedAt: new Date(now).toISOString(),
             uptimeSeconds: round(process.uptime()),
             cpuPercent: round(cpuPercent),
             memoryBytes: {
