@@ -240,6 +240,35 @@ html.low-power-ui [class*="blur-["] {
   filter: none !important;
 }
 
+@keyframes service-route-dot {
+  from { transform: translateX(-150%); opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  to { transform: translateX(150%); opacity: 0; }
+}
+
+@keyframes service-route-dot-vertical {
+  from { transform: translateY(-150%); opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  to { transform: translateY(150%); opacity: 0; }
+}
+
+.service-route-dot {
+  animation: service-route-dot var(--route-speed, 2.8s) linear infinite;
+  opacity: var(--route-opacity, 0.9);
+}
+
+.service-route-dot-vertical {
+  animation: service-route-dot-vertical var(--route-speed, 2.8s) linear infinite;
+  opacity: var(--route-opacity, 0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .service-route-dot,
+  .service-route-dot-vertical { animation: none; opacity: 0.9; }
+}
+
 /* Table overrides to ensure rows remain visible */
 body.has-custom-bg tr:hover,
 body.has-custom-bg .hover\:bg-muted:hover {

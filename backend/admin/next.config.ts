@@ -18,7 +18,7 @@ const backendUrl = configuredBackendUrl && !staleBackendUrls.has(configuredBacke
 
 const nextConfig = {
     turbopack: {
-        root: __dirname,
+        root: process.cwd(),
     },
     env: {
         NEXT_PUBLIC_BACKEND_URL: backendUrl,
