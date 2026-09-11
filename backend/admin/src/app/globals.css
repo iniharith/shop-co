@@ -265,6 +265,10 @@ html.low-power-ui [class*="blur-["] {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .transfer-particle { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
   .service-route-dot,
   .service-route-dot-vertical { animation: none; opacity: 0.9; }
 }
