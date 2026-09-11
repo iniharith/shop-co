@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.startDatabaseBackup = exports.createMongoDumpArgs = exports.createDatabaseBackupFilename = exports.DatabaseBackupBusyError = void 0;
+exports.startDatabaseBackup = exports.createMongoDumpArgs = exports.createDatabaseBackupFilename = exports.DatabaseBackupUnavailableError = exports.DatabaseBackupBusyError = void 0;
 const child_process_1 = require("child_process");
 const fs_1 = require("fs");
 const os_1 = require("os");
@@ -25,6 +25,13 @@ class DatabaseBackupBusyError extends Error {
     }
 }
 exports.DatabaseBackupBusyError = DatabaseBackupBusyError;
+class DatabaseBackupUnavailableError extends Error {
+    constructor() {
+        super('The database backup tool is unavailable on the server');
+        this.name = 'DatabaseBackupUnavailableError';
+    }
+}
+exports.DatabaseBackupUnavailableError = DatabaseBackupUnavailableError;
 const createDatabaseBackupFilename = (date = new Date()) => `shop-co-backup-${date.toISOString().replace(/[:.]/g, '-')}.archive.gz`;
 exports.createDatabaseBackupFilename = createDatabaseBackupFilename;
 const createMongoDumpArgs = (configPath) => [
@@ -54,7 +61,10 @@ const startDatabaseBackup = (mongoUri) => __awaiter(void 0, void 0, void 0, func
         });
         yield new Promise((resolve, reject) => {
             child.once('spawn', resolve);
-            child.once('error', reject);
+            child.once('error', error => {
+                const spawnError = error;
+                reject(spawnError.code === 'ENOENT' ? new DatabaseBackupUnavailableError() : error);
+            });
         });
         // Drain diagnostics without retaining them; MongoDB errors may contain URI credentials.
         child.stderr.resume();

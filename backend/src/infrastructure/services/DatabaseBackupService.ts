@@ -17,6 +17,13 @@ export class DatabaseBackupBusyError extends Error {
   }
 }
 
+export class DatabaseBackupUnavailableError extends Error {
+  constructor() {
+    super('The database backup tool is unavailable on the server');
+    this.name = 'DatabaseBackupUnavailableError';
+  }
+}
+
 export type RunningDatabaseBackup = {
   stream: Readable;
   completion: Promise<void>;
@@ -54,7 +61,10 @@ export const startDatabaseBackup = async (mongoUri: string): Promise<RunningData
 
     await new Promise<void>((resolve, reject) => {
       child.once('spawn', resolve);
-      child.once('error', reject);
+      child.once('error', error => {
+        const spawnError = error as NodeJS.ErrnoException;
+        reject(spawnError.code === 'ENOENT' ? new DatabaseBackupUnavailableError() : error);
+      });
     });
 
     // Drain diagnostics without retaining them; MongoDB errors may contain URI credentials.

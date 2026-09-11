@@ -15,6 +15,7 @@ import { upscaleImageLocally, UpscaleBusyError } from '../../infrastructure/serv
 import {
   createDatabaseBackupFilename,
   DatabaseBackupBusyError,
+  DatabaseBackupUnavailableError,
   startDatabaseBackup,
 } from '../../infrastructure/services/DatabaseBackupService';
 
@@ -41,6 +42,11 @@ router.post(
     } catch (error) {
       if (error instanceof DatabaseBackupBusyError) {
         res.status(429).json({ success: false, message: error.message });
+        return;
+      }
+      if (error instanceof DatabaseBackupUnavailableError) {
+        console.error('[Tools/DatabaseBackup] mongodump executable was not found');
+        res.status(503).json({ success: false, message: error.message });
         return;
       }
       console.error('[Tools/DatabaseBackup] Could not start:', error instanceof Error ? error.message : error);

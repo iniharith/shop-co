@@ -80,6 +80,11 @@ router.post('/database-backup', auth_middileware_1.default, (0, auth_middileware
             res.status(429).json({ success: false, message: error.message });
             return;
         }
+        if (error instanceof DatabaseBackupService_1.DatabaseBackupUnavailableError) {
+            console.error('[Tools/DatabaseBackup] mongodump executable was not found');
+            res.status(503).json({ success: false, message: error.message });
+            return;
+        }
         console.error('[Tools/DatabaseBackup] Could not start:', error instanceof Error ? error.message : error);
         res.status(500).json({ success: false, message: 'Database backup could not be started.' });
         return;
