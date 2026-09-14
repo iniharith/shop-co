@@ -17,6 +17,10 @@ export type PhotoCanvasTemplate = {
   aspectRatio: string;
   sourceFile: string;
   preview?: string;
+  // Exported from the original Illustrator template with transparency. This
+  // contains only the template's own frame, logo and decorations, and is
+  // rendered above customer photos without recreating any artwork in code.
+  overlay?: string;
   surface: "linen" | "gallery" | "midnight" | "clock";
   slots: PhotoSlot[];
 };

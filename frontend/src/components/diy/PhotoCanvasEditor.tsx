@@ -17,22 +17,6 @@ const surfaceClass: Record<PhotoCanvasTemplate["surface"], string> = {
   clock: "bg-[#111827]",
 };
 
-// This layer is always rendered after the customer photos. It deliberately
-// has pointer-events disabled so customers cannot move, hide or replace the
-// black frame, yellow keyline or Kampung Cetak logo.
-function ProtectedCanvasFrame({ size }: { size: string }) {
-  return (
-    <div className="pointer-events-none absolute inset-0 z-30 border-[clamp(5px,1.1vw,12px)] border-black">
-      <div className="absolute inset-[1.2%] border-2 border-[#f4db26]" />
-      <div className="absolute inset-[4.2%] border border-white/75" />
-      <div className="absolute bottom-[1.5%] left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded bg-black/85 px-2 py-1">
-        <img src="/images/kampung-cetak-logo.png" alt="" className="size-5 object-contain" />
-        <span className="text-[7px] font-bold tracking-[0.08em] text-[#f4db26] sm:text-[9px]">KAMPUNG CETAK · {size}</span>
-      </div>
-    </div>
-  );
-}
-
 export default function PhotoCanvasEditor() {
   const [selectedTemplateId, setSelectedTemplateId] = useState(photoCanvasTemplates[0].id);
   const [activeCategory, setActiveCategory] = useState<"All" | PhotoCanvasTemplate["category"]>("All");
@@ -144,7 +128,7 @@ export default function PhotoCanvasEditor() {
             {template.preview && <img src={template.preview} alt={`${template.name} reference preview`} className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-20" />}
             {template.surface === "clock" && <div className="pointer-events-none absolute left-[6%] top-[11%] grid h-[78%] w-[41%] place-items-center rounded-full border-[5px] border-white/90 bg-black/15 text-5xl font-light text-white/95 shadow-lg sm:text-7xl">◷</div>}
             {template.slots.map((slot, index) => { const item = design[slot.id] || { adjustment: DEFAULT_ADJUSTMENT }; const photo = photos.find((candidate) => candidate.id === item.photoId); const isSelected = selectedSlot.id === slot.id; return <div key={slot.id} onClick={() => setSelectedSlotId(slot.id)} onPointerDown={isSelected ? startDrag : undefined} onPointerMove={isSelected ? moveDrag : undefined} onPointerUp={() => { drag.current = undefined; }} onPointerCancel={() => { drag.current = undefined; }} className={`absolute cursor-pointer overflow-hidden border-2 transition ${slot.shape === "circle" ? "rounded-full" : "rounded-md"} ${isSelected ? "z-20 border-primary ring-4 ring-primary/30" : "border-white/80 hover:border-primary/80"}`} style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.width}%`, height: `${slot.height}%` }}>{photo ? <img src={photo.url} alt={slot.label} draggable={false} className="h-full w-full select-none object-cover" style={{ transform: `translate(${item.adjustment.x}%, ${item.adjustment.y}%) scale(${item.adjustment.scale})` }} /> : <div className="grid h-full place-items-center bg-black/35 p-2 text-center text-xs font-semibold text-white backdrop-blur-[1px]"><span><ImagePlus className="mx-auto mb-1 size-5" />{slot.label}</span></div>}<span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-semibold text-white">{index + 1}</span></div>; })}
-            <ProtectedCanvasFrame size={template.size} />
+            {template.overlay && <img src={template.overlay} alt="" className="pointer-events-none absolute inset-0 z-30 h-full w-full object-cover" />}
           </div></div>
           <div className="mt-4 flex flex-wrap justify-center gap-2">{template.slots.map((slot, index) => <button key={slot.id} onClick={() => setSelectedSlotId(slot.id)} className={`rounded-full border px-3 py-2 text-xs font-semibold ${selectedSlot.id === slot.id ? "border-primary bg-primary/10 text-primary" : "border-border bg-card"}`}>{design[slot.id]?.photoId ? <Check className="mr-1 inline size-3.5" /> : null}Photo {index + 1}</button>)}</div>
         </section>
