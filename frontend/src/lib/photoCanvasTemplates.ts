@@ -36,11 +36,12 @@ export const photoCanvasTemplates: PhotoCanvasTemplate[] = [
     size: "12 × 18 in",
     price: 59,
     aspectRatio: "12 / 18",
-    sourceFile: "12x18 inch DOUBLE BORDER.ai",
+    sourceFile: "12x18 inch COLLAGE 2 PCS BORDER HITAM.ai",
+    preview: "/templates/photo-canvas/photo-collage-12x18.png",
     surface: "gallery",
     slots: [
-      { id: "photo-1", label: "Top photo", x: 12, y: 10, width: 76, height: 35 },
-      { id: "photo-2", label: "Bottom photo", x: 12, y: 55, width: 76, height: 35 },
+      { id: "photo-1", label: "Top photo", x: 25, y: 18, width: 50, height: 31 },
+      { id: "photo-2", label: "Bottom photo", x: 25, y: 51, width: 50, height: 31 },
     ],
   },
   {
