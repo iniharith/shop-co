@@ -663,7 +663,8 @@ interface Sim {
   tweenUntil: number;
   center: THREE.Vector3;
   fitDist: number;
-  layoutCaps: Array<{ txt: string; col: string; list: SceneNode[]; x: number; y: number; z: number }>;
+  layoutCaps: Array<{ txt: string; col: string; cat: string; list: SceneNode[]; x: number; y: number; z: number }>;
+  capTxt: Array<{ sprite: THREE.Sprite; cat: string; list: SceneNode[] }>;
   manualAt: number;
   mouse: THREE.Vector2;
   ray: THREE.Raycaster;
@@ -816,6 +817,37 @@ function guestCount(list: SceneNode[]) {
   list.forEach(k => { if (k._count !== undefined) { sum += k._count; any = true; } });
   return any ? sum : list.length;
 }
+function capSprite(col: string, labels: THREE.Sprite[]) {
+  const W = 704, H = 64, cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const x = cv.getContext("2d")!;
+  const t = new THREE.CanvasTexture(cv);
+  t.minFilter = THREE.LinearFilter;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, depthTest: false }));
+  s.scale.set(150, (150 * H) / W, 1);
+  let last = "";
+  s.userData.setText = (txt: string) => {
+    if (txt === last) return;
+    last = txt;
+    x.clearRect(0, 0, W, H);
+    x.textAlign = "center";
+    x.textBaseline = "middle";
+    x.font = "700 44px ui-monospace,Consolas,monospace";
+    x.shadowColor = "rgba(2,5,11,0.95)";
+    x.shadowBlur = 7;
+    x.fillStyle = col;
+    x.fillText(txt, W / 2, H / 2);
+    t.needsUpdate = true;
+  };
+  labels.push(s);
+  return s;
+}
+function updateCapTexts(sim: Sim) {
+  sim.capTxt.forEach(c => {
+    const txt = `${c.cat.toUpperCase()} · ${guestCount(c.list)}`;
+    c.sprite.userData.setText?.(txt);
+  });
+}
 function computeLayout(topo: TopoTopo, sim: Sim) {
   const byId: Record<string, SceneNode> = {};
   const kids: Record<string, SceneNode[]> = {};
@@ -886,7 +918,7 @@ function computeLayout(topo: TopoTopo, sim: Sim) {
     return { blocks, gcols, cellW, cellD, span: gcols * cellW + (gcols - 1) * CAT_GAP + 10 };
   }
   const spanMemo: Record<string, number> = {};
-  const caps: Array<{ txt: string; col: string; list: SceneNode[]; x: number; y: number; z: number }> = [];
+  const caps: Array<{ txt: string; col: string; cat: string; list: SceneNode[]; x: number; y: number; z: number }> = [];
   function leafSpan(leaf: SceneNode[]) {
     return leaf[0].kind === "guest" ? guestPlan(leaf).span : Math.max(1, Math.ceil(Math.pow(leaf.length, 1 / 3))) * LEAF_SP + 8;
   }
@@ -944,6 +976,7 @@ function computeLayout(topo: TopoTopo, sim: Sim) {
           caps.push({
             txt: `${B.cat.toUpperCase()} · ${guestCount(B.list)}`,
             col: hex(CAT[B.cat] !== undefined ? CAT[B.cat] : 0x8fb0d0),
+            cat: B.cat,
             list: B.list,
             x: bx + ((B.rows - 1) * LEAF_SP) / 2,
             y: ((B.lays - 1) / 2) * LEAF_SP + 34,
@@ -1248,7 +1281,7 @@ function buildTour(sim: Sim, setTourText: (t: string) => void) {
       st.key = `host:${h.id}`;
       stops.push(st);
       blocks.forEach(B => {
-        const bst = mkStop(sim, `${hn} · ${B.cat.toUpperCase()} (${B.list.length})`, B.list, 1.05, 0.66, true, 0.7);
+        const bst = mkStop(sim, `${hn} · ${B.cat.toUpperCase()} (${guestCount(B.list)})`, B.list, 1.05, 0.66, true, 0.7);
         bst.key = `blk:${h.id}:${B.cat}`;
         stops.push(bst);
       });
@@ -1936,10 +1969,12 @@ function buildGraph(sim: Sim, topo: TopoTopo, setTourText: (t: string) => void) 
   buildLinks(sim, topo);
 
   sim.layoutCaps.forEach(cp => {
-    const s = textSprite([{ text: cp.txt, size: 40, bold: true, color: cp.col }], 150, { depthTest: false }, sim.labels);
+    const s = capSprite(cp.col, sim.labels);
+    s.userData.setText(cp.txt);
     s.position.set(cp.x, cp.y, cp.z);
     s.userData.focList = cp.list;
     graph.add(s);
+    sim.capTxt.push({ sprite: s, cat: cp.cat, list: cp.list });
   });
 
   const span = Math.max(size.x, size.z);
@@ -1976,6 +2011,7 @@ function applyLive(sim: Sim, topo: TopoTopo) {
   restyleLinks(sim);
   updateLinkGeometry(sim, true);
   allocParticles(sim, mulberry32(9001));
+  updateCapTexts(sim);
 }
 
 /* ============================ component ============================ */
@@ -2095,6 +2131,7 @@ export default function GalaxyTopology({
       pick: [], sig: "", lastTs: 0,
       tweenUntil: 0, center: new THREE.Vector3(), fitDist: 900,
       layoutCaps: [],
+      capTxt: [],
       manualAt: -1e9, mouse: new THREE.Vector2(-9, -9), ray: new THREE.Raycaster(),
       tip: tooltipRef.current,
       pGeo, pPts, pPos, pCol, pBase, pLink, pDir, pProg, pRate, pActive: 0,
@@ -2111,7 +2148,7 @@ export default function GalaxyTopology({
     scene.add(sim.background);
     simRef.current = sim;
 
-    const initialTopo = buildTopology(dependencies, bytesIn, bytesOut, sampleInterval, { cpu: cpuPercent });
+    const initialTopo = buildTopology(dependencies, bytesIn, bytesOut, sampleInterval, { cpu: cpuPercent, counts: countsRef.current });
     buildGraph(sim, initialTopo, setTourTextSafe);
 
     /* camera initial pose at overview */
@@ -2274,6 +2311,7 @@ export default function GalaxyTopology({
         const statusChanged = o.status !== nn.status;
         o.rx = nn.rx; o.tx = nn.tx; o.measured = nn.measured;
         o.meta = nn.meta || o.meta; o.status = nn.status;
+        o._count = nn._count !== undefined ? nn._count : o._count;
         if (nn.meta && nn.meta.cpu != null) o.meta = { ...(o.meta || {}), cpu: nn.meta.cpu };
         if (statusChanged && o._grp) {
           if (nn.status === "down" || nn.status === "warn") {
