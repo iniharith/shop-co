@@ -314,7 +314,25 @@
 .profile-area select { background-color: var(--card); color: var(--foreground); border-color: var(--input); }
 
 /* Give the DIY artboard more working room while preserving its responsive ratio. */
-div[class~="w-[min(76vw,520px)]"] { width: min(84vw, 640px); }
+div[class~="w-[min(76vw,520px)]"] { width: min(78vw, 560px); }
+
+/* A5: calculate the image box from the supplied measurements and center it. */
+div[style*="150 / 213"] > div[class*="cursor-move"][class*="bg-black"] {
+  left: 50% !important;
+  top: 50% !important;
+  width: 76.2% !important;
+  height: 83.474% !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+/* A6: calculate the image box from the supplied measurements and center it. */
+div[style*="105 / 151"] > div[class*="cursor-move"][class*="bg-black"] {
+  left: 50% !important;
+  top: 50% !important;
+  width: 78.263% !important;
+  height: 84.656% !important;
+  transform: translate(-50%, -50%) !important;
+}
 
 /* Polished Canva-style floating controls for a selected DIY photo. */
 div[class*="bottom-2"][class*="left-1/2"][class*="bg-card\\/95"] {

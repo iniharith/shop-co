@@ -26,18 +26,6 @@ export type PhotoCanvasTemplate = {
 // asset and its photo-slot coordinates added here.
 export const photoCanvasTemplates: PhotoCanvasTemplate[] = [
   {
-    id: "canvas-10x12-single",
-    name: "Classic single photo",
-    category: "Single photo",
-    size: "10 × 12 in",
-    price: 39,
-    aspectRatio: "10 / 12",
-    sourceFile: "10x12 inch.ai",
-    preview: "/templates/photo-canvas/draft.jpg",
-    surface: "linen",
-    slots: [{ id: "photo-1", label: "Main photo", x: 12, y: 11, width: 76, height: 72 }],
-  },
-  {
     id: "canvas-12x18-duo",
     name: "Modern double border",
     category: "Collage",
