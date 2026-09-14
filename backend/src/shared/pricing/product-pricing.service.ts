@@ -14,50 +14,12 @@ import { IProductConfiguration } from "../../domain/interfaces/cart.interface";
 export const DESIGN_SERVICE_FEE = 100;
 const PRICING_VERSION = 'catalog-v1';
 
-const PHOTOBOOK_PRICES: Record<string, Record<string, Record<string, number>>> = {
-    "HARDCOVER": {
-        "6X6": { "40 PAGES": 109, "60 PAGES": 119, "100 PAGES": 129 },
-        "8X6": { "40 PAGES": 129, "60 PAGES": 139, "100 PAGES": 149 }
-    },
-};
-
-const TSHIRT_PRICES: Record<string, Record<string, number>> = {
-    "Round Neck": { "1": 39, "10": 29, "20": 25, "30": 24, "50": 22, "100": 20 },
-    "Muslimah": { "1": 49, "10": 39, "20": 35, "30": 34, "50": 32, "100": 30 },
-    "Kids": { "1": 39, "10": 29, "20": 25, "30": 24, "50": 22, "100": 20 },
-    "Sweater Lycra": { "1": 119, "10": 99, "20": 89, "30": 79, "50": 75, "100": 65 },
-    "Baseball Lycra": { "1": 119, "10": 99, "20": 89, "30": 79, "50": 75, "100": 65 },
-    "Versity Lycra": { "1": 150, "10": 120, "20": 110, "30": 99, "50": 95, "100": 79 },
-    "Korporat Shortsleeve": { "1": 120, "10": 99, "20": 89, "30": 79, "50": 75, "100": 65 },
-    "Korporat Longsleeve": { "1": 130, "10": 109, "20": 99, "30": 89, "50": 85, "100": 75 }
-};
-const TSHIRT_TIERS = [100, 50, 30, 20, 10, 1];
-
 export interface ProductPricingResult {
     unitPrice: number;
     fixedPrice: number;
     lineTotal: number;
     pricingVersion: string;
 }
-
-interface SelectedValue {
-    label: string;
-    priceAdd: number;
-}
-
-const selectedValues = (configuration: IProductConfiguration | undefined, matcher: RegExp): SelectedValue[] => {
-    const entry = (configuration?.selections || []).find((selection) => matcher.test(selection.name));
-    if (!entry) return [];
-    return (entry.values || []).map((value) => ({
-        label: String(value.label || '').trim(),
-        priceAdd: Number(value.priceAdd) || 0,
-    }));
-};
-
-const selectedLabel = (configuration: IProductConfiguration | undefined, matcher: RegExp): string => {
-    const values = selectedValues(configuration, matcher);
-    return values.length > 0 ? values[0].label : '';
-};
 
 // Price add-ons only from the server-side product definition. Client prices are ignored.
 const sumAddons = (product: IProduct, configuration: IProductConfiguration | undefined, filter?: (name: string) => boolean): number => {
@@ -131,22 +93,9 @@ export const computeProductPricing = (
 ): ProductPricingResult => {
     const qty = Number.isInteger(Number(quantity)) && Number(quantity) > 0 ? Number(quantity) : 1;
     const fixedPrice = configuration?.design?.type === 'service' ? DESIGN_SERVICE_FEE : 0;
-    const category = (product.category || '').toLowerCase();
     let subtotal = 0;
 
-    if (category === 'photobook') {
-        const unitPrice = PHOTOBOOK_PRICES[selectedLabel(configuration, /material/i)]?.[selectedLabel(configuration, /size/i)]?.[selectedLabel(configuration, /pages/i)] || 0;
-        subtotal = unitPrice * qty;
-    } else if (category === 'sublimation-tshirt') {
-        const type = selectedLabel(configuration, /type/i) || 'Round Neck';
-        let tier = 1;
-        for (const candidate of TSHIRT_TIERS) {
-            if (qty >= candidate) { tier = candidate; break; }
-        }
-        const basePrice = TSHIRT_PRICES[type]?.[String(tier)] ?? TSHIRT_PRICES['Round Neck']['1'];
-        const addons = sumAddons(product, configuration, (name) => /add on/i.test(name));
-        subtotal = (basePrice + addons) * qty;
-    } else if (product.matrixPricing?.enabled) {
+    if (product.matrixPricing?.enabled) {
         subtotal = resolveMatrixSubtotal(product, qty, configuration);
     } else {
         const addons = sumAddons(product, configuration);
