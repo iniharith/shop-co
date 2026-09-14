@@ -104,6 +104,30 @@ const categories = [
   'NOTEBOOK',
 ];
 
+type SpecificationKey = 'material' | 'frame' | 'dimensions' | 'weight' | 'finish' | 'color';
+
+const specificationChoices: Record<SpecificationKey, string[]> = {
+  material: [
+    'Paper',
+    'Art card',
+    'PVC Flex',
+    'Mesh',
+    'Fabric',
+    'Vinyl',
+    'Foam board',
+    'PVC board',
+    'Acrylic',
+    'Aluminium composite',
+    'Hardcover',
+    'Softcover',
+  ],
+  frame: ['No frame', 'Wooden frame', 'Aluminium frame', 'Black frame', 'White frame'],
+  dimensions: ['A4', 'A5', 'A6', '6×6 inch', '8×8 inch', '12×18 inch', 'Up to 4×8 ft'],
+  weight: ['Lightweight', 'Standard', 'Heavy-duty'],
+  finish: ['Matte', 'Gloss', 'Lamination', 'Matte lamination', 'Gloss lamination', 'Lay-flat binding'],
+  color: ['Black and white', 'Full colour', 'Full color CMYK', 'CMYK + White ink', 'Transparent'],
+};
+
 const emptyProduct: Product = {
   _id: '',
   name: '',
@@ -165,6 +189,7 @@ const [draggedImage, setDraggedImage] = useState<number | null>(null);
   const [selectedVariations, setSelectedVariations] = useState<number[]>([]);
   const [editingVariation, setEditingVariation] = useState<number | null>(0);
   const [newCustomField, setNewCustomField] = useState({ key: '', value: '' });
+  const [customSpecChoice, setCustomSpecChoice] = useState<{ key: SpecificationKey; value: string } | null>(null);
   const [variationLinkPicker, setVariationLinkPicker] = useState<number | null>(null);
   const [variationLinkUrl, setVariationLinkUrl] = useState('');
 
@@ -379,6 +404,30 @@ images: resolveImages(current.images),
       ...current,
       specifications: { ...(current.specifications || {}), ...patch },
     }));
+
+  const getSpecChoices = (key: SpecificationKey) =>
+    String(product.specifications?.[key] || '')
+      .split(' / ')
+      .map(value => value.trim())
+      .filter(Boolean);
+
+  const toggleSpecChoice = (key: SpecificationKey, choice: string) => {
+    const choices = getSpecChoices(key);
+    const nextChoices = choices.includes(choice)
+      ? choices.filter(value => value !== choice)
+      : [...choices, choice];
+    updateSpec({ [key]: nextChoices.join(' / ') });
+  };
+
+  const addCustomSpecChoice = () => {
+    if (!customSpecChoice?.value.trim()) return;
+    const key = customSpecChoice.key;
+    const choices = getSpecChoices(key);
+    if (!choices.includes(customSpecChoice.value.trim())) {
+      updateSpec({ [key]: [...choices, customSpecChoice.value.trim()].join(' / ') });
+    }
+    setCustomSpecChoice(null);
+  };
 
   const addCustomField = (key: string, value: string) =>
     setProduct(current => ({
@@ -1174,17 +1223,72 @@ images: resolveImages(current.images),
                   Specifications
                 </h3>
                 <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                  {(
-                    ['material', 'frame', 'dimensions', 'weight', 'finish', 'color'] as const
-                  ).map(key => (
-                    <label key={key} className="space-y-1 text-sm font-medium capitalize">
-                      {key}
-                      <Input
-                        value={product.specifications?.[key] || ''}
-                        onChange={event => updateSpec({ [key]: event.target.value })}
-                      />
-                    </label>
-                  ))}
+                  {(['material', 'frame', 'dimensions', 'weight', 'finish', 'color'] as const).map(key => {
+                    const selectedChoices = getSpecChoices(key);
+                    const isAddingCustomChoice = customSpecChoice?.key === key;
+                    return (
+                      <div key={key} className="space-y-2 text-sm font-medium capitalize">
+                        <div className="flex items-center justify-between gap-2">
+                          <span>{key}</span>
+                          <span className="text-xs font-normal text-muted-foreground">
+                            {selectedChoices.length ? selectedChoices.join(' / ') : 'No choice selected'}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {specificationChoices[key].map(choice => {
+                            const selected = selectedChoices.includes(choice);
+                            return (
+                              <Button
+                                key={choice}
+                                type="button"
+                                size="sm"
+                                variant={selected ? 'default' : 'outline'}
+                                className="h-8 rounded-full text-xs"
+                                onClick={() => toggleSpecChoice(key, choice)}
+                              >
+                                {choice}
+                              </Button>
+                            );
+                          })}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 rounded-full text-xs"
+                            onClick={() => setCustomSpecChoice({ key, value: '' })}
+                          >
+                            <Plus className="mr-1 h-3 w-3" />
+                            Add choice
+                          </Button>
+                        </div>
+                        {isAddingCustomChoice && (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              autoFocus
+                              className="h-8 text-xs"
+                              value={customSpecChoice.value}
+                              placeholder={`Add ${key} choice`}
+                              onChange={event =>
+                                setCustomSpecChoice(current =>
+                                  current ? { ...current, value: event.target.value } : current,
+                                )
+                              }
+                              onKeyDown={event => {
+                                if (event.key === 'Enter') addCustomSpecChoice();
+                                if (event.key === 'Escape') setCustomSpecChoice(null);
+                              }}
+                            />
+                            <Button type="button" size="sm" onClick={addCustomSpecChoice}>
+                              Add
+                            </Button>
+                            <Button type="button" size="sm" variant="ghost" onClick={() => setCustomSpecChoice(null)}>
+                              Cancel
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="mt-3 space-y-2">
                   <p className="text-sm font-medium">Custom fields</p>
