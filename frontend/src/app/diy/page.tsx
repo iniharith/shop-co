@@ -12,8 +12,8 @@ type AdjustmentHistory = { coverAdjust: ImageAdjust; imageAdjustments: Record<nu
 
 const makeSpreads = (count: number, existing: Spread[] = []): Spread[] => Array.from({ length: count }, (_, index) => ({ ...(existing[index] || {}), id: index + 1, caption: index === 0 ? "Cover" : `Page ${index}` }));
 const sizeCopy: Record<BookSize, { label: string; dimensions: string; price: number; template: string; preview: string; innerPreview: string }> = {
-  A5: { label: "A5 portrait", dimensions: "148 × 210 mm", price: 49, template: "INLAY PHOTOBOOK BINDER 1P.indd", preview: "/templates/photobook/a5-preview.png", innerPreview: "/templates/photobook/inlay/a5.jpg" },
-  A6: { label: "A6 portrait", dimensions: "105 × 148 mm", price: 39, template: "INLAY PHOTOBOOK BINDER 1P A6.indd", preview: "/templates/photobook/a6-preview.png", innerPreview: "/templates/photobook/inlay/a6.jpg" },
+  A5: { label: "A5 portrait", dimensions: "148 × 210 mm", price: 49, template: "INLAY PHOTOBOOK BINDER 1P.indd", preview: "/templates/photobook/a5-preview.png", innerPreview: "/templates/photobook/website/a5.png" },
+  A6: { label: "A6 portrait", dimensions: "105 × 148 mm", price: 39, template: "INLAY PHOTOBOOK BINDER 1P A6.indd", preview: "/templates/photobook/a6-preview.png", innerPreview: "/templates/photobook/website/a6.png" },
 };
 const stickerChoices = ["★", "♥", "✦", "☀", "✿", "●"];
 const coverDesigns: Record<BookSize, string[]> = { A5: ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10"], A6: ["D1", "D2", "D5", "D7", "D8", "D10"] };
