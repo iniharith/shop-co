@@ -4,7 +4,18 @@
  */
 import type { NextConfig } from "next";
 
+const configuredBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+const staleBackendUrls = new Set(["https://api.studioivory.art"]);
+const backendUrl = configuredBackendUrl && !staleBackendUrls.has(configuredBackendUrl)
+  ? configuredBackendUrl
+  : process.env.NODE_ENV === "production"
+    ? "https://shop-co-production.up.railway.app"
+    : "http://localhost:8000";
+
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_BACKEND_URL: backendUrl,
+  },
   images: {
     // Let Next serve responsive sizes and modern formats for catalog imagery.
     unoptimized: false,
