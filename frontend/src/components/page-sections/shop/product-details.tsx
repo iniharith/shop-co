@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { QuantityPicker } from "@/components/global/quantity-picker";
 import { StarRating } from "@/components/global/star-rating";
 import { IProduct } from "@/types/IProduct";
@@ -52,6 +53,7 @@ export function ProductDetails({
   }, []);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number | number[]>>({});
   const [designOption, setDesignOption] = useState<"upload" | "design">("upload");
+  const supportsPhotoCanvasDIY = /photo|canvas|frame|clock/i.test(`${product.name || ""} ${product.category || ""}`);
 
   useEffect(() => {
     if (product.printingOptions) {
@@ -466,6 +468,7 @@ const variationStepNum = (hasImageVariations || hasDesignVariations) ? currentSt
                     <span className="text-sm font-bold text-gray-800 dark:text-foreground">{label("I have my own design", "Saya mempunyai reka bentuk sendiri")}</span>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">{label("Upload your print-ready artwork (PDF, AI, PSD) during checkout or in your dashboard.", "Muat naik karya sedia cetak (PDF, AI, PSD) semasa checkout atau melalui dashboard.")}</p>
+                  {supportsPhotoCanvasDIY && <Link href="/diy?mode=canvas" onClick={(event) => event.stopPropagation()} className="ml-7 mt-3 inline-flex w-fit rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/10">{label("Create a photo canvas in our DIY editor", "Cipta photo canvas dalam DIY editor")}</Link>}
                 </label>
 
                 <label className={`flex cursor-pointer flex-col rounded-xl border p-4 transition-all duration-200 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
