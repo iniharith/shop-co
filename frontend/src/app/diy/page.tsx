@@ -12,9 +12,9 @@ const initialSpreads: Spread[] = Array.from({ length: 8 }, (_, index) => ({
   caption: index === 0 ? "Cover" : `Page ${index}`,
 }));
 
-const sizeCopy: Record<BookSize, { label: string; dimensions: string; price: number }> = {
-  A5: { label: "A5 portrait", dimensions: "148 × 210 mm", price: 49 },
-  A6: { label: "A6 portrait", dimensions: "105 × 148 mm", price: 39 },
+const sizeCopy: Record<BookSize, { label: string; dimensions: string; price: number; template: string }> = {
+  A5: { label: "A5 portrait", dimensions: "148 × 210 mm", price: 49, template: "INLAY PHOTOBOOK BINDER 1P.indd" },
+  A6: { label: "A6 portrait", dimensions: "105 × 148 mm", price: 39, template: "INLAY PHOTOBOOK BINDER 1P A6.indd" },
 };
 
 export default function DiyPhotobookPage() {
@@ -103,6 +103,7 @@ export default function DiyPhotobookPage() {
             <select id="pages" value={pageCount} onChange={(event) => setPageCount(Number(event.target.value))} className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm"><option value={8}>8 pages</option><option value={12}>12 pages</option><option value={20}>20 pages</option></select>
             <label className="mb-2 mt-5 block text-xs font-bold uppercase tracking-wider text-muted-foreground" htmlFor="cover">Cover finish</label>
             <select id="cover" value={coverFinish} onChange={(event) => setCoverFinish(event.target.value)} className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm"><option>Hardcover</option><option>Softcover</option></select>
+            <div className="mt-4 rounded-xl bg-muted/60 p-3 text-xs leading-5 text-muted-foreground"><span className="font-semibold text-foreground">Active template:</span><br />{sizeCopy[bookSize].template}<br /><span className="text-[11px]">No suffix = A5 · “A6” suffix = A6</span></div>
           </section>
           <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
             <h2 className="mb-3 font-semibold">Your pages</h2>
