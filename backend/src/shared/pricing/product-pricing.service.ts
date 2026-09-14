@@ -19,10 +19,6 @@ const PHOTOBOOK_PRICES: Record<string, Record<string, Record<string, number>>> =
         "6X6": { "40 PAGES": 109, "60 PAGES": 119, "100 PAGES": 129 },
         "8X6": { "40 PAGES": 129, "60 PAGES": 139, "100 PAGES": 149 }
     },
-    "SOFTCOVER": {
-        "6X6": { "40 PAGES": 49, "60 PAGES": 59, "100 PAGES": 69 },
-        "8X6": { "40 PAGES": 55, "60 PAGES": 65, "100 PAGES": 75 }
-    }
 };
 
 const TSHIRT_PRICES: Record<string, Record<string, number>> = {

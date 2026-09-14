@@ -9421,10 +9421,6 @@ exports.catalogProducts = [
                         "label": "HARDCOVER",
                         "priceAdd": 0
                     },
-                    {
-                        "label": "SOFTCOVER",
-                        "priceAdd": 0
-                    }
                 ]
             },
             {

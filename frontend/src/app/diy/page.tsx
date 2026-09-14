@@ -20,7 +20,7 @@ const sizeCopy: Record<BookSize, { label: string; dimensions: string; price: num
 export default function DiyPhotobookPage() {
   const [bookSize, setBookSize] = useState<BookSize>("A5");
   const [pageCount, setPageCount] = useState(8);
-  const [coverFinish, setCoverFinish] = useState("Hardcover");
+  const coverFinish = "Hardcover";
   const [title, setTitle] = useState("Our little moments");
   const [subtitle, setSubtitle] = useState("A book made by you");
   const [accent, setAccent] = useState("#087f73");
@@ -35,7 +35,6 @@ export default function DiyPhotobookPage() {
       const parsed = JSON.parse(draft);
       setBookSize(parsed.bookSize || "A5");
       setPageCount(parsed.pageCount || 8);
-      setCoverFinish(parsed.coverFinish || "Hardcover");
       setTitle(parsed.title || "Our little moments");
       setSubtitle(parsed.subtitle || "A book made by you");
       setAccent(parsed.accent || "#087f73");
@@ -46,7 +45,7 @@ export default function DiyPhotobookPage() {
   }, []);
 
   const currentSpread = spreads[selectedSpread] || spreads[0];
-  const total = useMemo(() => sizeCopy[bookSize].price + (pageCount - 8) * 2 + (coverFinish === "Softcover" ? -8 : 0), [bookSize, pageCount, coverFinish]);
+  const total = useMemo(() => sizeCopy[bookSize].price + (pageCount - 8) * 2, [bookSize, pageCount]);
 
   const updateSpreadLayer = (layer: "backgroundImage" | "middleImage", file?: File) => {
     if (!file || !file.type.startsWith("image/")) return;
@@ -64,13 +63,13 @@ export default function DiyPhotobookPage() {
   };
 
   const saveDraft = () => {
-    window.localStorage.setItem("kampungcetak-photobook-draft", JSON.stringify({ bookSize, pageCount, coverFinish, title, subtitle, accent, spreads }));
+    window.localStorage.setItem("kampungcetak-photobook-draft", JSON.stringify({ bookSize, pageCount, coverFinish: "Hardcover", title, subtitle, accent, spreads }));
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2200);
   };
 
   const downloadDraft = () => {
-    const blob = new Blob([JSON.stringify({ bookSize, pageCount, coverFinish, title, subtitle, accent, spreads }, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify({ bookSize, pageCount, coverFinish: "Hardcover", title, subtitle, accent, spreads }, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
@@ -101,8 +100,7 @@ export default function DiyPhotobookPage() {
             </div>
             <label className="mb-2 mt-5 block text-xs font-bold uppercase tracking-wider text-muted-foreground" htmlFor="pages">Pages</label>
             <select id="pages" value={pageCount} onChange={(event) => setPageCount(Number(event.target.value))} className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm"><option value={8}>8 pages</option><option value={12}>12 pages</option><option value={20}>20 pages</option></select>
-            <label className="mb-2 mt-5 block text-xs font-bold uppercase tracking-wider text-muted-foreground" htmlFor="cover">Cover finish</label>
-            <select id="cover" value={coverFinish} onChange={(event) => setCoverFinish(event.target.value)} className="w-full rounded-xl border border-input bg-background px-3 py-3 text-sm"><option>Hardcover</option><option>Softcover</option></select>
+            <div className="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm"><span className="font-semibold">Cover finish:</span> Hardcover</div>
             <div className="mt-4 rounded-xl bg-muted/60 p-3 text-xs leading-5 text-muted-foreground"><span className="font-semibold text-foreground">Active template:</span><br />{sizeCopy[bookSize].template}<br /><span className="text-[11px]">No suffix = A5 · “A6” suffix = A6</span></div>
           </section>
           <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">

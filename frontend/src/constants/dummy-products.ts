@@ -9082,10 +9082,6 @@ export const dummyProducts: any[] = [
             "label": "HARDCOVER",
             "priceAdd": 0
           },
-          {
-            "label": "SOFTCOVER",
-            "priceAdd": 0
-          }
         ]
       },
       {
