@@ -1759,7 +1759,7 @@ export default function GalaxyTopology({
       if (sim.dragging) {
         sim.manualAt = sim.t;
         syncMan();
-        sim.man.az += (e.clientX - sim.lastPointer.x) * 0.0045;
+        sim.man.az -= (e.clientX - sim.lastPointer.x) * 0.0045;
         sim.man.el += (e.clientY - sim.lastPointer.y) * 0.004;
         sim.lastPointer = { x: e.clientX, y: e.clientY };
         applyMan();
