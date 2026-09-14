@@ -57,6 +57,7 @@ export default function DiyPhotobookPage() {
   const activeDesign = coverDesigns[bookSize].includes(coverDesign) ? coverDesign : coverDesigns[bookSize][0];
   const templatePreview = `/templates/photobook/covers/${bookSize.toLowerCase()}/${activeDesign.toLowerCase()}.png`;
   const previewImage = showCover ? templatePreview : sizeCopy[bookSize].innerPreview;
+  const previewAspect = showCover ? "1190.55 / 841.89" : "936 / 1368";
   const draftData = { bookSize, pageCount, coverFinish: "Hardcover", coverDesign: activeDesign, coverImage, coverStickers, title, subtitle, backgroundChoice, colourChoice, spreads };
   const saveDraft = () => { window.localStorage.setItem("kampungcetak-photobook-draft", JSON.stringify(draftData)); setSaved(true); window.setTimeout(() => setSaved(false), 2200); };
   const downloadDraft = () => { const url = URL.createObjectURL(new Blob([JSON.stringify(draftData, null, 2)], { type: "application/json" })); const anchor = document.createElement("a"); anchor.href = url; anchor.download = `kampungcetak-${bookSize.toLowerCase()}-photobook-draft.json`; anchor.click(); URL.revokeObjectURL(url); };
