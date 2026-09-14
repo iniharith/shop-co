@@ -7,7 +7,6 @@ import Link from "next/link";
 import { ProductDetails } from "@/components/page-sections/shop/product-details";
 import { ProductGallery } from "@/components/page-sections/shop/product-gallery";
 import ProductSctions from "@/components/page-sections/home/productSctions";
-import { mockProduct, products } from "@/constants/data";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { useParams } from "next/navigation";
@@ -26,7 +25,10 @@ const page = () => {
   const activeSizeImagesRef = useRef<string[] | null>(null);
   const product = data?.product as IProduct;
   const products = productsData?.products || [];
-   const dimensions = Array.from(new Set(product?.name?.match(/\d+\s*[xX]\s*\d+/g) || []));
+  const dimensions = Array.from(new Set([
+    ...(product?.name?.match(/\d+\s*[xX]\s*\d+/g) || []),
+    ...(product?.specifications?.dimensions ? [product.specifications.dimensions] : []),
+  ]));
 
   const handleSelectedSizeImagesChange = useCallback((images: string[] | null) => {
     const active = images?.length ? images : null;
@@ -91,9 +93,11 @@ const page = () => {
             <div className="space-y-3 rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-sm sm:rounded-3xl sm:p-6">
               <span className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Product details</span>
               <h2 className="font-sans text-xl font-semibold tracking-tight text-foreground">Product information</h2>
-              <p className="max-w-3xl text-sm leading-7 text-muted-foreground md:text-base">
-                 {product.description || "Product details will be confirmed by our team."}
-              </p>
+              {product.description ? (
+                <p className="max-w-3xl text-sm leading-7 text-muted-foreground md:text-base">
+                  {product.description}
+                </p>
+              ) : null}
               <dl className="grid gap-2 pt-2 sm:grid-cols-3">
                 <div className="rounded-xl border border-border bg-muted/25 p-3">
                   <dt className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Category</dt>
@@ -102,12 +106,12 @@ const page = () => {
                 <div className="rounded-xl border border-border bg-muted/25 p-3">
                   <dt className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Dimensions</dt>
                   <dd className="mt-1 text-sm font-semibold">
-                    {dimensions.length > 0 ? dimensions.map((value) => value.toUpperCase().replace("X", " × ")).join(", ") : "Standard format"}
+                    {dimensions.length > 0 ? dimensions.map((value) => value.toUpperCase().replace("X", " × ")).join(", ") : "—"}
                   </dd>
                 </div>
                 <div className="rounded-xl border border-border bg-muted/25 p-3">
 <dt className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Available designs</dt>
-                  <dd className="mt-1 text-sm font-semibold">{product.variations?.length ?? product.images.length}</dd>
+                  <dd className="mt-1 text-sm font-semibold">{product.variations?.length ?? 0}</dd>
                 </div>
               </dl>
               {(product.specifications || product.packageContents?.length || product.productionTurnaround || product.warrantyInfo || product.installationInstructions) && (

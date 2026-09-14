@@ -13,6 +13,7 @@ import { SessionProvider, SessionProviderProps } from "next-auth/react";
 import LiveSessionMonitor from "./liveSessionMonitor";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import type { Locale } from "@/i18n/messages";
+import SocketProvider from "./socketProvider";
 
 const Provider = ({
   children,
@@ -41,7 +42,7 @@ const Provider = ({
                     position="bottom-center"
                     richColors
                   />
-                  <LiveSessionMonitor>{children}</LiveSessionMonitor>
+                  <LiveSessionMonitor><SocketProvider>{children}</SocketProvider></LiveSessionMonitor>
                 </HeroUIProvider>
               </LanguageProvider>
             </ThemeProvider>

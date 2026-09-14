@@ -6,7 +6,6 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
 import { QuantityPicker } from "@/components/global/quantity-picker";
 import { StarRating } from "@/components/global/star-rating";
 import { IProduct } from "@/types/IProduct";
@@ -52,8 +51,6 @@ export function ProductDetails({
     setPortalEl(document.getElementById("flyer-pricing-portal"));
   }, []);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number | number[]>>({});
-  const [designOption, setDesignOption] = useState<"upload" | "design">("upload");
-  const supportsPhotoCanvasDIY = /photo|canvas|frame|clock/i.test(`${product.name || ""} ${product.category || ""}`);
 
   useEffect(() => {
     if (product.printingOptions) {
@@ -162,10 +159,10 @@ const hasDesignVariations = (product.variations || []).length > 0;
       : null;
     const selectedConfiguration = isIslamicKhat && product.images.length > 1
       ? baseSize
-      : hasDesignVariations
-        ? `${baseSize} | Design: ${selectedVariationInfo?.label || "Not selected"}`
-        : `${baseSize} | Design: ${designOption === "upload" ? "Upload Artwork" : "Need Design Service"}`;
-    const artworkUrl = !isIslamicKhat && designOption === "upload" ? "https://example.com/mock-uploaded-artwork.pdf" : undefined; // Replace with actual uploaded file URL state if it exists
+        : hasDesignVariations
+          ? `${baseSize} | Design: ${selectedVariationInfo?.label || "Not selected"}`
+        : baseSize;
+    const artworkUrl = undefined;
     const selections = options.flatMap((option) => {
       const selected = selectedOptions[option.name];
       const indexes = Array.isArray(selected) ? selected : typeof selected === "number" ? [selected] : [];
@@ -193,13 +190,9 @@ const configVariationLabel = selectedVariationInfo?.label || "";
             image: configVariationImage,
             priceAdd: 0,
           }
-        : {
-            type: designOption === "upload" ? "upload" as const : "service" as const,
-            label: designOption === "upload" ? "Upload Artwork" : "Need Design Service",
-            priceAdd: designOption === "design" ? 100 : 0,
-          },
+        : undefined,
     };
-    const fixedPrice = !isIslamicKhat && designOption === "design" ? 100 : 0;
+    const fixedPrice = 0;
     const unitPrice = Math.max(0, (total - fixedPrice) / quantity);
     mutate({
       productId: product._id,
@@ -308,9 +301,9 @@ const stockBySize = product.sizes || [];
         setTimeout(() => setQuantity(availableQuantities[0]), 0);
       }
       
-      subtotal = exactPrice + (designOption === "design" ? 100 : 0);
+      subtotal = exactPrice;
     } else {
-      subtotal = product.price * quantity + (designOption === "design" ? 100 : 0); // fallback if no combination exists
+      subtotal = product.price * quantity; // fallback if no combination exists
     }
   } else {
     let optionAddons = 0;
@@ -328,7 +321,7 @@ const stockBySize = product.sizes || [];
     }
 
     const basePrice = product.price + optionAddons;
-    subtotal = basePrice * quantity + (designOption === "design" ? 100 : 0);
+    subtotal = basePrice * quantity;
   }
 
   const total = subtotal;
@@ -383,7 +376,6 @@ const stockBySize = product.sizes || [];
   };
 
   let currentStep = 1;
-  const designStepNum = product.category?.toLowerCase() !== "islamic khat" ? currentStep++ : 0;
   const formatStepNum = step1Options.length > 0 ? currentStep++ : 0;
   const printingStepNum = step2Options.length > 0 ? currentStep++ : 0;
   const addonsStepNum = step3Addons.length > 0 ? currentStep++ : 0;
@@ -430,73 +422,6 @@ const variationStepNum = (hasImageVariations || hasDesignVariations) ? currentSt
 
       <div className="space-y-6 p-4 sm:space-y-8 sm:p-6">
         
-        {/* STEP 1: Design Options */}
-        {product.category?.toLowerCase() !== "islamic khat" && (
-          <div className="space-y-4">
-          <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
-            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
-              {designStepNum}
-            </span>
-            <h2 className="font-sans text-base font-semibold text-gray-800 dark:text-foreground sm:text-lg">{label("Design & Artwork", "Reka Bentuk & Karya")}</h2>
-          </div>
-          
-          <div className="grid grid-cols-1 gap-2">
-            {product.name?.toLowerCase() === "portrait" ? (
-              <div className="flex flex-col p-6 border-2 border-primary bg-primary/5 dark:bg-primary/10 rounded-xl shadow-sm text-center">
-                <h3 className="text-xl font-black text-gray-900 dark:text-foreground uppercase mb-2">
-                  {label("UPLOAD YOUR PICTURE AT PROFILE PAGE", "MUAT NAIK GAMBAR DI HALAMAN PROFIL")}
-                </h3>
-                <p className="text-base text-gray-600 dark:text-muted-foreground">
-                  {label("AFTER YOU HAVE PLACED THE ORDER", "SELEPAS ANDA MEMBUAT PESANAN")}
-                </p>
-              </div>
-            ) : (
-              <div role="radiogroup" aria-label={label("Artwork source", "Sumber karya")} className="contents">
-                <label className={`flex cursor-pointer flex-col rounded-xl border p-4 transition-all duration-200 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
-                  designOption === "upload" 
-                    ? "border-primary bg-primary/5 ring-2 ring-primary/15 dark:bg-primary/10"
-                    : "border-gray-200 dark:border-border hover:border-primary/50"
-                }`}>
-                  <div className="flex items-center gap-3">
-                    <input 
-                      type="radio" 
-                      name="designOption" 
-                      className="w-4 h-4 text-primary focus:ring-primary accent-primary"
-                      checked={designOption === "upload"}
-                      onChange={() => setDesignOption("upload")}
-                    />
-                    <span className="text-sm font-bold text-gray-800 dark:text-foreground">{label("I have my own design", "Saya mempunyai reka bentuk sendiri")}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">{label("Upload your print-ready artwork (PDF, AI, PSD) during checkout or in your dashboard.", "Muat naik karya sedia cetak (PDF, AI, PSD) semasa checkout atau melalui dashboard.")}</p>
-                  {supportsPhotoCanvasDIY && <Link href="/diy?mode=canvas" onClick={(event) => event.stopPropagation()} className="ml-7 mt-3 inline-flex w-fit rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/10">{label("Create a photo canvas in our DIY editor", "Cipta photo canvas dalam DIY editor")}</Link>}
-                </label>
-
-                <label className={`flex cursor-pointer flex-col rounded-xl border p-4 transition-all duration-200 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
-                  designOption === "design" 
-                    ? "border-primary bg-primary/5 ring-2 ring-primary/15 dark:bg-primary/10"
-                    : "border-gray-200 dark:border-border hover:border-primary/50"
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <input 
-                        type="radio" 
-                        name="designOption" 
-                        className="w-4 h-4 text-primary focus:ring-primary accent-primary"
-                        checked={designOption === "design"}
-                        onChange={() => setDesignOption("design")}
-                      />
-                      <span className="text-sm font-bold text-gray-800 dark:text-foreground">{label("Let Kampung Cetak design for you", "Biar Kampung Cetak mereka bentuk untuk anda")}</span>
-                    </div>
-                    <span className="text-sm font-semibold text-primary">+RM 100.00</span>
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-muted-foreground ml-7 mt-1">{label("Our professional designers will create a custom design for your brand.", "Pereka profesional kami akan menghasilkan reka bentuk khas untuk jenama anda.")}</p>
-                </label>
-              </div>
-            )}
-          </div>
-        </div>
-        )}
-
         {/* STEP 2 */}
         {step1Options.length > 0 && (
           <div className="space-y-4">
@@ -728,7 +653,7 @@ const variationStepNum = (hasImageVariations || hasDesignVariations) ? currentSt
                       <tr key={q} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                         <td className="p-3 text-left font-semibold text-gray-800 dark:text-foreground">{q}</td>
                         {turnaroundOpt.options.map((opt, idx) => {
-                          const cellBasePrice = product.price + optionAddonsWithoutTurnaround + opt.priceAdd + (designOption === "design" ? 100 : 0);
+                          const cellBasePrice = product.price + optionAddonsWithoutTurnaround + opt.priceAdd;
                           const cellSubtotal = cellBasePrice * q;
                           const cellTotal = cellSubtotal * 1.07;
                           const isSelected = quantity === q && selectedOptions[turnaroundOpt.name] === idx;

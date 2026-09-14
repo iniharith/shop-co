@@ -51,7 +51,7 @@ export const useProducts = (id?: string) => {
     const client = useQueryClient()
     const apiFn = !id ? getProducts : getProductById;
     const queryKey = !id ? "products" : "product";
-    const { data, isPending } = useQueryData([queryKey, id], () => apiFn(id as string), { enabled: true, staleTime: 5 * 60_000 });
+    const { data, isPending } = useQueryData([queryKey, id], () => apiFn(id as string), { enabled: true, staleTime: 0, refetchInterval: 30_000 });
     type type = IProductResponse & IProductByIdResponse;
     const response = data as type;
 
@@ -61,7 +61,7 @@ export const useProducts = (id?: string) => {
 
 export const useSearchProducts = (query: string) => {
     const terms = getSearchTerms(query);
-    const { data: response, isPending } = useQueryData(["product-search", query], () => searchProducts(query), { enabled: terms[0]?.length >= 2, staleTime: 60_000 });
+    const { data: response, isPending } = useQueryData(["product-search", query], () => searchProducts(query), { enabled: terms[0]?.length >= 2, staleTime: 0, refetchInterval: 30_000 });
     const keywordResults = (response as IProductResponse | undefined)?.products || [];
     const [ai, setAi] = useState<{ products: any[]; summary: string | null } | null>(null);
 
@@ -97,13 +97,13 @@ export const useSearchProducts = (query: string) => {
 }
 
 export const useGetProductByCategory = (category: string) => {
-    const { data, isPending } = useQueryData(["products-category", category], () => getProductByCategory(category));
+    const { data, isPending } = useQueryData(["products-category", category], () => getProductByCategory(category), { staleTime: 0, refetchInterval: 30_000 });
     return { data: data as IProductResponse, isPending };
 }
 
 
 export const useGetAvailableCategories = () => {
-    const { data, isPending } = useQueryData(["getAvailableCategories"], () => getAvailableCategories());
+    const { data, isPending } = useQueryData(["getAvailableCategories"], () => getAvailableCategories(), { staleTime: 0, refetchInterval: 30_000 });
     type type = ICategoryResponse;
     const response = data as type;
     return { data: response, isPending };
@@ -118,7 +118,7 @@ export const useFilterProducts = () => {
     const { data: response, isPending } = useQueryData(
         ["products-filter", searchQuery, serviceCategories, turnarounds, formats, materials, priceRange],
         () => filterProducts({ minPrice: priceRange[0], maxPrice: priceRange[1], category: serviceCategories.map((category) => categorySections[category] || category.toUpperCase()), size: formats, limit: 1000, page: 1 }),
-        { staleTime: 60_000 }
+        { staleTime: 0, refetchInterval: 30_000 }
     );
     let filtered = [...((response as IProductResponse | undefined)?.products || [])];
 
