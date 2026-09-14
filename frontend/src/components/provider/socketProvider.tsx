@@ -48,8 +48,7 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   }, [isSoundEnabled]);
 
   useEffect(() => {
-    if (!session?.user) return;
-    const socket = getSocket(session);
+    const socket = getSocket(session || undefined);
 
     socket.on("connect", () => {
       console.log("🟢 connected to socket");
@@ -87,6 +86,21 @@ const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     socket.on("disconnect", () => {
       console.log("🔴 disconnected from socket");
     });
+
+    socket.on("product_updated", () => {
+      void client.invalidateQueries({ queryKey: ["products"] });
+      void client.invalidateQueries({ queryKey: ["product"] });
+      void client.invalidateQueries({ queryKey: ["products-category"] });
+      void client.invalidateQueries({ queryKey: ["products-filter"] });
+      void client.invalidateQueries({ queryKey: ["product-search"] });
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("notification");
+      socket.off("disconnect");
+      socket.off("product_updated");
+    };
   }, [session?.user]);
 
   return <>{children}</>;

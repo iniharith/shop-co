@@ -34,6 +34,9 @@ export function handleRedisAndSocketMessageClient(redisService: RedisService, io
             case REDIS_CHANNELS.CHAT_TYPING:
                 io.emit("chat_typing", JSON.parse(message));
                 break;
+            case REDIS_CHANNELS.PRODUCT_UPDATED:
+                io.emit("product_updated", JSON.parse(message));
+                break;
 
         }
 
@@ -83,6 +86,9 @@ export function handleRedisAndSocketMessageAdmin(redisService: RedisService, io:
                 break;
             case REDIS_CHANNELS.TASK_TYPING:
                 io.emit("task_typing", JSON.parse(message));
+                break;
+            case REDIS_CHANNELS.PRODUCT_UPDATED:
+                io.emit("product_updated", JSON.parse(message));
                 break;
         }
 

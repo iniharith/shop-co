@@ -21,4 +21,5 @@ export enum REDIS_CHANNELS {
     FILES_UPDATED = "files_updated",
     TASK_UPDATED = "task_updated",
     TASK_TYPING = "task_typing",
+    PRODUCT_UPDATED = "product_updated",
 }

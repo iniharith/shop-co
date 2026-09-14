@@ -12,6 +12,7 @@ import { StockAdjustment } from '../../domain/entities/StockAdjustment';
 import productRepository from '../../infrastructure/db/repositories/product.repository';
 import { getProductSections } from '../../shared/constants/productSections';
 import OrderModel from '../../infrastructure/db/models/order.model';
+import { emitProductUpdated } from '../../shared/utils/productBroadcast';
 
 const router = Router();
 const redis = new RedisService();
@@ -468,6 +469,7 @@ router.post('/', async (req, res, next) => {
       }));
     if (initialAdjustments.length) await StockAdjustment.insertMany(initialAdjustments);
     await invalidateCatalog();
+    void emitProductUpdated(created, 'created');
     res.status(201).json({ success: true, product: created });
   } catch (error) {
     next(error);
@@ -532,6 +534,7 @@ router.patch('/:id', async (req, res, next) => {
     });
     if (stockChanges.length) await StockAdjustment.insertMany(stockChanges);
     await invalidateCatalog();
+    void emitProductUpdated(updated, 'updated');
     res.json({ success: true, product: updated });
   } catch (error) {
     next(error);
@@ -587,6 +590,7 @@ router.post('/:id/stock-adjustments', async (req, res, next) => {
         message: 'Stock changed before it could be saved. Please try again.',
       });
     await invalidateCatalog();
+    void emitProductUpdated(updated, 'updated');
     res.json({ success: true, product: updated });
   } catch (error) {
     next(error);
@@ -606,6 +610,7 @@ router.patch('/:id/archive', async (req, res, next) => {
     if (!updated)
       return res.status(404).json({ success: false, message: 'Product not found.' });
     await invalidateCatalog();
+    void emitProductUpdated(updated, 'archived');
     res.json({ success: true, product: updated });
   } catch (error) {
     next(error);
