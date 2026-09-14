@@ -50,6 +50,70 @@ const HOT_MIN = 1.0;
 /* live per-service shares of the measured aggregate bandwidth (sat to sum 1) */
 const SHARE: Record<Exclude<DependencyKey, "vercel" | "railway">, number> = { mongo: 0.42, redis: 0.2, s3: 0.38 };
 
+/* ---- flow arcs (netscene_flows.js port) ---- */
+const F_SEG = 20;
+const F_P_CAP = 1024;
+const F_MAXP_FLOW = 6;
+const F_TRAIL = 4;
+const F_RIB_MIN = 1.0;
+const F_RIB_MAX = 5.5;
+const F_RIB_TAIL = 0.55;
+const F_ARC_BASE = 46;
+const F_ARC_MAX = 132;
+const F_ARC_RISE = 0.2;
+const F_TAIL_BPS = 3000;
+const F_DUP_SP = 16;
+const F_SPLAY = 34;
+const F_CHEV_T = 0.62;
+const F_CHEV_SZ = 10.5;
+const F_LBL_MAX = 5;
+const F_LBL_MAX_INT = 3;
+const F_LBL_MAX_EXT = 2;
+const F_LBL_MIN_BPS = 900;
+const F_LBL_W = 148;
+const C_EPS = 1e-4;
+const F_PROTO_HEX: Record<string, number> = { HTTPS: 0x5ad7ff, MONGODB: 0xff8fab, REDIS: 0xff8fab, S3: 0xffb347 };
+
+interface FlowData {
+  src: string;
+  dst: string;
+  src_label: string;
+  dst_label: string;
+  bps: number;
+  proto: string;
+  internal: boolean;
+}
+interface FlowComet { p: number; rate: number; dir: number; }
+interface PairSim {
+  key: string;
+  src: SceneNode | null;
+  dst: SceneNode | null;
+  flow: FlowData | null;
+  bps: number;
+  u: number;
+  tail: boolean;
+  color: THREE.Color;
+  geo: THREE.BufferGeometry;
+  mesh: THREE.Mesh;
+  mat: THREE.MeshBasicMaterial;
+  pos: Float32Array;
+  comets: FlowComet[];
+  chev: THREE.Sprite | null;
+  lbl: THREE.Sprite | null;
+  lastText: string;
+}
+interface FlowsSim {
+  grp: THREE.Group;
+  pairs: PairSim[];
+  cPos: Float32Array;
+  cCol: Float32Array;
+  cActive: number;
+  cGeo: THREE.BufferGeometry;
+  cPts: THREE.Points;
+  viewW: number;
+  viewH: number;
+}
+
 const stateToStatus = (s: OpsStatus["state"]): "up" | "warn" | "down" | "unknown" =>
   s === "healthy" ? "up" : s === "degraded" || s === "stale" ? "warn" : s === "down" ? "down" : "unknown";
 
@@ -90,7 +154,7 @@ function fmtIO(b: number) {
 function hex(c: number) { return `#${(`00000${c.toString(16)}`).slice(-6)}`; }
 function smst(t: number) { return t * t * t * (t * (t * 6 - 15) + 10); }
 
-interface NodeMeta { cpu?: number | null; mem_pct?: number | null; disk_pct?: number | null; dr?: number; dw?: number; up?: number; model?: string; port?: number; cat?: string; }
+interface NodeMeta { cpu?: number | null; mem_pct?: number | null; disk_pct?: number | null; dr?: number; dw?: number; up?: number; model?: string; port?: number; cat?: string; count?: number; }
 
 interface SceneNode {
   id: string;
@@ -103,6 +167,7 @@ interface SceneNode {
   tx: number;
   measured: boolean;
   meta?: NodeMeta;
+  _count?: number;
   _x: number; _y: number; _z: number;
   _cx: number; _cy: number; _cz: number;
   _depth: number;
@@ -631,8 +696,9 @@ interface Sim {
   manTarget: THREE.Vector3;
   dragging: boolean;
   lastPointer: { x: number; y: number };
-  applyLive?: (deps: Dependencies, bi: number, bo: number, si: number, ex: { cpu?: number }) => void;
+  applyLive?: (deps: Dependencies, bi: number, bo: number, si: number, ex: { cpu?: number; counts?: Partial<Record<string, number>> }) => void;
   dispose?: () => void;
+  flows: FlowsSim | null;
 }
 interface LinkSim {
   data: TopoLink;
@@ -745,6 +811,11 @@ function makeTexts() {
 }
 
 /* ---- layout (tidy layered tree; sorted by kind, deterministic) ---- */
+function guestCount(list: SceneNode[]) {
+  let sum = 0, any = false;
+  list.forEach(k => { if (k._count !== undefined) { sum += k._count; any = true; } });
+  return any ? sum : list.length;
+}
 function computeLayout(topo: TopoTopo, sim: Sim) {
   const byId: Record<string, SceneNode> = {};
   const kids: Record<string, SceneNode[]> = {};
@@ -871,7 +942,7 @@ function computeLayout(topo: TopoTopo, sim: Sim) {
             k._bcz = bz;
           });
           caps.push({
-            txt: `${B.cat.toUpperCase()} · ${B.list.length}`,
+            txt: `${B.cat.toUpperCase()} · ${guestCount(B.list)}`,
             col: hex(CAT[B.cat] !== undefined ? CAT[B.cat] : 0x8fb0d0),
             list: B.list,
             x: bx + ((B.rows - 1) * LEAF_SP) / 2,
@@ -1436,6 +1507,302 @@ function updateHotLabels(sim: Sim) {
   return; // guests carry no CPU telemetry — the lattice stays a quiet dim map
 }
 
+/* ---- flow arcs (netscene_flows.js port) ---- */
+function flowNorm(bps: number) {
+  const b = Math.max(0, +bps || 0);
+  if (b < 1e2) return 0;
+  return Math.min(1, (Math.log10(b) - 2) / 6);
+}
+function fmtBits(bps: number) {
+  const b = Math.max(0, +bps || 0);
+  if (b < 1e3) return `${b.toFixed(0)} b/s`;
+  if (b < 1e6) return `${(b / 1e3).toFixed(1)} kb/s`;
+  if (b < 1e9) return `${(b / 1e6).toFixed(1)} Mb/s`;
+  return `${(b / 1e9).toFixed(2)} Gb/s`;
+}
+function chevTex() {
+  return canvasTex(64, (x, s) => {
+    x.globalCompositeOperation = "lighter";
+    for (let i = 0; i < 5; i++) {
+      const k = i / 4;
+      x.strokeStyle = `rgba(255,255,255,${(0.9 - 0.18 * k).toFixed(2)})`;
+      x.lineWidth = 5 - 2.4 * k;
+      x.lineCap = "round";
+      x.beginPath();
+      x.moveTo(s * 0.26, s * 0.22 + k * s * 0.13);
+      x.lineTo(s * 0.74, s * 0.5 + k * s * 0.14);
+      x.lineTo(s * 0.26, s * 0.78 - k * s * 0.14);
+      x.stroke();
+    }
+  });
+}
+function flowLabelSprite() {
+  const W = 704, H = 72, cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const x = cv.getContext("2d")!;
+  const t = new THREE.CanvasTexture(cv);
+  t.minFilter = THREE.LinearFilter;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending }));
+  s.scale.set(F_LBL_W, (F_LBL_W * H) / W, 1);
+  s.visible = false;
+  let last = "";
+  s.userData.setText = (text: string) => {
+    if (text === last) return;
+    last = text;
+    x.clearRect(0, 0, W, H);
+    x.textAlign = "center";
+    x.textBaseline = "middle";
+    x.font = "600 30px ui-monospace,Consolas,monospace";
+    const tw = x.measureText(text).width;
+    x.fillStyle = "rgba(3,9,17,0.62)";
+    x.fillRect((W - tw - 30) / 2, (H - 42) / 2, tw + 30, 42);
+    x.shadowColor = "rgba(2,5,11,0.9)";
+    x.shadowBlur = 6;
+    x.fillStyle = "#d6ecff";
+    x.fillText(text, W / 2, H / 2 + 1);
+    t.needsUpdate = true;
+  };
+  return s;
+}
+function ribbonGeometry() {
+  const vertCount = (F_SEG + 1) * 2;
+  const idx: number[] = [];
+  for (let i = 0; i < F_SEG; i++) {
+    const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
+    idx.push(a, c, b, b, c, d);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(vertCount * 3), 3).setUsage(THREE.DynamicDrawUsage));
+  g.setIndex(idx);
+  return g;
+}
+const _fA = new THREE.Vector3(), _fB = new THREE.Vector3(), _fM = new THREE.Vector3(), _fV = new THREE.Vector3();
+const _fP = new THREE.Vector3(), _fT = new THREE.Vector3(), _fN = new THREE.Vector3(), _fW = new THREE.Vector3();
+function arcSample(p: PairSim, t: number, out: THREE.Vector3) {
+  const a = _fA, b = _fB;
+  a.set(p.src?._cx ?? 0, p.src?._cy ?? 0, p.src?._cz ?? 0);
+  b.set(p.dst?._cx ?? 0, p.dst?._cy ?? 0, p.dst?._cz ?? 0);
+  const len = Math.max(1e-3, a.distanceTo(b));
+  const hoist = (F_ARC_RISE * len + F_ARC_BASE + (F_ARC_MAX - F_ARC_BASE) * p.u) * (p.u > 0 ? 1 : 0.35);
+  _fM.copy(a).add(b).multiplyScalar(0.5);
+  _fM.y += hoist;
+  const mt = 1 - t;
+  out.copy(a).multiplyScalar(mt * mt).addScaledVector(_fM, 2 * mt * t).addScaledVector(b, t * t);
+  return out;
+}
+function updateRibbon(p: PairSim, cam: THREE.Vector3) {
+  const a = _fA, b = _fB;
+  a.set(p.src?._cx ?? 0, p.src?._cy ?? 0, p.src?._cz ?? 0);
+  b.set(p.dst?._cx ?? 0, p.dst?._cy ?? 0, p.dst?._cz ?? 0);
+  const len = Math.max(1e-3, a.distanceTo(b));
+  const hoist = p.u > 0 ? F_ARC_RISE * len + F_ARC_BASE + (F_ARC_MAX - F_ARC_BASE) * p.u : (F_ARC_RISE * len + F_ARC_BASE) * 0.35;
+  _fM.copy(a).add(b).multiplyScalar(0.5);
+  _fM.y += hoist;
+  const halfW = (F_RIB_MIN + (F_RIB_MAX - F_RIB_MIN) * p.u) * 0.5 * (p.tail ? F_RIB_TAIL : 1);
+  const pos = p.pos;
+  for (let i = 0; i <= F_SEG; i++) {
+    const t = i / F_SEG, mt = 1 - t;
+    _fV.copy(a).multiplyScalar(mt * mt).addScaledVector(_fM, 2 * mt * t).addScaledVector(b, t * t);
+    const t0 = Math.max(0, t - C_EPS), t1 = Math.min(1, t + C_EPS);
+    _fP.copy(a).multiplyScalar((1 - t0) * (1 - t0)).addScaledVector(_fM, 2 * (1 - t0) * t0).addScaledVector(b, t0 * t0);
+    _fT.copy(a).multiplyScalar((1 - t1) * (1 - t1)).addScaledVector(_fM, 2 * (1 - t1) * t1).addScaledVector(b, t1 * t1);
+    _fW.copy(_fT).sub(_fP);
+    if (_fW.lengthSq() < 1e-8) _fW.set(1, 0, 0);
+    _fN.copy(cam).sub(_fV).cross(_fW);
+    if (_fN.lengthSq() < 1e-8) _fN.set(0, 1, 0);
+    _fN.normalize();
+    _fW.copy(_fN).cross(_fW).normalize().multiplyScalar(halfW);
+    const o = i * 6;
+    pos[o] = _fV.x + _fW.x; pos[o + 1] = _fV.y + _fW.y; pos[o + 2] = _fV.z + _fW.z;
+    pos[o + 3] = _fV.x - _fW.x; pos[o + 4] = _fV.y - _fW.y; pos[o + 5] = _fV.z - _fW.z;
+  }
+  p.geo.attributes.position.needsUpdate = true;
+}
+function makeFlows(sim: Sim, viewW: number, viewH: number) {
+  const grp = new THREE.Group();
+  grp.renderOrder = 10;
+  sim.scene.add(grp);
+  const cPos = new Float32Array(F_P_CAP * 3);
+  const cCol = new Float32Array(F_P_CAP * 3);
+  const cGeo = new THREE.BufferGeometry();
+  cGeo.setAttribute("position", new THREE.BufferAttribute(cPos, 3).setUsage(THREE.DynamicDrawUsage));
+  cGeo.setAttribute("color", new THREE.BufferAttribute(cCol, 3).setUsage(THREE.DynamicDrawUsage));
+  cGeo.setDrawRange(0, 0);
+  cGeo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 50000);
+  const cPts = new THREE.Points(cGeo, new THREE.PointsMaterial({
+    size: 5.2, map: dotTex(), vertexColors: true, transparent: true,
+    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
+  }));
+  cPts.frustumCulled = false;
+  grp.add(cPts);
+  const flows: FlowsSim = { grp, pairs: [], cPos, cCol, cActive: 0, cGeo, cPts, viewW, viewH };
+  const byKey: Record<string, PairSim> = {};
+  const cn = new THREE.Color();
+
+  const emptyGeo = (key: string, col: number): PairSim => {
+    const geo = ribbonGeometry();
+    const mat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.12, depthWrite: false, blending: THREE.AdditiveBlending });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.frustumCulled = false;
+    grp.add(mesh);
+    const chevMat = new THREE.SpriteMaterial({ map: chevTex(), color: col, transparent: true, opacity: 0, depthWrite: false, fog: false, blending: THREE.AdditiveBlending });
+    const chev = new THREE.Sprite(chevMat);
+    chev.scale.set(F_CHEV_SZ, F_CHEV_SZ, 1);
+    chev.renderOrder = 12;
+    grp.add(chev);
+    const lbl = flowLabelSprite();
+    lbl.renderOrder = 12;
+    grp.add(lbl);
+    const p: PairSim = {
+      key, src: null, dst: null, flow: null, bps: 0, u: 0, tail: true,
+      color: cn, geo, mesh, mat,
+      pos: geo.attributes.position.array as Float32Array,
+      comets: [], chev, lbl, lastText: "",
+    };
+    flows.pairs.push(p);
+    return p;
+  };
+
+  const update = (list: FlowData[], vw: number, vh: number) => {
+    if (vw) flows.viewW = vw;
+    if (vh) flows.viewH = vh;
+    list.forEach(f => {
+      const key = `${f.src}>${f.dst}`;
+      let p = byKey[key];
+      if (!p) {
+        const col = flowColorHex(f);
+        p = emptyGeo(key, col);
+        p.src = sim.byId[f.src] || null;
+        p.dst = sim.byId[f.dst] || null;
+        byKey[key] = p;
+      }
+      p.flow = f;
+      p.bps = Math.max(0, +f.bps || 0);
+      p.u = flowNorm(p.bps);
+      p.tail = p.bps < F_TAIL_BPS;
+      cn.setHex(flowColorHex(f));
+      p.color.copy(cn);
+      p.mat.color.copy(cn);
+      (p.chev!.material as THREE.SpriteMaterial).color.copy(cn);
+      const want = p.u <= 0 ? 1 : Math.max(1, Math.min(F_MAXP_FLOW, Math.round(p.u * F_MAXP_FLOW)));
+      if (p.comets.length !== want) {
+        p.comets = Array.from({ length: want }, (_, j) => ({ p: (j / want + 0.03) % 1, rate: 0, dir: j % 2 === 0 ? 1 : -1 }));
+      }
+      const spd = 0.3 + 1.9 * p.u;
+      p.comets.forEach(c => { c.rate = spd; });
+      if (p.lbl && p.flow) {
+        const text = `${p.flow.src_label} → ${p.flow.dst_label} / ${p.flow.proto} · ${fmtBits(p.bps)}`;
+        p.lbl.userData.setText?.(text);
+      }
+    });
+  };
+
+  const tick = (t: number, dt: number) => {
+    const cam = sim.cam.position;
+    const pairs = flows.pairs.slice().sort((a, b) => b.bps - a.bps);
+    let ptr = 0, shown = 0, ints = 0, exts = 0;
+    const placed: Array<{ x: number; y: number }> = [];
+    pairs.forEach((p, pi) => {
+      const live = p.flow && p.src && p.dst;
+      if (!live) { p.mesh.visible = false; p.chev!.visible = false; p.lbl.visible = false; return; }
+      p.mesh.visible = true;
+      const u = p.u;
+      const lf = Math.min(nodeFocus(sim, p.src!.id), nodeFocus(sim, p.dst!.id));
+      const vlen = Math.max(1, _fA.set(p.src!._cx, p.src!._cy, p.src!._cz).distanceTo(_fB.set(p.dst!._cx, p.dst!._cy, p.dst!._cz)));
+      p.comets.forEach(c => {
+        c.p += (c.rate * (vlen / 200)) * dt * c.dir;
+        if (c.p > 1) c.p -= 1;
+        else if (c.p < 0) c.p += 1;
+      });
+      p.comets.forEach((c, j) => {
+        const lateral = (u > 0 ? (j - (p.comets.length - 1) / 2) * F_SPLAY * 0.5 * u : 0);
+        for (let k = 0; k < F_TRAIL && ptr < F_P_CAP; k++) {
+          const raw = c.p - (k > 0 ? (F_DUP_SP * k) / vlen : 0);
+          const tt = ((raw % 1) + 1) % 1;
+          arcSample(p, tt, _fV);
+          _fV.y += lateral * 0.16;
+          const f = (1 - k / F_TRAIL * 0.82) * (c.dir === 1 ? 1 : 0.65) * (u <= 0 ? 0.55 : 1);
+          cCol[ptr * 3] = p.color.r * f;
+          cCol[ptr * 3 + 1] = p.color.g * f;
+          cCol[ptr * 3 + 2] = p.color.b * f;
+          cPos[ptr * 3] = _fV.x; cPos[ptr * 3 + 1] = _fV.y; cPos[ptr * 3 + 2] = _fV.z;
+          ptr++;
+        }
+      });
+      updateRibbon(p, cam);
+      p.mat.opacity = (p.tail ? 0.1 : 0.14 + 0.55 * u) * lf;
+      p.chev!.visible = lf > 0.02;
+      if (p.chev!.visible) {
+        arcSample(p, F_CHEV_T, _fV);
+        p.chev!.position.copy(_fV);
+        const pulse = 0.5 + 0.5 * Math.sin(t * 2.4 + pi * 1.7);
+        (p.chev!.material as THREE.SpriteMaterial).opacity = (0.18 + 0.42 * u) * (0.35 + 0.65 * pulse) * lf;
+        const cs = (0.8 + 0.5 * u) * F_CHEV_SZ;
+        p.chev!.scale.set(cs, cs, 1);
+      }
+      let lblOn = false;
+      if (p.flow && p.bps >= F_LBL_MIN_BPS && lf > 0.5) {
+        const canExt = p.flow.internal ? ints < F_LBL_MAX_INT : exts < F_LBL_MAX_EXT;
+        if (shown < F_LBL_MAX && canExt) {
+          const mid = arcSample(p, 0.5, _fT);
+          _fN.copy(mid).project(sim.cam);
+          const fx = (_fN.x + 1) / 2, fy = (1 - _fN.y) / 2;
+          if (fx >= 0.18 && fx <= 0.81 && fy >= 0.12 && fy <= 0.76) {
+            let clash = false;
+            for (let i = 0; i < placed.length && !clash; i++) {
+              const q = placed[i];
+              if (Math.abs(q.x - fx) < 0.055 && Math.abs(q.y - fy) < 0.05) clash = true;
+            }
+            for (let li = 0; li < sim.labels.length && !clash; li++) {
+              const L = sim.labels[li];
+              const lu = _fP.copy(L.position).project(sim.cam);
+              if (Math.abs((lu.x + 1) / 2 - fx) < 0.07 && Math.abs((1 - lu.y) / 2 - fy) < 0.05) clash = true;
+            }
+            if (!clash) {
+              shown++; if (p.flow.internal) ints++; else exts++;
+              placed.push({ x: fx, y: fy });
+              lblOn = true;
+            }
+          }
+        }
+      }
+      p.lbl.visible = lblOn;
+      if (lblOn) {
+        const lp = arcSample(p, 0.5, _fV);
+        lp.y += F_ARC_MAX * u + 16;
+        p.lbl.position.copy(lp);
+        const lproj = _fN.copy(lp).project(sim.cam);
+        placed[placed.length - 1] = { x: (lproj.x + 1) / 2, y: (1 - lproj.y) / 2 };
+      } else {
+        p.lbl.material.opacity = 0;
+      }
+    });
+    flows.cActive = ptr;
+    flows.cGeo.setDrawRange(0, ptr);
+    flows.cGeo.attributes.position.needsUpdate = true;
+    flows.cGeo.attributes.color.needsUpdate = true;
+  };
+
+  const dispose = () => {
+    let p: PairSim | undefined;
+    while ((p = flows.pairs.pop())) {
+      p.geo.dispose();
+      p.mat.dispose();
+      p.chev!.material.dispose();
+      p.chev!.geometry?.dispose?.();
+      p.lbl!.material.dispose();
+      if (p.lbl!.material.map) p.lbl!.material.map.dispose();
+    }
+    flows.cGeo.dispose();
+    (flows.cPts.material as THREE.Material).dispose();
+    ((flows.cPts.material as THREE.PointsMaterial).map as THREE.Texture)?.dispose?.();
+    grp.removeFromParent();
+    sim.flows = null;
+  };
+
+  return { update, tick, dispose, flows };
+}
+
 /* ---- hover ---- */
 function hover(sim: Sim) {
   if (!sim.tip || sim.mouse.x < -2) return;
@@ -1457,6 +1824,7 @@ function hover(sim: Sim) {
   if (n.meta && n.meta.model) l2.push(n.meta.model);
   rows.push(l2.join(" · "));
   rows.push(`<span style="color:${hex(PAL.cyan)}">↓ ${fmtRate(n.rx)}</span> · <span style="color:${hex(PAL.magenta)}">↑ ${fmtRate(n.tx)}</span>`);
+  if (n._count !== undefined) rows.push(`<span style="color:${hex(PAL.dim)}">${n._count.toLocaleString()} records</span>`);
   if (n.meta && (n.meta.cpu != null || n.meta.mem_pct != null)) {
     const m3: string[] = [];
     if (n.meta.cpu != null) m3.push(`cpu ${Number(n.meta.cpu).toFixed(1)}%`);
@@ -1473,7 +1841,7 @@ function hover(sim: Sim) {
 }
 
 /* ============================ data model ============================ */
-function buildTopology(deps: Dependencies, bytesIn: number, bytesOut: number, sampleInterval: number, extras: { cpu?: number; rpm?: number; p95?: number }) {
+function buildTopology(deps: Dependencies, bytesIn: number, bytesOut: number, sampleInterval: number, extras: { cpu?: number; rpm?: number; p95?: number; counts?: Partial<Record<string, number>> }) {
   const sec = Math.max(sampleInterval, 1);
   const rxTotal = bytesIn / sec;
   const txTotal = bytesOut / sec;
@@ -1500,7 +1868,12 @@ function buildTopology(deps: Dependencies, bytesIn: number, bytesOut: number, sa
     ["exports", "s3", "exports"],
   ];
   guests.forEach(([id, host, cat]) => {
-    nodes.push(mkNode(id, "guest", host, id, "", "up", 0, 0, cat));
+    const node = mkNode(id, "guest", host, id, "", "up", 0, 0, cat);
+    if (extras.counts && extras.counts[id] !== undefined) {
+      node._count = Math.max(0, Math.round(extras.counts[id] || 0));
+      node.meta = { ...(node.meta || {}), cat, count: node._count } as NodeMeta;
+    }
+    nodes.push(node);
   });
   const links: TopoLink[] = [
     { source: "wan", target: "gateway", measured: true, bps: rxTotal + txTotal },
@@ -1510,6 +1883,22 @@ function buildTopology(deps: Dependencies, bytesIn: number, bytesOut: number, sa
   ];
   guests.forEach(([id, host]) => { links.push({ source: host, target: id, measured: false, bps: 0 }); });
   return { nodes, links };
+}
+
+function buildFlowsData(bytesIn: number, bytesOut: number, sampleInterval: number): FlowData[] {
+  const sec = Math.max(sampleInterval, 1);
+  const rx = bytesIn / sec, tx = bytesOut / sec;
+  const total = Math.max(0, rx + tx);
+  const toBit = (v: number) => Math.max(0, +v || 0) * 8;
+  return [
+    { src: "wan", dst: "gateway", src_label: "VERCEL EDGE", dst_label: "RAILWAY API", bps: toBit(total), proto: "HTTPS", internal: false },
+    { src: "gateway", dst: "mongo", src_label: "RAILWAY API", dst_label: "MONGODB ATLAS", bps: toBit(total * SHARE.mongo), proto: "MONGODB", internal: true },
+    { src: "gateway", dst: "redis", src_label: "RAILWAY API", dst_label: "REDIS", bps: toBit(total * SHARE.redis), proto: "REDIS", internal: true },
+    { src: "gateway", dst: "s3", src_label: "RAILWAY API", dst_label: "AWS S3", bps: toBit(total * SHARE.s3), proto: "S3", internal: true },
+  ];
+}
+function flowColorHex(f: { proto: string; internal: boolean }) {
+  return f.internal ? F_PROTO_HEX[f.proto] || 0x8fb0d0 : 0xffb347;
 }
 
 function buildGraph(sim: Sim, topo: TopoTopo, setTourText: (t: string) => void) {
@@ -1601,6 +1990,7 @@ export default function GalaxyTopology({
   memoryBytes = 0,
   eventLoopLagMs = 0,
   uptimeSeconds = 0,
+  counts,
 }: {
   dependencies: Dependencies;
   bytesIn: number;
@@ -1612,11 +2002,14 @@ export default function GalaxyTopology({
   memoryBytes?: number;
   eventLoopLagMs?: number;
   uptimeSeconds?: number;
+  counts?: Partial<Record<string, number>>;
 }) {
   const canvasHostRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const tourRef = useRef<HTMLParagraphElement>(null);
   const simRef = useRef<Sim | null>(null);
+  const countsRef = useRef<Partial<Record<string, number>>>({});
+  countsRef.current = counts || {};
   const [tourText, setTourText] = useState("");
   const [webglUnavailable, setWebglUnavailable] = useState(false);
   const tourTextRef = useRef("");
@@ -1641,16 +2034,16 @@ export default function GalaxyTopology({
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(PAL.bg);
     scene.fog = new THREE.FogExp2(PAL.bg, 0.0006);
-    const camera = new THREE.PerspectiveCamera(42, 1, 8, 40000);
+    const camera = new THREE.PerspectiveCamera(58, 1, 0.5, 18000);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
     renderer.setClearColor(PAL.bg, 1);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.2;
     host.appendChild(renderer.domElement);
 
     const composer = new EffectComposer(renderer);
     const renderPass = new RenderPass(scene, camera);
-    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.5, 0.45, 0.72);
+    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.95, 0.6, 0.78);
     composer.addPass(renderPass);
     composer.addPass(bloom);
     composer.setPixelRatio(renderer.getPixelRatio());
@@ -1666,7 +2059,7 @@ export default function GalaxyTopology({
     const dl = new THREE.DirectionalLight(0xcfe4ff, 1.05);
     dl.position.set(-420, 540, 320);
     scene.add(dl);
-    scene.add(new THREE.AmbientLight(0x223448, 0.6));
+    scene.add(new THREE.AmbientLight(0x44557a, 0.6));
     const grid = new THREE.GridHelper(2600, 52, 0x11273f, 0x081525);
     grid.position.y = -64;
     (grid.material as THREE.Material).transparent = true;
@@ -1712,6 +2105,7 @@ export default function GalaxyTopology({
       tour: null, tourEl: tourRef.current, tourTxt: "",
       man: { az: 0, el: 0.6, dist: 900 }, manTarget: new THREE.Vector3(),
       dragging: false, lastPointer: { x: 0, y: 0 },
+      flows: null,
     };
     sim.ray.params.Points = { threshold: 0 };
     scene.add(sim.background);
@@ -1726,6 +2120,10 @@ export default function GalaxyTopology({
     tourPose(sim, sim.tour!.stops[0], 0, TP.pos, TP.tgt);
     sim.tour!.P0.copy(sim.cam.position);
     sim.tour!.T0.copy(sim.manTarget);
+
+    const flowS = makeFlows(sim, host.clientWidth || 800, host.clientHeight || 420);
+    sim.flows = flowS.flows;
+    flowS.update(buildFlowsData(bytesIn, bytesOut, sampleInterval), host.clientWidth || 800, host.clientHeight || 420);
 
     /* ---- interaction: drag-orbit, wheel dolly, hover ---- */
     const syncMan = () => {
@@ -1788,6 +2186,7 @@ export default function GalaxyTopology({
       camera.updateProjectionMatrix();
       renderer.setSize(width, height, false);
       composer.setSize(width, height);
+      if (sim.flows) { sim.flows.viewW = width; sim.flows.viewH = height; }
     };
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(host);
@@ -1832,6 +2231,7 @@ export default function GalaxyTopology({
       }
 
       tickParticles(sim, dt);
+      if (sim.flows) flowS.tick(sim.t, dt);
 
       for (let i = 0; i < sim.alertRings.length; i++) {
         sim.alertRings[i].material.opacity = 0.4 + 0.3 * Math.sin(sim.t * 2.2);
@@ -1866,7 +2266,7 @@ export default function GalaxyTopology({
     };
     frame = requestAnimationFrame(render);
 
-    simRef.current.applyLive = (deps: Dependencies, bi: number, bo: number, si: number, ex: { cpu?: number }) => {
+    simRef.current.applyLive = (deps: Dependencies, bi: number, bo: number, si: number, ex: { cpu?: number; counts?: Partial<Record<string, number>> }) => {
       const topo = buildTopology(deps, bi, bo, si, ex);
       topo.nodes.forEach(nn => {
         const o = sim.byId[nn.id];
@@ -1883,6 +2283,7 @@ export default function GalaxyTopology({
         }
       });
       applyLive(sim, topo);
+      if (sim.flows) flowS.update(buildFlowsData(bi, bo, si), host.clientWidth || 800, host.clientHeight || 420);
     };
 
     const dispose = () => {
@@ -1900,6 +2301,7 @@ export default function GalaxyTopology({
       });
       bloom.dispose();
       composer.dispose();
+      flowS.dispose();
       renderer.dispose();
       renderer.domElement.remove();
       simRef.current = null;
@@ -1911,9 +2313,9 @@ export default function GalaxyTopology({
   }, []);
 
   useEffect(() => {
-    simRef.current?.applyLive?.(dependencies, bytesIn, bytesOut, sampleInterval, { cpu: cpuPercent });
+    simRef.current?.applyLive?.(dependencies, bytesIn, bytesOut, sampleInterval, { cpu: cpuPercent, counts: countsRef.current });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dependencies, bytesIn, bytesOut, sampleInterval, cpuPercent]);
+  }, [dependencies, bytesIn, bytesOut, sampleInterval, cpuPercent, counts]);
 
   const trafficIn = formatBytes(bytesIn);
   const trafficOut = formatBytes(bytesOut);

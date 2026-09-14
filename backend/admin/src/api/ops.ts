@@ -18,6 +18,7 @@ export type OpsOverview = {
     traceCapacity: number;
   };
   dependencies: Record<"mongo" | "redis" | "s3" | "vercel" | "railway", OpsStatus>;
+  counts: { tasks: number; orders: number; users: number; images: number; sessions: number };
   network: { sampleIntervalSeconds: number; bandwidth: Array<{ timestamp: string; bytesIn: number; bytesOut: number }> };
 };
 

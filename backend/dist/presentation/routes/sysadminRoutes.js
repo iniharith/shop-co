@@ -197,12 +197,22 @@ router.get('/ops-overview', (0, express_async_handler_1.default)((_req, res) => 
             };
         })),
     ]);
+    const counts = yield Promise.all([
+        Task_1.Task.countDocuments(),
+        order_model_1.default.countDocuments(),
+        user_model_1.default.countDocuments({ isDeleted: { $ne: true } }),
+        FileUpload_1.FileUpload.countDocuments({ isDeleted: { $ne: true } }),
+    ]).then(([tasks, orders, users, images]) => ({
+        tasks, orders, users, images,
+        sessions: (0, socketHandler_1.getOnlineUsersCount)(),
+    }));
     res.json({
         success: true,
         data: {
             generatedAt: new Date().toISOString(),
             telemetry: (0, requestTelemetry_1.getOperationalTelemetry)(),
             dependencies: { mongo, redis, s3, vercel, railway },
+            counts,
             network: {
                 sampleIntervalSeconds: 5,
                 bandwidth: bandwidthTracker_1.bandwidthHistory.slice(-60),

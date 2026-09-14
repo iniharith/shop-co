@@ -182,12 +182,23 @@ router.get(
       }),
     ]);
 
+const counts = await Promise.all([
+      Task.countDocuments(),
+      OrderModel.countDocuments(),
+      User.countDocuments({ isDeleted: { $ne: true } }),
+      FileUpload.countDocuments({ isDeleted: { $ne: true } }),
+    ]).then(([tasks, orders, users, images]) => ({
+      tasks, orders, users, images,
+      sessions: getOnlineUsersCount(),
+    }));
+
     res.json({
       success: true,
       data: {
         generatedAt: new Date().toISOString(),
         telemetry: getOperationalTelemetry(),
         dependencies: { mongo, redis, s3, vercel, railway },
+        counts,
         network: {
           sampleIntervalSeconds: 5,
           bandwidth: bandwidthHistory.slice(-60),
