@@ -80,6 +80,7 @@ export default async function RootLayout({
 }>) {
   const requestHeaders = await headers();
   const isTaskAccess = requestHeaders.get("x-kc-task-access") === "1";
+  const isDiyEditor = requestHeaders.get("host")?.split(":")[0] === "diy.kampungcetak.com";
   const session = await getServerSession(authConfig);
   const cookieStore = await cookies();
   const savedLocale = cookieStore.get("kc_locale")?.value;
@@ -90,7 +91,7 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${dmSans.variable} ${geistMono.variable} ${fonarto.variable} ${provicaliAmpersand.variable} bg-background text-foreground antialiased`}
       >
         <Provider session={session} initialLocale={locale}>
-          {isTaskAccess ? (
+          {isTaskAccess || isDiyEditor ? (
             <main className="min-h-screen w-full">{children}</main>
           ) : (
             <>

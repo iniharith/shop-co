@@ -21,6 +21,9 @@ export default withAuth(
 
         // email.kampungcetak.com → webmail
         const host = req.nextUrl.hostname;
+        if (host === "diy.kampungcetak.com" && req.nextUrl.pathname === "/") {
+            return NextResponse.rewrite(new URL("/diy", req.url));
+        }
         if (host === "email.kampungcetak.com" && req.nextUrl.pathname === "/") {
             return NextResponse.redirect(new URL("/email", req.url));
         }
@@ -51,5 +54,5 @@ export default withAuth(
 );
 
 export const config = {
-    matcher: ["/home/cart/:path*", "/home/profile/:path*", "/email/:path*", "/task-access/:path*"],
+    matcher: ["/", "/diy/:path*", "/home/cart/:path*", "/home/profile/:path*", "/email/:path*", "/task-access/:path*"],
 };
