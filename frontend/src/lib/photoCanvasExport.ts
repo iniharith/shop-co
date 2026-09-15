@@ -47,11 +47,8 @@ export async function exportCanvasPackage(source: string, template: PhotoCanvasT
     preview = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Preview export failed.')), 'image/png'));
   } finally { URL.revokeObjectURL(url); }
   const writer = new ZipWriter(new BlobWriter('application/zip'));
-  await writer.add('completed-design.svg', new TextReader(text));
-  await writer.add('preview.png', new BlobReader(preview));
-  const names = new Map(used.map((photo, i) => [photo.id, `photos/${i + 1}-${photo.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`]));
-  await writer.add('layout.json', new TextReader(JSON.stringify({ version: 2, template, design, photos: used.map(p => ({ id: p.id, file: names.get(p.id), width: p.width, height: p.height })) }, null, 2)));
-  await writer.add('READ-ME.txt', new TextReader('Open completed-design.svg in Illustrator for the completed artwork with embedded full-resolution customer photos. Its physical dimensions match the source artboard, including any original margins. preview.png is a screen preview, not the print master. layout.json and photos/ preserve the source photos and crop settings.'));
-  for (const photo of used) await writer.add(names.get(photo.id)!, new BlobReader(photo.blob));
+  // Keep the customer download production-ready and simple: one protected SVG
+  // with all photos embedded and clipped by the original template masks.
+  await writer.add('kampungcetak-design.svg', new TextReader(text), { password: 'kampungcetak' });
   return { archive: await writer.close(), preview };
 }
