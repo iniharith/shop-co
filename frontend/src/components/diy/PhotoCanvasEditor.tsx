@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ImagePlus, Upload, Download, ArrowLeft, RotateCcw, Check, Loader2, Eye } from 'lucide-react';
+import { ImagePlus, Upload, Download, ArrowLeft, RotateCcw, Check, Loader2, Eye, Trash2, AlignCenter, Maximize2 } from 'lucide-react';
 import { loadPhotoCanvasTemplates, loadTemplateArtwork, PhotoCanvasTemplate, PhotoSlot } from '@/lib/photoCanvasTemplates';
 import { assignUploadedPhotos, CanvasDesigns, clamp, DEFAULT_PHOTO_ADJUSTMENT, PhotoAdjustment, photoPlacement } from '@/lib/photoCanvasDesign';
 import { loadCanvasDraft, saveCanvasDraft, saveCanvasPhotos } from '@/lib/photoCanvasDraft';
@@ -101,6 +101,10 @@ export default function PhotoCanvasEditor() {
     if (!selected) return;
     setDesigns(prev => ({ ...prev, [templateId]: { ...prev[templateId], [selected.id]: { photoId, adjustment: { ...DEFAULT_PHOTO_ADJUSTMENT } } } }));
   }
+  function removePhoto() {
+    if (!selected) return;
+    setDesigns(prev => { const next = { ...prev, [templateId]: { ...prev[templateId] } }; delete next[templateId][selected.id]; return next; });
+  }
   function chooseUpload(slotId = selected?.id) {
     if (!slotId || busy) return;
     uploadTarget.current = slotId; setSelectedId(slotId); input.current?.click();
@@ -165,6 +169,7 @@ export default function PhotoCanvasEditor() {
         {template && <><div className="mb-4 flex flex-wrap items-center justify-between gap-2"><div><h2 className="font-bold">{template.name}</h2><p className="text-sm text-muted-foreground">{template.size} · {complete}/{template.slots.length} photos</p></div><button className={button} onClick={() => setPreview(p => !p)}><Eye className="mr-1 inline size-4" />{preview ? 'Edit photos' : 'Preview'}</button></div>
           {!source ? <p className="p-10" role="status">Loading original artwork…</p> : <div className="mx-auto" style={{ maxWidth: `min(100%, ${Math.max(220, 700 * template.width / template.height)}px)` }}>
             <div className="relative isolate bg-[#d1d5db] p-3 shadow-xl sm:p-5" style={{ aspectRatio: template.aspectRatio }}>
+              {!preview && selected && <div className="absolute left-1/2 top-2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-xl border border-border bg-background/95 p-1.5 shadow-xl backdrop-blur-md" role="toolbar" aria-label="Photo adjustments"><button type="button" className="rounded-lg p-2 text-primary hover:bg-primary/10" title="Replace photo" onClick={() => chooseUpload()}><Upload className="size-4" /></button><button type="button" className="rounded-lg p-2 hover:bg-muted" title="Center photo" onClick={() => adjust(selected.id, { x: 0, y: 0 })}><AlignCenter className="size-4" /></button><button type="button" className="rounded-lg p-2 hover:bg-muted" title="Reset crop" onClick={() => adjust(selected.id, DEFAULT_PHOTO_ADJUSTMENT)}><Maximize2 className="size-4" /></button><label className="flex items-center gap-1 border-l border-border px-2 text-xs" title="Zoom"><span>Zoom</span><input className="w-20 accent-primary" type="range" min="1" max="4" step="0.02" value={adjustment.scale} disabled={!selectedPhoto || !!busy} onChange={e => adjust(selected.id, { scale: Number(e.target.value) })} /></label><button type="button" className="rounded-lg p-2 text-red-500 hover:bg-red-500/10" title="Remove photo" onClick={removePhoto}><Trash2 className="size-4" /></button></div>}
               <div ref={artwork} className="pointer-events-none absolute inset-0 [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: source }} />
               {!preview && template.slots.map(slot => <button key={slot.id} aria-label={`Edit ${slot.label}`} disabled={!!busy} style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.width}%`, height: `${slot.height}%`, clipPath: `polygon(${slot.polygon.map(p => `${p[0]}% ${p[1]}%`).join(',')})`, touchAction: design[slot.id]?.photoId ? 'none' : 'auto' }}
                 className={`absolute flex items-center justify-center overflow-hidden text-xs ${selected?.id === slot.id ? 'outline outline-2 -outline-offset-2 outline-emerald-500 bg-emerald-500/5' : 'hover:bg-white/10'}`}
