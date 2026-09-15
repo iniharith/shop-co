@@ -12,6 +12,10 @@ export function fillTemplate(svg: SVGSVGElement, template: PhotoCanvasTemplate, 
     const photo = photos.find(p => p.id === item?.photoId);
     if (!photo) { image.removeAttribute('href'); image.removeAttributeNS('http://www.w3.org/1999/xlink', 'href'); continue; }
     const position = photoPlacement(photo.width, photo.height, slot.width / 100 * template.width, slot.height / 100 * template.height, item.adjustment || DEFAULT_PHOTO_ADJUSTMENT);
+    // The customer edits against the green website slot. Illustrator exports
+    // must not re-apply a stale source mask that clips the photo differently.
+    image.removeAttribute('clip-path');
+    image.removeAttribute('mask');
     image.setAttribute('href', photo.url);
     image.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', photo.url);
     image.setAttribute('x', String(slot.x / 100 * template.width + position.x));
