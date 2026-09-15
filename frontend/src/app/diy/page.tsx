@@ -131,11 +131,13 @@ const drawPhotoBookPage = async (options: { size: BookSize; cover: boolean; back
     const imageHeight = options.cover ? height * 0.8 : height * (options.size === "A5" ? 0.83474 : 0.84656);
     const imageLeft = (width - imageWidth) / 2;
     const imageTop = (height - imageHeight) / 2;
-    const fit = Math.min(imageWidth / photo.width, imageHeight / photo.height) * options.adjustment.scale;
+    const fit = Math.max(imageWidth / photo.width, imageHeight / photo.height) * Math.max(1, options.adjustment.scale);
     const drawWidth = photo.width * fit;
     const drawHeight = photo.height * fit;
-    const drawLeft = imageLeft + (imageWidth - drawWidth) / 2 + (options.adjustment.x / 100) * imageWidth;
-    const drawTop = imageTop + (imageHeight - drawHeight) / 2 + (options.adjustment.y / 100) * imageHeight;
+    const overflowX = Math.max(0, drawWidth - imageWidth);
+    const overflowY = Math.max(0, drawHeight - imageHeight);
+    const drawLeft = imageLeft - overflowX / 2 + Math.max(-1, Math.min(1, options.adjustment.x)) * overflowX / 2;
+    const drawTop = imageTop - overflowY / 2 + Math.max(-1, Math.min(1, options.adjustment.y)) * overflowY / 2;
     context.save();
     context.beginPath();
     context.rect(imageLeft, imageTop, imageWidth, imageHeight);
@@ -191,7 +193,7 @@ function DiyPhotobookPage() {
   const [redoStack, setRedoStack] = useState<AdjustmentHistory[]>([]);
   const [imageSelected, setImageSelected] = useState(false);
   const replaceInputRef = useRef<HTMLInputElement>(null);
-  const dragOrigin = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | undefined>(undefined);
+  const dragOrigin = useRef<{ startX: number; startY: number; baseX: number; baseY: number; overflowX: number; overflowY: number } | undefined>(undefined);
   const pageCount = pageChoice === "80" ? 80 : Math.max(1, Math.min(300, Number(customPages) || 1));
   const currentSpread = spreads[selectedSpread] || spreads[0];
   const activeImage = showCover ? coverImage : currentSpread?.middleImage || currentSpread?.image;
@@ -284,19 +286,26 @@ function DiyPhotobookPage() {
     event.currentTarget.setPointerCapture(event.pointerId);
     setUndoStack((items) => [...items, { coverAdjust, imageAdjustments }]);
     setRedoStack([]);
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const image = event.currentTarget.querySelector("img");
+    const naturalWidth = image?.naturalWidth || bounds.width;
+    const naturalHeight = image?.naturalHeight || bounds.height;
+    const coverScale = Math.max(bounds.width / naturalWidth, bounds.height / naturalHeight) * Math.max(1, activeAdjust.scale);
     dragOrigin.current = {
       startX: event.clientX,
       startY: event.clientY,
       baseX: activeAdjust.x,
       baseY: activeAdjust.y,
+      overflowX: Math.max(0, naturalWidth * coverScale - bounds.width),
+      overflowY: Math.max(0, naturalHeight * coverScale - bounds.height),
     };
   };
   const dragImage = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!dragOrigin.current) return;
     updateImageAdjust(
       {
-        x: Math.max(-45, Math.min(45, dragOrigin.current.baseX + (event.clientX - dragOrigin.current.startX) / 3)),
-        y: Math.max(-45, Math.min(45, dragOrigin.current.baseY + (event.clientY - dragOrigin.current.startY) / 3)),
+        x: dragOrigin.current.overflowX ? Math.max(-1, Math.min(1, dragOrigin.current.baseX + ((event.clientX - dragOrigin.current.startX) * 2) / dragOrigin.current.overflowX)) : 0,
+        y: dragOrigin.current.overflowY ? Math.max(-1, Math.min(1, dragOrigin.current.baseY + ((event.clientY - dragOrigin.current.startY) * 2) / dragOrigin.current.overflowY)) : 0,
       },
       false,
     );
@@ -560,7 +569,8 @@ function DiyPhotobookPage() {
                     alt="Image inside selected cover design"
                     className="h-full w-full object-cover transition-transform"
                     style={{
-                      transform: `translate(${activeAdjust.x}%, ${activeAdjust.y}%) scale(${activeAdjust.scale})`,
+                      objectPosition: `${50 + activeAdjust.x * 50}% ${50 + activeAdjust.y * 50}%`,
+                      transform: `scale(${Math.max(1, activeAdjust.scale)})`,
                     }}
                   />
                 </div>
@@ -596,7 +606,7 @@ function DiyPhotobookPage() {
                     <Trash2 className="size-4" />
                   </button>
                   <label className="flex items-center gap-2 px-2 font-semibold">
-                    Zoom <input type="range" min="0.5" max="2.5" step="0.05" value={activeAdjust.scale} onChange={(event) => updateImageAdjust({ scale: Number(event.target.value) })} className="w-24" />
+                    Zoom <input type="range" min="1" max="4" step="0.02" value={Math.max(1, activeAdjust.scale)} onChange={(event) => updateImageAdjust({ scale: Number(event.target.value) })} className="w-24" />
                   </label>
                   <button onClick={() => updateImageAdjust({ x: 0, y: 0 })} className="rounded-lg p-2 hover:bg-muted" title="Center image">
                     <AlignCenter className="size-4" />
