@@ -11,11 +11,30 @@ export function fillTemplate(svg: SVGSVGElement, template: PhotoCanvasTemplate, 
     const item = design[slot.id];
     const photo = photos.find(p => p.id === item?.photoId);
     if (!photo) { image.removeAttribute('href'); image.removeAttributeNS('http://www.w3.org/1999/xlink', 'href'); continue; }
-    const position = photoPlacement(photo.width, photo.height, slot.width / 100 * template.width, slot.height / 100 * template.height, item.adjustment || DEFAULT_PHOTO_ADJUSTMENT);
+    const slotX = slot.x / 100 * template.width;
+    const slotY = slot.y / 100 * template.height;
+    const slotWidth = slot.width / 100 * template.width;
+    const slotHeight = slot.height / 100 * template.height;
+    const position = photoPlacement(photo.width, photo.height, slotWidth, slotHeight, item.adjustment || DEFAULT_PHOTO_ADJUSTMENT);
+
+    // Export against the exact green website slot. Source Illustrator files can
+    // contain an older mask whose bounds no longer match the customer editor.
+    const clipId = `kc-web-clip-${slot.id}`;
+    let defs = svg.querySelector('defs');
+    if (!defs) { defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs'); svg.insertBefore(defs, svg.firstChild); }
+    let clip = defs.querySelector(`#${CSS.escape(clipId)}`);
+    if (!clip) { clip = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath'); clip.setAttribute('id', clipId); defs.appendChild(clip); }
+    clip.innerHTML = `<rect x="${slotX}" y="${slotY}" width="${slotWidth}" height="${slotHeight}" />`;
+    const photoGroup = image.parentElement;
+    if (photoGroup && photoGroup.tagName.toLowerCase() !== 'svg') {
+      photoGroup.removeAttribute('mask');
+      photoGroup.setAttribute('clip-path', `url(#${clipId})`);
+    } else image.setAttribute('clip-path', `url(#${clipId})`);
     image.setAttribute('href', photo.url);
     image.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', photo.url);
-    image.setAttribute('x', String(slot.x / 100 * template.width + position.x));
-    image.setAttribute('y', String(slot.y / 100 * template.height + position.y));
+    image.setAttribute('preserveAspectRatio', 'none');
+    image.setAttribute('x', String(slotX + position.x));
+    image.setAttribute('y', String(slotY + position.y));
     image.setAttribute('width', String(position.width));
     image.setAttribute('height', String(position.height));
   }
