@@ -22,9 +22,10 @@ interface CartItemsProps {
   configurationKey?: string;
   unitPrice?: number;
   fixedPrice?: number;
+  artworkUrl?: string;
 }
 
-const CartItems = ({ product, qty, size, configuration: structuredConfiguration, configurationKey, unitPrice = product.price, fixedPrice = 0 }: CartItemsProps) => {
+const CartItems = ({ product, qty, size, configuration: structuredConfiguration, configurationKey, unitPrice = product.price, fixedPrice = 0, artworkUrl }: CartItemsProps) => {
   const [quantity, setQuantity] = useState(qty);
   const [disabled, setDisabled] = useState(false);
   const { mutate: cartUpdate, isPending } = useAddtoCart("update");
@@ -66,6 +67,7 @@ const CartItems = ({ product, qty, size, configuration: structuredConfiguration,
         </div>
         <div className="flex min-w-0 flex-col gap-2">
           <p className="font-sans text-sm font-semibold leading-snug sm:text-base">{product.name}</p>
+          {artworkUrl?.startsWith('https://') && <a href={artworkUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-primary underline">Your attached artwork</a>}
           <div className="flex flex-wrap gap-1.5">
             {configuration.map((part) => (
               <span key={part} className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">

@@ -1,143 +1,180 @@
 "use client";
 
-import Link from "next/link";
-import { ChangeEvent, PointerEvent, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Check, Download, ImagePlus, LayoutTemplate, RotateCcw, Save, ShoppingBag, Upload, ZoomIn } from "lucide-react";
-import { photoCanvasTemplates, PhotoCanvasTemplate } from "@/lib/photoCanvasTemplates";
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ImagePlus, Upload, Download, ArrowLeft, RotateCcw, Check, Loader2, Eye } from 'lucide-react';
+import { loadPhotoCanvasTemplates, loadTemplateArtwork, PhotoCanvasTemplate, PhotoSlot } from '@/lib/photoCanvasTemplates';
+import { assignUploadedPhotos, CanvasDesigns, clamp, DEFAULT_PHOTO_ADJUSTMENT, PhotoAdjustment, photoPlacement } from '@/lib/photoCanvasDesign';
+import { loadCanvasDraft, saveCanvasDraft, saveCanvasPhotos } from '@/lib/photoCanvasDraft';
+import { CustomerPhoto, exportCanvasPackage, fillTemplate } from '@/lib/photoCanvasExport';
+import { uploadToS3Directly } from '@/utils/s3Upload';
 
-type Adjustment = { scale: number; x: number; y: number };
-type CustomerPhoto = { id: string; name: string; url: string };
-type SlotDesign = { photoId?: string; adjustment: Adjustment };
-const DEFAULT_ADJUSTMENT: Adjustment = { scale: 1, x: 0, y: 0 };
-
-const surfaceClass: Record<PhotoCanvasTemplate["surface"], string> = {
-  linen: "bg-[#ded5bd]",
-  gallery: "bg-[#f4efe7]",
-  midnight: "bg-[#172029]",
-  clock: "bg-[#111827]",
-};
-
+const button = 'rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold disabled:opacity-40 hover:border-primary';
+const panel = 'rounded-2xl border border-border bg-card p-4';
 export default function PhotoCanvasEditor() {
-  const [selectedTemplateId, setSelectedTemplateId] = useState(photoCanvasTemplates[0].id);
-  const [activeCategory, setActiveCategory] = useState<"All" | PhotoCanvasTemplate["category"]>("All");
+  const params = useSearchParams();
+  const { data: session } = useSession();
+  const [templates, setTemplates] = useState<PhotoCanvasTemplate[]>([]);
+  const [templateId, setTemplateId] = useState('');
+  const [selectedId, setSelectedId] = useState('photo-1');
   const [photos, setPhotos] = useState<CustomerPhoto[]>([]);
-  const [design, setDesign] = useState<Record<string, SlotDesign>>({});
-  const [selectedSlotId, setSelectedSlotId] = useState("photo-1");
-  const [saved, setSaved] = useState(false);
-  const drag = useRef<{ x: number; y: number; baseX: number; baseY: number } | undefined>(undefined);
-
-  const template = photoCanvasTemplates.find((item) => item.id === selectedTemplateId) || photoCanvasTemplates[0];
-  const selectedSlot = template.slots.find((slot) => slot.id === selectedSlotId) || template.slots[0];
-  const slotDesign = design[selectedSlot.id] || { adjustment: DEFAULT_ADJUSTMENT };
-  const selectedPhoto = photos.find((photo) => photo.id === slotDesign.photoId);
-  const completedCount = template.slots.filter((slot) => design[slot.id]?.photoId).length;
+  const [designs, setDesigns] = useState<CanvasDesigns>({});
+  const [source, setSource] = useState('');
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState('');
+  const [storageMessage, setStorageMessage] = useState('');
+  const [busy, setBusy] = useState('');
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('All');
+  const [preview, setPreview] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const uploadTarget = useRef('photo-1');
+  const artwork = useRef<HTMLDivElement>(null);
+  const urls = useRef<string[]>([]);
+  const drag = useRef<{ slot: PhotoSlot; x: number; y: number; base: PhotoAdjustment; overflowX: number; overflowY: number } | null>(null);
+  const template = templates.find(t => t.id === templateId);
+  const design = designs[templateId] || {};
+  const selected = template?.slots.find(s => s.id === selectedId) || template?.slots[0];
+  const current = selected ? design[selected.id] : undefined;
+  const selectedPhoto = photos.find(p => p.id === current?.photoId);
+  const adjustment = current?.adjustment || DEFAULT_PHOTO_ADJUSTMENT;
+  const complete = template?.slots.filter(s => photos.some(p => p.id === design[s.id]?.photoId)).length || 0;
+  const finished = !!template?.slots.length && complete === template.slots.length;
 
   useEffect(() => {
-    setSelectedSlotId(template.slots[0].id);
-    setDesign((previous) => Object.fromEntries(template.slots.map((slot) => [slot.id, previous[slot.id] || { adjustment: DEFAULT_ADJUSTMENT }])));
-  }, [template.id]);
+    let mounted = true;
+    (async () => {
+      try {
+        const library = await loadPhotoCanvasTemplates();
+        let saved: Awaited<ReturnType<typeof loadCanvasDraft>> | undefined;
+        try { saved = await loadCanvasDraft(); } catch { if (mounted) setStorageMessage('Browser storage is unavailable. Download your design before leaving.'); }
+        if (!mounted) return;
+        setTemplates(library);
+        const wanted = params.get('template') || saved?.draft?.templateId;
+        setTemplateId(library.some(t => t.id === wanted) ? wanted! : library[0]?.id || '');
+        if (saved) {
+          setDesigns(saved.draft?.designs || {});
+          setPhotos(saved.photos.map(p => { const url = URL.createObjectURL(p.blob); urls.current.push(url); return { ...p, url }; }));
+        }
+        setReady(true);
+      } catch (e) { if (mounted) setError(e instanceof Error ? e.message : 'Could not open the template library.'); }
+    })();
+    return () => { mounted = false; urls.current.forEach(url => URL.revokeObjectURL(url)); };
+  // The initial query chooses a starting template; subsequent selections stay local.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const updateSlot = (slotId: string, changes: Partial<SlotDesign>) => {
-    setDesign((previous) => ({
-      ...previous,
-      [slotId]: { ...previous[slotId], adjustment: previous[slotId]?.adjustment || DEFAULT_ADJUSTMENT, ...changes },
-    }));
-  };
+  useEffect(() => {
+    if (!template) return;
+    let active = true;
+    setSource(''); setSelectedId(template.slots[0]?.id || ''); setPreview(false);
+    loadTemplateArtwork(template).then(svg => { if (active) setSource(svg); }).catch(e => { if (active) setError(e.message); });
+    return () => { active = false; };
+  }, [template]);
+  useLayoutEffect(() => {
+    const svg = artwork.current?.querySelector('svg');
+    if (svg && template) fillTemplate(svg, template, design, photos);
+  }, [source, template, design, photos]);
+  useEffect(() => {
+    if (!ready) return;
+    const timer = setTimeout(() => {
+      saveCanvasDraft({ templateId, designs, savedAt: new Date().toISOString() }).catch(() => setStorageMessage('Could not save in this browser. Download your design before leaving.'));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [templateId, designs, ready]);
 
-  const updateAdjustment = (changes: Partial<Adjustment>) => {
-    setDesign((previous) => ({
-      ...previous,
-      [selectedSlot.id]: {
-        photoId: previous[selectedSlot.id]?.photoId,
-        adjustment: { ...(previous[selectedSlot.id]?.adjustment || DEFAULT_ADJUSTMENT), ...changes },
-      },
-    }));
-  };
+  const filtered = useMemo(() => templates.filter(t => (category === 'All' || t.category === category) && `${t.name} ${t.size}`.toLowerCase().includes(search.toLowerCase())), [templates, category, search]);
+  function adjust(slotId: string, change: Partial<PhotoAdjustment>) {
+    setDesigns(prev => ({ ...prev, [templateId]: { ...prev[templateId], [slotId]: { ...prev[templateId]?.[slotId], adjustment: { ...(prev[templateId]?.[slotId]?.adjustment || DEFAULT_PHOTO_ADJUSTMENT), ...change } } } }));
+  }
+  function assign(photoId: string) {
+    if (!selected) return;
+    setDesigns(prev => ({ ...prev, [templateId]: { ...prev[templateId], [selected.id]: { photoId, adjustment: { ...DEFAULT_PHOTO_ADJUSTMENT } } } }));
+  }
+  function chooseUpload(slotId = selected?.id) {
+    if (!slotId || busy) return;
+    uploadTarget.current = slotId; setSelectedId(slotId); input.current?.click();
+  }
+  async function upload(files: File[], target: string) {
+    if (!template || busy || !files.length) return;
+    const targetTemplate = template;
+    setBusy('Opening photos…'); setError('');
+    const additions: CustomerPhoto[] = [];
+    const failures: string[] = [];
+    try {
+      for (const file of files) {
+        if (!/^image\/(jpeg|png|webp|gif|avif)$/i.test(file.type) || file.size > 50 * 1024 * 1024) { failures.push(file.name); continue; }
+        const url = URL.createObjectURL(file);
+        try {
+          const img = new Image(); await new Promise<void>((resolve, reject) => { img.onload = () => resolve(); img.onerror = reject; img.src = url; });
+          additions.push({ id: crypto.randomUUID(), name: file.name, blob: file, url, width: img.naturalWidth, height: img.naturalHeight }); urls.current.push(url);
+        } catch { URL.revokeObjectURL(url); failures.push(file.name); }
+      }
+      setPhotos(prev => [...prev, ...additions]);
+      setDesigns(prev => ({ ...prev, [targetTemplate.id]: assignUploadedPhotos(prev[targetTemplate.id] || {}, targetTemplate.slots.map(s => s.id), target, additions.map(p => p.id)) }));
+      try { await saveCanvasPhotos(additions.map(({ url: _url, ...photo }) => photo)); } catch { setStorageMessage('These photos could not be saved in this browser. Download before leaving.'); }
+      if (failures.length) setError(`${failures.length} file(s) could not be opened. Use JPG, PNG, WebP or AVIF under 50 MB each.`);
+    } finally { setBusy(''); if (input.current) input.current.value = ''; }
+  }
+  async function finish(forOrder: boolean) {
+    if (!template || !source || !finished || busy) return;
+    if (forOrder && !session?.user?.token) { setError('Please sign in before attaching a design to an order. Your photos are saved on this device; you can also download the design now.'); return; }
+    setBusy('Preparing your completed design…'); setError('');
+    try {
+      const output = await exportCanvasPackage(source, template, design, photos);
+      const filename = `kampungcetak-${template.id}.zip`;
+      if (!forOrder) {
+        const url = URL.createObjectURL(output.archive); const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(url), 30000);
+      } else {
+        setBusy('Uploading your completed design…');
+        const result = await uploadToS3Directly(session!.user.token, new File([output.archive], filename, { type: 'application/zip' }), process.env.NEXT_PUBLIC_BACKEND_URL || '', progress => setBusy(`Uploading design: ${progress}%`));
+        const productId = params.get('product');
+        localStorage.setItem('kc-canvas-ready', JSON.stringify({ id: crypto.randomUUID(), productId, url: result.fileUrl, templateId: template.id, templateName: template.name, size: template.size }));
+        window.location.assign(productId && /^[a-zA-Z0-9_-]+$/.test(productId) ? `/home/shop/${encodeURIComponent(productId)}?canvas=ready` : '/home/shop?search=photo%20canvas');
+      }
+    } catch (e) { setError(e instanceof Error ? e.message : 'Could not prepare your design. Please try again.'); }
+    finally { setBusy(''); }
+  }
 
-  const uploadPhotos = (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []).filter((file) => file.type.startsWith("image/"));
-    if (!files.length) return;
-    const additions = files.map((file) => ({ id: `${file.name}-${file.lastModified}-${Math.random().toString(36).slice(2)}`, name: file.name, url: URL.createObjectURL(file) }));
-    setPhotos((previous) => [...previous, ...additions]);
-    // Uploading while a slot is selected always replaces that slot; subsequent
-    // files fill the next empty slots so customers can work in one step.
-    const targets = [selectedSlot.id, ...template.slots.map((slot) => slot.id).filter((id) => id !== selectedSlot.id && !design[id]?.photoId)];
-    additions.forEach((photo, index) => { if (targets[index]) updateSlot(targets[index], { photoId: photo.id }); });
-    event.target.value = "";
-  };
-
-  const pickTemplate = (item: PhotoCanvasTemplate) => {
-    setSelectedTemplateId(item.id);
-    setSelectedSlotId(item.slots[0].id);
-  };
-
-  const startDrag = (event: PointerEvent<HTMLDivElement>) => {
-    if (!selectedPhoto) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    drag.current = { x: event.clientX, y: event.clientY, baseX: slotDesign.adjustment.x, baseY: slotDesign.adjustment.y };
-  };
-
-  const moveDrag = (event: PointerEvent<HTMLDivElement>) => {
-    if (!drag.current) return;
-    updateAdjustment({
-      x: Math.max(-50, Math.min(50, drag.current.baseX + (event.clientX - drag.current.x) / 2)),
-      y: Math.max(-50, Math.min(50, drag.current.baseY + (event.clientY - drag.current.y) / 2)),
-    });
-  };
-
-  const saveDraft = () => {
-    const draft = { templateId: template.id, design, photoNames: photos.map(({ id, name }) => ({ id, name })), savedAt: new Date().toISOString() };
-    window.localStorage.setItem("kampungcetak-photo-canvas-draft", JSON.stringify(draft));
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2200);
-  };
-
-  const downloadProductionBrief = () => {
-    const output = {
-      product: "DIY Photo Canvas",
-      template: { id: template.id, name: template.name, size: template.size, sourceFile: template.sourceFile },
-      photoSlots: template.slots.map((slot) => ({ ...slot, photo: photos.find((photo) => photo.id === design[slot.id]?.photoId)?.name || "NOT ASSIGNED", adjustment: design[slot.id]?.adjustment || DEFAULT_ADJUSTMENT })),
-      createdAt: new Date().toISOString(),
-    };
-    const url = URL.createObjectURL(new Blob([JSON.stringify(output, null, 2)], { type: "application/json" }));
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `kampungcetak-${template.id}-design-brief.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const filteredTemplates = useMemo(() => photoCanvasTemplates.filter((item) => activeCategory === "All" || item.category === activeCategory), [activeCategory]);
-
-  return (
-    <main className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border bg-card/90 px-4 py-4 backdrop-blur sm:px-8">
-        <div className="mx-auto flex max-w-[1540px] items-center justify-between gap-4">
-          <div className="flex items-center gap-3"><Link href="/" aria-label="Back to Kampung Cetak" className="rounded-full border border-border p-2 transition hover:border-primary hover:text-primary"><ArrowLeft className="size-4" /></Link><div><p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">Kampung Cetak</p><h1 className="text-xl font-bold tracking-tight sm:text-2xl">DIY Photo Canvas</h1></div></div>
-          <div className="hidden rounded-full border border-border bg-muted/40 p-1 text-sm sm:flex"><Link href="/diy?mode=photobook" className="rounded-full px-4 py-2 text-muted-foreground hover:text-foreground">Photobook</Link><span className="rounded-full bg-primary px-4 py-2 font-semibold text-primary-foreground">Photo Canvas</span></div>
-          <button onClick={saveDraft} className="inline-flex items-center gap-2 rounded-full bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white"><Save className="size-4" />{saved ? "Saved" : "Save draft"}</button>
-        </div>
-      </header>
-
-      <div className="mx-auto grid max-w-[1540px] gap-5 p-4 sm:p-6 lg:grid-cols-[290px_minmax(0,1fr)_320px]">
-        <aside className="space-y-4 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pr-1">
-          <section className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="mb-4 flex items-center gap-2"><LayoutTemplate className="size-4 text-primary" /><h2 className="font-semibold">1. Choose template</h2></div><div className="flex flex-wrap gap-2">{(["All", "Single photo", "Collage", "Photo clock"] as const).map((category) => <button key={category} onClick={() => setActiveCategory(category)} className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${activeCategory === category ? "bg-primary text-primary-foreground" : "border border-border hover:border-primary"}`}>{category}</button>)}</div><div className="mt-4 grid grid-cols-2 gap-3">{filteredTemplates.map((item) => <button key={item.id} onClick={() => pickTemplate(item)} className={`overflow-hidden rounded-xl border text-left transition ${item.id === template.id ? "border-primary ring-2 ring-primary/25" : "border-border hover:border-primary/60"}`}><div className={`relative aspect-square ${surfaceClass[item.surface]}`}>{item.preview ? <img src={item.preview} alt="" className="h-full w-full object-cover opacity-80" /> : <span className="grid h-full place-items-center text-3xl">{item.category === "Photo clock" ? "◷" : "▦"}</span>}<span className="absolute bottom-1 left-1 rounded bg-black/65 px-1.5 py-0.5 text-[9px] font-semibold text-white">{item.size}</span></div><span className="block p-2 text-xs font-semibold leading-4">{item.name}</span></button>)}</div></section>
-          <section className="rounded-2xl border border-border bg-card p-4 shadow-sm"><div className="mb-2 flex items-center gap-2"><Upload className="size-4 text-primary" /><h2 className="font-semibold">2. Your photos</h2></div><p className="mb-3 text-xs leading-5 text-muted-foreground">Upload once, then place a photo into any template slot.</p><label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 px-3 py-3 text-sm font-semibold text-primary hover:bg-primary/5"><ImagePlus className="size-4" /> Upload photos<input type="file" accept="image/*" multiple className="sr-only" onChange={uploadPhotos} /></label>{photos.length ? <div className="mt-3 grid grid-cols-3 gap-2">{photos.map((photo) => <button key={photo.id} title={photo.name} onClick={() => updateSlot(selectedSlot.id, { photoId: photo.id })} className={`aspect-square overflow-hidden rounded-lg border-2 ${slotDesign.photoId === photo.id ? "border-primary" : "border-transparent"}`}><img src={photo.url} alt={photo.name} className="h-full w-full object-cover" /></button>)}</div> : <p className="mt-3 text-xs text-muted-foreground">No photos uploaded yet.</p>}</section>
-        </aside>
-
-        <section className="flex min-h-[680px] flex-col rounded-3xl border border-border bg-muted/35 p-4 shadow-inner sm:p-6"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wider text-primary">Live print preview</p><h2 className="text-lg font-bold">{template.name}</h2><p className="text-sm text-muted-foreground">{completedCount} of {template.slots.length} photo slots completed</p></div><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{template.size}</span></div>
-          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card/90 p-2 text-sm shadow-sm"><span className="px-2 font-semibold">Selected: {selectedSlot.label}</span><label className="ml-auto flex items-center gap-2 px-2 text-xs font-semibold"><ZoomIn className="size-3.5" /> Zoom<input type="range" min="1" max="3" step="0.05" value={slotDesign.adjustment.scale} disabled={!selectedPhoto} onChange={(event) => updateAdjustment({ scale: Number(event.target.value) })} className="w-24" /></label><button onClick={() => updateAdjustment(DEFAULT_ADJUSTMENT)} disabled={!selectedPhoto} className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold disabled:opacity-40"><RotateCcw className="size-3.5" /> Reset</button></div>
-          <div className="flex flex-1 items-center justify-center overflow-hidden py-4"><div className={`relative w-[min(100%,720px)] overflow-hidden rounded-[1.4rem] border-[10px] border-white bg-black shadow-2xl ${surfaceClass[template.surface]}`} style={{ aspectRatio: template.aspectRatio }}>
-            {template.preview && <img src={template.preview} alt={`${template.name} original template`} className="pointer-events-none absolute inset-0 h-full w-full object-cover" />}
-            {template.surface === "clock" && <div className="pointer-events-none absolute left-[6%] top-[11%] grid h-[78%] w-[41%] place-items-center rounded-full border-[5px] border-white/90 bg-black/15 text-5xl font-light text-white/95 shadow-lg sm:text-7xl">◷</div>}
-            {template.slots.map((slot, index) => { const item = design[slot.id] || { adjustment: DEFAULT_ADJUSTMENT }; const photo = photos.find((candidate) => candidate.id === item.photoId); const isSelected = selectedSlot.id === slot.id; return <div key={slot.id} onClick={() => setSelectedSlotId(slot.id)} onPointerDown={isSelected ? startDrag : undefined} onPointerMove={isSelected ? moveDrag : undefined} onPointerUp={() => { drag.current = undefined; }} onPointerCancel={() => { drag.current = undefined; }} className={`absolute cursor-pointer overflow-hidden border-2 transition ${slot.shape === "circle" ? "rounded-full" : "rounded-md"} ${isSelected ? "z-20 border-primary ring-4 ring-primary/30" : "border-white/80 hover:border-primary/80"}`} style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.width}%`, height: `${slot.height}%` }}>{photo ? <img src={photo.url} alt={slot.label} draggable={false} className="h-full w-full select-none object-cover" style={{ transform: `translate(${item.adjustment.x}%, ${item.adjustment.y}%) scale(${item.adjustment.scale})` }} /> : <div className="grid h-full place-items-center bg-black/35 p-2 text-center text-xs font-semibold text-white backdrop-blur-[1px]"><span><ImagePlus className="mx-auto mb-1 size-5" />{slot.label}</span></div>}<span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-semibold text-white">{index + 1}</span></div>; })}
-            {template.overlay && <img src={template.overlay} alt="" className="pointer-events-none absolute inset-0 z-30 h-full w-full object-cover mix-blend-screen" />}
-          </div></div>
-          <div className="mt-4 flex flex-wrap justify-center gap-2">{template.slots.map((slot, index) => <button key={slot.id} onClick={() => setSelectedSlotId(slot.id)} className={`rounded-full border px-3 py-2 text-xs font-semibold ${selectedSlot.id === slot.id ? "border-primary bg-primary/10 text-primary" : "border-border bg-card"}`}>{design[slot.id]?.photoId ? <Check className="mr-1 inline size-3.5" /> : null}Photo {index + 1}</button>)}</div>
+  return <main className="min-h-screen bg-background text-foreground">
+    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card px-5 py-4">
+      <div className="flex items-center gap-3"><Link href="/" aria-label="Back to shop"><ArrowLeft className="size-5" /></Link><div><p className="text-xs font-bold text-primary">KAMPUNG CETAK</p><h1 className="text-xl font-bold">DIY Photo Canvas</h1></div></div>
+      <p className="text-xs text-muted-foreground">Choose a template · Add your photos · Use your design</p>
+      <Link href="/diy?mode=photobook" className={button}>Photobook</Link>
+    </header>
+    {error && <div role="alert" className="mx-5 mt-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-900">{error}<button className="ml-3 underline" onClick={() => setError('')}>Dismiss</button></div>}
+    {storageMessage && <p className="mx-5 mt-3 text-sm text-amber-800">{storageMessage}</p>}
+    {!ready ? <p role="status" className="p-10">{error ? 'Reload this page to try again.' : 'Loading template library…'}</p> : <div className="mx-auto grid max-w-[1700px] gap-5 p-4 lg:grid-cols-[280px_minmax(0,1fr)_280px]">
+      <aside className="space-y-4">
+        <section className={panel}><h2 className="font-bold">1. Choose template</h2><input aria-label="Search templates" placeholder="Search size or template…" value={search} onChange={e => setSearch(e.target.value)} className="my-3 w-full rounded-lg border border-border bg-background p-2 text-sm" /><div className="flex flex-wrap gap-1">{['All','Single photo','Collage','Photo clock'].map(c => <button className={`${button} ${category === c ? 'border-primary text-primary' : ''}`} key={c} onClick={() => setCategory(c)}>{c}</button>)}</div><p className="my-2 text-xs text-muted-foreground">{filtered.length} layouts</p>
+          <div className="grid max-h-[360px] grid-cols-2 gap-2 overflow-y-auto pr-1 lg:max-h-[540px]">{filtered.map(t => <button key={t.id} disabled={!!busy} onClick={() => setTemplateId(t.id)} className={`overflow-hidden rounded-xl border text-left ${t.id === templateId ? 'border-primary ring-2 ring-primary/30' : 'border-border'}`}><img src={t.preview} alt="" loading="lazy" className="aspect-square w-full bg-neutral-100 object-contain p-1" /><span className="block p-2 text-[11px] font-semibold">{t.name}<span className="mt-1 block font-normal text-muted-foreground">{t.slots.length} photos</span></span></button>)}</div>
         </section>
-
-        <aside className="space-y-4 lg:sticky lg:top-4 lg:h-fit"><section className="rounded-2xl border border-border bg-card p-4 shadow-sm"><h2 className="font-semibold">3. Finish your design</h2><div className="mt-4 rounded-xl bg-muted/60 p-3 text-sm"><div className="flex justify-between"><span className="text-muted-foreground">Template</span><strong>{template.name}</strong></div><div className="mt-2 flex justify-between"><span className="text-muted-foreground">Print size</span><strong>{template.size}</strong></div><div className="mt-2 flex justify-between"><span className="text-muted-foreground">Photos</span><strong>{completedCount}/{template.slots.length}</strong></div></div><div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-3"><p className="text-xs text-muted-foreground">Starting from</p><p className="text-3xl font-bold text-primary">RM {template.price.toFixed(2)}</p><p className="mt-1 text-xs text-muted-foreground">Final price depends on canvas material and selected size.</p></div><button onClick={downloadProductionBrief} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-semibold hover:border-primary hover:text-primary"><Download className="size-4" /> Download design brief</button><Link href="/home/shop?search=photo%20canvas" className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-950 px-4 py-3 text-sm font-bold text-white"><ShoppingBag className="size-4" /> Continue to order</Link></section><section className="rounded-2xl border border-dashed border-border p-4 text-xs leading-5 text-muted-foreground"><strong className="block text-sm text-foreground">Template production source</strong>The original Illustrator source remains <code>{template.sourceFile}</code>. Customer images will be placed below its original exported frame overlay.</section></aside>
-      </div>
-    </main>
-  );
+        <section className={panel}><h2 className="font-bold">2. Your photos</h2><p className="my-2 text-xs text-muted-foreground">Select a photo area, then upload or choose a photo below.</p><button className={`${button} w-full text-primary`} disabled={!!busy || !selected} onClick={() => chooseUpload()}><Upload className="mr-2 inline size-4" />Upload photos</button><input ref={input} type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,image/gif" className="sr-only" aria-label="Upload customer photos" onChange={e => void upload(Array.from(e.target.files || []), uploadTarget.current)} /><div className="mt-3 grid max-h-60 grid-cols-3 gap-2 overflow-y-auto">{photos.map(p => <button key={p.id} disabled={!!busy} title={`Insert ${p.name}`} onClick={() => assign(p.id)} className={`aspect-square overflow-hidden rounded-md border-2 ${selectedPhoto?.id === p.id ? 'border-primary' : 'border-transparent'}`}><img src={p.url} alt={p.name} className="h-full w-full object-cover" /></button>)}</div></section>
+      </aside>
+      <section className="min-w-0 rounded-2xl bg-muted/30 p-3 sm:p-5">
+        {template && <><div className="mb-4 flex flex-wrap items-center justify-between gap-2"><div><h2 className="font-bold">{template.name}</h2><p className="text-sm text-muted-foreground">{template.size} · {complete}/{template.slots.length} photos</p></div><button className={button} onClick={() => setPreview(p => !p)}><Eye className="mr-1 inline size-4" />{preview ? 'Edit photos' : 'Preview'}</button></div>
+          {!source ? <p className="p-10" role="status">Loading original artwork…</p> : <div className="mx-auto" style={{ maxWidth: `min(100%, ${Math.max(220, 700 * template.width / template.height)}px)` }}>
+            <div className="relative isolate bg-white shadow-xl" style={{ aspectRatio: template.aspectRatio }}>
+              <div ref={artwork} className="pointer-events-none absolute inset-0 [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: source }} />
+              {!preview && template.slots.map(slot => <button key={slot.id} aria-label={`Edit ${slot.label}`} disabled={!!busy} style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.width}%`, height: `${slot.height}%`, clipPath: `polygon(${slot.polygon.map(p => `${p[0]}% ${p[1]}%`).join(',')})`, touchAction: design[slot.id]?.photoId ? 'none' : 'auto' }}
+                className={`absolute flex items-center justify-center overflow-hidden text-xs ${selected?.id === slot.id ? 'outline outline-2 -outline-offset-2 outline-emerald-500 bg-emerald-500/5' : 'hover:bg-white/10'}`}
+                onClick={() => { setSelectedId(slot.id); if (!design[slot.id]?.photoId) chooseUpload(slot.id); }}
+                onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); setSelectedId(slot.id); void upload(Array.from(e.dataTransfer.files), slot.id); }}
+                onPointerDown={e => { setSelectedId(slot.id); const photo = photos.find(p => p.id === design[slot.id]?.photoId); if (!photo) return; const a = design[slot.id]?.adjustment || DEFAULT_PHOTO_ADJUSTMENT; const r = e.currentTarget.getBoundingClientRect(); const pos = photoPlacement(photo.width, photo.height, r.width, r.height, a); e.currentTarget.setPointerCapture(e.pointerId); drag.current = { slot, x: e.clientX, y: e.clientY, base: a, overflowX: pos.overflowX, overflowY: pos.overflowY }; }}
+                onPointerMove={e => { const d = drag.current; if (!d || d.slot.id !== slot.id) return; adjust(slot.id, { x: d.overflowX ? clamp(d.base.x + (e.clientX - d.x) * 2 / d.overflowX, -1, 1) : 0, y: d.overflowY ? clamp(d.base.y + (e.clientY - d.y) * 2 / d.overflowY, -1, 1) : 0 }); }} onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }}>
+                {!design[slot.id]?.photoId && <span className="rounded bg-white/85 p-1 text-neutral-800"><ImagePlus className="mx-auto size-4" />{slot.label}</span>}
+              </button>)}
+            </div>
+          </div>}
+          <div className="mt-5 flex flex-wrap justify-center gap-2">{template.slots.map(slot => <button key={slot.id} className={`${button} ${selected?.id === slot.id ? 'border-primary text-primary' : ''}`} onClick={() => { setSelectedId(slot.id); setPreview(false); }}>{design[slot.id]?.photoId && <Check className="mr-1 inline size-3" />}{slot.label}</button>)}</div>
+        </>}
+      </section>
+      <aside className="space-y-4 lg:sticky lg:top-4 lg:h-fit">
+        <section className={panel}><h2 className="font-bold">Adjust {selected?.label.toLowerCase() || 'photo'}</h2><p className="my-2 text-xs text-muted-foreground">Drag the photo to reposition it. Zoom to crop closer.</p><button disabled={!selected || !!busy} className={`${button} w-full`} onClick={() => chooseUpload()}>Replace photo</button><label className="mt-4 block text-sm">Zoom<input className="mt-2 w-full" type="range" min="1" max="4" step="0.02" aria-label="Photo zoom" value={adjustment.scale} disabled={!selectedPhoto || !!busy} onChange={e => selected && adjust(selected.id, { scale: Number(e.target.value) })} /></label><button className={`${button} mt-3`} disabled={!selectedPhoto || !!busy} onClick={() => selected && adjust(selected.id, DEFAULT_PHOTO_ADJUSTMENT)}><RotateCcw className="mr-1 inline size-3" />Reset crop</button></section>
+        <section className={panel}><h2 className="font-bold">3. Finish your design</h2><p className="my-3 text-sm">{complete} of {template?.slots.length || 0} photos filled</p><p className="mb-4 text-xs text-muted-foreground">Your template artwork stays fixed. Preview the complete design before continuing.</p><button className={`${button} w-full`} disabled={!finished || !!busy || !source} onClick={() => void finish(false)}><Download className="mr-1 inline size-4" />Download completed design</button><button className="mt-3 w-full rounded-xl bg-primary px-3 py-3 text-sm font-bold text-primary-foreground disabled:opacity-40" disabled={!finished || !!busy || !source} onClick={() => void finish(true)}>Use this design for my order</button><p className="mt-3 text-xs text-muted-foreground">Choose your product and print options next. Your completed design will be attached when you add it to cart.</p>{busy && <p role="status" className="mt-3 text-sm"><Loader2 className="mr-1 inline size-4 animate-spin" />{busy}</p>}</section>
+      </aside>
+    </div>}
+  </main>;
 }

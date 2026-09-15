@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ns1="http://www.inkscape.org/namespaces/inkscape" version="1.1" width="1296" height="1512" viewBox="0 0 1296 1512">
+<defs>
+<clipPath id="clip_2">
+<path transform="matrix(1,0,0,-1,0,1512)" d="M0 1512H1296V0H0Z" />
+</clipPath>
+<clipPath id="kc-clip-1" clipPathUnits="userSpaceOnUse"><polygon points="97.2,97.19995 1198.8,97.19995 1198.8,1414.7999499999999 97.2,1414.7999499999999" /></clipPath></defs>
+<g>
+<g ns1:groupmode="layer" ns1:label="Layer 1">
+<g transform="matrix(.24,0,0,.24,97.2,97.19995)">
+<g transform="matrix(4.166666666666667,-0.0,-0.0,4.166666666666667,-405.0,-404.9997916666666)" clip-path="url(#kc-clip-1)"><rect x="97.2" y="97.19995" width="1101.6" height="1317.6" fill="#eeeae3" /><image id="kc-photo-1" x="97.2" y="97.19995" width="1101.6" height="1317.6" preserveAspectRatio="none" /></g></g>
+</g>
+<g ns1:groupmode="layer" ns1:label="Layer 2">
+<path transform="matrix(1,0,0,-1,0,1512)" d="M0 0H100.8V1512H0Z" fill="#231f20" />
+<path transform="matrix(1,0,0,-1,0,1512)" d="M1195.2 0H1296V1512H1195.2Z" fill="#231f20" />
+<g clip-path="url(#clip_2)">
+<path transform="matrix(1,0,0,-1,0,1512)" stroke-width="1" stroke-linecap="butt" stroke-miterlimit="10" stroke-linejoin="miter" fill="none" stroke="#231f20" d="M1195.2 1512H1296V0H1195.2Z" />
+</g>
+<path transform="matrix(1,0,0,-1,0,1512)" d="M0 0H1296V100.8H0Z" fill="#231f20" />
+<path transform="matrix(1,0,0,-1,0,1512)" d="M0 1411.2H1296V1512H0Z" fill="#231f20" />
+<path transform="matrix(1,0,0,-1,0,1512)" d="M0 1509.12H1296V1512H0Z" fill="#ffed08" />
+<path transform="matrix(1,0,0,-1,0,1512)" d="M0 0H1296V2.88H0Z" fill="#ffed08" />
+<path transform="matrix(1,0,0,-1,0,0)" d="M0 0 .001-1512H2.88V0Z" fill="#ffed08" />
+<path transform="matrix(1,0,0,-1,1293.119,0)" d="M0 0 .001-1512H2.881L2.88 0Z" fill="#ffed08" />
+</g>
+<g ns1:groupmode="layer" ns1:label="Layer 3">
+</g>
+<g ns1:groupmode="layer" ns1:label="Layer 4">
+</g>
+</g>
+</svg>

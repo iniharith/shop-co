@@ -163,7 +163,8 @@ class OrderUsecase {
                     size: item.size,
                     artworkUrl: item.artworkUrl,
                     configuration: normalizedConfiguration,
-                    configurationKey: normalizedConfiguration ? JSON.stringify(normalizedConfiguration) : item.configurationKey,
+                    configurationKey: normalizedConfiguration ? JSON.stringify(normalizedConfiguration)
+                        + (item.artworkUrl ? `|artwork:${item.artworkUrl}` : '') : item.configurationKey,
                     productNameSnapshot: product.name || '',
                     productDescriptionSnapshot: product.description || '',
                     productCategorySnapshot: product.category || '',

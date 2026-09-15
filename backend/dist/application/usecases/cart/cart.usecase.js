@@ -41,7 +41,8 @@ class CartUsecase {
                 : undefined;
             const storedSize = normalizedConfiguration ? fulfillmentSize : size;
             const storedProductId = product._id.toString();
-            const configurationKey = normalizedConfiguration ? JSON.stringify(normalizedConfiguration) : size;
+            const configurationKey = (normalizedConfiguration ? JSON.stringify(normalizedConfiguration) : size)
+                + (artworkUrl ? `|artwork:${artworkUrl}` : '');
             const pricing = (0, product_pricing_service_1.computeProductPricing)(product, quantity, normalizedConfiguration);
             const cart = yield this.cartRepository.getCartByUserId(userId);
             if (!cart) {
@@ -123,7 +124,8 @@ class CartUsecase {
             const pricing = (0, product_pricing_service_1.computeProductPricing)(product, quantity, normalizedConfiguration);
             item.configuration = normalizedConfiguration;
             if (normalizedConfiguration)
-                item.configurationKey = JSON.stringify(normalizedConfiguration);
+                item.configurationKey = JSON.stringify(normalizedConfiguration)
+                    + (item.artworkUrl ? `|artwork:${item.artworkUrl}` : '');
             item.unitPrice = pricing.unitPrice;
             item.fixedPrice = pricing.fixedPrice;
             item.lineTotal = pricing.lineTotal;

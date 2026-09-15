@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ns1="http://www.inkscape.org/namespaces/inkscape" version="1.1" width="3603.17" height="1902.39" viewBox="0 0 3603.17 1902.39">
+<defs>
+<clipPath id="clip_1">
+<path transform="matrix(1,0,0,-1,0,1902.39)" d="M61.844 0H3541.331V1902.387H61.844Z" />
+</clipPath>
+<clipPath id="kc-clip-1" clipPathUnits="userSpaceOnUse"><polygon points="61.844,1902.39 3541.331,1902.39 3541.331,0.003000000000156433 61.844,0.003000000000156433" /></clipPath></defs>
+<g ns1:groupmode="layer" ns1:label="Layer 3">
+<g clip-path="url(#clip_1)">
+<g transform="matrix(.5663228,0,0,.5663228,61.843748,-27.409546)">
+<g transform="matrix(1.7657773976255235,-0.0,-0.0,1.7657773976255235,-109.20229240284867,48.39915680597708)" clip-path="url(#kc-clip-1)"><rect x="61.844" y="0.003000000000156433" width="3479.487" height="1902.387" fill="#eeeae3" /><image id="kc-photo-1" x="61.844" y="0.003000000000156433" width="3479.487" height="1902.387" preserveAspectRatio="none" /></g></g>
+</g>
+</g>
+<g ns1:groupmode="layer" ns1:label="Layer 1">
+<path transform="matrix(1,0,0,-1,0,1902.39)" d="M0 1801.588H3602.8V1902.3881H0Z" fill="#231f1f" />
+<path transform="matrix(1,0,0,-1,0,1902.39)" d="M0 0H3602.108V100.8H0Z" fill="#231f1f" />
+<path transform="matrix(1,0,0,-1,0,1902.39)" d="M3502.374 0H3603.174V1902.387H3502.374Z" fill="#231f1f" />
+<path transform="matrix(1,0,0,-1,0,1902.39)" d="M0 0H100.8V1902.387H0Z" fill="#231f1f" />
+</g>
+<g ns1:groupmode="layer" ns1:label="Layer 2">
+<path transform="matrix(1,0,0,-1,0,1902.39)" d="M0 1898.298H3603.174V1902.388H0Z" fill="#ffed08" />
+<path transform="matrix(1,0,0,-1,0,1902.39)" d="M0 0H3603.174V4.09H0Z" fill="#ffed08" />
+<path transform="matrix(1,0,0,-1,0,1902.39)" d="M3600.295 0H3603.1739V1902.387H3600.295Z" fill="#ffed08" />
+<path transform="matrix(1,0,0,-1,0,1902.39)" d="M0 0H2.88V1902.387H0Z" fill="#ffed08" />
+</g>
+</svg>

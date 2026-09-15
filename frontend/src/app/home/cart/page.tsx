@@ -53,7 +53,8 @@ const handleCheckout = () => {
                     configuration={item.configuration}
                     configurationKey={item.configurationKey}
                     unitPrice={item.unitPrice}
-                    fixedPrice={item.fixedPrice}
+                      fixedPrice={item.fixedPrice}
+                      artworkUrl={item.artworkUrl}
                   />
                   {index < cartItems.length - 1 && (
                     <div className="mt-4 h-px w-full bg-border"></div>

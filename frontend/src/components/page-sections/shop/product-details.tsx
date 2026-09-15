@@ -19,6 +19,7 @@ import { useLanguage } from "@/i18n/LanguageProvider";
 import { getImageUrl } from "@/utils/getImageUrl";
 import { getProductVariation, getVariationImagesForSize } from "@/utils/productConfiguration";
 import { Check, Headphones, ShieldCheck, Truck } from "lucide-react";
+import Link from "next/link";
 
 interface ProductDetailsProps {
   product: IProduct;
@@ -43,6 +44,19 @@ export function ProductDetails({
   const { mutate, isPending } = useAddtoCart();
 
   const [quantity, setQuantity] = useState(1);
+  const supportsCanvas = /photo|canvas|frame|acrylic|clock/i.test(`${product.name} ${product.category}`);
+  const [canvasDesign, setCanvasDesign] = useState<{ url: string; templateName: string; size: string; productId?: string } | null>(null);
+  const [useCanvas, setUseCanvas] = useState(false);
+  useEffect(() => {
+    setCanvasDesign(null); setUseCanvas(false);
+    if (!supportsCanvas) return;
+    try {
+      const value = JSON.parse(localStorage.getItem('kc-canvas-ready') || 'null');
+      if (value && typeof value.url === 'string' && value.url.startsWith('https://') && (!value.productId || value.productId === product._id)) {
+        setCanvasDesign(value); setUseCanvas(value.productId === product._id);
+      }
+    } catch { /* No completed design on this device. */ }
+  }, [product._id, supportsCanvas]);
   const [selectedGridSize, setSelectedGridSize] = useState<string>("A4");
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
@@ -162,7 +176,7 @@ const hasDesignVariations = (product.variations || []).length > 0;
         : hasDesignVariations
           ? `${baseSize} | Design: ${selectedVariationInfo?.label || "Not selected"}`
         : baseSize;
-    const artworkUrl = undefined;
+    const artworkUrl = useCanvas && canvasDesign ? canvasDesign.url : undefined;
     const selections = options.flatMap((option) => {
       const selected = selectedOptions[option.name];
       const indexes = Array.isArray(selected) ? selected : typeof selected === "number" ? [selected] : [];
@@ -179,7 +193,7 @@ const configVariationLabel = selectedVariationInfo?.label || "";
       version: 1,
       fulfillmentSize: baseSize,
       selections,
-      design: isIslamicKhat || hasDesignVariations
+      design: artworkUrl ? { type: "upload" as const, label: "Upload Artwork", priceAdd: 0 } : isIslamicKhat || hasDesignVariations
         ? {
             type: "variation" as const,
             label: configVariationLabel,
@@ -385,6 +399,12 @@ const variationStepNum = (hasImageVariations || hasDesignVariations) ? currentSt
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-border dark:bg-card sm:rounded-3xl lg:sticky lg:top-[190px]">
+      {supportsCanvas && <section className="m-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
+        <h2 className="font-semibold">I have my own design</h2>
+        <p className="my-2 text-sm text-muted-foreground">Use one of our photo templates and insert your own photos.</p>
+        <Link href={`/diy?product=${encodeURIComponent(product._id)}`} className="text-sm font-semibold text-primary underline">Open DIY photo templates</Link>
+        {canvasDesign && <label className="mt-3 flex items-start gap-2 text-sm"><input type="checkbox" checked={useCanvas} onChange={event => setUseCanvas(event.target.checked)} className="mt-1" /><span>Attach my completed design: {canvasDesign.templateName}<span className="block text-xs text-muted-foreground">Template size: {canvasDesign.size}. Select the matching product size below.</span></span></label>}
+      </section>}
       
       {/* Product Header inside configurator */}
       <div className="border-b border-gray-200 bg-gray-50/80 p-5 dark:border-border dark:bg-black/20 sm:p-6">

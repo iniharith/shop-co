@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ns1="http://www.inkscape.org/namespaces/inkscape" version="1.1" width="3672" height="7128" viewBox="0 0 3672 7128">
+<defs>
+<clipPath id="clip_2">
+<path transform="matrix(1,0,0,-1,0,7128)" d="M1750.44 1769.599H1800.84V1819.999H1750.44Z" />
+</clipPath>
+<clipPath id="kc-clip-1" clipPathUnits="userSpaceOnUse"><polygon points="161.86223,181.69434 3512.8336700000004,181.69434 3512.8336700000004,6946.30602 161.86223,6946.30602" /></clipPath></defs>
+<g>
+<g ns1:groupmode="layer" ns1:label="Layer 1">
+<g transform="matrix(.4654127,0,0,.4697647,161.86223,181.69434)">
+<g transform="matrix(2.1486306669328106,-0.0,-0.0,2.1287252958768508,-347.78215119613196,-386.77733767564916)" clip-path="url(#kc-clip-1)"><rect x="161.86223" y="181.69434" width="3350.9714400000003" height="6764.61168" fill="#eeeae3" /><image id="kc-photo-1" x="161.86223" y="181.69434" width="3350.9714400000003" height="6764.61168" preserveAspectRatio="none" /></g></g>
+</g>
+<g ns1:groupmode="layer" ns1:label="Layer 2">
+<path transform="matrix(1,0,0,-1,0,7128)" d="M0 0H164.863V7128H0Z" fill="#2d292b" />
+<path transform="matrix(1,0,0,-1,0,7128)" d="M3512.834 0H3671.999V7128H3512.834Z" fill="#2d292b" />
+<path transform="matrix(1,0,0,-1,0,7128)" d="M0 0H3671.999V181.694H0Z" fill="#2d292b" />
+<path transform="matrix(1,0,0,-1,0,7128)" d="M0 6946.306H3671.999V7128H0Z" fill="#2d292b" />
+</g>
+<g ns1:groupmode="layer" ns1:label="Layer 5">
+</g>
+<g ns1:groupmode="layer" ns1:label="Layer 3">
+<path transform="matrix(1,0,0,-1,0,7128)" d="M0 0H4.633V7128H0Z" fill="#ffed08" />
+<path transform="matrix(1,0,0,-1,0,7128)" d="M3670.062 0H3671.999V7128H3670.062Z" fill="#ffed08" />
+<path transform="matrix(1,0,0,-1,0,7128)" d="M0 7122.408H3671.999V7128H0Z" fill="#ffed08" />
+<path transform="matrix(1,0,0,-1,0,7128)" d="M0 0H3671.999V5.59H0Z" fill="#ffed08" />
+</g>
+<g ns1:groupmode="layer" ns1:label="Layer 4">
+<g clip-path="url(#clip_2)">
+</g>
+</g>
+<g ns1:groupmode="layer" ns1:label="Layer 6">
+</g>
+</g>
+</svg>

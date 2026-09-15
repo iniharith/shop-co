@@ -1,0 +1,57 @@
+import { BlobReader, BlobWriter, TextReader, ZipWriter } from '@zip.js/zip.js';
+import { CanvasDesign, DEFAULT_PHOTO_ADJUSTMENT, photoPlacement } from './photoCanvasDesign';
+import { PhotoCanvasTemplate } from './photoCanvasTemplates';
+import { SavedCanvasPhoto } from './photoCanvasDraft';
+
+export type CustomerPhoto = SavedCanvasPhoto & { url: string };
+export function fillTemplate(svg: SVGSVGElement, template: PhotoCanvasTemplate, design: CanvasDesign, photos: CustomerPhoto[]) {
+  for (const slot of template.slots) {
+    const image = svg.querySelector(`#kc-${slot.id}`);
+    if (!image) continue;
+    const item = design[slot.id];
+    const photo = photos.find(p => p.id === item?.photoId);
+    if (!photo) { image.removeAttribute('href'); image.removeAttributeNS('http://www.w3.org/1999/xlink', 'href'); continue; }
+    const position = photoPlacement(photo.width, photo.height, slot.width / 100 * template.width, slot.height / 100 * template.height, item.adjustment || DEFAULT_PHOTO_ADJUSTMENT);
+    image.setAttribute('href', photo.url);
+    image.setAttribute('x', String(slot.x / 100 * template.width + position.x));
+    image.setAttribute('y', String(slot.y / 100 * template.height + position.y));
+    image.setAttribute('width', String(position.width));
+    image.setAttribute('height', String(position.height));
+  }
+}
+function dataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result as string); reader.onerror = () => reject(reader.error); reader.readAsDataURL(blob); });
+}
+export async function exportCanvasPackage(source: string, template: PhotoCanvasTemplate, design: CanvasDesign, photos: CustomerPhoto[]) {
+  if (template.slots.some(slot => !photos.some(photo => photo.id === design[slot.id]?.photoId))) throw new Error('Please fill every photo area first.');
+  const used = photos.filter(photo => template.slots.some(slot => design[slot.id]?.photoId === photo.id));
+  const embedded: CustomerPhoto[] = [];
+  for (const photo of used) embedded.push({ ...photo, url: await dataUrl(photo.blob) });
+  const doc = new DOMParser().parseFromString(source, 'image/svg+xml');
+  const svg = doc.documentElement as unknown as SVGSVGElement;
+  fillTemplate(svg, template, design, embedded);
+  // PDF artboards use points. Explicit inches preserve their actual physical size.
+  svg.setAttribute('width', `${template.width / 72}in`);
+  svg.setAttribute('height', `${template.height / 72}in`);
+  const text = new XMLSerializer().serializeToString(svg);
+  const image = new Image();
+  const url = URL.createObjectURL(new Blob([text], { type: 'image/svg+xml' }));
+  let preview: Blob;
+  try {
+    await new Promise<void>((resolve, reject) => { image.onload = () => resolve(); image.onerror = () => reject(new Error('Could not render this design.')); image.src = url; });
+    const canvas = document.createElement('canvas');
+    const scale = Math.min(1, 2400 / Math.max(template.width, template.height));
+    canvas.width = Math.round(template.width * scale); canvas.height = Math.round(template.height * scale);
+    const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('Image export is unavailable in this browser.');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    preview = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Preview export failed.')), 'image/png'));
+  } finally { URL.revokeObjectURL(url); }
+  const writer = new ZipWriter(new BlobWriter('application/zip'));
+  await writer.add('completed-design.svg', new TextReader(text));
+  await writer.add('preview.png', new BlobReader(preview));
+  const names = new Map(used.map((photo, i) => [photo.id, `photos/${i + 1}-${photo.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`]));
+  await writer.add('layout.json', new TextReader(JSON.stringify({ version: 2, template, design, photos: used.map(p => ({ id: p.id, file: names.get(p.id), width: p.width, height: p.height })) }, null, 2)));
+  await writer.add('READ-ME.txt', new TextReader('Open completed-design.svg in Illustrator for the completed artwork with embedded full-resolution customer photos. Its physical dimensions match the source artboard, including any original margins. preview.png is a screen preview, not the print master. layout.json and photos/ preserve the source photos and crop settings.'));
+  for (const photo of used) await writer.add(names.get(photo.id)!, new BlobReader(photo.blob));
+  return { archive: await writer.close(), preview };
+}
