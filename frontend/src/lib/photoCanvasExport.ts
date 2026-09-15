@@ -57,7 +57,7 @@ async function renderCroppedSlot(photo: CustomerPhoto, width: number, height: nu
   return { blob, url: await dataUrl(blob), width: outputWidth, height: outputHeight };
 }
 
-export async function exportCanvasPackage(source: string, template: PhotoCanvasTemplate, design: CanvasDesign, photos: CustomerPhoto[]) {
+export async function exportCanvasPackage(source: string, template: PhotoCanvasTemplate, design: CanvasDesign, photos: CustomerPhoto[], notes = '') {
   if (template.slots.some(slot => !photos.some(photo => photo.id === design[slot.id]?.photoId))) throw new Error('Please fill every photo area first.');
   // Bake each website crop into a slot-sized PNG. Illustrator then receives an
   // exact, already-cropped rectangle instead of recalculating image fitting.
@@ -94,5 +94,6 @@ export async function exportCanvasPackage(source: string, template: PhotoCanvasT
   // Keep the customer download production-ready and simple: one protected SVG
   // with all photos embedded and clipped by the original template masks.
   await writer.add('kampungcetak-design.svg', new TextReader(text), { password: 'kampungcetak' });
+  if (notes.trim()) await writer.add('CUSTOMER-NOTES.txt', new TextReader(notes.trim()), { password: 'kampungcetak' });
   return { archive: await writer.close(), preview };
 }

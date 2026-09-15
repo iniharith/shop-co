@@ -1,7 +1,7 @@
 import type { CanvasDesigns } from "./photoCanvasDesign";
 
 export type SavedCanvasPhoto = { id: string; name: string; blob: Blob; width: number; height: number };
-export type SavedCanvasDraft = { templateId: string; designs: CanvasDesigns; savedAt: string };
+export type SavedCanvasDraft = { templateId: string; designs: CanvasDesigns; notes?: string; savedAt: string };
 const DATABASE = "kampungcetak-photo-canvas";
 
 function openDatabase(): Promise<IDBDatabase> {

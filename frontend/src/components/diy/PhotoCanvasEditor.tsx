@@ -29,6 +29,7 @@ export default function PhotoCanvasEditor() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [preview, setPreview] = useState(false);
+  const [notes, setNotes] = useState('');
   const input = useRef<HTMLInputElement>(null);
   const uploadTarget = useRef('photo-1');
   const artwork = useRef<HTMLDivElement>(null);
@@ -56,6 +57,7 @@ export default function PhotoCanvasEditor() {
         setTemplateId(library.some(t => t.id === wanted) ? wanted! : library[0]?.id || '');
         if (saved) {
           setDesigns(saved.draft?.designs || {});
+          setNotes(saved.draft?.notes || '');
           setPhotos(saved.photos.map(p => { const url = URL.createObjectURL(p.blob); urls.current.push(url); return { ...p, url }; }));
         }
         setReady(true);
@@ -92,10 +94,10 @@ export default function PhotoCanvasEditor() {
   useEffect(() => {
     if (!ready) return;
     const timer = setTimeout(() => {
-      saveCanvasDraft({ templateId, designs, savedAt: new Date().toISOString() }).catch(() => setStorageMessage('Could not save in this browser. Download your design before leaving.'));
+      saveCanvasDraft({ templateId, designs, notes, savedAt: new Date().toISOString() }).catch(() => setStorageMessage('Could not save in this browser. Download your design before leaving.'));
     }, 400);
     return () => clearTimeout(timer);
-  }, [templateId, designs, ready]);
+  }, [templateId, designs, notes, ready]);
 
   const filtered = useMemo(() => templates.filter(t => (category === 'All' || t.category === category) && `${t.name} ${t.size}`.toLowerCase().includes(search.toLowerCase())), [templates, category, search]);
   function adjust(slotId: string, change: Partial<PhotoAdjustment>) {
@@ -139,7 +141,7 @@ export default function PhotoCanvasEditor() {
     if (forOrder && !session?.user?.token) { setError('Please sign in before attaching a design to an order. Your photos are saved on this device; you can also download the design now.'); return; }
     setBusy('Preparing your completed design…'); setError('');
     try {
-      const output = await exportCanvasPackage(source, template, design, photos);
+      const output = await exportCanvasPackage(source, template, design, photos, notes);
       const filename = `kampungcetak-${template.id}.zip`;
       if (!forOrder) {
         const url = URL.createObjectURL(output.archive); const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(url), 30000);
@@ -190,7 +192,7 @@ export default function PhotoCanvasEditor() {
       </section>
       <aside className="space-y-4 lg:sticky lg:top-4 lg:h-fit">
         <section className={panel}><h2 className="font-bold">Adjust {selected?.label.toLowerCase() || 'photo'}</h2><p className="my-2 text-xs text-muted-foreground">Drag the photo to reposition it. Zoom to crop closer.</p><button disabled={!selected || !!busy} className={`${button} w-full`} onClick={() => chooseUpload()}>Replace photo</button><label className="mt-4 block text-sm">Zoom<input className="mt-2 w-full" type="range" min="1" max="4" step="0.02" aria-label="Photo zoom" value={adjustment.scale} disabled={!selectedPhoto || !!busy} onChange={e => selected && adjust(selected.id, { scale: Number(e.target.value) })} /></label><button className={`${button} mt-3`} disabled={!selectedPhoto || !!busy} onClick={() => selected && adjust(selected.id, DEFAULT_PHOTO_ADJUSTMENT)}><RotateCcw className="mr-1 inline size-3" />Reset crop</button></section>
-        <section className={panel}><h2 className="font-bold">3. Finish your design</h2><p className="my-3 text-sm">{complete} of {template?.slots.length || 0} photos filled</p><p className="mb-4 text-xs text-muted-foreground">Your template artwork stays fixed. Preview the complete design before continuing.</p><button className={`${button} w-full`} disabled={!finished || !!busy || !source} onClick={() => void finish(false)}><Download className="mr-1 inline size-4" />Download completed design</button><button className="mt-3 w-full rounded-xl bg-primary px-3 py-3 text-sm font-bold text-primary-foreground disabled:opacity-40" disabled={!finished || !!busy || !source} onClick={() => void finish(true)}>Use this design for my order</button><p className="mt-3 text-xs text-muted-foreground">Choose your product and print options next. Your completed design will be attached when you add it to cart.</p>{busy && <p role="status" className="mt-3 text-sm"><Loader2 className="mr-1 inline size-4 animate-spin" />{busy}</p>}</section>
+        <section className={panel}><h2 className="font-bold">3. Finish your design</h2><p className="my-3 text-sm">{complete} of {template?.slots.length || 0} photos filled</p><label className="mb-4 block text-xs font-semibold">Notes for Kampung Cetak<textarea value={notes} onChange={event => setNotes(event.target.value)} maxLength={2000} placeholder="Example: Please make the faces brighter…" className="mt-2 min-h-24 w-full resize-y rounded-xl border border-input bg-background p-3 text-sm font-normal" /></label><p className="mb-4 text-xs text-muted-foreground">Notes are included inside the protected ZIP with your completed SVG.</p><button className={`${button} w-full`} disabled={!finished || !!busy || !source} onClick={() => void finish(false)}><Download className="mr-1 inline size-4" />Download completed design</button><button className="mt-3 w-full rounded-xl bg-primary px-3 py-3 text-sm font-bold text-primary-foreground disabled:opacity-40" disabled={!finished || !!busy || !source} onClick={() => void finish(true)}>Use this design for my order</button><p className="mt-3 text-xs text-muted-foreground">Choose your product and print options next. Your completed design will be attached when you add it to cart.</p>{busy && <p role="status" className="mt-3 text-sm"><Loader2 className="mr-1 inline size-4 animate-spin" />{busy}</p>}</section>
       </aside>
     </div>}
   </main>;
