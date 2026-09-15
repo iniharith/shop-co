@@ -400,9 +400,16 @@ const variationStepNum = (hasImageVariations || hasDesignVariations) ? currentSt
   return (
     <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-border dark:bg-card sm:rounded-3xl lg:sticky lg:top-[190px]">
       {supportsCanvas && <section className="m-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
-        <h2 className="font-semibold">I have my own design</h2>
-        <p className="my-2 text-sm text-muted-foreground">Use one of our photo templates and insert your own photos.</p>
-        <Link href={`/diy?product=${encodeURIComponent(product._id)}`} className="text-sm font-semibold text-primary underline">Open DIY photo templates</Link>
+        <h2 className="font-semibold">Choose your design method</h2>
+        <p className="my-2 text-sm text-muted-foreground">Choose a Kampung Cetak template, or send us your own finished artwork.</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Link href={`/diy?product=${encodeURIComponent(product._id)}`} className="rounded-xl border border-primary bg-white p-3 text-sm font-semibold text-primary shadow-sm hover:bg-primary/10">
+            Kampung Cetak design<span className="mt-1 block text-xs font-normal text-muted-foreground">Insert your photos into our templates</span>
+          </Link>
+          <Link href="/home/profile/upload" className="rounded-xl border border-border bg-white p-3 text-sm font-semibold hover:border-primary hover:text-primary">
+            I have my own design<span className="mt-1 block text-xs font-normal text-muted-foreground">Upload a finished JPG, PNG or PDF</span>
+          </Link>
+        </div>
         {canvasDesign && <label className="mt-3 flex items-start gap-2 text-sm"><input type="checkbox" checked={useCanvas} onChange={event => setUseCanvas(event.target.checked)} className="mt-1" /><span>Attach my completed design: {canvasDesign.templateName}<span className="block text-xs text-muted-foreground">Template size: {canvasDesign.size}. Select the matching product size below.</span></span></label>}
       </section>}
       
