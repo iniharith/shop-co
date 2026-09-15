@@ -143,30 +143,24 @@ export default function PhotoCanvasEditor() {
 
   const filtered = useMemo(() => templates.filter((t) => (category === "All" || t.category === category) && `${t.name} ${t.size}`.toLowerCase().includes(search.toLowerCase())), [templates, category, search]);
   function commitDesigns(update: (current: CanvasDesigns) => CanvasDesigns) {
-    setDesigns((current) => {
-      const next = update(current);
-      setUndoStack((items) => [...items.slice(-49), current]);
-      setRedoStack([]);
-      return next;
-    });
+    const next = update(designs);
+    setUndoStack((items) => [...items.slice(-49), structuredClone(designs)]);
+    setRedoStack([]);
+    setDesigns(next);
   }
   function undo() {
-    setUndoStack((items) => {
-      const previous = items.at(-1);
-      if (!previous) return items;
-      setRedoStack((future) => [...future.slice(-49), designs]);
-      setDesigns(previous);
-      return items.slice(0, -1);
-    });
+    const previous = undoStack.at(-1);
+    if (!previous) return;
+    setUndoStack((items) => items.slice(0, -1));
+    setRedoStack((items) => [...items.slice(-49), structuredClone(designs)]);
+    setDesigns(previous);
   }
   function redo() {
-    setRedoStack((items) => {
-      const next = items.at(-1);
-      if (!next) return items;
-      setUndoStack((history) => [...history.slice(-49), designs]);
-      setDesigns(next);
-      return items.slice(0, -1);
-    });
+    const next = redoStack.at(-1);
+    if (!next) return;
+    setRedoStack((items) => items.slice(0, -1));
+    setUndoStack((items) => [...items.slice(-49), structuredClone(designs)]);
+    setDesigns(next);
   }
   function adjust(slotId: string, change: Partial<PhotoAdjustment>) {
     commitDesigns((prev) => ({

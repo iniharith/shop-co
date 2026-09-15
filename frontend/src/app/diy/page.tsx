@@ -261,24 +261,20 @@ function DiyPhotobookPage() {
       }));
   };
   const undo = () => {
-    setUndoStack((items) => {
-      const previous = items.at(-1);
-      if (!previous) return items;
-      setRedoStack((future) => [...future, { coverAdjust, imageAdjustments }]);
-      setCoverAdjust(previous.coverAdjust);
-      setImageAdjustments(previous.imageAdjustments);
-      return items.slice(0, -1);
-    });
+    const previous = undoStack.at(-1);
+    if (!previous) return;
+    setUndoStack((items) => items.slice(0, -1));
+    setRedoStack((items) => [...items.slice(-49), { coverAdjust: { ...coverAdjust }, imageAdjustments: structuredClone(imageAdjustments) }]);
+    setCoverAdjust(previous.coverAdjust);
+    setImageAdjustments(previous.imageAdjustments);
   };
   const redo = () => {
-    setRedoStack((items) => {
-      const next = items.at(-1);
-      if (!next) return items;
-      setUndoStack((past) => [...past, { coverAdjust, imageAdjustments }]);
-      setCoverAdjust(next.coverAdjust);
-      setImageAdjustments(next.imageAdjustments);
-      return items.slice(0, -1);
-    });
+    const next = redoStack.at(-1);
+    if (!next) return;
+    setRedoStack((items) => items.slice(0, -1));
+    setUndoStack((items) => [...items.slice(-49), { coverAdjust: { ...coverAdjust }, imageAdjustments: structuredClone(imageAdjustments) }]);
+    setCoverAdjust(next.coverAdjust);
+    setImageAdjustments(next.imageAdjustments);
   };
   const beginImageDrag = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!activeImage) return;
@@ -552,29 +548,23 @@ function DiyPhotobookPage() {
                   </code>
                 </div>
               )}
-              {activeImage && (
+              <input ref={replaceInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => updateSpreadImage(event.target.files?.[0])} />
+              {
                 <div
-                  className={`absolute z-10 cursor-move overflow-hidden outline outline-2 -outline-offset-2 outline-emerald-500 ${showCover ? "left-[4%] top-[4%] h-[80%] w-[44%]" : "left-[7%] top-[5%] h-[66%] w-[62%]"} bg-black`}
+                  className={`absolute z-10 overflow-hidden outline outline-2 -outline-offset-2 outline-emerald-500 ${activeImage ? "cursor-move" : "cursor-pointer bg-emerald-500/10"} ${showCover ? "left-[4%] top-[4%] h-[80%] w-[44%]" : "left-[7%] top-[5%] h-[66%] w-[62%]"}`}
                   onClick={(event) => {
                     event.stopPropagation();
-                    setImageSelected(true);
+                    if (activeImage) setImageSelected(true);
+                    else replaceInputRef.current?.click();
                   }}
                   onPointerDown={beginImageDrag}
                   onPointerMove={dragImage}
                   onPointerUp={endImageDrag}
                   onPointerCancel={endImageDrag}
                 >
-                  <img
-                    src={activeImage}
-                    alt="Image inside selected cover design"
-                    className="h-full w-full object-cover transition-transform"
-                    style={{
-                      objectPosition: `${50 + activeAdjust.x * 50}% ${50 + activeAdjust.y * 50}%`,
-                      transform: `scale(${Math.max(1, activeAdjust.scale)})`,
-                    }}
-                  />
+                  {activeImage ? <img src={activeImage} alt="Image inside selected cover design" draggable={false} className="pointer-events-none h-full w-full select-none object-cover" style={{ objectPosition: `${50 + activeAdjust.x * 50}% ${50 + activeAdjust.y * 50}%`, transform: `scale(${Math.max(1, activeAdjust.scale)})` }} /> : <span className="grid h-full place-items-center text-center text-xs font-semibold text-emerald-700"><span><ImagePlus className="mx-auto mb-1 size-5" />Click to add photo</span></span>}
                 </div>
-              )}
+              }
               {activeStickers.map((sticker, index) => (
                 <button
                   key={`${sticker}-${index}`}
@@ -601,7 +591,6 @@ function DiyPhotobookPage() {
                   <button onClick={() => replaceInputRef.current?.click()} className="rounded-lg p-2 text-primary hover:bg-primary/10" title="Replace image">
                     <Upload className="size-4" />
                   </button>
-                  <input ref={replaceInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => updateSpreadImage(event.target.files?.[0])} />
                   <button onClick={deleteActiveImage} className="rounded-lg p-2 text-destructive hover:bg-destructive/10" title="Delete image">
                     <Trash2 className="size-4" />
                   </button>
