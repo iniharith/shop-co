@@ -73,8 +73,8 @@ const NotificationsDrawer = ({
             { "--initial-transform": "calc(100% + 8px)" } as React.CSSProperties
           }
         >
-          <div className="bg-white h-full w-full grow px-4 py-3 flex flex-col rounded-[16px] shadow-lg">
-            <Drawer.Title className="font-medium px-0 border-b border-dashed border-zinc-900/20 justify-between flex items-center mb-4 pb-2">
+          <div className="bg-background/95 h-full w-full grow px-4 py-4 flex flex-col rounded-2xl border border-border shadow-2xl backdrop-blur-xl">
+            <Drawer.Title className="font-medium px-0 border-b border-border justify-between flex items-center mb-4 pb-3">
               <div className="flex items-center gap-2">
                 <Bell className="h-5 w-5 text-primary" />
                 <h2 className="text-lg font-semibold">Notifications</h2>
@@ -91,13 +91,13 @@ const NotificationsDrawer = ({
             </Drawer.Title>
 
             <Tabs
-              defaultValue="all"
+              defaultValue="new"
               value={activeTab}
               onValueChange={setActiveTab}
               className="w-full h-full relative overflow-y-auto "
             >
-              <TabsList className="grid grid-cols-3 mb-4">
-                <TabsTrigger value="new" className="relative">
+              <TabsList className="mb-4 grid grid-cols-3 rounded-full bg-muted p-1">
+                <TabsTrigger value="new" className="relative rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   New
                   {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center">
@@ -106,8 +106,8 @@ const NotificationsDrawer = ({
                   )}
                 </TabsTrigger>
 
-                <TabsTrigger value="read">Read</TabsTrigger>
-                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="read" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Read</TabsTrigger>
+                <TabsTrigger value="all" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">All</TabsTrigger>
               </TabsList>
 
               <div className="flex-1 h-full relative overflow-y-auto">
@@ -117,10 +117,10 @@ const NotificationsDrawer = ({
                       <div
                         key={notification._id}
                         className={cn(
-                          "p-3 rounded-lg border transition-all duration-200 hover:bg-gray-50",
+                          "p-3 rounded-xl border transition-all duration-200 hover:bg-muted",
                           notification.read
-                            ? "border-gray-200"
-                            : "border-primary/30 bg-blue-50/50"
+                            ? "border-border bg-card"
+                            : "border-primary/30 bg-primary/5"
                         )}
                       >
                         <div className="flex gap-3">
@@ -128,7 +128,7 @@ const NotificationsDrawer = ({
                             className={cn(
                               "h-8 w-8 rounded-full flex items-center justify-center",
                               notification.read
-                                ? "bg-gray-100"
+                                ? "bg-muted text-muted-foreground"
                                 : "bg-primary/10 text-primary"
                             )}
                           >
@@ -138,19 +138,19 @@ const NotificationsDrawer = ({
                             <div className="flex justify-between items-start">
                               <h3
                                 className={cn(
-                                  "text-sm font-medium",
+                                  "text-sm font-semibold",
                                   !notification.read && "text-primary"
                                 )}
                               >
                                 {notification.title}
                               </h3>
-                              <span className="text-xs text-gray-500">
+                              <span className="text-[11px] text-muted-foreground">
                                 {new Date(
                                   notification.createdAt as string
                                 ).toLocaleString()}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-600 mt-1">
+                            <p className="text-sm text-muted-foreground mt-1">
                               {notification.message}
                             </p>
                           </div>
