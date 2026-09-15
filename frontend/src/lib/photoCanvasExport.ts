@@ -16,6 +16,12 @@ export function fillTemplate(svg: SVGSVGElement, template: PhotoCanvasTemplate, 
     // must not re-apply a stale source mask that clips the photo differently.
     image.removeAttribute('clip-path');
     image.removeAttribute('mask');
+    let parent = image.parentElement;
+    while (parent && parent.tagName.toLowerCase() !== 'svg') {
+      parent.removeAttribute('clip-path');
+      parent.removeAttribute('mask');
+      parent = parent.parentElement;
+    }
     image.setAttribute('href', photo.url);
     image.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', photo.url);
     image.setAttribute('x', String(slot.x / 100 * template.width + position.x));

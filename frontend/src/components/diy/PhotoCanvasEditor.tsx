@@ -83,7 +83,11 @@ export default function PhotoCanvasEditor() {
       const nextSvg = artwork.current?.querySelector('svg');
       if (nextSvg && template) fillTemplate(nextSvg, template, design, photos);
     });
-    return () => cancelAnimationFrame(frame);
+    const retry = window.setTimeout(() => {
+      const nextSvg = artwork.current?.querySelector('svg');
+      if (nextSvg && template) fillTemplate(nextSvg, template, design, photos);
+    }, 80);
+    return () => { cancelAnimationFrame(frame); window.clearTimeout(retry); };
   }, [source, template, design, photos]);
   useEffect(() => {
     if (!ready) return;
