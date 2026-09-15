@@ -117,6 +117,22 @@ class AuthController {
             }
         });
     }
+    google(req, res, next) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { email, name, avatar } = req.body;
+                if (!email)
+                    return res.status(api_constant_1.statusCodes.BAD_REQUEST).json({ success: false, message: "Google email is required" });
+                const result = yield this.authUsecase.googleLogin(email, name, avatar);
+                const safeUser = result.user.toObject();
+                delete safeUser.password;
+                res.status(api_constant_1.statusCodes.OK).json({ success: true, user: safeUser, accessToken: result.accessToken, refreshToken: result.refreshToken });
+            }
+            catch (error) {
+                next(error);
+            }
+        });
+    }
     /**
      * @description Refresh access token using a valid refresh token
      * @Method POST

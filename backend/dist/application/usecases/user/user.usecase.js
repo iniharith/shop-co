@@ -14,7 +14,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserUsecase = void 0;
 const user_repository_1 = require("../../../infrastructure/db/repositories/user.repository");
+const user_type_1 = require("../../../domain/types/user.type");
 const jwt_1 = __importDefault(require("../../../shared/utils/jwt"));
+const crypto_1 = __importDefault(require("crypto"));
 class UserUsecase {
     constructor() {
         this.userRepository = new user_repository_1.UserRepository();
@@ -47,6 +49,17 @@ class UserUsecase {
             const accessToken = this.jwtService.generateAccessToken({ userId: newUser._id });
             const refreshToken = this.jwtService.generateRefreshToken({ userId: newUser._id });
             return { user: newUser, accessToken, refreshToken };
+        });
+    }
+    googleLogin(email, name, avatar) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let user = yield this.userRepository.findByEmail(email);
+            if (!user) {
+                user = yield this.userRepository.create({ email, name: name || email.split('@')[0], avatar: avatar || '', password: `google-${crypto_1.default.randomUUID()}`, role: user_type_1.Roles.CLIENT, verified: true });
+            }
+            const accessToken = this.jwtService.generateAccessToken({ userId: user._id });
+            const refreshToken = this.jwtService.generateRefreshToken({ userId: user._id });
+            return { user, accessToken, refreshToken };
         });
     }
     getStaff() {
