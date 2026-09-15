@@ -21,6 +21,11 @@ const cachePrefix = `${REDIS_KEYS.PRODUCTS}:`;
 const ARCHIVE_RETENTION_DAYS = 30;
 type NormalizedSize = { size: string; stock: number; lowStockThreshold: number; images: string[] };
 type NormalizedVariation = { name: string; stock: number; lowStockThreshold: number; images: string[] };
+type NormalizedPrintingOption = {
+  name: string;
+  isMultiSelect: boolean;
+  options: Array<{ label: string; priceAdd: number }>;
+};
 type NormalizedProduct = {
   name: string;
   description: string;
@@ -174,7 +179,22 @@ const normalizeProduct = (body: any): NormalizedProduct => {
           })
           .filter((item: NormalizedVariation) => item.name)
       : ([] as NormalizedVariation[]),
-    printingOptions: Array.isArray(body.printingOptions) ? body.printingOptions : [],
+    printingOptions: Array.isArray(body.printingOptions)
+      ? body.printingOptions
+          .map((option: any): NormalizedPrintingOption => ({
+            name: String(option?.name || '').trim(),
+            isMultiSelect: Boolean(option?.isMultiSelect),
+            options: Array.isArray(option?.options)
+              ? option.options
+                  .map((value: any) => ({
+                    label: String(value?.label || '').trim(),
+                    priceAdd: Number(value?.priceAdd) || 0,
+                  }))
+                  .filter((value: { label: string }) => value.label)
+              : [],
+          }))
+          .filter((option: NormalizedPrintingOption) => option.name && option.options.length)
+      : [],
     sections: getProductSections(String(body.category || '')),
     specifications: (() => {
       const specs = body.specifications && typeof body.specifications === 'object' ? body.specifications : {};

@@ -59,6 +59,7 @@ const StockAdjustment_1 = require("../../domain/entities/StockAdjustment");
 const product_repository_1 = __importDefault(require("../../infrastructure/db/repositories/product.repository"));
 const productSections_1 = require("../../shared/constants/productSections");
 const order_model_1 = __importDefault(require("../../infrastructure/db/models/order.model"));
+const productBroadcast_1 = require("../../shared/utils/productBroadcast");
 const router = (0, express_1.Router)();
 const redis = new redis_1.RedisService();
 const roles = (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss');
@@ -419,6 +420,7 @@ router.post('/', (req, res, next) => __awaiter(void 0, void 0, void 0, function*
         if (initialAdjustments.length)
             yield StockAdjustment_1.StockAdjustment.insertMany(initialAdjustments);
         yield invalidateCatalog();
+        void (0, productBroadcast_1.emitProductUpdated)(created, 'created');
         res.status(201).json({ success: true, product: created });
     }
     catch (error) {
@@ -466,6 +468,7 @@ router.patch('/:id', (req, res, next) => __awaiter(void 0, void 0, void 0, funct
         if (stockChanges.length)
             yield StockAdjustment_1.StockAdjustment.insertMany(stockChanges);
         yield invalidateCatalog();
+        void (0, productBroadcast_1.emitProductUpdated)(updated, 'updated');
         res.json({ success: true, product: updated });
     }
     catch (error) {
@@ -516,6 +519,7 @@ router.post('/:id/stock-adjustments', (req, res, next) => __awaiter(void 0, void
                 message: 'Stock changed before it could be saved. Please try again.',
             });
         yield invalidateCatalog();
+        void (0, productBroadcast_1.emitProductUpdated)(updated, 'updated');
         res.json({ success: true, product: updated });
     }
     catch (error) {
@@ -531,6 +535,7 @@ router.patch('/:id/archive', (req, res, next) => __awaiter(void 0, void 0, void 
         if (!updated)
             return res.status(404).json({ success: false, message: 'Product not found.' });
         yield invalidateCatalog();
+        void (0, productBroadcast_1.emitProductUpdated)(updated, 'archived');
         res.json({ success: true, product: updated });
     }
     catch (error) {

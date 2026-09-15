@@ -23,4 +23,5 @@ var REDIS_CHANNELS;
     REDIS_CHANNELS["FILES_UPDATED"] = "files_updated";
     REDIS_CHANNELS["TASK_UPDATED"] = "task_updated";
     REDIS_CHANNELS["TASK_TYPING"] = "task_typing";
+    REDIS_CHANNELS["PRODUCT_UPDATED"] = "product_updated";
 })(REDIS_CHANNELS || (exports.REDIS_CHANNELS = REDIS_CHANNELS = {}));

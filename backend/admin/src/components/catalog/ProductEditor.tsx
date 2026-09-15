@@ -46,6 +46,17 @@ type DesignVariation = {
   images?: string[];
 };
 
+type PrintingOptionValue = {
+  label: string;
+  priceAdd: number;
+};
+
+type PrintingOption = {
+  name: string;
+  isMultiSelect?: boolean;
+  options: PrintingOptionValue[];
+};
+
 type Product = {
   _id: string;
   name: string;
@@ -57,6 +68,7 @@ type Product = {
   images: string[];
   sizes: SizeStock[];
   variations?: DesignVariation[];
+  printingOptions?: PrintingOption[];
   slug?: string;
   status?: 'draft' | 'published';
   seoTitle?: string;
@@ -428,6 +440,65 @@ images: resolveImages(current.images),
     }
     setCustomSpecChoice(null);
   };
+
+  const updatePrintingOption = (index: number, patch: Partial<PrintingOption>) =>
+    setProduct(current => ({
+      ...current,
+      printingOptions: (current.printingOptions || []).map((option, optionIndex) =>
+        optionIndex === index ? { ...option, ...patch } : option,
+      ),
+    }));
+
+  const addPrintingOption = () =>
+    setProduct(current => ({
+      ...current,
+      printingOptions: [...(current.printingOptions || []), { name: '', isMultiSelect: false, options: [] }],
+    }));
+
+  const removePrintingOption = (index: number) =>
+    setProduct(current => ({
+      ...current,
+      printingOptions: (current.printingOptions || []).filter((_, optionIndex) => optionIndex !== index),
+    }));
+
+  const addPrintingOptionValue = (optionIndex: number) =>
+    setProduct(current => ({
+      ...current,
+      printingOptions: (current.printingOptions || []).map((option, index) =>
+        index === optionIndex
+          ? { ...option, options: [...(option.options || []), { label: '', priceAdd: 0 }] }
+          : option,
+      ),
+    }));
+
+  const updatePrintingOptionValue = (
+    optionIndex: number,
+    valueIndex: number,
+    patch: Partial<PrintingOptionValue>,
+  ) =>
+    setProduct(current => ({
+      ...current,
+      printingOptions: (current.printingOptions || []).map((option, index) =>
+        index === optionIndex
+          ? {
+              ...option,
+              options: (option.options || []).map((value, indexValue) =>
+                indexValue === valueIndex ? { ...value, ...patch } : value,
+              ),
+            }
+          : option,
+      ),
+    }));
+
+  const removePrintingOptionValue = (optionIndex: number, valueIndex: number) =>
+    setProduct(current => ({
+      ...current,
+      printingOptions: (current.printingOptions || []).map((option, index) =>
+        index === optionIndex
+          ? { ...option, options: (option.options || []).filter((_, indexValue) => indexValue !== valueIndex) }
+          : option,
+      ),
+    }));
 
   const addCustomField = (key: string, value: string) =>
     setProduct(current => ({
@@ -1234,6 +1305,21 @@ images: resolveImages(current.images),
                             {selectedChoices.length ? selectedChoices.join(' / ') : 'No choice selected'}
                           </span>
                         </div>
+                        {selectedChoices.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {selectedChoices.map(choice => (
+                              <button
+                                key={choice}
+                                type="button"
+                                className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-1 text-xs text-primary"
+                                onClick={() => toggleSpecChoice(key, choice)}
+                              >
+                                {choice}
+                                <X className="h-3 w-3" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
                         <div className="flex flex-wrap gap-2">
                           {specificationChoices[key].map(choice => {
                             const selected = selectedChoices.includes(choice);
@@ -1339,6 +1425,78 @@ images: resolveImages(current.images),
                       Add field
                     </Button>
                   </div>
+                </div>
+              </section>
+
+              <section>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                      Storefront choices &amp; pricing
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      These buttons appear on the storefront, including Size, Material, and add-ons.
+                    </p>
+                  </div>
+                  <Button type="button" size="sm" variant="outline" onClick={addPrintingOption}>
+                    <Plus className="mr-1 h-4 w-4" /> Add choice group
+                  </Button>
+                </div>
+                <div className="mt-3 space-y-3">
+                  {(product.printingOptions || []).map((option, optionIndex) => (
+                    <div key={optionIndex} className="rounded-xl border p-3">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          className="h-8 text-xs font-medium"
+                          value={option.name}
+                          placeholder="Choice group name (e.g. Size)"
+                          onChange={event => updatePrintingOption(optionIndex, { name: event.target.value })}
+                        />
+                        <label className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(option.isMultiSelect)}
+                            onChange={event => updatePrintingOption(optionIndex, { isMultiSelect: event.target.checked })}
+                          />
+                          Multi-select
+                        </label>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removePrintingOption(optionIndex)}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="mt-2 space-y-2">
+                        {(option.options || []).map((value, valueIndex) => (
+                          <div key={valueIndex} className="flex items-center gap-2">
+                            <Input
+                              className="h-8 text-xs"
+                              value={value.label}
+                              placeholder="Choice label"
+                              onChange={event => updatePrintingOptionValue(optionIndex, valueIndex, { label: event.target.value })}
+                            />
+                            <Input
+                              className="h-8 w-28 text-xs"
+                              type="number"
+                              step="0.01"
+                              value={value.priceAdd}
+                              placeholder="Add-on RM"
+                              onChange={event => updatePrintingOptionValue(optionIndex, valueIndex, { priceAdd: Number(event.target.value) || 0 })}
+                            />
+                            <Button type="button" variant="ghost" size="icon" onClick={() => removePrintingOptionValue(optionIndex, valueIndex)}>
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button type="button" size="sm" variant="outline" onClick={() => addPrintingOptionValue(optionIndex)}>
+                          <Plus className="mr-1 h-3 w-3" /> Add option
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {!product.printingOptions?.length && (
+                    <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                      No storefront choice groups configured. The product will use its base price.
+                    </p>
+                  )}
                 </div>
               </section>
 

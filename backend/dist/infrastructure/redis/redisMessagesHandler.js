@@ -40,6 +40,9 @@ function handleRedisAndSocketMessageClient(redisService, io) {
             case redis_constant_1.REDIS_CHANNELS.CHAT_TYPING:
                 io.emit("chat_typing", JSON.parse(message));
                 break;
+            case redis_constant_1.REDIS_CHANNELS.PRODUCT_UPDATED:
+                io.emit("product_updated", JSON.parse(message));
+                break;
         }
     }));
 }
@@ -85,6 +88,9 @@ function handleRedisAndSocketMessageAdmin(redisService, io) {
                 break;
             case redis_constant_1.REDIS_CHANNELS.TASK_TYPING:
                 io.emit("task_typing", JSON.parse(message));
+                break;
+            case redis_constant_1.REDIS_CHANNELS.PRODUCT_UPDATED:
+                io.emit("product_updated", JSON.parse(message));
                 break;
         }
     }));
