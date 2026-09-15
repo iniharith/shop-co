@@ -12,7 +12,6 @@ import { Button } from "../ui/button";
 import FormGeneratorV2 from "../global/formgenrator";
 import { FaEnvelope, FaLock } from "react-icons/fa6";
 import { useUIStore } from "@/store/uiStore";
-import { signIn } from "next-auth/react";
 export function LoginForm({ callBack, redirectTo }: { callBack?: () => void; redirectTo?: string }) {
   const { form,control, errors, onFormSubmit, isPending, isSuccess } = useAuth("login", redirectTo);
   const {previewsFunction} = useUIStore()
@@ -73,8 +72,6 @@ export function LoginForm({ callBack, redirectTo }: { callBack?: () => void; red
       <Button type="submit" className="w-full h-12 bg-primary rounded-2xl" disabled={isPending}>
         {isPending ? "Logging in..." : "Login"}
       </Button>
-      <div className="relative my-1 text-center text-xs text-muted-foreground"><span className="bg-background px-2">or</span></div>
-      <Button type="button" variant="outline" className="h-12 w-full rounded-2xl" onClick={() => signIn("google", { callbackUrl: redirectTo || "/home/profile" })}>Continue with Google</Button>
     </form>
     </Form>
   );
