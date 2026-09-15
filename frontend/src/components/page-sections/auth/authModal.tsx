@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useUIStore } from "@/store/uiStore";
+import { signIn } from "next-auth/react";
 
 const AuthModal = ({
   nowProp = "login",
@@ -58,7 +59,7 @@ const AuthModal = ({
           </div>
 
           <div className="grid gap-4 ">
-            <Button variant="outline" className="w-full">
+            <Button type="button" variant="outline" className="w-full" onClick={() => signIn("google", { callbackUrl: pathname || "/home/profile" })}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
