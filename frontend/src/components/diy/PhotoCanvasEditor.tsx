@@ -156,7 +156,7 @@ export default function PhotoCanvasEditor() {
       <section className="min-w-0 rounded-2xl bg-muted/30 p-3 sm:p-5">
         {template && <><div className="mb-4 flex flex-wrap items-center justify-between gap-2"><div><h2 className="font-bold">{template.name}</h2><p className="text-sm text-muted-foreground">{template.size} · {complete}/{template.slots.length} photos</p></div><button className={button} onClick={() => setPreview(p => !p)}><Eye className="mr-1 inline size-4" />{preview ? 'Edit photos' : 'Preview'}</button></div>
           {!source ? <p className="p-10" role="status">Loading original artwork…</p> : <div className="mx-auto" style={{ maxWidth: `min(100%, ${Math.max(220, 700 * template.width / template.height)}px)` }}>
-            <div className="relative isolate bg-white shadow-xl" style={{ aspectRatio: template.aspectRatio }}>
+            <div className="relative isolate bg-[#d1d5db] p-3 shadow-xl sm:p-5" style={{ aspectRatio: template.aspectRatio }}>
               <div ref={artwork} className="pointer-events-none absolute inset-0 [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: source }} />
               {!preview && template.slots.map(slot => <button key={slot.id} aria-label={`Edit ${slot.label}`} disabled={!!busy} style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.width}%`, height: `${slot.height}%`, clipPath: `polygon(${slot.polygon.map(p => `${p[0]}% ${p[1]}%`).join(',')})`, touchAction: design[slot.id]?.photoId ? 'none' : 'auto' }}
                 className={`absolute flex items-center justify-center overflow-hidden text-xs ${selected?.id === slot.id ? 'outline outline-2 -outline-offset-2 outline-emerald-500 bg-emerald-500/5' : 'hover:bg-white/10'}`}
