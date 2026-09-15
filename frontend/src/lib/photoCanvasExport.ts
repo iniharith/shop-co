@@ -42,14 +42,38 @@ export function fillTemplate(svg: SVGSVGElement, template: PhotoCanvasTemplate, 
 function dataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result as string); reader.onerror = () => reject(reader.error); reader.readAsDataURL(blob); });
 }
+
+async function renderCroppedSlot(photo: CustomerPhoto, width: number, height: number, adjustment = DEFAULT_PHOTO_ADJUSTMENT) {
+  const outputWidth = Math.max(1, Math.round(Math.min(2400, width * 3)));
+  const outputHeight = Math.max(1, Math.round(outputWidth * height / width));
+  const sourceUrl = await dataUrl(photo.blob);
+  const sourceImage = new Image();
+  await new Promise<void>((resolve, reject) => { sourceImage.onload = () => resolve(); sourceImage.onerror = () => reject(new Error(`Could not prepare ${photo.name} for export.`)); sourceImage.src = sourceUrl; });
+  const canvas = document.createElement('canvas'); canvas.width = outputWidth; canvas.height = outputHeight;
+  const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('Image export is unavailable in this browser.');
+  const position = photoPlacement(photo.width, photo.height, outputWidth, outputHeight, adjustment);
+  ctx.drawImage(sourceImage, position.x, position.y, position.width, position.height);
+  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error('Could not crop the photo for export.')), 'image/png'));
+  return { blob, url: await dataUrl(blob), width: outputWidth, height: outputHeight };
+}
+
 export async function exportCanvasPackage(source: string, template: PhotoCanvasTemplate, design: CanvasDesign, photos: CustomerPhoto[]) {
   if (template.slots.some(slot => !photos.some(photo => photo.id === design[slot.id]?.photoId))) throw new Error('Please fill every photo area first.');
-  const used = photos.filter(photo => template.slots.some(slot => design[slot.id]?.photoId === photo.id));
+  // Bake each website crop into a slot-sized PNG. Illustrator then receives an
+  // exact, already-cropped rectangle instead of recalculating image fitting.
   const embedded: CustomerPhoto[] = [];
-  for (const photo of used) embedded.push({ ...photo, url: await dataUrl(photo.blob) });
+  const exportDesign: CanvasDesign = {};
+  for (const slot of template.slots) {
+    const item = design[slot.id];
+    const photo = photos.find(value => value.id === item?.photoId)!;
+    const rendered = await renderCroppedSlot(photo, slot.width / 100 * template.width, slot.height / 100 * template.height, item.adjustment);
+    const id = `export-${slot.id}`;
+    embedded.push({ id, name: `${slot.id}.png`, ...rendered });
+    exportDesign[slot.id] = { photoId: id, adjustment: { ...DEFAULT_PHOTO_ADJUSTMENT } };
+  }
   const doc = new DOMParser().parseFromString(source, 'image/svg+xml');
   const svg = doc.documentElement as unknown as SVGSVGElement;
-  fillTemplate(svg, template, design, embedded);
+  fillTemplate(svg, template, exportDesign, embedded);
   // PDF artboards use points. Explicit inches preserve their actual physical size.
   svg.setAttribute('width', `${template.width / 72}in`);
   svg.setAttribute('height', `${template.height / 72}in`);
