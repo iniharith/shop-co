@@ -13,6 +13,7 @@ export function fillTemplate(svg: SVGSVGElement, template: PhotoCanvasTemplate, 
     if (!photo) { image.removeAttribute('href'); image.removeAttributeNS('http://www.w3.org/1999/xlink', 'href'); continue; }
     const position = photoPlacement(photo.width, photo.height, slot.width / 100 * template.width, slot.height / 100 * template.height, item.adjustment || DEFAULT_PHOTO_ADJUSTMENT);
     image.setAttribute('href', photo.url);
+    image.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', photo.url);
     image.setAttribute('x', String(slot.x / 100 * template.width + position.x));
     image.setAttribute('y', String(slot.y / 100 * template.height + position.y));
     image.setAttribute('width', String(position.width));

@@ -76,6 +76,14 @@ export default function PhotoCanvasEditor() {
   useLayoutEffect(() => {
     const svg = artwork.current?.querySelector('svg');
     if (svg && template) fillTemplate(svg, template, design, photos);
+    // The inner SVG is replaced by React after source/design updates. Re-apply
+    // on the next paint so freshly attached photos appear without requiring a
+    // secondary interaction such as changing zoom.
+    const frame = requestAnimationFrame(() => {
+      const nextSvg = artwork.current?.querySelector('svg');
+      if (nextSvg && template) fillTemplate(nextSvg, template, design, photos);
+    });
+    return () => cancelAnimationFrame(frame);
   }, [source, template, design, photos]);
   useEffect(() => {
     if (!ready) return;
