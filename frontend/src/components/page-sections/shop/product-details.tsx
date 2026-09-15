@@ -111,7 +111,10 @@ export function ProductDetails({
     let images: string[] | null = null;
 
     const activeSize = selectedSize ? sizes.find(size => size.size === selectedSize) : null;
-    if (activeSize?.images?.length) {
+    // A single-size product can still have a multi-image gallery. Only let
+    // size-specific images replace the gallery when there are multiple sizes
+    // or the selected size actually has more than one image.
+    if (activeSize?.images?.length && (sizes.length > 1 || activeSize.images.length > 1)) {
       images = activeSize.images;
     }
 
