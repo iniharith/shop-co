@@ -18,7 +18,7 @@ import AnimatedButton from "@/components/animation/animatedButton";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { getImageUrl } from "@/utils/getImageUrl";
 import { getProductVariation, getVariationImagesForSize } from "@/utils/productConfiguration";
-import { Check, Headphones, ShieldCheck, Truck } from "lucide-react";
+import { Check, Headphones, ShieldCheck, Truck, Palette, MessageCircle, Upload } from "lucide-react";
 import Link from "next/link";
 
 interface ProductDetailsProps {
@@ -399,19 +399,14 @@ const variationStepNum = (hasImageVariations || hasDesignVariations) ? currentSt
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-border dark:bg-card sm:rounded-3xl lg:sticky lg:top-[190px]">
-      {supportsCanvas && <section className="m-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
-        <h2 className="font-semibold">Choose your design method</h2>
-        <p className="my-2 text-sm text-muted-foreground">Choose DIY placement, ask Kampung Cetak to design it, or send us your own finished artwork.</p>
-        <div className="grid gap-2 sm:grid-cols-3">
-          <Link href={`/diy?product=${encodeURIComponent(product._id)}`} className="rounded-xl border border-primary bg-white p-3 text-sm font-semibold text-primary shadow-sm hover:bg-primary/10">
-            DIY Yourself<span className="mt-1 block text-xs font-normal text-muted-foreground">Insert your photos into our templates</span>
+      {supportsCanvas && <section className="m-4 overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/[0.1] via-card to-card p-4 shadow-sm sm:p-5">
+        <div className="flex items-start gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground"><Palette className="size-4" /></span><div><p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">Design options</p><h2 className="mt-0.5 text-lg font-bold tracking-tight">How would you like to design?</h2><p className="mt-1 text-sm text-muted-foreground">Choose the easiest option for you. You can change this later.</p></div></div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <Link href={`/diy?product=${encodeURIComponent(product._id)}`} className="group relative rounded-xl border-2 border-primary bg-primary/[0.08] p-4 transition hover:-translate-y-0.5 hover:bg-primary/[0.14]">
+            <span className="absolute right-3 top-3 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">Recommended</span><Palette className="mb-3 size-5 text-primary" /><span className="block text-sm font-bold text-foreground">DIY Yourself</span><span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Insert your photos into our templates</span>
           </Link>
-          <a href="https://wa.me/601116141946?text=Hi%20Kampung%20Cetak%2C%20I%20need%20help%20with%20my%20design." target="_blank" rel="noopener noreferrer" className="rounded-xl border border-border bg-white p-3 text-sm font-semibold hover:border-primary hover:text-primary">
-            Kampung Cetak Design<span className="mt-1 block text-xs font-normal text-muted-foreground">Ask our admin to prepare it for you</span>
-          </a>
-          <Link href="/home/profile/upload" className="rounded-xl border border-border bg-white p-3 text-sm font-semibold hover:border-primary hover:text-primary">
-            I have my own design<span className="mt-1 block text-xs font-normal text-muted-foreground">Upload a finished JPG, PNG or PDF</span>
-          </Link>
+          <a href="https://wa.me/601116141946?text=Hi%20Kampung%20Cetak%2C%20I%20need%20help%20with%20my%20design." target="_blank" rel="noopener noreferrer" className="group rounded-xl border border-border bg-background/70 p-4 transition hover:-translate-y-0.5 hover:border-primary hover:bg-primary/[0.06]"><MessageCircle className="mb-3 size-5 text-primary" /><span className="block text-sm font-bold text-foreground">Kampung Cetak Design</span><span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Our admin will prepare it for you via WhatsApp</span></a>
+          <Link href="/home/profile/upload" className="group rounded-xl border border-border bg-background/70 p-4 transition hover:-translate-y-0.5 hover:border-primary hover:bg-primary/[0.06]"><Upload className="mb-3 size-5 text-primary" /><span className="block text-sm font-bold text-foreground">I have my own design</span><span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Upload a finished JPG, PNG or PDF</span></Link>
         </div>
         {canvasDesign && <label className="mt-3 flex items-start gap-2 text-sm"><input type="checkbox" checked={useCanvas} onChange={event => setUseCanvas(event.target.checked)} className="mt-1" /><span>Attach my completed design: {canvasDesign.templateName}<span className="block text-xs text-muted-foreground">Template size: {canvasDesign.size}. Select the matching product size below.</span></span></label>}
       </section>}
