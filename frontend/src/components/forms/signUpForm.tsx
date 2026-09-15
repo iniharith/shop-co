@@ -13,6 +13,7 @@ import { FormField, Form } from "../ui/form";
 import FormGeneratorV2 from "../global/formgenrator";
 import { FaEnvelope, FaLock } from "react-icons/fa";
 import { FaUser } from "react-icons/fa6";
+import { signIn } from "next-auth/react";
 
 export function SignupForm({ callBack }: { callBack?: () => void }) {
   const { errors, control, onFormSubmit, isPending, isSuccess, form } =
@@ -102,6 +103,8 @@ export function SignupForm({ callBack }: { callBack?: () => void }) {
           isLoading={isPending}
           disabled={isPending}
         />
+        <div className="relative my-1 text-center text-xs text-muted-foreground"><span className="bg-background px-2">or</span></div>
+        <button type="button" className="h-12 w-full rounded-2xl border border-border bg-background font-semibold hover:border-primary" onClick={() => signIn("google", { callbackUrl: "/home/profile" })}>Continue with Google</button>
       </form>
     </Form>
   );

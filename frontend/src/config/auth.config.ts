@@ -5,9 +5,11 @@
 // client/auth.config.ts
 import { AuthOptions, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 
 export const authConfig: AuthOptions = {
     providers: [
+        GoogleProvider({ clientId: process.env.GOOGLE_CLIENT_ID || "", clientSecret: process.env.GOOGLE_CLIENT_SECRET || "" }),
         CredentialsProvider({
             name: "Credentials",
             credentials: {
@@ -70,6 +72,15 @@ export const authConfig: AuthOptions = {
         },
     },
     callbacks: {
+        async signIn({ user, account }) {
+            if (account?.provider === "google" && user.email) {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/auth/google`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: user.email, name: user.name, avatar: user.image }) });
+                if (!response.ok) return false;
+                const data = await response.json();
+                user.id = data.user._id; (user as any).token = data.accessToken; (user as any).avatar = data.user.avatar || user.image || '';
+            }
+            return true;
+        },
         jwt({ token, user, trigger, session }) {
             if (user) {
                 token.id = user.id;

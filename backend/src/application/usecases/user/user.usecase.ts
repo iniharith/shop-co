@@ -7,6 +7,7 @@ import { UserRepository } from "../../../infrastructure/db/repositories/user.rep
 import { Roles } from "../../../domain/types/user.type";
 import JwtService from "../../../shared/utils/jwt";
 import type IJwtService from "../../../domain/interfaces/jwt.ineterface";
+import crypto from "crypto";
 
 export class UserUsecase {
     private readonly userRepository: UserRepository;
@@ -44,6 +45,16 @@ export class UserUsecase {
         const accessToken = this.jwtService.generateAccessToken({ userId: newUser._id });
         const refreshToken = this.jwtService.generateRefreshToken({ userId: newUser._id });
         return { user: newUser, accessToken, refreshToken };
+    }
+
+    async googleLogin(email: string, name: string, avatar?: string): Promise<{ user: IUserDocument, accessToken: string, refreshToken: string }> {
+        let user = await this.userRepository.findByEmail(email);
+        if (!user) {
+            user = await this.userRepository.create({ email, name: name || email.split('@')[0], avatar: avatar || '', password: `google-${crypto.randomUUID()}`, role: Roles.CLIENT, verified: true });
+        }
+        const accessToken = this.jwtService.generateAccessToken({ userId: user._id });
+        const refreshToken = this.jwtService.generateRefreshToken({ userId: user._id });
+        return { user, accessToken, refreshToken };
     }
 
     async getStaff(): Promise<IUserDocument[]> {

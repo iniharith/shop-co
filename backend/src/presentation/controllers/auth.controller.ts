@@ -116,6 +116,16 @@ export class AuthController {
         }
     }
 
+    async google(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { email, name, avatar } = req.body;
+            if (!email) return res.status(statusCodes.BAD_REQUEST).json({ success: false, message: "Google email is required" });
+            const result = await this.authUsecase.googleLogin(email, name, avatar);
+            const safeUser = result.user.toObject(); delete (safeUser as any).password;
+            res.status(statusCodes.OK).json({ success: true, user: safeUser, accessToken: result.accessToken, refreshToken: result.refreshToken });
+        } catch (error) { next(error); }
+    }
+
     /**
      * @description Refresh access token using a valid refresh token
      * @Method POST
