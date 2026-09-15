@@ -120,7 +120,12 @@ const drawPhotoBookPage = async (options: { size: BookSize; cover: boolean; back
   if (!context) throw new Error("Canvas export is unavailable");
   const backgroundImage = await loadExportImage(options.backgroundImage);
   if (backgroundImage) {
-    context.drawImage(backgroundImage, 0, 0, width, height);
+    context.fillStyle = options.background;
+    context.fillRect(0, 0, width, height);
+    const backgroundScale = Math.min(width / backgroundImage.width, height / backgroundImage.height);
+    const backgroundWidth = backgroundImage.width * backgroundScale;
+    const backgroundHeight = backgroundImage.height * backgroundScale;
+    context.drawImage(backgroundImage, (width - backgroundWidth) / 2, (height - backgroundHeight) / 2, backgroundWidth, backgroundHeight);
   } else {
     context.fillStyle = options.background;
     context.fillRect(0, 0, width, height);
@@ -189,6 +194,7 @@ function DiyPhotobookPage() {
   const [shareCopied, setShareCopied] = useState(false);
   const [shareError, setShareError] = useState("");
   const [templateReady, setTemplateReady] = useState(true);
+  const [coverAspect, setCoverAspect] = useState(500 / 354);
   const [undoStack, setUndoStack] = useState<AdjustmentHistory[]>([]);
   const [redoStack, setRedoStack] = useState<AdjustmentHistory[]>([]);
   const [imageSelected, setImageSelected] = useState(false);
@@ -330,7 +336,7 @@ function DiyPhotobookPage() {
   const activeDesign = coverDesigns[bookSize].includes(coverDesign) ? coverDesign : coverDesigns[bookSize][0];
   const templatePreview = `/templates/photobook/covers/${bookSize.toLowerCase()}/${activeDesign.toLowerCase()}.png`;
   const previewImage = showCover ? templatePreview : sizeCopy[bookSize].innerPreview;
-  const previewAspect = showCover ? "1190.55 / 841.89" : bookSize === "A5" ? "150 / 213" : "105 / 151";
+  const previewAspect = showCover ? String(coverAspect) : bookSize === "A5" ? "150 / 213" : "105 / 151";
   const draftData = {
     bookSize,
     pageCount,
@@ -532,7 +538,10 @@ function DiyPhotobookPage() {
               <img
                 src={previewImage}
                 alt={showCover ? `${bookSize} ${activeDesign} cover design` : `${bookSize} inlay template`}
-                className="absolute inset-0 h-full w-full object-cover"
+                className="absolute inset-0 h-full w-full object-contain"
+                onLoad={(event) => {
+                  if (showCover && event.currentTarget.naturalWidth && event.currentTarget.naturalHeight) setCoverAspect(event.currentTarget.naturalWidth / event.currentTarget.naturalHeight);
+                }}
                 onError={(event) => {
                   event.currentTarget.style.display = "none";
                   setTemplateReady(false);
