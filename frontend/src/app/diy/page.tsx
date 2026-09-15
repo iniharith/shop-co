@@ -281,6 +281,92 @@ const drawPhotoBookPage = async (options: {
   return addPngResolution(png);
 };
 
+// Keep pages 1–80 on the original, proven inlay renderer. Cover templates use
+// the new multi-slot renderer above, but must never change the inlay geometry.
+const drawOriginalPhotobookInlay = async (options: {
+  size: BookSize;
+  background: string;
+  backgroundImage?: string;
+  image?: string;
+  adjustment: ImageAdjust;
+  stickers: string[];
+}) => {
+  const canvas = document.createElement("canvas");
+  const width = options.size === "A5" ? mmToPixels(150) : mmToPixels(105);
+  const height = options.size === "A5" ? mmToPixels(213) : mmToPixels(151);
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Canvas export is unavailable");
+  const backgroundImage = await loadExportImage(options.backgroundImage);
+  if (backgroundImage) {
+    context.fillStyle = options.background;
+    context.fillRect(0, 0, width, height);
+    const backgroundScale = Math.min(
+      width / backgroundImage.width,
+      height / backgroundImage.height,
+    );
+    const backgroundWidth = backgroundImage.width * backgroundScale;
+    const backgroundHeight = backgroundImage.height * backgroundScale;
+    context.drawImage(
+      backgroundImage,
+      (width - backgroundWidth) / 2,
+      (height - backgroundHeight) / 2,
+      backgroundWidth,
+      backgroundHeight,
+    );
+  } else {
+    context.fillStyle = options.background;
+    context.fillRect(0, 0, width, height);
+  }
+  const photo = await loadExportImage(options.image);
+  if (photo) {
+    const imageWidth = width * (options.size === "A5" ? 0.762 : 0.78263);
+    const imageHeight = height * (options.size === "A5" ? 0.83474 : 0.84656);
+    const imageLeft = (width - imageWidth) / 2;
+    const imageTop = (height - imageHeight) / 2;
+    const fit =
+      Math.max(imageWidth / photo.width, imageHeight / photo.height) *
+      Math.max(1, options.adjustment.scale);
+    const drawWidth = photo.width * fit;
+    const drawHeight = photo.height * fit;
+    const overflowX = Math.max(0, drawWidth - imageWidth);
+    const overflowY = Math.max(0, drawHeight - imageHeight);
+    const drawLeft =
+      imageLeft -
+      overflowX / 2 +
+      (Math.max(-1, Math.min(1, options.adjustment.x)) * overflowX) / 2;
+    const drawTop =
+      imageTop -
+      overflowY / 2 +
+      (Math.max(-1, Math.min(1, options.adjustment.y)) * overflowY) / 2;
+    context.save();
+    context.beginPath();
+    context.rect(imageLeft, imageTop, imageWidth, imageHeight);
+    context.clip();
+    context.drawImage(photo, drawLeft, drawTop, drawWidth, drawHeight);
+    context.restore();
+  }
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.font = `${Math.max(18, Math.round(width * 0.025))}px sans-serif`;
+  options.stickers.forEach((sticker, index) => {
+    context.fillStyle = "#111827";
+    context.fillText(
+      sticker,
+      width * (0.18 + (index % 3) * 0.27),
+      height * (0.12 + Math.floor(index / 3) * 0.16),
+    );
+  });
+  const png = await new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("PNG export failed"))),
+      "image/png",
+    ),
+  );
+  return addPngResolution(png);
+};
+
 const xmlAttribute = (value: string) =>
   value
     .replaceAll("&", "&amp;")
@@ -753,9 +839,8 @@ function DiyPhotobookPage() {
       for (let index = 0; index < spreads.length; index += 1) {
         const spread = spreads[index];
         const photo = await toDataUrl(spread.middleImage || spread.image);
-        const png = await drawPhotoBookPage({
+        const png = await drawOriginalPhotobookInlay({
           size: bookSize,
-          cover: false,
           background: previewBackground,
           backgroundImage: await toDataUrl(sizeCopy[bookSize].innerPreview),
           image: photo,
@@ -1094,7 +1179,7 @@ function DiyPhotobookPage() {
                 })
               ) : (
                 <div
-                  className={`absolute left-[7%] top-[5%] z-10 h-[66%] w-[62%] touch-none overflow-hidden outline outline-2 -outline-offset-2 outline-emerald-500 ${activeImage ? "cursor-move" : "cursor-pointer bg-emerald-500/10"}`}
+                  className={`absolute left-[7%] top-[5%] z-10 h-[66%] w-[62%] overflow-hidden outline outline-2 -outline-offset-2 outline-emerald-500 ${activeImage ? "cursor-move" : "cursor-pointer bg-emerald-500/10"}`}
                   onClick={(event) => {
                     event.stopPropagation();
                     if (activeImage) setImageSelected(true);
@@ -1108,7 +1193,7 @@ function DiyPhotobookPage() {
                   {activeImage ? (
                     <img
                       src={activeImage}
-                      alt="Image inside selected page design"
+                      alt="Image inside selected cover design"
                       draggable={false}
                       className="pointer-events-none h-full w-full select-none object-cover"
                       style={{
