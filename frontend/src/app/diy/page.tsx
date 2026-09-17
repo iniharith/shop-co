@@ -1087,7 +1087,7 @@ function DiyPhotobookPage() {
                     ? `${bookSize} ${activeDesign} cover design`
                     : `${bookSize} inlay template`
                 }
-                className={`absolute inset-0 h-full w-full ${showCover ? "object-contain" : "object-cover"}`}
+                 className="absolute inset-0 h-full w-full object-contain"
                 onLoad={(event) => {
                   if (
                     showCover &&
@@ -1179,7 +1179,13 @@ function DiyPhotobookPage() {
                 })
               ) : (
                 <div
-                  className={`absolute left-[7%] top-[5%] z-10 h-[66%] w-[62%] overflow-hidden outline outline-2 -outline-offset-2 outline-emerald-500 ${activeImage ? "cursor-move" : "cursor-pointer bg-emerald-500/10"}`}
+                  className={`absolute z-10 overflow-hidden outline outline-2 -outline-offset-2 outline-emerald-500 ${activeImage ? "cursor-move" : "cursor-pointer bg-emerald-500/10"}`}
+                  style={{
+                    left: "7%",
+                    top: "5%",
+                    width: "62%",
+                    height: "66%",
+                  }}
                   onClick={(event) => {
                     event.stopPropagation();
                     if (activeImage) setImageSelected(true);
