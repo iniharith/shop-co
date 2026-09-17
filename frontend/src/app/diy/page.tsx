@@ -42,6 +42,12 @@ type Spread = {
   stickers?: string[];
 };
 type ImageAdjust = { scale: number; x: number; y: number };
+// Customer-specified print dimensions in millimetres, shared by preview/export.
+// The photo frame is centred on both axes within the full-size background.
+const inlayGeometry = {
+  A5: { pageWidth: 150, pageHeight: 213, x: 17.85, y: 17.6, photoWidth: 114.3, photoHeight: 177.8 },
+  A6: { pageWidth: 105, pageHeight: 151, x: 11.412, y: 11.585, photoWidth: 82.176, photoHeight: 127.83 },
+} satisfies Record<BookSize, { pageWidth: number; pageHeight: number; x: number; y: number; photoWidth: number; photoHeight: number }>;
 type AdjustmentHistory = {
   coverSlotAdjustments: Record<string, ImageAdjust>;
   imageAdjustments: Record<number, ImageAdjust>;
@@ -66,7 +72,7 @@ const sizeCopy: Record<
 > = {
   A5: {
     label: "A5 portrait",
-    dimensions: "148 × 210 mm",
+    dimensions: "150 × 213 mm",
     price: 49,
     template: "INLAY PHOTOBOOK BINDER 1P.indd",
     preview: "/templates/photobook/a5-preview.png",
@@ -74,7 +80,7 @@ const sizeCopy: Record<
   },
   A6: {
     label: "A6 portrait",
-    dimensions: "105 × 148 mm",
+    dimensions: "105 × 151 mm",
     price: 39,
     template: "INLAY PHOTOBOOK BINDER 1P A6.indd",
     preview: "/templates/photobook/a6-preview.png",
@@ -187,17 +193,13 @@ const drawPhotoBookPage = async (options: {
   const canvas = document.createElement("canvas");
   const width = options.cover
     ? mmToPixels(420)
-    : options.size === "A5"
-      ? mmToPixels(150)
-      : mmToPixels(105);
+    : mmToPixels(inlayGeometry[options.size].pageWidth);
   const height =
     options.cover && backgroundImage
       ? Math.round(width / (backgroundImage.width / backgroundImage.height))
       : options.cover
         ? mmToPixels(297)
-        : options.size === "A5"
-          ? mmToPixels(213)
-          : mmToPixels(151);
+        : mmToPixels(inlayGeometry[options.size].pageHeight);
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext("2d");
@@ -241,8 +243,9 @@ const drawPhotoBookPage = async (options: {
   } else {
     const photo = await loadExportImage(options.image);
     if (photo) {
-      const imageWidth = width * (options.size === "A5" ? 0.762 : 0.78263);
-      const imageHeight = height * (options.size === "A5" ? 0.83474 : 0.84656);
+      const geometry = inlayGeometry[options.size];
+      const imageWidth = width * geometry.photoWidth / geometry.pageWidth;
+      const imageHeight = height * geometry.photoHeight / geometry.pageHeight;
       drawPlacedPhoto(
         context,
         photo,
@@ -292,15 +295,17 @@ const drawOriginalPhotobookInlay = async (options: {
   stickers: string[];
 }) => {
   const canvas = document.createElement("canvas");
-  const width = options.size === "A5" ? mmToPixels(150) : mmToPixels(105);
-  const height = options.size === "A5" ? mmToPixels(213) : mmToPixels(151);
+  const geometry = inlayGeometry[options.size];
+  const width = mmToPixels(geometry.pageWidth);
+  const height = mmToPixels(geometry.pageHeight);
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas export is unavailable");
   const backgroundImage = await loadExportImage(options.backgroundImage);
   if (backgroundImage) {
-    context.fillStyle = options.background;
+    // The template is white; its aspect-fit margins must not reveal teal strips.
+    context.fillStyle = "#ffffff";
     context.fillRect(0, 0, width, height);
     const backgroundScale = Math.min(
       width / backgroundImage.width,
@@ -321,10 +326,10 @@ const drawOriginalPhotobookInlay = async (options: {
   }
   const photo = await loadExportImage(options.image);
   if (photo) {
-    const imageWidth = width * (options.size === "A5" ? 0.762 : 0.78263);
-    const imageHeight = height * (options.size === "A5" ? 0.83474 : 0.84656);
-    const imageLeft = (width - imageWidth) / 2;
-    const imageTop = (height - imageHeight) / 2;
+    const imageWidth = width * geometry.photoWidth / geometry.pageWidth;
+    const imageHeight = height * geometry.photoHeight / geometry.pageHeight;
+    const imageLeft = width * geometry.x / geometry.pageWidth;
+    const imageTop = height * geometry.y / geometry.pageHeight;
     const fit =
       Math.max(imageWidth / photo.width, imageHeight / photo.height) *
       Math.max(1, options.adjustment.scale);
@@ -755,11 +760,10 @@ function DiyPhotobookPage() {
   const previewImage = showCover
     ? templatePreview
     : sizeCopy[bookSize].innerPreview;
+  const inlay = inlayGeometry[bookSize];
   const previewAspect = showCover
     ? String(coverAspect)
-    : bookSize === "A5"
-      ? "150 / 213"
-      : "105 / 151";
+    : `${inlay.pageWidth} / ${inlay.pageHeight}`;
   const activeCoverPhotos = activeTemplate.slots.map((slot) => {
     const key = `${bookSize}:${activeDesign}:${slot.id}`;
     return {
@@ -1076,7 +1080,7 @@ function DiyPhotobookPage() {
               className="relative w-[min(76vw,520px)] overflow-hidden rounded-[1.25rem] border-[10px] border-white bg-white shadow-2xl"
               onClick={() => setImageSelected(false)}
               style={{
-                background: previewBackground,
+                background: showCover ? previewBackground : "#ffffff",
                 aspectRatio: previewAspect,
               }}
             >
@@ -1181,10 +1185,10 @@ function DiyPhotobookPage() {
                 <div
                   className={`absolute z-10 overflow-hidden outline outline-2 -outline-offset-2 outline-emerald-500 ${activeImage ? "cursor-move" : "cursor-pointer bg-emerald-500/10"}`}
                   style={{
-                    left: `${bookSize === "A5" ? 11.9 : 10.8685}%`,
-                    top: `${bookSize === "A5" ? 8.263 : 7.672}%`,
-                    width: `${bookSize === "A5" ? 76.2 : 78.263}%`,
-                    height: `${bookSize === "A5" ? 83.474 : 84.656}%`,
+                    left: `${inlay.x / inlay.pageWidth * 100}%`,
+                    top: `${inlay.y / inlay.pageHeight * 100}%`,
+                    width: `${inlay.photoWidth / inlay.pageWidth * 100}%`,
+                    height: `${inlay.photoHeight / inlay.pageHeight * 100}%`,
                   }}
                   onClick={(event) => {
                     event.stopPropagation();
