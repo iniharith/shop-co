@@ -13,11 +13,24 @@ let library: Promise<PhotoCanvasTemplate[]> | undefined;
 const artwork = new Map<string, Promise<string>>();
 export function loadPhotoCanvasTemplates() {
   const backend = process.env.NEXT_PUBLIC_BACKEND_URL;
-  const libraryUrl = backend ? `${backend.replace(/\/$/, '')}/api/diy-templates` : '/templates/photo-canvas/library/manifest.json';
-  return library ||= fetch(libraryUrl).then(async response => {
-    if (!response.ok) throw new Error('Could not load templates. Please try again.');
-    const payload = await response.json() as PhotoCanvasTemplate[] | { templates?: PhotoCanvasTemplate[] };
-    const entries = Array.isArray(payload) ? payload : (payload.templates || []).filter((template: any) => template.kind === 'photo-canvas');
+  return library ||= (async () => {
+    const urls = [
+      ...(backend ? [`${backend.replace(/\/$/, '')}/api/diy-templates`] : []),
+      '/templates/photo-canvas/library/manifest.json',
+    ];
+    let entries: PhotoCanvasTemplate[] = [];
+    for (const url of urls) {
+      try {
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) continue;
+        const payload = await response.json() as PhotoCanvasTemplate[] | { templates?: PhotoCanvasTemplate[] };
+        const candidate = Array.isArray(payload) ? payload : (payload.templates || []).filter((template: any) => template.kind === 'photo-canvas');
+        if (candidate.length) { entries = candidate; break; }
+      } catch {
+        // Try the local, versioned DIY manifest when sync is unavailable.
+      }
+    }
+    if (!entries.length) throw new Error('Could not load templates. Please try again.');
     const grouped = new Map<string, PhotoCanvasTemplate[]>();
     for (const entry of entries) { const key = entry.sourceFile; const list = grouped.get(key) || []; list.push(entry); grouped.set(key, list); }
     const result: PhotoCanvasTemplate[] = [];
@@ -29,7 +42,7 @@ export function loadPhotoCanvasTemplates() {
       result.push({ ...first, id: `${first.id}-set`, name: first.name.replace(/\s*·\s*Artboard\s*\d+$/i, '') + ` · ${list.length} pieces`, artboard: 1, artboards: list.map(({ artboard, width, height, svg, slots }) => ({ artboard, width, height, svg, slots })), slots: list.flatMap((page, index) => { const offset = list.slice(0, index).reduce((sum, p) => sum + p.height, 0); const xOffset = (totalWidth - page.width) / 2; return page.slots.map(slot => ({ ...slot, id: `artboard-${index + 1}-${slot.id}`, label: `Piece ${index + 1} · ${slot.label}`, x: ((xOffset + slot.x * page.width / 100) / totalWidth) * 100, width: slot.width * page.width / totalWidth, y: ((offset + slot.y * page.height / 100) / totalHeight) * 100, height: slot.height * page.height / totalHeight })); }), width: totalWidth, height: totalHeight, aspectRatio: `${totalWidth} / ${totalHeight}` });
     }
     return result;
-  }).catch(error => { library = undefined; throw error; });
+  })().catch(error => { library = undefined; throw error; });
 }
 export function refreshPhotoCanvasTemplates() {
   library = undefined;
