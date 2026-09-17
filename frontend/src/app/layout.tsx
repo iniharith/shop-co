@@ -46,6 +46,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://kampungcetak.com"),
   title: {
     default: "Kampung Cetak",
     template: "%s | Kampung Cetak",

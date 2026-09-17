@@ -9,6 +9,18 @@ export default withAuth(
     function proxy(req) {
         const token = req.nextauth.token;
         const isLoggedIn = !!token;
+        const host = req.nextUrl.hostname;
+        const forwardedProto = req.headers.get("x-forwarded-proto");
+
+        if (host === "www.kampungcetak.com" || (host === "kampungcetak.com" && forwardedProto === "http")) {
+            const canonicalUrl = new URL(req.nextUrl.pathname + req.nextUrl.search, "https://kampungcetak.com");
+            return NextResponse.redirect(canonicalUrl, 301);
+        }
+
+        if (req.nextUrl.pathname === "/home") {
+            return NextResponse.redirect(new URL("/", req.url), 301);
+        }
+
         if (req.nextUrl.pathname.startsWith("/task-access/")) {
             const headers = new Headers(req.headers);
             headers.set("x-kc-task-access", "1");
@@ -20,7 +32,6 @@ export default withAuth(
         );
 
         // email.kampungcetak.com → webmail
-        const host = req.nextUrl.hostname;
         if (host === "diy.kampungcetak.com" && req.nextUrl.pathname === "/") {
             return NextResponse.rewrite(new URL("/diy", req.url));
         }
@@ -54,5 +65,5 @@ export default withAuth(
 );
 
 export const config = {
-    matcher: ["/", "/diy/:path*", "/home/cart/:path*", "/home/profile/:path*", "/email/:path*", "/task-access/:path*"],
+    matcher: ["/((?!api|_next|favicon.ico|robots.txt|sitemap.xml).*)"],
 };

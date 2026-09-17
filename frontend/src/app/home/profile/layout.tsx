@@ -3,8 +3,17 @@
  * Kampungcetak ®
  */
 import React from "react";
+import type { Metadata } from "next";
 import ProfileSidebar from "@/components/page-sections/profile/profileSidebar";
 import { Breadcrumbs } from "@/components/global/breadcrumb";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false },
+  },
+};
 
 export default function ProfileLayout({
   children,
