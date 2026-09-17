@@ -429,6 +429,18 @@ export default function TemplateStudioPage() {
     }));
     event.target.value = "";
   };
+  const removeArtboard = (id: string) => {
+    if (state.artboards.length === 1) return;
+    const item = state.artboards.find((board) => board.id === id);
+    if (!item || !window.confirm(`Remove template \"${item.name}\"?`)) return;
+    const remaining = state.artboards.filter((board) => board.id !== id);
+    commit({ artboards: remaining });
+    if (selectedArtboardId === id) {
+      const next = remaining[0];
+      setSelectedArtboardId(next.id);
+      setSelection(next.photoSlots[0] ? { type: "photo", id: next.photoSlots[0].id } : null);
+    }
+  };
   const saveDraft = () => {
     localStorage.setItem(studioKey, JSON.stringify(state));
     setSavedAt(
@@ -640,8 +652,16 @@ export default function TemplateStudioPage() {
           </label>
           <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
             SVG is recommended. PDF and raster files are kept as locked artwork
-            backgrounds.
+            backgrounds. Select a listed template to edit it.
           </p>
+          <label className="mt-3 block text-xs font-semibold">
+            Selected template name
+            <input
+              className={fieldClass}
+              value={artboard.name}
+              onChange={(event) => updateArtboard((item) => ({ ...item, name: event.target.value }))}
+            />
+          </label>
           <div className="mt-5 flex items-center justify-between">
             <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Artboards
@@ -650,36 +670,41 @@ export default function TemplateStudioPage() {
               {state.artboards.length}
             </span>
           </div>
-          <div className="mt-2 space-y-2">
+          <div className="mt-2 space-y-2" aria-label="Existing templates">
             {state.artboards.map((item, index) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setSelectedArtboardId(item.id);
-                  setSelection(
-                    item.photoSlots[0]
-                      ? { type: "photo", id: item.photoSlots[0].id }
-                      : null,
-                  );
-                }}
-                className={`w-full rounded-lg border p-2 text-left text-xs ${item.id === artboard.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="grid size-9 place-items-center rounded bg-muted">
-                    <FileImage className="size-4 text-muted-foreground" />
-                  </div>
-                  <span className="min-w-0 flex-1 truncate font-semibold">
-                    {item.name}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {index + 1}
-                  </span>
+              <div key={item.id} className={`rounded-lg border p-2 text-xs ${item.id === artboard.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      setSelectedArtboardId(item.id);
+                      setSelection(item.photoSlots[0] ? { type: "photo", id: item.photoSlots[0].id } : null);
+                    }}
+                    className="min-w-0 flex-1 text-left"
+                    title={`Edit ${item.name}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="grid size-9 place-items-center rounded bg-muted">
+                        <FileImage className="size-4 text-muted-foreground" />
+                      </div>
+                      <span className="min-w-0 flex-1 truncate font-semibold">{item.name}</span>
+                      <span className="text-[10px] text-muted-foreground">{index + 1}</span>
+                    </div>
+                    <span className="mt-1 block text-[10px] text-muted-foreground">
+                      {item.sourceName ? `Uploaded: ${item.sourceName} · ` : "Blank template · "}{item.width}×{item.height} in · {item.photoSlots.length} photo
+                      {item.photoSlots.length === 1 ? "" : "s"}
+                    </span>
+                  </button>
+                  <button
+                    className="rounded p-1 text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-30"
+                    onClick={() => removeArtboard(item.id)}
+                    disabled={state.artboards.length === 1}
+                    title={state.artboards.length === 1 ? "Keep at least one template" : `Remove ${item.name}`}
+                    aria-label={`Remove ${item.name}`}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
                 </div>
-                <span className="mt-1 block text-[10px] text-muted-foreground">
-                  {item.width}×{item.height} in · {item.photoSlots.length} photo
-                  {item.photoSlots.length === 1 ? "" : "s"}
-                </span>
-              </button>
+              </div>
             ))}
           </div>
           <div className="mt-6 border-t border-border pt-4">
