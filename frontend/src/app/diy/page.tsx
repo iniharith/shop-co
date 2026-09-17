@@ -205,7 +205,8 @@ const drawPhotoBookPage = async (options: {
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas export is unavailable");
   if (backgroundImage) {
-    context.fillStyle = options.background;
+    // White backing prevents aspect-fit gaps from exposing coloured edge strips.
+    context.fillStyle = "#ffffff";
     context.fillRect(0, 0, width, height);
     const backgroundScale = Math.min(
       width / backgroundImage.width,
@@ -1080,7 +1081,7 @@ function DiyPhotobookPage() {
               className="relative w-[min(76vw,520px)] overflow-hidden rounded-[1.25rem] border-[10px] border-white bg-white shadow-2xl"
               onClick={() => setImageSelected(false)}
               style={{
-                background: showCover ? previewBackground : "#ffffff",
+                background: "#ffffff",
                 aspectRatio: previewAspect,
               }}
             >
