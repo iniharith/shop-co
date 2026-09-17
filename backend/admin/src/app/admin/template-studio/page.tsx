@@ -2,6 +2,8 @@
 
 import {
   AlignCenter,
+  AlignLeft,
+  AlignRight,
   Check,
   ChevronDown,
   Circle,
@@ -23,6 +25,8 @@ import {
   Upload,
   ZoomIn,
 } from "lucide-react";
+import { deleteTemplateFont, getTemplateFonts, TemplateFont, uploadTemplateFont } from "@/api/templateFonts";
+import { useSession } from "next-auth/react";
 import {
   ChangeEvent,
   PointerEvent,
@@ -155,8 +159,14 @@ export default function TemplateStudioPage() {
   const [customerPreview, setCustomerPreview] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
+  const [customFonts, setCustomFonts] = useState<TemplateFont[]>([]);
+  const [fontBusy, setFontBusy] = useState(false);
+  const [fontMessage, setFontMessage] = useState<string | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const artboardRef = useRef<HTMLDivElement>(null);
+  const inlineTextSnapshotRef = useRef<StudioState | null>(null);
+  const { data: session, status: sessionStatus } = useSession();
+  const token = (session?.user as { accessToken?: string } | undefined)?.accessToken || "";
 
   useEffect(() => {
     try {
@@ -169,6 +179,23 @@ export default function TemplateStudioPage() {
       /* local draft is optional */
     }
   }, []);
+
+  const registerFont = async (font: TemplateFont) => {
+    if (typeof document === "undefined" || document.fonts.check(`12px \"${font.family}\"`)) return;
+    const face = new FontFace(font.family, `url(${font.url})`);
+    await face.load();
+    document.fonts.add(face);
+  };
+
+  useEffect(() => {
+    if (sessionStatus !== "authenticated" || !token) return;
+    getTemplateFonts(token)
+      .then(async (fonts) => {
+        setCustomFonts(fonts);
+        await Promise.all(fonts.map((font) => registerFont(font).catch(() => undefined)));
+      })
+      .catch(() => setFontMessage("Custom fonts could not be loaded."));
+  }, [sessionStatus, token]);
 
   const artboard = useMemo(
     () =>
@@ -421,6 +448,112 @@ export default function TemplateStudioPage() {
   const updateSelected = (patch: Record<string, unknown>) =>
     selection && updateLayer(selection.type, selection.id, patch);
 
+  const finishInlineTextEdit = () => {
+    const snapshot = inlineTextSnapshotRef.current;
+    if (!snapshot) return;
+    setPast((items) => [...items.slice(-39), snapshot]);
+    setFuture([]);
+    inlineTextSnapshotRef.current = null;
+  };
+  const alignSelected = (horizontal: "left" | "center" | "right" | null, vertical?: "top" | "middle" | "bottom") => {
+    if (!selectedLayer) return;
+    const patch: Record<string, number> = {};
+    if (horizontal === "left") patch.x = 0;
+    if (horizontal === "center") patch.x = (100 - selectedLayer.width) / 2;
+    if (horizontal === "right") patch.x = 100 - selectedLayer.width;
+    if (vertical === "top") patch.y = 0;
+    if (vertical === "middle") patch.y = (100 - selectedLayer.height) / 2;
+    if (vertical === "bottom") patch.y = 100 - selectedLayer.height;
+    updateSelected(patch);
+  };
+  const moveSelected = (x: number, y: number) => {
+    if (!selectedLayer) return;
+    updateSelected({
+      x: Math.max(0, Math.min(100 - selectedLayer.width, selectedLayer.x + x)),
+      y: Math.max(0, Math.min(100 - selectedLayer.height, selectedLayer.y + y)),
+    });
+  };
+  const handleFontUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !token) return;
+    const family = file.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
+    setFontBusy(true);
+    setFontMessage(null);
+    try {
+      const font = await uploadTemplateFont(token, file, family);
+      await registerFont(font);
+      setCustomFonts((items) => [...items, font].sort((a, b) => a.name.localeCompare(b.name)));
+      setFontMessage(`${font.name} is ready to use.`);
+    } catch (error: any) {
+      setFontMessage(error?.response?.data?.message || "Font upload failed.");
+    } finally {
+      setFontBusy(false);
+    }
+  };
+  const removeCustomFont = async (font: TemplateFont) => {
+    if (!token || !window.confirm(`Remove ${font.name}?`)) return;
+    try {
+      await deleteTemplateFont(token, font._id);
+      setCustomFonts((items) => items.filter((item) => item._id !== font._id));
+    } catch {
+      setFontMessage("Font could not be removed.");
+    }
+  };
+
+  useEffect(() => {
+    const isTyping = (target: EventTarget | null) => {
+      const element = target as HTMLElement | null;
+      return !!element?.closest("input, textarea, select, [contenteditable='true']");
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      const modifier = event.ctrlKey || event.metaKey;
+      const key = event.key.toLowerCase();
+      if (modifier && key === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redo(); else undo();
+        return;
+      }
+      if (modifier && key === "y") {
+        event.preventDefault();
+        redo();
+        return;
+      }
+      if (modifier && ["+", "="].includes(key)) {
+        event.preventDefault();
+        setZoom((value) => Math.min(200, value + 10));
+        return;
+      }
+      if (modifier && key === "-") {
+        event.preventDefault();
+        setZoom((value) => Math.max(25, value - 10));
+        return;
+      }
+      if (modifier && key === "0") {
+        event.preventDefault();
+        setZoom(72);
+        return;
+      }
+      if (isTyping(event.target)) return;
+      if (key === "escape") setSelection(null);
+      if ((key === "delete" || key === "backspace") && selection) {
+        event.preventDefault();
+        removeSelected();
+      }
+      if (modifier && key === "d") {
+        event.preventDefault();
+        duplicateSelected();
+      }
+      const distance = event.shiftKey ? 5 : 1;
+      if (key === "arrowleft") moveSelected(-distance, 0);
+      if (key === "arrowright") moveSelected(distance, 0);
+      if (key === "arrowup") moveSelected(0, -distance);
+      if (key === "arrowdown") moveSelected(0, distance);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [past, future, state, selection, selectedLayer]);
+
   return (
     <main className="min-h-full bg-background text-foreground">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card px-5 py-4 md:px-8">
@@ -601,7 +734,7 @@ export default function TemplateStudioPage() {
                 className="rounded-md p-2 hover:bg-white/10 disabled:opacity-30"
                 onClick={undo}
                 disabled={!past.length}
-                title="Undo"
+                title="Undo (Ctrl/Cmd + Z)"
               >
                 <Undo2 className="size-4" />
               </button>
@@ -609,7 +742,7 @@ export default function TemplateStudioPage() {
                 className="rounded-md p-2 hover:bg-white/10 disabled:opacity-30"
                 onClick={redo}
                 disabled={!future.length}
-                title="Redo"
+                title="Redo (Ctrl/Cmd + Shift + Z / Ctrl + Y)"
               >
                 <Redo2 className="size-4" />
               </button>
@@ -631,6 +764,11 @@ export default function TemplateStudioPage() {
           </div>
           <div
             className="flex flex-1 items-center justify-center overflow-auto rounded-xl border border-black/30 bg-[#34383b] p-8"
+            onWheel={(event) => {
+              if (!event.ctrlKey && !event.metaKey) return;
+              event.preventDefault();
+              setZoom((value) => Math.max(25, Math.min(200, value + (event.deltaY < 0 ? 8 : -8))));
+            }}
             style={{
               backgroundImage:
                 "linear-gradient(45deg,#3a3e41 25%,transparent 25%),linear-gradient(-45deg,#3a3e41 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#3a3e41 75%),linear-gradient(-45deg,transparent 75%,#3a3e41 75%)",
@@ -742,7 +880,30 @@ export default function TemplateStudioPage() {
                     setSelection({ type: "text", id: slot.id });
                   }}
                 >
-                  {slot.text}
+                  <div
+                    contentEditable={!customerPreview && !slot.locked}
+                    suppressContentEditableWarning
+                    className="h-full w-full whitespace-pre-wrap break-words outline-none"
+                    onPointerDown={(event) => {
+                      event.stopPropagation();
+                      setSelection({ type: "text", id: slot.id });
+                    }}
+                    onFocus={() => {
+                      if (!inlineTextSnapshotRef.current) inlineTextSnapshotRef.current = cloneState(state);
+                    }}
+                    onInput={(event) =>
+                      updateLayer("text", slot.id, { text: event.currentTarget.textContent || "" }, false)
+                    }
+                    onBlur={finishInlineTextEdit}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setSelection({ type: "text", id: slot.id });
+                    }}
+                    role="textbox"
+                    aria-label={`${slot.name} text`}
+                  >
+                    {slot.text}
+                  </div>
                   {!customerPreview && (
                     <span className="absolute -right-0.5 -top-0.5 rounded bg-sky-500 px-1 text-[8px] text-white">
                       T
@@ -754,8 +915,8 @@ export default function TemplateStudioPage() {
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-white/60">
             <span>
-              Drag a green box to move it. Drag its bottom-right handle to
-              resize.
+              Click text to edit it. Drag a layer edge to move it; use Ctrl +
+              wheel to zoom.
             </span>
             <span>{artboard.sourceName || "No source imported"}</span>
           </div>
@@ -938,6 +1099,17 @@ export default function TemplateStudioPage() {
                 />
                 Lock this layer
               </label>
+              <div className="mt-3">
+                <p className="text-xs font-semibold">Align on artboard</p>
+                <div className="mt-1 grid grid-cols-3 gap-1">
+                  <button className={buttonClass} onClick={() => alignSelected("left")} title="Align layer left">Left</button>
+                  <button className={buttonClass} onClick={() => alignSelected("center")} title="Align layer centre">Centre</button>
+                  <button className={buttonClass} onClick={() => alignSelected("right")} title="Align layer right">Right</button>
+                  <button className={buttonClass} onClick={() => alignSelected(null, "top")} title="Align layer top">Top</button>
+                  <button className={buttonClass} onClick={() => alignSelected(null, "middle")} title="Align layer middle">Middle</button>
+                  <button className={buttonClass} onClick={() => alignSelected(null, "bottom")} title="Align layer bottom">Bottom</button>
+                </div>
+              </div>
               {selection.type === "photo" ? (
                 <>
                   <label className="mt-3 block text-xs font-semibold">
@@ -990,6 +1162,10 @@ export default function TemplateStudioPage() {
                         <option>Arial</option>
                         <option>Georgia</option>
                         <option>Montserrat</option>
+                        {customFonts.length > 0 && <option disabled>── Uploaded fonts ──</option>}
+                        {customFonts.map((font) => (
+                          <option key={font._id} value={font.family}>{font.name}</option>
+                        ))}
                       </select>
                     </label>
                     <label className="text-xs font-semibold">
@@ -1005,6 +1181,53 @@ export default function TemplateStudioPage() {
                         }
                       />
                     </label>
+                  </div>
+                  <div className="mt-3 rounded-lg border border-border bg-muted/30 p-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold">Admin font library</span>
+                      <label className={`${buttonClass} cursor-pointer py-1.5`}>
+                        <Upload className="size-3" />
+                        {fontBusy ? "Uploading…" : "Upload font"}
+                        <input
+                          className="sr-only"
+                          type="file"
+                          accept=".woff,.woff2,.ttf,.otf,font/woff,font/woff2,font/ttf,font/otf"
+                          disabled={fontBusy || !token}
+                          onChange={handleFontUpload}
+                        />
+                      </label>
+                    </div>
+                    <p className="mt-1 text-[10px] text-muted-foreground">WOFF2, WOFF, TTF, or OTF · available to every admin.</p>
+                    {fontMessage && <p className="mt-1 text-[10px] text-primary">{fontMessage}</p>}
+                    {customFonts.length > 0 && (
+                      <div className="mt-2 max-h-24 space-y-1 overflow-y-auto">
+                        {customFonts.map((font) => (
+                          <div key={font._id} className="flex items-center justify-between gap-2 text-[11px]" style={{ fontFamily: font.family }}>
+                            <span className="truncate">{font.name}</span>
+                            <button className="text-destructive hover:underline" onClick={() => removeCustomFont(font)}>Remove</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-xs font-semibold">Text alignment</p>
+                    <div className="mt-1 grid grid-cols-3 gap-1">
+                      {([
+                        ["left", AlignLeft, "Left"],
+                        ["center", AlignCenter, "Centre"],
+                        ["right", AlignRight, "Right"],
+                      ] as const).map(([value, Icon, label]) => (
+                        <button
+                          key={value}
+                          className={`${buttonClass} py-1.5 ${(selectedLayer as TextSlot).align === value ? "border-primary bg-primary/10 text-primary" : ""}`}
+                          onClick={() => updateSelected({ align: value })}
+                          title={`Align text ${label.toLowerCase()}`}
+                        >
+                          <Icon className="size-3.5" /> {label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <label className="mt-3 block text-xs font-semibold">
                     Colour

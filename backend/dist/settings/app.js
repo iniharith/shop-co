@@ -33,6 +33,7 @@ const toolsRoutes_1 = __importDefault(require("../presentation/routes/toolsRoute
 const WhatsAppWebhookService_1 = __importDefault(require("../infrastructure/services/WhatsAppWebhookService"));
 const user_route_1 = __importDefault(require("../presentation/routes/user.route"));
 const sysadminRoutes_1 = __importDefault(require("../presentation/routes/sysadminRoutes"));
+const templateFontRoutes_1 = __importDefault(require("../presentation/routes/templateFontRoutes"));
 const chatRoutes_1 = __importDefault(require("../presentation/routes/chatRoutes"));
 const appRoutes_1 = __importDefault(require("../presentation/routes/appRoutes"));
 const webhook_route_1 = __importDefault(require("../presentation/routes/webhook.route"));
@@ -123,6 +124,7 @@ app.use('/api/audit-logs', auditRoutes_1.default);
 app.use('/api/tools', toolsRoutes_1.default);
 app.use('/api/chat', chatRoutes_1.default);
 app.use('/api/sysadmin', sysadminRoutes_1.default);
+app.use('/api/template-fonts', templateFontRoutes_1.default);
 app.use('/api/web-vitals', webVitalsRoutes_1.default);
 // ─── WhatsApp Webhook (Meta callback verification) ───────
 // Callback URL: https://admin.kampungcetak.com/api/webhooks/whatsapp
