@@ -787,7 +787,7 @@ export default function TemplateStudioPage() {
               Artboards
             </p>
             <span className="text-[10px] text-muted-foreground">
-              {state.artboards.length}
+              {state.artboards.filter((item) => !item.diyTemplate).length}
             </span>
           </div>
           <label className="mt-2 block text-xs font-semibold">
@@ -811,8 +811,8 @@ export default function TemplateStudioPage() {
           <p className="mt-1 text-[10px] text-muted-foreground">
             {state.artboards.filter((item) => item.diyTemplate).length} DIY templates available · matches the DIY library
           </p>
-          <div className="mt-2 space-y-2" aria-label="Existing templates">
-            {state.artboards.map((item, index) => (
+          <div className="mt-2 space-y-2" aria-label="Saved templates">
+            {state.artboards.filter((item) => !item.diyTemplate).map((item, index) => (
               <div key={item.id} className={`rounded-lg border p-2 text-xs ${item.id === artboard.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}>
                 <div className="flex items-center gap-1">
                   <button
