@@ -12,9 +12,12 @@ export type PhotoCanvasTemplate = {
 let library: Promise<PhotoCanvasTemplate[]> | undefined;
 const artwork = new Map<string, Promise<string>>();
 export function loadPhotoCanvasTemplates() {
-  return library ||= fetch('/templates/photo-canvas/library/manifest.json').then(async response => {
+  const backend = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const libraryUrl = backend ? `${backend.replace(/\/$/, '')}/api/diy-templates` : '/templates/photo-canvas/library/manifest.json';
+  return library ||= fetch(libraryUrl).then(async response => {
     if (!response.ok) throw new Error('Could not load templates. Please try again.');
-    const entries = await response.json() as PhotoCanvasTemplate[];
+    const payload = await response.json() as PhotoCanvasTemplate[] | { templates?: PhotoCanvasTemplate[] };
+    const entries = Array.isArray(payload) ? payload : (payload.templates || []).filter((template: any) => template.kind === 'photo-canvas');
     const grouped = new Map<string, PhotoCanvasTemplate[]>();
     for (const entry of entries) { const key = entry.sourceFile; const list = grouped.get(key) || []; list.push(entry); grouped.set(key, list); }
     const result: PhotoCanvasTemplate[] = [];

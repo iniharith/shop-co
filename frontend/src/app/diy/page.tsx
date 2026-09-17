@@ -26,7 +26,6 @@ import {
 import { BlobReader, BlobWriter, ZipWriter } from "@zip.js/zip.js";
 import PhotoCanvasEditor from "@/components/diy/PhotoCanvasEditor";
 import {
-  getPhotobookCoverTemplate,
   photobookCoverTemplates,
   type PhotobookCoverSlot,
   type PhotobookSize,
@@ -440,6 +439,7 @@ const buildPhotobookCoverSvg = async (options: {
 
 function DiyPhotobookPage() {
   const [bookSize, setBookSize] = useState<BookSize>("A5");
+  const [syncedCoverTemplates, setSyncedCoverTemplates] = useState<Record<BookSize, typeof photobookCoverTemplates.A5> | null>(null);
   const [pageChoice, setPageChoice] = useState<PageChoice>("80");
   const [customPages, setCustomPages] = useState("80");
   const [title, setTitle] = useState("Our little moments");
@@ -491,7 +491,8 @@ function DiyPhotobookPage() {
       ? 80
       : Math.max(1, Math.min(300, Number(customPages) || 1));
   const currentSpread = spreads[selectedSpread] || spreads[0];
-  const activeTemplate = getPhotobookCoverTemplate(bookSize, coverDesign);
+  const coverTemplates = syncedCoverTemplates || photobookCoverTemplates;
+  const activeTemplate = coverTemplates[bookSize].find((template) => template.id === coverDesign) || coverTemplates[bookSize][0];
   const activeCoverSlot =
     activeTemplate.slots.find((item) => item.id === selectedCoverSlotId) ||
     activeTemplate.slots[0];
@@ -509,6 +510,22 @@ function DiyPhotobookPage() {
     () => sizeCopy[bookSize].price + Math.max(0, pageCount - 80) * 2,
     [bookSize, pageCount],
   );
+
+  useEffect(() => {
+    const backend = process.env.NEXT_PUBLIC_BACKEND_URL;
+    if (!backend) return;
+    fetch(`${backend.replace(/\/$/, "")}/api/diy-templates`)
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("Template sync unavailable")))
+      .then((payload) => {
+        const covers = (payload.templates || []).filter((template: any) => template.kind === "photobook-cover");
+        if (!covers.length) return;
+        setSyncedCoverTemplates({
+          A5: covers.filter((template: any) => template.bookSize === "A5").map((template: any) => ({ ...template, id: template.id.replace(/^photobook-a5-/, "").toUpperCase() })),
+          A6: covers.filter((template: any) => template.bookSize === "A6").map((template: any) => ({ ...template, id: template.id.replace(/^photobook-a6-/, "").toUpperCase() })),
+        });
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     const shared = new URLSearchParams(window.location.hash.slice(1)).get(
@@ -1386,7 +1403,7 @@ function DiyPhotobookPage() {
                 }}
                 className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-3 text-sm"
               >
-                {photobookCoverTemplates[bookSize].map((template) => (
+                {coverTemplates[bookSize].map((template) => (
                   <option key={template.id} value={template.id}>
                     {template.name}
                   </option>

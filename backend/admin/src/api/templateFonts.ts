@@ -26,3 +26,26 @@ export const uploadTemplateFont = async (token: string, file: File, family: stri
 export const deleteTemplateFont = async (token: string, id: string) => {
   await AxiosInstance(token).delete(`/api/template-fonts/${id}`);
 };
+
+export type DiyTemplate = {
+  id: string;
+  name: string;
+  kind: "photo-canvas" | "photobook-cover";
+  width: number;
+  height: number;
+  size?: string;
+  sourceFile?: string;
+  preview?: string;
+  svg?: string;
+  slots: Array<{ id: string; label: string; x: number; y: number; width: number; height: number; rotation?: number; radius?: number }>;
+  [key: string]: unknown;
+};
+
+export const getDiyTemplates = async (token: string) => {
+  const response = await AxiosInstance(token).get<{ templates: DiyTemplate[] }>("/api/diy-templates");
+  return response.data.templates;
+};
+
+export const updateDiyTemplate = async (token: string, template: DiyTemplate) => {
+  await AxiosInstance(token).put(`/api/diy-templates/${encodeURIComponent(template.id)}`, { template });
+};

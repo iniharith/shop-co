@@ -25,7 +25,7 @@ import {
   Upload,
   ZoomIn,
 } from "lucide-react";
-import { deleteTemplateFont, getTemplateFonts, TemplateFont, uploadTemplateFont } from "@/api/templateFonts";
+import { deleteTemplateFont, DiyTemplate, getDiyTemplates, getTemplateFonts, TemplateFont, updateDiyTemplate, uploadTemplateFont } from "@/api/templateFonts";
 import { useSession } from "next-auth/react";
 import {
   ChangeEvent,
@@ -74,6 +74,7 @@ type Artboard = {
   height: number;
   background?: string;
   sourceName?: string;
+  diyTemplate?: DiyTemplate;
   lockedArtwork: boolean;
   photoSlots: PhotoSlot[];
   textSlots: TextSlot[];
@@ -91,6 +92,7 @@ type DragState = {
 };
 
 const studioKey = "kampung-cetak-template-studio-v1";
+const diyBaseUrl = (process.env.NEXT_PUBLIC_DIY_URL || "https://diy.kampungcetak.com").replace(/\/$/, "");
 const cloneState = (state: StudioState): StudioState =>
   JSON.parse(JSON.stringify(state));
 const newId = (prefix: string) =>
@@ -204,6 +206,7 @@ export default function TemplateStudioPage() {
   const [customFonts, setCustomFonts] = useState<TemplateFont[]>([]);
   const [fontBusy, setFontBusy] = useState(false);
   const [fontMessage, setFontMessage] = useState<string | null>(null);
+  const [diyLibraryMessage, setDiyLibraryMessage] = useState<string | null>(null);
   const dragRef = useRef<DragState | null>(null);
   const artboardRef = useRef<HTMLDivElement>(null);
   const inlineTextSnapshotRef = useRef<StudioState | null>(null);
@@ -243,6 +246,38 @@ export default function TemplateStudioPage() {
         await Promise.all(fonts.map((font) => registerFont(font).catch(() => undefined)));
       })
       .catch(() => setFontMessage("Custom fonts could not be loaded."));
+  }, [sessionStatus, token]);
+
+  useEffect(() => {
+    if (sessionStatus !== "authenticated" || !token) return;
+    getDiyTemplates(token).then((templates) => {
+      const diyArtboards: Artboard[] = templates.map((template) => ({
+        id: `diy-${template.id}`,
+        name: `DIY · ${template.name}`,
+        width: template.width,
+        height: template.height,
+        background: template.preview || template.svg ? `${diyBaseUrl}${template.preview || template.svg}` : undefined,
+        sourceName: template.sourceFile || template.size || "DIY template",
+        diyTemplate: template,
+        lockedArtwork: true,
+        photoSlots: template.slots.map((slot) => ({
+          id: slot.id,
+          name: slot.label,
+          x: slot.x,
+          y: slot.y,
+          width: slot.width,
+          height: slot.height,
+          rotation: slot.rotation || 0,
+          shape: "rect" as Shape,
+          required: true,
+          locked: false,
+        })),
+        textSlots: [],
+      }));
+      setState((current) => ({
+        artboards: [...current.artboards.filter((item) => !item.diyTemplate), ...diyArtboards],
+      }));
+    }).catch(() => setDiyLibraryMessage("DIY template library could not be loaded."));
   }, [sessionStatus, token]);
 
   const artboard = useMemo(
@@ -504,7 +539,32 @@ export default function TemplateStudioPage() {
       new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     );
   };
-  const publish = () => {
+  const publish = async () => {
+    if (artboard.diyTemplate && token) {
+      const template: DiyTemplate = {
+        ...artboard.diyTemplate,
+        name: artboard.name.replace(/^DIY ·\s*/, ""),
+        width: artboard.width,
+        height: artboard.height,
+        slots: artboard.photoSlots.map((slot) => ({
+          ...(artboard.diyTemplate?.slots.find((item) => item.id === slot.id) || {}),
+          id: slot.id,
+          label: slot.name,
+          x: slot.x,
+          y: slot.y,
+          width: slot.width,
+          height: slot.height,
+          rotation: slot.rotation,
+        })),
+      };
+      try {
+        await updateDiyTemplate(token, template);
+        setState((current) => ({ artboards: current.artboards.map((item) => item.id === artboard.id ? { ...item, diyTemplate: template } : item) }));
+      } catch {
+        setDiyLibraryMessage("DIY sync failed. Your template was not published.");
+        return;
+      }
+    }
     localStorage.setItem(
       `${studioKey}-published`,
       JSON.stringify({ ...state, publishedAt: new Date().toISOString() }),
@@ -711,6 +771,7 @@ export default function TemplateStudioPage() {
             SVG is recommended. PDF and raster files are kept as locked artwork
             backgrounds. Select a listed template to edit it.
           </p>
+          {diyLibraryMessage && <p className="mt-2 text-[11px] text-destructive">{diyLibraryMessage}</p>}
           <label className="mt-3 block text-xs font-semibold">
             Selected template name
             <input

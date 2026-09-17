@@ -30,6 +30,7 @@ import whatsappWebhook from '../infrastructure/services/WhatsAppWebhookService';
 import userRoutes from '../presentation/routes/user.route';
 import sysadminRoutes from '../presentation/routes/sysadminRoutes';
 import templateFontRoutes from '../presentation/routes/templateFontRoutes';
+import diyTemplateRoutes from '../presentation/routes/diyTemplateRoutes';
 import chatRoutes from '../presentation/routes/chatRoutes';
 import appRoutes from '../presentation/routes/appRoutes';
 import webhookRouter from '../presentation/routes/webhook.route';
@@ -136,6 +137,7 @@ app.use('/api/tools', toolsRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/sysadmin', sysadminRoutes);
 app.use('/api/template-fonts', templateFontRoutes);
+app.use('/api/diy-templates', diyTemplateRoutes);
 app.use('/api/web-vitals', webVitalsRoutes);
 
 // ─── WhatsApp Webhook (Meta callback verification) ───────
