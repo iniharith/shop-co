@@ -42,8 +42,16 @@ export type DiyTemplate = {
 };
 
 export const getDiyTemplates = async (token: string) => {
-  const response = await AxiosInstance(token).get<{ templates: DiyTemplate[] }>("/api/diy-templates");
-  return response.data.templates;
+  try {
+    const response = await AxiosInstance(token).get<{ templates: DiyTemplate[] }>("/api/diy-templates", { timeout: 30000 });
+    if (Array.isArray(response.data.templates) && response.data.templates.length) return response.data.templates;
+  } catch {
+    // The public DIY source below keeps the admin library usable while the backend deploys.
+  }
+  const fallback = await fetch("https://diy.kampungcetak.com/api/diy-template-library", { cache: "no-store" });
+  if (!fallback.ok) throw new Error("Could not load the DIY template library.");
+  const payload = await fallback.json() as { templates?: DiyTemplate[] };
+  return Array.isArray(payload.templates) ? payload.templates : [];
 };
 
 export const updateDiyTemplate = async (token: string, template: DiyTemplate) => {

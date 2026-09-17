@@ -20,6 +20,9 @@ export async function GET() {
     })),
   );
   return NextResponse.json({ templates: [...photoCanvas, ...photobook] }, {
-    headers: { 'Cache-Control': 'public, max-age=30, s-maxage=30' },
+    headers: {
+      'Cache-Control': 'public, max-age=30, s-maxage=30',
+      'Access-Control-Allow-Origin': '*',
+    },
   });
 }
