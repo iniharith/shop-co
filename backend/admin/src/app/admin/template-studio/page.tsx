@@ -211,7 +211,9 @@ export default function TemplateStudioPage() {
   const artboardRef = useRef<HTMLDivElement>(null);
   const inlineTextSnapshotRef = useRef<StudioState | null>(null);
   const { data: session, status: sessionStatus } = useSession();
-  const token = (session?.user as { accessToken?: string } | undefined)?.accessToken || "";
+  const token = (session?.user as { token?: string; accessToken?: string } | undefined)?.token
+    || (session?.user as { accessToken?: string } | undefined)?.accessToken
+    || (typeof window !== "undefined" ? window.localStorage.getItem("token") || "" : "");
 
   useEffect(() => {
     try {
@@ -788,6 +790,27 @@ export default function TemplateStudioPage() {
               {state.artboards.length}
             </span>
           </div>
+          <label className="mt-2 block text-xs font-semibold">
+            Open DIY template
+            <select
+              className={fieldClass}
+              value={artboard.diyTemplate ? artboard.id : ""}
+              onChange={(event) => {
+                const next = state.artboards.find((item) => item.id === event.target.value);
+                if (!next) return;
+                setSelectedArtboardId(next.id);
+                setSelection(next.photoSlots[0] ? { type: "photo", id: next.photoSlots[0].id } : null);
+              }}
+            >
+              <option value="">Select a DIY template…</option>
+              {state.artboards.filter((item) => item.diyTemplate).map((item) => (
+                <option key={item.id} value={item.id}>{String(item.diyTemplate?.category || "DIY")} · {String(item.diyTemplate?.size || item.name.replace(/^DIY ·\s*/, ""))}</option>
+              ))}
+            </select>
+          </label>
+          <p className="mt-1 text-[10px] text-muted-foreground">
+            {state.artboards.filter((item) => item.diyTemplate).length} DIY templates available · matches the DIY library
+          </p>
           <div className="mt-2 space-y-2" aria-label="Existing templates">
             {state.artboards.map((item, index) => (
               <div key={item.id} className={`rounded-lg border p-2 text-xs ${item.id === artboard.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"}`}>
