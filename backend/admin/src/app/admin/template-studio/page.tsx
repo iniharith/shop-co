@@ -251,7 +251,7 @@ export default function TemplateStudioPage() {
   }, [sessionStatus, token]);
 
   useEffect(() => {
-    if (sessionStatus !== "authenticated" || !token) return;
+    if (sessionStatus === "loading") return;
     getDiyTemplates(token).then((templates) => {
       const diyArtboards: Artboard[] = templates.map((template) => ({
         id: `diy-${template.id}`,

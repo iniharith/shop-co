@@ -48,10 +48,22 @@ export const getDiyTemplates = async (token: string) => {
   } catch {
     // The public DIY source below keeps the admin library usable while the backend deploys.
   }
-  const fallback = await fetch("https://diy.kampungcetak.com/api/diy-template-library", { cache: "no-store" });
-  if (!fallback.ok) throw new Error("Could not load the DIY template library.");
-  const payload = await fallback.json() as { templates?: DiyTemplate[] };
-  return Array.isArray(payload.templates) ? payload.templates : [];
+  const sources = [
+    "https://diy.kampungcetak.com/api/diy-template-library",
+    "https://raw.githubusercontent.com/iniharith/shop-co/main/frontend/public/templates/photo-canvas/library/manifest.json",
+  ];
+  for (const source of sources) {
+    try {
+      const fallback = await fetch(source, { cache: "no-store" });
+      if (!fallback.ok) continue;
+      const payload = await fallback.json() as { templates?: DiyTemplate[] } | DiyTemplate[];
+      const templates = Array.isArray(payload) ? payload : payload.templates;
+      if (Array.isArray(templates) && templates.length) return templates.map((template) => ({ ...template, kind: template.kind || "photo-canvas" }));
+    } catch {
+      // Try the next canonical DIY source.
+    }
+  }
+  throw new Error("Could not load the DIY template library.");
 };
 
 export const updateDiyTemplate = async (token: string, template: DiyTemplate) => {
