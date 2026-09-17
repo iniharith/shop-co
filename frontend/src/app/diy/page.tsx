@@ -1179,7 +1179,13 @@ function DiyPhotobookPage() {
                 })
               ) : (
                 <div
-                  className={`absolute left-[7%] top-[5%] z-10 h-[66%] w-[62%] overflow-hidden outline outline-2 -outline-offset-2 outline-emerald-500 ${activeImage ? "cursor-move" : "cursor-pointer bg-emerald-500/10"}`}
+                  className={`absolute z-10 overflow-hidden outline outline-2 -outline-offset-2 outline-emerald-500 ${activeImage ? "cursor-move" : "cursor-pointer bg-emerald-500/10"}`}
+                  style={{
+                    left: `${bookSize === "A5" ? 11.9 : 10.8685}%`,
+                    top: `${bookSize === "A5" ? 8.263 : 7.672}%`,
+                    width: `${bookSize === "A5" ? 76.2 : 78.263}%`,
+                    height: `${bookSize === "A5" ? 83.474 : 84.656}%`,
+                  }}
                   onClick={(event) => {
                     event.stopPropagation();
                     if (activeImage) setImageSelected(true);
