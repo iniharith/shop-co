@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ImagePlus, Upload, Download, ArrowLeft, RotateCcw, Check, Loader2, Eye, Trash2, AlignCenter, Maximize2, Undo2, Redo2 } from "lucide-react";
-import { loadPhotoCanvasTemplates, loadTemplateArtwork, PhotoCanvasTemplate, PhotoSlot } from "@/lib/photoCanvasTemplates";
+import { loadPhotoCanvasTemplates, loadTemplateArtwork, PhotoCanvasTemplate, PhotoSlot, refreshPhotoCanvasTemplates } from "@/lib/photoCanvasTemplates";
 import { assignUploadedPhotos, CanvasDesigns, clamp, DEFAULT_PHOTO_ADJUSTMENT, PhotoAdjustment, photoPlacement } from "@/lib/photoCanvasDesign";
 import { loadCanvasDraft, saveCanvasDraft, saveCanvasPhotos } from "@/lib/photoCanvasDraft";
 import { CustomerPhoto, exportCanvasPackage, fillTemplate } from "@/lib/photoCanvasExport";
@@ -90,6 +90,14 @@ export default function PhotoCanvasEditor() {
     };
     // The initial query chooses a starting template; subsequent selections stay local.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => refreshPhotoCanvasTemplates()
+      .then((library) => setTemplates(library))
+      .catch(() => undefined);
+    const interval = window.setInterval(refresh, 10_000);
+    return () => window.clearInterval(interval);
   }, []);
 
   useEffect(() => {

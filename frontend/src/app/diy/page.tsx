@@ -514,7 +514,7 @@ function DiyPhotobookPage() {
   useEffect(() => {
     const backend = process.env.NEXT_PUBLIC_BACKEND_URL;
     if (!backend) return;
-    fetch(`${backend.replace(/\/$/, "")}/api/diy-templates`)
+    const syncCovers = () => fetch(`${backend.replace(/\/$/, "")}/api/diy-templates`, { cache: "no-store" })
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("Template sync unavailable")))
       .then((payload) => {
         const covers = (payload.templates || []).filter((template: any) => template.kind === "photobook-cover");
@@ -525,6 +525,9 @@ function DiyPhotobookPage() {
         });
       })
       .catch(() => undefined);
+    syncCovers();
+    const interval = window.setInterval(syncCovers, 10_000);
+    return () => window.clearInterval(interval);
   }, []);
 
   useEffect(() => {

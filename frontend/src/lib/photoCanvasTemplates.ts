@@ -31,6 +31,10 @@ export function loadPhotoCanvasTemplates() {
     return result;
   }).catch(error => { library = undefined; throw error; });
 }
+export function refreshPhotoCanvasTemplates() {
+  library = undefined;
+  return loadPhotoCanvasTemplates();
+}
 export function loadTemplateArtwork(template: PhotoCanvasTemplate) {
   if (template.artboards?.length) {
     const key = `set:${template.id}`;
