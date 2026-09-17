@@ -100,7 +100,7 @@ const initialState: StudioState = {
   artboards: [
     {
       id: "artboard-1",
-      name: "Artboard 1",
+      name: "Frame 8 × 10 in",
       width: 12,
       height: 18,
       lockedArtwork: true,
@@ -136,6 +136,48 @@ const initialState: StudioState = {
           locked: false,
         },
       ],
+    },
+    {
+      id: "frame-12x18",
+      name: "Frame 12 × 18 in",
+      width: 12,
+      height: 18,
+      lockedArtwork: true,
+      photoSlots: [{ id: "frame-12x18-photo", name: "Main photo", x: 8, y: 8, width: 84, height: 70, rotation: 0, shape: "rect", required: true, locked: false }],
+      textSlots: [{ id: "frame-12x18-text", name: "Caption", text: "Your caption", x: 12, y: 82, width: 76, height: 8, rotation: 0, fontFamily: "Inter", fontSize: 4, color: "#102a32", align: "center", editable: true, locked: false }],
+    },
+    {
+      id: "frame-16x20-landscape",
+      name: "Frame 16 × 20 in (Landscape)",
+      width: 20,
+      height: 16,
+      lockedArtwork: true,
+      photoSlots: [{ id: "frame-16x20-photo", name: "Main photo", x: 7, y: 10, width: 86, height: 65, rotation: 0, shape: "rect", required: true, locked: false }],
+      textSlots: [{ id: "frame-16x20-text", name: "Caption", text: "Your caption", x: 12, y: 80, width: 76, height: 8, rotation: 0, fontFamily: "Inter", fontSize: 4, color: "#102a32", align: "center", editable: true, locked: false }],
+    },
+    {
+      id: "photobook-cover",
+      name: "Photobook — Cover",
+      width: 12,
+      height: 12,
+      lockedArtwork: true,
+      photoSlots: [{ id: "photobook-cover-photo", name: "Cover photo", x: 6, y: 6, width: 88, height: 70, rotation: 0, shape: "rect", required: true, locked: false }],
+      textSlots: [
+        { id: "photobook-cover-title", name: "Title", text: "Our Story", x: 10, y: 80, width: 80, height: 7, rotation: 0, fontFamily: "Georgia", fontSize: 5, color: "#102a32", align: "center", editable: true, locked: false },
+        { id: "photobook-cover-date", name: "Date", text: "2026", x: 10, y: 88, width: 80, height: 4, rotation: 0, fontFamily: "Inter", fontSize: 3, color: "#102a32", align: "center", editable: true, locked: false },
+      ],
+    },
+    {
+      id: "photobook-page",
+      name: "Photobook — Inside Page",
+      width: 12,
+      height: 12,
+      lockedArtwork: true,
+      photoSlots: [
+        { id: "photobook-page-photo-1", name: "Photo 1", x: 7, y: 8, width: 41, height: 62, rotation: 0, shape: "rect", required: true, locked: false },
+        { id: "photobook-page-photo-2", name: "Photo 2", x: 52, y: 8, width: 41, height: 62, rotation: 0, shape: "rect", required: true, locked: false },
+      ],
+      textSlots: [{ id: "photobook-page-caption", name: "Page caption", text: "A moment to remember", x: 10, y: 78, width: 80, height: 7, rotation: 0, fontFamily: "Inter", fontSize: 4, color: "#102a32", align: "center", editable: true, locked: false }],
     },
   ],
 };
@@ -173,7 +215,13 @@ export default function TemplateStudioPage() {
       const saved = localStorage.getItem(studioKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed?.artboards?.length) setState(parsed);
+        if (parsed?.artboards?.length) {
+          const hasPresetLibrary = parsed.artboards.some((item: Artboard) => item.id === "photobook-cover");
+          setState(hasPresetLibrary ? parsed : {
+            ...parsed,
+            artboards: [...parsed.artboards, ...initialState.artboards.filter((item) => item.id !== "artboard-1")],
+          });
+        }
       }
     } catch {
       /* local draft is optional */
@@ -422,11 +470,20 @@ export default function TemplateStudioPage() {
     const file = event.target.files?.[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
-    updateArtboard((item) => ({
-      ...item,
+    const imported: Artboard = {
+      id: newId("artboard"),
+      name: file.name.replace(/\.[^.]+$/, "") || "Imported template",
+      width: artboard.width,
+      height: artboard.height,
       background: url,
       sourceName: file.name,
-    }));
+      lockedArtwork: true,
+      photoSlots: [],
+      textSlots: [],
+    };
+    commit({ artboards: [...state.artboards, imported] });
+    setSelectedArtboardId(imported.id);
+    setSelection(null);
     event.target.value = "";
   };
   const removeArtboard = (id: string) => {
