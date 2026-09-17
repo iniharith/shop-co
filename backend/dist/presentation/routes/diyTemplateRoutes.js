@@ -69,7 +69,7 @@ router.get('/', (0, express_async_handler_1.default)((_req, res) => __awaiter(vo
     const changed = new Map(overrides.map((item) => [item.templateId, item.template]));
     res.json({ success: true, templates: templates.map((template) => changed.get(template.id) || template) });
 })));
-router.put('/:id', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.put('/:id', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const template = (_a = req.body) === null || _a === void 0 ? void 0 : _a.template;
     if (!template || typeof template !== 'object' || String(template.id) !== String(req.params.id)) {

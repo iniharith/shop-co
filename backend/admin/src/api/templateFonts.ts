@@ -67,5 +67,10 @@ export const getDiyTemplates = async (token: string) => {
 };
 
 export const updateDiyTemplate = async (token: string, template: DiyTemplate) => {
-  await AxiosInstance(token).put(`/api/diy-templates/${encodeURIComponent(template.id)}`, { template });
+  try {
+    await AxiosInstance(token).put(`/api/diy-templates/${encodeURIComponent(template.id)}`, { template });
+  } catch (error: any) {
+    const message = error?.response?.data?.message || error?.message || "Template publish request failed.";
+    throw new Error(String(message));
+  }
 };

@@ -23,7 +23,7 @@ router.get('/', asyncHandler(async (_req, res) => {
   res.json({ success: true, templates: templates.map((template: any) => changed.get(template.id) || template) });
 }));
 
-router.put('/:id', authMiddilware, authorizeRoles('admin', 'sysadmin', 'boss'), asyncHandler(async (req: any, res) => {
+router.put('/:id', authMiddilware, authorizeRoles('admin', 'sysadmin', 'boss', 'designer'), asyncHandler(async (req: any, res) => {
   const template = req.body?.template;
   if (!template || typeof template !== 'object' || String(template.id) !== String(req.params.id)) {
     res.status(400).json({ success: false, message: 'A valid template payload is required.' });

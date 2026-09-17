@@ -562,8 +562,8 @@ export default function TemplateStudioPage() {
       try {
         await updateDiyTemplate(token, template);
         setState((current) => ({ artboards: current.artboards.map((item) => item.id === artboard.id ? { ...item, diyTemplate: template } : item) }));
-      } catch {
-        setDiyLibraryMessage("DIY sync failed. Your template was not published.");
+      } catch (error: any) {
+        setDiyLibraryMessage(`DIY sync failed: ${error?.message || "publish request failed"}`);
         return;
       }
     }
