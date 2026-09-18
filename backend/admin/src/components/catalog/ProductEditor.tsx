@@ -286,12 +286,18 @@ images: resolveImages(current.images),
       return next;
     });
 
-  const uploadFiles = async (files: FileList | File[]) => {
-    for (const file of Array.from(files)) {
+  const uploadFiles = async (files: FileList | File[], replacePrimary = false) => {
+    const selectedFiles = Array.from(files);
+    for (const [fileIndex, file] of selectedFiles.entries()) {
       const uploadKey = `${file.name}-${file.size}`;
       try {
         const imageUrl = await uploadFileToStorage(file, uploadKey);
-        setProduct(current => ({ ...current, images: [...current.images, imageUrl] }));
+        setProduct(current => {
+          if (!replacePrimary || fileIndex > 0 || current.images.length === 0) {
+            return { ...current, images: [...current.images, imageUrl] };
+          }
+          return { ...current, images: [imageUrl, ...current.images.slice(1)] };
+        });
       } catch (error: any) {
         toast.error(error?.message || 'Could not upload image');
       } finally {
@@ -429,6 +435,17 @@ images: resolveImages(current.images),
       ? choices.filter(value => value !== choice)
       : [...choices, choice];
     updateSpec({ [key]: nextChoices.join(' / ') });
+  };
+
+  const makePrimary = (imageIndex: number) => {
+    if (imageIndex <= 0 || imageIndex >= product.images.length) return;
+    setProduct(current => {
+      const images = [...current.images];
+      const [image] = images.splice(imageIndex, 1);
+      images.unshift(image);
+      return { ...current, images };
+    });
+    toast.success('Primary image updated. Save the product to keep this change.');
   };
 
   const addCustomSpecChoice = () => {
@@ -738,7 +755,7 @@ images: resolveImages(current.images),
             onDragOver={event => event.preventDefault()}
             onDrop={event => {
               event.preventDefault();
-              if (event.dataTransfer.files.length) void uploadFiles(event.dataTransfer.files);
+              if (event.dataTransfer.files.length) void uploadFiles(event.dataTransfer.files, true);
             }}
             className="mt-5 rounded-2xl border border-dashed p-4"
           >
@@ -781,6 +798,13 @@ images: resolveImages(current.images),
                         <GripVertical className="absolute bottom-1 left-1 rounded bg-black/60 p-1 text-white" />
                         <button
                           type="button"
+                          className="absolute bottom-1 right-1 rounded bg-black/70 px-1.5 py-1 text-[10px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100"
+                          onClick={() => makePrimary(index + 1)}
+                        >
+                          Make primary
+                        </button>
+                        <button
+                          type="button"
                           className="absolute right-1 top-1 rounded bg-black/70 p-1 text-white"
                           onClick={() =>
                             setProduct(current => ({
@@ -815,7 +839,7 @@ images: resolveImages(current.images),
                   accept="image/*"
                   multiple
                   onChange={event => {
-                    if (event.target.files) void uploadFiles(event.target.files);
+                    if (event.target.files) void uploadFiles(event.target.files, true);
                     event.target.value = '';
                   }}
                 />
