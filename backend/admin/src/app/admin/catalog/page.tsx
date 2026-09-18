@@ -46,10 +46,8 @@ export default function CatalogPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const [result, performance] = await Promise.all([getCatalog(token), getCatalogAnalytics(token)]);
+      const result = await getCatalog(token);
       setProducts((result.products || []).map((product: Product) => ({ ...product, images: resolveImages(product.images) })));
-      const resolve = (items: Product[] = []) => items.map(product => ({ ...product, images: resolveImages(product.images) }));
-      setAnalytics({ mostViewed: resolve(performance.mostViewed), bestSelling: resolve(performance.bestSelling), zeroSales: resolve(performance.zeroSales), lowStock: resolve(performance.lowStock), recentlyUpdated: resolve(performance.recentlyUpdated) });
       setSelected([]);
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Could not load catalog');
@@ -59,6 +57,13 @@ export default function CatalogPage() {
   };
 
   useEffect(() => { void load(); }, [token]);
+  useEffect(() => {
+    if (!token) return;
+    void getCatalogAnalytics(token).then(performance => {
+      const resolve = (items: Product[] = []) => items.map(product => ({ ...product, images: resolveImages(product.images) }));
+      setAnalytics({ mostViewed: resolve(performance.mostViewed), bestSelling: resolve(performance.bestSelling), zeroSales: resolve(performance.zeroSales), lowStock: resolve(performance.lowStock), recentlyUpdated: resolve(performance.recentlyUpdated) });
+    }).catch(() => undefined);
+  }, [token]);
 
   const filtered = useMemo(() => products.filter(product => {
     const matchesQuery = `${product.name} ${product.category}`.toLowerCase().includes(query.toLowerCase());
