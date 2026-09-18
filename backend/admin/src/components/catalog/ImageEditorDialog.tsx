@@ -25,11 +25,22 @@ export function ImageEditorDialog({
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [imageReady, setImageReady] = useState(false);
+  const [sourceUrl, setSourceUrl] = useState(imageUrl);
 
   useEffect(() => {
     setImageReady(false);
+    setSourceUrl(imageUrl);
     setZoom(1);
     setRotation(0);
+  }, [imageUrl]);
+
+  useEffect(() => {
+    let objectUrl = '';
+    void fetch(imageUrl)
+      .then(response => response.blob())
+      .then(blob => { objectUrl = URL.createObjectURL(blob); setSourceUrl(objectUrl); })
+      .catch(() => undefined);
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [imageUrl]);
 
   const save = () => {
@@ -67,7 +78,7 @@ export function ImageEditorDialog({
     <Card className="w-full max-w-3xl">
       <CardHeader className="flex flex-row items-center justify-between"><div><CardTitle>Edit image · {productName}</CardTitle><p className="mt-1 text-sm text-muted-foreground">Crop, rotate, and zoom before saving this product image.</p></div><Button variant="ghost" size="icon" onClick={onClose}><X /></Button></CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex min-h-72 items-center justify-center overflow-hidden rounded-xl bg-muted p-4"><img ref={imageRef} src={imageUrl} alt={`${productName} preview`} onLoad={() => setImageReady(true)} className="max-h-[55vh] max-w-full object-contain" style={{ transform: `rotate(${rotation}deg) scale(${zoom})` }} /></div>
+        <div className="flex min-h-72 items-center justify-center overflow-hidden rounded-xl bg-muted p-4"><img ref={imageRef} src={sourceUrl} alt={`${productName} preview`} onLoad={() => setImageReady(true)} className="max-h-[55vh] max-w-full object-contain" style={{ transform: `rotate(${rotation}deg) scale(${zoom})` }} /></div>
         <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-medium">Crop</span>{([['original', 'Original'], ['square', 'Square'], ['landscape', '4:3'], ['portrait', '3:4']] as const).map(([value, label]) => <Button key={value} size="sm" variant={ratio === value ? 'default' : 'outline'} onClick={() => setRatio(value)}>{label}</Button>)}<Button size="sm" variant="outline" onClick={() => setRotation(value => value - 90)}><RotateCcw className="mr-1 h-4 w-4" /> Rotate</Button><Button size="sm" variant="outline" onClick={() => setRotation(value => value + 90)}><RotateCw className="mr-1 h-4 w-4" /> Rotate</Button></div>
         <label className="block text-sm font-medium">Zoom <input className="ml-3 align-middle" type="range" min="1" max="2.5" step="0.05" value={zoom} onChange={event => setZoom(Number(event.target.value))} /></label>
         <div className="flex justify-end gap-2"><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={!imageReady || saving} onClick={save}>{saving ? 'Saving...' : 'Save edited image'}</Button></div>

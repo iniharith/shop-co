@@ -456,9 +456,13 @@ images: resolveImages(current.images),
     setSavingEditedImage(true);
     try {
       const imageUrl = await uploadFileToStorage(file, `edited-${editingImage}-${file.size}`);
-      setProduct(current => ({ ...current, images: current.images.map((image, index) => index === editingImage ? imageUrl : image) }));
+      const nextProduct = { ...product, images: product.images.map((image, index) => index === editingImage ? imageUrl : image) };
+      setProduct(nextProduct);
+      if (productId) {
+        await updateCatalogProduct(token, productId, { ...nextProduct, slug: slugify(nextProduct.name) });
+      }
       setEditingImage(null);
-      toast.success('Edited image applied. Save the product to keep this change.');
+      toast.success('Edited image saved.');
     } catch (error: any) {
       toast.error(error?.message || 'Could not save edited image');
     } finally {
@@ -809,6 +813,7 @@ images: resolveImages(current.images),
                       >
                         <img
                           src={image}
+                          draggable={false}
                           alt={`${product.name || 'Product'} image ${index + 2}`}
                           className="aspect-square h-full w-full object-cover"
                         />
