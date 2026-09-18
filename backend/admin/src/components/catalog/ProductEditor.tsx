@@ -722,11 +722,8 @@ images: resolveImages(current.images),
               <ArrowLeft className="mr-1" /> Catalog
             </Link>
           </Button>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">Product Images</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage your main image and linked variations together for{' '}
-            <span className="font-medium text-foreground">{product.name || 'this product'}</span>.
-          </p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">{product.name || 'Product Images'}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Manage your main image and linked variations together.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Badge variant={product.status === 'published' ? 'default' : 'secondary'}>
