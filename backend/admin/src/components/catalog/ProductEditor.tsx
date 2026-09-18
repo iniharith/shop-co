@@ -31,6 +31,7 @@ import {
   updateCatalogProduct,
 } from '@/api/catalog';
 import { resolveImages } from '@/utils/productImage';
+import { ImageEditorDialog } from './ImageEditorDialog';
 
 type SizeStock = {
   size: string;
@@ -204,6 +205,8 @@ const [draggedImage, setDraggedImage] = useState<number | null>(null);
   const [customSpecChoice, setCustomSpecChoice] = useState<{ key: SpecificationKey; value: string } | null>(null);
   const [variationLinkPicker, setVariationLinkPicker] = useState<number | null>(null);
   const [variationLinkUrl, setVariationLinkUrl] = useState('');
+  const [editingImage, setEditingImage] = useState<number | null>(null);
+  const [savingEditedImage, setSavingEditedImage] = useState(false);
 
   useEffect(() => {
     if (!productId || !token) return;
@@ -446,6 +449,22 @@ images: resolveImages(current.images),
       return { ...current, images };
     });
     toast.success('Primary image updated. Save the product to keep this change.');
+  };
+
+  const saveEditedImage = async (file: File) => {
+    if (editingImage === null) return;
+    setSavingEditedImage(true);
+    try {
+      const imageUrl = await uploadFileToStorage(file, `edited-${editingImage}-${file.size}`);
+      setProduct(current => ({ ...current, images: current.images.map((image, index) => index === editingImage ? imageUrl : image) }));
+      setEditingImage(null);
+      toast.success('Edited image applied. Save the product to keep this change.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Could not save edited image');
+    } finally {
+      clearUpload(`edited-${editingImage}-${file.size}`);
+      setSavingEditedImage(false);
+    }
   };
 
   const addCustomSpecChoice = () => {
@@ -773,6 +792,7 @@ images: resolveImages(current.images),
                     size="sm"
                     variant="secondary"
                     className="absolute right-3 top-3"
+                    onClick={() => setEditingImage(0)}
                   >
                     <Pencil className="mr-1 h-4 w-4" /> Edit
                   </Button>
@@ -803,6 +823,7 @@ images: resolveImages(current.images),
                         >
                           Make primary
                         </button>
+                        <button type="button" className="absolute left-1 top-1 rounded bg-black/70 px-1.5 py-1 text-[10px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100" onClick={() => setEditingImage(index + 1)}>Edit</button>
                         <button
                           type="button"
                           className="absolute right-1 top-1 rounded bg-black/70 p-1 text-white"
@@ -1654,6 +1675,7 @@ images: resolveImages(current.images),
           </section>
         </aside>
       </div>
+    {editingImage !== null && product.images[editingImage] && <ImageEditorDialog imageUrl={product.images[editingImage]} productName={product.name || 'Product'} saving={savingEditedImage} onClose={() => setEditingImage(null)} onSave={file => void saveEditedImage(file)} />}
     </main>
   );
 }
