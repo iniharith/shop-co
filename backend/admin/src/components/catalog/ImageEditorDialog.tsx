@@ -58,8 +58,6 @@ export function ImageEditorDialog({
       cropHeight = rotatedHeight;
       cropWidth = cropHeight * targetRatio;
     }
-    cropWidth /= zoom;
-    cropHeight /= zoom;
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(cropWidth));
     canvas.height = Math.max(1, Math.round(cropHeight));

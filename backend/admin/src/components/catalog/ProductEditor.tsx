@@ -781,9 +781,12 @@ images: resolveImages(current.images),
           >
             {mainImage ? (
               <div className="space-y-4">
-                <div className="group relative overflow-hidden rounded-2xl border bg-muted">
+                <div className="group relative overflow-hidden rounded-2xl border bg-muted" onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); if (draggedImage !== null && draggedImage !== 0) moveImage(draggedImage, 0); setDraggedImage(null); }}>
                   <img
                     src={mainImage}
+                    draggable
+                    onDragStart={() => setDraggedImage(0)}
+                    onDragEnd={() => setDraggedImage(null)}
                     alt={`${product.name || 'Product'} primary image`}
                     className="aspect-square w-full object-cover"
                   />
