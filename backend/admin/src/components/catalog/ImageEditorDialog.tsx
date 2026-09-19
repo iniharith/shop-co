@@ -1,86 +1,16 @@
 'use client';
-
-import { useEffect, useRef, useState } from 'react';
-import { RotateCcw, RotateCw, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import Cropper, { Area } from 'react-easy-crop';
+import { FlipHorizontal, FlipVertical, Redo2, RotateCcw, RotateCw, Undo2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-type Ratio = 'original' | 'square' | 'landscape' | 'portrait';
-
-export function ImageEditorDialog({
-  imageUrl,
-  productName,
-  saving,
-  onClose,
-  onSave,
-}: {
-  imageUrl: string;
-  productName: string;
-  saving?: boolean;
-  onClose: () => void;
-  onSave: (file: File) => void;
-}) {
-  const imageRef = useRef<HTMLImageElement>(null);
-  const [ratio, setRatio] = useState<Ratio>('original');
-  const [zoom, setZoom] = useState(1);
-  const [rotation, setRotation] = useState(0);
-  const [imageReady, setImageReady] = useState(false);
-  const [sourceUrl, setSourceUrl] = useState(imageUrl);
-
-  useEffect(() => {
-    setImageReady(false);
-    setSourceUrl(imageUrl);
-    setZoom(1);
-    setRotation(0);
-  }, [imageUrl]);
-
-  useEffect(() => {
-    let objectUrl = '';
-    void fetch(imageUrl)
-      .then(response => response.blob())
-      .then(blob => { objectUrl = URL.createObjectURL(blob); setSourceUrl(objectUrl); })
-      .catch(() => undefined);
-    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
-  }, [imageUrl]);
-
-  const save = () => {
-    const image = imageRef.current;
-    if (!image || !imageReady) return;
-    const sourceWidth = image.naturalWidth;
-    const sourceHeight = image.naturalHeight;
-    const angle = ((rotation % 360) + 360) % 360;
-    const rotatedWidth = angle === 90 || angle === 270 ? sourceHeight : sourceWidth;
-    const rotatedHeight = angle === 90 || angle === 270 ? sourceWidth : sourceHeight;
-    const targetRatio = ratio === 'square' ? 1 : ratio === 'landscape' ? 4 / 3 : ratio === 'portrait' ? 3 / 4 : rotatedWidth / rotatedHeight;
-    let cropWidth = rotatedWidth;
-    let cropHeight = cropWidth / targetRatio;
-    if (cropHeight > rotatedHeight) {
-      cropHeight = rotatedHeight;
-      cropWidth = cropHeight * targetRatio;
-    }
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(cropWidth));
-    canvas.height = Math.max(1, Math.round(cropHeight));
-    const context = canvas.getContext('2d');
-    if (!context) return;
-    context.translate(canvas.width / 2, canvas.height / 2);
-    context.rotate((angle * Math.PI) / 180);
-    context.scale(zoom, zoom);
-    context.drawImage(image, -sourceWidth / 2, -sourceHeight / 2, sourceWidth, sourceHeight);
-    canvas.toBlob(blob => {
-      if (blob) onSave(new File([blob], `${productName || 'product'}-edited.jpg`, { type: 'image/jpeg' }));
-    }, 'image/jpeg', 0.92);
-  };
-
-  return <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4">
-    <Card className="w-full max-w-3xl">
-      <CardHeader className="flex flex-row items-center justify-between"><div><CardTitle>Edit image · {productName}</CardTitle><p className="mt-1 text-sm text-muted-foreground">Crop, rotate, and zoom before saving this product image.</p></div><Button variant="ghost" size="icon" onClick={onClose}><X /></Button></CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex min-h-72 items-center justify-center overflow-hidden rounded-xl bg-muted p-4"><img ref={imageRef} src={sourceUrl} alt={`${productName} preview`} onLoad={() => setImageReady(true)} className="max-h-[55vh] max-w-full object-contain" style={{ transform: `rotate(${rotation}deg) scale(${zoom})` }} /></div>
-        <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-medium">Crop</span>{([['original', 'Original'], ['square', 'Square'], ['landscape', '4:3'], ['portrait', '3:4']] as const).map(([value, label]) => <Button key={value} size="sm" variant={ratio === value ? 'default' : 'outline'} onClick={() => setRatio(value)}>{label}</Button>)}<Button size="sm" variant="outline" onClick={() => setRotation(value => value - 90)}><RotateCcw className="mr-1 h-4 w-4" /> Rotate</Button><Button size="sm" variant="outline" onClick={() => setRotation(value => value + 90)}><RotateCw className="mr-1 h-4 w-4" /> Rotate</Button></div>
-        <label className="block text-sm font-medium">Zoom <input className="ml-3 align-middle" type="range" min="1" max="2.5" step="0.05" value={zoom} onChange={event => setZoom(Number(event.target.value))} /></label>
-        <div className="flex justify-end gap-2"><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={!imageReady || saving} onClick={save}>{saving ? 'Saving...' : 'Save edited image'}</Button></div>
-      </CardContent>
-    </Card>
-  </div>;
+type Ratio = 'original' | 'square' | 'landscape' | 'portrait' | 'wide';
+type Snapshot = { crop: { x: number; y: number }; zoom: number; rotation: number; flipX: boolean; flipY: boolean; area: Area | null };
+const ratios: Record<Exclude<Ratio, 'original'>, number> = { square: 1, landscape: 4 / 3, portrait: 3 / 4, wide: 16 / 9 };
+async function exportCrop(url: string, area: Area, rotation: number, flipX: boolean, flipY: boolean) { const image = new Image(); image.src = url; await new Promise<void>((resolve, reject) => { image.onload = () => resolve(); image.onerror = () => reject(new Error('Image could not be loaded.')); }); const canvas = document.createElement('canvas'); canvas.width = Math.round(area.width); canvas.height = Math.round(area.height); const context = canvas.getContext('2d'); if (!context) throw new Error('Canvas unavailable.'); context.translate(canvas.width / 2, canvas.height / 2); context.rotate((rotation * Math.PI) / 180); context.scale(flipX ? -1 : 1, flipY ? -1 : 1); context.drawImage(image, -area.x - area.width / 2, -area.y - area.height / 2, image.naturalWidth, image.naturalHeight); const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92)); if (!blob) throw new Error('Could not export image.'); return new File([blob], 'edited-product-image.jpg', { type: 'image/jpeg' }); }
+export function ImageEditorDialog({ imageUrl, productName, saving, onClose, onSave }: { imageUrl: string; productName: string; saving?: boolean; onClose: () => void; onSave: (file: File) => void }) {
+  const [sourceUrl, setSourceUrl] = useState(imageUrl); const [ratio, setRatio] = useState<Ratio>('original'); const [aspect, setAspect] = useState<number>(); const [crop, setCrop] = useState({ x: 0, y: 0 }); const [zoom, setZoom] = useState(1); const [rotation, setRotation] = useState(0); const [flipX, setFlipX] = useState(false); const [flipY, setFlipY] = useState(false); const [area, setArea] = useState<Area | null>(null); const [history, setHistory] = useState<Snapshot[]>([]); const [future, setFuture] = useState<Snapshot[]>([]);
+  useEffect(() => { let objectUrl = ''; void fetch(imageUrl).then(response => response.blob()).then(blob => { objectUrl = URL.createObjectURL(blob); setSourceUrl(objectUrl); }).catch(() => setSourceUrl(imageUrl)); return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); }; }, [imageUrl]);
+  const snapshot = (): Snapshot => ({ crop, zoom, rotation, flipX, flipY, area }); const apply = (next: Partial<Snapshot>) => { setHistory(items => [...items.slice(-29), snapshot()]); setFuture([]); if (next.crop) setCrop(next.crop); if (next.zoom !== undefined) setZoom(next.zoom); if (next.rotation !== undefined) setRotation(next.rotation); if (next.flipX !== undefined) setFlipX(next.flipX); if (next.flipY !== undefined) setFlipY(next.flipY); if (next.area !== undefined) setArea(next.area); }; const restore = (item: Snapshot) => { setCrop(item.crop); setZoom(item.zoom); setRotation(item.rotation); setFlipX(item.flipX); setFlipY(item.flipY); setArea(item.area); }; const undo = () => { const item = history.at(-1); if (!item) return; setHistory(items => items.slice(0, -1)); setFuture(items => [...items, snapshot()]); restore(item); }; const redo = () => { const item = future.at(-1); if (!item) return; setFuture(items => items.slice(0, -1)); setHistory(items => [...items, snapshot()]); restore(item); };
+  return <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-auto bg-black/75 p-4"><Card className="my-4 w-full max-w-5xl"><CardHeader className="flex flex-row items-center justify-between"><div><CardTitle>Edit image · {productName}</CardTitle><p className="mt-1 text-sm text-muted-foreground">Pan, crop, focus, rotate, flip, zoom, undo, and redo.</p></div><Button variant="ghost" size="icon" onClick={onClose}><X /></Button></CardHeader><CardContent className="space-y-4"><div className="relative h-[55vh] min-h-80 overflow-hidden rounded-xl bg-neutral-950"><Cropper image={sourceUrl} crop={crop} zoom={zoom} rotation={rotation} aspect={aspect} onCropChange={setCrop} onZoomChange={value => apply({ zoom: value })} onCropComplete={(_, pixels) => setArea(pixels)} transform={`scale(${flipX ? -1 : 1}, ${flipY ? -1 : 1})`} showGrid restrictPosition /></div><div className="flex flex-wrap items-center gap-2"><span className="text-sm font-medium">Crop box</span>{([['original', 'Original'], ['square', '1:1'], ['landscape', '4:3'], ['portrait', '3:4'], ['wide', '16:9']] as const).map(([value, label]) => <Button key={value} size="sm" variant={ratio === value ? 'default' : 'outline'} onClick={() => { setRatio(value); setAspect(value === 'original' ? undefined : ratios[value]); }}>{label}</Button>)}<Button size="sm" variant="outline" disabled={!history.length} onClick={undo}><Undo2 className="mr-1 h-4 w-4" /> Undo</Button><Button size="sm" variant="outline" disabled={!future.length} onClick={redo}><Redo2 className="mr-1 h-4 w-4" /> Redo</Button></div><div className="flex flex-wrap items-center gap-2"><Button size="sm" variant="outline" onClick={() => apply({ rotation: rotation - 90 })}><RotateCcw className="mr-1 h-4 w-4" /> Rotate left</Button><Button size="sm" variant="outline" onClick={() => apply({ rotation: rotation + 90 })}><RotateCw className="mr-1 h-4 w-4" /> Rotate right</Button><Button size="sm" variant="outline" onClick={() => apply({ flipX: !flipX })}><FlipHorizontal className="mr-1 h-4 w-4" /> Flip horizontal</Button><Button size="sm" variant="outline" onClick={() => apply({ flipY: !flipY })}><FlipVertical className="mr-1 h-4 w-4" /> Flip vertical</Button><label className="ml-auto flex items-center gap-2 text-sm">Zoom <input type="range" min="1" max="3" step="0.05" value={zoom} onChange={event => apply({ zoom: Number(event.target.value) })} /></label></div><div className="flex justify-end gap-2"><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={!area || saving} onClick={() => area && void exportCrop(sourceUrl, area, rotation, flipX, flipY).then(onSave)}>{saving ? 'Saving...' : 'Save edited image'}</Button></div></CardContent></Card></div>;
 }
