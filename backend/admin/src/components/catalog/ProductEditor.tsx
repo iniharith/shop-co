@@ -788,7 +788,7 @@ images: resolveImages(current.images),
                     onDragStart={() => setDraggedImage(0)}
                     onDragEnd={() => setDraggedImage(null)}
                     alt={`${product.name || 'Product'} primary image`}
-                    className="aspect-square w-full object-cover"
+                    className="aspect-square w-full object-contain"
                   />
                   <Badge className="absolute left-3 top-3">Primary</Badge>
                   <Button
@@ -818,7 +818,7 @@ images: resolveImages(current.images),
                           src={image}
                           draggable={false}
                           alt={`${product.name || 'Product'} image ${index + 2}`}
-                          className="aspect-square h-full w-full object-cover"
+                          className="aspect-square h-full w-full object-contain"
                         />
                         <GripVertical className="absolute bottom-1 left-1 rounded bg-black/60 p-1 text-white" />
                         <button
