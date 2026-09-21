@@ -30,14 +30,15 @@ const Cta = () => {
     });
   };
   return (
-    <div className="w-full transform translate-y-10 grid place-items-center">
-      <div className="w-[90%] md:w-[70%] rounded-lg bg-black px-4 py-7 grid md:grid-cols-2 ">
-        <div className="flex flex-col justify-center gap-2 md:px-10 px-4">
-          <h1 className="text-white text-3xl ">
+    <section className="grid w-full place-items-center bg-background px-4 py-16 sm:px-8 sm:py-20">
+      <div className="grid w-full max-w-[1480px] overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#101820] px-6 py-9 shadow-[0_28px_80px_-52px_rgba(0,0,0,0.9)] md:grid-cols-2 md:px-12 md:py-12">
+        <div className="flex max-w-lg flex-col justify-center gap-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/55">Kampung Cetak updates</p>
+          <h2 className="text-3xl font-semibold leading-tight text-white sm:text-4xl">
             {t("cta.title")}
-          </h1>
+          </h2>
         </div>
-        <div className="flex md:mt-0 md:px-0 px-4 mt-10 flex-col items-center justify-center gap-2">
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 md:mt-0">
           <Input
             value={email}
             onChange={handleChange}
@@ -67,7 +68,7 @@ const Cta = () => {
           </Button>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

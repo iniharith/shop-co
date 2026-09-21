@@ -77,7 +77,7 @@ export default function FilterSidebar() {
   const displayLabel = (label: string) => locale === "ms" ? malayLabels[label] || label : label;
 
   return (
-    <div className="w-full md:max-w-[300px] p-4 md:border-input border-transparent border md:mt-5 rounded-lg bg-white dark:bg-card shadow-sm">
+    <aside className="store-surface w-full p-5 md:sticky md:top-40 md:max-w-[300px]">
       <div className="flex items-center border-b border-border pb-3 justify-between mb-4">
         <h2 className="text-lg font-bold text-foreground">{t("filters.title")}</h2>
         <button type="button" onClick={resetFilters} className="rounded text-xs font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
@@ -211,6 +211,6 @@ export default function FilterSidebar() {
       >
         {t("filters.apply")}
       </Button>
-    </div>
+    </aside>
   );
 }

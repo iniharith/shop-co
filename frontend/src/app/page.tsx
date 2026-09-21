@@ -14,10 +14,10 @@ import { testimonials } from "@/constants/data";
 import { useProducts } from "@/hooks/useProducts";
 
 const features = [
-  { icon: "🏷️", title: "Best Price Guarantee", desc: "Lowest prices in Malaysia" },
-  { icon: "🚚", title: "Fast Delivery", desc: "48-hour delivery nationwide" },
-  { icon: "🎨", title: "Design Services", desc: "Professional design support" },
-  { icon: "⭐", title: "Top Quality", desc: "Premium materials & printing" },
+  { number: "01", title: "Clear pricing", desc: "Straightforward quotes with no hidden surprises" },
+  { number: "02", title: "Reliable turnaround", desc: "Production timelines you can plan around" },
+  { number: "03", title: "Design support", desc: "Real people ready to check and refine your artwork" },
+  { number: "04", title: "Made to last", desc: "Materials selected for colour, finish and durability" },
 ];
 
 export default function Home() {
@@ -40,20 +40,19 @@ export default function Home() {
   return (
     <>
       <Hero />
-      {/* Features Bar */}
-      <div className="w-full bg-[#101820] text-white py-7 dark:bg-[#0b1116]">
-        <div className="md:w-[80%] w-[90%] mx-auto grid md:grid-cols-4 grid-cols-2 gap-4">
+      <section className="border-b border-border bg-background py-8 sm:py-10" aria-label="Why Kampung Cetak">
+        <div className="mx-auto grid w-full max-w-[1480px] grid-cols-1 gap-0 px-5 sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
           {features.map((f, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <span className="text-2xl">{f.icon}</span>
+            <div key={i} className="flex gap-4 border-b border-border py-5 last:border-b-0 sm:border-r sm:px-6 sm:last:border-r-0 lg:border-b-0">
+              <span className="font-mono text-xs font-semibold text-primary">{f.number}</span>
               <div>
-                <p className="font-bold text-sm">{f.title}</p>
-                <p className="text-gray-400 text-xs">{f.desc}</p>
+                <p className="text-sm font-semibold text-foreground">{f.title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{f.desc}</p>
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </section>
       <ProductSctions
         isLoading={isPending}
         title="Featured Products"

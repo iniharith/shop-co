@@ -50,8 +50,8 @@ const SocialIcon = ({
 export function Footer() {
   const { t } = useLanguage();
   return (
-    <footer className="w-full rounded-t-lg py-12 md:px-[3rem] px-[.5rem] bg-muted text-foreground border-t border-border">
-      <div className="grid mt-5 grid-cols-1 md:grid-cols-12 gap-8">
+    <footer className="w-full border-t border-border bg-[#0d151b] px-5 py-14 text-white sm:px-8 md:py-20">
+      <div className="mx-auto grid w-full max-w-[1480px] grid-cols-1 gap-12 md:grid-cols-12">
         <div className="md:col-span-3 space-y-4">
 
           {/* ── FOOTER LOGO ── */}
@@ -68,7 +68,7 @@ export function Footer() {
             </h2>
           </Link>
 
-          <p className="text-sm text-muted-foreground">
+          <p className="max-w-sm text-sm leading-relaxed text-white/55">
             {t("footer.description")}
           </p>
           <div className="flex space-x-2">
@@ -129,8 +129,8 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row justify-between items-center mt-12 pt-8 border-t">
-        <p className="text-xs text-muted-foreground mb-4 md:mb-0">
+      <div className="mx-auto mt-12 flex w-full max-w-[1480px] flex-col items-center justify-between border-t border-white/10 pt-8 md:flex-row">
+        <p className="mb-4 text-xs text-white/45 md:mb-0">
           Kampung Cetak © 2026, {t("footer.rights")}
         </p>
         <div className="flex items-center space-x-4">

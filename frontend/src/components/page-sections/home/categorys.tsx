@@ -23,19 +23,20 @@ const Categorys = () => {
   const router = useRouter();
 
   return (
-    <div className="w-full py-16 grid place-items-center bg-[#f5f1e8] dark:bg-[#17232b] border-y border-[#d8d0c2] dark:border-border">
-      <div className="md:w-[80%] w-[90%]">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold dark:text-foreground">Explore Our Products</h1>
-          <p className="text-gray-500 dark:text-muted-foreground mt-2">Discover a wide range of premium printing services delivered across Malaysia</p>
+    <section className="grid w-full place-items-center border-y border-border bg-muted/35 py-16 sm:py-24">
+      <div className="w-[calc(100%-2rem)] max-w-[1480px] sm:w-[calc(100%-4rem)]">
+        <div className="mb-10 max-w-2xl sm:mb-14">
+          <p className="store-eyebrow mb-3">What we make</p>
+          <h2 className="store-page-title text-3xl font-semibold sm:text-5xl">Explore our print services</h2>
+          <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">From everyday business essentials to custom pieces made for a single moment.</p>
         </div>
-        <div className="grid md:grid-cols-4 sm:grid-cols-2 grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {printingCategories.map((category, index) => {
             const img = bannerImages[category.label];
             return (
               <div
                 key={index}
-                className="relative group cursor-pointer hover:scale-[1.02] transition-all duration-300 rounded-xl overflow-hidden aspect-[16/9] hover:shadow-xl"
+                className="group relative aspect-[4/3] cursor-pointer overflow-hidden rounded-[1.15rem] border border-white/10 bg-neutral-900 shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-xl"
                 onClick={() => router.push(category.href)}
               >
                 {img && (
@@ -49,7 +50,7 @@ const Categorys = () => {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col gap-1">
-                  <h2 className="font-bold text-sm text-white drop-shadow-md">{category.label}</h2>
+                  <h3 className="text-base font-semibold text-white drop-shadow-md">{category.label}</h3>
                   <p className="text-white/70 text-xs leading-relaxed">
                     {category.subItems?.slice(0, 3).map((s, i) => (
                       <span key={i}>
@@ -70,7 +71,7 @@ const Categorys = () => {
           })}
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

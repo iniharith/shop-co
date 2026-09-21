@@ -14,10 +14,10 @@ interface ProductSctionsProps {
 
 const ProductSctions = ({ title, products, isLoading }: ProductSctionsProps) => {
   return (
-    <section id={title === "Featured Products" ? "featured-section" : undefined} className={`w-full flex flex-col items-center gap-6 py-12 px-4 sm:px-6 ${title === "Featured Products" ? "bg-[#101820] dark:bg-[#0b1116]" : "bg-background"}`}>
+    <section id={title === "Featured Products" ? "featured-section" : undefined} className="flex w-full flex-col items-center gap-8 border-b border-border bg-background px-4 py-16 sm:px-8 sm:py-24">
       <div className="flex w-full max-w-[1480px] items-end justify-between gap-4 px-1">
-        <h1 className={`text-3xl text-left font-bold tracking-tight sm:text-4xl ${title === "Featured Products" ? "text-white" : "text-foreground"}`}>{title}</h1>
-        <span className={`hidden text-xs font-semibold uppercase tracking-[0.18em] sm:inline ${title === "Featured Products" ? "text-white/60" : "text-muted-foreground"}`}>Curated selection</span>
+        <div><p className="store-eyebrow mb-3">Selected for you</p><h2 className="store-page-title text-left text-3xl font-semibold sm:text-5xl">{title}</h2></div>
+        <span className="hidden text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground sm:inline">Curated selection</span>
       </div>
       <ProductCarousel products={products} isLoading={isLoading} />
     </section>

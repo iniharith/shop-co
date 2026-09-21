@@ -65,17 +65,17 @@ const ShopContent = () => {
   return (
     <div
     
-      className="mx-auto w-full max-w-[1480px] px-4 py-5 sm:px-6 xl:px-8"
+      className="mx-auto w-full max-w-[1480px] px-4 py-8 sm:px-6 sm:py-12 xl:px-8"
     >
       <Breadcrumbs />
-      <div className="mt-5 grid w-full grid-cols-1 gap-6 md:mt-0 md:grid-cols-4">
+      <div className="mt-6 grid w-full grid-cols-1 gap-8 md:grid-cols-4">
         <div className="col-span-1 md:block hidden">
           <FilterSidebar />
         </div>
         <div className="md:col-span-3 flex flex-col gap-5 col-span-4">
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="font-sans text-2xl font-semibold">{t("shop.title")}</h1>
+              <p className="store-eyebrow mb-2">Browse the collection</p><h1 className="store-page-title font-sans text-3xl font-semibold sm:text-5xl">{t("shop.title")}</h1>
               <p className="text-sm text-muted-foreground">
                 {products?.length || 0}&nbsp;{t("shop.productsFound")}
               </p>
@@ -125,7 +125,7 @@ const ShopContent = () => {
             variants={container_variants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4"
+            className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 sm:gap-5 lg:grid-cols-3"
           >
             {!isPending &&
               paginatedProducts.length > 0 &&
