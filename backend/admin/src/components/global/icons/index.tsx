@@ -50,6 +50,7 @@ import {
   Shirt,
   Gauge,
   CalendarDays,
+  LayoutTemplate,
 } from "lucide-react";
 
 import { FaCartShopping } from "react-icons/fa6";
@@ -112,6 +113,7 @@ export const Icons = {
   supplier: Truck,
   form: FaWpforms,
   object: MdDataObject,
+  template: LayoutTemplate,
   data: FaDatabase,
   deliveryBoy: MdDeliveryDining,
   box: LuBox,

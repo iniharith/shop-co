@@ -44,7 +44,7 @@ export const AdminNavItems: NavItem[] = [
     {
         title: 'Template Studio',
         url: '/admin/template-studio',
-        icon: 'object',
+        icon: 'template',
         shortcut: ['t', 's'],
         isActive: false,
     },
