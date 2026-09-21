@@ -22,8 +22,8 @@ const PaymentsPage = () => {
     { name: "Bank Rakyat", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Logo_Bank_Rakyat.svg/1200px-Logo_Bank_Rakyat.svg.png" },
     { name: "Affin Bank", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Affin_Bank_logo.svg/1200px-Affin_Bank_logo.svg.png" },
     { name: "BSN", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Bank_Simpanan_Nasional_Logo.svg/1200px-Bank_Simpanan_Nasional_Logo.svg.png" },
-    { name: "UOB", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/United_Overseas_Bank_logo.svg/1200px-United_Overseas_Bank_logo.svg.png" },
-    { name: "Standard Chartered", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Standard_Chartered_Logo_2021.svg/1200px-Standard_Chartered_Logo_2021.svg.png" }
+    { name: "Bank Muamalat", src: "https://www.muamalat.com.my/wp-content/uploads/2023/09/logo-bank-muamalat.png" },
+    { name: "Agrobank", src: "https://www.agrobank.com.my/wp-content/themes/agrobank/images/logo.png" }
   ];
 
   return (
@@ -51,25 +51,24 @@ const PaymentsPage = () => {
 
             <div className="flex min-h-56 flex-col items-center justify-center space-y-4 p-8">
               <span className="font-mono text-xs text-[#9a7300] dark:text-[#f4b400]">01</span>
-              <h2 className="mb-4 text-xl font-semibold">{isMalay ? "Kad Kredit / Debit" : "Credit / Debit Cards"}</h2>
+              <h2 className="mb-4 text-xl font-semibold">MyDebit</h2>
               <div className="flex gap-6">
-                <img src="https://cdn-icons-png.flaticon.com/128/349/349221.png" alt="Visa" className="h-16 w-auto object-contain" />
-                <img src="https://cdn-icons-png.flaticon.com/128/196/196578.png" alt="Mastercard" className="h-16 w-auto object-contain" />
+                <img src="https://www.mepsfpx.com.my/FPXMain/images/mydebit-logo.png" alt="MyDebit Malaysia" className="h-16 w-auto object-contain" />
               </div>
             </div>
 
             <div className="flex min-h-56 flex-col items-center justify-center space-y-4 border-t border-[#e5ddcd] p-8 md:border-l md:border-t-0 dark:border-white/10">
               <span className="font-mono text-xs text-[#9a7300] dark:text-[#f4b400]">02</span>
-              <h2 className="mb-4 text-xl font-semibold">{isMalay ? "Perbankan Dalam Talian" : "Online Banking"}</h2>
+              <h2 className="mb-4 text-xl font-semibold">FPX Online Banking</h2>
               <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/FPX_logo.svg/1200px-FPX_logo.svg.png" alt="FPX" className="h-16 w-auto object-contain" />
             </div>
 
             <div className="flex min-h-56 flex-col items-center justify-center space-y-4 border-t border-[#e5ddcd] p-8 md:border-l md:border-t-0 dark:border-white/10">
               <span className="font-mono text-xs text-[#9a7300] dark:text-[#f4b400]">03</span>
-              <h2 className="mb-4 text-xl font-semibold">{isMalay ? "E-Dompet" : "E-Wallets"}</h2>
+              <h2 className="mb-4 text-xl font-semibold">DuitNow &amp; {isMalay ? "E-Dompet" : "E-Wallets"}</h2>
               <div className="flex gap-4">
+                  <img src="https://www.duitnow.my/images/duitnow-logo.svg" alt="DuitNow" className="h-12 w-auto object-contain" />
                   <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Touch_%27n_Go_eWallet_logo.svg/1200px-Touch_%27n_Go_eWallet_logo.svg.png" alt="TNG" className="h-12 w-auto object-contain" />
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Grab_Logo.svg/1200px-Grab_Logo.svg.png" alt="GrabPay" className="h-12 w-auto object-contain" />
               </div>
             </div>
 

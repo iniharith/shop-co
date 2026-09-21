@@ -182,7 +182,7 @@ export default function EasyParcelShipmentDialog({ order, open, onOpenChange }: 
                     return (
                       <button key={serviceId} type="button" onClick={() => setSelectedServiceId(serviceId)} className={`rounded-xl border p-4 text-left transition ${selected ? "border-primary bg-primary/10 ring-1 ring-primary" : "hover:border-primary/40"}`}>
                         <div className="flex items-start justify-between gap-3">
-                          <div><p className="font-semibold">{quotation.courier.courier_name || "Courier"}</p><p className="mt-1 text-xs text-muted-foreground">{quotation.courier.service_name || serviceId}</p></div>
+                          <div className="flex items-center gap-3">{quotation.courier.courier_logo ? <img src={quotation.courier.courier_logo} alt="" className="h-9 w-14 rounded-md border bg-white object-contain p-1" /> : <div className="flex h-9 w-14 items-center justify-center rounded-md border bg-muted"><Truck className="h-4 w-4" /></div>}<div><p className="font-semibold">{quotation.courier.courier_name || "Courier"}</p><p className="mt-1 text-xs text-muted-foreground">{quotation.courier.service_name || serviceId}</p></div></div>
                           <p className="font-bold">{quotation.pricing.currency || "MYR"} {quotation.pricing.total_amount || quotation.pricing.shipment_price || "-"}</p>
                         </div>
                         <p className="mt-3 text-xs text-muted-foreground">{quotation.courier.delivery_duration || "Delivery estimate unavailable"}</p>

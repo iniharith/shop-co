@@ -387,10 +387,10 @@ export const ManualOrderModal: React.FC<ManualOrderModalProps> = ({ open, onOpen
                 <SelectItem value="PosLaju">PosLaju</SelectItem>
                 <SelectItem value="Ninja Van">Ninja Van</SelectItem>
                 <SelectItem value="GDEX">GDEX</SelectItem>
-                <SelectItem value="FedEx">FedEx</SelectItem>
-                <SelectItem value="DHL">DHL</SelectItem>
                 <SelectItem value="City-Link Express">City-Link Express</SelectItem>
                 <SelectItem value="Flash Express">Flash Express</SelectItem>
+                <SelectItem value="Skynet Malaysia">Skynet Malaysia</SelectItem>
+                <SelectItem value="KEX Express">KEX Express</SelectItem>
                 <SelectItem value="Shopee Express">Shopee Express</SelectItem>
                 <SelectItem value="Others">Others</SelectItem>
               </SelectContent>

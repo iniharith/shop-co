@@ -35,11 +35,11 @@ const DeliveryPage = () => {
     { name: "J&T Express", src: "https://www.jtexpress.my/assets/img/logo.png" },
     { name: "Pos Laju", src: "https://www.pos.com.my/media/wysiwyg/pos-logo.png" },
     { name: "Ninja Van", src: "https://www.ninjavan.co/wp-content/uploads/sites/4/2021/04/ninjavan-logo-dark.png" },
-    { name: "DHL eCommerce", src: "https://www.dhl.com/content/dam/dhl/global/core/images/logos/dhl-logo.svg" },
     { name: "City-Link Express", src: "https://www.citylinkexpress.com/wp-content/uploads/2020/06/citylink-logo-dark.png" },
     { name: "GDEX", src: "https://www.gdexpress.com/malaysia/wp-content/uploads/2019/12/logo-gdex.png" },
     { name: "Lalamove", src: "https://www.lalamove.com/hubfs/Lalamove%20Website%202020/logo/Lalamove_Logo_Color.svg" },
-    { name: "GrabExpress", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Grab_Logo.svg/512px-Grab_Logo.svg.png" }
+    { name: "Skynet Malaysia", src: "https://www.skynet.com.my/images/logo.png" },
+    { name: "Flash Express Malaysia", src: "https://www.flashexpress.my/fle/images/logo2.png" }
   ];
 
   return (
@@ -69,27 +69,15 @@ const DeliveryPage = () => {
           {partners.map((partner) => (
             <div key={partner.name} className="group flex h-32 w-full items-center justify-center rounded-2xl border border-[#ded5c2] bg-white p-6 shadow-[0_10px_35px_-30px_rgba(16,24,32,0.5)] transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-[#f4b400]/60 hover:shadow-[0_22px_48px_-30px_rgba(16,24,32,0.55)] sm:h-40 sm:p-8">
               {/* Note: We use standard img tags here because some external logos might not be configured in next.config.js */}
-              {partner.name === "GrabExpress" ? (
-                <div className="flex flex-col items-center justify-center">
-                  <img
-                    src={partner.src}
-                    alt={partner.name}
-                    className="max-h-16 max-w-full object-contain mb-2"
-                  />
-                  <span className="text-lg font-semibold text-[#101820]">Express</span>
-                </div>
-              ) : (
-                <img
-                  src={partner.src}
-                  alt={partner.name}
-                  className="max-h-20 max-w-full object-contain"
-                  onError={(e) => {
-                    // Fallback to text if logo fails to load
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                  }}
-                />
-              )}
+              <img
+                src={partner.src}
+                alt={partner.name}
+                className="max-h-20 max-w-full object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
               <span className="hidden text-center text-base font-semibold text-[#101820] sm:text-xl">{partner.name}</span>
             </div>
           ))}
