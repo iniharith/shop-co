@@ -32,14 +32,14 @@ const DeliveryPage = () => {
     ],
   };
   const partners = [
-    { name: "J&T Express", src: "https://www.jtexpress.my/assets/img/logo.png" },
-    { name: "Pos Laju", src: "https://www.pos.com.my/media/wysiwyg/pos-logo.png" },
-    { name: "Ninja Van", src: "https://www.ninjavan.co/wp-content/uploads/sites/4/2021/04/ninjavan-logo-dark.png" },
-    { name: "City-Link Express", src: "https://www.citylinkexpress.com/wp-content/uploads/2020/06/citylink-logo-dark.png" },
-    { name: "GDEX", src: "https://www.gdexpress.com/malaysia/wp-content/uploads/2019/12/logo-gdex.png" },
-    { name: "Lalamove", src: "https://www.lalamove.com/hubfs/Lalamove%20Website%202020/logo/Lalamove_Logo_Color.svg" },
-    { name: "Skynet Malaysia", src: "https://www.skynet.com.my/images/logo.png" },
-    { name: "Flash Express Malaysia", src: "https://www.flashexpress.my/fle/images/logo2.png" }
+    { name: "J&T Express", mark: "J&T", color: "#d71920", detail: "Nationwide parcel delivery" },
+    { name: "Pos Laju", mark: "POS", color: "#e11d2e", detail: "Malaysia's national courier" },
+    { name: "Ninja Van", mark: "NINJA", color: "#ed1c24", detail: "Door-to-door delivery" },
+    { name: "City-Link Express", mark: "CITY-LINK", color: "#ef7c00", detail: "Domestic express courier" },
+    { name: "GDEX", mark: "GDEX", color: "#e31837", detail: "Express delivery network" },
+    { name: "Lalamove", mark: "LALAMOVE", color: "#ff671d", detail: "On-demand local delivery" },
+    { name: "Skynet Malaysia", mark: "SKYNET", color: "#1d4f91", detail: "Nationwide courier service" },
+    { name: "Flash Express Malaysia", mark: "FLASH", color: "#f5b400", detail: "Fast parcel delivery" }
   ];
 
   return (
@@ -67,18 +67,10 @@ const DeliveryPage = () => {
         </div>
         <div className="grid grid-cols-2 items-center justify-items-center gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
           {partners.map((partner) => (
-            <div key={partner.name} className="group flex h-32 w-full items-center justify-center rounded-2xl border border-[#ded5c2] bg-white p-6 shadow-[0_10px_35px_-30px_rgba(16,24,32,0.5)] transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-[#f4b400]/60 hover:shadow-[0_22px_48px_-30px_rgba(16,24,32,0.55)] sm:h-40 sm:p-8">
-              {/* Note: We use standard img tags here because some external logos might not be configured in next.config.js */}
-              <img
-                src={partner.src}
-                alt={partner.name}
-                className="max-h-20 max-w-full object-contain"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-              <span className="hidden text-center text-base font-semibold text-[#101820] sm:text-xl">{partner.name}</span>
+            <div key={partner.name} className="group flex min-h-40 w-full flex-col items-center justify-center rounded-2xl border border-[#ded5c2] bg-white p-5 text-center shadow-[0_10px_35px_-30px_rgba(16,24,32,0.5)] transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-[#f4b400]/60 hover:shadow-[0_22px_48px_-30px_rgba(16,24,32,0.55)] sm:min-h-48 sm:p-7">
+              <div className="mb-4 flex h-12 min-w-20 items-center justify-center rounded-xl px-4 text-lg font-black tracking-[-0.04em] text-white shadow-sm" style={{ backgroundColor: partner.color }}>{partner.mark}</div>
+              <h3 className="text-base font-semibold text-[#101820] sm:text-lg">{partner.name}</h3>
+              <p className="mt-1 text-xs text-[#687078] sm:text-sm">{partner.detail}</p>
             </div>
           ))}
         </div>

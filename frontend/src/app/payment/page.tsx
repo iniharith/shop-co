@@ -12,18 +12,18 @@ const PaymentsPage = () => {
   const { locale } = useLanguage();
   const isMalay = locale === "ms";
   const banks = [
-    { name: "Maybank2u", src: "https://www.maybank2u.com.my/maybank2u/malaysia/en/personal/images/m2u-logo.png" },
-    { name: "CIMB Clicks", src: "https://www.cimbclicks.com.my/content/dam/cimbclicks/cimb-clicks-logo.svg" },
-    { name: "Public Bank", src: "https://www.pbebank.com/images/layout/logo.png" },
-    { name: "RHB Now", src: "https://logodix.com/logo/2034020.png" },
-    { name: "Hong Leong Connect", src: "https://s3-ap-southeast-1.amazonaws.com/s3.kinihalal.com/hlb_logo_400x400.png" },
-    { name: "AmOnline", src: "https://www.ambank.com.my/Style%20Library/AmBank%202018/images/ambank-logo.png" },
-    { name: "Bank Islam", src: "https://upload.wikimedia.org/wikipedia/en/thumb/0/05/Bank_Islam_Malaysia_logo.svg/1200px-Bank_Islam_Malaysia_logo.svg.png" },
-    { name: "Bank Rakyat", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Logo_Bank_Rakyat.svg/1200px-Logo_Bank_Rakyat.svg.png" },
-    { name: "Affin Bank", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Affin_Bank_logo.svg/1200px-Affin_Bank_logo.svg.png" },
-    { name: "BSN", src: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Bank_Simpanan_Nasional_Logo.svg/1200px-Bank_Simpanan_Nasional_Logo.svg.png" },
-    { name: "Bank Muamalat", src: "https://www.muamalat.com.my/wp-content/uploads/2023/09/logo-bank-muamalat.png" },
-    { name: "Agrobank", src: "https://www.agrobank.com.my/wp-content/themes/agrobank/images/logo.png" }
+    { name: "Maybank", mark: "MAYBANK", color: "#ffcc00", ink: "#111827", detail: "Maybank2u" },
+    { name: "CIMB Bank", mark: "CIMB", color: "#d71920", ink: "#ffffff", detail: "CIMB Clicks" },
+    { name: "Public Bank", mark: "PBE", color: "#d71920", ink: "#ffffff", detail: "PBe Online Banking" },
+    { name: "RHB Bank", mark: "RHB", color: "#005baa", ink: "#ffffff", detail: "RHB Online Banking" },
+    { name: "Hong Leong Bank", mark: "HLB", color: "#0067b1", ink: "#ffffff", detail: "HLB Connect" },
+    { name: "AmBank", mark: "AMBANK", color: "#e31837", ink: "#ffffff", detail: "AmOnline" },
+    { name: "Bank Islam", mark: "BANK ISLAM", color: "#7b1e3a", ink: "#ffffff", detail: "BIMB Web" },
+    { name: "Bank Rakyat", mark: "BANK RAKYAT", color: "#0071bc", ink: "#ffffff", detail: "iRakyat" },
+    { name: "Affin Bank", mark: "AFFIN", color: "#00529b", ink: "#ffffff", detail: "AffinAlways" },
+    { name: "BSN", mark: "BSN", color: "#0072bc", ink: "#ffffff", detail: "myBSN" },
+    { name: "Bank Muamalat", mark: "MUAMALAT", color: "#642d91", ink: "#ffffff", detail: "i-Muamalat" },
+    { name: "Agrobank", mark: "AGROBANK", color: "#008c45", ink: "#ffffff", detail: "AgroNet" }
   ];
 
   return (
@@ -52,24 +52,19 @@ const PaymentsPage = () => {
             <div className="flex min-h-56 flex-col items-center justify-center space-y-4 p-8">
               <span className="font-mono text-xs text-[#9a7300] dark:text-[#f4b400]">01</span>
               <h2 className="mb-4 text-xl font-semibold">MyDebit</h2>
-              <div className="flex gap-6">
-                <img src="https://www.mepsfpx.com.my/FPXMain/images/mydebit-logo.png" alt="MyDebit Malaysia" className="h-16 w-auto object-contain" />
-              </div>
+              <div className="rounded-xl bg-[#ef3123] px-5 py-3 text-lg font-black tracking-tight text-white">MyDebit</div>
             </div>
 
             <div className="flex min-h-56 flex-col items-center justify-center space-y-4 border-t border-[#e5ddcd] p-8 md:border-l md:border-t-0 dark:border-white/10">
               <span className="font-mono text-xs text-[#9a7300] dark:text-[#f4b400]">02</span>
               <h2 className="mb-4 text-xl font-semibold">FPX Online Banking</h2>
-              <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/FPX_logo.svg/1200px-FPX_logo.svg.png" alt="FPX" className="h-16 w-auto object-contain" />
+              <div className="rounded-xl bg-[#174b8c] px-6 py-3 text-xl font-black tracking-tight text-white">FPX</div>
             </div>
 
             <div className="flex min-h-56 flex-col items-center justify-center space-y-4 border-t border-[#e5ddcd] p-8 md:border-l md:border-t-0 dark:border-white/10">
               <span className="font-mono text-xs text-[#9a7300] dark:text-[#f4b400]">03</span>
               <h2 className="mb-4 text-xl font-semibold">DuitNow &amp; {isMalay ? "E-Dompet" : "E-Wallets"}</h2>
-              <div className="flex gap-4">
-                  <img src="https://www.duitnow.my/images/duitnow-logo.svg" alt="DuitNow" className="h-12 w-auto object-contain" />
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Touch_%27n_Go_eWallet_logo.svg/1200px-Touch_%27n_Go_eWallet_logo.svg.png" alt="TNG" className="h-12 w-auto object-contain" />
-              </div>
+              <div className="flex flex-wrap justify-center gap-3"><div className="rounded-xl bg-[#e6007e] px-4 py-3 text-base font-black text-white">DuitNow</div><div className="rounded-xl bg-[#1769aa] px-4 py-3 text-base font-black text-white">TNG eWallet</div></div>
             </div>
 
           </div>
@@ -83,17 +78,10 @@ const PaymentsPage = () => {
 
         <div className="grid grid-cols-2 items-center justify-items-center gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
           {banks.map((bank) => (
-            <div key={bank.name} className="flex h-32 w-full flex-col items-center justify-center rounded-2xl border border-[#ded5c2] bg-white p-6 shadow-[0_10px_35px_-30px_rgba(16,24,32,0.5)] transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-[#f4b400]/60 hover:shadow-[0_22px_48px_-30px_rgba(16,24,32,0.55)] sm:h-36">
-              <img
-                src={bank.src}
-                alt={bank.name}
-                className="max-h-12 max-w-full object-contain mb-4"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-              <span className="hidden font-semibold text-gray-800 text-center">{bank.name}</span>
+            <div key={bank.name} className="flex min-h-40 w-full flex-col items-center justify-center rounded-2xl border border-[#ded5c2] bg-white p-5 text-center shadow-[0_10px_35px_-30px_rgba(16,24,32,0.5)] transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-[#f4b400]/60 hover:shadow-[0_22px_48px_-30px_rgba(16,24,32,0.55)] sm:min-h-44">
+              <div className="mb-4 flex h-11 min-w-20 items-center justify-center rounded-xl px-4 text-sm font-black tracking-[-0.03em] shadow-sm" style={{ backgroundColor: bank.color, color: bank.ink }}>{bank.mark}</div>
+              <h3 className="font-semibold text-[#101820]">{bank.name}</h3>
+              <p className="mt-1 text-xs text-[#687078]">{bank.detail}</p>
             </div>
           ))}
         </div>
