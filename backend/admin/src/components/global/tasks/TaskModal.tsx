@@ -309,6 +309,17 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { mutateAsync: createShareLink, isPending: isGeneratingLink } = useCreateShareLink();
   const router = useRouter();
 
+  const copyTaskLink = React.useCallback(async () => {
+    try {
+      const taskUrl = new URL('/admin/tasks', window.location.origin);
+      taskUrl.searchParams.set('taskId', String(task._id));
+      await navigator.clipboard.writeText(taskUrl.toString());
+      toast.success("Task link copied");
+    } catch {
+      toast.error("Unable to copy task link");
+    }
+  }, [task._id]);
+
   // Full task from single-task API (includes activities and comments),
   // falls back to the prop task from the list (which excludes activities).
   const fullTask = (fullTaskData as any)?.task || task;
@@ -515,6 +526,25 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const typingKeepAliveRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
   const descriptionPendingSaveRef = React.useRef(false);
   const pendingDescriptionHtmlRef = React.useRef<string>("");
+  const descriptionHistoryRef = React.useRef<string[]>([task.description || ""]);
+  const descriptionHistoryIndexRef = React.useRef(0);
+
+  const resetDescriptionHistory = React.useCallback((html: string) => {
+    descriptionHistoryRef.current = [html];
+    descriptionHistoryIndexRef.current = 0;
+  }, []);
+
+  const recordDescriptionHistory = React.useCallback((html: string) => {
+    const history = descriptionHistoryRef.current;
+    const index = descriptionHistoryIndexRef.current;
+    if (history[index] === html) return;
+
+    const nextHistory = [...history.slice(0, index + 1), html];
+    // Keep enough granular edits for normal writing sessions without allowing
+    // an indefinitely-open modal to retain unbounded description snapshots.
+    descriptionHistoryRef.current = nextHistory.slice(-150);
+    descriptionHistoryIndexRef.current = descriptionHistoryRef.current.length - 1;
+  }, []);
 
   const emitTyping = React.useCallback((text: string, stopped?: boolean) => {
     const socket = session ? getSocket(session) : null;
@@ -552,7 +582,8 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   };
 
   // Throttled live-typing broadcast while the description is being edited.
-  const handleDescriptionInput = React.useCallback((html: string) => {
+  const handleDescriptionInput = React.useCallback((html: string, recordHistory = true) => {
+    if (recordHistory) recordDescriptionHistory(html);
     setDescription(html);
     const now = Date.now();
     const emit = () => {
@@ -566,7 +597,38 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       typingTimerRef.current = setTimeout(emit, 150);
     }
     ensureTypingKeepAlive();
-  }, [emitTyping]);
+  }, [emitTyping, recordDescriptionHistory]);
+
+  const handleDescriptionHistoryShortcut = React.useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    const modifierPressed = event.ctrlKey || event.metaKey;
+    if (!modifierPressed || event.key.toLowerCase() !== 'z') return;
+
+    const history = descriptionHistoryRef.current;
+    const currentIndex = descriptionHistoryIndexRef.current;
+    const nextIndex = event.shiftKey
+      ? Math.min(currentIndex + 1, history.length - 1)
+      : Math.max(currentIndex - 1, 0);
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (nextIndex === currentIndex) return;
+
+    const nextHtml = history[nextIndex];
+    descriptionHistoryIndexRef.current = nextIndex;
+    if (descriptionRef.current) {
+      descriptionRef.current.innerHTML = nextHtml;
+
+      // Put the caret back inside the editor after applying a history state so
+      // the user can immediately continue typing.
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(descriptionRef.current);
+      range.collapse(false);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+    handleDescriptionInput(nextHtml, false);
+  }, [handleDescriptionInput]);
 
   const handleDescriptionPaste = React.useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -635,8 +697,9 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       const html = fullTask.description || "";
       setDescription(html);
       if (descriptionRef.current) descriptionRef.current.innerHTML = html;
+      resetDescriptionHistory(html);
     }
-  }, [fullTask.description]);
+  }, [fullTask.description, resetDescriptionHistory]);
 
   React.useEffect(() => {
     if (editingFieldRef.current !== 'dueDate') {
@@ -1363,6 +1426,9 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <span className="w-1.5 h-4 bg-primary rounded-full"></span> Description
+                  <span className="ml-auto text-[10px] text-muted-foreground/70">
+                    Ctrl+Z undo · Ctrl+Shift+Z redo
+                  </span>
                   {typingInfo && String(typingInfo.userId) !== String(myUserId) && (
                     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary/80">
                       <span className="relative flex h-2 w-2">
@@ -1392,6 +1458,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
                   onInput={(e) => {
                     handleDescriptionInput((e.currentTarget as HTMLDivElement).innerHTML);
                   }}
+                  onKeyDown={handleDescriptionHistoryShortcut}
                   onPaste={handleDescriptionPaste}
                   onBlur={(e) => {
                     editingFieldRef.current = null;
@@ -2116,9 +2183,9 @@ return (
             <div className="pt-6 mt-auto border-t border-border/50 space-y-3">
               <button
                 type="button"
-                onClick={() => { navigator.clipboard.writeText(task._id); toast.success("Task ID copied"); }}
+                onClick={copyTaskLink}
                 className="w-full text-center text-[10px] font-mono text-muted-foreground/60 hover:text-muted-foreground transition-colors cursor-pointer truncate select-all"
-                title="Click to copy Task ID"
+                title="Click to copy full task link"
               >
                 {task._id}
               </button>
