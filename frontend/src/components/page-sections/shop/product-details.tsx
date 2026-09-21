@@ -44,7 +44,8 @@ export function ProductDetails({
   const { mutate, isPending } = useAddtoCart();
 
   const [quantity, setQuantity] = useState(1);
-  const supportsCanvas = /photo|canvas|frame|acrylic|clock/i.test(`${product.name} ${product.category}`);
+  const isPortraitProduct = String(id || "").toLowerCase() === "portrait" || String(product.slug || "").toLowerCase() === "portrait";
+  const supportsCanvas = isPortraitProduct || /photo|canvas|frame|acrylic|clock/i.test(`${product.name} ${product.category}`);
   const [canvasDesign, setCanvasDesign] = useState<{ url: string; templateName: string; size: string; productId?: string } | null>(null);
   const [useCanvas, setUseCanvas] = useState(false);
   useEffect(() => {
@@ -234,7 +235,7 @@ const stockBySize = product.sizes || [];
     : stockBySize.reduce((total, size) => total + Number(size.stock || 0), 0);
   const standardStock = stockBySize.find(size => size.size.toLowerCase() === "standard")?.stock;
   const hasImageVariations = product.category?.toLowerCase() === "islamic khat" && product.images.length > 1;
-  const hasSizeVariations = !hasDesignVariations && stockBySize.length > 1 && product.category?.toLowerCase() !== "islamic khat";
+  const hasSizeVariations = !isPortraitProduct && !hasDesignVariations && stockBySize.length > 1 && product.category?.toLowerCase() !== "islamic khat";
   const activeSize = stockBySize.find(size => size.size === selectedSize);
   const activeVariation = selectedVariationIndex !== null && selectedVariationIndex != null ? designVariations[selectedVariationIndex] : undefined;
   const maxQuantity = hasDesignVariations
@@ -405,8 +406,8 @@ const variationStepNum = (hasImageVariations || hasDesignVariations) ? currentSt
       {supportsCanvas && <section className="m-4 overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/[0.1] via-card to-card p-4 shadow-sm sm:p-5">
         <div className="flex items-start gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground"><Palette className="size-4" /></span><div><p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">Design options</p><h2 className="mt-0.5 text-lg font-bold tracking-tight">How would you like to design?</h2><p className="mt-1 text-sm text-muted-foreground">Choose the easiest option for you. You can change this later.</p></div></div>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <Link href={`/diy?product=${encodeURIComponent(product._id)}`} className="group relative rounded-xl border-2 border-primary bg-primary/[0.08] p-4 transition hover:-translate-y-0.5 hover:bg-primary/[0.14]">
-            <span className="absolute right-3 top-3 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">Recommended</span><Palette className="mb-3 size-5 text-primary" /><span className="block text-sm font-bold text-foreground">DIY Yourself</span><span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Insert your photos into our templates</span>
+          <Link href={`/diy?product=${encodeURIComponent(product._id)}${isPortraitProduct ? "&mode=frame&source=portrait" : ""}`} className="group relative rounded-xl border-2 border-primary bg-primary/[0.08] p-4 transition hover:-translate-y-0.5 hover:bg-primary/[0.14]">
+            <span className="absolute right-3 top-3 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">Recommended</span><Palette className="mb-3 size-5 text-primary" /><span className="block text-sm font-bold text-foreground">{isPortraitProduct ? "Open DIY Frame" : "DIY Yourself"}</span><span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{isPortraitProduct ? "Choose a frame template and add your portrait" : "Insert your photos into our templates"}</span>
           </Link>
           <a href="https://wa.me/601116141946?text=Hi%20Kampung%20Cetak%2C%20I%20need%20help%20with%20my%20design." target="_blank" rel="noopener noreferrer" className="group rounded-xl border border-border bg-background/70 p-4 transition hover:-translate-y-0.5 hover:border-primary hover:bg-primary/[0.06]"><MessageCircle className="mb-3 size-5 text-primary" /><span className="block text-sm font-bold text-foreground">Kampung Cetak Design</span><span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Our admin will prepare it for you via WhatsApp</span></a>
           <Link href="/home/profile/upload" className="group rounded-xl border border-border bg-background/70 p-4 transition hover:-translate-y-0.5 hover:border-primary hover:bg-primary/[0.06]"><Upload className="mb-3 size-5 text-primary" /><span className="block text-sm font-bold text-foreground">I have my own design</span><span className="mt-1 block text-xs leading-relaxed text-muted-foreground">Upload a finished JPG, PNG or PDF</span></Link>
