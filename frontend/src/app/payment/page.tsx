@@ -12,18 +12,10 @@ const PaymentsPage = () => {
   const { locale } = useLanguage();
   const isMalay = locale === "ms";
   const banks = [
-    { name: "Maybank", mark: "MAYBANK", color: "#ffcc00", ink: "#111827", detail: "Maybank2u" },
-    { name: "CIMB Bank", mark: "CIMB", color: "#d71920", ink: "#ffffff", detail: "CIMB Clicks" },
-    { name: "Public Bank", mark: "PBE", color: "#d71920", ink: "#ffffff", detail: "PBe Online Banking" },
-    { name: "RHB Bank", mark: "RHB", color: "#005baa", ink: "#ffffff", detail: "RHB Online Banking" },
-    { name: "Hong Leong Bank", mark: "HLB", color: "#0067b1", ink: "#ffffff", detail: "HLB Connect" },
-    { name: "AmBank", mark: "AMBANK", color: "#e31837", ink: "#ffffff", detail: "AmOnline" },
-    { name: "Bank Islam", mark: "BANK ISLAM", color: "#7b1e3a", ink: "#ffffff", detail: "BIMB Web" },
-    { name: "Bank Rakyat", mark: "BANK RAKYAT", color: "#0071bc", ink: "#ffffff", detail: "iRakyat" },
-    { name: "Affin Bank", mark: "AFFIN", color: "#00529b", ink: "#ffffff", detail: "AffinAlways" },
-    { name: "BSN", mark: "BSN", color: "#0072bc", ink: "#ffffff", detail: "myBSN" },
-    { name: "Bank Muamalat", mark: "MUAMALAT", color: "#642d91", ink: "#ffffff", detail: "i-Muamalat" },
-    { name: "Agrobank", mark: "AGROBANK", color: "#008c45", ink: "#ffffff", detail: "AgroNet" }
+    { name: "Maybank", logo: "/images/providers/maybank.png", detail: "Maybank2u" },
+    { name: "CIMB Bank", logo: "/images/providers/cimb.png", detail: "CIMB Clicks" },
+    { name: "Hong Leong Bank", logo: "/images/providers/hong-leong.png", detail: "HLB Connect" },
+    { name: "AmBank", logo: "/images/providers/ambank.png", detail: "AmOnline" }
   ];
 
   return (
@@ -52,19 +44,19 @@ const PaymentsPage = () => {
             <div className="flex min-h-56 flex-col items-center justify-center space-y-4 p-8">
               <span className="font-mono text-xs text-[#9a7300] dark:text-[#f4b400]">01</span>
               <h2 className="mb-4 text-xl font-semibold">MyDebit</h2>
-              <div className="rounded-xl bg-[#ef3123] px-5 py-3 text-lg font-black tracking-tight text-white">MyDebit</div>
+              <div className="relative h-14 w-44"><Image src="/images/providers/mydebit.png" alt="MyDebit official logo" fill className="object-contain" sizes="176px" /></div>
             </div>
 
             <div className="flex min-h-56 flex-col items-center justify-center space-y-4 border-t border-[#e5ddcd] p-8 md:border-l md:border-t-0 dark:border-white/10">
               <span className="font-mono text-xs text-[#9a7300] dark:text-[#f4b400]">02</span>
               <h2 className="mb-4 text-xl font-semibold">FPX Online Banking</h2>
-              <div className="rounded-xl bg-[#174b8c] px-6 py-3 text-xl font-black tracking-tight text-white">FPX</div>
+              <div className="rounded-xl border border-[#174b8c]/20 bg-white px-7 py-3 text-xl font-black tracking-tight text-[#174b8c] shadow-sm">FPX</div>
             </div>
 
             <div className="flex min-h-56 flex-col items-center justify-center space-y-4 border-t border-[#e5ddcd] p-8 md:border-l md:border-t-0 dark:border-white/10">
               <span className="font-mono text-xs text-[#9a7300] dark:text-[#f4b400]">03</span>
               <h2 className="mb-4 text-xl font-semibold">DuitNow &amp; {isMalay ? "E-Dompet" : "E-Wallets"}</h2>
-              <div className="flex flex-wrap justify-center gap-3"><div className="rounded-xl bg-[#e6007e] px-4 py-3 text-base font-black text-white">DuitNow</div><div className="rounded-xl bg-[#1769aa] px-4 py-3 text-base font-black text-white">TNG eWallet</div></div>
+              <div className="flex items-center justify-center gap-5"><div className="relative h-14 w-24"><Image src="/images/providers/duitnow.webp" alt="DuitNow official logo" fill className="object-contain" sizes="96px" /></div><div className="relative h-14 w-14"><Image src="/images/providers/tng-ewallet.svg" alt="Touch 'n Go eWallet official logo" fill className="object-contain" sizes="56px" /></div></div>
             </div>
 
           </div>
@@ -79,7 +71,7 @@ const PaymentsPage = () => {
         <div className="grid grid-cols-2 items-center justify-items-center gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
           {banks.map((bank) => (
             <div key={bank.name} className="flex min-h-40 w-full flex-col items-center justify-center rounded-2xl border border-[#ded5c2] bg-white p-5 text-center shadow-[0_10px_35px_-30px_rgba(16,24,32,0.5)] transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-[#f4b400]/60 hover:shadow-[0_22px_48px_-30px_rgba(16,24,32,0.55)] sm:min-h-44">
-              <div className="mb-4 flex h-11 min-w-20 items-center justify-center rounded-xl px-4 text-sm font-black tracking-[-0.03em] shadow-sm" style={{ backgroundColor: bank.color, color: bank.ink }}>{bank.mark}</div>
+              <div className="relative mb-4 h-14 w-full max-w-40"><Image src={bank.logo} alt={`${bank.name} official logo`} fill className="object-contain" sizes="160px" /></div>
               <h3 className="font-semibold text-[#101820]">{bank.name}</h3>
               <p className="mt-1 text-xs text-[#687078]">{bank.detail}</p>
             </div>

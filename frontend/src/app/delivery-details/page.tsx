@@ -32,14 +32,10 @@ const DeliveryPage = () => {
     ],
   };
   const partners = [
-    { name: "J&T Express", mark: "J&T", color: "#d71920", detail: "Nationwide parcel delivery" },
-    { name: "Pos Laju", mark: "POS", color: "#e11d2e", detail: "Malaysia's national courier" },
-    { name: "Ninja Van", mark: "NINJA", color: "#ed1c24", detail: "Door-to-door delivery" },
-    { name: "City-Link Express", mark: "CITY-LINK", color: "#ef7c00", detail: "Domestic express courier" },
-    { name: "GDEX", mark: "GDEX", color: "#e31837", detail: "Express delivery network" },
-    { name: "Lalamove", mark: "LALAMOVE", color: "#ff671d", detail: "On-demand local delivery" },
-    { name: "Skynet Malaysia", mark: "SKYNET", color: "#1d4f91", detail: "Nationwide courier service" },
-    { name: "Flash Express Malaysia", mark: "FLASH", color: "#f5b400", detail: "Fast parcel delivery" }
+    { name: "J&T Express", logo: "/images/providers/jnt.png", detail: "Nationwide parcel delivery" },
+    { name: "Pos Laju", logo: "/images/providers/pos-laju.png", detail: "Malaysia's national courier" },
+    { name: "Ninja Van", logo: "/images/providers/ninja-van.png", detail: "Door-to-door delivery" },
+    { name: "Lalamove", logo: "/images/providers/lalamove.png", detail: "On-demand local delivery" }
   ];
 
   return (
@@ -68,7 +64,7 @@ const DeliveryPage = () => {
         <div className="grid grid-cols-2 items-center justify-items-center gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
           {partners.map((partner) => (
             <div key={partner.name} className="group flex min-h-40 w-full flex-col items-center justify-center rounded-2xl border border-[#ded5c2] bg-white p-5 text-center shadow-[0_10px_35px_-30px_rgba(16,24,32,0.5)] transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-[#f4b400]/60 hover:shadow-[0_22px_48px_-30px_rgba(16,24,32,0.55)] sm:min-h-48 sm:p-7">
-              <div className="mb-4 flex h-12 min-w-20 items-center justify-center rounded-xl px-4 text-lg font-black tracking-[-0.04em] text-white shadow-sm" style={{ backgroundColor: partner.color }}>{partner.mark}</div>
+              <div className="relative mb-4 h-14 w-full max-w-40"><Image src={partner.logo} alt={`${partner.name} official logo`} fill className="object-contain" sizes="160px" /></div>
               <h3 className="text-base font-semibold text-[#101820] sm:text-lg">{partner.name}</h3>
               <p className="mt-1 text-xs text-[#687078] sm:text-sm">{partner.detail}</p>
             </div>
