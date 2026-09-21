@@ -340,6 +340,30 @@
     letter-spacing: -0.035em;
     line-height: 0.98;
   }
+
+  .site-header > div {
+    background: color-mix(in oklab, var(--background) 88%, transparent);
+    -webkit-backdrop-filter: blur(18px) saturate(1.15);
+    backdrop-filter: blur(18px) saturate(1.15);
+  }
+
+  .site-header .rounded-full {
+    transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  }
+
+  .site-header input::placeholder {
+    opacity: 0.68;
+  }
+
+  .site-header button:not([data-slot="drawer-trigger"]),
+  .site-header a {
+    transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, transform 180ms ease;
+  }
+
+  .site-header button:active,
+  .site-header a:active {
+    transform: scale(0.98);
+  }
 }
 
 /* Profile screens contain older utility colors; keep them tied to the active theme. */
