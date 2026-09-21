@@ -1485,7 +1485,7 @@ images: resolveImages(current.images),
                       Storefront choices &amp; pricing
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      These buttons appear on the storefront, including Size, Material, and add-ons.
+                      These buttons appear on the storefront. To offer sizes, add a Size choice group and enter each option manually. No size picker is added automatically.
                     </p>
                   </div>
                   <Button type="button" size="sm" variant="outline" onClick={addPrintingOption}>

@@ -235,7 +235,6 @@ const stockBySize = product.sizes || [];
     : stockBySize.reduce((total, size) => total + Number(size.stock || 0), 0);
   const standardStock = stockBySize.find(size => size.size.toLowerCase() === "standard")?.stock;
   const hasImageVariations = product.category?.toLowerCase() === "islamic khat" && product.images.length > 1;
-  const hasSizeVariations = !isPortraitProduct && !hasDesignVariations && stockBySize.length > 1 && product.category?.toLowerCase() !== "islamic khat";
   const activeSize = stockBySize.find(size => size.size === selectedSize);
   const activeVariation = selectedVariationIndex !== null && selectedVariationIndex != null ? designVariations[selectedVariationIndex] : undefined;
   const maxQuantity = hasDesignVariations
@@ -244,7 +243,7 @@ const stockBySize = product.sizes || [];
       : 1
     : activeSize && Number(activeSize.stock) > 0
       ? Number(activeSize.stock)
-      : hasSizeVariations ? 1 : (stockBySize.length > 0 ? (standardStock ?? totalAvailableStock) : 10000);
+      : (stockBySize.length > 0 ? (standardStock ?? totalAvailableStock) : 10000);
 
   let minQuantity = 1;
   if (product.category === 'button-badge') {
@@ -398,7 +397,6 @@ const stockBySize = product.sizes || [];
   const printingStepNum = step2Options.length > 0 ? currentStep++ : 0;
   const addonsStepNum = step3Addons.length > 0 ? currentStep++ : 0;
 const variationStepNum = (hasImageVariations || hasDesignVariations) ? currentStep++ : 0;
-  const sizeStepNum = hasSizeVariations ? currentStep++ : 0;
   const quantityStepNum = currentStep++;
 
   return (
@@ -601,40 +599,7 @@ const variationStepNum = (hasImageVariations || hasDesignVariations) ? currentSt
           </div>
         )}
 
-        {/* SIZE VARIATIONS */}
-        {hasSizeVariations && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">{sizeStepNum}</span>
-              <h2 className="font-sans text-base font-semibold text-gray-800 dark:text-foreground sm:text-lg">{label("Choose Size", "Pilih Saiz")}</h2>
-            </div>
-            <div role="group" aria-label={label("Product size", "Saiz produk")} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {stockBySize.map((size) => {
-                const isSelected = selectedSize === size.size;
-                const isOut = Number(size.stock) <= 0;
-                return (
-                  <button
-                    key={size.size}
-                    type="button"
-                    disabled={isOut}
-                    onClick={() => { setSelectedSize(size.size); setQuantity(current => Math.min(current, Math.max(1, Number(size.stock) || 1))); }}
-                    aria-pressed={isSelected}
-                    className={`rounded-xl border p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-45 ${
-                      isSelected
-                        ? "border-primary bg-primary/5 ring-2 ring-primary/15 dark:bg-primary/10"
-                        : "border-gray-200 hover:border-primary/50 dark:border-border"
-                    }`}
-                  >
-                    <span className="block text-sm font-semibold text-gray-800 dark:text-foreground">{size.size}</span>
-                    <span className={`mt-0.5 block text-xs font-medium ${isOut ? "text-red-600" : "text-muted-foreground"}`}>
-                      {isOut ? label("Out of stock", "Stok habis") : `${size.stock} ${label("available", "tersedia")}`}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        {/* Size choices are rendered above from admin-managed printingOptions. */}
 
         {/* QUANTITY / TURNAROUND */}
         {product.category !== "flyers" && (<div className="space-y-4">
