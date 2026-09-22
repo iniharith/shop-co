@@ -53,16 +53,18 @@ export default function Home() {
           ))}
         </div>
       </section>
-      <ProductSctions
+<ProductSctions
         isLoading={isPending}
         title="Featured Products"
         products={featuredProducts}
+        variant="depth"
       />
       <Categorys />
       <ProductSctions
         isLoading={isPending}
         title="Best Sellers"
         products={bestSellerProducts}
+        variant="depth"
       />
       <Testimonials title="What Our Customers Say" testimonials={testimonials} />
     </>
