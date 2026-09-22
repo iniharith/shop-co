@@ -27,6 +27,14 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { categoryLabels } from "@/i18n/messages";
 import { AI_SEARCH_ENABLED, aiSemanticSearch, aiSearchSuggestions } from "@/utils/aiSearch";
+import {
+  MotionNavigationMenu,
+  MotionNavigationMenuContent,
+  MotionNavigationMenuItem,
+  MotionNavigationMenuList,
+  MotionNavigationMenuTrigger,
+} from "../ui/motion-navigation-menu";
+import { HighlightItem } from "../ui/highlight";
 
 // ── Dynamic Nav Categories ──────────────────────────────────────────────────
 interface NavSubItem {
@@ -654,7 +662,7 @@ const Nav = () => {
           </div>
         </div>
 
-        {/* ── DESKTOP CATEGORY NAV ── */}
+{/* ── DESKTOP CATEGORY NAV ── */}
         <div className={cn(
           "w-full border-y hidden md:block relative z-40 transition-all duration-300",
           isHomePage && !isScrolled
@@ -662,38 +670,62 @@ const Nav = () => {
             : "border-black/5 bg-white/40 dark:border-white/10 dark:bg-[rgba(242,242,242,0.03)]"
         )}
         >
-          <div className="max-w-[1400px] mx-auto px-7 py-3 flex items-center justify-center gap-8 flex-wrap">
-            {navCategories.map((item, index) => (
-              <div key={index} className="relative group">
-                <Link
-                  href={item.href}
-                  className={cn("font-bold uppercase tracking-wide inline-block py-2 cursor-default transition-colors duration-300", isHomePage && !isScrolled ? "text-white" : "text-primary")}
-                >
-                  <p className="relative text-sm inline-block overflow-hidden transition-colors">
-                    <span className={cn("inline-block transition-all duration-300 opacity-100 group-hover:-translate-y-6", isHomePage && !isScrolled ? "text-white" : "text-primary")}>
-                      {categoryLabels[locale][item.label] || item.label}
-                    </span>
-                    <span className={cn("absolute left-0 inline-block translate-y-5 transition-all duration-300 group-hover:scale-[.9] group-hover:translate-y-0", isHomePage && !isScrolled ? "text-white" : "text-primary")}>
-                      {categoryLabels[locale][item.label] || item.label}
-                    </span>
-                  </p>
-                </Link>
+          <MotionNavigationMenu className="mx-auto w-full max-w-[1400px] px-4 md:px-7 py-3">
+            <MotionNavigationMenuList className="justify-center gap-1 flex-wrap">
+              {navCategories.map((item, index) => {
+                const label = categoryLabels[locale][item.label] || item.label;
+                const textColor = isHomePage && !isScrolled ? "text-white" : "text-primary";
+                const hasSubItems = !!item.subItems?.length;
+                const triggerClasses = cn("font-bold uppercase tracking-wide", textColor);
 
-                {/* Dropdown */}
-                 <div className="absolute left-0 top-full hidden group-hover:flex group-focus-within:flex flex-col bg-white dark:bg-popover border border-gray-200 dark:border-border shadow-2xl rounded-xl min-w-[220px] max-h-[75vh] overflow-y-auto py-2 z-[110] animate-in fade-in slide-in-from-top-1 duration-150">
-                  {item.subItems?.map((sub, idx) => (
-                    <Link
-                      key={idx}
-                      href={sub.href}
-                      className="px-4 py-2.5 text-xs lg:text-sm text-foreground font-medium hover:bg-gray-100 dark:hover:bg-muted hover:text-primary transition-colors whitespace-nowrap"
-                    >
-                      {sub.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+                if (!hasSubItems) {
+                  return (
+                    <li key={index} className="relative">
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "inline-flex h-9 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-bold uppercase tracking-wide transition-colors hover:text-accent-foreground",
+                          textColor,
+                        )}
+                      >
+                        {label}
+                      </Link>
+                    </li>
+                  );
+                }
+
+                return (
+                  <MotionNavigationMenuItem key={index} value={item.label}>
+                    <MotionNavigationMenuTrigger className={triggerClasses}>
+                      {label}
+                    </MotionNavigationMenuTrigger>
+                    <MotionNavigationMenuContent className="w-[420px] max-h-[70vh] overflow-y-auto">
+                      <HighlightItem asChild value={`${item.label}|view-all`}>
+                        <Link
+                          href={item.href}
+                          className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-primary transition-colors"
+                        >
+                          View all {label} →
+                        </Link>
+                      </HighlightItem>
+                      <div className="my-1 border-t border-border" />
+                      {item.subItems!.map((sub, idx) => (
+                        <HighlightItem asChild value={`${item.label}|${sub.href}|${idx}`} key={idx}>
+                          <Link
+                            href={sub.href}
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground transition-colors hover:text-primary"
+                          >
+                            <span className="h-1 w-1 shrink-0 rounded-full bg-primary/40" />
+                            {sub.label}
+                          </Link>
+                        </HighlightItem>
+                      ))}
+                    </MotionNavigationMenuContent>
+                  </MotionNavigationMenuItem>
+                );
+              })}
+            </MotionNavigationMenuList>
+          </MotionNavigationMenu>
         </div>
       </div>
 
