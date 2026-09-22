@@ -14,7 +14,9 @@ export const printingCategories = [
       { label: "CAR STICKER", href: "/home/shop/prod-102" },
       { label: "BOARD PRINTING", href: "/home/shop/prod-103" },
       { label: "WALL STICKER", href: "/home/shop/prod-104" },
-      { label: "GLASS STICKER", href: "/home/shop/prod-105" }
+      { label: "GLASS STICKER", href: "/home/shop/prod-105" },
+      { label: "UV DTF STICKER", href: "/home/shop/prod-268" },
+      { label: "DTF STICKER", href: "/home/shop/prod-269" }
     ]
   },
   {
@@ -59,7 +61,10 @@ export const printingCategories = [
       { label: "CALENDAR", href: "/home/shop/prod-125" },
       { label: "NOTEBOOK", href: "/home/shop/prod-126" },
       { label: "MONEY PACKET", href: "/home/shop/prod-127" },
-      { label: "PREMIUM GIFT", href: "/home/shop/prod-128" }
+      { label: "PREMIUM GIFT", href: "/home/shop/prod-128" },
+      { label: "LASER ENGRAVING", href: "/home/shop/prod-270" },
+      { label: "PENUNJUK AL-QURAN", href: "/home/shop/prod-271" },
+      { label: "I CARD", href: "/home/shop/prod-272" }
     ]
   },
   {

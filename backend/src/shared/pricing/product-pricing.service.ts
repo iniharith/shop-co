@@ -22,9 +22,10 @@ export interface ProductPricingResult {
 }
 
 // Price add-ons only from the server-side product definition. Client prices are ignored.
-const sumAddons = (product: IProduct, configuration: IProductConfiguration | undefined, filter?: (name: string) => boolean): number => {
+const sumAddons = (product: IProduct, configuration: IProductConfiguration | undefined, filter?: (name: string) => boolean): { perUnit: number; fixed: number } => {
     const optionNames = new Set((product.printingOptions || []).map((option) => option.name));
-    let total = 0;
+    let perUnit = 0;
+    let fixed = 0;
     for (const selection of configuration?.selections || []) {
         if (!optionNames.has(selection.name)) continue;
         if (filter && !filter(selection.name)) continue;
@@ -32,16 +33,32 @@ const sumAddons = (product: IProduct, configuration: IProductConfiguration | und
         for (const value of selection.values || []) {
             if (value.label === undefined || value.label === null) continue;
             const match = option?.options?.find((candidate) => candidate.label === value.label);
-            total += match ? (Number(match.priceAdd) || 0) : 0;
+            const amount = match ? (Number(match.priceAdd) || 0) : 0;
+            if (option?.priceMode === 'fixed') fixed += amount;
+            else perUnit += amount;
         }
     }
-    return total;
+    return { perUnit, fixed };
 };
 
 const selectedValueForOption = (configuration: IProductConfiguration | undefined, optionName: string | undefined): string => {
     if (!optionName) return '';
     const entry = (configuration?.selections || []).find((selection) => selection.name === optionName);
     return entry?.values?.[0]?.label !== undefined ? String(entry.values[0].label).trim() : '';
+};
+
+const matrixDimensionNames = (product: IProduct): Set<string> => {
+    const options = product.printingOptions || [];
+    const names = new Set<string>();
+    const material = options.find((option) => /material|format|package/i.test(option.name))?.name;
+    const lamination = options.find((option) => /lamination|sides|packaging/i.test(option.name))?.name;
+    if (material) names.add(material);
+    if (lamination) names.add(lamination);
+    if (product.category === 'paper-bag') {
+        const design = options.find((option) => /design|size/i.test(option.name))?.name;
+        if (design) names.add(design);
+    }
+    return names;
 };
 
 const resolveMatrixSubtotal = (product: IProduct, quantity: number, configuration: IProductConfiguration | undefined): number => {
@@ -67,7 +84,11 @@ const resolveMatrixSubtotal = (product: IProduct, quantity: number, configuratio
 
     if (matrixRow) {
         const availableQuantities = Object.keys(matrixRow.quantityPrices || {}).map(Number).sort((a, b) => a - b);
-        const qPrices: any = matrixRow.quantityPrices[quantity] ?? matrixRow.quantityPrices[availableQuantities[0]];
+        const eligibleTiers = availableQuantities.filter((candidate: number) => candidate <= quantity);
+        const tierQuantity = matrixRow.priceMode === 'perUnit'
+            ? eligibleTiers[eligibleTiers.length - 1] ?? availableQuantities[0]
+            : quantity;
+        const qPrices: any = matrixRow.quantityPrices[tierQuantity] ?? matrixRow.quantityPrices[availableQuantities[0]];
         let exactPrice = 0;
         if (qPrices && typeof qPrices === 'object') {
             const gridSize = (configuration?.fulfillmentSize || '').trim();
@@ -75,7 +96,7 @@ const resolveMatrixSubtotal = (product: IProduct, quantity: number, configuratio
         } else {
             exactPrice = qPrices || 0;
         }
-        return exactPrice;
+        return matrixRow.priceMode === 'perUnit' ? exactPrice * quantity : exactPrice;
     }
     // fallback if no combination exists (matches storefront behavior)
     return product.price * quantity;
@@ -96,10 +117,12 @@ export const computeProductPricing = (
     let subtotal = 0;
 
     if (product.matrixPricing?.enabled) {
-        subtotal = resolveMatrixSubtotal(product, qty, configuration);
+        const dimensions = matrixDimensionNames(product);
+        const addons = sumAddons(product, configuration, (name) => !dimensions.has(name));
+        subtotal = resolveMatrixSubtotal(product, qty, configuration) + addons.perUnit * qty + addons.fixed;
     } else {
         const addons = sumAddons(product, configuration);
-        subtotal = (product.price + addons) * qty;
+        subtotal = (product.price + addons.perUnit) * qty + addons.fixed;
     }
 
     const lineTotal = subtotal + fixedPrice;

@@ -175,7 +175,23 @@ const normalizeProduct = (body) => {
             })
                 .filter((item) => item.name)
             : [],
-        printingOptions: Array.isArray(body.printingOptions) ? body.printingOptions : [],
+        printingOptions: Array.isArray(body.printingOptions)
+            ? body.printingOptions
+                .map((option) => ({
+                name: String((option === null || option === void 0 ? void 0 : option.name) || '').trim(),
+                isMultiSelect: Boolean(option === null || option === void 0 ? void 0 : option.isMultiSelect),
+                priceMode: (option === null || option === void 0 ? void 0 : option.priceMode) === 'fixed' ? 'fixed' : 'perUnit',
+                options: Array.isArray(option === null || option === void 0 ? void 0 : option.options)
+                    ? option.options
+                        .map((value) => ({
+                        label: String((value === null || value === void 0 ? void 0 : value.label) || '').trim(),
+                        priceAdd: Number(value === null || value === void 0 ? void 0 : value.priceAdd) || 0,
+                    }))
+                        .filter((value) => value.label)
+                    : [],
+            }))
+                .filter((option) => option.name && option.options.length)
+            : [],
         sections: (0, productSections_1.getProductSections)(String(body.category || '')),
         specifications: (() => {
             const specs = body.specifications && typeof body.specifications === 'object' ? body.specifications : {};

@@ -69,6 +69,7 @@ export interface IProductReview {
 export interface IProductPrintingOption {
     name: string;
     isMultiSelect?: boolean;
+    priceMode?: 'perUnit' | 'fixed';
     options: IProductOptionValue[];
 }
 
@@ -88,6 +89,7 @@ export interface IProductMatrixRow {
     laminate?: string;
     lamination?: string;
     design?: string;
+    priceMode?: 'total' | 'perUnit';
     quantityPrices: Record<string, any>;
 }
 

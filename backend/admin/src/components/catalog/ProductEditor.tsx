@@ -55,6 +55,7 @@ type PrintingOptionValue = {
 type PrintingOption = {
   name: string;
   isMultiSelect?: boolean;
+  priceMode?: 'perUnit' | 'fixed';
   options: PrintingOptionValue[];
 };
 
@@ -492,7 +493,7 @@ images: resolveImages(current.images),
   const addPrintingOption = () =>
     setProduct(current => ({
       ...current,
-      printingOptions: [...(current.printingOptions || []), { name: '', isMultiSelect: false, options: [] }],
+      printingOptions: [...(current.printingOptions || []), { name: '', isMultiSelect: false, priceMode: 'perUnit', options: [] }],
     }));
 
   const removePrintingOption = (index: number) =>
@@ -1510,6 +1511,15 @@ images: resolveImages(current.images),
                           />
                           Multi-select
                         </label>
+                        <select
+                          className="h-8 rounded-md border bg-background px-2 text-xs"
+                          value={option.priceMode || 'perUnit'}
+                          aria-label="Add-on pricing mode"
+                          onChange={event => updatePrintingOption(optionIndex, { priceMode: event.target.value as 'perUnit' | 'fixed' })}
+                        >
+                          <option value="perUnit">Per unit</option>
+                          <option value="fixed">Once per order</option>
+                        </select>
                         <Button type="button" variant="ghost" size="icon" onClick={() => removePrintingOption(optionIndex)}>
                           <X className="h-4 w-4" />
                         </Button>

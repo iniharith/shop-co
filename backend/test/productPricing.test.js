@@ -109,6 +109,62 @@ test('ignores client prices for unknown option values', () => {
   assert.equal(pricing.lineTotal, 62);
 });
 
+test('multiplies per-unit matrix tiers by the requested quantity', () => {
+  const tieredProduct = {
+    ...configurableProduct,
+    price: 222,
+    printingOptions: [{
+      name: 'Format',
+      options: [{ label: '2.8 Meters', priceAdd: 0 }],
+    }],
+    matrixPricing: {
+      enabled: true,
+      hideQuantityGrid: true,
+      pricingData: [{
+        material: '2.8 Meters',
+        laminate: '',
+        priceMode: 'perUnit',
+        quantityPrices: { 1: 222, 3: 218, 6: 214 },
+      }],
+    },
+  };
+  const pricing = computeProductPricing(tieredProduct, 7, {
+    version: 1,
+    fulfillmentSize: 'Standard',
+    selections: [{ name: 'Format', values: [{ label: '2.8 Meters', priceAdd: 999 }] }],
+  });
+
+  assert.equal(pricing.unitPrice, 214);
+  assert.equal(pricing.lineTotal, 1498);
+});
+
+test('adds per-unit and once-per-order choices to matrix totals', () => {
+  const matrixProduct = {
+    ...configurableProduct,
+    price: 10,
+    printingOptions: [
+      { name: 'Material', options: [{ label: 'Standard', priceAdd: 0 }] },
+      { name: 'Add Ons', isMultiSelect: true, priceMode: 'perUnit', options: [{ label: 'Sleeve', priceAdd: 2 }] },
+      { name: 'Design Service', priceMode: 'fixed', options: [{ label: 'New Design', priceAdd: 30 }] },
+    ],
+    matrixPricing: {
+      enabled: true,
+      pricingData: [{ material: 'Standard', laminate: '', quantityPrices: { 50: 100 } }],
+    },
+  };
+  const pricing = computeProductPricing(matrixProduct, 50, {
+    version: 1,
+    fulfillmentSize: 'Standard',
+    selections: [
+      { name: 'Material', values: [{ label: 'Standard', priceAdd: 0 }] },
+      { name: 'Add Ons', values: [{ label: 'Sleeve', priceAdd: 999 }] },
+      { name: 'Design Service', values: [{ label: 'New Design', priceAdd: 999 }] },
+    ],
+  });
+
+  assert.equal(pricing.lineTotal, 230);
+});
+
 test('cart and order schemas persist explicit variation fields', () => {
   for (const model of [CartModel, OrderModel]) {
     const productsPath = model === CartModel ? 'items' : 'products';

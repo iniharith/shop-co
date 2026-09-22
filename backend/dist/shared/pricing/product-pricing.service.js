@@ -12,7 +12,8 @@ const PRICING_VERSION = 'catalog-v1';
 const sumAddons = (product, configuration, filter) => {
     var _a, _b;
     const optionNames = new Set((product.printingOptions || []).map((option) => option.name));
-    let total = 0;
+    let perUnit = 0;
+    let fixed = 0;
     for (const selection of (configuration === null || configuration === void 0 ? void 0 : configuration.selections) || []) {
         if (!optionNames.has(selection.name))
             continue;
@@ -23,10 +24,14 @@ const sumAddons = (product, configuration, filter) => {
             if (value.label === undefined || value.label === null)
                 continue;
             const match = (_b = option === null || option === void 0 ? void 0 : option.options) === null || _b === void 0 ? void 0 : _b.find((candidate) => candidate.label === value.label);
-            total += match ? (Number(match.priceAdd) || 0) : 0;
+            const amount = match ? (Number(match.priceAdd) || 0) : 0;
+            if ((option === null || option === void 0 ? void 0 : option.priceMode) === 'fixed')
+                fixed += amount;
+            else
+                perUnit += amount;
         }
     }
-    return total;
+    return { perUnit, fixed };
 };
 const selectedValueForOption = (configuration, optionName) => {
     var _a, _b;
@@ -35,8 +40,25 @@ const selectedValueForOption = (configuration, optionName) => {
     const entry = ((configuration === null || configuration === void 0 ? void 0 : configuration.selections) || []).find((selection) => selection.name === optionName);
     return ((_b = (_a = entry === null || entry === void 0 ? void 0 : entry.values) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.label) !== undefined ? String(entry.values[0].label).trim() : '';
 };
+const matrixDimensionNames = (product) => {
+    var _a, _b, _c;
+    const options = product.printingOptions || [];
+    const names = new Set();
+    const material = (_a = options.find((option) => /material|format|package/i.test(option.name))) === null || _a === void 0 ? void 0 : _a.name;
+    const lamination = (_b = options.find((option) => /lamination|sides|packaging/i.test(option.name))) === null || _b === void 0 ? void 0 : _b.name;
+    if (material)
+        names.add(material);
+    if (lamination)
+        names.add(lamination);
+    if (product.category === 'paper-bag') {
+        const design = (_c = options.find((option) => /design|size/i.test(option.name))) === null || _c === void 0 ? void 0 : _c.name;
+        if (design)
+            names.add(design);
+    }
+    return names;
+};
 const resolveMatrixSubtotal = (product, quantity, configuration) => {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g;
     const options = product.printingOptions || [];
     const materialOptName = (_a = options.find((option) => /material|format|package/i.test(option.name))) === null || _a === void 0 ? void 0 : _a.name;
     const laminationOptName = (_b = options.find((option) => /lamination|sides|packaging/i.test(option.name))) === null || _b === void 0 ? void 0 : _b.name;
@@ -53,7 +75,11 @@ const resolveMatrixSubtotal = (product, quantity, configuration) => {
     }
     if (matrixRow) {
         const availableQuantities = Object.keys(matrixRow.quantityPrices || {}).map(Number).sort((a, b) => a - b);
-        const qPrices = (_f = matrixRow.quantityPrices[quantity]) !== null && _f !== void 0 ? _f : matrixRow.quantityPrices[availableQuantities[0]];
+        const eligibleTiers = availableQuantities.filter((candidate) => candidate <= quantity);
+        const tierQuantity = matrixRow.priceMode === 'perUnit'
+            ? (_f = eligibleTiers[eligibleTiers.length - 1]) !== null && _f !== void 0 ? _f : availableQuantities[0]
+            : quantity;
+        const qPrices = (_g = matrixRow.quantityPrices[tierQuantity]) !== null && _g !== void 0 ? _g : matrixRow.quantityPrices[availableQuantities[0]];
         let exactPrice = 0;
         if (qPrices && typeof qPrices === 'object') {
             const gridSize = ((configuration === null || configuration === void 0 ? void 0 : configuration.fulfillmentSize) || '').trim();
@@ -62,7 +88,7 @@ const resolveMatrixSubtotal = (product, quantity, configuration) => {
         else {
             exactPrice = qPrices || 0;
         }
-        return exactPrice;
+        return matrixRow.priceMode === 'perUnit' ? exactPrice * quantity : exactPrice;
     }
     // fallback if no combination exists (matches storefront behavior)
     return product.price * quantity;
@@ -78,11 +104,13 @@ const computeProductPricing = (product, quantity, configuration) => {
     const fixedPrice = ((_a = configuration === null || configuration === void 0 ? void 0 : configuration.design) === null || _a === void 0 ? void 0 : _a.type) === 'service' ? exports.DESIGN_SERVICE_FEE : 0;
     let subtotal = 0;
     if ((_b = product.matrixPricing) === null || _b === void 0 ? void 0 : _b.enabled) {
-        subtotal = resolveMatrixSubtotal(product, qty, configuration);
+        const dimensions = matrixDimensionNames(product);
+        const addons = sumAddons(product, configuration, (name) => !dimensions.has(name));
+        subtotal = resolveMatrixSubtotal(product, qty, configuration) + addons.perUnit * qty + addons.fixed;
     }
     else {
         const addons = sumAddons(product, configuration);
-        subtotal = (product.price + addons) * qty;
+        subtotal = (product.price + addons.perUnit) * qty + addons.fixed;
     }
     const lineTotal = subtotal + fixedPrice;
     const unitPrice = qty > 0 ? subtotal / qty : 0;

@@ -114,6 +114,7 @@ const ProductSchema: Schema = new Schema(
         printingOptions: [{
             name: { type: String },
             isMultiSelect: { type: Boolean, default: false },
+            priceMode: { type: String, enum: ['perUnit', 'fixed'], default: 'perUnit' },
             options: [{
                 label: { type: String },
                 priceAdd: { type: Number, default: 0 },
@@ -127,6 +128,7 @@ const ProductSchema: Schema = new Schema(
                 laminate: { type: String },
                 lamination: { type: String },
                 design: { type: String },
+                priceMode: { type: String, enum: ['total', 'perUnit'], default: 'total' },
                 quantityPrices: { type: Schema.Types.Mixed },
             }],
         },

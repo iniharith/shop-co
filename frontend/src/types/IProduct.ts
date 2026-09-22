@@ -5,6 +5,7 @@
 export interface IPrintingOption {
     name: string;
     isMultiSelect?: boolean;
+    priceMode?: 'perUnit' | 'fixed';
     options: { label: string; priceAdd: number }[];
 }
 
@@ -27,9 +28,12 @@ export interface IProduct {
         enabled: boolean;
         hideQuantityGrid?: boolean;
         pricingData: {
-            laminate: string;
+            laminate?: string;
+            lamination?: string;
+            design?: string;
             material: string;
-            quantityPrices: Record<number, number>;
+            priceMode?: 'total' | 'perUnit';
+            quantityPrices: Record<number, number | Record<string, number>>;
         }[];
     };
     catalogId?: string;

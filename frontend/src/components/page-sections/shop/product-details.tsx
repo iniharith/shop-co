@@ -296,8 +296,11 @@ const stockBySize = product.sizes || [];
 
     if (matrixRow) {
       availableQuantities = Object.keys(matrixRow.quantityPrices).map(Number).sort((a,b) => a-b);
-      
-      let qPrices: any = matrixRow.quantityPrices[quantity] || matrixRow.quantityPrices[availableQuantities[0]];
+      const eligibleTiers = availableQuantities.filter(candidate => candidate <= quantity);
+      const tierQuantity = matrixRow.priceMode === 'perUnit'
+        ? (eligibleTiers[eligibleTiers.length - 1] ?? availableQuantities[0])
+        : quantity;
+      let qPrices: any = matrixRow.quantityPrices[tierQuantity] || matrixRow.quantityPrices[availableQuantities[0]];
       let exactPrice = 0;
       
       if (typeof qPrices === 'object') {
@@ -314,31 +317,59 @@ const stockBySize = product.sizes || [];
         exactPrice = qPrices || 0;
       }
 
-      if (!availableQuantities.includes(quantity) && availableQuantities.length > 0) {
+      if (matrixRow.priceMode !== 'perUnit' && !availableQuantities.includes(quantity) && availableQuantities.length > 0) {
         setTimeout(() => setQuantity(availableQuantities[0]), 0);
       }
-      
-      subtotal = exactPrice;
+
+      const dimensionOptionNames = new Set(
+        [materialOptName, laminationOptName, product.category === 'paper-bag'
+          ? options.find(o => o.name.toLowerCase().includes('design') || o.name.toLowerCase().includes('size'))?.name
+          : undefined].filter(Boolean),
+      );
+      let perUnitAddons = 0;
+      let fixedAddons = 0;
+      options.forEach(opt => {
+        if (dimensionOptionNames.has(opt.name)) return;
+        const selectedVal = selectedOptions[opt.name];
+        const indexes = Array.isArray(selectedVal)
+          ? selectedVal
+          : selectedVal !== undefined
+            ? [selectedVal as number]
+            : [];
+        indexes.forEach(index => {
+          const amount = Number(opt.options[index]?.priceAdd || 0);
+          if (opt.priceMode === 'fixed') fixedAddons += amount;
+          else perUnitAddons += amount;
+        });
+      });
+      subtotal = (matrixRow.priceMode === 'perUnit' ? exactPrice * quantity : exactPrice)
+        + perUnitAddons * quantity
+        + fixedAddons;
     } else {
       subtotal = product.price * quantity; // fallback if no combination exists
     }
   } else {
-    let optionAddons = 0;
+    let perUnitAddons = 0;
+    let fixedAddons = 0;
     if (product.printingOptions) {
       product.printingOptions.forEach(opt => {
         const selectedVal = selectedOptions[opt.name];
         if (Array.isArray(selectedVal)) {
           selectedVal.forEach(idx => {
-            if (opt.options[idx]) optionAddons += opt.options[idx].priceAdd;
+            if (opt.options[idx]) {
+              if (opt.priceMode === 'fixed') fixedAddons += opt.options[idx].priceAdd;
+              else perUnitAddons += opt.options[idx].priceAdd;
+            }
           });
         } else if (selectedVal !== undefined && opt.options[selectedVal as number]) {
-          optionAddons += opt.options[selectedVal as number].priceAdd;
+          if (opt.priceMode === 'fixed') fixedAddons += opt.options[selectedVal as number].priceAdd;
+          else perUnitAddons += opt.options[selectedVal as number].priceAdd;
         }
       });
     }
 
-    const basePrice = product.price + optionAddons;
-    subtotal = basePrice * quantity;
+    const basePrice = product.price + perUnitAddons;
+    subtotal = basePrice * quantity + fixedAddons;
   }
 
   const total = subtotal;

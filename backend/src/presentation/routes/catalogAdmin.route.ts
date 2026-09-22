@@ -24,6 +24,7 @@ type NormalizedVariation = { name: string; stock: number; lowStockThreshold: num
 type NormalizedPrintingOption = {
   name: string;
   isMultiSelect: boolean;
+  priceMode: 'perUnit' | 'fixed';
   options: Array<{ label: string; priceAdd: number }>;
 };
 type NormalizedProduct = {
@@ -184,6 +185,7 @@ const normalizeProduct = (body: any): NormalizedProduct => {
           .map((option: any): NormalizedPrintingOption => ({
             name: String(option?.name || '').trim(),
             isMultiSelect: Boolean(option?.isMultiSelect),
+            priceMode: option?.priceMode === 'fixed' ? 'fixed' : 'perUnit',
             options: Array.isArray(option?.options)
               ? option.options
                   .map((value: any) => ({

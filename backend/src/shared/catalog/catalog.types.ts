@@ -27,6 +27,7 @@ export interface ICatalogSize {
 export interface ICatalogPrintingOption {
     name: string;
     isMultiSelect?: boolean;
+    priceMode?: 'perUnit' | 'fixed';
     options: ICatalogOption[];
 }
 
@@ -46,5 +47,6 @@ export interface ICatalogMatrixRow {
     laminate?: string;
     lamination?: string;
     design?: string;
+    priceMode?: 'total' | 'perUnit';
     quantityPrices: Record<string, any>;
 }

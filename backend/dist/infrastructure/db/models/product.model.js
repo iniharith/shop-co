@@ -144,6 +144,7 @@ const ProductSchema = new mongoose_1.Schema({
     printingOptions: [{
             name: { type: String },
             isMultiSelect: { type: Boolean, default: false },
+            priceMode: { type: String, enum: ['perUnit', 'fixed'], default: 'perUnit' },
             options: [{
                     label: { type: String },
                     priceAdd: { type: Number, default: 0 },
@@ -157,6 +158,7 @@ const ProductSchema = new mongoose_1.Schema({
                 laminate: { type: String },
                 lamination: { type: String },
                 design: { type: String },
+                priceMode: { type: String, enum: ['total', 'perUnit'], default: 'total' },
                 quantityPrices: { type: mongoose_1.Schema.Types.Mixed },
             }],
     },
