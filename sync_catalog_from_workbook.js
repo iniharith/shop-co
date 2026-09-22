@@ -640,7 +640,30 @@ const assertCatalog = () => {
   }
 };
 
+const assertMatrixChoices = () => {
+  for (const id of changedIds) {
+    const product = productById.get(id);
+    if (!product.matrixPricing?.enabled) continue;
+    const options = product.printingOptions || [];
+    const dimensions = [
+      ['material', options.find(entry => /material|format|package/i.test(entry.name))],
+      [product.category === 'paper-bag' ? 'lamination' : 'laminate', options.find(entry => /lamination|sides|packaging/i.test(entry.name))],
+      ['design', product.category === 'paper-bag' ? options.find(entry => /design|size/i.test(entry.name)) : undefined],
+    ];
+    for (const row of product.matrixPricing.pricingData) {
+      for (const [field, entry] of dimensions) {
+        if (!entry) continue;
+        const value = row[field];
+        if (!entry.options.some(choice => choice.label === value)) {
+          throw new Error(`${id} matrix ${field} '${value}' is not a selectable catalog choice.`);
+        }
+      }
+    }
+  }
+};
+
 assertCatalog();
+assertMatrixChoices();
 
 const serializeCatalog = (file, catalog) => {
   const eol = file.text.includes('\r\n') ? '\r\n' : '\n';

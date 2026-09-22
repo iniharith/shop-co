@@ -98,7 +98,9 @@ const resolveMatrixSubtotal = (product: IProduct, quantity: number, configuratio
         }
         return matrixRow.priceMode === 'perUnit' ? exactPrice * quantity : exactPrice;
     }
-    // fallback if no combination exists (matches storefront behavior)
+    if (materialOptName || laminationOptName) {
+        throw new Error('Selected product variation is not available');
+    }
     return product.price * quantity;
 };
 

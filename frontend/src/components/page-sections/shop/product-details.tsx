@@ -66,6 +66,41 @@ export function ProductDetails({
     setPortalEl(document.getElementById("flyer-pricing-portal"));
   }, []);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number | number[]>>({});
+  const options = product.printingOptions || [];
+
+  const matrixDimensions = (() => {
+    const material = options.find(option => /material|format|package/i.test(option.name));
+    const laminate = options.find(option => /lamination|sides|packaging/i.test(option.name));
+    const design = product.category === "paper-bag"
+      ? options.find(option => /design|size/i.test(option.name))
+      : undefined;
+    return [
+      material ? { field: "material" as const, option: material } : null,
+      laminate ? { field: (product.category === "paper-bag" ? "lamination" : "laminate") as "lamination" | "laminate", option: laminate } : null,
+      design ? { field: "design" as const, option: design } : null,
+    ].filter(Boolean) as Array<{ field: "material" | "laminate" | "lamination" | "design"; option: typeof options[number] }>;
+  })();
+
+  const selectedLabel = (optionName: string, selections = selectedOptions) => {
+    const index = selections[optionName];
+    return typeof index === "number"
+      ? options.find(option => option.name === optionName)?.options[index]?.label || ""
+      : "";
+  };
+
+  const findMatrixRow = (selections = selectedOptions) => product.matrixPricing?.pricingData.find((row: any) =>
+    matrixDimensions.every(({ field, option }) => String(row[field] || "") === selectedLabel(option.name, selections)),
+  );
+
+  const isMatrixOptionAvailable = (optionName: string, index: number) => {
+    const dimension = matrixDimensions.find(item => item.option.name === optionName);
+    if (!dimension || !product.matrixPricing?.enabled) return true;
+    const candidateSelections = { ...selectedOptions, [optionName]: index };
+    return product.matrixPricing.pricingData.some((row: any) => matrixDimensions.every(({ field, option }) => {
+      const selected = selectedLabel(option.name, candidateSelections);
+      return !selected || String(row[field] || "") === selected;
+    }));
+  };
 
   useEffect(() => {
     if (product.printingOptions) {
@@ -90,7 +125,24 @@ export function ProductDetails({
           return { ...prev, [optionName]: [...current, index] };
         }
       }
-      return { ...prev, [optionName]: index };
+      const next = { ...prev, [optionName]: index };
+      const changedDimension = matrixDimensions.find(item => item.option.name === optionName);
+      if (!changedDimension || !product.matrixPricing?.enabled || findMatrixRow(next)) return next;
+
+      // A price matrix can intentionally omit invalid combinations. When the
+      // first dimension changes, move the related dimension to the first
+      // valid workbook-backed option rather than pricing a non-existent row.
+      const changedLabel = selectedLabel(optionName, next);
+      const compatibleRow = product.matrixPricing.pricingData.find((row: any) =>
+        String(row[changedDimension.field] || "") === changedLabel,
+      );
+      if (!compatibleRow) return next;
+      matrixDimensions.forEach(({ field, option }) => {
+        if (option.name === optionName) return;
+        const compatibleIndex = option.options.findIndex(value => value.label === compatibleRow[field]);
+        if (compatibleIndex >= 0) next[option.name] = compatibleIndex;
+      });
+      return next;
     });
 
     if (!isMultiSelect && /\bdesigns?\b|reka bentuk/i.test(optionName)) {
@@ -153,6 +205,10 @@ const hasDesignVariations = (product.variations || []).length > 0;
     const isIslamicKhat = product.category?.toLowerCase() === "islamic khat";
     if ((hasDesignVariations || (isIslamicKhat && product.images.length > 1)) && selectedVariationIndex === null) {
       toast.error(label("Please choose a design before adding to cart", "Sila pilih reka bentuk sebelum menambah ke troli"));
+      return;
+    }
+    if (product.matrixPricing?.enabled && !findMatrixRow()) {
+      toast.error(label("This variation has no published price. Please choose an available option.", "Variasi ini tiada harga. Sila pilih pilihan yang tersedia."));
       return;
     }
 
@@ -226,7 +282,6 @@ const configVariationLabel = selectedVariationInfo?.label || "";
     });
   };
 
-  const options = product.printingOptions || [];
 const stockBySize = product.sizes || [];
   const designVariations = product.variations || [];
   const hasDesignVariations = designVariations.length > 0;
@@ -394,10 +449,14 @@ const stockBySize = product.sizes || [];
             {opt.options.map((val, idx) => (
               <label
                 key={idx}
-                className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 transition-all duration-200 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
+                className={`flex items-center justify-between rounded-xl border p-3 transition-all duration-200 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
+                  !opt.isMultiSelect && !isMatrixOptionAvailable(opt.name, idx)
+                    ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 opacity-60 dark:border-border dark:bg-muted/30"
+                    : "cursor-pointer " + (
                   opt.isMultiSelect ? (Array.isArray(selectedOptions[opt.name]) && (selectedOptions[opt.name] as number[]).includes(idx)) : selectedOptions[opt.name] === idx
                     ? "border-primary bg-primary/5 ring-2 ring-primary/15 dark:bg-primary/10"
                     : "border-gray-200 hover:border-primary/50 dark:border-border dark:hover:border-primary/50"
+                    )
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -405,6 +464,7 @@ const stockBySize = product.sizes || [];
                     type={opt.isMultiSelect ? "checkbox" : "radio"}
                     name={opt.name}
                     className="w-4 h-4 text-primary focus:ring-primary accent-primary"
+                    disabled={!opt.isMultiSelect && !isMatrixOptionAvailable(opt.name, idx)}
                     checked={opt.isMultiSelect ? Array.isArray(selectedOptions[opt.name]) && (selectedOptions[opt.name] as number[]).includes(idx) : selectedOptions[opt.name] === idx}
                     onChange={() => handleOptionChange(opt.name, idx, opt.isMultiSelect)}
                   />

@@ -165,6 +165,30 @@ test('adds per-unit and once-per-order choices to matrix totals', () => {
   assert.equal(pricing.lineTotal, 230);
 });
 
+test('rejects a matrix variation that has no workbook price', () => {
+  const matrixProduct = {
+    ...configurableProduct,
+    price: 10,
+    printingOptions: [
+      { name: 'Material', options: [{ label: '80gsm', priceAdd: 0 }, { label: '85gsm', priceAdd: 0 }] },
+      { name: 'Printing Sides', options: [{ label: '4C + 0C', priceAdd: 0 }, { label: '4C + 4C', priceAdd: 0 }] },
+    ],
+    matrixPricing: {
+      enabled: true,
+      pricingData: [{ material: '85gsm', laminate: '4C + 4C', quantityPrices: { 100: 100 } }],
+    },
+  };
+
+  assert.throws(() => computeProductPricing(matrixProduct, 100, {
+    version: 1,
+    fulfillmentSize: 'Standard',
+    selections: [
+      { name: 'Material', values: [{ label: '85gsm', priceAdd: 0 }] },
+      { name: 'Printing Sides', values: [{ label: '4C + 0C', priceAdd: 0 }] },
+    ],
+  }), /Selected product variation is not available/);
+});
+
 test('cart and order schemas persist explicit variation fields', () => {
   for (const model of [CartModel, OrderModel]) {
     const productsPath = model === CartModel ? 'items' : 'products';
