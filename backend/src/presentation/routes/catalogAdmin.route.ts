@@ -13,6 +13,7 @@ import productRepository from '../../infrastructure/db/repositories/product.repo
 import { getProductSections } from '../../shared/constants/productSections';
 import OrderModel from '../../infrastructure/db/models/order.model';
 import { emitProductUpdated } from '../../shared/utils/productBroadcast';
+import { catalogProducts } from '../../shared/catalog/catalogProducts';
 
 const router = Router();
 const redis = new RedisService();
@@ -330,6 +331,57 @@ router.get('/image/:fileName', async (req, res, next) => {
 });
 
 router.use(authMiddilware, roles);
+
+// Applies the versioned catalog fields only. Product content, uploaded images,
+// stock, and operational settings remain owned by the admin database.
+router.post('/sync-published-pricing', async (req, res, next) => {
+  try {
+    const updatedBy = actor(req).actorName;
+    const operations: any[] = catalogProducts.map(product => ({
+      updateOne: {
+        filter: { catalogId: product.catalogId },
+        update: {
+          $set: {
+            price: product.price,
+            originalPrice: product.originalPrice ?? product.price,
+            discount: product.discount ?? 0,
+            category: product.category,
+            sections: getProductSections(product.category),
+            printingOptions: product.printingOptions ?? [],
+            matrixPricing: product.matrixPricing ?? { enabled: false, pricingData: [] },
+            updatedBy,
+          },
+          $setOnInsert: {
+            catalogId: product.catalogId,
+            name: product.name,
+            description: product.description,
+            images: product.images || [],
+            sizes: product.sizes || [],
+            rating: product.rating ?? 0,
+            status: 'published',
+            slug: slugify(product.name),
+          },
+        },
+        upsert: true,
+      },
+    }));
+    const result = await ProductModel.bulkWrite(operations, { ordered: false });
+    await invalidateCatalog();
+    const synced = await ProductModel.find({
+      catalogId: { $in: catalogProducts.map(product => product.catalogId) },
+    }).lean();
+    synced.forEach(product => void emitProductUpdated(product, 'updated'));
+    res.json({
+      success: true,
+      message: 'Published catalog pricing is synchronized.',
+      updated: result.modifiedCount,
+      added: result.upsertedCount,
+      total: synced.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.get('/', async (req, res, next) => {
   try {

@@ -1,6 +1,7 @@
 import AxiosInstance from '@/utils/axios';
 
 export const getCatalog = async (token: string) => (await AxiosInstance(token).get('/api/admin/catalog')).data;
+export const syncPublishedCatalogPricing = async (token: string) => (await AxiosInstance(token).post('/api/admin/catalog/sync-published-pricing')).data;
 export const getCatalogAnalytics = async (token: string) => (await AxiosInstance(token).get('/api/admin/catalog/analytics')).data;
 export const getCatalogProduct = async (token: string, id: string) => (await AxiosInstance(token).get(`/api/admin/catalog/${id}`)).data;
 export const createCatalogProduct = async (token: string, payload: unknown) => (await AxiosInstance(token).post('/api/admin/catalog', payload)).data;
