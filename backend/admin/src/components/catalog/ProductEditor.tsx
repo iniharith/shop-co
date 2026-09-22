@@ -58,6 +58,7 @@ type PrintingOption = {
   priceMode?: 'perUnit' | 'fixed';
   options: PrintingOptionValue[];
 };
+type AreaPricing = { enabled: boolean; unit?: 'ft' | 'in' | 'm'; pricePerSquareUnit: number; minimumArea?: number; rounding?: 'none' | 'ceil' };
 
 type Product = {
   _id: string;
@@ -71,6 +72,7 @@ type Product = {
   sizes: SizeStock[];
   variations?: DesignVariation[];
   printingOptions?: PrintingOption[];
+  areaPricing?: AreaPricing;
   slug?: string;
   status?: 'draft' | 'published';
   seoTitle?: string;
@@ -1294,6 +1296,17 @@ images: resolveImages(current.images),
                   }
                 />
               </label>
+              <div className="rounded-xl border bg-muted/30 p-4 md:col-span-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div><p className="font-semibold">Square-foot pricing</p><p className="text-xs text-muted-foreground">Let customers enter width × height and calculate the price from your rate.</p></div>
+                  <input type="checkbox" checked={Boolean(product.areaPricing?.enabled)} onChange={event => setProduct({ ...product, areaPricing: { enabled: event.target.checked, unit: product.areaPricing?.unit || 'ft', pricePerSquareUnit: product.areaPricing?.pricePerSquareUnit ?? product.price, minimumArea: product.areaPricing?.minimumArea || 0, rounding: product.areaPricing?.rounding || 'none' } })} />
+                </div>
+                {product.areaPricing?.enabled && <div className="mt-3 grid gap-3 md:grid-cols-3">
+                  <label className="text-sm font-medium">Rate / sq ft<Input type="number" min="0" step="0.01" value={product.areaPricing.pricePerSquareUnit} onChange={event => setProduct({ ...product, areaPricing: { ...product.areaPricing!, pricePerSquareUnit: Number(event.target.value) } })} /></label>
+                  <label className="text-sm font-medium">Minimum billable area<Input type="number" min="0" step="0.01" value={product.areaPricing.minimumArea || 0} onChange={event => setProduct({ ...product, areaPricing: { ...product.areaPricing!, minimumArea: Number(event.target.value) } })} /></label>
+                  <label className="text-sm font-medium">Rounding<select value={product.areaPricing.rounding || 'none'} onChange={event => setProduct({ ...product, areaPricing: { ...product.areaPricing!, rounding: event.target.value as 'none' | 'ceil' } })} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"><option value="none">Exact area</option><option value="ceil">Round up to next sq ft</option></select></label>
+                </div>}
+              </div>
             </div>
             <label className="mt-4 block space-y-1 text-sm font-medium">
               Description

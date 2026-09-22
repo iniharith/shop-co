@@ -358,6 +358,7 @@ router.post('/sync-published-pricing', async (req, res, next) => {
             sections: getProductSections(product.category),
             printingOptions: product.printingOptions ?? [],
             matrixPricing: product.matrixPricing ?? { enabled: false, pricingData: [] },
+            areaPricing: product.areaPricing ?? { enabled: false, pricePerSquareUnit: product.price },
             updatedBy,
           },
           $setOnInsert: {

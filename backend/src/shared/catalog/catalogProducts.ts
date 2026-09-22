@@ -573,6 +573,13 @@ export const catalogProducts: ICatalogProduct[] = [
     "matrixPricing": {
       "enabled": false,
       "pricingData": []
+    },
+    "areaPricing": {
+      "enabled": true,
+      "unit": "ft",
+      "pricePerSquareUnit": 20,
+      "minimumArea": 1,
+      "rounding": "none"
     }
   },
   {

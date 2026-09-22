@@ -66,6 +66,8 @@ export function ProductDetails({
     setPortalEl(document.getElementById("flyer-pricing-portal"));
   }, []);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number | number[]>>({});
+  const [customWidth, setCustomWidth] = useState(1);
+  const [customHeight, setCustomHeight] = useState(1);
   const options = product.printingOptions || [];
 
   const matrixDimensions = (() => {
@@ -253,6 +255,12 @@ const configVariationLabel = selectedVariationInfo?.label || "";
       version: 1,
       fulfillmentSize: baseSize,
       selections,
+      area: product.areaPricing?.enabled ? {
+        width: customWidth,
+        height: customHeight,
+        unit: product.areaPricing.unit || "ft",
+        squareUnits: customWidth * customHeight,
+      } : undefined,
       design: artworkUrl ? { type: "upload" as const, label: "Upload Artwork", priceAdd: 0 } : isIslamicKhat || hasDesignVariations
         ? {
             type: "variation" as const,
@@ -320,7 +328,24 @@ const stockBySize = product.sizes || [];
   let subtotal = 0;
   let availableQuantities: number[] = [];
   
-  if (product.matrixPricing?.enabled) {
+  if (product.areaPricing?.enabled) {
+    let perAreaAddons = 0;
+    let fixedAddons = 0;
+    options.forEach(opt => {
+      const selectedVal = selectedOptions[opt.name];
+      const indexes = Array.isArray(selectedVal) ? selectedVal : typeof selectedVal === 'number' ? [selectedVal] : [];
+      indexes.forEach(index => {
+        const amount = Number(opt.options[index]?.priceAdd || 0);
+        if (opt.priceMode === 'fixed') fixedAddons += amount;
+        else perAreaAddons += amount;
+      });
+    });
+    const rawArea = customWidth * customHeight;
+    const billedArea = product.areaPricing.rounding === 'ceil'
+      ? Math.ceil(Math.max(rawArea, Number(product.areaPricing.minimumArea || 0)))
+      : Math.max(rawArea, Number(product.areaPricing.minimumArea || 0));
+    subtotal = billedArea * (Number(product.areaPricing.pricePerSquareUnit || product.price) + perAreaAddons) * quantity + fixedAddons;
+  } else if (product.matrixPricing?.enabled) {
     const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format') || o.name.toLowerCase().includes('package'))?.name;
     const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides') || o.name.toLowerCase().includes('packaging'))?.name;
     
@@ -539,6 +564,17 @@ const variationStepNum = (hasImageVariations || hasDesignVariations) ? currentSt
       </div>
 
       <div className="space-y-6 p-4 sm:space-y-8 sm:p-6">
+        {product.areaPricing?.enabled && (
+          <section className="rounded-2xl border border-primary/30 bg-primary/[0.04] p-4">
+            <h2 className="text-base font-semibold">Custom size (square feet)</h2>
+            <p className="mt-1 text-xs text-muted-foreground">Enter the width and height. Price is calculated from the admin rate per square foot.</p>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <label className="text-sm font-medium">Width ({product.areaPricing.unit || "ft"})<input type="number" min="0.01" step="0.01" value={customWidth} onChange={e => setCustomWidth(Math.max(0.01, Number(e.target.value) || 0.01))} className="mt-1 flex h-10 w-full rounded-lg border border-input bg-background px-3" /></label>
+              <label className="text-sm font-medium">Height ({product.areaPricing.unit || "ft"})<input type="number" min="0.01" step="0.01" value={customHeight} onChange={e => setCustomHeight(Math.max(0.01, Number(e.target.value) || 0.01))} className="mt-1 flex h-10 w-full rounded-lg border border-input bg-background px-3" /></label>
+            </div>
+            <p className="mt-3 text-sm font-semibold">Area: {(customWidth * customHeight).toFixed(2)} sq ft · Rate: RM {Number(product.areaPricing.pricePerSquareUnit || product.price).toFixed(2)}/sq ft</p>
+          </section>
+        )}
         
         {/* STEP 2 */}
         {step1Options.length > 0 && (

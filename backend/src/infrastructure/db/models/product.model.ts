@@ -132,6 +132,13 @@ const ProductSchema: Schema = new Schema(
                 quantityPrices: { type: Schema.Types.Mixed },
             }],
         },
+        areaPricing: {
+            enabled: { type: Boolean, default: false },
+            unit: { type: String, enum: ['ft', 'in', 'm'], default: 'ft' },
+            pricePerSquareUnit: { type: Number, default: 0, min: 0 },
+            minimumArea: { type: Number, default: 0, min: 0 },
+            rounding: { type: String, enum: ['none', 'ceil'], default: 'none' },
+        },
         averageRating: {
             type: Number,
             default: 0,

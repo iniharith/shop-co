@@ -21,6 +21,18 @@ export interface ProductPricingResult {
     pricingVersion: string;
 }
 
+const areaSubtotal = (product: IProduct, configuration: IProductConfiguration | undefined, quantity: number): number | null => {
+    const rule = product.areaPricing;
+    const area = configuration?.area;
+    if (!rule?.enabled || !area) return null;
+    const factor = area.unit === rule.unit ? 1 : area.unit === 'in' && rule.unit === 'ft' ? 1 / 144 : area.unit === 'm' && rule.unit === 'ft' ? 10.7639104167 : 1;
+    const squareUnits = area.width * area.height * factor;
+    if (!Number.isFinite(squareUnits) || squareUnits <= 0) throw new Error('A valid custom size is required');
+    const billedArea = rule.rounding === 'ceil' ? Math.ceil(Math.max(squareUnits, rule.minimumArea || 0)) : Math.max(squareUnits, rule.minimumArea || 0);
+    const addons = sumAddons(product, configuration);
+    return (billedArea * (Number(rule.pricePerSquareUnit || product.price) + addons.perUnit)) * quantity + addons.fixed;
+};
+
 // Price add-ons only from the server-side product definition. Client prices are ignored.
 const sumAddons = (product: IProduct, configuration: IProductConfiguration | undefined, filter?: (name: string) => boolean): { perUnit: number; fixed: number } => {
     const optionNames = new Set((product.printingOptions || []).map((option) => option.name));
@@ -117,6 +129,12 @@ export const computeProductPricing = (
     const qty = Number.isInteger(Number(quantity)) && Number(quantity) > 0 ? Number(quantity) : 1;
     const fixedPrice = configuration?.design?.type === 'service' ? DESIGN_SERVICE_FEE : 0;
     let subtotal = 0;
+
+    const customAreaSubtotal = areaSubtotal(product, configuration, qty);
+    if (customAreaSubtotal !== null) {
+        const lineTotal = customAreaSubtotal + fixedPrice;
+        return { unitPrice: customAreaSubtotal / qty, fixedPrice, lineTotal, pricingVersion: PRICING_VERSION };
+    }
 
     if (product.matrixPricing?.enabled) {
         const dimensions = matrixDimensionNames(product);

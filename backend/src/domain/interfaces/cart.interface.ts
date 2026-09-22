@@ -15,6 +15,7 @@ export interface IProductConfiguration {
       priceAdd?: number;
     }>;
   }>;
+  area?: { width: number; height: number; unit: 'ft' | 'in' | 'm'; squareUnits: number };
   design?: {
     type: 'upload' | 'service' | 'variation';
     label: string;

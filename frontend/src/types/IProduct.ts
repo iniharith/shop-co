@@ -36,6 +36,7 @@ export interface IProduct {
             quantityPrices: Record<number, number | Record<string, number>>;
         }[];
     };
+    areaPricing?: { enabled: boolean; unit?: 'ft' | 'in' | 'm'; pricePerSquareUnit: number; minimumArea?: number; rounding?: 'none' | 'ceil' };
     catalogId?: string;
     slug?: string;
     seoTitle?: string;

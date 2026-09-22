@@ -16,6 +16,13 @@ export interface ICatalogProduct {
     sizes: ICatalogSize[];
     printingOptions?: ICatalogPrintingOption[];
     matrixPricing?: ICatalogMatrixPricing;
+    areaPricing?: {
+        enabled: boolean;
+        unit?: 'ft' | 'in' | 'm';
+        pricePerSquareUnit: number;
+        minimumArea?: number;
+        rounding?: 'none' | 'ceil';
+    };
 }
 
 export interface ICatalogSize {

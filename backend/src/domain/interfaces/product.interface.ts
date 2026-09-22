@@ -28,6 +28,7 @@ export interface IProduct {
     discount?: number;
     printingOptions?: IProductPrintingOption[];
     matrixPricing?: IProductMatrixPricing;
+    areaPricing?: IProductAreaPricing;
     specifications?: IProductSpecifications;
     packageContents?: string[];
     installationInstructions?: string;
@@ -91,6 +92,14 @@ export interface IProductMatrixRow {
     design?: string;
     priceMode?: 'total' | 'perUnit';
     quantityPrices: Record<string, any>;
+}
+
+export interface IProductAreaPricing {
+    enabled: boolean;
+    unit?: 'ft' | 'in' | 'm';
+    pricePerSquareUnit: number;
+    minimumArea?: number;
+    rounding?: 'none' | 'ceil';
 }
 
 
