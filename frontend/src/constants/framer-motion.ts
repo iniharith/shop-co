@@ -3,7 +3,8 @@
  * Kampungcetak ®
  */
 "use client"
-export const item_variants = {
+import { type Variants } from "framer-motion";
+export const item_variants: Variants = {
     hidden: {
         opacity: 0,
         y: 20
@@ -19,7 +20,7 @@ export const item_variants = {
     }
 }
 
-export const container_variants = {
+export const container_variants: Variants = {
 
     hidden: {},
     visible: {
@@ -31,7 +32,7 @@ export const container_variants = {
 
 }
 
-export const button_variants = {
+export const button_variants: Variants = {
     hidden: {
         opacity: 0,
         y: 10
