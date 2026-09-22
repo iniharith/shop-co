@@ -339,7 +339,16 @@ router.post('/sync-published-pricing', async (req, res, next) => {
     const updatedBy = actor(req).actorName;
     const operations: any[] = catalogProducts.map(product => ({
       updateOne: {
-        filter: { catalogId: product.catalogId },
+        // Older catalog records may have been created with the slug but without
+        // the versioned catalogId. Match either identity so every existing
+        // storefront record is updated instead of silently creating a second
+        // product document.
+        filter: {
+          $or: [
+            { catalogId: product.catalogId },
+            { slug: slugify(product.name) },
+          ],
+        },
         update: {
           $set: {
             price: product.price,
