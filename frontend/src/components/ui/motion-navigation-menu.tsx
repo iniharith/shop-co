@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDownIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Highlight, HighlightItem } from "@/components/unlumen-ui/primitives/highlight";
+import { Highlight, HighlightItem } from "@/components/ui/highlight";
 
 type Spring = {
   type: "spring";

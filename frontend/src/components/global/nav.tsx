@@ -33,8 +33,8 @@ import {
   MotionNavigationMenuItem,
   MotionNavigationMenuList,
   MotionNavigationMenuTrigger,
-} from "../unlumen-ui/motion-navigation-menu";
-import { HighlightItem } from "../unlumen-ui/primitives/highlight";
+} from "../ui/motion-navigation-menu";
+import { HighlightItem } from "../ui/highlight";
 
 // ── Dynamic Nav Categories ──────────────────────────────────────────────────
 interface NavSubItem {
