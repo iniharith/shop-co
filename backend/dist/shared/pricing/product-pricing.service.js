@@ -18,6 +18,7 @@ exports.CartPriceChangedError = CartPriceChangedError;
 const cartPriceChanged = (previous, current) => previous === undefined || !Number.isFinite(previous) || Math.round(previous * 100) !== Math.round(current * 100);
 exports.cartPriceChanged = cartPriceChanged;
 const areaSubtotal = (product, configuration, quantity) => {
+    var _a, _b;
     const rule = product.areaPricing;
     const area = configuration === null || configuration === void 0 ? void 0 : configuration.area;
     if (!(rule === null || rule === void 0 ? void 0 : rule.enabled) || !area)
@@ -27,8 +28,13 @@ const areaSubtotal = (product, configuration, quantity) => {
     if (!Number.isFinite(squareUnits) || squareUnits <= 0)
         throw new Error('A valid custom size is required');
     const billedArea = rule.rounding === 'ceil' ? Math.ceil(Math.max(squareUnits, rule.minimumArea || 0)) : Math.max(squareUnits, rule.minimumArea || 0);
-    const addons = sumAddons(product, configuration);
-    return (billedArea * (Number(rule.pricePerSquareUnit || product.price) + addons.perUnit)) * quantity + addons.fixed;
+    const matrixEnabled = Boolean((_a = product.matrixPricing) === null || _a === void 0 ? void 0 : _a.enabled);
+    const rate = matrixEnabled
+        ? resolveMatrixSubtotal(product, quantity, configuration) / quantity
+        : Number((_b = rule.pricePerSquareUnit) !== null && _b !== void 0 ? _b : product.price);
+    const dimensions = matrixEnabled ? matrixDimensionNames(product) : new Set();
+    const addons = sumAddons(product, configuration, (name) => !dimensions.has(name));
+    return billedArea * (rate + addons.perUnit) * quantity + addons.fixed;
 };
 // Price add-ons only from the server-side product definition. Client prices are ignored.
 const sumAddons = (product, configuration, filter) => {

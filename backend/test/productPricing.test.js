@@ -138,6 +138,33 @@ test('multiplies per-unit matrix tiers by the requested quantity', () => {
   assert.equal(pricing.lineTotal, 1498);
 });
 
+test('uses the selected banner material rate for customer-entered square feet', () => {
+  const banner = {
+    ...configurableProduct,
+    price: 2,
+    areaPricing: { enabled: true, unit: 'ft', pricePerSquareUnit: 2, minimumArea: 0, rounding: 'none' },
+    printingOptions: [{
+      name: 'Material / Print Type',
+      options: [{ label: '320GSM / SOLVENT', priceAdd: 0 }, { label: '400GSM / ECO SOLVENT', priceAdd: 0 }],
+    }],
+    matrixPricing: {
+      enabled: true,
+      pricingData: [
+        { material: '320GSM / SOLVENT', laminate: '', priceMode: 'perUnit', quantityPrices: { 1: 2 } },
+        { material: '400GSM / ECO SOLVENT', laminate: '', priceMode: 'perUnit', quantityPrices: { 1: 3.5 } },
+      ],
+    },
+  };
+  const configuration = {
+    version: 1,
+    fulfillmentSize: 'Standard',
+    area: { width: 2, height: 5, unit: 'ft', squareUnits: 10 },
+    selections: [{ name: 'Material / Print Type', values: [{ label: '400GSM / ECO SOLVENT', priceAdd: 0 }] }],
+  };
+  assert.equal(computeProductPricing(banner, 3, configuration).lineTotal, 105);
+  assert.throws(() => computeProductPricing(banner, 3, { ...configuration, selections: [] }), /not available/);
+});
+
 test('rejects quantities without an exact total-price matrix entry', () => {
   const matrixProduct = {
     ...configurableProduct,

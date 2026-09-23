@@ -94,6 +94,12 @@ export function ProductDetails({
     matrixDimensions.every(({ field, option }) => String(row[field] || "") === selectedLabel(option.name, selections)),
   );
 
+  const currentAreaRate = () => {
+    if (!product.matrixPricing?.enabled) return Number(product.areaPricing?.pricePerSquareUnit ?? product.price);
+    const tiers = Object.keys(findMatrixRow()?.quantityPrices || {}).map(Number).filter(tier => tier <= quantity);
+    return tiers.length ? Number(findMatrixRow()?.quantityPrices[Math.max(...tiers)]) : 0;
+  };
+
   const isMatrixOptionAvailable = (optionName: string, index: number) => {
     const dimension = matrixDimensions.find(item => item.option.name === optionName);
     if (!dimension || !product.matrixPricing?.enabled) return true;
@@ -335,9 +341,12 @@ const stockBySize = product.sizes || [];
   let availableQuantities: number[] = [];
   
   if (product.areaPricing?.enabled) {
+    const areaRate = currentAreaRate();
+    const dimensionNames = new Set(matrixDimensions.map(({ option }) => option.name));
     let perAreaAddons = 0;
     let fixedAddons = 0;
     options.forEach(opt => {
+      if (product.matrixPricing?.enabled && dimensionNames.has(opt.name)) return;
       const selectedVal = selectedOptions[opt.name];
       const indexes = Array.isArray(selectedVal) ? selectedVal : typeof selectedVal === 'number' ? [selectedVal] : [];
       indexes.forEach(index => {
@@ -350,7 +359,7 @@ const stockBySize = product.sizes || [];
     const billedArea = product.areaPricing.rounding === 'ceil'
       ? Math.ceil(Math.max(rawArea, Number(product.areaPricing.minimumArea || 0)))
       : Math.max(rawArea, Number(product.areaPricing.minimumArea || 0));
-    subtotal = billedArea * (Number(product.areaPricing.pricePerSquareUnit || product.price) + perAreaAddons) * quantity + fixedAddons;
+    subtotal = billedArea * (areaRate + perAreaAddons) * quantity + fixedAddons;
   } else if (product.matrixPricing?.enabled) {
     const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format') || o.name.toLowerCase().includes('package'))?.name;
     const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides') || o.name.toLowerCase().includes('packaging'))?.name;
@@ -578,7 +587,7 @@ const variationStepNum = (hasImageVariations || hasDesignVariations) ? currentSt
               <label className="text-sm font-medium">Width ({product.areaPricing.unit || "ft"})<input type="number" min="0.01" step="0.01" value={customWidth} onChange={e => setCustomWidth(Math.max(0.01, Number(e.target.value) || 0.01))} className="mt-1 flex h-10 w-full rounded-lg border border-input bg-background px-3" /></label>
               <label className="text-sm font-medium">Height ({product.areaPricing.unit || "ft"})<input type="number" min="0.01" step="0.01" value={customHeight} onChange={e => setCustomHeight(Math.max(0.01, Number(e.target.value) || 0.01))} className="mt-1 flex h-10 w-full rounded-lg border border-input bg-background px-3" /></label>
             </div>
-            <p className="mt-3 text-sm font-semibold">Area: {(customWidth * customHeight).toFixed(2)} sq ft · Rate: RM {Number(product.areaPricing.pricePerSquareUnit || product.price).toFixed(2)}/sq ft</p>
+            <p className="mt-3 text-sm font-semibold">Area: {(customWidth * customHeight).toFixed(2)} sq ft · Rate: RM {currentAreaRate().toFixed(2)}/sq ft</p>
           </section>
         )}
         

@@ -39,8 +39,13 @@ const areaSubtotal = (product: IProduct, configuration: IProductConfiguration | 
     const squareUnits = area.width * area.height * factor;
     if (!Number.isFinite(squareUnits) || squareUnits <= 0) throw new Error('A valid custom size is required');
     const billedArea = rule.rounding === 'ceil' ? Math.ceil(Math.max(squareUnits, rule.minimumArea || 0)) : Math.max(squareUnits, rule.minimumArea || 0);
-    const addons = sumAddons(product, configuration);
-    return (billedArea * (Number(rule.pricePerSquareUnit || product.price) + addons.perUnit)) * quantity + addons.fixed;
+    const matrixEnabled = Boolean(product.matrixPricing?.enabled);
+    const rate = matrixEnabled
+        ? resolveMatrixSubtotal(product, quantity, configuration) / quantity
+        : Number(rule.pricePerSquareUnit ?? product.price);
+    const dimensions = matrixEnabled ? matrixDimensionNames(product) : new Set<string>();
+    const addons = sumAddons(product, configuration, (name) => !dimensions.has(name));
+    return billedArea * (rate + addons.perUnit) * quantity + addons.fixed;
 };
 
 // Price add-ons only from the server-side product definition. Client prices are ignored.
