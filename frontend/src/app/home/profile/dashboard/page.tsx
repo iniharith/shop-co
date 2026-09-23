@@ -136,13 +136,13 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6 w-full">
       
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-amber-600/20 bg-gradient-to-br from-amber-50 to-orange-50 p-8 dark:from-[#282219] dark:to-[#1b1710]">
+      <div className="relative overflow-hidden rounded-3xl border border-amber-600/20 bg-gradient-to-br from-amber-50 to-orange-50 p-8 dark:from-card dark:to-muted dark:border-border">
         <div className="absolute right-0 top-0 select-none text-[120px] leading-none opacity-10">🖨️</div>
         <div className="relative">
-          <h1 className="mb-2 text-3xl font-extrabold text-gray-950 dark:text-[#fff8e8]">
+          <h1 className="mb-2 text-3xl font-extrabold text-gray-950 dark:text-foreground">
             Selamat Datang! 👋
           </h1>
-          <p className="max-w-lg text-base text-gray-700 dark:text-[#f7e8c5]/75">
+          <p className="max-w-lg text-base text-gray-700 dark:text-muted-foreground">
             Urus pesanan, hantar fail cetak, dan jejak penghantaran anda — semuanya di sini.
           </p>
           <div className="flex gap-4 mt-6 flex-wrap">

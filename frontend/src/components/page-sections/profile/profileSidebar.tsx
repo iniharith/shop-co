@@ -28,7 +28,7 @@ const ProfileSidebar = () => {
     <>
       <div className="sticky top-24 hidden overflow-hidden rounded-3xl border border-border bg-card shadow-xl md:block">
         <div className="border-b border-border px-5 py-5">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700 dark:text-[#d6a21d]">Member menu</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700 dark:text-muted-foreground">Member menu</p>
           <p className="mt-1 text-sm text-muted-foreground">Account navigation / Navigasi akaun</p>
         </div>
         <div className="flex flex-col gap-1 p-3">
@@ -40,7 +40,7 @@ const ProfileSidebar = () => {
                 href={link.href}
                 className={cn(
                   "relative flex items-center gap-3 rounded-2xl px-4 py-3 transition-colors",
-                  isActive ? "bg-amber-500 text-amber-950 shadow-lg shadow-amber-500/10" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  isActive ? "bg-amber-500 text-amber-950 shadow-lg shadow-amber-500/10 dark:bg-accent dark:text-accent-foreground dark:shadow-none" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 {isActive && (
@@ -73,13 +73,13 @@ const ProfileSidebar = () => {
                 href={link.href}
                 className={cn(
                   "relative flex items-center gap-2 px-4 py-3 whitespace-nowrap transition-colors",
-                  isActive ? "text-amber-700 dark:text-[#f2c14e]" : "text-muted-foreground"
+                  isActive ? "text-amber-700 dark:text-foreground" : "text-muted-foreground"
                 )}
               >
                 {iconMap[link.name] || <User size={16} />}
                 <span className="font-medium text-sm">{link.name}</span>
                 {isActive && (
-                  <div className="absolute bottom-0 left-4 right-4 h-0.5 rounded-t-full bg-amber-600" />
+                  <div className="absolute bottom-0 left-4 right-4 h-0.5 rounded-t-full bg-amber-600 dark:bg-foreground" />
                 )}
               </Link>
             );

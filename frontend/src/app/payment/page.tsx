@@ -19,9 +19,9 @@ const PaymentsPage = () => {
   ];
 
   return (
-    <main className="min-h-screen bg-[#f7f3e9] text-[#101820] dark:bg-[#0b1116] dark:text-white">
-      <section className="relative overflow-hidden border-b border-[#d9cfba] bg-[#101820] px-4 py-16 text-white sm:px-6 sm:py-24 lg:px-8">
-        <div className="pointer-events-none absolute -left-28 -top-32 size-[32rem] rounded-full bg-[#f4b400]/10 blur-3xl" />
+    <main className="min-h-screen bg-[#f7f3e9] text-[#101820] dark:bg-background dark:text-foreground">
+      <section className="relative overflow-hidden border-b border-[#d9cfba] bg-[#101820] dark:bg-card dark:border-border dark:text-foreground px-4 py-16 text-white sm:px-6 sm:py-24 lg:px-8">
+        <div className="pointer-events-none absolute -left-28 -top-32 size-[32rem] rounded-full bg-[#f4b400]/10 dark:bg-foreground/5 blur-3xl" />
         <div className="relative mx-auto flex max-w-6xl flex-col items-center text-center">
           <div className="mb-7 flex size-20 items-center justify-center rounded-2xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur sm:size-24">
             <Image src="/images/kampung-cetak-logo.png" alt="Kampung Cetak" width={76} height={76} priority className="size-16 object-contain sm:size-20" />
@@ -38,23 +38,23 @@ const PaymentsPage = () => {
 
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
         {/* Global Cards & FPX */}
-        <section className="mb-14 overflow-hidden rounded-[1.5rem] border border-[#d9cfba] bg-white shadow-[0_24px_70px_-55px_rgba(16,24,32,0.75)] dark:border-white/10 dark:bg-[#101820]">
+        <section className="mb-14 overflow-hidden rounded-[1.5rem] border border-[#d9cfba] bg-white shadow-[0_24px_70px_-55px_rgba(16,24,32,0.75)] dark:border-white/10 dark:bg-card">
           <div className="grid grid-cols-1 md:grid-cols-3">
 
             <div className="flex min-h-56 flex-col items-center justify-center space-y-4 p-8">
-              <span className="font-mono text-xs text-[#9a7300] dark:text-[#f4b400]">01</span>
+              <span className="font-mono text-xs text-[#9a7300] dark:text-muted-foreground">01</span>
               <h2 className="mb-4 text-xl font-semibold">MyDebit</h2>
               <div className="relative h-14 w-44"><Image src="/images/providers/mydebit.png" alt="MyDebit official logo" fill className="object-contain" sizes="176px" /></div>
             </div>
 
             <div className="flex min-h-56 flex-col items-center justify-center space-y-4 border-t border-[#e5ddcd] p-8 md:border-l md:border-t-0 dark:border-white/10">
-              <span className="font-mono text-xs text-[#9a7300] dark:text-[#f4b400]">02</span>
+              <span className="font-mono text-xs text-[#9a7300] dark:text-muted-foreground">02</span>
               <h2 className="mb-4 text-xl font-semibold">FPX Online Banking</h2>
               <div className="rounded-xl border border-[#174b8c]/20 bg-white px-7 py-3 text-xl font-black tracking-tight text-[#174b8c] shadow-sm">FPX</div>
             </div>
 
             <div className="flex min-h-56 flex-col items-center justify-center space-y-4 border-t border-[#e5ddcd] p-8 md:border-l md:border-t-0 dark:border-white/10">
-              <span className="font-mono text-xs text-[#9a7300] dark:text-[#f4b400]">03</span>
+              <span className="font-mono text-xs text-[#9a7300] dark:text-muted-foreground">03</span>
               <h2 className="mb-4 text-xl font-semibold">DuitNow &amp; {isMalay ? "E-Dompet" : "E-Wallets"}</h2>
               <div className="flex items-center justify-center gap-5"><div className="relative h-14 w-24"><Image src="/images/providers/duitnow.webp" alt="DuitNow official logo" fill className="object-contain" sizes="96px" /></div><div className="relative h-14 w-14"><Image src="/images/providers/tng-ewallet.svg" alt="Touch 'n Go eWallet official logo" fill className="object-contain" sizes="56px" /></div></div>
             </div>
@@ -64,7 +64,7 @@ const PaymentsPage = () => {
 
         {/* Supported Banks grid */}
         <div className="mb-10 mt-16">
-          <p className="store-eyebrow mb-2 text-[#80620a] dark:text-[#f4b400]">FPX network</p>
+          <p className="store-eyebrow mb-2 text-[#80620a] dark:text-muted-foreground">FPX network</p>
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{isMalay ? "Bank yang Disokong melalui FPX" : "Supported Banks via FPX"}</h2>
         </div>
 

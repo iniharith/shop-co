@@ -89,25 +89,27 @@
   --ring: oklch(0.58 0.13 178);
 }
 
+/* Neutral charcoal palette shared by every dark-mode storefront surface. */
 .dark {
-  --background: oklch(0.11 0.02 230);
-  --foreground: oklch(0.96 0.012 85);
-  --card: oklch(0.16 0.025 230);
-  --card-foreground: oklch(0.96 0.012 85);
-  --popover: oklch(0.14 0.025 230);
-  --popover-foreground: oklch(0.96 0.012 85);
-  --primary: oklch(0.78 0.16 78);
-  --primary-foreground: oklch(0.18 0.03 230);
-  --secondary: oklch(0.22 0.035 230);
-  --secondary-foreground: oklch(0.96 0.012 85);
-  --muted: oklch(0.19 0.03 230);
-  --muted-foreground: oklch(0.78 0.025 85);
-  --accent: oklch(0.72 0.12 178);
-  --accent-foreground: oklch(0.15 0.025 230);
+  color-scheme: dark;
+  --background: #111111;
+  --foreground: #dedede;
+  --card: #171717;
+  --card-foreground: #dedede;
+  --popover: #1c1c1c;
+  --popover-foreground: #dedede;
+  --primary: #dedede;
+  --primary-foreground: #171717;
+  --secondary: #242424;
+  --secondary-foreground: #dedede;
+  --muted: #1c1c1c;
+  --muted-foreground: #a0a0a0;
+  --accent: #2b2b2b;
+  --accent-foreground: #ededed;
   --destructive: oklch(0.68 0.18 25);
-  --border: oklch(0.3 0.04 230);
-  --input: oklch(0.34 0.045 230);
-  --ring: oklch(0.78 0.16 78);
+  --border: #2b2b2b;
+  --input: #363636;
+  --ring: #a0a0a0;
 }
 
 @layer base {

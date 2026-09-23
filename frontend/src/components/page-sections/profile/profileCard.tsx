@@ -220,7 +220,7 @@ const ProfileCard = () => {
               <Button
                 onClick={() => setIsEditing(true)}
                  variant="outline"
-                 className="gap-2 rounded-full border-amber-600/60 px-5 text-amber-700 hover:bg-amber-500 hover:text-amber-950 dark:text-[#f2c14e]"
+                 className="gap-2 rounded-full border-amber-600/60 px-5 text-amber-700 hover:bg-amber-500 hover:text-amber-950 dark:text-foreground dark:border-border dark:hover:bg-accent dark:hover:text-accent-foreground"
               >
                 <Edit2 size={15} /> Edit Profile
               </Button>
@@ -258,8 +258,8 @@ const ProfileCard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
           {/* Email */}
            <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3">
-             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
-               <Mail size={14} className="text-amber-700 dark:text-[#f2c14e]" />
+             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/15 dark:bg-accent">
+               <Mail size={14} className="text-amber-700 dark:text-foreground" />
             </div>
             <div className="overflow-hidden">
                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Email / E-mel</p>
@@ -271,8 +271,8 @@ const ProfileCard = () => {
 
           {/* Phone */}
            <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3">
-             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
-               <Phone size={14} className="text-amber-700 dark:text-[#f2c14e]" />
+             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/15 dark:bg-accent">
+               <Phone size={14} className="text-amber-700 dark:text-foreground" />
             </div>
             <div className="overflow-hidden">
                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Phone / Telefon</p>
@@ -286,8 +286,8 @@ const ProfileCard = () => {
 
           {/* Address */}
            <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3 sm:col-span-2">
-             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
-               <MapPin size={14} className="text-amber-700 dark:text-[#f2c14e]" />
+             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/15 dark:bg-accent">
+               <MapPin size={14} className="text-amber-700 dark:text-foreground" />
             </div>
             <div className="overflow-hidden">
                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Delivery address / Alamat penghantaran</p>
