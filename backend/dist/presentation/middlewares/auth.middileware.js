@@ -64,7 +64,6 @@ const refreshTokenMidllWare = (req, res, next) => __awaiter(void 0, void 0, void
         if (refreshToken) {
             const jwt = new jwt_1.default();
             const { userId } = jwt.verifyRefreshToken(refreshToken);
-            console.log('userId', userId);
             if (!userId) {
                 res.status(api_constant_1.statusCodes.UNAUTHORIZED);
                 throw new Error("user not found");

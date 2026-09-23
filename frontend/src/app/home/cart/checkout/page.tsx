@@ -4,136 +4,111 @@
  */
 "use client";
 import { Breadcrumbs } from "@/components/global/breadcrumb";
-import React, { useEffect, useRef, useState } from "react";
-import { Button } from "@heroui/button";
-import { useRouter } from "nextjs-toploader/app";
+import React, { useEffect, useState } from "react";
+import { isAxiosError } from 'axios';
+import Link from 'next/link';
 import AddressForm from "@/components/forms/addressForm";
 import { useGetCart } from "@/hooks/useCart";
 import AnimatedButton from "@/components/animation/animatedButton";
-import { toast } from "sonner";
 import { useOrder } from "@/hooks/useOrder";
 import { getShippingQuotations } from "@/api/order";
 import { useSession } from "next-auth/react";
 import { getImageUrl } from "@/utils/getImageUrl";
 import { getCartLineTotal, getCartUnitPrice, getConfiguredProductImage, getStructuredConfigurationParts } from "@/utils/productConfiguration";
+import type { ICartItem } from '@/types/ICart';
 
-const DEFAULT_WEIGHT = 1;
-const DEFAULT_DIMENSIONS = { width: 20, length: 30, height: 5 };
-
-function estimateCartWeight(cartItems: any[]): number {
-  let totalWeight = 0;
-  const sizeMap: Record<string, number> = {
-    A3: 0.12474,
-    A4: 0.06237,
-    A5: 0.03108,
-    A6: 0.01554,
-  };
-  for (const item of cartItems) {
-    let area = 0.06237;
-    const sizeName = (item.size || "").toUpperCase();
-    for (const [key, val] of Object.entries(sizeMap)) {
-      if (sizeName.includes(key)) {
-        area = val;
-        break;
-      }
-    }
-    const qty = item.quantity || 1;
-    totalWeight += (qty * 128 * area) / 1000;
-  }
-  totalWeight += 0.2;
-  if (totalWeight < 1) totalWeight = 1;
-  return Number(totalWeight.toFixed(2));
+function makeQuoteKey(postalCode: string, state: string, country: string, token: string | undefined, items: ICartItem[], revision: number): string {
+  return JSON.stringify([postalCode, state, country, token, revision,
+    items.map((item) => [item.product?._id, item.size, item.quantity, item.configurationKey])]);
 }
 
-const page = () => {
-  const [shippingFee, setShippingFee] = useState<number | null>(null);
-  const [shippingLoading, setShippingLoading] = useState(false);
-  const [shippingError, setShippingError] = useState<string | null>(null);
-  const [courierName, setCourierName] = useState<string | null>(null);
+const CheckoutPage = () => {
+  const [quoteState, setQuoteState] = useState<{ key: string; price: number | null; courier: string | null; error: string | null } | null>(null);
   const [configurationConfirmed, setConfigurationConfirmed] = useState(false);
-  const { form, onFormSubmit, control, errors, formRef, handleCheckout, profile } = useOrder({ shippingPrice: shippingFee, courier: courierName });
-  const router = useRouter();
-  const { data: session } = useSession();
-
+  const [quoteRevision, setQuoteRevision] = useState(0);
+  const { data: session, status: sessionStatus } = useSession();
   const { data: response, isLoading } = useGetCart();
   const cartItems = response?.cart?.items || [];
-
-  const postalCode = form.watch("postalCode");
-  const state = form.watch("state");
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { form, onFormSubmit, control, errors, formRef, handleCheckout, profile, orderSubmitting } = useOrder({
+    getShippingPrice: (address) => {
+      const key = makeQuoteKey(address.postalCode, address.state, address.country, session?.user?.token, cartItems, quoteRevision);
+      return quoteState?.key === key ? quoteState.price : null;
+    },
+    onShippingQuoteChanged: () => setQuoteRevision((revision) => revision + 1),
+  });
+  const postalCode = form.watch('postalCode');
+  const state = form.watch('state');
+  const country = form.watch('country');
+  const quoteKey = makeQuoteKey(postalCode, state, country, session?.user?.token, cartItems, quoteRevision);
+  const addressReady = postalCode.length >= 5 && state.length > 0 && country.length > 0 && cartItems.length > 0 && !!session?.user?.token;
+  const currentQuote = addressReady && quoteState?.key === quoteKey ? quoteState : null;
+  const shippingFee = currentQuote?.price ?? null;
+  const shippingError = currentQuote?.error ?? null;
+  const courierName = currentQuote?.courier ?? null;
+  const shippingLoading = addressReady && !currentQuote;
 
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-
-    if (!postalCode || postalCode.length < 5 || !state || state.length < 1) {
-      setShippingFee(null);
-      setShippingError(null);
-      setCourierName(null);
-      return;
-    }
-
-    debounceRef.current = setTimeout(async () => {
-      setShippingLoading(true);
-      setShippingError(null);
+    if (!addressReady) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
       try {
-        const weight = cartItems.length > 0 ? estimateCartWeight(cartItems) : DEFAULT_WEIGHT;
         const res = await getShippingQuotations(session?.user?.token || "", {
           postalCode: postalCode.trim(),
           state: state.trim(),
-          country: "Malaysia",
-          weight,
-          ...DEFAULT_DIMENSIONS,
+          country: country.trim(),
         }, 30000);
-        const groups = Array.isArray(res?.quotations) ? res.quotations : [];
-        const quotations = groups.flatMap((group: any) => Array.isArray(group?.quotations) ? group.quotations : Array.isArray(group) ? group : []);
-        if (quotations.length > 0) {
-          const getQuotationPrice = (q: any) => Number(q?.pricing?.total_amount || q?.pricing?.shipment_price || q?.price || q?.total_amount || q?.shipping_price) || Infinity;
-          const cheapest = quotations.reduce((min: any, q: any) => {
-            return getQuotationPrice(q) < getQuotationPrice(min) ? q : min;
-          });
-          const price = getQuotationPrice(cheapest);
-          setShippingFee(price === Infinity ? 0 : price);
-          setCourierName(cheapest?.courier?.courier_name || cheapest?.courier?.service_name || cheapest?.courier_name || "");
-        } else {
-          setShippingFee(null);
-          setShippingError(res?.error || "No shipping options available for this address");
-        }
-      } catch (err: any) {
-        setShippingFee(null);
-        setShippingError(err?.response?.data?.message || err?.message || "Failed to get shipping rates");
-      } finally {
-        setShippingLoading(false);
+        if (cancelled) return;
+        if (typeof res?.shippingPrice === 'number' && Number.isFinite(res.shippingPrice)) {
+          setQuoteState({ key: quoteKey, price: res.shippingPrice, courier: res.courier || '', error: null });
+        } else setQuoteState({ key: quoteKey, price: null, courier: null, error: 'No shipping options available for this address' });
+      } catch (err: unknown) {
+        if (cancelled) return;
+        const serverMessage = isAxiosError(err) ? (err.response?.data as { message?: string } | undefined)?.message : undefined;
+        setQuoteState({ key: quoteKey, price: null, courier: null, error: serverMessage || (err instanceof Error ? err.message : 'Failed to get shipping rates') });
       }
     }, 600);
 
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
+      cancelled = true;
+      clearTimeout(timer);
     };
-  }, [postalCode, state, cartItems, session?.user?.token]);
+  }, [addressReady, postalCode, state, country, session?.user?.token, quoteKey]);
 
   const subtotal = cartItems.reduce(
-    (acc: number, item: any) => acc + getCartLineTotal(item),
+    (acc: number, item) => acc + getCartLineTotal(item),
     0
   );
   const total = subtotal + (shippingFee || 0);
-  const productionDays = cartItems.reduce((max: number, item: any) => Math.max(max, Number(item.product?.productionTurnaround?.standardDays) || 0), 0);
+  const productionDays = cartItems.reduce((max: number, item) => Math.max(max, Number(item.product?.productionTurnaround?.standardDays) || 0), 0);
+
+  if (!isLoading && sessionStatus !== 'loading' && cartItems.length === 0) {
+    return (
+      <main className="mx-auto flex min-h-[55vh] max-w-xl flex-col items-center justify-center px-5 text-center">
+        <h1 className="text-3xl font-semibold text-foreground">Your cart is empty</h1>
+        <p className="mt-3 text-muted-foreground">Choose a product before starting checkout.</p>
+        <Link href="/home/shop" className="mt-6 rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2">
+          Browse products
+        </Link>
+      </main>
+    );
+  }
 
   return (
     <div className="w-full py-5 md:px-10 px-5">
       <Breadcrumbs />
-      <h1 className="text-4xl mt-3 font-bold">Checkout</h1>
+      <h1 className="mt-3 text-3xl font-bold sm:text-4xl">Checkout</h1>
       <div className="grid w-full grid-cols-1 gap-5 md:grid-cols-3">
-        <div className="w-full col-span-2 rounded-lg bg-gray-300/10 border-input border-1 h-min py-4 px-4 mt-4">
+        <div className="mt-4 h-min w-full min-w-0 rounded-xl border border-border bg-card px-4 py-4 md:col-span-2">
           <AddressForm
             form={form}
             onFormSubmit={onFormSubmit}
             control={control}
             errors={errors}
-            formRef={formRef as any}
+            formRef={formRef}
             profile={profile}
           />
         </div>
-        <div className="w-full rounded-lg bg-gray-300/10 border-input border-1 py-7 mt-4 flex flex-col gap-4 md:px-4 px-2">
+        <div className="mt-4 flex w-full min-w-0 flex-col gap-4 rounded-xl border border-border bg-card px-4 py-7">
           <div className="w-full">
             <p className="text-xl font-medium border-b border-dashed">
               Order Summary
@@ -143,7 +118,7 @@ const page = () => {
               <p className="text-lg text-primary/80 mt-2 font-medium border-b border-dashed">
                 Items
               </p>
-              {cartItems.map((item: any) => (
+              {cartItems.map((item) => (
                 <div
                   key={`${item.product._id}-${item.configurationKey || item.size}`}
                   className="flex w-full items-center justify-between gap-3"
@@ -192,7 +167,10 @@ const page = () => {
                     )}
                   </div>
                 ) : shippingError ? (
-                  <p className="text-sm text-destructive font-medium">{shippingError}</p>
+                  <div className="text-right text-sm">
+                    <p role="alert" className="font-medium text-destructive">{shippingError}</p>
+                    <button type="button" onClick={() => setQuoteRevision((revision) => revision + 1)} className="mt-1 font-medium text-foreground underline underline-offset-4">Retry rates</button>
+                  </div>
                 ) : (
                   <p className="text-sm text-muted-foreground font-medium">Enter address</p>
                 )}
@@ -211,8 +189,8 @@ const page = () => {
               </div>
               <div className="w-full mt-3 border-t border-b border-dashed flex items-center justify-between">
                 <p className="text-xl  font-medium">Total</p>
-                <p className="text-lg   font-medium">
-                  RM {total.toFixed(2)}
+                <p className="text-lg font-medium tabular-nums">
+                  {shippingFee === null ? '—' : `RM ${total.toFixed(2)}`}
                 </p>
               </div>
 
@@ -221,21 +199,12 @@ const page = () => {
                  <span>I confirm that my product configuration and design selection are correct.</span>
                </label>
                <AnimatedButton
-                 disabled={cartItems.length === 0 || isLoading || !configurationConfirmed}
+                 disabled={cartItems.length === 0 || isLoading || orderSubmitting || shippingLoading || shippingFee === null || !!shippingError || !configurationConfirmed}
                 className="w-full hover:bg-primary/90 cursor-pointer mt-3 bg-primary text-primary-foreground rounded-lg"
-                isLoading={isLoading}
+                isLoading={isLoading || orderSubmitting}
                 loadingText="Checking out..."
-                onClick={() => {
-                  if (cartItems.length > 0) {
-                    handleCheckout();
-                  } else {
-                    toast.error("No items in cart", {
-                      description: "Please add some items to your cart",
-                    });
-                    router.push("/home/shop");
-                  }
-                }}
-                text={cartItems.length > 0 ? "Checkout" : "No items in cart"}
+                onClick={handleCheckout}
+                text="Place order"
               />
             </div>
           </div>
@@ -245,4 +214,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default CheckoutPage;

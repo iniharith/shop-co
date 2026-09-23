@@ -36,6 +36,7 @@ export interface IAddress {
 
 export interface IOrder {
   userId: Types.ObjectId | IUser | string;
+  checkoutKey?: string;
   trackingNumber?: string;
   easyparcelOrderNo?: string;
   easyparcelAwb?: string;

@@ -65,8 +65,8 @@ const router = (0, express_1.Router)();
 const adminController = new admin_controller_1.AdminController();
 const SEARCH_MAX_TIME_MS = 5000;
 const prioritizeExact = (rows, isExact) => rows.sort((left, right) => Number(isExact(right)) - Number(isExact(left)));
-// Quick migration endpoint for the user to trigger in their browser
-router.get("/migrate-statuses", (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+// Manual maintenance must be explicitly invoked by a system administrator.
+router.post("/migrate-statuses", auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)("sysadmin"), (0, express_async_handler_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const o1 = yield order_model_1.default.collection.updateMany({ orderStatus: "ARTWORK_REVIEW" }, { $set: { orderStatus: "ARTWORK_REVIEWED" } });
         const o2 = yield order_model_1.default.collection.updateMany({ orderStatus: "DONE DESIGN" }, { $set: { orderStatus: "DONE_DESIGN" } });
@@ -335,7 +335,7 @@ router.post("/orders/bulk-delete", auth_middileware_1.default, adminController.b
 router.delete("/orders/:id", auth_middileware_1.default, adminController.deleteOrder.bind(adminController));
 router.post("/seed-test-data", auth_middileware_1.default, adminController.seedTestData.bind(adminController));
 router.delete("/clear-test-data", auth_middileware_1.default, adminController.clearTestData.bind(adminController));
-router.post("/users/:id/avatar", auth_middileware_1.default, uploadAvatar_middleware_1.uploadAvatar.single('avatar'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post("/users/:id/avatar", auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)("admin", "sysadmin", "boss"), uploadAvatar_middleware_1.uploadAvatar.single('avatar'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.params.id;
     if (!req.file) {
         res.status(400).json({ success: false, message: 'Tiada fail dipilih' });

@@ -85,16 +85,15 @@ export function Footer() {
         </div>
 
         <div className="md:col-span-9">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
             <div className="space-y-4">
               <h3 className="text-sm font-semibold uppercase tracking-wider">
                 {t("footer.company")}
               </h3>
               <ul className="space-y-2">
                 <li><FooterLink href="/about">{t("footer.about")}</FooterLink></li>
-                <li><FooterLink href="/features">{t("footer.features")}</FooterLink></li>
-                <li><FooterLink href="/works">{t("footer.works")}</FooterLink></li>
-                <li><FooterLink href="/career">{t("footer.career")}</FooterLink></li>
+                <li><FooterLink href="/home/shop">{t("footer.shop")}</FooterLink></li>
+                <li><FooterLink href="/home/contact">{t("footer.contact")}</FooterLink></li>
               </ul>
             </div>
 
@@ -133,33 +132,7 @@ export function Footer() {
         <p className="mb-4 text-xs text-white/45 md:mb-0">
           Kampung Cetak © 2026, {t("footer.rights")}
         </p>
-        <div className="flex items-center space-x-4">
-          <img
-            src="https://cdn-icons-png.flaticon.com/128/349/349221.png"
-            alt="Visa"
-            className="h-8 w-auto"
-          />
-          <img
-            src="https://cdn-icons-png.flaticon.com/128/196/196578.png"
-            alt="Mastercard"
-            className="h-8 w-auto"
-          />
-          <img
-            src="https://cdn-icons-png.flaticon.com/128/174/174861.png"
-            alt="PayPal"
-            className="h-8 w-auto"
-          />
-          <img
-            src="https://cdn-icons-png.flaticon.com/128/888/888871.png"
-            alt="Apple Pay"
-            className="h-8 w-auto"
-          />
-          <img
-            src="https://cdn-icons-png.flaticon.com/128/6124/6124998.png"
-            alt="Google Pay"
-            className="h-8 w-auto"
-          />
-        </div>
+        <p className="text-xs text-white/65">{t("footer.cod")}</p>
       </div>
     </footer>
   );

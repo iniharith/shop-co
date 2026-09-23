@@ -35,6 +35,11 @@ class OrderRepository {
             return yield this.orderModel.findById(orderId).populate("products.product").populate("userId");
         });
     }
+    getOrderByCheckoutKey(userId, checkoutKey) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.orderModel.findOne({ userId, checkoutKey });
+        });
+    }
     getOrderOwnerId(orderId) {
         return __awaiter(this, void 0, void 0, function* () {
             const order = yield this.orderModel.findById(orderId).select("userId").lean();
@@ -74,7 +79,7 @@ class OrderRepository {
     }
     getOrderByStatus(status) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.orderModel.find({ status }).populate("products.product").populate("userId");
+            return yield this.orderModel.find({ orderStatus: status }).populate("products.product").populate("userId");
         });
     }
     getOderByDeliveryBoy(deliveryBoy) {

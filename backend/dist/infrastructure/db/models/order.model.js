@@ -119,6 +119,7 @@ const OrderSchema = new mongoose_1.Schema({
         ref: 'User',
         required: false,
     },
+    checkoutKey: { type: String },
     customerName: {
         type: String,
         required: true,
@@ -227,5 +228,6 @@ const OrderSchema = new mongoose_1.Schema({
 OrderSchema.index({ createdAt: -1 });
 OrderSchema.index({ userId: 1, createdAt: -1 });
 OrderSchema.index({ orderStatus: 1, createdAt: -1 });
+OrderSchema.index({ checkoutKey: 1 }, { unique: true, sparse: true });
 const OrderModel = mongoose_1.default.model('Order', OrderSchema);
 exports.default = OrderModel;

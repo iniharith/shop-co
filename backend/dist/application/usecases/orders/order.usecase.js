@@ -65,6 +65,7 @@ const CustomerUpdateSettingsService_1 = require("../../../infrastructure/service
 const EasyParcelTrackingSyncService_1 = require("../../../infrastructure/services/EasyParcelTrackingSyncService");
 const fileUploadRoutes_1 = require("../../../presentation/routes/fileUploadRoutes");
 const product_pricing_service_1 = require("../../../shared/pricing/product-pricing.service");
+const shippingQuote_1 = require("../../../shared/pricing/shippingQuote");
 const productConfiguration_1 = require("../../../shared/catalog/productConfiguration");
 function requiredSenderEnv(name) {
     var _a;
@@ -124,9 +125,14 @@ class OrderUsecase {
             return order;
         });
     }
-    createOrder(address, userId, customerName, orderNotes, shippingPrice, courier) {
+    createOrder(address, userId, customerName, orderNotes, shippingPrice, checkoutKey) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a, _b;
+            if (checkoutKey) {
+                const existing = yield this.orderRepository.getOrderByCheckoutKey(userId, checkoutKey);
+                if (existing)
+                    return existing;
+            }
             const cart = yield this.cartRepository.getCartByUserId(userId);
             if (!cart || !cart.items || !((_a = cart === null || cart === void 0 ? void 0 : cart.items) === null || _a === void 0 ? void 0 : _a.length)) {
                 throw new Error("Cart did'nt have products , add Some Products In Cart");
@@ -171,6 +177,10 @@ class OrderUsecase {
                 });
                 totalAmount += productPrice;
             }
+            const quote = yield this.getCartShippingQuote(userId, address, cart.items);
+            if (!(0, shippingQuote_1.matchesQuotedShippingPrice)(shippingPrice, quote.shippingPrice)) {
+                throw new shippingQuote_1.ShippingQuoteChangedError();
+            }
             const decrementedStock = [];
             let order;
             try {
@@ -186,17 +196,17 @@ class OrderUsecase {
                         throw new Error(`Insufficient stock for product: ${update.productName}`);
                     decrementedStock.push(update);
                 }
-                const safeShippingPrice = Number.isFinite(shippingPrice) && shippingPrice >= 0 ? shippingPrice : 0;
                 order = yield this.orderRepository.createOrder({
                     userId,
+                    checkoutKey,
                     customerName,
                     orderNotes,
                     address,
                     paymentMethod: "COD",
                     products: orderItems,
-                    totalAmount: totalAmount + safeShippingPrice,
-                    shippingPrice: safeShippingPrice || undefined,
-                    courier: courier || undefined,
+                    totalAmount: totalAmount + quote.shippingPrice,
+                    shippingPrice: quote.shippingPrice,
+                    courier: quote.courier || undefined,
                 });
             }
             catch (error) {
@@ -209,13 +219,28 @@ class OrderUsecase {
                         referenceId: userId,
                     }).catch(() => undefined);
                 }
+                if (checkoutKey && (error === null || error === void 0 ? void 0 : error.code) === 11000) {
+                    const existing = yield this.orderRepository.getOrderByCheckoutKey(userId, checkoutKey);
+                    if (existing)
+                        return existing;
+                }
                 throw error;
             }
-            yield this.redisService.del(redis_constant_1.REDIS_KEYS.ORDERS + userId);
-            yield this.redisService.del(redis_constant_1.REDIS_KEYS.CART + userId);
-            yield this.redisService.del(redis_constant_1.REDIS_KEYS.PRODUCTS);
-            yield this.redisService.del(redis_constant_1.REDIS_KEYS.CATEGORIES);
-            yield this.redisService.del(redis_constant_1.REDIS_KEYS.ADDRESS + userId);
+            const cacheResults = yield Promise.allSettled([
+                this.invalidateOrderCaches(order),
+                this.redisService.del(redis_constant_1.REDIS_KEYS.CART + userId),
+                this.redisService.del(redis_constant_1.REDIS_KEYS.PRODUCTS),
+                this.redisService.del(redis_constant_1.REDIS_KEYS.CATEGORIES),
+                this.redisService.del(redis_constant_1.REDIS_KEYS.ADDRESS + userId),
+            ]);
+            cacheResults.forEach((result, index) => {
+                if (result.status === 'rejected') {
+                    console.error('Order created but cache invalidation failed:', order._id.toString(), index, result.reason);
+                }
+            });
+            yield this.cartRepository.clearCart(userId).catch((error) => {
+                console.error('Order created but cart cleanup failed:', order._id.toString(), error);
+            });
             yield this.notificationUsecase.createNotification({
                 userId: userId,
                 title: "Order Placed",
@@ -223,8 +248,9 @@ class OrderUsecase {
                 type: "ORDER",
                 orderId: order._id.toString(),
                 read: false
+            }).catch((error) => {
+                console.error('Order created but notification failed:', order._id.toString(), error);
             });
-            yield this.cartRepository.clearCart(userId);
             // Auto-create Task for this order
             try {
                 const task = yield this.taskRepository.create({
@@ -239,7 +265,9 @@ class OrderUsecase {
             catch (e) {
                 console.error('Failed to auto-create task for order:', e);
             }
-            yield this.redisService.publish(redis_constant_1.REDIS_CHANNELS.ORDER_PLACED, 'order placed');
+            yield this.redisService.publish(redis_constant_1.REDIS_CHANNELS.ORDER_PLACED, 'order placed').catch((error) => {
+                console.error('Order created but broadcast failed:', order._id.toString(), error);
+            });
             return order;
         });
     }
@@ -351,13 +379,7 @@ class OrderUsecase {
     }
     getOrdersByStatus(status) {
         return __awaiter(this, void 0, void 0, function* () {
-            const cachedOrders = yield this.redisService.get(redis_constant_1.REDIS_KEYS.ORDERS + status);
-            if (cachedOrders) {
-                return JSON.parse(cachedOrders);
-            }
-            const orders = yield this.orderRepository.getOrderByStatus(status);
-            yield this.redisService.set(redis_constant_1.REDIS_KEYS.ORDERS + status, JSON.stringify(orders), 60 * 60 * 24);
-            return orders;
+            return yield this.orderRepository.getOrderByStatus(status);
         });
     }
     getDistintAddress(userId) {
@@ -818,6 +840,29 @@ class OrderUsecase {
             subdivisionCode: (0, EasyParcelUtils_1.toMalaysianSubdivisionCode)(state),
             countryCode,
         };
+    }
+    getCartShippingQuote(userId, address, cartItems) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            if (!address || typeof address.postalCode !== 'string' || typeof address.state !== 'string')
+                throw new Error('Invalid shipping address');
+            const items = cartItems || ((_a = (yield this.cartRepository.getCartByUserId(userId))) === null || _a === void 0 ? void 0 : _a.items);
+            if (!(items === null || items === void 0 ? void 0 : items.length))
+                throw new Error('Cart is empty');
+            const quotations = yield this.getPublicShippingQuotations({
+                postalCode: address.postalCode,
+                state: address.state,
+                country: address.country,
+                weight: (0, shippingQuote_1.estimateCartWeight)(items),
+                width: 20,
+                length: 30,
+                height: 5,
+            });
+            const selected = (0, shippingQuote_1.selectCheapestShippingQuote)(quotations);
+            if (!selected)
+                throw new Error('No shipping options available for this address');
+            return { quotations, shippingPrice: selected.price, courier: selected.courier };
+        });
     }
     getPublicShippingQuotations(input) {
         return __awaiter(this, void 0, void 0, function* () {

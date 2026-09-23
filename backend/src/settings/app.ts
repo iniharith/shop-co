@@ -49,6 +49,7 @@ import { bandwidthMiddleware } from '../shared/utils/bandwidthTracker';
 import { randomUUID } from 'crypto';
 import mongoose from 'mongoose';
 import { requestTelemetryMiddleware } from '../shared/utils/requestTelemetry';
+import { allowedCorsOrigins, isAllowedCorsOrigin } from '../shared/utils/corsOrigins';
 
 declare global {
     namespace Express {
@@ -60,12 +61,12 @@ declare global {
 
 dotenv.config();
 const app = express();
+const allowedOrigins = allowedCorsOrigins();
 
 const corsOptions: cors.CorsOptions = {
     origin: (origin, callback) => {
-        // Allow requests with no origin (mobile apps, curl, server-to-server)
-        if (!origin) return callback(null, true);
-        return callback(null, true);
+        // Native clients and server-to-server calls omit Origin; browsers must match exactly.
+        return callback(null, isAllowedCorsOrigin(origin, allowedOrigins));
     },
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
@@ -79,7 +80,8 @@ const corsOptions: cors.CorsOptions = {
         "Access-Control-Request-Headers",
         "Cache-Control",
         "Pragma",
-        "X-Request-ID"
+        "X-Request-ID",
+        "Idempotency-Key"
     ],
     exposedHeaders: ["Content-Range", "X-Content-Range", "X-Request-ID"],
     maxAge: 86400,

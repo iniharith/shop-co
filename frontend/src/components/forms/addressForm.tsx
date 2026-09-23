@@ -8,29 +8,18 @@ import React, { RefObject } from "react";
 import { FormField } from "../ui/form";
 import { Form } from "../ui/form";
 import FormGeneratorV2 from "../global/formgenrator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { FaAddressCard } from "react-icons/fa";
 import { FaMapLocationDot } from "react-icons/fa6";
 import { LuMapPinHouse } from "react-icons/lu";
 import { IoEarthSharp } from "react-icons/io5";
 import { FaFlag, FaUser, FaStickyNote } from "react-icons/fa";
 import { Switch } from "@/components/ui/switch";
-import {
-  Drawer,
-  DrawerTitle,
-  DrawerContent,
-  DrawerTrigger,
-} from "../ui/drawer";
-import { ScrollArea } from "../ui/scroll-area";
-import { CgOptions } from "react-icons/cg";
-import { Button } from "@heroui/button";
 import { Control, FieldErrors, UseFormReturn } from "react-hook-form";
+import { addressSchema } from "@/schema/address.schema";
+import type { z } from "zod";
+
+type AddressFields = z.infer<typeof addressSchema>;
+type ProfileAddress = Partial<Pick<AddressFields, "street" | "city" | "state" | "country">> & { zip?: string };
 
 const AddressForm = ({
   form,
@@ -40,13 +29,14 @@ const AddressForm = ({
   formRef,
   profile,
 }: {
-  form: UseFormReturn<any>;
-  onFormSubmit: (data: any) => void;
-  control: Control<any>;
-  errors: FieldErrors<any>;
-  formRef: RefObject<HTMLFormElement>;
-  profile?: any;
+  form: UseFormReturn<AddressFields>;
+  onFormSubmit: React.FormEventHandler<HTMLFormElement>;
+  control: Control<AddressFields>;
+  errors: FieldErrors<AddressFields>;
+  formRef: RefObject<HTMLFormElement | null>;
+  profile?: { data?: { address?: ProfileAddress } };
 }) => {
+  const savedAddress = profile?.data?.address;
   return (
     <div className="w-full   ">
       <div className="flex flex-row  md:pb-0 pb-5  justify-between w-full  md:items-center items-start">
@@ -56,7 +46,7 @@ const AddressForm = ({
             Please enter your address to continue
           </p>
         </div>
-          {profile?.data?.address?.street && (
+          {savedAddress?.street && (
             <div className="flex flex-col items-end gap-2">
               <p className="text-sm md:block hidden text-muted-foreground font-medium">
                 Alamat Profil (Profile Address)
@@ -64,16 +54,15 @@ const AddressForm = ({
               <div className="flex items-center gap-3 bg-primary/5 p-3 rounded-xl border border-primary/20 w-max">
                 <Switch 
                   id="use-profile-address" 
-                  checked={form.watch("street") === profile.data.address.street}
+                  checked={form.watch("street") === savedAddress.street}
                   onCheckedChange={(checked) => {
                     if (checked) {
-                      const addr = profile.data.address;
-                      form.setValue("street", addr.street || "");
-                      form.setValue("city", addr.city || "");
-                      form.setValue("state", addr.state || "");
-                      form.setValue("country", addr.country || "Malaysia");
-                      form.setValue("postalCode", addr.zip || "");
-                      form.setValue("address", addr.state || "");
+                      form.setValue("street", savedAddress.street || "");
+                      form.setValue("city", savedAddress.city || "");
+                      form.setValue("state", savedAddress.state || "");
+                      form.setValue("country", savedAddress.country || "Malaysia");
+                      form.setValue("postalCode", savedAddress.zip || "");
+                      form.setValue("address", savedAddress.state || "");
                     } else {
                       form.setValue("street", "");
                       form.setValue("city", "");

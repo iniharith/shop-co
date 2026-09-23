@@ -9,7 +9,10 @@ import { useGetCart } from "./useCart";
 import { useSession } from "next-auth/react";
 import { createOrder, getOrderById, getPreviousAddress } from "@/api/order";
 import { getProfile } from "@/api/user";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { isAxiosError } from 'axios';
+import type { z } from 'zod';
+import type { ICartItem } from '@/types/ICart';
 import { useMutationData } from "./useMutation";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,34 +20,57 @@ import { useRouter } from "nextjs-toploader/app";
 import { getOrdersByUserId } from "@/api/order";
 import { useQueryData } from "./useQueryData";
 import { IOrderByIdResponse, IOrderResponse, IPreviousAddressResponse } from "@/types/api";
-import { IOrder } from "@/types/IOrder";
 
 
 
-export const useOrder = (checkoutMeta?: { shippingPrice?: number | null; courier?: string | null }) => {
+const CHECKOUT_KEY_STORAGE = 'kampungcetak:checkout-attempt';
+
+function getCheckoutKey(items: ICartItem[]): string {
+    const fingerprint = JSON.stringify(items.map((item) => [
+        item.product?._id, item.size, item.quantity, item.configurationKey, item.artworkUrl,
+    ]));
+    try {
+        const stored = JSON.parse(sessionStorage.getItem(CHECKOUT_KEY_STORAGE) || 'null');
+        if (stored?.fingerprint === fingerprint && typeof stored.key === 'string') return stored.key;
+    } catch { /* Storage may be unavailable; this attempt still gets a unique key. */ }
+    const key = crypto.randomUUID();
+    try { sessionStorage.setItem(CHECKOUT_KEY_STORAGE, JSON.stringify({ fingerprint, key })); } catch { /* Storage may be unavailable. */ }
+    return key;
+}
+
+export const useOrder = (checkoutMeta?: { getShippingPrice?: (address: z.infer<typeof addressSchema>) => number | null; onShippingQuoteChanged?: () => void }) => {
     const { data: session, update } = useSession();
     const [DisOpen,setDisOpen]=useState(false)
     const client = useQueryClient()
     const router = useRouter();
     const token = session?.user?.token || "";
     const { data: previousAddress, isLoading: previousAddressLoading } = useQueryData(['previousAddress'], () => getPreviousAddress(token));
-    const { data: response, isLoading } = useGetCart();
+    const { data: response } = useGetCart();
     const formRef = useRef<HTMLFormElement>(null);
-    const { mutate: createOrderMutation, reset } = useMutationData(['order'], (data: any) => createOrder({ ...data, shippingPrice: checkoutMeta?.shippingPrice ?? undefined, courier: checkoutMeta?.courier ?? undefined }, token), ['cart'], async (data: any) => {
+    const { mutate: createOrderMutation, isPending: orderSubmitting } = useMutationData(['order'], async (data: z.infer<typeof addressSchema>) => {
+        try {
+            const shippingPrice = checkoutMeta?.getShippingPrice?.(data);
+            if (shippingPrice === null || shippingPrice === undefined) throw new Error('Please wait for shipping rates before checking out.');
+            return await createOrder({ ...data, shippingPrice }, token, getCheckoutKey(response?.cart?.items || []));
+        } catch (error: unknown) {
+            if (isAxiosError(error) && error.response?.status === 409) checkoutMeta?.onShippingQuoteChanged?.();
+            throw error;
+        }
+    }, ['cart'], async () => {
         await update({ ...session, user: { ...session?.user, orderSuccesPageAccess: true } });
         toast.success("Order created successfully");
         await client.invalidateQueries({ queryKey: ['products'], exact: true });
         await client.invalidateQueries({ queryKey: ['cart'], exact: true });
         await client.invalidateQueries({ queryKey: ['orders'], exact: true });
-        reset();
+        try { sessionStorage.removeItem(CHECKOUT_KEY_STORAGE); } catch { /* Storage may be unavailable. */ }
         router.push("/home/cart/checkout/success");
     })
     
     // Also fetch the user's profile to see if they have a saved address
-    const { data: profileResponse, isLoading: isProfileLoading } = useQueryData(['profile'], () => getProfile(token));
-    const profile = profileResponse as any;
+    const { data: profileData } = useQueryData(['profile'], () => getProfile(token));
+    const profile = profileData as { data?: { address?: { street?: string; city?: string; state?: string; country?: string; zip?: string } } } | undefined;
 
-    const { form, onFormSubmit, control, errors, } = useZodFormV2(addressSchema, (data: any) => createOrderMutation(data), {
+    const { form, onFormSubmit, control, errors, } = useZodFormV2(addressSchema, (data: z.infer<typeof addressSchema>) => createOrderMutation(data), {
         customerName: "",
         address: "",
         city: "",
@@ -65,7 +91,7 @@ export const useOrder = (checkoutMeta?: { shippingPrice?: number | null; courier
     };
 
     const previousAddressData = previousAddress as IPreviousAddressResponse
-    return { form, onFormSubmit, control, errors, formRef, handleCheckout, previousAddressData, previousAddressLoading,DisOpen,setDisOpen, profile }
+    return { form, onFormSubmit, control, errors, formRef, handleCheckout, previousAddressData, previousAddressLoading,DisOpen,setDisOpen, profile, orderSubmitting }
 }
 
 
@@ -73,8 +99,11 @@ export const useOrder = (checkoutMeta?: { shippingPrice?: number | null; courier
 export const useGetOrders = () => {
     const [searchTerm, setSearchTerm] = useState("");
 
-    const [orders, setOrders] = useState<IOrder[]>([]);
-
+    const { data: session } = useSession();
+    const token = session?.user?.token || "";
+    const { data: response, isLoading } = useQueryData(['orders', token], () => getOrdersByUserId(token), { enabled: !!token });
+    const responseData = response as IOrderResponse;
+    const orders = responseData?.orders || [];
     const filteredOrders = orders.length > 0 ? orders.filter(
         (order) =>
             order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -82,18 +111,6 @@ export const useGetOrders = () => {
                 item.product.name.toLowerCase().includes(searchTerm.toLowerCase())
             )
     ) : [];
-
-    const { data: session } = useSession();
-    const token = session?.user?.token || "";
-    const { data: response, isLoading } = useQueryData(['orders', token], () => getOrdersByUserId(token), { enabled: !!token });
-
-    const responseData = response as IOrderResponse
-
-    useEffect(() => {
-        if (responseData) {
-            setOrders(responseData.orders);
-        }
-    }, [responseData]);
 
     return { data: responseData, isLoading, filteredOrders, setSearchTerm, searchTerm }
 }

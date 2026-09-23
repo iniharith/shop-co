@@ -28,6 +28,10 @@ export class OrderRepository {
         return await this.orderModel.findById(orderId).populate("products.product").populate("userId");
     }
 
+    async getOrderByCheckoutKey(userId: string, checkoutKey: string): Promise<IOrderDocument | null> {
+        return await this.orderModel.findOne({ userId, checkoutKey });
+    }
+
     async getOrderOwnerId(orderId: string): Promise<string | null> {
         const order = await this.orderModel.findById(orderId).select("userId").lean();
         const userId = (order as any)?.userId;
@@ -61,7 +65,7 @@ export class OrderRepository {
 
 
     async getOrderByStatus(status: string): Promise<IOrderDocument[]> {
-        return await this.orderModel.find({ status }).populate("products.product").populate("userId");
+        return await this.orderModel.find({ orderStatus: status }).populate("products.product").populate("userId");
     }
 
     async getOderByDeliveryBoy(deliveryBoy: string): Promise<IOrderDocument[]> {

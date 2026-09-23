@@ -24,6 +24,7 @@ import { areWhatsAppCustomerUpdatesEnabled } from "../../../infrastructure/servi
 import { convergeOrderFromParcel } from "../../../infrastructure/services/EasyParcelTrackingSyncService";
 import { clearFolderGroupCache } from "../../../presentation/routes/fileUploadRoutes";
 import { computeProductPricing } from "../../../shared/pricing/product-pricing.service";
+import { estimateCartWeight, matchesQuotedShippingPrice, selectCheapestShippingQuote, ShippingQuoteChangedError, ShippingCartItem } from "../../../shared/pricing/shippingQuote";
 import { normalizeProductConfiguration } from "../../../shared/catalog/productConfiguration";
 
 interface ShipmentDimensions {
@@ -102,7 +103,12 @@ export class OrderUsecase {
         return order;
     }
 
-    async createOrder(address: IAddress, userId: string, customerName: string, orderNotes: string, shippingPrice?: number, courier?: string): Promise<IOrderDocument> {
+    async createOrder(address: IAddress, userId: string, customerName: string, orderNotes: string, shippingPrice?: number, checkoutKey?: string): Promise<IOrderDocument> {
+
+        if (checkoutKey) {
+            const existing = await this.orderRepository.getOrderByCheckoutKey(userId, checkoutKey);
+            if (existing) return existing;
+        }
 
         const cart = await this.cartRepository.getCartByUserId(userId);
         if (!cart || !cart.items || !cart?.items?.length) {
@@ -147,6 +153,11 @@ let totalAmount = 0;
             totalAmount += productPrice;
         }
 
+        const quote = await this.getCartShippingQuote(userId, address, cart.items);
+        if (!matchesQuotedShippingPrice(shippingPrice, quote.shippingPrice)) {
+            throw new ShippingQuoteChangedError();
+        }
+
         const decrementedStock: typeof stockUpdates = [];
         let order: IOrderDocument;
         try {
@@ -161,17 +172,17 @@ let totalAmount = 0;
                 if (!updatedProduct) throw new Error(`Insufficient stock for product: ${update.productName}`);
                 decrementedStock.push(update);
             }
-            const safeShippingPrice = Number.isFinite(shippingPrice) && (shippingPrice as number) >= 0 ? shippingPrice as number : 0;
             order = await this.orderRepository.createOrder({
                 userId,
+                checkoutKey,
                 customerName,
                 orderNotes,
                 address,
                 paymentMethod: "COD",
                 products: orderItems,
-                totalAmount: totalAmount + safeShippingPrice,
-                shippingPrice: safeShippingPrice || undefined,
-                courier: courier || undefined,
+                totalAmount: totalAmount + quote.shippingPrice,
+                shippingPrice: quote.shippingPrice,
+                courier: quote.courier || undefined,
             });
         } catch (error) {
             for (const update of decrementedStock.reverse()) {
@@ -183,14 +194,29 @@ let totalAmount = 0;
                     referenceId: userId,
                 }).catch(() => undefined);
             }
+            if (checkoutKey && (error as any)?.code === 11000) {
+                const existing = await this.orderRepository.getOrderByCheckoutKey(userId, checkoutKey);
+                if (existing) return existing;
+            }
             throw error;
         }
 
-        await this.redisService.del(REDIS_KEYS.ORDERS + userId);
-        await this.redisService.del(REDIS_KEYS.CART + userId);
-        await this.redisService.del(REDIS_KEYS.PRODUCTS);
-        await this.redisService.del(REDIS_KEYS.CATEGORIES);
-        await this.redisService.del(REDIS_KEYS.ADDRESS + userId);
+        const cacheResults = await Promise.allSettled([
+            this.invalidateOrderCaches(order),
+            this.redisService.del(REDIS_KEYS.CART + userId),
+            this.redisService.del(REDIS_KEYS.PRODUCTS),
+            this.redisService.del(REDIS_KEYS.CATEGORIES),
+            this.redisService.del(REDIS_KEYS.ADDRESS + userId),
+        ]);
+        cacheResults.forEach((result, index) => {
+            if (result.status === 'rejected') {
+                console.error('Order created but cache invalidation failed:', order._id.toString(), index, result.reason);
+            }
+        });
+
+        await this.cartRepository.clearCart(userId).catch((error) => {
+            console.error('Order created but cart cleanup failed:', order._id.toString(), error);
+        });
 
         await this.notificationUsecase.createNotification({
             userId: userId,
@@ -199,8 +225,9 @@ let totalAmount = 0;
             type: "ORDER",
             orderId: order._id.toString(),
             read: false
-        })
-        await this.cartRepository.clearCart(userId);
+        }).catch((error) => {
+            console.error('Order created but notification failed:', order._id.toString(), error);
+        });
         
         // Auto-create Task for this order
         try {
@@ -216,7 +243,9 @@ let totalAmount = 0;
             console.error('Failed to auto-create task for order:', e);
         }
 
-        await this.redisService.publish(REDIS_CHANNELS.ORDER_PLACED, 'order placed');
+        await this.redisService.publish(REDIS_CHANNELS.ORDER_PLACED, 'order placed').catch((error) => {
+            console.error('Order created but broadcast failed:', order._id.toString(), error);
+        });
         return order;
     }
 
@@ -340,13 +369,7 @@ let totalAmount = 0;
 
 
     async getOrdersByStatus(status: "PLACED" | "IN_PROGRESS" | "PENDING_ARTWORK" | "ARTWORK_REVIEWED" | "ARTWORK_REJECTED" | "IN_DESIGN" | "PEMBETULAN" | "DONE_DESIGN" | "IN_PRODUCTION" | "PRINT_AWB" | "DONE_PRINTING" | "PACKAGING" | "SHIPPED" | "IN_TRANSIT" | "DELIVERED" | "RETURNED" | "CANCELLED" | "FAILED") {
-        const cachedOrders = await this.redisService.get(REDIS_KEYS.ORDERS + status);
-        if (cachedOrders) {
-            return JSON.parse(cachedOrders);
-        }
-        const orders = await this.orderRepository.getOrderByStatus(status);
-        await this.redisService.set(REDIS_KEYS.ORDERS + status, JSON.stringify(orders), 60 * 60 * 24);
-        return orders;
+        return await this.orderRepository.getOrderByStatus(status);
     }
 
 
@@ -798,6 +821,24 @@ let totalAmount = 0;
             subdivisionCode: toMalaysianSubdivisionCode(state),
             countryCode,
         };
+    }
+
+    async getCartShippingQuote(userId: string, address: { postalCode: string; state?: string; country?: string }, cartItems?: ShippingCartItem[]): Promise<{ quotations: any[]; shippingPrice: number; courier: string }> {
+        if (!address || typeof address.postalCode !== 'string' || typeof address.state !== 'string') throw new Error('Invalid shipping address');
+        const items = cartItems || (await this.cartRepository.getCartByUserId(userId))?.items;
+        if (!items?.length) throw new Error('Cart is empty');
+        const quotations = await this.getPublicShippingQuotations({
+            postalCode: address.postalCode,
+            state: address.state,
+            country: address.country,
+            weight: estimateCartWeight(items),
+            width: 20,
+            length: 30,
+            height: 5,
+        });
+        const selected = selectCheapestShippingQuote(quotations);
+        if (!selected) throw new Error('No shipping options available for this address');
+        return { quotations, shippingPrice: selected.price, courier: selected.courier };
     }
 
     async getPublicShippingQuotations(input: {

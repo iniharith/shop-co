@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.OrderController = void 0;
 const order_usecase_1 = require("../../application/usecases/orders/order.usecase");
 const api_constant_1 = require("../../shared/constants/api.constant");
+const shippingQuote_1 = require("../../shared/pricing/shippingQuote");
 /** @Controller */
 class OrderController {
     constructor() {
@@ -82,11 +83,20 @@ class OrderController {
     createOrder(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const { address, customerName, orderNotes, shippingPrice, courier } = req.body;
-                const order = yield this.orderUsecase.createOrder(address, req.userId, customerName, orderNotes, shippingPrice, courier);
+                const { address, customerName, orderNotes, shippingPrice } = req.body;
+                const checkoutKey = req.get('Idempotency-Key');
+                if (checkoutKey && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(checkoutKey)) {
+                    res.status(400).json({ message: 'Invalid checkout key' });
+                    return;
+                }
+                const order = yield this.orderUsecase.createOrder(address, req.userId, customerName, orderNotes, shippingPrice, checkoutKey);
                 res.status(api_constant_1.statusCodes.OK).json({ message: "Order created successfully", order });
             }
             catch (error) {
+                if (error instanceof shippingQuote_1.ShippingQuoteChangedError) {
+                    res.status(409).json({ message: error.message });
+                    return;
+                }
                 next(error);
             }
         });
@@ -224,16 +234,12 @@ class OrderController {
     getPublicShippingQuotations(req, res, next) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const quotations = yield this.orderUsecase.getPublicShippingQuotations(req.body);
-                res.status(api_constant_1.statusCodes.OK).json({ message: "Shipping quotations fetched successfully", quotations });
+                const quote = yield this.orderUsecase.getCartShippingQuote(req.userId, req.body);
+                res.status(api_constant_1.statusCodes.OK).json(Object.assign({ message: "Shipping quotations fetched successfully" }, quote));
             }
             catch (error) {
                 console.error('Public shipping quotation failed:', (error === null || error === void 0 ? void 0 : error.message) || error);
-                res.status(api_constant_1.statusCodes.OK).json({
-                    message: "Shipping rates temporarily unavailable",
-                    quotations: [],
-                    error: (error === null || error === void 0 ? void 0 : error.message) || 'Shipping service error',
-                });
+                res.status(503).json({ message: 'Shipping rates are temporarily unavailable. Please try again.' });
             }
         });
     }

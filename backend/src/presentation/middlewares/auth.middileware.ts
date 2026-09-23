@@ -68,7 +68,6 @@ export const refreshTokenMidllWare = async (req: AuthRequest, res: Response, nex
         if (refreshToken) {
             const jwt = new JwtService();
             const { userId } = jwt.verifyRefreshToken(refreshToken) as JwtPayload
-            console.log('userId', userId)
             if (!userId) {
                 res.status(statusCodes.UNAUTHORIZED);
                 throw new Error("user not found");

@@ -53,14 +53,14 @@ const bandwidthTracker_1 = require("../shared/utils/bandwidthTracker");
 const crypto_1 = require("crypto");
 const mongoose_1 = __importDefault(require("mongoose"));
 const requestTelemetry_1 = require("../shared/utils/requestTelemetry");
+const corsOrigins_1 = require("../shared/utils/corsOrigins");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
+const allowedOrigins = (0, corsOrigins_1.allowedCorsOrigins)();
 const corsOptions = {
     origin: (origin, callback) => {
-        // Allow requests with no origin (mobile apps, curl, server-to-server)
-        if (!origin)
-            return callback(null, true);
-        return callback(null, true);
+        // Native clients and server-to-server calls omit Origin; browsers must match exactly.
+        return callback(null, (0, corsOrigins_1.isAllowedCorsOrigin)(origin, allowedOrigins));
     },
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
@@ -74,7 +74,8 @@ const corsOptions = {
         "Access-Control-Request-Headers",
         "Cache-Control",
         "Pragma",
-        "X-Request-ID"
+        "X-Request-ID",
+        "Idempotency-Key"
     ],
     exposedHeaders: ["Content-Range", "X-Content-Range", "X-Request-ID"],
     maxAge: 86400,

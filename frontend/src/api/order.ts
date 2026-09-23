@@ -4,17 +4,17 @@
  */
 import { ORDER_URL } from "@/constants/api";
 import AxiosInstance from "@/utils/axios";
+import type { z } from 'zod';
+import { addressSchema } from '@/schema/address.schema';
 
-export const createOrder = async (data: any, token: string) => {
-    console.log("ajja")
-    const { customerName, orderNotes, shippingPrice, courier, ...addressData } = data;
+export const createOrder = async (data: z.infer<typeof addressSchema> & { shippingPrice?: number }, token: string, checkoutKey: string) => {
+    const { customerName, orderNotes, shippingPrice, ...addressData } = data;
     const response = await AxiosInstance(token).post(ORDER_URL, {
         address: addressData,
         customerName,
         orderNotes,
-        shippingPrice,
-        courier
-    });
+        shippingPrice
+    }, { headers: { 'Idempotency-Key': checkoutKey } });
     return response.data;
 };
 
@@ -49,10 +49,6 @@ export const getShippingQuotations = async (token: string, data: {
     postalCode: string;
     state: string;
     country?: string;
-    weight: number;
-    width: number;
-    length: number;
-    height: number;
 }, timeout?: number) => {
     const instance = AxiosInstance(token);
     const response = await instance.post(`${ORDER_URL}/shipping/quote`, data, timeout ? { timeout } : undefined);

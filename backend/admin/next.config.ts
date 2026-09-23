@@ -24,9 +24,6 @@ const nextConfig = {
         NEXT_PUBLIC_BACKEND_URL: backendUrl,
     },
     transpilePackages: ['@heroui/react', '@heroui/spinner', 'framer-motion', '@tanstack/react-query', 'lucide-react', 'sonner'],
-    typescript: {
-        ignoreBuildErrors: true,
-    },
     images: {
         unoptimized: true,
         remotePatterns: [

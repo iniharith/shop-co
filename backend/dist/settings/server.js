@@ -67,6 +67,7 @@ const TaskStatusAutoTransition_1 = require("../infrastructure/jobs/TaskStatusAut
 const AiReindexJob_1 = require("../infrastructure/jobs/AiReindexJob");
 const Parcel_1 = require("../domain/entities/Parcel");
 const mongoose_1 = __importDefault(require("mongoose"));
+const order_model_1 = __importDefault(require("../infrastructure/db/models/order.model"));
 const Sentry = __importStar(require("@sentry/node"));
 const instrumentation_1 = require("../instrumentation");
 const redisService = new redis_1.RedisService();
@@ -76,6 +77,8 @@ function main() {
     return __awaiter(this, void 0, void 0, function* () {
         (0, dotenv_1.config)();
         yield (0, db_config_1.default)();
+        // Checkout retries rely on the unique sparse key index being ready before HTTP traffic.
+        yield order_model_1.default.init();
         yield (0, initAdmin_1.initAdmin)();
         redisService.connect();
         server = http_1.default.createServer(app_1.default);

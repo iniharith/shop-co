@@ -6,6 +6,7 @@ import { NextFunction, Response } from "express";
 import { OrderUsecase } from "../../application/usecases/orders/order.usecase";
 import { AuthRequest } from "../../domain/types/api";
 import { statusCodes } from "../../shared/constants/api.constant";
+import { ShippingQuoteChangedError } from "../../shared/pricing/shippingQuote";
 
 
 
@@ -75,10 +76,19 @@ export class OrderController {
      */ 
     async createOrder(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            const { address, customerName, orderNotes, shippingPrice, courier } = req.body;
-            const order = await this.orderUsecase.createOrder(address, req.userId as string, customerName, orderNotes, shippingPrice, courier);
+            const { address, customerName, orderNotes, shippingPrice } = req.body;
+            const checkoutKey = req.get('Idempotency-Key');
+            if (checkoutKey && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(checkoutKey)) {
+                res.status(400).json({ message: 'Invalid checkout key' });
+                return;
+            }
+            const order = await this.orderUsecase.createOrder(address, req.userId as string, customerName, orderNotes, shippingPrice, checkoutKey);
             res.status(statusCodes.OK).json({ message: "Order created successfully", order });
         } catch (error: any) {
+            if (error instanceof ShippingQuoteChangedError) {
+                res.status(409).json({ message: error.message });
+                return;
+            }
             next(error);
         }
     }
@@ -205,15 +215,11 @@ export class OrderController {
      */
     async getPublicShippingQuotations(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            const quotations = await this.orderUsecase.getPublicShippingQuotations(req.body);
-            res.status(statusCodes.OK).json({ message: "Shipping quotations fetched successfully", quotations });
+            const quote = await this.orderUsecase.getCartShippingQuote(req.userId as string, req.body);
+            res.status(statusCodes.OK).json({ message: "Shipping quotations fetched successfully", ...quote });
         } catch (error: any) {
             console.error('Public shipping quotation failed:', error?.message || error);
-            res.status(statusCodes.OK).json({
-                message: "Shipping rates temporarily unavailable",
-                quotations: [],
-                error: error?.message || 'Shipping service error',
-            });
+            res.status(503).json({ message: 'Shipping rates are temporarily unavailable. Please try again.' });
         }
     }
 

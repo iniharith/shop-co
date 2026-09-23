@@ -22,6 +22,7 @@ import { startTaskAutoTransitionJob } from '../infrastructure/jobs/TaskStatusAut
 import { startAiReindexCron } from '../infrastructure/jobs/AiReindexJob';
 import { ensureParcelIndexes } from '../domain/entities/Parcel';
 import mongoose from 'mongoose';
+import OrderModel from '../infrastructure/db/models/order.model';
 import * as Sentry from '@sentry/node';
 import { sanitizeSensitiveText } from '../instrumentation';
 
@@ -34,6 +35,8 @@ async function main() {
     config();
 
     await connectDB();
+    // Checkout retries rely on the unique sparse key index being ready before HTTP traffic.
+    await OrderModel.init();
     await initAdmin();
     redisService.connect();
     server = http.createServer(app);

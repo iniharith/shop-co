@@ -23,8 +23,8 @@ const SEARCH_MAX_TIME_MS = 5_000;
 const prioritizeExact = <T>(rows: T[], isExact: (row: T) => boolean): T[] =>
   rows.sort((left, right) => Number(isExact(right)) - Number(isExact(left)));
 
-// Quick migration endpoint for the user to trigger in their browser
-router.get("/migrate-statuses", asyncHandler(async (req, res) => {
+// Manual maintenance must be explicitly invoked by a system administrator.
+router.post("/migrate-statuses", authMiddilware, authorizeRoles("sysadmin"), asyncHandler(async (_req, res) => {
   try {
     const o1 = await Order.collection.updateMany({ orderStatus: "ARTWORK_REVIEW" }, { $set: { orderStatus: "ARTWORK_REVIEWED" } });
     const o2 = await Order.collection.updateMany({ orderStatus: "DONE DESIGN" }, { $set: { orderStatus: "DONE_DESIGN" } });
@@ -323,7 +323,7 @@ router.delete("/orders/:id", authMiddilware, adminController.deleteOrder.bind(ad
 router.post("/seed-test-data", authMiddilware, adminController.seedTestData.bind(adminController));
 router.delete("/clear-test-data", authMiddilware, adminController.clearTestData.bind(adminController));
 
-router.post("/users/:id/avatar", authMiddilware, uploadAvatar.single('avatar'), asyncHandler(async (req: any, res: any) => {
+router.post("/users/:id/avatar", authMiddilware, authorizeRoles("admin", "sysadmin", "boss"), uploadAvatar.single('avatar'), asyncHandler(async (req: any, res: any) => {
     const userId = req.params.id;
     if (!req.file) {
         res.status(400).json({ success: false, message: 'Tiada fail dipilih' });

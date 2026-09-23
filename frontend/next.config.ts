@@ -13,6 +13,10 @@ const backendUrl = configuredBackendUrl && !staleBackendUrls.has(configuredBacke
     : "http://localhost:8000";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: process.cwd(),
+  },
+  outputFileTracingRoot: process.cwd(),
   env: {
     NEXT_PUBLIC_BACKEND_URL: backendUrl,
   },
@@ -54,9 +58,6 @@ const nextConfig: NextConfig = {
         protocol: "https",
       },
     ],
-  },
-  typescript: {
-    ignoreBuildErrors: true,
   },
 };
 
