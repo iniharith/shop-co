@@ -22,6 +22,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-brand-highlight: var(--brand-highlight);
   /* Orbea's real body font is "neue-haas-grotesk-text", served from a private
      Adobe Typekit kit (use.typekit.net/suo5owd.css) that's domain-locked to
      orbea.com — those font files 403 on any other domain, including ours.
@@ -68,25 +69,28 @@
 }
 
 :root {
+  color-scheme: light;
   --radius: 1rem;
-  --background: oklch(0.965 0.012 85);
-  --foreground: oklch(0.22 0.035 230);
-  --card: oklch(0.995 0.006 85);
-  --card-foreground: oklch(0.22 0.035 230);
-  --popover: oklch(0.995 0.006 85);
-  --popover-foreground: oklch(0.22 0.035 230);
-  --primary: oklch(0.48 0.12 178);
-  --primary-foreground: oklch(0.99 0.005 85);
-  --secondary: oklch(0.91 0.025 85);
-  --secondary-foreground: oklch(0.25 0.04 230);
-  --muted: oklch(0.925 0.018 85);
-  --muted-foreground: oklch(0.42 0.035 230);
-  --accent: oklch(0.9 0.06 82);
-  --accent-foreground: oklch(0.25 0.04 230);
-  --destructive: oklch(0.55 0.18 25);
-  --border: oklch(0.84 0.025 75);
-  --input: oklch(0.78 0.03 75);
-  --ring: oklch(0.58 0.13 178);
+  /* Paper and ink: the light counterpart to the neutral charcoal dark theme. */
+  --background: #f7f7f4;
+  --foreground: #1b1c1a;
+  --brand-highlight: #e9ad13;
+  --card: #ffffff;
+  --card-foreground: #1b1c1a;
+  --popover: #ffffff;
+  --popover-foreground: #1b1c1a;
+  --primary: #1b1c1a;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f1ed;
+  --secondary-foreground: #1b1c1a;
+  --muted: #f0f1ed;
+  --muted-foreground: #5f625d;
+  --accent: #f0f1ed;
+  --accent-foreground: #1b1c1a;
+  --destructive: #b42318;
+  --border: #d7dad3;
+  --input: #a5aca3;
+  --ring: #a66b00;
 }
 
 /* Neutral charcoal palette shared by every dark-mode storefront surface. */
@@ -94,6 +98,7 @@
   color-scheme: dark;
   --background: #111111;
   --foreground: #dedede;
+  --brand-highlight: #f4b400;
   --card: #171717;
   --card-foreground: #dedede;
   --popover: #1c1c1c;
