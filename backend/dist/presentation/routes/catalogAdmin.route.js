@@ -124,6 +124,7 @@ const withResolvedCatalogImages = (req, product) => {
     return Object.assign(Object.assign({}, product), { images, sizes, variations });
 };
 const normalizeProduct = (body) => {
+    var _a;
     const images = Array.isArray(body.images) ? body.images.map(String).filter(Boolean) : [];
     const mainImage = images[0] || '';
     const sizes = Array.isArray(body.sizes)
@@ -195,6 +196,15 @@ const normalizeProduct = (body) => {
             }))
                 .filter((option) => option.name && option.options.length)
             : [],
+        areaPricing: body.areaPricing && typeof body.areaPricing === 'object'
+            ? {
+                enabled: Boolean(body.areaPricing.enabled),
+                unit: body.areaPricing.unit === 'in' || body.areaPricing.unit === 'm' ? body.areaPricing.unit : 'ft',
+                pricePerSquareUnit: Number(body.areaPricing.pricePerSquareUnit),
+                minimumArea: Number((_a = body.areaPricing.minimumArea) !== null && _a !== void 0 ? _a : 0),
+                rounding: body.areaPricing.rounding === 'ceil' ? 'ceil' : 'none',
+            }
+            : undefined,
         sections: (0, productSections_1.getProductSections)(String(body.category || '')),
         specifications: (() => {
             const specs = body.specifications && typeof body.specifications === 'object' ? body.specifications : {};
@@ -249,6 +259,9 @@ const validateProduct = (product) => {
         return 'Price must be a valid positive number.';
     if (product.maximumQuantity !== undefined && (!Number.isInteger(product.maximumQuantity) || product.maximumQuantity < 1))
         return 'Maximum order quantity must be a positive whole number.';
+    if (product.areaPricing && (!Number.isFinite(product.areaPricing.pricePerSquareUnit) || product.areaPricing.pricePerSquareUnit < 0 ||
+        !Number.isFinite(product.areaPricing.minimumArea) || product.areaPricing.minimumArea < 0))
+        return 'Square-foot pricing requires a valid rate and minimum area.';
     if (!Number.isFinite(product.originalPrice) || product.originalPrice < 0)
         return 'Original price must be valid.';
     if (product.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(product.slug))
