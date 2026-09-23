@@ -74,6 +74,7 @@ type Product = {
   variations?: DesignVariation[];
   printingOptions?: PrintingOption[];
   areaPricing?: AreaPricing;
+  matrixPricing?: { enabled?: boolean; pricingData?: unknown[] };
   slug?: string;
   status?: 'draft' | 'published';
   seoTitle?: string;
