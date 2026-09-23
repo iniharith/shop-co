@@ -8,6 +8,7 @@ import { IProductDocument } from './product.interface';
 export interface IProductConfiguration {
   version: number;
   fulfillmentSize: string;
+  pricingSize?: string;
   selections: Array<{
     name: string;
     values: Array<{

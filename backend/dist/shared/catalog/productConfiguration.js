@@ -22,6 +22,7 @@ const variationFor = (product, index) => {
     };
 };
 const normalizeProductConfiguration = (product, configuration, fulfillmentSize) => {
+    var _a, _b;
     const productOptions = product.printingOptions || [];
     const incomingSelections = configuration.selections || [];
     const incomingOptionNames = new Set();
@@ -70,10 +71,25 @@ const normalizeProductConfiguration = (product, configuration, fulfillmentSize) 
     if (product.category.toLowerCase() === 'islamic khat' && product.images.length > 1 && (design === null || design === void 0 ? void 0 : design.type) !== 'variation') {
         throw new Error('A valid design selection is required');
     }
+    if (((_a = product.areaPricing) === null || _a === void 0 ? void 0 : _a.enabled) && !configuration.area) {
+        throw new Error('A valid custom size is required');
+    }
     return {
         version: 1,
         fulfillmentSize,
+        pricingSize: typeof configuration.pricingSize === 'string' ? configuration.pricingSize.trim() || undefined : undefined,
         selections,
+        area: ((_b = product.areaPricing) === null || _b === void 0 ? void 0 : _b.enabled) && configuration.area
+            ? (() => {
+                const width = Number(configuration.area.width);
+                const height = Number(configuration.area.height);
+                const unit = configuration.area.unit;
+                if (!Number.isFinite(width) || width <= 0 || !Number.isFinite(height) || height <= 0 || !['ft', 'in', 'm'].includes(unit)) {
+                    throw new Error('A valid custom size is required');
+                }
+                return { width, height, unit, squareUnits: width * height };
+            })()
+            : undefined,
         design,
     };
 };

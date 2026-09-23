@@ -213,8 +213,12 @@ const hasDesignVariations = (product.variations || []).length > 0;
       toast.error(label("This variation has no published price. Please choose an available option.", "Variasi ini tiada harga. Sila pilih pilihan yang tersedia."));
       return;
     }
+    if (product.maximumQuantity && quantity > product.maximumQuantity) {
+      toast.error(label(`Orders above ${product.maximumQuantity} pieces require a manual quote.`, `Pesanan melebihi ${product.maximumQuantity} unit memerlukan sebut harga.`));
+      return;
+    }
 
-    const baseSize = hasDesignVariations ? "Standard" : (product.category === "flyers" ? selectedGridSize : (selectedSize || "Standard"));
+    const baseSize = hasDesignVariations ? "Standard" : (product.category === "flyers" ? "Standard" : (selectedSize || "Standard"));
     const selectedVariation = isIslamicKhat && product.images.length > 1
       ? getProductVariation(product, selectedVariationIndex as number)
       : hasDesignVariations && selectedVariationIndex !== null && selectedVariationIndex != null
@@ -254,6 +258,7 @@ const configVariationLabel = selectedVariationInfo?.label || "";
     const configuration = {
       version: 1,
       fulfillmentSize: baseSize,
+      pricingSize: product.category === "flyers" ? selectedGridSize : undefined,
       selections,
       area: product.areaPricing?.enabled ? {
         width: customWidth,
@@ -300,13 +305,14 @@ const stockBySize = product.sizes || [];
   const hasImageVariations = product.category?.toLowerCase() === "islamic khat" && product.images.length > 1;
   const activeSize = stockBySize.find(size => size.size === selectedSize);
   const activeVariation = selectedVariationIndex !== null && selectedVariationIndex != null ? designVariations[selectedVariationIndex] : undefined;
-  const maxQuantity = hasDesignVariations
+  const stockMaxQuantity = hasDesignVariations
     ? activeVariation && Number(activeVariation.stock) > 0
       ? Number(activeVariation.stock)
       : 1
     : activeSize && Number(activeSize.stock) > 0
       ? Number(activeSize.stock)
       : (stockBySize.length > 0 ? (standardStock ?? totalAvailableStock) : 10000);
+  const maxQuantity = Math.min(stockMaxQuantity, product.maximumQuantity ?? Number.POSITIVE_INFINITY);
 
   let minQuantity = 1;
   if (product.category === 'button-badge') {

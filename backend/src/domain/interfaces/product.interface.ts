@@ -8,6 +8,7 @@ export interface IProduct {
     name: string;
     description: string;
     price: number;
+    maximumQuantity?: number;
     category: string;
     sections?: string[];
     sizes: ISize[];

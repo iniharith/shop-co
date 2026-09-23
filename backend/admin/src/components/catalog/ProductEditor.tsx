@@ -66,6 +66,7 @@ type Product = {
   description: string;
   category: string;
   price: number;
+  maximumQuantity?: number;
   originalPrice?: number;
   discount?: number;
   images: string[];
@@ -1295,6 +1296,18 @@ images: resolveImages(current.images),
                     setProduct({ ...product, originalPrice: Number(event.target.value) })
                   }
                 />
+              </label>
+              <label className="space-y-1 text-sm font-medium">
+                Maximum order quantity (optional)
+                <Input
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="No limit"
+                  value={product.maximumQuantity ?? ''}
+                  onChange={event => setProduct({ ...product, maximumQuantity: event.target.value === '' ? undefined : Number(event.target.value) })}
+                />
+                <span className="block text-xs font-normal text-muted-foreground">Larger orders require a manual quote.</span>
               </label>
               <div className="rounded-xl border bg-muted/30 p-4 md:col-span-2">
                 <div className="flex items-center justify-between gap-3">

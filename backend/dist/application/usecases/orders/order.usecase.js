@@ -139,6 +139,7 @@ class OrderUsecase {
             }
             let totalAmount = 0;
             const orderItems = [];
+            let productPriceChanged = false;
             const stockUpdates = [];
             for (const item of cart.items) {
                 if (!Number.isInteger(item.quantity) || item.quantity < 1)
@@ -158,6 +159,13 @@ class OrderUsecase {
                     : undefined;
                 const pricing = (0, product_pricing_service_1.computeProductPricing)(product, item.quantity, normalizedConfiguration);
                 const productPrice = pricing.lineTotal;
+                if ((0, product_pricing_service_1.cartPriceChanged)(item.lineTotal, productPrice)) {
+                    item.unitPrice = pricing.unitPrice;
+                    item.fixedPrice = pricing.fixedPrice;
+                    item.lineTotal = productPrice;
+                    item.pricingVersion = pricing.pricingVersion;
+                    productPriceChanged = true;
+                }
                 orderItems.push({
                     product: product._id,
                     quantity: item.quantity,
@@ -176,6 +184,10 @@ class OrderUsecase {
                     productCategorySnapshot: product.category || '',
                 });
                 totalAmount += productPrice;
+            }
+            if (productPriceChanged) {
+                yield cart.save();
+                throw new product_pricing_service_1.CartPriceChangedError();
             }
             const quote = yield this.getCartShippingQuote(userId, address, cart.items);
             if (!(0, shippingQuote_1.matchesQuotedShippingPrice)(shippingPrice, quote.shippingPrice)) {

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.computeProductPricing = exports.DESIGN_SERVICE_FEE = void 0;
+exports.computeProductPricing = exports.cartPriceChanged = exports.CartPriceChangedError = exports.DESIGN_SERVICE_FEE = void 0;
 /**
  * Server-side product pricing engine.
  * Mirrors the storefront pricing rules (frontend/src/components/page-sections/shop/product-details.tsx)
@@ -8,6 +8,28 @@ exports.computeProductPricing = exports.DESIGN_SERVICE_FEE = void 0;
  */
 exports.DESIGN_SERVICE_FEE = 100;
 const PRICING_VERSION = 'catalog-v1';
+class CartPriceChangedError extends Error {
+    constructor() {
+        super('Product price changed. Please review the updated cart total and confirm your order again.');
+        this.name = 'CartPriceChangedError';
+    }
+}
+exports.CartPriceChangedError = CartPriceChangedError;
+const cartPriceChanged = (previous, current) => previous === undefined || !Number.isFinite(previous) || Math.round(previous * 100) !== Math.round(current * 100);
+exports.cartPriceChanged = cartPriceChanged;
+const areaSubtotal = (product, configuration, quantity) => {
+    const rule = product.areaPricing;
+    const area = configuration === null || configuration === void 0 ? void 0 : configuration.area;
+    if (!(rule === null || rule === void 0 ? void 0 : rule.enabled) || !area)
+        return null;
+    const factor = area.unit === rule.unit ? 1 : area.unit === 'in' && rule.unit === 'ft' ? 1 / 144 : area.unit === 'm' && rule.unit === 'ft' ? 10.7639104167 : 1;
+    const squareUnits = area.width * area.height * factor;
+    if (!Number.isFinite(squareUnits) || squareUnits <= 0)
+        throw new Error('A valid custom size is required');
+    const billedArea = rule.rounding === 'ceil' ? Math.ceil(Math.max(squareUnits, rule.minimumArea || 0)) : Math.max(squareUnits, rule.minimumArea || 0);
+    const addons = sumAddons(product, configuration);
+    return (billedArea * (Number(rule.pricePerSquareUnit || product.price) + addons.perUnit)) * quantity + addons.fixed;
+};
 // Price add-ons only from the server-side product definition. Client prices are ignored.
 const sumAddons = (product, configuration, filter) => {
     var _a, _b;
@@ -58,7 +80,7 @@ const matrixDimensionNames = (product) => {
     return names;
 };
 const resolveMatrixSubtotal = (product, quantity, configuration) => {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c, _d, _e;
     const options = product.printingOptions || [];
     const materialOptName = (_a = options.find((option) => /material|format|package/i.test(option.name))) === null || _a === void 0 ? void 0 : _a.name;
     const laminationOptName = (_b = options.find((option) => /lamination|sides|packaging/i.test(option.name))) === null || _b === void 0 ? void 0 : _b.name;
@@ -75,15 +97,26 @@ const resolveMatrixSubtotal = (product, quantity, configuration) => {
     }
     if (matrixRow) {
         const availableQuantities = Object.keys(matrixRow.quantityPrices || {}).map(Number).sort((a, b) => a - b);
+        if (availableQuantities.length === 0)
+            throw new Error('Selected product variation has no published price');
         const eligibleTiers = availableQuantities.filter((candidate) => candidate <= quantity);
+        if (matrixRow.priceMode === 'perUnit' && eligibleTiers.length === 0) {
+            throw new Error('Selected quantity is below the minimum published quantity');
+        }
+        if (matrixRow.priceMode !== 'perUnit' && !Object.prototype.hasOwnProperty.call(matrixRow.quantityPrices, quantity)) {
+            throw new Error('Selected quantity has no published price');
+        }
         const tierQuantity = matrixRow.priceMode === 'perUnit'
-            ? (_f = eligibleTiers[eligibleTiers.length - 1]) !== null && _f !== void 0 ? _f : availableQuantities[0]
+            ? eligibleTiers[eligibleTiers.length - 1]
             : quantity;
-        const qPrices = (_g = matrixRow.quantityPrices[tierQuantity]) !== null && _g !== void 0 ? _g : matrixRow.quantityPrices[availableQuantities[0]];
+        const qPrices = matrixRow.quantityPrices[tierQuantity];
         let exactPrice = 0;
         if (qPrices && typeof qPrices === 'object') {
-            const gridSize = ((configuration === null || configuration === void 0 ? void 0 : configuration.fulfillmentSize) || '').trim();
-            exactPrice = qPrices[gridSize] || Object.values(qPrices)[0] || 0;
+            const gridSize = ((configuration === null || configuration === void 0 ? void 0 : configuration.pricingSize) || (configuration === null || configuration === void 0 ? void 0 : configuration.fulfillmentSize) || '').trim();
+            if (!Object.prototype.hasOwnProperty.call(qPrices, gridSize)) {
+                throw new Error('Selected size has no published price');
+            }
+            exactPrice = qPrices[gridSize];
         }
         else {
             exactPrice = qPrices || 0;
@@ -103,8 +136,16 @@ const resolveMatrixSubtotal = (product, quantity, configuration) => {
 const computeProductPricing = (product, quantity, configuration) => {
     var _a, _b;
     const qty = Number.isInteger(Number(quantity)) && Number(quantity) > 0 ? Number(quantity) : 1;
+    if (product.maximumQuantity !== undefined && qty > product.maximumQuantity) {
+        throw new Error(`Orders above ${product.maximumQuantity} pieces require a manual quote`);
+    }
     const fixedPrice = ((_a = configuration === null || configuration === void 0 ? void 0 : configuration.design) === null || _a === void 0 ? void 0 : _a.type) === 'service' ? exports.DESIGN_SERVICE_FEE : 0;
     let subtotal = 0;
+    const customAreaSubtotal = areaSubtotal(product, configuration, qty);
+    if (customAreaSubtotal !== null) {
+        const lineTotal = customAreaSubtotal + fixedPrice;
+        return { unitPrice: customAreaSubtotal / qty, fixedPrice, lineTotal, pricingVersion: PRICING_VERSION };
+    }
     if ((_b = product.matrixPricing) === null || _b === void 0 ? void 0 : _b.enabled) {
         const dimensions = matrixDimensionNames(product);
         const addons = sumAddons(product, configuration, (name) => !dimensions.has(name));

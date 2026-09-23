@@ -23,7 +23,7 @@ import { parcelRepository } from "../../../infrastructure/repositories/ParcelRep
 import { areWhatsAppCustomerUpdatesEnabled } from "../../../infrastructure/services/CustomerUpdateSettingsService";
 import { convergeOrderFromParcel } from "../../../infrastructure/services/EasyParcelTrackingSyncService";
 import { clearFolderGroupCache } from "../../../presentation/routes/fileUploadRoutes";
-import { computeProductPricing } from "../../../shared/pricing/product-pricing.service";
+import { cartPriceChanged, CartPriceChangedError, computeProductPricing } from "../../../shared/pricing/product-pricing.service";
 import { estimateCartWeight, matchesQuotedShippingPrice, selectCheapestShippingQuote, ShippingQuoteChangedError, ShippingCartItem } from "../../../shared/pricing/shippingQuote";
 import { normalizeProductConfiguration } from "../../../shared/catalog/productConfiguration";
 
@@ -116,6 +116,7 @@ export class OrderUsecase {
         }
 let totalAmount = 0;
         const orderItems = [];
+        let productPriceChanged = false;
         const stockUpdates: Array<{ productId: string; size: string; quantity: number; productName: string }> = [];
         for (const item of cart.items) {
             if (!Number.isInteger(item.quantity) || item.quantity < 1) throw new Error("Invalid cart quantity");
@@ -133,6 +134,13 @@ let totalAmount = 0;
                 : undefined;
             const pricing = computeProductPricing(product, item.quantity, normalizedConfiguration);
             const productPrice = pricing.lineTotal;
+            if (cartPriceChanged(item.lineTotal, productPrice)) {
+                item.unitPrice = pricing.unitPrice;
+                item.fixedPrice = pricing.fixedPrice;
+                item.lineTotal = productPrice;
+                item.pricingVersion = pricing.pricingVersion;
+                productPriceChanged = true;
+            }
             orderItems.push({
                 product: product._id as Types.ObjectId,
                 quantity: item.quantity,
@@ -151,6 +159,11 @@ let totalAmount = 0;
                 productCategorySnapshot: product.category || '',
             });
             totalAmount += productPrice;
+        }
+
+        if (productPriceChanged) {
+            await cart.save();
+            throw new CartPriceChangedError();
         }
 
         const quote = await this.getCartShippingQuote(userId, address, cart.items);

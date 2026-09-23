@@ -54,6 +54,7 @@ const ProductSchema = new mongoose_1.Schema({
         min: 0,
         default: 0,
     },
+    maximumQuantity: { type: Number, min: 1 },
     category: {
         type: String,
         required: true,
@@ -161,6 +162,13 @@ const ProductSchema = new mongoose_1.Schema({
                 priceMode: { type: String, enum: ['total', 'perUnit'], default: 'total' },
                 quantityPrices: { type: mongoose_1.Schema.Types.Mixed },
             }],
+    },
+    areaPricing: {
+        enabled: { type: Boolean, default: false },
+        unit: { type: String, enum: ['ft', 'in', 'm'], default: 'ft' },
+        pricePerSquareUnit: { type: Number, default: 0, min: 0 },
+        minimumArea: { type: Number, default: 0, min: 0 },
+        rounding: { type: String, enum: ['none', 'ceil'], default: 'none' },
     },
     averageRating: {
         type: Number,

@@ -7,6 +7,8 @@ import { IProduct } from "./IProduct";
 export interface IProductConfiguration {
     version: number;
     fulfillmentSize: string;
+    pricingSize?: string;
+    area?: { width: number; height: number; unit: 'ft' | 'in' | 'm'; squareUnits: number };
     selections: Array<{
         name: string;
         values: Array<{ label: string; priceAdd?: number }>;

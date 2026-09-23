@@ -60,7 +60,6 @@ const product_repository_1 = __importDefault(require("../../infrastructure/db/re
 const productSections_1 = require("../../shared/constants/productSections");
 const order_model_1 = __importDefault(require("../../infrastructure/db/models/order.model"));
 const productBroadcast_1 = require("../../shared/utils/productBroadcast");
-const catalogProducts_1 = require("../../shared/catalog/catalogProducts");
 const router = (0, express_1.Router)();
 const redis = new redis_1.RedisService();
 const roles = (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss');
@@ -148,6 +147,9 @@ const normalizeProduct = (body) => {
         name: String(body.name || '').trim(),
         description: String(body.description || '').trim(),
         price: Number(body.price),
+        maximumQuantity: body.maximumQuantity === '' || body.maximumQuantity == null
+            ? undefined
+            : Number(body.maximumQuantity),
         originalPrice: body.originalPrice === '' || body.originalPrice == null
             ? Number(body.price)
             : Number(body.originalPrice),
@@ -245,6 +247,8 @@ const validateProduct = (product) => {
         return 'Name, description, and category are required.';
     if (!Number.isFinite(product.price) || product.price < 0)
         return 'Price must be a valid positive number.';
+    if (product.maximumQuantity !== undefined && (!Number.isInteger(product.maximumQuantity) || product.maximumQuantity < 1))
+        return 'Maximum order quantity must be a positive whole number.';
     if (!Number.isFinite(product.originalPrice) || product.originalPrice < 0)
         return 'Original price must be valid.';
     if (product.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(product.slug))
@@ -305,60 +309,6 @@ router.get('/image/:fileName', (req, res, next) => __awaiter(void 0, void 0, voi
     }
 }));
 router.use(auth_middileware_1.default, roles);
-// Applies the versioned catalog fields only. Product content, uploaded images,
-// stock, and operational settings remain owned by the admin database.
-router.post('/sync-published-pricing', (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const updatedBy = actor(req).actorName;
-        const operations = catalogProducts_1.catalogProducts.map(product => {
-            var _a, _b, _c, _d, _e;
-            return ({
-                updateOne: {
-                    filter: { catalogId: product.catalogId },
-                    update: {
-                        $set: {
-                            price: product.price,
-                            originalPrice: (_a = product.originalPrice) !== null && _a !== void 0 ? _a : product.price,
-                            discount: (_b = product.discount) !== null && _b !== void 0 ? _b : 0,
-                            category: product.category,
-                            sections: (0, productSections_1.getProductSections)(product.category),
-                            printingOptions: (_c = product.printingOptions) !== null && _c !== void 0 ? _c : [],
-                            matrixPricing: (_d = product.matrixPricing) !== null && _d !== void 0 ? _d : { enabled: false, pricingData: [] },
-                            updatedBy,
-                        },
-                        $setOnInsert: {
-                            catalogId: product.catalogId,
-                            name: product.name,
-                            description: product.description,
-                            images: product.images || [],
-                            sizes: product.sizes || [],
-                            rating: (_e = product.rating) !== null && _e !== void 0 ? _e : 0,
-                            status: 'published',
-                            slug: slugify(product.name),
-                        },
-                    },
-                    upsert: true,
-                },
-            });
-        });
-        const result = yield product_model_1.default.bulkWrite(operations, { ordered: false });
-        yield invalidateCatalog();
-        const synced = yield product_model_1.default.find({
-            catalogId: { $in: catalogProducts_1.catalogProducts.map(product => product.catalogId) },
-        }).lean();
-        synced.forEach(product => void (0, productBroadcast_1.emitProductUpdated)(product, 'updated'));
-        res.json({
-            success: true,
-            message: 'Published catalog pricing is synchronized.',
-            updated: result.modifiedCount,
-            added: result.upsertedCount,
-            total: synced.length,
-        });
-    }
-    catch (error) {
-        next(error);
-    }
-}));
 router.get('/', (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const products = yield product_model_1.default.find({}).sort({ isDelete: 1, updatedAt: -1 }).lean();

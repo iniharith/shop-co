@@ -13,6 +13,7 @@ exports.OrderController = void 0;
 const order_usecase_1 = require("../../application/usecases/orders/order.usecase");
 const api_constant_1 = require("../../shared/constants/api.constant");
 const shippingQuote_1 = require("../../shared/pricing/shippingQuote");
+const product_pricing_service_1 = require("../../shared/pricing/product-pricing.service");
 /** @Controller */
 class OrderController {
     constructor() {
@@ -93,8 +94,8 @@ class OrderController {
                 res.status(api_constant_1.statusCodes.OK).json({ message: "Order created successfully", order });
             }
             catch (error) {
-                if (error instanceof shippingQuote_1.ShippingQuoteChangedError) {
-                    res.status(409).json({ message: error.message });
+                if (error instanceof shippingQuote_1.ShippingQuoteChangedError || error instanceof product_pricing_service_1.CartPriceChangedError) {
+                    res.status(409).json({ code: error.name, message: error.message });
                     return;
                 }
                 next(error);

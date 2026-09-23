@@ -9,6 +9,14 @@ const ConfigurationSchema = new Schema(
   {
     version: { type: Number, default: 1 },
     fulfillmentSize: { type: String, default: '' },
+    pricingSize: { type: String, default: '' },
+    area: {
+      _id: false,
+      width: { type: Number },
+      height: { type: Number },
+      unit: { type: String, enum: ['ft', 'in', 'm'] },
+      squareUnits: { type: Number },
+    },
     selections: [{
       _id: false,
       name: { type: String, required: true },

@@ -56,7 +56,10 @@ export function getStructuredConfigurationParts(item: Pick<ICartItem, "size" | "
     selection.values.map((value) => `${selection.name}: ${value.label}`)
   );
   const designLabel = item.configuration.design?.variantLabel || item.configuration.design?.label;
-  return [item.configuration.fulfillmentSize, ...selections, designLabel]
+  const areaLabel = item.configuration.area
+    ? `${item.configuration.area.width} × ${item.configuration.area.height} ${item.configuration.area.unit}`
+    : undefined;
+  return [item.configuration.fulfillmentSize, item.configuration.pricingSize, areaLabel, ...selections, designLabel]
     .filter((part): part is string => Boolean(part));
 }
 

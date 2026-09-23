@@ -14,6 +14,7 @@ export interface IProduct {
     name: string;
     description: string;
     price: number; // Base price
+    maximumQuantity?: number;
     category: string;
     sizes: ISize[]; // Keep for legacy
     variations?: IVariation[];

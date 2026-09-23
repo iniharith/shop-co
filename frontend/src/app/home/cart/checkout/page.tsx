@@ -35,6 +35,10 @@ const CheckoutPage = () => {
       return quoteState?.key === key ? quoteState.price : null;
     },
     onShippingQuoteChanged: () => setQuoteRevision((revision) => revision + 1),
+    onCartPriceChanged: () => {
+      setConfigurationConfirmed(false);
+      setQuoteRevision((revision) => revision + 1);
+    },
   });
   const postalCode = form.watch('postalCode');
   const state = form.watch('state');

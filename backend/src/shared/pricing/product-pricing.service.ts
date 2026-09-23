@@ -21,6 +21,16 @@ export interface ProductPricingResult {
     pricingVersion: string;
 }
 
+export class CartPriceChangedError extends Error {
+    constructor() {
+        super('Product price changed. Please review the updated cart total and confirm your order again.');
+        this.name = 'CartPriceChangedError';
+    }
+}
+
+export const cartPriceChanged = (previous: number | undefined, current: number): boolean =>
+    previous === undefined || !Number.isFinite(previous) || Math.round(previous * 100) !== Math.round(current * 100);
+
 const areaSubtotal = (product: IProduct, configuration: IProductConfiguration | undefined, quantity: number): number | null => {
     const rule = product.areaPricing;
     const area = configuration?.area;
@@ -96,15 +106,25 @@ const resolveMatrixSubtotal = (product: IProduct, quantity: number, configuratio
 
     if (matrixRow) {
         const availableQuantities = Object.keys(matrixRow.quantityPrices || {}).map(Number).sort((a, b) => a - b);
+        if (availableQuantities.length === 0) throw new Error('Selected product variation has no published price');
         const eligibleTiers = availableQuantities.filter((candidate: number) => candidate <= quantity);
+        if (matrixRow.priceMode === 'perUnit' && eligibleTiers.length === 0) {
+            throw new Error('Selected quantity is below the minimum published quantity');
+        }
+        if (matrixRow.priceMode !== 'perUnit' && !Object.prototype.hasOwnProperty.call(matrixRow.quantityPrices, quantity)) {
+            throw new Error('Selected quantity has no published price');
+        }
         const tierQuantity = matrixRow.priceMode === 'perUnit'
-            ? eligibleTiers[eligibleTiers.length - 1] ?? availableQuantities[0]
+            ? eligibleTiers[eligibleTiers.length - 1]
             : quantity;
-        const qPrices: any = matrixRow.quantityPrices[tierQuantity] ?? matrixRow.quantityPrices[availableQuantities[0]];
+        const qPrices: any = matrixRow.quantityPrices[tierQuantity];
         let exactPrice = 0;
         if (qPrices && typeof qPrices === 'object') {
-            const gridSize = (configuration?.fulfillmentSize || '').trim();
-            exactPrice = qPrices[gridSize] || Object.values(qPrices)[0] || 0;
+            const gridSize = (configuration?.pricingSize || configuration?.fulfillmentSize || '').trim();
+            if (!Object.prototype.hasOwnProperty.call(qPrices, gridSize)) {
+                throw new Error('Selected size has no published price');
+            }
+            exactPrice = qPrices[gridSize];
         } else {
             exactPrice = qPrices || 0;
         }
@@ -127,6 +147,9 @@ export const computeProductPricing = (
     configuration?: IProductConfiguration
 ): ProductPricingResult => {
     const qty = Number.isInteger(Number(quantity)) && Number(quantity) > 0 ? Number(quantity) : 1;
+    if (product.maximumQuantity !== undefined && qty > product.maximumQuantity) {
+        throw new Error(`Orders above ${product.maximumQuantity} pieces require a manual quote`);
+    }
     const fixedPrice = configuration?.design?.type === 'service' ? DESIGN_SERVICE_FEE : 0;
     let subtotal = 0;
 

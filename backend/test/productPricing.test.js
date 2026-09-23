@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const { normalizeProductConfiguration } = require('../dist/shared/catalog/productConfiguration.js');
-const { computeProductPricing } = require('../dist/shared/pricing/product-pricing.service.js');
+const { cartPriceChanged, computeProductPricing } = require('../dist/shared/pricing/product-pricing.service.js');
 const CartModel = require('../dist/infrastructure/db/models/cart.model.js').default;
 const OrderModel = require('../dist/infrastructure/db/models/order.model.js').default;
 
@@ -138,6 +138,91 @@ test('multiplies per-unit matrix tiers by the requested quantity', () => {
   assert.equal(pricing.lineTotal, 1498);
 });
 
+test('rejects quantities without an exact total-price matrix entry', () => {
+  const matrixProduct = {
+    ...configurableProduct,
+    printingOptions: [{ name: 'Material', options: [{ label: 'Standard', priceAdd: 0 }] }],
+    matrixPricing: {
+      enabled: true,
+      pricingData: [{ material: 'Standard', laminate: '', priceMode: 'total', quantityPrices: { 100: 22, 200: 30 } }],
+    },
+  };
+  const config = { version: 1, fulfillmentSize: 'Standard', selections: [{ name: 'Material', values: [{ label: 'Standard', priceAdd: 0 }] }] };
+  assert.equal(computeProductPricing(matrixProduct, 100, config).lineTotal, 22);
+  assert.equal(computeProductPricing(matrixProduct, 200, config).lineTotal, 30);
+  assert.throws(() => computeProductPricing(matrixProduct, 99, config), /no published price/);
+  assert.throws(() => computeProductPricing(matrixProduct, 101, config), /no published price/);
+  assert.throws(() => computeProductPricing(matrixProduct, 201, config), /no published price/);
+});
+
+test('per-unit quantity tiers switch at their published minimums', () => {
+  const matrixProduct = {
+    ...configurableProduct,
+    printingOptions: [{ name: 'Material', options: [{ label: 'Standard', priceAdd: 0 }] }],
+    matrixPricing: {
+      enabled: true,
+      pricingData: [{ material: 'Standard', laminate: '', priceMode: 'perUnit', quantityPrices: { 10: 29, 20: 25, 30: 24 } }],
+    },
+  };
+  const config = { version: 1, fulfillmentSize: 'Standard', selections: [{ name: 'Material', values: [{ label: 'Standard', priceAdd: 0 }] }] };
+  assert.throws(() => computeProductPricing(matrixProduct, 9, config), /below the minimum/);
+  for (const [quantity, unitPrice] of [[10, 29], [19, 29], [20, 25], [29, 25], [30, 24]]) {
+    assert.equal(computeProductPricing(matrixProduct, quantity, config).lineTotal, quantity * unitPrice);
+  }
+});
+
+test('Flyer pricing size is distinct from the stock size and never falls back to another format', () => {
+  const flyers = {
+    ...configurableProduct,
+    category: 'flyers',
+    sizes: [{ size: 'Standard', stock: 1000 }],
+    printingOptions: [{ name: 'Material', options: [{ label: '80gsm', priceAdd: 0 }] }],
+    matrixPricing: {
+      enabled: true,
+      pricingData: [{ material: '80gsm', laminate: '', priceMode: 'total', quantityPrices: { 300: { A3: 208, A4: 115.6 } } }],
+    },
+  };
+  const configuration = normalizeProductConfiguration(flyers, {
+    version: 1, fulfillmentSize: 'Forged', pricingSize: 'A4',
+    selections: [{ name: 'Material', values: [{ label: '80gsm', priceAdd: 0 }] }],
+  }, 'Standard');
+  assert.equal(configuration.fulfillmentSize, 'Standard');
+  assert.equal(configuration.pricingSize, 'A4');
+  assert.equal(computeProductPricing(flyers, 300, configuration).lineTotal, 115.6);
+  assert.throws(() => computeProductPricing(flyers, 300, { ...configuration, pricingSize: 'A5' }), /Selected size has no published price/);
+});
+
+test('server recalculates custom area and preserves it in the order configuration', () => {
+  const areaProduct = {
+    ...configurableProduct,
+    price: 20,
+    printingOptions: [],
+    areaPricing: { enabled: true, unit: 'ft', pricePerSquareUnit: 20, minimumArea: 1, rounding: 'none' },
+  };
+  const configuration = normalizeProductConfiguration(areaProduct, {
+    version: 1, fulfillmentSize: 'Standard', selections: [],
+    area: { width: 2, height: 3, unit: 'ft', squareUnits: 999 },
+  }, 'Standard');
+  assert.equal(configuration.area.squareUnits, 6);
+  assert.equal(computeProductPricing(areaProduct, 1, configuration).lineTotal, 120);
+  assert.throws(() => normalizeProductConfiguration(areaProduct, {
+    version: 1, fulfillmentSize: 'Standard', selections: [],
+    area: { width: -2, height: 3, unit: 'ft', squareUnits: -6 },
+  }, 'Standard'), /valid custom size/);
+});
+
+test('checkout detects a changed cart quote to the nearest sen', () => {
+  assert.equal(cartPriceChanged(19.90, 19.9), false);
+  assert.equal(cartPriceChanged(19.90, 19.91), true);
+  assert.equal(cartPriceChanged(undefined, 19.9), true);
+});
+
+test('manual-quote products reject quantities above their approved maximum', () => {
+  const productWithLimit = { ...configurableProduct, maximumQuantity: 50 };
+  assert.equal(computeProductPricing(productWithLimit, 50).lineTotal, 50 * productWithLimit.price);
+  assert.throws(() => computeProductPricing(productWithLimit, 51), /manual quote/);
+});
+
 test('adds per-unit and once-per-order choices to matrix totals', () => {
   const matrixProduct = {
     ...configurableProduct,
@@ -197,5 +282,7 @@ test('cart and order schemas persist explicit variation fields', () => {
     assert.ok(configurationSchema.path('design.variantId'));
     assert.ok(configurationSchema.path('design.variantLabel'));
     assert.ok(configurationSchema.path('design.variantImage'));
+    assert.ok(configurationSchema.path('pricingSize'));
+    assert.ok(configurationSchema.path('area.width'));
   }
 });

@@ -23,6 +23,7 @@ const ProductSchema: Schema = new Schema(
             min: 0,
             default: 0,
         },
+        maximumQuantity: { type: Number, min: 1 },
         category: {
             type: String,
             required: true,

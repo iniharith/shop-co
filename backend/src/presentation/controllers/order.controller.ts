@@ -7,6 +7,7 @@ import { OrderUsecase } from "../../application/usecases/orders/order.usecase";
 import { AuthRequest } from "../../domain/types/api";
 import { statusCodes } from "../../shared/constants/api.constant";
 import { ShippingQuoteChangedError } from "../../shared/pricing/shippingQuote";
+import { CartPriceChangedError } from "../../shared/pricing/product-pricing.service";
 
 
 
@@ -85,8 +86,8 @@ export class OrderController {
             const order = await this.orderUsecase.createOrder(address, req.userId as string, customerName, orderNotes, shippingPrice, checkoutKey);
             res.status(statusCodes.OK).json({ message: "Order created successfully", order });
         } catch (error: any) {
-            if (error instanceof ShippingQuoteChangedError) {
-                res.status(409).json({ message: error.message });
+            if (error instanceof ShippingQuoteChangedError || error instanceof CartPriceChangedError) {
+                res.status(409).json({ code: error.name, message: error.message });
                 return;
             }
             next(error);

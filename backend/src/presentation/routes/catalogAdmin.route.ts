@@ -13,7 +13,6 @@ import productRepository from '../../infrastructure/db/repositories/product.repo
 import { getProductSections } from '../../shared/constants/productSections';
 import OrderModel from '../../infrastructure/db/models/order.model';
 import { emitProductUpdated } from '../../shared/utils/productBroadcast';
-import { catalogProducts } from '../../shared/catalog/catalogProducts';
 
 const router = Router();
 const redis = new RedisService();
@@ -32,6 +31,7 @@ type NormalizedProduct = {
   name: string;
   description: string;
   price: number;
+  maximumQuantity?: number;
   originalPrice: number;
   discount: number;
   category: string;
@@ -151,6 +151,9 @@ const normalizeProduct = (body: any): NormalizedProduct => {
     name: String(body.name || '').trim(),
     description: String(body.description || '').trim(),
     price: Number(body.price),
+    maximumQuantity: body.maximumQuantity === '' || body.maximumQuantity == null
+      ? undefined
+      : Number(body.maximumQuantity),
     originalPrice:
       body.originalPrice === '' || body.originalPrice == null
         ? Number(body.price)
@@ -264,6 +267,8 @@ const validateProduct = (product: ReturnType<typeof normalizeProduct>) => {
     return 'Name, description, and category are required.';
   if (!Number.isFinite(product.price) || product.price < 0)
     return 'Price must be a valid positive number.';
+  if (product.maximumQuantity !== undefined && (!Number.isInteger(product.maximumQuantity) || product.maximumQuantity < 1))
+    return 'Maximum order quantity must be a positive whole number.';
   if (!Number.isFinite(product.originalPrice) || product.originalPrice < 0)
     return 'Original price must be valid.';
   if (product.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(product.slug))
@@ -331,67 +336,6 @@ router.get('/image/:fileName', async (req, res, next) => {
 });
 
 router.use(authMiddilware, roles);
-
-// Applies the versioned catalog fields only. Product content, uploaded images,
-// stock, and operational settings remain owned by the admin database.
-router.post('/sync-published-pricing', async (req, res, next) => {
-  try {
-    const updatedBy = actor(req).actorName;
-    const operations: any[] = catalogProducts.map(product => ({
-      updateOne: {
-        // Older catalog records may have been created with the slug but without
-        // the versioned catalogId. Match either identity so every existing
-        // storefront record is updated instead of silently creating a second
-        // product document.
-        filter: {
-          $or: [
-            { catalogId: product.catalogId },
-            { slug: slugify(product.name) },
-          ],
-        },
-        update: {
-          $set: {
-            price: product.price,
-            originalPrice: product.originalPrice ?? product.price,
-            discount: product.discount ?? 0,
-            category: product.category,
-            sections: getProductSections(product.category),
-            printingOptions: product.printingOptions ?? [],
-            matrixPricing: product.matrixPricing ?? { enabled: false, pricingData: [] },
-            areaPricing: product.areaPricing ?? { enabled: false, pricePerSquareUnit: product.price },
-            updatedBy,
-          },
-          $setOnInsert: {
-            catalogId: product.catalogId,
-            name: product.name,
-            description: product.description,
-            images: product.images || [],
-            sizes: product.sizes || [],
-            rating: product.rating ?? 0,
-            status: 'published',
-            slug: slugify(product.name),
-          },
-        },
-        upsert: true,
-      },
-    }));
-    const result = await ProductModel.bulkWrite(operations, { ordered: false });
-    await invalidateCatalog();
-    const synced = await ProductModel.find({
-      catalogId: { $in: catalogProducts.map(product => product.catalogId) },
-    }).lean();
-    synced.forEach(product => void emitProductUpdated(product, 'updated'));
-    res.json({
-      success: true,
-      message: 'Published catalog pricing is synchronized.',
-      updated: result.modifiedCount,
-      added: result.upsertedCount,
-      total: synced.length,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
 
 router.get('/', async (req, res, next) => {
   try {

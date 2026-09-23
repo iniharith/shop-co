@@ -38,7 +38,7 @@ function getCheckoutKey(items: ICartItem[]): string {
     return key;
 }
 
-export const useOrder = (checkoutMeta?: { getShippingPrice?: (address: z.infer<typeof addressSchema>) => number | null; onShippingQuoteChanged?: () => void }) => {
+export const useOrder = (checkoutMeta?: { getShippingPrice?: (address: z.infer<typeof addressSchema>) => number | null; onShippingQuoteChanged?: () => void; onCartPriceChanged?: () => void }) => {
     const { data: session, update } = useSession();
     const [DisOpen,setDisOpen]=useState(false)
     const client = useQueryClient()
@@ -53,7 +53,13 @@ export const useOrder = (checkoutMeta?: { getShippingPrice?: (address: z.infer<t
             if (shippingPrice === null || shippingPrice === undefined) throw new Error('Please wait for shipping rates before checking out.');
             return await createOrder({ ...data, shippingPrice }, token, getCheckoutKey(response?.cart?.items || []));
         } catch (error: unknown) {
-            if (isAxiosError(error) && error.response?.status === 409) checkoutMeta?.onShippingQuoteChanged?.();
+            if (isAxiosError(error) && error.response?.status === 409) {
+                const code = (error.response.data as { code?: string } | undefined)?.code;
+                if (code === 'CartPriceChangedError') {
+                    await client.invalidateQueries({ queryKey: ['cart'], exact: true });
+                    checkoutMeta?.onCartPriceChanged?.();
+                } else checkoutMeta?.onShippingQuoteChanged?.();
+            }
             throw error;
         }
     }, ['cart'], async () => {
