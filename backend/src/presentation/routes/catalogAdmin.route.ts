@@ -49,6 +49,7 @@ type NormalizedProduct = {
   variations: NormalizedVariation[];
   printingOptions: any[];
   matrixPricing?: NormalizedMatrixPricing;
+  storefrontLabels?: { formatMaterialTitle?: string; variationTitle?: string };
   areaPricing?: {
     enabled: boolean;
     unit: 'ft' | 'in' | 'm';
@@ -239,6 +240,12 @@ const normalizeProduct = (body: any): NormalizedProduct => {
                   : {},
               }))
             : [],
+        }
+      : undefined,
+    storefrontLabels: body.storefrontLabels && typeof body.storefrontLabels === 'object'
+      ? {
+          formatMaterialTitle: String(body.storefrontLabels.formatMaterialTitle || '').trim().slice(0, 80),
+          variationTitle: String(body.storefrontLabels.variationTitle || '').trim().slice(0, 80),
         }
       : undefined,
     areaPricing: body.areaPricing && typeof body.areaPricing === 'object'

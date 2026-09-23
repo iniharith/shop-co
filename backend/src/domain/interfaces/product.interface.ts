@@ -29,6 +29,7 @@ export interface IProduct {
     discount?: number;
     printingOptions?: IProductPrintingOption[];
     matrixPricing?: IProductMatrixPricing;
+    storefrontLabels?: { formatMaterialTitle?: string; variationTitle?: string };
     areaPricing?: IProductAreaPricing;
     specifications?: IProductSpecifications;
     packageContents?: string[];

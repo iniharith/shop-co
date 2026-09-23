@@ -62,6 +62,7 @@ type AreaPricing = { enabled: boolean; unit?: 'ft' | 'in' | 'm'; pricePerSquareU
 type MatrixPrice = number | Record<string, number>;
 type MatrixRow = { material?: string; laminate?: string; lamination?: string; design?: string; priceMode?: 'total' | 'perUnit'; quantityPrices: Record<string, MatrixPrice> };
 type MatrixPricing = { enabled?: boolean; hideQuantityGrid?: boolean; pricingData?: MatrixRow[] };
+type StorefrontLabels = { formatMaterialTitle?: string; variationTitle?: string };
 
 type Product = {
   _id: string;
@@ -78,6 +79,7 @@ type Product = {
   printingOptions?: PrintingOption[];
   areaPricing?: AreaPricing;
   matrixPricing?: MatrixPricing;
+  storefrontLabels?: StorefrontLabels;
   slug?: string;
   status?: 'draft' | 'published';
   seoTitle?: string;
@@ -169,6 +171,7 @@ const emptyProduct: Product = {
   productionTurnaround: undefined,
   warrantyInfo: '',
   matrixPricing: { enabled: false, hideQuantityGrid: false, pricingData: [] },
+  storefrontLabels: { formatMaterialTitle: '', variationTitle: '' },
 };
 
 const slugify = (value: string) =>
@@ -1339,13 +1342,23 @@ images: resolveImages(current.images),
                 <span className="block text-xs font-normal text-muted-foreground">Larger orders require a manual quote.</span>
               </label>
               <div className="rounded-xl border bg-muted/30 p-4 md:col-span-2">
+                <p className="font-semibold">Storefront section titles</p>
+                <p className="text-xs text-muted-foreground">Leave blank to use the standard title.</p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <label className="text-sm font-medium">Format / material section<Input placeholder="Format & Material" value={product.storefrontLabels?.formatMaterialTitle || ''} onChange={event => setProduct({ ...product, storefrontLabels: { ...product.storefrontLabels, formatMaterialTitle: event.target.value } })} /></label>
+                  <label className="text-sm font-medium">Variation section<Input placeholder="Choose Variation" value={product.storefrontLabels?.variationTitle || ''} onChange={event => setProduct({ ...product, storefrontLabels: { ...product.storefrontLabels, variationTitle: event.target.value } })} /></label>
+                </div>
+              </div>
+              <div className="rounded-xl border bg-muted/30 p-4 md:col-span-2">
                 <div className="flex items-center justify-between gap-3">
                   <div><p className="font-semibold">Quantity &amp; material price matrix</p><p className="text-xs text-muted-foreground">Set rates for each material/finish and quantity. Existing prices are preserved when editing.</p></div>
                   <input aria-label="Enable price matrix" type="checkbox" checked={Boolean(product.matrixPricing?.enabled)} onChange={event => setProduct({ ...product, matrixPricing: { ...product.matrixPricing, enabled: event.target.checked } })} />
                 </div>
                 {product.matrixPricing?.enabled && <div className="mt-4 space-y-3">
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(product.matrixPricing.hideQuantityGrid)} onChange={event => setProduct({ ...product, matrixPricing: { ...product.matrixPricing, hideQuantityGrid: event.target.checked } })} />Hide quantity grid on storefront</label>
-                  {(product.matrixPricing.pricingData || []).map((row, rowIndex) => <div key={rowIndex} className="rounded-lg border bg-background p-3">
+                  {(product.matrixPricing.pricingData || []).map((row, rowIndex) => <details key={rowIndex} className="rounded-lg border bg-background">
+                    <summary className="cursor-pointer px-3 py-2 text-sm font-semibold">Combination {rowIndex + 1}{row.material ? ` · ${row.material}` : ''}{row.lamination ? ` · ${row.lamination}` : ''} <span className="font-normal text-muted-foreground">({Object.keys(row.quantityPrices || {}).length} tiers)</span></summary>
+                    <div className="border-t p-3">
                     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                       {(['material', 'laminate', 'lamination', 'design'] as const).map(field => <label key={field} className="text-xs font-medium capitalize">{field}<Input value={row[field] || ''} onChange={event => updateMatrixRow(rowIndex, { [field]: event.target.value })} /></label>)}
                     </div>
@@ -1355,7 +1368,8 @@ images: resolveImages(current.images),
                       {typeof price === 'object' ? <div className="grid gap-2 sm:grid-cols-3">{Object.entries(price).map(([size, amount]) => <label key={size} className="text-xs font-medium">{size}<Input type="number" min="0" step="0.01" value={amount} onChange={event => updateMatrixTier(rowIndex, quantity, { ...price, [size]: Number(event.target.value) })}/></label>)}</div> : <label className="text-xs font-medium">Price (RM)<Input type="number" min="0" step="0.01" value={price} onChange={event => updateMatrixTier(rowIndex, quantity, Number(event.target.value))}/></label>}
                       <Button type="button" size="sm" variant="ghost" aria-label="Remove quantity tier" onClick={() => { const prices = { ...row.quantityPrices }; delete prices[quantity]; updateMatrixRow(rowIndex, { quantityPrices: prices }); }}><X className="h-4 w-4"/></Button>
                     </div>)}<Button type="button" size="sm" variant="outline" onClick={() => addMatrixTier(rowIndex)}><Plus className="mr-1 h-4 w-4"/>Add quantity tier</Button></div>
-                  </div>)}
+                    </div>
+                  </details>)}
                   <Button type="button" variant="outline" onClick={addMatrixRow}><Plus className="mr-1 h-4 w-4"/>Add price combination</Button>
                 </div>}
               </div>

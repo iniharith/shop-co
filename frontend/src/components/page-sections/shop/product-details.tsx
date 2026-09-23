@@ -596,7 +596,7 @@ const variationStepNum = (hasImageVariations || hasDesignVariations) ? currentSt
           <div className="space-y-4">
             <div className="flex items-center gap-3 border-b border-gray-200 dark:border-border pb-2">
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">{formatStepNum}</span>
-              <h2 className="font-sans text-base font-semibold text-gray-800 dark:text-foreground sm:text-lg">{label("Format & Material", "Format & Bahan")}</h2>
+              <h2 className="font-sans text-base font-semibold text-gray-800 dark:text-foreground sm:text-lg">{label(product.storefrontLabels?.formatMaterialTitle || "Format & Material", "Format & Bahan")}</h2>
             </div>
             {renderOptions(step1Options)}
           </div>
@@ -634,7 +634,7 @@ const variationStepNum = (hasImageVariations || hasDesignVariations) ? currentSt
               </span>
               <div className="min-w-0">
                 <h2 className="font-sans text-base font-semibold text-gray-800 dark:text-foreground sm:text-lg">
-                  {label("Choose Variation", "Pilih Variasi")}
+                  {label(product.storefrontLabels?.variationTitle || "Choose Variation", "Pilih Variasi")}
                 </h2>
                 <p aria-live="polite" className={`text-xs ${selectedVariationIndex === null ? "font-medium text-primary" : "text-muted-foreground"}`}>
                   {selectedVariationIndex === null

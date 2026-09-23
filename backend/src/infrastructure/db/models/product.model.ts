@@ -133,6 +133,10 @@ const ProductSchema: Schema = new Schema(
                 quantityPrices: { type: Schema.Types.Mixed },
             }],
         },
+        storefrontLabels: {
+            formatMaterialTitle: { type: String, trim: true, maxlength: 80 },
+            variationTitle: { type: String, trim: true, maxlength: 80 },
+        },
         areaPricing: {
             enabled: { type: Boolean, default: false },
             unit: { type: String, enum: ['ft', 'in', 'm'], default: 'ft' },

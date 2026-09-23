@@ -163,6 +163,10 @@ const ProductSchema = new mongoose_1.Schema({
                 quantityPrices: { type: mongoose_1.Schema.Types.Mixed },
             }],
     },
+    storefrontLabels: {
+        formatMaterialTitle: { type: String, trim: true, maxlength: 80 },
+        variationTitle: { type: String, trim: true, maxlength: 80 },
+    },
     areaPricing: {
         enabled: { type: Boolean, default: false },
         unit: { type: String, enum: ['ft', 'in', 'm'], default: 'ft' },

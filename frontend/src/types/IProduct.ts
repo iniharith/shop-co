@@ -37,6 +37,7 @@ export interface IProduct {
             quantityPrices: Record<number, number | Record<string, number>>;
         }[];
     };
+    storefrontLabels?: { formatMaterialTitle?: string; variationTitle?: string };
     areaPricing?: { enabled: boolean; unit?: 'ft' | 'in' | 'm'; pricePerSquareUnit: number; minimumArea?: number; rounding?: 'none' | 'ceil' };
     catalogId?: string;
     slug?: string;

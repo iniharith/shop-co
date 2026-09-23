@@ -16,6 +16,7 @@ export interface ICatalogProduct {
     sizes: ICatalogSize[];
     printingOptions?: ICatalogPrintingOption[];
     matrixPricing?: ICatalogMatrixPricing;
+    storefrontLabels?: { formatMaterialTitle?: string; variationTitle?: string };
     areaPricing?: {
         enabled: boolean;
         unit?: 'ft' | 'in' | 'm';
