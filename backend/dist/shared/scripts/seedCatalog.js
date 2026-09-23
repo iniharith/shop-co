@@ -22,11 +22,11 @@ const product_model_1 = __importDefault(require("../../infrastructure/db/models/
 const productSections_1 = require("../constants/productSections");
 const catalogProducts_1 = require("../catalog/catalogProducts");
 const main = () => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     (0, dotenv_1.config)();
     yield (0, db_config_1.default)();
     let created = 0;
-    let updated = 0;
+    let skipped = 0;
     for (const product of catalogProducts_1.catalogProducts) {
         const patch = {
             name: product.name,
@@ -40,20 +40,22 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
             discount: (_c = product.discount) !== null && _c !== void 0 ? _c : 0,
             printingOptions: (_d = product.printingOptions) !== null && _d !== void 0 ? _d : [],
             matrixPricing: (_e = product.matrixPricing) !== null && _e !== void 0 ? _e : { enabled: false },
+            areaPricing: (_f = product.areaPricing) !== null && _f !== void 0 ? _f : { enabled: false },
             catalogId: product.catalogId,
             sections: (0, productSections_1.getProductSections)(product.category),
         };
         const existing = yield product_model_1.default.findOne({ catalogId: product.catalogId });
         if (existing) {
-            yield product_model_1.default.updateOne({ _id: existing._id }, { $set: patch });
-            updated += 1;
+            // Once created, the product database and admin publishing flow own prices.
+            // Re-running bootstrap must not overwrite a staff-approved catalog record.
+            skipped += 1;
         }
         else {
             yield product_model_1.default.create(patch);
             created += 1;
         }
     }
-    console.log(`Catalog seeded: ${created} created, ${updated} updated (${catalogProducts_1.catalogProducts.length} total).`);
+    console.log(`Catalog seeded: ${created} created, ${skipped} existing products skipped (${catalogProducts_1.catalogProducts.length} total).`);
     process.exit(0);
 });
 main().catch((error) => {

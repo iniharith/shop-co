@@ -13,7 +13,7 @@ const main = async () => {
   await connectDB();
 
   let created = 0;
-  let updated = 0;
+  let skipped = 0;
 
   for (const product of catalogProducts) {
     const patch: Record<string, any> = {
@@ -28,21 +28,23 @@ const main = async () => {
       discount: product.discount ?? 0,
       printingOptions: product.printingOptions ?? [],
       matrixPricing: product.matrixPricing ?? { enabled: false },
+      areaPricing: product.areaPricing ?? { enabled: false },
       catalogId: product.catalogId,
       sections: getProductSections(product.category),
     };
 
     const existing = await ProductModel.findOne({ catalogId: product.catalogId });
     if (existing) {
-      await ProductModel.updateOne({ _id: existing._id }, { $set: patch });
-      updated += 1;
+      // Once created, the product database and admin publishing flow own prices.
+      // Re-running bootstrap must not overwrite a staff-approved catalog record.
+      skipped += 1;
     } else {
       await ProductModel.create(patch);
       created += 1;
     }
   }
 
-  console.log(`Catalog seeded: ${created} created, ${updated} updated (${catalogProducts.length} total).`);
+  console.log(`Catalog seeded: ${created} created, ${skipped} existing products skipped (${catalogProducts.length} total).`);
   process.exit(0);
 };
 

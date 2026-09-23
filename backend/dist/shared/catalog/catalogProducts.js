@@ -7,6 +7,7 @@ exports.catalogProducts = [
         "name": "Banner",
         "description": "High-quality Banner with premium materials and vibrant printing. Perfect for digital printing needs.",
         "price": 2,
+        "areaPricing": { "enabled": true, "unit": "ft", "pricePerSquareUnit": 2, "minimumArea": 0, "rounding": "none" },
         "category": "banner",
         "images": [
             "/images/products/BANNER.png"
@@ -199,6 +200,7 @@ exports.catalogProducts = [
         "name": "Bunting",
         "description": "High-quality Bunting with premium materials and vibrant printing. Perfect for digital printing needs.",
         "price": 2,
+        "areaPricing": { "enabled": true, "unit": "ft", "pricePerSquareUnit": 2, "minimumArea": 0, "rounding": "none" },
         "category": "bunting",
         "images": [
             "/images/products/BUNTING.png"
