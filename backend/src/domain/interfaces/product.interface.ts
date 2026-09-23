@@ -88,6 +88,7 @@ export interface IProductMatrixPricing {
 }
 
 export interface IProductMatrixRow {
+    title?: string;
     material: string;
     laminate?: string;
     lamination?: string;

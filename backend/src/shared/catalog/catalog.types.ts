@@ -51,6 +51,7 @@ export interface ICatalogMatrixPricing {
 }
 
 export interface ICatalogMatrixRow {
+    title?: string;
     material: string;
     laminate?: string;
     lamination?: string;

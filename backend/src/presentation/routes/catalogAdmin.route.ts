@@ -28,6 +28,7 @@ type NormalizedPrintingOption = {
   options: Array<{ label: string; priceAdd: number }>;
 };
 type NormalizedMatrixRow = {
+  title?: string;
   material: string;
   laminate?: string;
   lamination?: string;
@@ -225,6 +226,7 @@ const normalizeProduct = (body: any): NormalizedProduct => {
           hideQuantityGrid: Boolean(body.matrixPricing.hideQuantityGrid),
           pricingData: Array.isArray(body.matrixPricing.pricingData)
             ? body.matrixPricing.pricingData.map((row: any): NormalizedMatrixRow => ({
+                title: String(row?.title || '').trim().slice(0, 80) || undefined,
                 material: String(row?.material || '').trim(),
                 laminate: String(row?.laminate || '').trim(),
                 lamination: String(row?.lamination || '').trim(),

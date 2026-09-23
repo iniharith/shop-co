@@ -155,6 +155,7 @@ const ProductSchema = new mongoose_1.Schema({
         enabled: { type: Boolean, default: false },
         hideQuantityGrid: { type: Boolean, default: false },
         pricingData: [{
+                title: { type: String, trim: true, maxlength: 80 },
                 material: { type: String },
                 laminate: { type: String },
                 lamination: { type: String },

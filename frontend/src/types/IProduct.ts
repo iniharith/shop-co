@@ -29,6 +29,7 @@ export interface IProduct {
         enabled: boolean;
         hideQuantityGrid?: boolean;
         pricingData: {
+            title?: string;
             laminate?: string;
             lamination?: string;
             design?: string;

@@ -202,6 +202,7 @@ const normalizeProduct = (body) => {
                 hideQuantityGrid: Boolean(body.matrixPricing.hideQuantityGrid),
                 pricingData: Array.isArray(body.matrixPricing.pricingData)
                     ? body.matrixPricing.pricingData.map((row) => ({
+                        title: String((row === null || row === void 0 ? void 0 : row.title) || '').trim().slice(0, 80) || undefined,
                         material: String((row === null || row === void 0 ? void 0 : row.material) || '').trim(),
                         laminate: String((row === null || row === void 0 ? void 0 : row.laminate) || '').trim(),
                         lamination: String((row === null || row === void 0 ? void 0 : row.lamination) || '').trim(),

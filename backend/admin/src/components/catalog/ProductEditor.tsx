@@ -60,7 +60,7 @@ type PrintingOption = {
 };
 type AreaPricing = { enabled: boolean; unit?: 'ft' | 'in' | 'm'; pricePerSquareUnit: number; minimumArea?: number; rounding?: 'none' | 'ceil' };
 type MatrixPrice = number | Record<string, number>;
-type MatrixRow = { material?: string; laminate?: string; lamination?: string; design?: string; priceMode?: 'total' | 'perUnit'; quantityPrices: Record<string, MatrixPrice> };
+type MatrixRow = { title?: string; material?: string; laminate?: string; lamination?: string; design?: string; priceMode?: 'total' | 'perUnit'; quantityPrices: Record<string, MatrixPrice> };
 type MatrixPricing = { enabled?: boolean; hideQuantityGrid?: boolean; pricingData?: MatrixRow[] };
 type StorefrontLabels = { formatMaterialTitle?: string; variationTitle?: string };
 
@@ -1357,8 +1357,9 @@ images: resolveImages(current.images),
                 {product.matrixPricing?.enabled && <div className="mt-4 space-y-3">
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(product.matrixPricing.hideQuantityGrid)} onChange={event => setProduct({ ...product, matrixPricing: { ...product.matrixPricing, hideQuantityGrid: event.target.checked } })} />Hide quantity grid on storefront</label>
                   {(product.matrixPricing.pricingData || []).map((row, rowIndex) => <details key={rowIndex} className="rounded-lg border bg-background">
-                    <summary className="cursor-pointer px-3 py-2 text-sm font-semibold">Combination {rowIndex + 1}{row.material ? ` · ${row.material}` : ''}{row.lamination ? ` · ${row.lamination}` : ''} <span className="font-normal text-muted-foreground">({Object.keys(row.quantityPrices || {}).length} tiers)</span></summary>
+                    <summary className="cursor-pointer px-3 py-2 text-sm font-semibold">{row.title?.trim() || `Combination ${rowIndex + 1}`}{!row.title?.trim() && row.material ? ` · ${row.material}` : ''}{!row.title?.trim() && row.lamination ? ` · ${row.lamination}` : ''} <span className="font-normal text-muted-foreground">({Object.keys(row.quantityPrices || {}).length} tiers)</span></summary>
                     <div className="border-t p-3">
+                    <label className="mb-3 block text-xs font-medium">Combination title<Input maxLength={80} placeholder={`Combination ${rowIndex + 1}`} value={row.title || ''} onChange={event => updateMatrixRow(rowIndex, { title: event.target.value })} /></label>
                     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                       {(['material', 'laminate', 'lamination', 'design'] as const).map(field => <label key={field} className="text-xs font-medium capitalize">{field}<Input value={row[field] || ''} onChange={event => updateMatrixRow(rowIndex, { [field]: event.target.value })} /></label>)}
                     </div>
