@@ -196,6 +196,29 @@ const normalizeProduct = (body) => {
             }))
                 .filter((option) => option.name && option.options.length)
             : [],
+        matrixPricing: body.matrixPricing && typeof body.matrixPricing === 'object'
+            ? {
+                enabled: Boolean(body.matrixPricing.enabled),
+                hideQuantityGrid: Boolean(body.matrixPricing.hideQuantityGrid),
+                pricingData: Array.isArray(body.matrixPricing.pricingData)
+                    ? body.matrixPricing.pricingData.map((row) => ({
+                        material: String((row === null || row === void 0 ? void 0 : row.material) || '').trim(),
+                        laminate: String((row === null || row === void 0 ? void 0 : row.laminate) || '').trim(),
+                        lamination: String((row === null || row === void 0 ? void 0 : row.lamination) || '').trim(),
+                        design: String((row === null || row === void 0 ? void 0 : row.design) || '').trim(),
+                        priceMode: (row === null || row === void 0 ? void 0 : row.priceMode) === 'perUnit' ? 'perUnit' : 'total',
+                        quantityPrices: (row === null || row === void 0 ? void 0 : row.quantityPrices) && typeof row.quantityPrices === 'object' && !Array.isArray(row.quantityPrices)
+                            ? Object.fromEntries(Object.entries(row.quantityPrices).map(([quantity, value]) => [
+                                String(quantity),
+                                value && typeof value === 'object' && !Array.isArray(value)
+                                    ? Object.fromEntries(Object.entries(value).map(([size, price]) => [String(size).trim(), Number(price)]))
+                                    : Number(value),
+                            ]))
+                            : {},
+                    }))
+                    : [],
+            }
+            : undefined,
         areaPricing: body.areaPricing && typeof body.areaPricing === 'object'
             ? {
                 enabled: Boolean(body.areaPricing.enabled),
@@ -253,6 +276,7 @@ const ensureUniqueSlug = (slug, name, productId) => __awaiter(void 0, void 0, vo
     return candidate;
 });
 const validateProduct = (product) => {
+    var _a;
     if (!product.name || !product.description || !product.category)
         return 'Name, description, and category are required.';
     if (!Number.isFinite(product.price) || product.price < 0)
@@ -262,6 +286,29 @@ const validateProduct = (product) => {
     if (product.areaPricing && (!Number.isFinite(product.areaPricing.pricePerSquareUnit) || product.areaPricing.pricePerSquareUnit < 0 ||
         !Number.isFinite(product.areaPricing.minimumArea) || product.areaPricing.minimumArea < 0))
         return 'Square-foot pricing requires a valid rate and minimum area.';
+    if ((_a = product.matrixPricing) === null || _a === void 0 ? void 0 : _a.enabled) {
+        if (!product.matrixPricing.pricingData.length)
+            return 'Add at least one priced combination before enabling the price matrix.';
+        const combinations = new Set();
+        for (const row of product.matrixPricing.pricingData) {
+            const key = [row.material, row.laminate, row.lamination, row.design].join('\u001f');
+            if (combinations.has(key))
+                return 'Each price-matrix combination must be unique.';
+            combinations.add(key);
+            const entries = Object.entries(row.quantityPrices);
+            if (!entries.length)
+                return 'Every price-matrix combination needs at least one quantity price.';
+            for (const [quantity, price] of entries) {
+                if (!/^\d+$/.test(quantity) || Number(quantity) < 1)
+                    return 'Matrix quantities must be positive whole numbers.';
+                const amounts = price && typeof price === 'object' ? Object.values(price) : [price];
+                if (!amounts.length || amounts.some(amount => !Number.isFinite(amount) || Number(amount) < 0))
+                    return 'Matrix prices must be valid non-negative amounts.';
+                if (price && typeof price === 'object' && !Object.keys(price).length)
+                    return 'Size-based prices need at least one size and price.';
+            }
+        }
+    }
     if (!Number.isFinite(product.originalPrice) || product.originalPrice < 0)
         return 'Original price must be valid.';
     if (product.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(product.slug))

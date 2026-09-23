@@ -27,6 +27,15 @@ type NormalizedPrintingOption = {
   priceMode: 'perUnit' | 'fixed';
   options: Array<{ label: string; priceAdd: number }>;
 };
+type NormalizedMatrixRow = {
+  material: string;
+  laminate?: string;
+  lamination?: string;
+  design?: string;
+  priceMode: 'total' | 'perUnit';
+  quantityPrices: Record<string, number | Record<string, number>>;
+};
+type NormalizedMatrixPricing = { enabled: boolean; hideQuantityGrid: boolean; pricingData: NormalizedMatrixRow[] };
 type NormalizedProduct = {
   name: string;
   description: string;
@@ -39,6 +48,7 @@ type NormalizedProduct = {
   sizes: NormalizedSize[];
   variations: NormalizedVariation[];
   printingOptions: any[];
+  matrixPricing?: NormalizedMatrixPricing;
   areaPricing?: {
     enabled: boolean;
     unit: 'ft' | 'in' | 'm';
@@ -208,6 +218,29 @@ const normalizeProduct = (body: any): NormalizedProduct => {
           }))
           .filter((option: NormalizedPrintingOption) => option.name && option.options.length)
       : [],
+    matrixPricing: body.matrixPricing && typeof body.matrixPricing === 'object'
+      ? {
+          enabled: Boolean(body.matrixPricing.enabled),
+          hideQuantityGrid: Boolean(body.matrixPricing.hideQuantityGrid),
+          pricingData: Array.isArray(body.matrixPricing.pricingData)
+            ? body.matrixPricing.pricingData.map((row: any): NormalizedMatrixRow => ({
+                material: String(row?.material || '').trim(),
+                laminate: String(row?.laminate || '').trim(),
+                lamination: String(row?.lamination || '').trim(),
+                design: String(row?.design || '').trim(),
+                priceMode: row?.priceMode === 'perUnit' ? 'perUnit' : 'total',
+                quantityPrices: row?.quantityPrices && typeof row.quantityPrices === 'object' && !Array.isArray(row.quantityPrices)
+                  ? Object.fromEntries(Object.entries(row.quantityPrices).map(([quantity, value]) => [
+                      String(quantity),
+                      value && typeof value === 'object' && !Array.isArray(value)
+                        ? Object.fromEntries(Object.entries(value).map(([size, price]) => [String(size).trim(), Number(price)]))
+                        : Number(value),
+                    ]))
+                  : {},
+              }))
+            : [],
+        }
+      : undefined,
     areaPricing: body.areaPricing && typeof body.areaPricing === 'object'
       ? {
           enabled: Boolean(body.areaPricing.enabled),
@@ -289,6 +322,25 @@ const validateProduct = (product: ReturnType<typeof normalizeProduct>) => {
     !Number.isFinite(product.areaPricing.pricePerSquareUnit) || product.areaPricing.pricePerSquareUnit < 0 ||
     !Number.isFinite(product.areaPricing.minimumArea) || product.areaPricing.minimumArea < 0
   )) return 'Square-foot pricing requires a valid rate and minimum area.';
+  if (product.matrixPricing?.enabled) {
+    if (!product.matrixPricing.pricingData.length) return 'Add at least one priced combination before enabling the price matrix.';
+    const combinations = new Set<string>();
+    for (const row of product.matrixPricing.pricingData) {
+      const key = [row.material, row.laminate, row.lamination, row.design].join('\u001f');
+      if (combinations.has(key)) return 'Each price-matrix combination must be unique.';
+      combinations.add(key);
+      const entries = Object.entries(row.quantityPrices);
+      if (!entries.length) return 'Every price-matrix combination needs at least one quantity price.';
+      for (const [quantity, price] of entries) {
+        if (!/^\d+$/.test(quantity) || Number(quantity) < 1) return 'Matrix quantities must be positive whole numbers.';
+        const amounts = price && typeof price === 'object' ? Object.values(price) : [price];
+        if (!amounts.length || amounts.some(amount => !Number.isFinite(amount) || Number(amount) < 0))
+          return 'Matrix prices must be valid non-negative amounts.';
+        if (price && typeof price === 'object' && !Object.keys(price).length)
+          return 'Size-based prices need at least one size and price.';
+      }
+    }
+  }
   if (!Number.isFinite(product.originalPrice) || product.originalPrice < 0)
     return 'Original price must be valid.';
   if (product.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(product.slug))

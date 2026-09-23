@@ -59,6 +59,9 @@ type PrintingOption = {
   options: PrintingOptionValue[];
 };
 type AreaPricing = { enabled: boolean; unit?: 'ft' | 'in' | 'm'; pricePerSquareUnit: number; minimumArea?: number; rounding?: 'none' | 'ceil' };
+type MatrixPrice = number | Record<string, number>;
+type MatrixRow = { material?: string; laminate?: string; lamination?: string; design?: string; priceMode?: 'total' | 'perUnit'; quantityPrices: Record<string, MatrixPrice> };
+type MatrixPricing = { enabled?: boolean; hideQuantityGrid?: boolean; pricingData?: MatrixRow[] };
 
 type Product = {
   _id: string;
@@ -74,7 +77,7 @@ type Product = {
   variations?: DesignVariation[];
   printingOptions?: PrintingOption[];
   areaPricing?: AreaPricing;
-  matrixPricing?: { enabled?: boolean; pricingData?: unknown[] };
+  matrixPricing?: MatrixPricing;
   slug?: string;
   status?: 'draft' | 'published';
   seoTitle?: string;
@@ -165,6 +168,7 @@ const emptyProduct: Product = {
   packageContents: [],
   productionTurnaround: undefined,
   warrantyInfo: '',
+  matrixPricing: { enabled: false, hideQuantityGrid: false, pricingData: [] },
 };
 
 const slugify = (value: string) =>
@@ -252,6 +256,30 @@ images: resolveImages(current.images),
       images.splice(to, 0, image);
       return { ...current, images };
     });
+
+  const updateMatrixRow = (index: number, patch: Partial<MatrixRow>) => setProduct(current => ({
+    ...current,
+    matrixPricing: { ...current.matrixPricing, pricingData: (current.matrixPricing?.pricingData || []).map((row, rowIndex) => rowIndex === index ? { ...row, ...patch } : row) },
+  }));
+  const updateMatrixTier = (rowIndex: number, quantity: string, value: MatrixPrice) => setProduct(current => ({
+    ...current,
+    matrixPricing: { ...current.matrixPricing, pricingData: (current.matrixPricing?.pricingData || []).map((row, index) => index === rowIndex ? { ...row, quantityPrices: { ...row.quantityPrices, [quantity]: value } } : row) },
+  }));
+  const addMatrixTier = (rowIndex: number) => setProduct(current => ({
+    ...current,
+    matrixPricing: { ...current.matrixPricing, pricingData: (current.matrixPricing?.pricingData || []).map((row, index) => {
+      if (index !== rowIndex) return row;
+      const quantities = Object.keys(row.quantityPrices || {}).map(Number).filter(Number.isFinite);
+      const quantity = String(Math.max(0, ...quantities) + 1);
+      const template = Object.values(row.quantityPrices || {}).find(value => value && typeof value === 'object');
+      const value: MatrixPrice = template && typeof template === 'object' ? Object.fromEntries(Object.keys(template).map(size => [size, 0])) : 0;
+      return { ...row, quantityPrices: { ...row.quantityPrices, [quantity]: value } };
+    }) },
+  }));
+  const addMatrixRow = () => setProduct(current => ({
+    ...current,
+    matrixPricing: { ...current.matrixPricing, enabled: true, pricingData: [...(current.matrixPricing?.pricingData || []), { material: '', laminate: '', lamination: '', design: '', priceMode: 'perUnit', quantityPrices: { '1': 0 } }] },
+  }));
   const handleDrop = (event: DragEvent<HTMLDivElement>, to: number) => {
     event.preventDefault();
     if (draggedImage !== null && draggedImage !== to) moveImage(draggedImage, to);
@@ -1310,6 +1338,27 @@ images: resolveImages(current.images),
                 />
                 <span className="block text-xs font-normal text-muted-foreground">Larger orders require a manual quote.</span>
               </label>
+              <div className="rounded-xl border bg-muted/30 p-4 md:col-span-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div><p className="font-semibold">Quantity &amp; material price matrix</p><p className="text-xs text-muted-foreground">Set rates for each material/finish and quantity. Existing prices are preserved when editing.</p></div>
+                  <input aria-label="Enable price matrix" type="checkbox" checked={Boolean(product.matrixPricing?.enabled)} onChange={event => setProduct({ ...product, matrixPricing: { ...product.matrixPricing, enabled: event.target.checked } })} />
+                </div>
+                {product.matrixPricing?.enabled && <div className="mt-4 space-y-3">
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(product.matrixPricing.hideQuantityGrid)} onChange={event => setProduct({ ...product, matrixPricing: { ...product.matrixPricing, hideQuantityGrid: event.target.checked } })} />Hide quantity grid on storefront</label>
+                  {(product.matrixPricing.pricingData || []).map((row, rowIndex) => <div key={rowIndex} className="rounded-lg border bg-background p-3">
+                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                      {(['material', 'laminate', 'lamination', 'design'] as const).map(field => <label key={field} className="text-xs font-medium capitalize">{field}<Input value={row[field] || ''} onChange={event => updateMatrixRow(rowIndex, { [field]: event.target.value })} /></label>)}
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2"><label className="text-xs font-medium">Price mode<select value={row.priceMode || 'total'} onChange={event => updateMatrixRow(rowIndex, { priceMode: event.target.value as 'total' | 'perUnit' })} className="ml-2 h-9 rounded-md border bg-background px-2"><option value="total">Total price</option><option value="perUnit">Per unit</option></select></label><Button type="button" size="sm" variant="outline" onClick={() => setProduct(current => ({ ...current, matrixPricing: { ...current.matrixPricing, pricingData: (current.matrixPricing?.pricingData || []).filter((_, index) => index !== rowIndex) } }))}><Trash2 className="mr-1 h-4 w-4"/>Remove row</Button></div>
+                    <div className="mt-3 space-y-2">{Object.entries(row.quantityPrices || {}).map(([quantity, price]) => <div key={quantity} className="grid items-end gap-2 sm:grid-cols-[120px_1fr_auto]">
+                      <label className="text-xs font-medium">Minimum quantity<Input type="number" min="1" step="1" value={quantity} onChange={event => { const next = event.target.value; const prices = { ...row.quantityPrices }; delete prices[quantity]; if (next) prices[next] = price; updateMatrixRow(rowIndex, { quantityPrices: prices }); }} /></label>
+                      {typeof price === 'object' ? <div className="grid gap-2 sm:grid-cols-3">{Object.entries(price).map(([size, amount]) => <label key={size} className="text-xs font-medium">{size}<Input type="number" min="0" step="0.01" value={amount} onChange={event => updateMatrixTier(rowIndex, quantity, { ...price, [size]: Number(event.target.value) })}/></label>)}</div> : <label className="text-xs font-medium">Price (RM)<Input type="number" min="0" step="0.01" value={price} onChange={event => updateMatrixTier(rowIndex, quantity, Number(event.target.value))}/></label>}
+                      <Button type="button" size="sm" variant="ghost" aria-label="Remove quantity tier" onClick={() => { const prices = { ...row.quantityPrices }; delete prices[quantity]; updateMatrixRow(rowIndex, { quantityPrices: prices }); }}><X className="h-4 w-4"/></Button>
+                    </div>)}<Button type="button" size="sm" variant="outline" onClick={() => addMatrixTier(rowIndex)}><Plus className="mr-1 h-4 w-4"/>Add quantity tier</Button></div>
+                  </div>)}
+                  <Button type="button" variant="outline" onClick={addMatrixRow}><Plus className="mr-1 h-4 w-4"/>Add price combination</Button>
+                </div>}
+              </div>
               <div className="rounded-xl border bg-muted/30 p-4 md:col-span-2">
                 <div className="flex items-center justify-between gap-3">
                   <div><p className="font-semibold">Square-foot pricing</p><p className="text-xs text-muted-foreground">Let customers enter width × height. {product.matrixPricing?.enabled ? 'The selected material rate comes from the published price matrix.' : 'Price is calculated from your rate.'}</p></div>
