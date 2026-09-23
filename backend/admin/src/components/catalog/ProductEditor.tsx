@@ -54,6 +54,7 @@ type PrintingOptionValue = {
 
 type PrintingOption = {
   name: string;
+  matrixField?: 'material' | 'laminate' | 'lamination' | 'design';
   isMultiSelect?: boolean;
   priceMode?: 'perUnit' | 'fixed';
   options: PrintingOptionValue[];
@@ -241,6 +242,10 @@ images: resolveImages(current.images),
             stock: Number(variation.stock) || 0,
             lowStockThreshold: variation.lowStockThreshold ?? 10,
             images: Array.isArray(variation.images) ? resolveImages(variation.images.slice(0, MAX_VARIATION_IMAGES)) : [],
+          })),
+          printingOptions: (current.printingOptions || []).map(option => ({
+            ...option,
+            matrixField: option.matrixField || (/material|format|package/i.test(option.name) ? 'material' : /lamination|sides|packaging/i.test(option.name) ? (current.category === 'paper-bag' ? 'lamination' : 'laminate') : current.category === 'paper-bag' && /design|size/i.test(option.name) ? 'design' : undefined),
           })),
         });
       } catch (error: any) {
@@ -521,7 +526,7 @@ images: resolveImages(current.images),
     setProduct(current => ({
       ...current,
       printingOptions: (current.printingOptions || []).map((option, optionIndex) =>
-        optionIndex === index ? { ...option, ...patch } : option,
+        optionIndex === index ? { ...option, ...patch, options: patch.matrixField ? option.options.map(value => ({ ...value, priceAdd: 0 })) : option.options } : option,
       ),
     }));
 
@@ -552,8 +557,14 @@ images: resolveImages(current.images),
     valueIndex: number,
     patch: Partial<PrintingOptionValue>,
   ) =>
-    setProduct(current => ({
+    setProduct(current => {
+      const option = current.printingOptions?.[optionIndex];
+      const previousLabel = option?.options[valueIndex]?.label;
+      return {
       ...current,
+      matrixPricing: patch.label !== undefined && option?.matrixField && previousLabel
+        ? { ...current.matrixPricing, pricingData: (current.matrixPricing?.pricingData || []).map(row => row[option.matrixField!] === previousLabel ? { ...row, [option.matrixField!]: patch.label } : row) }
+        : current.matrixPricing,
       printingOptions: (current.printingOptions || []).map((option, index) =>
         index === optionIndex
           ? {
@@ -564,7 +575,8 @@ images: resolveImages(current.images),
             }
           : option,
       ),
-    }));
+      };
+    });
 
   const removePrintingOptionValue = (optionIndex: number, valueIndex: number) =>
     setProduct(current => ({
@@ -1349,6 +1361,90 @@ images: resolveImages(current.images),
                   <label className="text-sm font-medium">Variation section<Input placeholder="Choose Variation" value={product.storefrontLabels?.variationTitle || ''} onChange={event => setProduct({ ...product, storefrontLabels: { ...product.storefrontLabels, variationTitle: event.target.value } })} /></label>
                 </div>
               </div>
+              <section className="rounded-xl border bg-muted/30 p-4 md:col-span-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                      Customer choices
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Edit the question and answers customers see. Link a group to a price-matrix field when its choice changes the rate.
+                    </p>
+                  </div>
+                  <Button type="button" size="sm" variant="outline" onClick={addPrintingOption}>
+                    <Plus className="mr-1 h-4 w-4" /> Add variable option
+                  </Button>
+                </div>
+                <div className="mt-3 space-y-3">
+                  {(product.printingOptions || []).map((option, optionIndex) => (
+                    <div key={optionIndex} className="rounded-xl border bg-background p-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Input
+                          className="h-8 min-w-48 flex-1 text-xs font-medium"
+                          value={option.name}
+                          placeholder="Choice group name (e.g. Size)"
+                          onChange={event => updatePrintingOption(optionIndex, { name: event.target.value })}
+                        />
+                        <select className="h-8 rounded-md border bg-background px-2 text-xs" aria-label="Price matrix role" value={option.matrixField || ''} onChange={event => updatePrintingOption(optionIndex, { matrixField: (event.target.value || undefined) as PrintingOption['matrixField'], isMultiSelect: event.target.value ? false : option.isMultiSelect })}>
+                          <option value="">Independent add-on</option><option value="material">Main format / material</option><option value="laminate">Finish / laminate</option><option value="lamination">Lamination</option><option value="design">Design / size</option>
+                        </select>
+                        {!option.matrixField && <label className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(option.isMultiSelect)}
+                            onChange={event => updatePrintingOption(optionIndex, { isMultiSelect: event.target.checked })}
+                          />
+                          Multi-select
+                        </label>}
+                        {!option.matrixField && <select
+                          className="h-8 rounded-md border bg-background px-2 text-xs"
+                          value={option.priceMode || 'perUnit'}
+                          aria-label="Add-on pricing mode"
+                          onChange={event => updatePrintingOption(optionIndex, { priceMode: event.target.value as 'perUnit' | 'fixed' })}
+                        >
+                          <option value="perUnit">Per unit</option>
+                          <option value="fixed">Once per order</option>
+                        </select>}
+                        <Button type="button" variant="ghost" size="icon" title="Remove choice group" disabled={Boolean(option.matrixField && (product.matrixPricing?.pricingData || []).some(row => Boolean(row[option.matrixField!]))) } onClick={() => removePrintingOption(optionIndex)}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="mt-2 space-y-2">
+                        {(option.options || []).map((value, valueIndex) => (
+                          <div key={valueIndex} className="flex items-center gap-2">
+                            <Input
+                              className="h-8 text-xs"
+                              value={value.label}
+                              placeholder="Choice label"
+                              onChange={event => updatePrintingOptionValue(optionIndex, valueIndex, { label: event.target.value })}
+                            />
+                            {!option.matrixField && <Input
+                              className="h-8 w-28 text-xs"
+                              type="number"
+                              step="0.01"
+                              value={value.priceAdd}
+                              placeholder="Add-on RM"
+                              onChange={event => updatePrintingOptionValue(optionIndex, valueIndex, { priceAdd: Number(event.target.value) || 0 })}
+                            />}
+                            <Button type="button" variant="ghost" size="icon" title="Remove choice" disabled={Boolean(option.matrixField && (product.matrixPricing?.pricingData || []).some(row => row[option.matrixField!] === value.label))} onClick={() => removePrintingOptionValue(optionIndex, valueIndex)}>
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button type="button" size="sm" variant="outline" onClick={() => addPrintingOptionValue(optionIndex)}>
+                          <Plus className="mr-1 h-3 w-3" /> Add choice
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {!product.printingOptions?.length && (
+                    <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                      No storefront choice groups configured. The product will use its base price.
+                    </p>
+                  )}
+                </div>
+              </section>
+
               <div className="rounded-xl border bg-muted/30 p-4 md:col-span-2">
                 <div className="flex items-center justify-between gap-3">
                   <div><p className="font-semibold">Quantity &amp; material price matrix</p><p className="text-xs text-muted-foreground">Set rates for each material/finish and quantity. Existing prices are preserved when editing.</p></div>
@@ -1357,11 +1453,15 @@ images: resolveImages(current.images),
                 {product.matrixPricing?.enabled && <div className="mt-4 space-y-3">
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(product.matrixPricing.hideQuantityGrid)} onChange={event => setProduct({ ...product, matrixPricing: { ...product.matrixPricing, hideQuantityGrid: event.target.checked } })} />Hide quantity grid on storefront</label>
                   {(product.matrixPricing.pricingData || []).map((row, rowIndex) => <details key={rowIndex} className="rounded-lg border bg-background">
-                    <summary className="cursor-pointer px-3 py-2 text-sm font-semibold">{row.title?.trim() || `Combination ${rowIndex + 1}`}{!row.title?.trim() && row.material ? ` · ${row.material}` : ''}{!row.title?.trim() && row.lamination ? ` · ${row.lamination}` : ''} <span className="font-normal text-muted-foreground">({Object.keys(row.quantityPrices || {}).length} tiers)</span></summary>
+                    <summary className="cursor-pointer px-3 py-2 text-sm font-semibold">{row.material || `Price combination ${rowIndex + 1}`}{row.laminate ? ` · ${row.laminate}` : ''}{row.lamination ? ` · ${row.lamination}` : ''}{row.design ? ` · ${row.design}` : ''} <span className="font-normal text-muted-foreground">({Object.keys(row.quantityPrices || {}).length} tiers)</span></summary>
                     <div className="border-t p-3">
-                    <label className="mb-3 block text-xs font-medium">Combination title<Input maxLength={80} placeholder={`Combination ${rowIndex + 1}`} value={row.title || ''} onChange={event => updateMatrixRow(rowIndex, { title: event.target.value })} /></label>
                     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                      {(['material', 'laminate', 'lamination', 'design'] as const).map(field => <label key={field} className="text-xs font-medium capitalize">{field}<Input value={row[field] || ''} onChange={event => updateMatrixRow(rowIndex, { [field]: event.target.value })} /></label>)}
+                      {(['material', 'laminate', 'lamination', 'design'] as const).filter(field => field === 'material' || Boolean(row[field]) || (product.matrixPricing?.pricingData || []).some(candidate => Boolean(candidate[field])) || (product.printingOptions || []).some(option => option.matrixField === field)).map(field => {
+                        const linkedOption = (product.printingOptions || []).find(option => option.matrixField === field);
+                        return <label key={field} className="text-xs font-medium capitalize">{linkedOption?.name || field}
+                          {linkedOption?.options.length ? <select className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm" value={row[field] || ''} onChange={event => updateMatrixRow(rowIndex, { [field]: event.target.value })}><option value="">Choose an option</option>{row[field] && !linkedOption.options.some(choice => choice.label === row[field]) && <option value={row[field]}>{row[field]}</option>}{linkedOption.options.map((choice, index) => <option key={index} value={choice.label}>{choice.label}</option>)}</select> : <Input value={row[field] || ''} onChange={event => updateMatrixRow(rowIndex, { [field]: event.target.value })} />}
+                        </label>;
+                      })}
                     </div>
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2"><label className="text-xs font-medium">Price mode<select value={row.priceMode || 'total'} onChange={event => updateMatrixRow(rowIndex, { priceMode: event.target.value as 'total' | 'perUnit' })} className="ml-2 h-9 rounded-md border bg-background px-2"><option value="total">Total price</option><option value="perUnit">Per unit</option></select></label><Button type="button" size="sm" variant="outline" onClick={() => setProduct(current => ({ ...current, matrixPricing: { ...current.matrixPricing, pricingData: (current.matrixPricing?.pricingData || []).filter((_, index) => index !== rowIndex) } }))}><Trash2 className="mr-1 h-4 w-4"/>Remove row</Button></div>
                     <div className="mt-3 space-y-2">{Object.entries(row.quantityPrices || {}).map(([quantity, price]) => <div key={quantity} className="grid items-end gap-2 sm:grid-cols-[120px_1fr_auto]">
@@ -1567,87 +1667,6 @@ images: resolveImages(current.images),
                       Add field
                     </Button>
                   </div>
-                </div>
-              </section>
-
-              <section>
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                      Storefront choices &amp; pricing
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      These buttons appear on the storefront. To offer sizes, add a Size choice group and enter each option manually. No size picker is added automatically.
-                    </p>
-                  </div>
-                  <Button type="button" size="sm" variant="outline" onClick={addPrintingOption}>
-                    <Plus className="mr-1 h-4 w-4" /> Add choice group
-                  </Button>
-                </div>
-                <div className="mt-3 space-y-3">
-                  {(product.printingOptions || []).map((option, optionIndex) => (
-                    <div key={optionIndex} className="rounded-xl border p-3">
-                      <div className="flex items-center gap-2">
-                        <Input
-                          className="h-8 text-xs font-medium"
-                          value={option.name}
-                          placeholder="Choice group name (e.g. Size)"
-                          onChange={event => updatePrintingOption(optionIndex, { name: event.target.value })}
-                        />
-                        <label className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-                          <input
-                            type="checkbox"
-                            checked={Boolean(option.isMultiSelect)}
-                            onChange={event => updatePrintingOption(optionIndex, { isMultiSelect: event.target.checked })}
-                          />
-                          Multi-select
-                        </label>
-                        <select
-                          className="h-8 rounded-md border bg-background px-2 text-xs"
-                          value={option.priceMode || 'perUnit'}
-                          aria-label="Add-on pricing mode"
-                          onChange={event => updatePrintingOption(optionIndex, { priceMode: event.target.value as 'perUnit' | 'fixed' })}
-                        >
-                          <option value="perUnit">Per unit</option>
-                          <option value="fixed">Once per order</option>
-                        </select>
-                        <Button type="button" variant="ghost" size="icon" onClick={() => removePrintingOption(optionIndex)}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="mt-2 space-y-2">
-                        {(option.options || []).map((value, valueIndex) => (
-                          <div key={valueIndex} className="flex items-center gap-2">
-                            <Input
-                              className="h-8 text-xs"
-                              value={value.label}
-                              placeholder="Choice label"
-                              onChange={event => updatePrintingOptionValue(optionIndex, valueIndex, { label: event.target.value })}
-                            />
-                            <Input
-                              className="h-8 w-28 text-xs"
-                              type="number"
-                              step="0.01"
-                              value={value.priceAdd}
-                              placeholder="Add-on RM"
-                              onChange={event => updatePrintingOptionValue(optionIndex, valueIndex, { priceAdd: Number(event.target.value) || 0 })}
-                            />
-                            <Button type="button" variant="ghost" size="icon" onClick={() => removePrintingOptionValue(optionIndex, valueIndex)}>
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                        <Button type="button" size="sm" variant="outline" onClick={() => addPrintingOptionValue(optionIndex)}>
-                          <Plus className="mr-1 h-3 w-3" /> Add option
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                  {!product.printingOptions?.length && (
-                    <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-                      No storefront choice groups configured. The product will use its base price.
-                    </p>
-                  )}
                 </div>
               </section>
 

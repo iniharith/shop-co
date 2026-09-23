@@ -4,6 +4,7 @@
  */
 export interface IPrintingOption {
     name: string;
+    matrixField?: 'material' | 'laminate' | 'lamination' | 'design';
     isMultiSelect?: boolean;
     priceMode?: 'perUnit' | 'fixed';
     options: { label: string; priceAdd: number }[];

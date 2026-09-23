@@ -23,6 +23,7 @@ type NormalizedSize = { size: string; stock: number; lowStockThreshold: number; 
 type NormalizedVariation = { name: string; stock: number; lowStockThreshold: number; images: string[] };
 type NormalizedPrintingOption = {
   name: string;
+  matrixField?: 'material' | 'laminate' | 'lamination' | 'design';
   isMultiSelect: boolean;
   priceMode: 'perUnit' | 'fixed';
   options: Array<{ label: string; priceAdd: number }>;
@@ -207,13 +208,14 @@ const normalizeProduct = (body: any): NormalizedProduct => {
       ? body.printingOptions
           .map((option: any): NormalizedPrintingOption => ({
             name: String(option?.name || '').trim(),
+            matrixField: ['material', 'laminate', 'lamination', 'design'].includes(option?.matrixField) ? option.matrixField : undefined,
             isMultiSelect: Boolean(option?.isMultiSelect),
             priceMode: option?.priceMode === 'fixed' ? 'fixed' : 'perUnit',
             options: Array.isArray(option?.options)
               ? option.options
                   .map((value: any) => ({
                     label: String(value?.label || '').trim(),
-                    priceAdd: Number(value?.priceAdd) || 0,
+                    priceAdd: option?.matrixField ? 0 : Number(value?.priceAdd) || 0,
                   }))
                   .filter((value: { label: string }) => value.label)
               : [],
@@ -333,6 +335,15 @@ const validateProduct = (product: ReturnType<typeof normalizeProduct>) => {
   )) return 'Square-foot pricing requires a valid rate and minimum area.';
   if (product.matrixPricing?.enabled) {
     if (!product.matrixPricing.pricingData.length) return 'Add at least one priced combination before enabling the price matrix.';
+    const mappedFields = new Set<string>();
+    for (const option of product.printingOptions as NormalizedPrintingOption[]) {
+      if (!option.matrixField) continue;
+      if (mappedFields.has(option.matrixField)) return 'Each price-matrix field can be linked to only one customer choice group.';
+      mappedFields.add(option.matrixField);
+      if (option.isMultiSelect) return 'Price-matrix choices must allow only one selection.';
+      if (product.matrixPricing.pricingData.some(row => !option.options.some(value => value.label === row[option.matrixField!])))
+        return `Every price combination needs a matching choice in ${option.name}.`;
+    }
     const combinations = new Set<string>();
     for (const row of product.matrixPricing.pricingData) {
       const key = [row.material, row.laminate, row.lamination, row.design].join('\u001f');

@@ -165,6 +165,26 @@ test('uses the selected banner material rate for customer-entered square feet', 
   assert.throws(() => computeProductPricing(banner, 3, { ...configuration, selections: [] }), /not available/);
 });
 
+test('custom customer choice names still select the linked matrix price', () => {
+  const product = {
+    ...configurableProduct,
+    price: 999,
+    printingOptions: [
+      { name: 'Your Fabric', matrixField: 'material', options: [{ label: 'Canvas', priceAdd: 0 }] },
+      { name: 'Coating Choice', matrixField: 'laminate', options: [{ label: 'Matte', priceAdd: 0 }] },
+      { name: 'Artwork Style', matrixField: 'design', options: [{ label: 'Classic', priceAdd: 0 }] },
+    ],
+    matrixPricing: { enabled: true, pricingData: [{ material: 'Canvas', laminate: 'Matte', design: 'Classic', priceMode: 'perUnit', quantityPrices: { 1: 12 } }] },
+  };
+  const configuration = { version: 1, fulfillmentSize: 'Standard', selections: [
+    { name: 'Your Fabric', values: [{ label: 'Canvas', priceAdd: 0 }] },
+    { name: 'Coating Choice', values: [{ label: 'Matte', priceAdd: 0 }] },
+    { name: 'Artwork Style', values: [{ label: 'Classic', priceAdd: 0 }] },
+  ] };
+  assert.equal(computeProductPricing(product, 2, configuration).lineTotal, 24);
+  assert.throws(() => computeProductPricing(product, 2, { ...configuration, selections: configuration.selections.slice(0, 2) }), /not available/);
+});
+
 test('rejects quantities without an exact total-price matrix entry', () => {
   const matrixProduct = {
     ...configurableProduct,

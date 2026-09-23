@@ -74,40 +74,26 @@ const selectedValueForOption = (configuration: IProductConfiguration | undefined
     return entry?.values?.[0]?.label !== undefined ? String(entry.values[0].label).trim() : '';
 };
 
+const matrixOption = (product: IProduct, field: 'material' | 'laminate' | 'lamination' | 'design', fallback: RegExp) =>
+    product.printingOptions?.find((option) => option.matrixField === field) ||
+    product.printingOptions?.find((option) => !option.matrixField && fallback.test(option.name));
+
+const matrixDimensions = (product: IProduct) => [
+    { field: 'material' as const, option: matrixOption(product, 'material', /material|format|package/i) },
+    { field: 'laminate' as const, option: matrixOption(product, 'laminate', product.category === 'paper-bag' ? /^$/ : /lamination|sides|packaging/i) },
+    { field: 'lamination' as const, option: matrixOption(product, 'lamination', product.category === 'paper-bag' ? /lamination|sides|packaging/i : /^$/) },
+    { field: 'design' as const, option: matrixOption(product, 'design', product.category === 'paper-bag' ? /design|size/i : /^$/) },
+].filter((dimension): dimension is { field: 'material' | 'laminate' | 'lamination' | 'design'; option: NonNullable<typeof dimension.option> } => Boolean(dimension.option));
+
 const matrixDimensionNames = (product: IProduct): Set<string> => {
-    const options = product.printingOptions || [];
-    const names = new Set<string>();
-    const material = options.find((option) => /material|format|package/i.test(option.name))?.name;
-    const lamination = options.find((option) => /lamination|sides|packaging/i.test(option.name))?.name;
-    if (material) names.add(material);
-    if (lamination) names.add(lamination);
-    if (product.category === 'paper-bag') {
-        const design = options.find((option) => /design|size/i.test(option.name))?.name;
-        if (design) names.add(design);
-    }
-    return names;
+    return new Set(matrixDimensions(product).map(({ option }) => option.name));
 };
 
 const resolveMatrixSubtotal = (product: IProduct, quantity: number, configuration: IProductConfiguration | undefined): number => {
-    const options = product.printingOptions || [];
-    const materialOptName = options.find((option) => /material|format|package/i.test(option.name))?.name;
-    const laminationOptName = options.find((option) => /lamination|sides|packaging/i.test(option.name))?.name;
-
-    const selectedMaterial = selectedValueForOption(configuration, materialOptName);
-    const selectedLamination = selectedValueForOption(configuration, laminationOptName);
-
-    let matrixRow: any = null;
-    if (product.category === 'paper-bag') {
-        const designOptName = options.find((option) => /design|size/i.test(option.name))?.name;
-        const selectedDesign = selectedValueForOption(configuration, designOptName);
-        matrixRow = product.matrixPricing?.pricingData.find((row: any) =>
-            row.material === selectedMaterial && row.lamination === selectedLamination && row.design === selectedDesign
-        );
-    } else {
-        matrixRow = product.matrixPricing?.pricingData.find((row: any) =>
-            row.material === selectedMaterial && row.laminate === selectedLamination
-        );
-    }
+    const dimensions = matrixDimensions(product);
+    const matrixRow = dimensions.length ? product.matrixPricing?.pricingData.find((row: any) =>
+        dimensions.every(({ field, option }) => String(row[field] || '') === selectedValueForOption(configuration, option.name))
+    ) : undefined;
 
     if (matrixRow) {
         const availableQuantities = Object.keys(matrixRow.quantityPrices || {}).map(Number).sort((a, b) => a - b);
@@ -135,7 +121,7 @@ const resolveMatrixSubtotal = (product: IProduct, quantity: number, configuratio
         }
         return matrixRow.priceMode === 'perUnit' ? exactPrice * quantity : exactPrice;
     }
-    if (materialOptName || laminationOptName) {
+    if (dimensions.length) {
         throw new Error('Selected product variation is not available');
     }
     return product.price * quantity;

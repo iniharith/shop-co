@@ -71,6 +71,7 @@ export interface IProductReview {
 
 export interface IProductPrintingOption {
     name: string;
+    matrixField?: 'material' | 'laminate' | 'lamination' | 'design';
     isMultiSelect?: boolean;
     priceMode?: 'perUnit' | 'fixed';
     options: IProductOptionValue[];

@@ -34,6 +34,7 @@ export interface ICatalogSize {
 
 export interface ICatalogPrintingOption {
     name: string;
+    matrixField?: 'material' | 'laminate' | 'lamination' | 'design';
     isMultiSelect?: boolean;
     priceMode?: 'perUnit' | 'fixed';
     options: ICatalogOption[];

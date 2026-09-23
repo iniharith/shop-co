@@ -69,16 +69,18 @@ export function ProductDetails({
   const [customWidth, setCustomWidth] = useState(1);
   const [customHeight, setCustomHeight] = useState(1);
   const options = product.printingOptions || [];
+  const optionForMatrixField = (field: 'material' | 'laminate' | 'lamination' | 'design', fallback: RegExp) =>
+    options.find(option => option.matrixField === field) || options.find(option => !option.matrixField && fallback.test(option.name));
 
   const matrixDimensions = (() => {
-    const material = options.find(option => /material|format|package/i.test(option.name));
-    const laminate = options.find(option => /lamination|sides|packaging/i.test(option.name));
-    const design = product.category === "paper-bag"
-      ? options.find(option => /design|size/i.test(option.name))
-      : undefined;
+    const material = optionForMatrixField('material', /material|format|package/i);
+    const laminate = optionForMatrixField('laminate', product.category === 'paper-bag' ? /^$/ : /lamination|sides|packaging/i);
+    const lamination = optionForMatrixField('lamination', product.category === 'paper-bag' ? /lamination|sides|packaging/i : /^$/);
+    const design = optionForMatrixField('design', product.category === 'paper-bag' ? /design|size/i : /^$/);
     return [
       material ? { field: "material" as const, option: material } : null,
-      laminate ? { field: (product.category === "paper-bag" ? "lamination" : "laminate") as "lamination" | "laminate", option: laminate } : null,
+      laminate ? { field: "laminate" as const, option: laminate } : null,
+      lamination ? { field: "lamination" as const, option: lamination } : null,
       design ? { field: "design" as const, option: design } : null,
     ].filter(Boolean) as Array<{ field: "material" | "laminate" | "lamination" | "design"; option: typeof options[number] }>;
   })();
@@ -361,33 +363,7 @@ const stockBySize = product.sizes || [];
       : Math.max(rawArea, Number(product.areaPricing.minimumArea || 0));
     subtotal = billedArea * (areaRate + perAreaAddons) * quantity + fixedAddons;
   } else if (product.matrixPricing?.enabled) {
-    const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format') || o.name.toLowerCase().includes('package'))?.name;
-    const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides') || o.name.toLowerCase().includes('packaging'))?.name;
-    
-    const selectedMaterial = materialOptName && typeof selectedOptions[materialOptName] === 'number' 
-      ? options.find(o => o.name === materialOptName)?.options[selectedOptions[materialOptName] as number]?.label 
-      : "";
-    const selectedLamination = laminationOptName && typeof selectedOptions[laminationOptName] === 'number' 
-      ? options.find(o => o.name === laminationOptName)?.options[selectedOptions[laminationOptName] as number]?.label 
-      : "";
-
-    let matrixRow: any = null;
-    if (product.category === 'paper-bag') {
-      const designOptName = options.find(o => o.name.toLowerCase().includes('design') || o.name.toLowerCase().includes('size'))?.name;
-      const selectedDesign = designOptName && typeof selectedOptions[designOptName] === 'number' 
-        ? options.find(o => o.name === designOptName)?.options[selectedOptions[designOptName] as number]?.label 
-        : "";
-        
-      matrixRow = product.matrixPricing.pricingData.find((row: any) => 
-        row.material === selectedMaterial && 
-        row.lamination === selectedLamination && 
-        row.design === selectedDesign
-      );
-    } else {
-      matrixRow = product.matrixPricing.pricingData.find((row: any) => 
-        row.material === selectedMaterial && row.laminate === selectedLamination
-      );
-    }
+    const matrixRow = matrixDimensions.length ? findMatrixRow() : undefined;
 
     if (matrixRow) {
       availableQuantities = Object.keys(matrixRow.quantityPrices).map(Number).sort((a,b) => a-b);
@@ -416,11 +392,7 @@ const stockBySize = product.sizes || [];
         setTimeout(() => setQuantity(availableQuantities[0]), 0);
       }
 
-      const dimensionOptionNames = new Set(
-        [materialOptName, laminationOptName, product.category === 'paper-bag'
-          ? options.find(o => o.name.toLowerCase().includes('design') || o.name.toLowerCase().includes('size'))?.name
-          : undefined].filter(Boolean),
-      );
+      const dimensionOptionNames = new Set(matrixDimensions.map(({ option }) => option.name));
       let perUnitAddons = 0;
       let fixedAddons = 0;
       options.forEach(opt => {
@@ -474,8 +446,8 @@ const stockBySize = product.sizes || [];
   // Step 1: Format/Size & Material
   // Step 2: Printing sides, finishing, add-ons
   // Step 3: Turnaround (and quantity is added manually to step 3)
-  const step1Options = options.filter(o => /format|size|material|package/i.test(o.name));
-  const step2Options = options.filter(o => !/format|size|material|package|turnaround|addon/i.test(o.name));
+  const step1Options = options.filter(o => o.matrixField === 'material' || (!o.matrixField && /format|size|material|package/i.test(o.name)));
+  const step2Options = options.filter(o => !step1Options.includes(o) && !/turnaround|addon/i.test(o.name));
   const step3Addons = options.filter(o => /addon/i.test(o.name));
   const stepTurnaround = options.filter(o => /turnaround/i.test(o.name));
 
@@ -863,8 +835,8 @@ const variationStepNum = (hasImageVariations || hasDesignVariations) ? currentSt
 {(product.category === 'flyers' || product.category === 'kad-kahwin') && (() => {
         let matrixRow: any = null;
         if (product.matrixPricing?.enabled) {
-          const materialOptName = options.find(o => o.name.toLowerCase().includes('material') || o.name.toLowerCase().includes('format'))?.name;
-          const laminationOptName = options.find(o => o.name.toLowerCase().includes('lamination') || o.name.toLowerCase().includes('sides') || o.name.toLowerCase().includes('packaging'))?.name;
+          const materialOptName = optionForMatrixField('material', /material|format|package/i)?.name;
+          const laminationOptName = optionForMatrixField('laminate', /lamination|sides|packaging/i)?.name;
           
           const selectedMaterial = materialOptName && typeof selectedOptions[materialOptName] === 'number' 
       ? options.find(o => o.name === materialOptName)?.options[selectedOptions[materialOptName] as number]?.label 

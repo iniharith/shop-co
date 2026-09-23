@@ -114,6 +114,7 @@ const ProductSchema: Schema = new Schema(
         },
         printingOptions: [{
             name: { type: String },
+            matrixField: { type: String, enum: ['material', 'laminate', 'lamination', 'design'] },
             isMultiSelect: { type: Boolean, default: false },
             priceMode: { type: String, enum: ['perUnit', 'fixed'], default: 'perUnit' },
             options: [{

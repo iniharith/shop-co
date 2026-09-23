@@ -68,39 +68,24 @@ const selectedValueForOption = (configuration, optionName) => {
     const entry = ((configuration === null || configuration === void 0 ? void 0 : configuration.selections) || []).find((selection) => selection.name === optionName);
     return ((_b = (_a = entry === null || entry === void 0 ? void 0 : entry.values) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.label) !== undefined ? String(entry.values[0].label).trim() : '';
 };
+const matrixOption = (product, field, fallback) => {
+    var _a, _b;
+    return ((_a = product.printingOptions) === null || _a === void 0 ? void 0 : _a.find((option) => option.matrixField === field)) ||
+        ((_b = product.printingOptions) === null || _b === void 0 ? void 0 : _b.find((option) => !option.matrixField && fallback.test(option.name)));
+};
+const matrixDimensions = (product) => [
+    { field: 'material', option: matrixOption(product, 'material', /material|format|package/i) },
+    { field: 'laminate', option: matrixOption(product, 'laminate', product.category === 'paper-bag' ? /^$/ : /lamination|sides|packaging/i) },
+    { field: 'lamination', option: matrixOption(product, 'lamination', product.category === 'paper-bag' ? /lamination|sides|packaging/i : /^$/) },
+    { field: 'design', option: matrixOption(product, 'design', product.category === 'paper-bag' ? /design|size/i : /^$/) },
+].filter((dimension) => Boolean(dimension.option));
 const matrixDimensionNames = (product) => {
-    var _a, _b, _c;
-    const options = product.printingOptions || [];
-    const names = new Set();
-    const material = (_a = options.find((option) => /material|format|package/i.test(option.name))) === null || _a === void 0 ? void 0 : _a.name;
-    const lamination = (_b = options.find((option) => /lamination|sides|packaging/i.test(option.name))) === null || _b === void 0 ? void 0 : _b.name;
-    if (material)
-        names.add(material);
-    if (lamination)
-        names.add(lamination);
-    if (product.category === 'paper-bag') {
-        const design = (_c = options.find((option) => /design|size/i.test(option.name))) === null || _c === void 0 ? void 0 : _c.name;
-        if (design)
-            names.add(design);
-    }
-    return names;
+    return new Set(matrixDimensions(product).map(({ option }) => option.name));
 };
 const resolveMatrixSubtotal = (product, quantity, configuration) => {
-    var _a, _b, _c, _d, _e;
-    const options = product.printingOptions || [];
-    const materialOptName = (_a = options.find((option) => /material|format|package/i.test(option.name))) === null || _a === void 0 ? void 0 : _a.name;
-    const laminationOptName = (_b = options.find((option) => /lamination|sides|packaging/i.test(option.name))) === null || _b === void 0 ? void 0 : _b.name;
-    const selectedMaterial = selectedValueForOption(configuration, materialOptName);
-    const selectedLamination = selectedValueForOption(configuration, laminationOptName);
-    let matrixRow = null;
-    if (product.category === 'paper-bag') {
-        const designOptName = (_c = options.find((option) => /design|size/i.test(option.name))) === null || _c === void 0 ? void 0 : _c.name;
-        const selectedDesign = selectedValueForOption(configuration, designOptName);
-        matrixRow = (_d = product.matrixPricing) === null || _d === void 0 ? void 0 : _d.pricingData.find((row) => row.material === selectedMaterial && row.lamination === selectedLamination && row.design === selectedDesign);
-    }
-    else {
-        matrixRow = (_e = product.matrixPricing) === null || _e === void 0 ? void 0 : _e.pricingData.find((row) => row.material === selectedMaterial && row.laminate === selectedLamination);
-    }
+    var _a;
+    const dimensions = matrixDimensions(product);
+    const matrixRow = dimensions.length ? (_a = product.matrixPricing) === null || _a === void 0 ? void 0 : _a.pricingData.find((row) => dimensions.every(({ field, option }) => String(row[field] || '') === selectedValueForOption(configuration, option.name))) : undefined;
     if (matrixRow) {
         const availableQuantities = Object.keys(matrixRow.quantityPrices || {}).map(Number).sort((a, b) => a - b);
         if (availableQuantities.length === 0)
@@ -129,7 +114,7 @@ const resolveMatrixSubtotal = (product, quantity, configuration) => {
         }
         return matrixRow.priceMode === 'perUnit' ? exactPrice * quantity : exactPrice;
     }
-    if (materialOptName || laminationOptName) {
+    if (dimensions.length) {
         throw new Error('Selected product variation is not available');
     }
     return product.price * quantity;
