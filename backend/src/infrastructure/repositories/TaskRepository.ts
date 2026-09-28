@@ -357,7 +357,14 @@ export class TaskRepository {
 
   async updateFileNotes(taskId: string, fileUrl: string, notes: string): Promise<ITask | null> {
     return Task.findOneAndUpdate(
-      { _id: taskId, 'files.url': fileUrl },
+      {
+        _id: taskId,
+        $or: [
+          { 'files.url': fileUrl },
+          { 'files.name': fileUrl },
+          { 'files.url': { $regex: `${fileUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$` } },
+        ],
+      },
       { $set: { 'files.$.notes': notes } },
       { new: true }
     );

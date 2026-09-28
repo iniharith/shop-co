@@ -2071,7 +2071,13 @@ router.put(
         userName = userName || 'Admin';
 
         // Update task file notes
-        await taskRepository.updateFileNotes(file.taskId, file.path, notes || '');
+        // Keep the task attachment note in lockstep with the folder/FileUpload note.
+        // Older task records may contain a URL variant, so try the canonical path
+        // first and fall back to the stored filename when necessary.
+        const updatedTask = await taskRepository.updateFileNotes(file.taskId, file.path, notes || '');
+        if (!updatedTask) {
+          await taskRepository.updateFileNotes(file.taskId, file.filename, notes || '');
+        }
         
         // Add comment to task
         await taskRepository.addComment(

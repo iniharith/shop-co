@@ -535,8 +535,8 @@ router.put(
     // Sync the note to the FileUpload collection
     try {
       await FileUpload.findOneAndUpdate(
-        { path: fileUrl, taskId: id },
-        { $set: { adminNotes: notes || '' } }
+        { $or: [{ path: fileUrl }, { filename: fileUrl.split('/').pop() }], taskId: id },
+        { $set: { notes: notes || '', adminNotes: notes || '' } }
       );
       void notifyFileClients();
     } catch (err) {
