@@ -522,9 +522,10 @@ router.put(
       return;
     }
 
-    // Update the note in the Task
-    const task = await taskRepository.updateFileNotes(id, fileUrl, notes || '');
-    if (!task) {
+    const fileUpload = await FileUpload.findOne({ taskId: id, path: fileUrl });
+    const savedNotes = typeof notes === 'string' ? notes : '';
+    const task = await taskRepository.updateFileNotes(id, fileUrl, savedNotes);
+    if (!task && !fileUpload) {
       res.status(404).json({ success: false, message: 'Task or file not found' });
       return;
     }
@@ -532,15 +533,14 @@ router.put(
     // Extract filename for comment
     const fileName = fileUrl.split('/').pop() || 'file';
 
-    // Sync the note to the FileUpload collection
-    try {
-      await FileUpload.findOneAndUpdate(
-        { $or: [{ path: fileUrl }, { filename: fileUrl.split('/').pop() }], taskId: id },
-        { $set: { notes: notes || '', adminNotes: notes || '' } }
+    // Staff notes belong in adminNotes. FileUpload.notes is the customer's
+    // original upload note and must remain intact.
+    if (fileUpload) {
+      await FileUpload.updateOne(
+        { _id: fileUpload._id },
+        { $set: { adminNotes: savedNotes } }
       );
       void notifyFileClients();
-    } catch (err) {
-      console.error("Failed to sync file upload notes:", err);
     }
 
     // Add an activity to the task to notify stakeholders

@@ -314,7 +314,7 @@ export const useUpdateTaskFileNotes = () => {
     const { mutate, isPending } = useMutationData(
         ['updateTaskFileNotes'],
         (data: { id: string, fileUrl: string, notes: string }) => import("@/api/tasks").then(m => m.updateTaskFileNotes(session?.user?.token, data.id, data.fileUrl, data.notes)),
-        ["tasks", "allFiles", "groupedFiles", "fileIndex", "filesByFolder"]
+        ["task", "tasks", "allFiles", "groupedFiles", "fileIndex", "filesByFolder"]
     );
     return { mutate, isPending };
 }

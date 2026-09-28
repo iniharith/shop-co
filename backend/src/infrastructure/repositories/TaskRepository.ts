@@ -356,15 +356,17 @@ export class TaskRepository {
   }
 
   async updateFileNotes(taskId: string, fileUrl: string, notes: string): Promise<ITask | null> {
+    const exact = await Task.findOneAndUpdate(
+      { _id: taskId, 'files.url': fileUrl },
+      { $set: { 'files.$.notes': notes } },
+      { new: true }
+    );
+    if (exact) return exact;
+
+    const fileName = fileUrl.split('/').pop();
+    if (!fileName) return null;
     return Task.findOneAndUpdate(
-      {
-        _id: taskId,
-        $or: [
-          { 'files.url': fileUrl },
-          { 'files.name': fileUrl },
-          { 'files.url': { $regex: `${fileUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$` } },
-        ],
-      },
+      { _id: taskId, 'files.name': fileName },
       { $set: { 'files.$.notes': notes } },
       { new: true }
     );

@@ -379,7 +379,13 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
     // files group into their assigned folder instead of falling to Ungrouped.
     const enriched = (fullTask?.files || []).map((tf: any) => {
       const match = taskFiles.find((f: any) => f.path === tf.url || (tf.name && f.originalName && tf.name === f.originalName));
-      return match ? { ...tf, _id: match._id, folderId: match.folderId, createdAt: tf.createdAt || match.createdAt || match.uploadedAt } : tf;
+      return match ? {
+        ...tf,
+        _id: match._id,
+        folderId: match.folderId,
+        notes: match.adminNotes || match.notes || tf.notes || '',
+        createdAt: tf.createdAt || match.createdAt || match.uploadedAt,
+      } : tf;
     });
 
     const uploadedTaskFiles = taskFiles.filter((f: any) => {
@@ -389,7 +395,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       url: f.path,
       name: f.originalName || f.filename,
       mimetype: f.mimetype,
-      notes: f.notes || f.adminNotes, // Make sure to sync notes
+      notes: f.adminNotes || f.notes || '',
       tag: f.tag || 'customer_upload',
       _id: f._id,
       folderId: f.folderId,

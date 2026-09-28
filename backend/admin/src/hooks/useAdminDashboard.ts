@@ -163,7 +163,7 @@ export const useFilesByFolder = (params: { taskId?: string | null; orderId?: str
 
 export const useReviewFile = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['reviewFile'], ({ id, reviewed, notes }: any) => reviewFile(session?.user?.token, id, reviewed, notes), ['groupedFiles', 'fileIndex', 'folderGroup', 'filesByFolder']);
+    const { mutate, isPending } = useMutationData(['reviewFile'], ({ id, reviewed, notes }: any) => reviewFile(session?.user?.token, id, reviewed, notes), ['task', 'groupedFiles', 'fileIndex', 'folderGroup', 'filesByFolder']);
     return { mutate, isPending };
 }
 
