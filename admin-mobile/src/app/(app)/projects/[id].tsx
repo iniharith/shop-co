@@ -90,11 +90,23 @@ export default function ProjectDetailScreen() {
         if (size > 200 * 1024 * 1024) continue;
         const name = asset.fileName || `photo-${Date.now()}.jpg`;
         // 1. presigned url
-        const signRes: any = await api.post(`/projects/${id}/upload-url`, {
+        let signRes: any = await api.post(`/projects/${id}/upload-url`, {
           filename: name,
           contentType: asset.mimeType || 'image/jpeg',
           size,
         });
+        if (signRes.data?.code === 'DUPLICATE_FILE') {
+          const accepted = await new Promise<boolean>(resolve => {
+            Alert.alert('Duplicated file', `A file named "${name}" already exists. Upload as "${signRes.data.suggestedName}"?`, [
+              { text: 'Cancel upload', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Upload with number', onPress: () => resolve(true) },
+            ], { cancelable: true, onDismiss: () => resolve(false) });
+          });
+          if (!accepted) continue;
+          signRes = await api.post(`/projects/${id}/upload-url`, {
+            filename: name, contentType: asset.mimeType || 'image/jpeg', size, duplicateAction: 'rename',
+          });
+        }
         const key = signRes.data?.key || signRes.data?.fileKey;
         const signedUrl = signRes.data?.signedUrl || signRes.data?.url;
         // 2. PUT to S3
@@ -104,7 +116,7 @@ export default function ProjectDetailScreen() {
           headers: { 'Content-Type': asset.mimeType || 'image/jpeg' },
         });
         // 3. register file
-        await api.post(`/projects/${id}/files`, { key, originalName: name, folderId });
+        await api.post(`/projects/${id}/files`, { key, originalName: signRes.data?.assignedName || name, folderId });
       }
       await load();
     } catch (e) {

@@ -1,3 +1,4 @@
+import { reserveUploadName } from '../../shared/utils/reserveUploadName';
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -183,8 +184,10 @@ router.post(
     const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
     const userId = (req as any).userId || (req as any).user?.id || 'unknown';
     const folder = folderPath ? folderPath : userId;
+    const assignedName = await reserveUploadName(req, res, { taskId: req.body.taskId || (typeof folderPath === 'string' && folderPath.startsWith('tasks/') ? folderPath.slice(6) : undefined), orderId: req.body.orderId, userId: req.body.userId && ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes((req as any).role) ? req.body.userId : userId });
+    if (!assignedName) return;
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const key = `kampungcetak/uploads/${folder}/${uniqueSuffix}-${filename.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const key = `kampungcetak/uploads/${folder}/${uniqueSuffix}-${assignedName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
 
     const command = new PutObjectCommand({
       Bucket: S3_BUCKET_NAME,
@@ -195,7 +198,7 @@ router.post(
     const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
     const fileUrl = `https://${S3_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-southeast-5'}.amazonaws.com/${key}`;
 
-    res.json({ success: true, signedUrl, fileUrl, key });
+    res.json({ success: true, signedUrl, fileUrl, key, assignedName });
   })
 );
 
@@ -773,6 +776,7 @@ const decodeSharedToken = (req: any, res: any, next: any) => {
     // SAME folder the link was generated from (task folders are grouped by
     // taskId/category, not by userId).
     req.shareCategory = decoded.t ? 'TASK' : 'artwork';
+    req.shareSlug = req.params.token;
     next();
   } catch (e) {
     res.status(400).json({ success: false, message: 'Invalid token' });
@@ -1170,8 +1174,10 @@ router.post(
     const { PutObjectCommand } = require('@aws-sdk/client-s3');
     const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
     
+    const assignedName = await reserveUploadName(req, res, { orderId, userId: username });
+    if (!assignedName) return;
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const safeFilename = assignedName.replace(/[^a-zA-Z0-9.-]/g, '_');
     const safeUsername = username.toString().replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 100) || 'customer';
     const key = `kampungcetak/customer_uploads/${safeUsername}/${uniqueSuffix}-${safeFilename}`;
 
@@ -1185,6 +1191,7 @@ router.post(
     
     res.json({
       success: true,
+      assignedName,
       url: uploadUrl,
       key: key,
       publicUrl: `https://${S3_BUCKET_NAME}.s3.ap-southeast-5.amazonaws.com/${key}`,
@@ -1340,8 +1347,10 @@ router.post(
     const { PutObjectCommand } = require('@aws-sdk/client-s3');
     const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
 
+    const assignedName = await reserveUploadName(req, res, { orderId, userId: username });
+    if (!assignedName) return;
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const safeFilename = assignedName.replace(/[^a-zA-Z0-9.-]/g, '_');
     const safeUsername = username.toString().replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 100) || 'staff';
     const key = `kampungcetak/manual_uploads/${safeUsername}/${uniqueSuffix}-${safeFilename}`;
 
@@ -1355,6 +1364,7 @@ router.post(
 
     res.json({
       success: true,
+      assignedName,
       url: uploadUrl,
       key,
       publicUrl: `https://${S3_BUCKET_NAME}.s3.ap-southeast-5.amazonaws.com/${key}`,
@@ -1591,8 +1601,11 @@ router.post(
 
 // 🌐 Public: Get presigned URL for direct S3 upload via shared link
 router.post(
-  '/s/:slug/upload-url',
-  asyncHandler(decodeSharedSlug),
+  ['/s/:slug/upload-url', '/shared/upload-url/:token'],
+  asyncHandler(async (req: Request, res: Response, next) => {
+    if (req.params.token) decodeSharedToken(req, res, next);
+    else await decodeSharedSlug(req, res, next);
+  }),
   asyncHandler(async (req: Request, res: Response) => {
     const { filename, contentType } = req.body;
     if (!filename) {
@@ -1612,8 +1625,10 @@ router.post(
     const shareCategory = (req as any).shareCategory || 'artwork';
     const shareSlug = (req as any).shareSlug;
 
+    const assignedName = await reserveUploadName(req, res, { taskId, orderId, userId });
+    if (!assignedName) return;
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const safeFilename = assignedName.replace(/[^a-zA-Z0-9.-]/g, '_');
     const key = `kampungcetak/uploads/${userId}/${uniqueSuffix}-${safeFilename}`;
 
     const command = new PutObjectCommand({
@@ -1633,6 +1648,7 @@ router.post(
     
     res.json({
       success: true,
+      assignedName,
       url: uploadUrl,
       key: key,
       publicUrl: `https://${S3_BUCKET_NAME}.s3.ap-southeast-5.amazonaws.com/${key}`,
@@ -1643,8 +1659,11 @@ router.post(
 
 // 🌐 Public: Save metadata after direct S3 upload via shared link
 router.post(
-  '/s/:slug/save-metadata',
-  asyncHandler(decodeSharedSlug),
+  ['/s/:slug/save-metadata', '/shared/save-metadata/:token'],
+  asyncHandler(async (req: Request, res: Response, next) => {
+    if (req.params.token) decodeSharedToken(req, res, next);
+    else await decodeSharedSlug(req, res, next);
+  }),
   asyncHandler(async (req: Request, res: Response) => {
     const { files } = req.body;
     if (!files || !Array.isArray(files) || files.length === 0) {

@@ -1,4 +1,5 @@
 "use client";
+import { requestUploadUrl } from "@/utils/duplicateUpload";
 
 import React, { useState } from "react";
 import { Upload, FileText, Check, Loader2, Image as ImageIcon, X, CloudUpload, Plus } from "lucide-react";
@@ -295,24 +296,28 @@ export default function CustomerUploadPortal() {
 
     try {
       // 1. Get presigned URL (10s — this is just a tiny JSON call)
-      const urlRes = await fetchWithTimeout(`${BACKEND}/api/files/customer/upload-url`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          filename: file.name,
-          contentType: file.type,
-          orderId: orderId.trim(),
-          username: username.trim(),
-          phoneNumber: phoneNumber.trim(),
-          item: item.name.trim()
-        })
-      }, 30000);
+      const urlData = await requestUploadUrl(async (duplicateAction) => {
+        const urlRes = await fetchWithTimeout(`${BACKEND}/api/files/customer/upload-url`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            filename: file.name,
+            duplicateAction,
+            contentType: file.type,
+            orderId: orderId.trim(),
+            username: username.trim(),
+            phoneNumber: phoneNumber.trim(),
+            item: item.name.trim()
+          })
+        }, 30000);
 
-      if (!urlRes.ok) {
-        const err = await urlRes.json().catch(() => ({}));
-        throw new Error(err.message || "Failed to get upload link");
-      }
-      const { url, key, publicUrl } = await urlRes.json();
+        if (!urlRes.ok) {
+          const err = await urlRes.json().catch(() => ({}));
+          throw new Error(err.message || "Failed to get upload link");
+        }
+        return urlRes.json();
+      });
+      const { url, key, publicUrl, assignedName } = urlData;
 
       // 2. Upload directly to S3 with real progress + its own timeout
       await uploadToS3WithProgress(url, file, (pct) => {
@@ -321,7 +326,7 @@ export default function CustomerUploadPortal() {
 
       const uploaded = {
         key,
-        originalName: file.name,
+        originalName: assignedName || file.name,
         mimetype: file.type || "application/octet-stream",
         size: file.size,
         path: publicUrl

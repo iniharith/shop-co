@@ -194,7 +194,7 @@ export default function UploadPage() {
           if (uploadedFilesRef.current.has(item.id)) continue;
 
           try {
-            const uploaded = await uploadToS3Directly(token, item.file, API);
+            const uploaded = await uploadToS3Directly(token, item.file, API, undefined, { orderId: orderId || undefined });
             uploadedFilesRef.current.set(item.id, uploaded);
           } catch (error: any) {
             failures.push(error instanceof Error ? error : new Error('Muat naik gagal'));

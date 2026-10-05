@@ -3,6 +3,7 @@
  * Kampungcetak ®
  */
 "use client";
+import { requestUploadUrl } from "@/utils/duplicateUpload";
 
 import React, { useEffect, useState, use } from "react";
 import AxiosInstance from "@/utils/axios";
@@ -74,18 +75,24 @@ export default function PublicFolderView({ params }: { params: Promise<{ folderI
         toast.loading(`Uploading files (${i + 1}/${e.target.files.length})...`, { id: toastId });
         setUploadStats({ current: i + 1, total: e.target.files.length });
         
-        const formData = new FormData();
-        formData.append("files", e.target.files[i]);
-        
-        const res = await fetch(`${backendUrl}/api/files/shared/upload/${unwrappedParams.folderId}`, {
-          method: "POST",
-          body: formData,
+        const file = e.target.files[i];
+        const data = await requestUploadUrl(async (duplicateAction) => {
+          const response = await fetch(`${backendUrl}/api/files/shared/upload-url/${unwrappedParams.folderId}`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filename: file.name, contentType: file.type, duplicateAction }),
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.message || "Upload failed");
+          return result;
         });
-        
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.message || "Upload failed");
-        }
+        if (!data.url) throw new Error(data.message || "Failed to get upload link");
+        const uploaded = await fetch(data.url, { method: "PUT", headers: { "Content-Type": file.type || "application/octet-stream" }, body: file });
+        if (!uploaded.ok) throw new Error("Upload failed");
+        const saved = await fetch(`${backendUrl}/api/files/shared/save-metadata/${unwrappedParams.folderId}`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ files: [{ key: data.key, originalName: data.assignedName || file.name, mimetype: file.type || "application/octet-stream", size: file.size, path: data.publicUrl }] }),
+        });
+        if (!saved.ok) throw new Error("Failed to save file metadata");
       }
       
       toast.success("Files uploaded successfully", { id: toastId });

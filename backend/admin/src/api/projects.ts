@@ -1,3 +1,4 @@
+import { requestUploadUrl } from "@/utils/duplicateUpload";
 import AxiosInstance from "@/utils/axios";
 
 export interface ProjectFile {
@@ -92,12 +93,12 @@ export const uploadProjectFile = async (
   folderId?: string | null
 ) => {
   const mimetype = file.type || "application/octet-stream";
-  const presign = await AxiosInstance(token).post(`/api/projects/${projectId}/upload-url`, {
+  const presign = await requestUploadUrl(async (duplicateAction) => (await AxiosInstance(token).post(`/api/projects/${projectId}/upload-url`, {
     filename: file.name,
     contentType: mimetype,
-    size: file.size,
-  });
-  const { signedUrl, key } = presign.data;
+    size: file.size, duplicateAction,
+  })).data);
+  const { signedUrl, key, assignedName } = presign;
 
   await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -117,7 +118,7 @@ export const uploadProjectFile = async (
 
   const response = await AxiosInstance(token).post(`/api/projects/${projectId}/files`, {
     key,
-    originalName: file.name,
+    originalName: assignedName || file.name,
     folderId: folderId || undefined,
   });
   return response.data;

@@ -3,6 +3,7 @@
  * Kampungcetak ®
  */
 "use client";
+import { requestUploadUrl } from "@/utils/duplicateUpload";
 
 import React, { useEffect, useState, use } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -90,15 +91,18 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
         const file = selectedFiles[i];
         
         // 1. Get presigned URL
-        const urlRes = await publicApiFetch(`${BACKEND}/api/files/s/${slug}/upload-url`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename: file.name, contentType: file.type, folderId: activeFolderId })
-        });
+        const urlData = await requestUploadUrl(async (duplicateAction) => {
+          const urlRes = await publicApiFetch(`${BACKEND}/api/files/s/${slug}/upload-url`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filename: file.name, duplicateAction, contentType: file.type, folderId: activeFolderId })
+          });
         
-        const urlData = await urlRes.json().catch(() => null);
-        if (!urlRes.ok || !urlData?.url) throw new Error(urlData?.message || "Failed to get upload link");
-        const { url, key, publicUrl } = urlData;
+          const urlData = await urlRes.json().catch(() => null);
+          if (!urlRes.ok || (!urlData?.url && urlData?.code !== 'DUPLICATE_FILE')) throw new Error(urlData?.message || "Failed to get upload link");
+          return urlData;
+        });
+        const { url, key, publicUrl, assignedName } = urlData;
         
         // 2. Upload directly to S3
         const s3Res = await fetch(url, {
@@ -111,7 +115,7 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
         
         const fileData = {
           key,
-          originalName: file.name,
+          originalName: assignedName || file.name,
           mimetype: file.type || "application/octet-stream",
           size: file.size,
           path: publicUrl

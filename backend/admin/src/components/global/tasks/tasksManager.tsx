@@ -1,4 +1,5 @@
 "use client";
+import { requestUploadUrl } from "@/utils/duplicateUpload";
 import React, { useState, useRef, useCallback, useEffect, useMemo, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { useTaskColumns, useTask, useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
@@ -250,17 +251,18 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
         addUpload({ id, name: file.name, tag: 'attachment', taskId, file, abortController });
         try {
           updateStatus(id, 'uploading');
-          const presignRes = await AxiosInstance(token).post("/api/files/presigned-url", {
+          const presignData = await requestUploadUrl(async (duplicateAction) => (await AxiosInstance(token).post("/api/files/presigned-url", {
             filename: file.name,
             contentType: file.type || "application/octet-stream",
             folderPath: `tasks/${taskId}`,
-          });
-          const { signedUrl, fileUrl, key } = presignRes?.data || {};
+            taskId, duplicateAction,
+          })).data);
+          const { signedUrl, fileUrl, key, assignedName } = presignData || {};
           if (!signedUrl || !fileUrl || !key) throw new Error("Failed to get presigned URL");
           await putFileToS3(signedUrl, file, (percent) => updateProgress(id, percent), abortController);
           const metaRes = await AxiosInstance(token).post(`/api/tasks/${taskId}/files/save-metadata`, {
             fileUrl,
-            fileName: file.name,
+            fileName: assignedName || file.name,
             fileKey: key,
             mimetype: file.type || "application/octet-stream",
             size: file.size,

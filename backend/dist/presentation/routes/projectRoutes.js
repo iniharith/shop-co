@@ -45,6 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const reserveUploadName_1 = require("../../shared/utils/reserveUploadName");
 /**
  * Coded by Harith
  * Kampungcetak (R)
@@ -425,7 +426,10 @@ router.post('/:id/upload-url', (0, express_async_handler_1.default)((req, res) =
         res.status(404).json({ success: false, message: 'Project not found' });
         return;
     }
-    const safeFilename = filename.toString().replace(/[^a-zA-Z0-9.-]/g, '_').slice(-180) || 'file';
+    const assignedName = yield (0, reserveUploadName_1.reserveUploadName)(req, res, { projectId: req.params.id });
+    if (!assignedName)
+        return;
+    const safeFilename = assignedName.replace(/[^a-zA-Z0-9.-]/g, '_').slice(-180) || 'file';
     const key = `kampungcetak/projects/${req.params.id}/${Date.now()}-${Math.round(Math.random() * 1E9)}-${safeFilename}`;
     const mimetype = contentType || 'application/octet-stream';
     const command = new client_s3_1.PutObjectCommand({ Bucket: s3_1.S3_BUCKET_NAME, Key: key, ContentType: mimetype });
@@ -433,6 +437,7 @@ router.post('/:id/upload-url', (0, express_async_handler_1.default)((req, res) =
     res.json({
         success: true,
         signedUrl,
+        assignedName,
         key,
         fileUrl: `https://${s3_1.S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/${key}`,
     });

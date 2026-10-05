@@ -1,41 +1,47 @@
+import { requestUploadUrl } from "./duplicateUpload";
 /**
  * Coded by Harith
  * Kampungcetak ®
  */
-export const uploadToS3Directly = async (token: string, file: File, backendUrl: string, onProgress?: (percent: number) => void) => {
+export const uploadToS3Directly = async (token: string, file: File, backendUrl: string, onProgress?: (percent: number) => void, scope?: { orderId?: string; taskId?: string }) => {
   // 1. Get presigned URL from backend
-  const controller = new AbortController();
-  const presignTimeout = setTimeout(() => controller.abort(), 30_000);
-  let presignRes: Response;
+  const presignData = await requestUploadUrl(async (duplicateAction) => {
+    const controller = new AbortController();
+    const presignTimeout = setTimeout(() => controller.abort(), 30_000);
+    let presignRes: Response;
 
-  try {
-    presignRes = await fetch(`${backendUrl}/api/files/presigned-url`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        filename: file.name,
-        contentType: file.type || "application/octet-stream"
-      }),
-      signal: controller.signal,
-    });
-  } catch (error: any) {
-    if (error?.name === "AbortError") {
-      throw new Error("Backend mengambil masa terlalu lama untuk memulakan muat naik.");
+    try {
+      presignRes = await fetch(`${backendUrl}/api/files/presigned-url`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          filename: file.name,
+          duplicateAction,
+          ...scope,
+          contentType: file.type || "application/octet-stream"
+        }),
+        signal: controller.signal,
+      });
+    } catch (error: any) {
+      if (error?.name === "AbortError") {
+        throw new Error("Backend mengambil masa terlalu lama untuk memulakan muat naik.");
+      }
+      throw error;
+    } finally {
+      clearTimeout(presignTimeout);
     }
-    throw error;
-  } finally {
-    clearTimeout(presignTimeout);
-  }
   
-  const presignData = await presignRes.json().catch(() => null);
-  if (!presignRes.ok || !presignData?.success) {
-    throw new Error(presignData?.message || "Failed to get presigned URL");
-  }
+    const presignData = await presignRes.json().catch(() => null);
+    if (!presignRes.ok || (!presignData?.success && presignData?.code !== 'DUPLICATE_FILE')) {
+      throw new Error(presignData?.message || "Failed to get presigned URL");
+    }
   
-  const { signedUrl, fileUrl, key } = presignData;
+    return presignData;
+  });
+  const { signedUrl, fileUrl, key, assignedName } = presignData;
 
   // 2. Upload file directly to S3 using XHR to track progress
   return new Promise<{ fileUrl: string, key: string, name: string, type: string, size: number }>((resolve, reject) => {
@@ -55,7 +61,7 @@ export const uploadToS3Directly = async (token: string, file: File, backendUrl: 
         resolve({
           fileUrl,
           key,
-          name: file.name,
+          name: assignedName || file.name,
           type: file.type || "application/octet-stream",
           size: file.size
         });

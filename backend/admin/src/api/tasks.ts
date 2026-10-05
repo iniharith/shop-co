@@ -56,7 +56,7 @@ import { uploadToS3Directly } from "@/utils/s3Upload";
 
 export const uploadTaskFile = async (token: string, taskId: string, file: File, tag?: string, onProgress?: (percent: number) => void, abortController?: AbortController, folderId?: string) => {
     // 1. Upload directly to S3
-    const uploadedData = await uploadToS3Directly(token, file, `tasks/${taskId}`, onProgress, abortController);
+    const uploadedData = await uploadToS3Directly(token, file, `tasks/${taskId}`, onProgress, abortController, { taskId });
     
     // 2. Save metadata to backend
     const response = await AxiosInstance(token).post(`/api/tasks/${taskId}/files/save-metadata`, {

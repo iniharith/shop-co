@@ -1,3 +1,4 @@
+import { reserveUploadName } from '../../shared/utils/reserveUploadName';
 /**
  * Coded by Harith
  * Kampungcetak (R)
@@ -462,7 +463,9 @@ router.post(
       return;
     }
 
-    const safeFilename = filename.toString().replace(/[^a-zA-Z0-9.-]/g, '_').slice(-180) || 'file';
+    const assignedName = await reserveUploadName(req, res, { projectId: req.params.id });
+    if (!assignedName) return;
+    const safeFilename = assignedName.replace(/[^a-zA-Z0-9.-]/g, '_').slice(-180) || 'file';
     const key = `kampungcetak/projects/${req.params.id}/${Date.now()}-${Math.round(Math.random() * 1E9)}-${safeFilename}`;
     const mimetype = contentType || 'application/octet-stream';
     const command = new PutObjectCommand({ Bucket: S3_BUCKET_NAME, Key: key, ContentType: mimetype });
@@ -470,6 +473,7 @@ router.post(
     res.json({
       success: true,
       signedUrl,
+      assignedName,
       key,
       fileUrl: `https://${S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/${key}`,
     });

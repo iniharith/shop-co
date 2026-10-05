@@ -46,6 +46,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.clearFolderGroupCache = void 0;
+const reserveUploadName_1 = require("../../shared/utils/reserveUploadName");
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -210,8 +211,11 @@ router.post('/presigned-url', auth_middileware_1.default, (0, express_async_hand
     const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
     const userId = req.userId || ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || 'unknown';
     const folder = folderPath ? folderPath : userId;
+    const assignedName = yield (0, reserveUploadName_1.reserveUploadName)(req, res, { taskId: req.body.taskId || (typeof folderPath === 'string' && folderPath.startsWith('tasks/') ? folderPath.slice(6) : undefined), orderId: req.body.orderId, userId: req.body.userId && ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(req.role) ? req.body.userId : userId });
+    if (!assignedName)
+        return;
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const key = `kampungcetak/uploads/${folder}/${uniqueSuffix}-${filename.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const key = `kampungcetak/uploads/${folder}/${uniqueSuffix}-${assignedName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
     const command = new PutObjectCommand({
         Bucket: s3_1.S3_BUCKET_NAME,
         Key: key,
@@ -219,7 +223,7 @@ router.post('/presigned-url', auth_middileware_1.default, (0, express_async_hand
     });
     const signedUrl = yield getSignedUrl(s3_1.s3Client, command, { expiresIn: 3600 });
     const fileUrl = `https://${s3_1.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-southeast-5'}.amazonaws.com/${key}`;
-    res.json({ success: true, signedUrl, fileUrl, key });
+    res.json({ success: true, signedUrl, fileUrl, key, assignedName });
 })));
 // ─── POST /api/files/resolve-by-path ──────────────────────
 // Used by the "Share" button on a file that doesn't have a locally-known
@@ -729,6 +733,7 @@ const decodeSharedToken = (req, res, next) => {
         // SAME folder the link was generated from (task folders are grouped by
         // taskId/category, not by userId).
         req.shareCategory = decoded.t ? 'TASK' : 'artwork';
+        req.shareSlug = req.params.token;
         next();
     }
     catch (e) {
@@ -1040,8 +1045,11 @@ router.post('/customer/upload-url', (0, express_async_handler_1.default)((req, r
     const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
     const { PutObjectCommand } = require('@aws-sdk/client-s3');
     const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
+    const assignedName = yield (0, reserveUploadName_1.reserveUploadName)(req, res, { orderId, userId: username });
+    if (!assignedName)
+        return;
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const safeFilename = assignedName.replace(/[^a-zA-Z0-9.-]/g, '_');
     const safeUsername = username.toString().replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 100) || 'customer';
     const key = `kampungcetak/customer_uploads/${safeUsername}/${uniqueSuffix}-${safeFilename}`;
     const command = new PutObjectCommand({
@@ -1052,6 +1060,7 @@ router.post('/customer/upload-url', (0, express_async_handler_1.default)((req, r
     const uploadUrl = yield getSignedUrl(s3Client, command, { expiresIn: 3600 });
     res.json({
         success: true,
+        assignedName,
         url: uploadUrl,
         key: key,
         publicUrl: `https://${S3_BUCKET_NAME}.s3.ap-southeast-5.amazonaws.com/${key}`,
@@ -1190,8 +1199,11 @@ router.post('/manual/upload-url', (0, express_async_handler_1.default)((req, res
     const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
     const { PutObjectCommand } = require('@aws-sdk/client-s3');
     const { s3Client, S3_BUCKET_NAME } = require('../../infrastructure/config/s3');
+    const assignedName = yield (0, reserveUploadName_1.reserveUploadName)(req, res, { orderId, userId: username });
+    if (!assignedName)
+        return;
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const safeFilename = assignedName.replace(/[^a-zA-Z0-9.-]/g, '_');
     const safeUsername = username.toString().replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 100) || 'staff';
     const key = `kampungcetak/manual_uploads/${safeUsername}/${uniqueSuffix}-${safeFilename}`;
     const command = new PutObjectCommand({
@@ -1202,6 +1214,7 @@ router.post('/manual/upload-url', (0, express_async_handler_1.default)((req, res
     const uploadUrl = yield getSignedUrl(s3Client, command, { expiresIn: 3600 });
     res.json({
         success: true,
+        assignedName,
         url: uploadUrl,
         key,
         publicUrl: `https://${S3_BUCKET_NAME}.s3.ap-southeast-5.amazonaws.com/${key}`,
@@ -1396,7 +1409,12 @@ router.post('/customer/file-note', (0, express_async_handler_1.default)((req, re
     res.json({ success: true, task: updated });
 })));
 // 🌐 Public: Get presigned URL for direct S3 upload via shared link
-router.post('/s/:slug/upload-url', (0, express_async_handler_1.default)(decodeSharedSlug), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post(['/s/:slug/upload-url', '/shared/upload-url/:token'], (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    if (req.params.token)
+        decodeSharedToken(req, res, next);
+    else
+        yield decodeSharedSlug(req, res, next);
+})), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { filename, contentType } = req.body;
     if (!filename) {
         res.status(400).json({ success: false, message: 'Filename required' });
@@ -1412,8 +1430,11 @@ router.post('/s/:slug/upload-url', (0, express_async_handler_1.default)(decodeSh
     const folderId = req.folderId;
     const shareCategory = req.shareCategory || 'artwork';
     const shareSlug = req.shareSlug;
+    const assignedName = yield (0, reserveUploadName_1.reserveUploadName)(req, res, { taskId, orderId, userId });
+    if (!assignedName)
+        return;
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const safeFilename = assignedName.replace(/[^a-zA-Z0-9.-]/g, '_');
     const key = `kampungcetak/uploads/${userId}/${uniqueSuffix}-${safeFilename}`;
     const command = new PutObjectCommand({
         Bucket: S3_BUCKET_NAME,
@@ -1429,6 +1450,7 @@ router.post('/s/:slug/upload-url', (0, express_async_handler_1.default)(decodeSh
     // Since the frontend is just /share/[slug]/page.tsx, let's just return the URL and let the frontend save metadata!
     res.json({
         success: true,
+        assignedName,
         url: uploadUrl,
         key: key,
         publicUrl: `https://${S3_BUCKET_NAME}.s3.ap-southeast-5.amazonaws.com/${key}`,
@@ -1436,7 +1458,12 @@ router.post('/s/:slug/upload-url', (0, express_async_handler_1.default)(decodeSh
     });
 })));
 // 🌐 Public: Save metadata after direct S3 upload via shared link
-router.post('/s/:slug/save-metadata', (0, express_async_handler_1.default)(decodeSharedSlug), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.post(['/s/:slug/save-metadata', '/shared/save-metadata/:token'], (0, express_async_handler_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    if (req.params.token)
+        decodeSharedToken(req, res, next);
+    else
+        yield decodeSharedSlug(req, res, next);
+})), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { files } = req.body;
     if (!files || !Array.isArray(files) || files.length === 0) {
         res.status(400).json({ success: false, message: 'Files required' });

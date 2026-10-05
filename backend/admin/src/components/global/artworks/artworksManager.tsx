@@ -346,7 +346,7 @@ export default function ArtworksManager() {
           try {
             updateStatus(id, 'uploading');
             const folderPath = activeGroup.userId || activeGroup.taskId || 'general';
-            const data = await uploadToS3Directly(token, file, folderPath, (percent) => updateProgress(id, percent), abortController);
+            const data = await uploadToS3Directly(token, file, folderPath, (percent) => updateProgress(id, percent), abortController, { taskId: activeGroup.taskId || undefined, orderId: activeGroup.orderId || undefined, userId: activeGroup.userId || undefined });
             uploaded[index] = { id, data };
           } catch (err: any) {
             const error = err instanceof Error ? err : new Error('Upload failed');

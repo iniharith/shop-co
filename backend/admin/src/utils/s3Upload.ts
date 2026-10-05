@@ -1,3 +1,4 @@
+import { requestUploadUrl } from "./duplicateUpload";
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -6,19 +7,23 @@ import AxiosInstance from "./axios";
 
 export type S3UploadResult = { fileUrl: string, key: string, name: string, type: string, size: number };
 
-export const uploadToS3Directly = async (token: string, file: File, folderPath?: string, onProgress?: (percent: number) => void, abortController?: AbortController) => {
+export const uploadToS3Directly = async (token: string, file: File, folderPath?: string, onProgress?: (percent: number) => void, abortController?: AbortController, scope?: { taskId?: string; orderId?: string; userId?: string }) => {
   // 1. Get presigned URL from backend
-  const presignRes = await AxiosInstance(token).post("/api/files/presigned-url", {
+  const presignData = await requestUploadUrl(async (duplicateAction) => (await AxiosInstance(token).post("/api/files/presigned-url", {
     filename: file.name,
     contentType: file.type || "application/octet-stream",
-    folderPath
-  });
+    folderPath,
+    ...scope,
+    duplicateAction
+  })).data);
   
-  if (!presignRes.data.success) {
-    throw new Error(presignRes.data.message || "Failed to get presigned URL");
+  if (!presignData.success) {
+    throw new Error(presignData.message || "Failed to get presigned URL");
   }
   
-  const { signedUrl, fileUrl, key } = presignRes.data;
+  const { signedUrl, fileUrl, key, assignedName } = presignData;
+
+  if (abortController?.signal.aborted) throw new Error('Upload cancelled');
 
   // 2. Upload file directly to S3 using XHR to track progress
   return new Promise<S3UploadResult>((resolve, reject) => {
@@ -39,7 +44,7 @@ export const uploadToS3Directly = async (token: string, file: File, folderPath?:
         resolve({
           fileUrl,
           key,
-          name: file.name,
+          name: assignedName || file.name,
           type: file.type || "application/octet-stream",
           size: file.size
         });

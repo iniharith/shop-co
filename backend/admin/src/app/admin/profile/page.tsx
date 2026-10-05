@@ -3,6 +3,7 @@
  * Kampungcetak ®
  */
 "use client";
+import { uploadToS3Directly } from "@/utils/s3Upload";
 
 import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
@@ -111,14 +112,11 @@ export default function ProfilePage() {
       const file = e.target.files[0];
       try {
         setUploading(true);
-        const formData = new FormData();
-        formData.append("files", file); // use the generic file upload endpoint
-        formData.append("category", "UI_BACKGROUND"); // Hide from Artworks
-        
-        const res = await AxiosInstance(session?.user?.token).post(`/api/files/upload`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
+        const uploaded = await uploadToS3Directly(session.user.token, file);
+        const res = await AxiosInstance(session.user.token).post('/api/files/save-metadata', {
+          category: 'UI_BACKGROUND', files: [uploaded],
         });
-        
+
         if (res.data?.success && res.data.data && res.data.data.length > 0) {
            const uploadedFile = res.data.data[0];
            const fileUrl = uploadedFile.path.startsWith("http") ? uploadedFile.path : `${process.env.NEXT_PUBLIC_BACKEND_URL}/${uploadedFile.path.replace(/^\/+/, '')}`.replace(/\\/g, '/');
