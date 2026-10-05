@@ -27,6 +27,7 @@ const monthlyReports_route_1 = __importDefault(require("../presentation/routes/m
 const notification_route_1 = __importDefault(require("../presentation/routes/notification.route"));
 const parcelRoutes_1 = __importDefault(require("../presentation/routes/parcelRoutes"));
 const fileUploadRoutes_1 = __importDefault(require("../presentation/routes/fileUploadRoutes"));
+const fileAnnotationRoutes_1 = __importDefault(require("../presentation/routes/fileAnnotationRoutes"));
 const virtualFolderRoutes_1 = __importDefault(require("../presentation/routes/virtualFolderRoutes"));
 const taskRoutes_1 = __importDefault(require("../presentation/routes/taskRoutes"));
 const toolsRoutes_1 = __importDefault(require("../presentation/routes/toolsRoutes"));
@@ -120,6 +121,7 @@ app.use('/api/folders', virtualFolderRoutes_1.default);
 // ─── Kampung Cetak: Parcel Tracking & File Upload ────────
 app.use('/api/parcels', parcelRoutes_1.default);
 app.use('/api/files', fileUploadRoutes_1.default);
+app.use('/api/file-annotations', fileAnnotationRoutes_1.default);
 app.use('/api/tasks', taskRoutes_1.default);
 app.use('/api/projects', projectRoutes_1.default);
 app.use('/api/audit-logs', auditRoutes_1.default);

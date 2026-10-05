@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useUpdateFileTag } from "@/hooks/useAdminDashboard";
 import { toast } from "sonner";
+import { useSession } from 'next-auth/react';
+import { AnnotatedImage, AnnotationHeader, AnnotationToolbar, useImageAnnotationSession } from './ImageAnnotations';
 
 const FILE_TAGS = [
   { value: 'attachment', label: 'Attachment', dot: 'bg-gray-500' },
@@ -35,6 +37,12 @@ export const FilePreviewModal = ({
 }) => {
   const { mutate: updateFileTagMutate, isPending: isUpdatingTag } = useUpdateFileTag();
   const [currentTag, setCurrentTag] = useState<string | null>(null);
+  const { data: session } = useSession();
+  const fileName = file?.originalName || file?.name || '';
+  const isImage = !!(file?.mimetype?.includes('image') || fileName.match(/\.(jpg|jpeg|png|gif|webp|heic|heif|tiff?|bmp|avif)$/i));
+  const annotations = useImageAnnotationSession(file?._id || file?.id, session?.user?.token || '', {
+    id: (session?.user as any)?.id || '', name: session?.user?.name || 'User',
+  }, isOpen && isImage, file?._annotationEditorId);
 
   useEffect(() => {
     setCurrentTag(file?.tag || null);
@@ -45,26 +53,27 @@ export const FilePreviewModal = ({
   const hasPrev = currentIndex > 0;
 
   const handleNext = useCallback(() => {
-    if (hasNext && onNavigate) {
+    if (hasNext && onNavigate && annotations.canLeave()) {
       onNavigate(files[currentIndex + 1]);
     }
-  }, [hasNext, currentIndex, files, onNavigate]);
+  }, [hasNext, currentIndex, files, onNavigate, annotations.dirty, annotations.saving]);
 
   const handlePrev = useCallback(() => {
-    if (hasPrev && onNavigate) {
+    if (hasPrev && onNavigate && annotations.canLeave()) {
       onNavigate(files[currentIndex - 1]);
     }
-  }, [hasPrev, currentIndex, files, onNavigate]);
+  }, [hasPrev, currentIndex, files, onNavigate, annotations.dirty, annotations.saving]);
 
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (annotations.editing || (e.target as HTMLElement)?.closest('input, textarea, select')) return;
       if (e.key === 'ArrowRight') handleNext();
       if (e.key === 'ArrowLeft') handlePrev();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, handleNext, handlePrev]);
+  }, [isOpen, handleNext, handlePrev, annotations.editing]);
 
   if (!file) return null;
 
@@ -75,8 +84,6 @@ export const FilePreviewModal = ({
     return `${backendUrl}/${path}`;
   };
 
-  const fileName = file.originalName || file.name || "";
-  const isImage = file.mimetype?.includes("image") || fileName.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i);
   const isPdf = file.mimetype?.includes("pdf") || fileName.toLowerCase().endsWith(".pdf");
 
   const fileUrl = getFileUrl(file.path || file.url);
@@ -86,14 +93,15 @@ export const FilePreviewModal = ({
   const activeTag = FILE_TAGS.find(t => t.value === (currentTag || file?.tag)) || FILE_TAGS[0];
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && annotations.canLeave()) onClose(); }}>
       <DialogContent className="max-w-[95vw] w-full max-h-[95vh] h-full flex flex-col p-0 overflow-hidden bg-black/95 border-none shadow-2xl z-[100]">
-        <div className="flex items-center justify-between p-3 bg-black/60 text-white z-10 absolute top-0 left-0 right-0 backdrop-blur-sm">
-          <DialogTitle className="text-sm font-medium truncate pr-4 max-w-[70%]">
+        <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-black/60 text-white z-10 absolute top-0 left-0 right-0 backdrop-blur-sm">
+          <DialogTitle className="text-sm font-medium truncate pr-4 min-w-0 flex-1 basis-full sm:basis-auto">
             {fileName} {files.length > 1 && currentIndex >= 0 && <span className="text-gray-400 ml-2">({currentIndex + 1} of {files.length})</span>}
           </DialogTitle>
                 <DialogDescription className="sr-only">Dialog Content</DialogDescription>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 w-full sm:w-auto">
+            {isImage && <AnnotationHeader session={annotations} />}
             <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 h-8 w-8" onClick={() => window.open(fileUrl, "_blank")} title="Open in new tab">
               <ExternalLink className="w-4 h-4" />
             </Button>
@@ -140,7 +148,7 @@ export const FilePreviewModal = ({
           </div>
         </div>
         
-        <div className="flex-1 flex items-center justify-center p-2 pt-14 pb-4 overflow-hidden relative group">
+        <div className={`flex-1 min-h-0 flex items-center justify-center p-2 pt-40 sm:pt-16 overflow-hidden relative group ${annotations.editing ? 'pb-28' : 'pb-4'}`}>
           {hasPrev && (
             <button 
               onClick={(e) => { e.stopPropagation(); handlePrev(); }}
@@ -151,11 +159,7 @@ export const FilePreviewModal = ({
           )}
 
           {isImage ? (
-            <img 
-              src={proxyUrl} 
-              alt={fileName} 
-              className="max-w-full max-h-full object-contain rounded-md select-none"
-            />
+            <AnnotatedImage src={proxyUrl} alt={fileName} session={annotations} />
           ) : isPdf ? (
             <iframe 
               src={proxyUrl} 
@@ -183,6 +187,7 @@ export const FilePreviewModal = ({
               <ChevronRight size={32} />
             </button>
           )}
+          {annotations.editing && <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 w-max max-w-[96%]"><AnnotationToolbar session={annotations} /></div>}
         </div>
       </DialogContent>
     </Dialog>

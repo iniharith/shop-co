@@ -25,6 +25,7 @@ import { useOrders } from "@/hooks/useOrder";
 import { useProducts } from "@/hooks/useProducts";
 import { TASK_CATEGORIES, productToTaskCategory } from "@/constants/taskCategories";
 import { FilePreviewModal } from "@/components/global/FilePreviewModal";
+import { AnnotationEditorBadge, useAnnotationSummaries } from "@/components/global/ImageAnnotations";
 import { Check, ChevronsUpDown, Download as DownloadIcon, Copy, Package } from "lucide-react";
 import { cn, forceDownload } from "@/lib/utils";
 import { useCreateShareLink, useFilesByFolder, useResolveFileByPath, useFolders, useMoveFile } from "@/hooks/useAdminDashboard";
@@ -66,7 +67,7 @@ const clearTaskModalView = () => {
   }
 };
 
-const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview, onDeleteLocal, allFiles, folders, moveFile }: any) => {
+const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview, onDeleteLocal, allFiles, folders, moveFile, annotationEditors = [] }: any) => {
   const [notes, setNotes] = useState(file.notes || "");
   const { mutate: updateNotes, isPending } = useUpdateTaskFileNotes();
 
@@ -147,7 +148,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
   };
 
   return (
-    <div className="relative group w-fit max-w-full mb-6 mt-1">
+    <div className={`relative group w-fit max-w-full mt-1 ${annotationEditors.length ? 'mb-12' : 'mb-6'}`}>
       {/* Dark container matching the sketch */}
       <div className="flex items-center gap-1.5 bg-[#5a5a5a] p-1.5 pb-3 pr-1.5 rounded-[12px] w-full min-w-[140px] shadow-sm relative z-10 overflow-visible">
         
@@ -281,6 +282,9 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
         />
         {isPending && <LoaderCircle className="w-3 h-3 animate-spin text-black mr-2 shrink-0" />}
       </div>
+      {annotationEditors.length > 0 && <div className="absolute top-[calc(100%+20px)] left-2 right-1">
+        <AnnotationEditorBadge editors={annotationEditors} onSelect={(editorId) => onPreview?.({ ...file, _annotationEditorId: editorId })} />
+      </div>}
     </div>
   );
 };
@@ -526,6 +530,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
   const { data: session } = useSession();
   const sessionUser = (session?.user as any) || null;
   const myUserId = sessionUser?.id as string | undefined;
+  const { data: annotationSummaries = {} } = useAnnotationSummaries(combinedFiles.map((file: any) => file._id || ''), sessionUser?.token || '', myUserId || '', isOpen);
   const typingTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingEmitRef = React.useRef(0);
   const descriptionFocusActiveRef = React.useRef(false);
@@ -1182,6 +1187,7 @@ export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
       allFiles={taskFiles}
       task={fullTask}
       file={file}
+      annotationEditors={annotationSummaries[file._id] || []}
       deleteFile={deleteFile}
       isDeletingFile={isDeletingFile}
       onPreview={setPreviewFile}

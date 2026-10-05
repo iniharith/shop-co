@@ -23,6 +23,7 @@ import monthlyReportsRoutes from '../presentation/routes/monthlyReports.route';
 import notificationRoutes from '../presentation/routes/notification.route';
 import parcelRoutes from '../presentation/routes/parcelRoutes';
 import fileUploadRoutes from '../presentation/routes/fileUploadRoutes';
+import fileAnnotationRoutes from '../presentation/routes/fileAnnotationRoutes';
 import virtualFolderRoutes from '../presentation/routes/virtualFolderRoutes';
 import taskRoutes from '../presentation/routes/taskRoutes';
 import toolsRoutes from '../presentation/routes/toolsRoutes';
@@ -132,6 +133,7 @@ app.use('/api/folders', virtualFolderRoutes);
 // ─── Kampung Cetak: Parcel Tracking & File Upload ────────
 app.use('/api/parcels', parcelRoutes);
 app.use('/api/files', fileUploadRoutes);
+app.use('/api/file-annotations', fileAnnotationRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/audit-logs', auditRoutes);

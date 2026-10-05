@@ -11,6 +11,8 @@ import { Breadcrumbs } from "@/components/global/breadcrumb";
 import { useSession } from "next-auth/react";
 import { useGetOrders } from "@/hooks/useOrder";
 import { uploadToS3Directly } from "@/utils/s3Upload";
+import { ImageAnnotationModal } from '@/components/global/ImageAnnotationModal';
+import { AnnotationEditorBadge, useAnnotationSummaries } from '@/components/global/ImageAnnotations';
 
 
 interface UploadedFile {
@@ -96,6 +98,8 @@ export default function UploadPage() {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [error, setError] = useState('');
   const [myFiles, setMyFiles] = useState<UploadedFile[]>([]);
+  const [annotationFile, setAnnotationFile] = useState<(UploadedFile & { _annotationEditorId?: string }) | null>(null);
+  const { data: annotationSummaries = {} } = useAnnotationSummaries(myFiles.map(file => file._id), token, (session?.user as any)?.id || '');
   const [loadingFiles, setLoadingFiles] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadedFilesRef = useRef(new Map<string, DirectUploadResult>());
@@ -489,6 +493,7 @@ export default function UploadPage() {
                     <div className="text-2xl">{f.mimetype.startsWith('image/') ? '🖼️' : '📄'}</div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-black truncate">{f.originalName}</p>
+                      <AnnotationEditorBadge editors={annotationSummaries[f._id] || []} onSelect={editorId => setAnnotationFile({ ...f, _annotationEditorId: editorId })} />
                       <p className="text-xs text-gray-500">
                         {formatSize(f.size)} · {formatDate(f.uploadedAt)}
                         {f.orderId && ` · Order: ${f.orderId}`}
@@ -501,6 +506,7 @@ export default function UploadPage() {
                     }`}>
                       {f.adminReviewed ? '✅ Disemak' : '⏳ Menunggu'}
                     </span>
+                    {f.mimetype.startsWith('image/') && <button type="button" onClick={() => setAnnotationFile(f)} className="text-xs font-semibold px-3 py-2 rounded-lg border border-gray-200 text-black hover:bg-gray-100" title="View image annotations">View / Mark</button>}
                     <button
                       onClick={() => runAiCheck(f._id)}
                       disabled={verifyingId === f._id || deletingId === f._id}
@@ -573,7 +579,8 @@ export default function UploadPage() {
                 })}
               </div>
             )}
-          </div>
-    </div>
+        </div>
+        <ImageAnnotationModal file={annotationFile} onClose={() => setAnnotationFile(null)} />
+      </div>
   );
 }
