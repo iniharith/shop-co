@@ -229,15 +229,36 @@ export function AnnotatedImage({ src, alt, session }: { src: string; alt: string
     if (stroke && !cancel) session.commit([...session.draft, stroke]);
   };
   const remove = (id: string) => { session.commit(session.draft.filter(item => item.id !== id)); session.setSelectedItemId(''); };
+  // Hit-test in displayed pixels so thin sketches are easy to erase at any zoom.
+  const eraseAt = (event: React.PointerEvent) => {
+    const p = point(event);
+    const hit = session.draft.filter(item => item.kind === 'stroke' && (item.points || []).some((b, index, points) => {
+      const a = points[Math.max(0, index - 1)];
+      const dx = (b.x - a.x) * size.width, dy = (b.y - a.y) * size.height;
+      const px = (p.x - a.x) * size.width, py = (p.y - a.y) * size.height;
+      const length = dx * dx + dy * dy;
+      const t = length ? Math.max(0, Math.min(1, (px * dx + py * dy) / length)) : 0;
+      return Math.hypot(px - t * dx, py - t * dy) <= 12 + item.width / 2;
+    }));
+    if (hit.length) {
+      const ids = new Set(hit.map(item => item.id));
+      session.commit(session.draft.filter(item => !ids.has(item.id)));
+      session.setSelectedItemId('');
+    }
+  };
   const selected = session.editing ? session.draft.find(item => item.id === session.selectedItemId && item.kind !== 'stroke') : undefined;
   const rendered = drawing ? [...session.items, drawing] : session.items;
   const path = (item: ImageAnnotation) => (item.points || []).map((p, index) => `${index ? 'L' : 'M'}${p.x * 1000},${p.y * 1000}`).join(' ');
   return <div ref={container} className="w-full h-full flex items-center justify-center relative min-h-0">
     {imageFailed ? <p className="text-red-300 text-sm">This image could not be loaded. Open or download the original file.</p> : <div ref={surface} className="relative shrink-0" style={{ width: size.width || undefined, height: size.height || undefined }}>
       <img src={src} alt={alt} draggable={false} onError={() => setImageFailed(true)} onLoad={event => setNatural({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} className="block rounded-md select-none" style={{ width: size.width || undefined, height: size.height || undefined, maxWidth: size.width ? undefined : '100%', visibility: size.width ? 'visible' : 'hidden' }} />
-      {size.width > 0 && <div className="absolute inset-0" style={{ cursor: session.editing ? session.tool === 'erase' ? 'not-allowed' : 'crosshair' : 'default', touchAction: session.editing ? 'none' : 'auto' }}
+      {size.width > 0 && <div className="absolute inset-0" style={{ cursor: session.editing ? session.tool === 'erase' ? 'crosshair' : 'crosshair' : 'default', touchAction: session.editing ? 'none' : 'auto' }}
         onPointerDown={event => {
-          if (!session.editing || session.saving || event.button !== 0 || activePointer.current !== null || session.tool === 'erase') return;
+          if (!session.editing || session.saving || event.button !== 0 || activePointer.current !== null) return;
+          if (session.tool === 'erase') {
+            event.currentTarget.setPointerCapture(event.pointerId); activePointer.current = event.pointerId;
+            eraseAt(event); return;
+          }
           const p = point(event);
           if (session.tool === 'stroke') {
             const total = session.draft.reduce((count, item) => count + (item.points?.length || 0), 0);
@@ -251,7 +272,9 @@ export function AnnotatedImage({ src, alt, session }: { src: string; alt: string
           }
         }}
         onPointerMove={event => {
-          if (event.pointerId !== activePointer.current || !activeStroke.current) return;
+          if (event.pointerId !== activePointer.current) return;
+          if (session.tool === 'erase') { eraseAt(event); return; }
+          if (!activeStroke.current) return;
           const points = activeStroke.current.points!;
           const total = session.draft.reduce((count, item) => count + (item.points?.length || 0), 0);
           if (points.length >= 3000 || points.length + total >= 15000) return;
@@ -261,7 +284,7 @@ export function AnnotatedImage({ src, alt, session }: { src: string; alt: string
           if (frame.current === null) frame.current = requestAnimationFrame(() => { frame.current = null; setDrawing(activeStroke.current); });
         }} onPointerUp={event => endStroke(event)} onPointerCancel={event => endStroke(event, true)}>
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-label="Image sketch overlay">
-          {rendered.filter(item => item.kind === 'stroke').map(item => <path key={item.id} d={item.points?.length === 1 ? `${path(item)} l.01,.01` : path(item)} fill="none" stroke={item.color} strokeWidth={item.width} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" style={{ pointerEvents: session.editing && session.tool === 'erase' ? 'stroke' : 'none' }} onPointerDown={event => { if (session.editing && session.tool === 'erase' && !session.saving) { event.stopPropagation(); remove(item.id); } }} />)}
+          {rendered.filter(item => item.kind === 'stroke').map(item => <path key={item.id} d={item.points?.length === 1 ? `${path(item)} l.01,.01` : path(item)} fill="none" stroke={item.color} strokeWidth={item.width} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" style={{ pointerEvents: 'none' }} />)}
         </svg>
         {rendered.filter(item => item.kind !== 'stroke').map((item, index) => <button type="button" key={item.id} aria-label={`${item.kind === 'pin' ? 'Pin' : 'Note'} ${index + 1}: ${item.text || 'Add a note'}`} title={item.text || 'Add a note'} className={`absolute text-left shadow-lg border-2 ${item.kind === 'pin' ? 'rounded-full flex items-center justify-center w-7 h-7 -translate-x-1/2 -translate-y-1/2 text-white font-bold text-xs' : 'rounded-md px-2 py-1 text-xs bg-yellow-100 text-black max-w-[180px] whitespace-pre-wrap break-words'}`} style={{ left: `${item.x! * 100}%`, top: `${item.y! * 100}%`, transform: item.kind === 'note' ? `translate(${item.x! > .75 ? '-100%' : '0'}, ${item.y! > .75 ? '-100%' : '0'})` : undefined, backgroundColor: item.kind === 'pin' ? item.color : undefined, borderColor: item.color, outline: item.id === session.selectedItemId ? '2px solid white' : undefined }} onPointerDown={event => event.stopPropagation()} onClick={() => {
           if (session.saving) return;

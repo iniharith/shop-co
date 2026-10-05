@@ -89,7 +89,10 @@ async function run() {
       const point = path.getPointAtLength(path.getTotalLength() / 2);
       const screen = new DOMPoint(point.x, point.y).matrixTransform(path.getScreenCTM()); return { x: screen.x, y: screen.y };
     });
-    await page.mouse.click(hit.x, hit.y); assert.equal(await pathCount(), 0);
+    // Start outside the line and drag near it: erasing must not require an exact SVG hit.
+    await page.mouse.move(hit.x, hit.y + 35); await page.mouse.down();
+    await page.mouse.move(hit.x, hit.y + 8, { steps: 10 }); await page.mouse.up();
+    assert.equal(await pathCount(), 0);
     await page.click('button[aria-label="Undo annotation"]'); assert.equal(await pathCount(), 1);
     await page.click('button[aria-label="Pin"]'); let r = await imageRect(); await page.mouse.click(r.x + r.width * .7, r.y + r.height * .25);
     await page.waitForSelector('#annotation-note'); await page.type('#annotation-note', 'Please straighten this edge'); await clickText('Done');
