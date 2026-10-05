@@ -50,6 +50,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Kampungcetak ®
  */
 const express_1 = require("express");
+const taskQrUrl_1 = require("../../shared/utils/taskQrUrl");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const TaskRepository_1 = require("../../infrastructure/repositories/TaskRepository");
 const order_usecase_1 = require("../../application/usecases/orders/order.usecase");
@@ -161,7 +162,7 @@ router.get('/:id/qr', auth_middileware_1.default, (0, express_async_handler_1.de
     if (!task.qrToken)
         task.qrToken = (0, crypto_1.randomBytes)(24).toString('hex');
     yield task.save();
-    res.json({ success: true, token: task.qrToken });
+    res.json({ success: true, token: task.qrToken, url: (0, taskQrUrl_1.taskQrUrl)(task.qrToken) });
 })));
 router.get('/', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;

@@ -3,6 +3,7 @@
  * Kampungcetak ®
  */
 import { Router, Request, Response } from 'express';
+import { taskQrUrl } from '../../shared/utils/taskQrUrl';
 import asyncHandler from 'express-async-handler';
 import { taskRepository } from '../../infrastructure/repositories/TaskRepository';
 import { OrderUsecase } from '../../application/usecases/orders/order.usecase';
@@ -126,7 +127,7 @@ router.get(
     }
     if (!task.qrToken) task.qrToken = randomBytes(24).toString('hex');
     await task.save();
-    res.json({ success: true, token: task.qrToken });
+    res.json({ success: true, token: task.qrToken, url: taskQrUrl(task.qrToken) });
   })
 );
 

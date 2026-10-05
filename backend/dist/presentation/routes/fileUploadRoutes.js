@@ -1918,6 +1918,7 @@ router.put('/:id/move', auth_middileware_1.default, (0, express_async_handler_1.
 // 🟥 PUT /api/files/:id/tag
 // Admin changes a file's tag (attachment / draft / for_print / awb)
 router.put('/:id/tag', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const { tag } = req.body;
     const validTags = ['attachment', 'draft', 'for_print', 'awb'];
     if (!tag || !validTags.includes(tag)) {
@@ -1930,7 +1931,7 @@ router.put('/:id/tag', auth_middileware_1.default, (0, auth_middileware_1.author
         return;
     }
     const oldPath = file.path;
-    if (tag === 'draft' && (file.tag !== 'draft' || !file.draftQrPath)) {
+    if (tag === 'draft') {
         if (!file.taskId) {
             res.status(400).json({ success: false, message: 'Draft QR requires a linked task' });
             return;
@@ -1938,7 +1939,7 @@ router.put('/:id/tag', auth_middileware_1.default, (0, auth_middileware_1.author
         const draftImage = yield (0, draftQrImage_1.createDraftQrAsset)(file.sourcePath || file.path, file.taskId);
         if (draftImage) {
             file.sourcePath = draftImage.sourcePath;
-            file.sourceSize = file.size;
+            file.sourceSize = (_a = file.sourceSize) !== null && _a !== void 0 ? _a : file.size;
             file.draftQrPath = draftImage.draftQrPath;
             file.size = draftImage.size;
         }

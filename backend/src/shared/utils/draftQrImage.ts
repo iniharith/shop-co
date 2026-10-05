@@ -5,6 +5,7 @@ import sharp from 'sharp';
 import { PDFDocument, rgb } from 'pdf-lib';
 import { S3_BUCKET_NAME, deleteFromS3, s3Client } from '../../infrastructure/config/s3';
 import { Task } from '../../domain/entities/Task';
+import { taskQrUrl } from './taskQrUrl';
 
 export type DraftQrAsset = {
   path: string;
@@ -65,8 +66,7 @@ export async function createDraftQrAsset(sourcePath: string, taskId: string): Pr
   const body = await response.Body?.transformToByteArray();
   if (!body) throw new Error('Draft file is empty');
   const source = Buffer.from(body);
-  const baseUrl = (process.env.FRONTEND_URL || 'https://kampungcetak.com').replace(/\/$/, '');
-  const targetUrl = `${baseUrl}/task-access/${task.qrToken}`;
+  const targetUrl = taskQrUrl(task.qrToken);
   let output: Buffer;
   let contentType: string;
   let extension: string;

@@ -22,6 +22,7 @@ const sharp_1 = __importDefault(require("sharp"));
 const pdf_lib_1 = require("pdf-lib");
 const s3_1 = require("../../infrastructure/config/s3");
 const Task_1 = require("../../domain/entities/Task");
+const taskQrUrl_1 = require("./taskQrUrl");
 const keyFromUrl = (sourcePath) => {
     const url = new URL(sourcePath);
     if (url.protocol !== 'https:' || !url.hostname.startsWith(`${s3_1.S3_BUCKET_NAME}.s3.`)) {
@@ -77,8 +78,7 @@ function createDraftQrAsset(sourcePath, taskId) {
         if (!body)
             throw new Error('Draft file is empty');
         const source = Buffer.from(body);
-        const baseUrl = (process.env.FRONTEND_URL || 'https://kampungcetak.com').replace(/\/$/, '');
-        const targetUrl = `${baseUrl}/task-access/${task.qrToken}`;
+        const targetUrl = (0, taskQrUrl_1.taskQrUrl)(task.qrToken);
         let output;
         let contentType;
         let extension;

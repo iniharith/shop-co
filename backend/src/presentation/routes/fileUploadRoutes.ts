@@ -2268,7 +2268,7 @@ router.put(
     }
 
     const oldPath = file.path;
-    if (tag === 'draft' && (file.tag !== 'draft' || !file.draftQrPath)) {
+    if (tag === 'draft') {
       if (!file.taskId) {
         res.status(400).json({ success: false, message: 'Draft QR requires a linked task' });
         return;
@@ -2276,7 +2276,7 @@ router.put(
       const draftImage = await createDraftQrAsset(file.sourcePath || file.path, file.taskId);
       if (draftImage) {
         file.sourcePath = draftImage.sourcePath;
-        file.sourceSize = file.size;
+        file.sourceSize = file.sourceSize ?? file.size;
         file.draftQrPath = draftImage.draftQrPath;
         file.size = draftImage.size;
       }

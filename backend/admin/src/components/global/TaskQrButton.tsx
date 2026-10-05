@@ -30,9 +30,7 @@ export function TaskQrButton({ taskId, taskTitle, compact = false }: TaskQrButto
       .then(async ({ data }) => {
         const token = data?.token;
         if (!token) throw new Error("QR token was not returned");
-        const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL
-          || (process.env.NODE_ENV === "production" ? "https://kampungcetak.com" : window.location.origin);
-        const url = `${baseUrl.replace(/\/$/, "")}/task-access/${token}`;
+        const url = data?.url || `https://admin.kampungcetak.com/task-access/${encodeURIComponent(token)}`;
         const image = await QRCode.toDataURL(url, { width: 640, margin: 2, errorCorrectionLevel: "H" });
         if (!cancelled) {
           setTaskUrl(url);
