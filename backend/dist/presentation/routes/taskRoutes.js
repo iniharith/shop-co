@@ -71,6 +71,7 @@ const pgVectorStore_1 = require("../../infrastructure/vector/pgVectorStore");
 const aiProvider_1 = require("../../infrastructure/ai/aiProvider");
 const Task_1 = require("../../domain/entities/Task");
 const crypto_1 = require("crypto");
+const draftQrImage_1 = require("../../shared/utils/draftQrImage");
 const reindexTaskInBg = (task) => {
     if (!task || !(0, aiProvider_1.aiConfigured)())
         return;
@@ -261,6 +262,9 @@ const deleteAllTaskFiles = (task) => __awaiter(void 0, void 0, void 0, function*
         const { FileUpload } = yield Promise.resolve().then(() => __importStar(require('../../domain/entities/FileUpload')));
         const taskId = task._id.toString();
         // Delete all FileUpload records referencing this task (share link uploads + direct uploads)
+        const uploadedFiles = yield FileUpload.find({ taskId });
+        for (const uploadedFile of uploadedFiles)
+            yield (0, draftQrImage_1.deleteDraftQrCompanions)(uploadedFile);
         yield FileUpload.deleteMany({ taskId });
         void (0, FileUploadRepository_1.notifyFileClients)();
         // Delete files from S3 and clear task.files array
@@ -485,21 +489,20 @@ router.put('/:id/files/notes', auth_middileware_1.default, (0, express_async_han
         res.status(400).json({ success: false, message: 'fileUrl is required' });
         return;
     }
-    // Update the note in the Task
-    const task = yield TaskRepository_1.taskRepository.updateFileNotes(id, fileUrl, notes || '');
-    if (!task) {
+    const fileUpload = yield FileUpload_1.FileUpload.findOne({ taskId: id, path: fileUrl });
+    const savedNotes = typeof notes === 'string' ? notes : '';
+    const task = yield TaskRepository_1.taskRepository.updateFileNotes(id, fileUrl, savedNotes);
+    if (!task && !fileUpload) {
         res.status(404).json({ success: false, message: 'Task or file not found' });
         return;
     }
     // Extract filename for comment
     const fileName = fileUrl.split('/').pop() || 'file';
-    // Sync the note to the FileUpload collection
-    try {
-        yield FileUpload_1.FileUpload.findOneAndUpdate({ path: fileUrl, taskId: id }, { $set: { adminNotes: notes || '' } });
+    // Staff notes belong in adminNotes. FileUpload.notes is the customer's
+    // original upload note and must remain intact.
+    if (fileUpload) {
+        yield FileUpload_1.FileUpload.updateOne({ _id: fileUpload._id }, { $set: { adminNotes: savedNotes } });
         void (0, FileUploadRepository_1.notifyFileClients)();
-    }
-    catch (err) {
-        console.error("Failed to sync file upload notes:", err);
     }
     // Add an activity to the task to notify stakeholders
     yield TaskRepository_1.taskRepository.addActivity(id, userId, userName, `updated note for attached file (${fileName}): ${notes || '(cleared)'}`);
@@ -518,7 +521,9 @@ router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'),
     const fileName = req.file.originalname || 'Attached File';
     const tag = normalizeTaskFileTag(req.body.tag);
     const folderId = req.body.folderId || undefined;
-    const task = yield TaskRepository_1.taskRepository.addFile(req.params.id, fileUrl, fileName, tag);
+    const draftImage = tag === 'draft' ? yield (0, draftQrImage_1.createDraftQrAsset)(fileUrl, req.params.id) : null;
+    const displayUrl = (draftImage === null || draftImage === void 0 ? void 0 : draftImage.path) || fileUrl;
+    const task = yield TaskRepository_1.taskRepository.addFile(req.params.id, displayUrl, fileName, tag);
     if (!task) {
         res.status(404).json({ success: false, message: 'Task not found' });
         return;
@@ -549,9 +554,12 @@ router.post('/:id/files', auth_middileware_1.default, taskUpload.single('file'),
             folderId: folderId,
             filename: req.file.key || req.file.filename || req.file.originalname,
             originalName: fileName,
-            mimetype: req.file.mimetype,
-            size: req.file.size,
-            path: fileUrl,
+            mimetype: (draftImage === null || draftImage === void 0 ? void 0 : draftImage.mimetype) || req.file.mimetype,
+            size: (draftImage === null || draftImage === void 0 ? void 0 : draftImage.size) || req.file.size,
+            path: displayUrl,
+            sourcePath: draftImage === null || draftImage === void 0 ? void 0 : draftImage.sourcePath,
+            sourceSize: draftImage ? req.file.size : undefined,
+            draftQrPath: draftImage === null || draftImage === void 0 ? void 0 : draftImage.draftQrPath,
         });
         reindexFileInBg(createdUpload);
     }
@@ -573,7 +581,9 @@ router.post('/:id/files/save-metadata', auth_middileware_1.default, (0, express_
         res.status(400).json({ success: false, message: 'fileUrl and fileName are required' });
         return;
     }
-    const task = yield TaskRepository_1.taskRepository.addFile(req.params.id, fileUrl, fileName, tag);
+    const draftImage = tag === 'draft' ? yield (0, draftQrImage_1.createDraftQrAsset)(fileUrl, req.params.id) : null;
+    const displayUrl = (draftImage === null || draftImage === void 0 ? void 0 : draftImage.path) || fileUrl;
+    const task = yield TaskRepository_1.taskRepository.addFile(req.params.id, displayUrl, fileName, tag);
     if (!task) {
         res.status(404).json({ success: false, message: 'Task not found' });
         return;
@@ -603,9 +613,12 @@ router.post('/:id/files/save-metadata', auth_middileware_1.default, (0, express_
             folderId,
             filename: fileKey || fileName,
             originalName: fileName,
-            mimetype: mimetype || 'application/octet-stream',
-            size: size || 0,
-            path: fileUrl,
+            mimetype: (draftImage === null || draftImage === void 0 ? void 0 : draftImage.mimetype) || mimetype || 'application/octet-stream',
+            size: (draftImage === null || draftImage === void 0 ? void 0 : draftImage.size) || size || 0,
+            path: displayUrl,
+            sourcePath: draftImage === null || draftImage === void 0 ? void 0 : draftImage.sourcePath,
+            sourceSize: draftImage ? size || 0 : undefined,
+            draftQrPath: draftImage === null || draftImage === void 0 ? void 0 : draftImage.draftQrPath,
         });
         reindexFileInBg(createdUpload);
     }
@@ -647,6 +660,7 @@ router.delete('/:id/files/:fileId', auth_middileware_1.default, (0, express_asyn
             if (fileDoc) {
                 if (fileDoc.path)
                     yield (0, s3_1.deleteFromS3)(fileDoc.path).catch(console.error);
+                yield (0, draftQrImage_1.deleteDraftQrCompanions)(fileDoc);
                 yield FileUpload.findByIdAndDelete(fileId);
                 removeFileIndex(fileId);
                 // Remove the matching entry from the task's files array too, so the
@@ -687,7 +701,9 @@ router.delete('/:id/files/:fileId', auth_middileware_1.default, (0, express_asyn
     // Delete from FileUpload collection
     try {
         const { FileUpload } = yield Promise.resolve().then(() => __importStar(require('../../domain/entities/FileUpload')));
-        yield FileUpload.findOneAndDelete({ path: fileUrl });
+        const fileDoc = yield FileUpload.findOneAndDelete({ path: fileUrl });
+        if (fileDoc)
+            yield (0, draftQrImage_1.deleteDraftQrCompanions)(fileDoc);
         void (0, FileUploadRepository_1.notifyFileClients)();
     }
     catch (e) {

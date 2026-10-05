@@ -78,6 +78,7 @@ const pdfSharePreview_1 = require("../../shared/utils/pdfSharePreview");
 const aiIndexService_1 = require("../../application/ai/aiIndexService");
 const pgVectorStore_1 = require("../../infrastructure/vector/pgVectorStore");
 const aiProvider_1 = require("../../infrastructure/ai/aiProvider");
+const draftQrImage_1 = require("../../shared/utils/draftQrImage");
 const reindexFileInBg = (file) => {
     if (!file || !(0, aiProvider_1.aiConfigured)())
         return;
@@ -149,22 +150,31 @@ router.post('/upload', auth_middileware_1.default, upload.array('files', 100), (
         res.status(400).json({ success: false, message: 'Tiada fail dipilih' });
         return;
     }
-    // Cloudinary multer-storage-cloudinary puts the secure URL in file.path
-    const savedFiles = yield Promise.all(files.map((file) => FileUploadRepository_1.fileUploadRepository.create({
-        userId: userId || 'admin',
-        orderId: orderId || undefined,
-        taskId: taskId || undefined,
-        category: category || undefined,
-        tag: tag || undefined,
-        filename: file.key || file.filename || file.originalname,
-        originalName: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size,
-        // file.location is provided by multer-s3
-        path: file.location || file.path,
-        notes: notes || undefined,
-        adminReviewed: false,
-        folderId: folderId || undefined,
+    if (tag === 'draft' && !taskId) {
+        res.status(400).json({ success: false, message: 'Draft QR requires a linked task' });
+        return;
+    }
+    const savedFiles = yield Promise.all(files.map((file) => __awaiter(void 0, void 0, void 0, function* () {
+        const sourcePath = file.location || file.path;
+        const draftImage = tag === 'draft' ? yield (0, draftQrImage_1.createDraftQrAsset)(sourcePath, taskId) : null;
+        return FileUploadRepository_1.fileUploadRepository.create({
+            userId: userId || 'admin',
+            orderId: orderId || undefined,
+            taskId: taskId || undefined,
+            category: category || undefined,
+            tag: tag || undefined,
+            filename: file.key || file.filename || file.originalname,
+            originalName: file.originalname,
+            mimetype: (draftImage === null || draftImage === void 0 ? void 0 : draftImage.mimetype) || file.mimetype,
+            size: (draftImage === null || draftImage === void 0 ? void 0 : draftImage.size) || file.size,
+            path: (draftImage === null || draftImage === void 0 ? void 0 : draftImage.path) || sourcePath,
+            sourcePath: draftImage === null || draftImage === void 0 ? void 0 : draftImage.sourcePath,
+            sourceSize: draftImage ? file.size : undefined,
+            draftQrPath: draftImage === null || draftImage === void 0 ? void 0 : draftImage.draftQrPath,
+            notes: notes || undefined,
+            adminReviewed: false,
+            folderId: folderId || undefined,
+        });
     })));
     // Optionally notify customer via WhatsApp
     const customerPhone = (_b = authReq.user) === null || _b === void 0 ? void 0 : _b.phone;
@@ -269,7 +279,17 @@ router.post('/save-metadata', auth_middileware_1.default, (0, express_async_hand
         res.status(400).json({ success: false, message: 'Tiada fail metadata diberikan' });
         return;
     }
-    const savedFiles = yield FileUploadRepository_1.fileUploadRepository.createMany(files.map((file) => ({
+    if (tag === 'draft' && !taskId) {
+        res.status(400).json({ success: false, message: 'Draft QR requires a linked task' });
+        return;
+    }
+    const preparedFiles = [];
+    for (const file of files) {
+        const sourcePath = file.fileUrl || file.path || file.url;
+        const draftImage = tag === 'draft' ? yield (0, draftQrImage_1.createDraftQrAsset)(sourcePath, taskId) : null;
+        preparedFiles.push({ file, sourcePath, draftImage });
+    }
+    const savedFiles = yield FileUploadRepository_1.fileUploadRepository.createMany(preparedFiles.map(({ file, sourcePath, draftImage }) => ({
         userId: userId || 'admin',
         orderId: orderId || undefined,
         taskId: taskId || undefined,
@@ -277,9 +297,12 @@ router.post('/save-metadata', auth_middileware_1.default, (0, express_async_hand
         tag: tag || undefined,
         filename: file.key || file.filename || file.originalname || file.name,
         originalName: file.originalname || file.name,
-        mimetype: file.mimetype || file.type || 'application/octet-stream',
-        size: file.size || 0,
-        path: file.fileUrl || file.path || file.url,
+        mimetype: (draftImage === null || draftImage === void 0 ? void 0 : draftImage.mimetype) || file.mimetype || file.type || 'application/octet-stream',
+        size: (draftImage === null || draftImage === void 0 ? void 0 : draftImage.size) || file.size || 0,
+        path: (draftImage === null || draftImage === void 0 ? void 0 : draftImage.path) || sourcePath,
+        sourcePath: draftImage === null || draftImage === void 0 ? void 0 : draftImage.sourcePath,
+        sourceSize: draftImage ? file.size || 0 : undefined,
+        draftQrPath: draftImage === null || draftImage === void 0 ? void 0 : draftImage.draftQrPath,
         notes: notes || undefined,
         adminReviewed: false,
         folderId: folderId || undefined,
@@ -1532,6 +1555,7 @@ router.delete('/s/:slug/files/:id', (0, express_async_handler_1.default)((req, r
     try {
         if (file.path)
             yield (0, s3_1.deleteFromS3)(file.path);
+        yield (0, draftQrImage_1.deleteDraftQrCompanions)(file);
     }
     catch (err) {
         console.warn('[SharedDelete] S3 delete failed:', err.message);
@@ -1783,7 +1807,13 @@ router.put('/:id/review', auth_middileware_1.default, (0, express_async_handler_
             }
             userName = userName || 'Admin';
             // Update task file notes
-            yield TaskRepository_1.taskRepository.updateFileNotes(file.taskId, file.path, notes || '');
+            // Keep the task attachment note in lockstep with the folder/FileUpload note.
+            // Older task records may contain a URL variant, so try the canonical path
+            // first and fall back to the stored filename when necessary.
+            const updatedTask = (yield TaskRepository_1.taskRepository.updateFileNotes(file.taskId, file.path, notes || ''))
+                || (yield TaskRepository_1.taskRepository.updateFileNotes(file.taskId, file.filename, notes || ''));
+            if (updatedTask)
+                void (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: updatedTask });
             // Add comment to task
             yield TaskRepository_1.taskRepository.addComment(file.taskId, userId, userName, `Note updated for artwork (${file.originalName}): ${notes || '(cleared)'}`, authReq.role || 'admin');
         }
@@ -1823,6 +1853,7 @@ router.post('/bulk-delete', auth_middileware_1.default, (0, express_async_handle
             removeFileIndex(id);
             if (file.path) {
                 yield (0, s3_1.deleteFromS3)(file.path);
+                yield (0, draftQrImage_1.deleteDraftQrCompanions)(file);
                 // Remove file from any Task that references it
                 yield Task_1.Task.updateMany({ "files.url": file.path }, { $pull: { files: { url: file.path } } });
             }
@@ -1859,6 +1890,7 @@ router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.de
     try {
         if (file.path) {
             yield (0, s3_1.deleteFromS3)(file.path);
+            yield (0, draftQrImage_1.deleteDraftQrCompanions)(file);
             // Remove file from any Task that references it
             yield Task_1.Task.updateMany({ "files.url": file.path }, { $pull: { files: { url: file.path } } });
         }
@@ -1885,22 +1917,44 @@ router.put('/:id/move', auth_middileware_1.default, (0, express_async_handler_1.
 })));
 // 🟥 PUT /api/files/:id/tag
 // Admin changes a file's tag (attachment / draft / for_print / awb)
-router.put('/:id/tag', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.put('/:id/tag', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { tag } = req.body;
     const validTags = ['attachment', 'draft', 'for_print', 'awb'];
     if (!tag || !validTags.includes(tag)) {
         res.status(400).json({ success: false, message: 'Tag tidak sah' });
         return;
     }
-    const updatedFile = yield FileUpload_1.FileUpload.findByIdAndUpdate(req.params.id, { tag }, { new: true });
-    if (!updatedFile) {
+    const file = yield FileUpload_1.FileUpload.findById(req.params.id);
+    if (!file) {
         res.status(404).json({ success: false, message: 'File not found' });
         return;
     }
+    const oldPath = file.path;
+    if (tag === 'draft' && (file.tag !== 'draft' || !file.draftQrPath)) {
+        if (!file.taskId) {
+            res.status(400).json({ success: false, message: 'Draft QR requires a linked task' });
+            return;
+        }
+        const draftImage = yield (0, draftQrImage_1.createDraftQrAsset)(file.sourcePath || file.path, file.taskId);
+        if (draftImage) {
+            file.sourcePath = draftImage.sourcePath;
+            file.sourceSize = file.size;
+            file.draftQrPath = draftImage.draftQrPath;
+            file.size = draftImage.size;
+        }
+        file.path = file.draftQrPath;
+    }
+    else if (tag !== 'draft' && file.sourcePath) {
+        file.path = file.sourcePath;
+        if (file.sourceSize !== undefined)
+            file.size = file.sourceSize;
+    }
+    file.tag = tag;
+    const updatedFile = yield file.save();
     // Sync with task if this file is attached to a task
     if (updatedFile.taskId) {
         try {
-            yield TaskRepository_1.taskRepository.updateFileTag(updatedFile.taskId, updatedFile.path, tag);
+            yield TaskRepository_1.taskRepository.updateFilePathAndTag(updatedFile.taskId, oldPath, updatedFile.path, tag);
         }
         catch (syncErr) {
             console.error("Failed to sync file tag to task:", syncErr);

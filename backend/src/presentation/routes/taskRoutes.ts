@@ -25,6 +25,7 @@ import { pgVectorStore } from '../../infrastructure/vector/pgVectorStore';
 import { aiConfigured } from '../../infrastructure/ai/aiProvider';
 import { Task } from '../../domain/entities/Task';
 import { randomBytes } from 'crypto';
+import { createDraftQrAsset, deleteDraftQrCompanions } from '../../shared/utils/draftQrImage';
 
 const reindexTaskInBg = (task: any) => {
   if (!task || !aiConfigured()) return;
@@ -248,6 +249,8 @@ const deleteAllTaskFiles = async (task: any) => {
     const taskId = task._id.toString();
 
     // Delete all FileUpload records referencing this task (share link uploads + direct uploads)
+    const uploadedFiles = await FileUpload.find({ taskId });
+    for (const uploadedFile of uploadedFiles) await deleteDraftQrCompanions(uploadedFile);
     await FileUpload.deleteMany({ taskId });
     void notifyFileClients();
 
@@ -571,8 +574,10 @@ router.post(
     const fileName = req.file.originalname || 'Attached File';
     const tag = normalizeTaskFileTag(req.body.tag);
     const folderId = req.body.folderId || undefined;
+    const draftImage = tag === 'draft' ? await createDraftQrAsset(fileUrl, req.params.id) : null;
+    const displayUrl = draftImage?.path || fileUrl;
 
-    const task = await taskRepository.addFile(req.params.id, fileUrl, fileName, tag);
+    const task = await taskRepository.addFile(req.params.id, displayUrl, fileName, tag);
     if (!task) {
       res.status(404).json({ success: false, message: 'Task not found' });
       return;
@@ -605,9 +610,12 @@ router.post(
         folderId: folderId,
         filename: (req.file as any).key || req.file.filename || req.file.originalname,
         originalName: fileName,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-        path: fileUrl,
+        mimetype: draftImage?.mimetype || req.file.mimetype,
+        size: draftImage?.size || req.file.size,
+        path: displayUrl,
+        sourcePath: draftImage?.sourcePath,
+        sourceSize: draftImage ? req.file.size : undefined,
+        draftQrPath: draftImage?.draftQrPath,
       });
       reindexFileInBg(createdUpload);
     } catch (e) {
@@ -635,7 +643,9 @@ router.post(
       return;
     }
 
-    const task = await taskRepository.addFile(req.params.id, fileUrl, fileName, tag);
+    const draftImage = tag === 'draft' ? await createDraftQrAsset(fileUrl, req.params.id) : null;
+    const displayUrl = draftImage?.path || fileUrl;
+    const task = await taskRepository.addFile(req.params.id, displayUrl, fileName, tag);
     if (!task) {
       res.status(404).json({ success: false, message: 'Task not found' });
       return;
@@ -667,9 +677,12 @@ router.post(
         folderId,
         filename: fileKey || fileName,
         originalName: fileName,
-        mimetype: mimetype || 'application/octet-stream',
-        size: size || 0,
-        path: fileUrl,
+        mimetype: draftImage?.mimetype || mimetype || 'application/octet-stream',
+        size: draftImage?.size || size || 0,
+        path: displayUrl,
+        sourcePath: draftImage?.sourcePath,
+        sourceSize: draftImage ? size || 0 : undefined,
+        draftQrPath: draftImage?.draftQrPath,
       });
       reindexFileInBg(createdUpload);
     } catch (e) {
@@ -715,6 +728,7 @@ router.delete(
         const fileDoc = await FileUpload.findById(fileId);
         if (fileDoc) {
           if (fileDoc.path) await deleteFromS3(fileDoc.path).catch(console.error);
+          await deleteDraftQrCompanions(fileDoc);
           await FileUpload.findByIdAndDelete(fileId);
           removeFileIndex(fileId);
 
@@ -760,7 +774,8 @@ router.delete(
     // Delete from FileUpload collection
     try {
       const { FileUpload } = await import('../../domain/entities/FileUpload');
-      await FileUpload.findOneAndDelete({ path: fileUrl });
+      const fileDoc = await FileUpload.findOneAndDelete({ path: fileUrl });
+      if (fileDoc) await deleteDraftQrCompanions(fileDoc);
       void notifyFileClients();
     } catch (e) {
       console.error('Failed to delete task file from FileUpload:', e);

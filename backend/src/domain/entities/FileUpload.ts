@@ -15,6 +15,9 @@ export interface IFileUpload extends Document {
   mimetype: string;
   size: number;
   path: string;
+  sourcePath?: string;
+  sourceSize?: number;
+  draftQrPath?: string;
   thumbnailPath?: string;
   uploadedAt: Date;
   notes?: string;
@@ -38,6 +41,9 @@ const FileUploadSchema = new Schema<IFileUpload>(
     mimetype: { type: String, required: true },
     size: { type: Number, required: true },
     path: { type: String, required: true },
+    sourcePath: { type: String },
+    sourceSize: { type: Number },
+    draftQrPath: { type: String },
     thumbnailPath: { type: String },
     uploadedAt: { type: Date, default: Date.now, index: true },
     notes: { type: String },

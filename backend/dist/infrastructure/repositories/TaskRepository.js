@@ -313,12 +313,23 @@ class TaskRepository {
     }
     updateFileNotes(taskId, fileUrl, notes) {
         return __awaiter(this, void 0, void 0, function* () {
-            return Task_1.Task.findOneAndUpdate({ _id: taskId, 'files.url': fileUrl }, { $set: { 'files.$.notes': notes } }, { new: true });
+            const exact = yield Task_1.Task.findOneAndUpdate({ _id: taskId, 'files.url': fileUrl }, { $set: { 'files.$.notes': notes } }, { new: true });
+            if (exact)
+                return exact;
+            const fileName = fileUrl.split('/').pop();
+            if (!fileName)
+                return null;
+            return Task_1.Task.findOneAndUpdate({ _id: taskId, 'files.name': fileName }, { $set: { 'files.$.notes': notes } }, { new: true });
         });
     }
     updateFileTag(taskId, fileUrl, tag) {
         return __awaiter(this, void 0, void 0, function* () {
             return Task_1.Task.findOneAndUpdate({ _id: taskId, 'files.url': fileUrl }, { $set: { 'files.$.tag': tag } }, { new: true });
+        });
+    }
+    updateFilePathAndTag(taskId, oldUrl, newUrl, tag) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return Task_1.Task.findOneAndUpdate({ _id: taskId, 'files.url': oldUrl }, { $set: { 'files.$.url': newUrl, 'files.$.tag': tag } }, { new: true });
         });
     }
 }

@@ -379,6 +379,14 @@ export class TaskRepository {
       { new: true }
     );
   }
+
+  async updateFilePathAndTag(taskId: string, oldUrl: string, newUrl: string, tag: string): Promise<ITask | null> {
+    return Task.findOneAndUpdate(
+      { _id: taskId, 'files.url': oldUrl },
+      { $set: { 'files.$.url': newUrl, 'files.$.tag': tag } },
+      { new: true }
+    );
+  }
 }
 
 export const taskRepository = new TaskRepository();
