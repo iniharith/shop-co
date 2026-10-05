@@ -47,3 +47,30 @@ test('warns before reserving; concurrent confirmed uploads get distinct numbers'
     Reservation.find = originals.reservations; Reservation.create = originals.create;
   }
 });
+
+test('completed uploads and deletions release filename locks for immediate reuse', async () => {
+  const { FileUpload } = require('../dist/domain/entities/FileUpload');
+  const { UploadNameReservation: Reservation } = require('../dist/domain/entities/UploadNameReservation');
+  const original = Reservation.deleteMany;
+  const released = [];
+  Reservation.deleteMany = async filter => { released.push(filter); };
+  const file = { taskId: 'task', orderId: 'order', userId: 'user', originalName: 'Art.PDF' };
+  const hooks = FileUpload.schema.s.hooks;
+  const post = (name, docs) => new Promise((resolve, reject) => hooks.execPost(name, new FileUpload(file), [docs], {}, error => error ? reject(error) : resolve()));
+  const pre = (name, query) => new Promise((resolve, reject) => hooks.execPre(name, query, [], error => error ? reject(error) : resolve()));
+  try {
+    await post('save', file);
+    await post('insertMany', [file]);
+    const query = {
+      getFilter: () => ({ taskId: 'task' }),
+      model: { findOne: () => ({ lean: async () => file }), find: () => ({ lean: async () => [file] }) },
+    };
+    await pre('findOneAndDelete', query);
+    await pre('deleteMany', query);
+    assert.equal(released.length, 4);
+    for (const filter of released) assert.deepEqual(filter.$or, [
+      { scope: JSON.stringify({ taskId: 'task' }), name: 'art.pdf' },
+    ]);
+    assert.equal(nextFileName('Art.PDF', []), 'Art.PDF');
+  } finally { Reservation.deleteMany = original; }
+});

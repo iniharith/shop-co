@@ -3,6 +3,7 @@
  * Kampungcetak ®
  */
 "use client";
+import { confirmUploadAction } from "@/utils/duplicateUpload";
 import { Badge } from "@/components/ui/badge";
 import React, { useState } from "react";
 import Image from "next/image";
@@ -198,7 +199,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
                 variant="ghost" 
                 size="icon" 
                 className="w-5 h-5 shrink-0 text-blue-400 hover:text-blue-500 hover:bg-white/10 rounded-full"
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   forceDownload(file.url, file.name);
@@ -246,10 +247,10 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
                 variant="ghost" 
                 size="icon" 
                 className="w-5 h-5 shrink-0 text-red-400 hover:text-red-500 hover:bg-white/10 rounded-full ml-0.5"
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (confirm('Are you sure you want to delete this file?')) {
+                  if (await confirmUploadAction('Delete artwork?', 'Are you sure you want to delete this file? This action cannot be undone.', 'Cancel', 'Delete')) {
                     const fid = file._id || file.url.split('/').pop();
                     if (onDeleteLocal) onDeleteLocal(fid);
                     deleteFile({ id: task._id, fileId: fid });

@@ -4,7 +4,8 @@ function confirmDuplicate(originalName: string, suggestedName: string): Promise<
   const result = promptQueue.then(() => new Promise<boolean>(resolve => {
     const dialog = document.createElement('dialog');
     dialog.setAttribute('aria-label', 'Duplicated file');
-    dialog.style.cssText = 'max-width:480px;width:calc(100% - 32px);padding:24px;border:1px solid #ccc;border-radius:12px;background:white;color:#111;box-shadow:0 20px 60px #0005;';
+    dialog.setAttribute('data-upload-confirmation', 'true');
+    dialog.style.cssText = 'max-width:480px;width:calc(100% - 32px);padding:24px;border:1px solid #ccc;border-radius:12px;background:white;color:#111;pointer-events:auto;box-shadow:0 20px 60px #0005;';
     const title = document.createElement('h2');
     title.textContent = 'Duplicated file';
     title.style.cssText = 'font-size:20px;font-weight:700;margin-bottom:12px;';
@@ -23,7 +24,8 @@ function confirmDuplicate(originalName: string, suggestedName: string): Promise<
     rename.onclick = () => finish(true);
     dialog.oncancel = event => { event.preventDefault(); finish(false); };
     dialog.append(title, message, cancel, rename);
-    document.body.append(dialog);
+    const host = document.querySelector('[role="dialog"][data-state="open"]') || document.body;
+    host.append(dialog);
     dialog.showModal();
     cancel.focus();
   }));

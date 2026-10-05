@@ -1,3 +1,4 @@
+import { UploadNameReservation } from './UploadNameReservation';
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -67,5 +68,26 @@ FileUploadSchema.index({ orderId: 1, uploadedAt: -1 });
 FileUploadSchema.index({ userId: 1, uploadedAt: -1 });
 FileUploadSchema.index({ userId: 1, filename: 1 });
 FileUploadSchema.index({ shareSlug: 1, uploadedAt: -1 });
+
+async function releaseUploadReservations(files: any[]) {
+  const matches = files.flatMap(file => {
+    if (!file.originalName) return [];
+    const key = file.taskId ? 'taskId' : file.orderId ? 'orderId' : 'userId';
+    if (!file[key]) return [];
+    return [{ scope: JSON.stringify({ [key]: String(file[key]) }), name: file.originalName.toLowerCase() }];
+  });
+  if (matches.length) await UploadNameReservation.deleteMany({ $or: matches });
+}
+FileUploadSchema.post('save', async function (doc) { await releaseUploadReservations([doc]); });
+FileUploadSchema.post('insertMany', async function (docs: any) { await releaseUploadReservations(docs); });
+// Also clears locks created before metadata-completion cleanup was introduced.
+FileUploadSchema.pre('findOneAndDelete', async function () {
+  const doc = await this.model.findOne(this.getFilter()).lean();
+  if (doc) await releaseUploadReservations([doc]);
+});
+FileUploadSchema.pre('deleteMany', async function () {
+  const docs = await this.model.find(this.getFilter()).lean();
+  await releaseUploadReservations(docs);
+});
 
 export const FileUpload = mongoose.model<IFileUpload>('FileUpload', FileUploadSchema);

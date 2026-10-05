@@ -45,6 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const UploadNameReservation_1 = require("../../domain/entities/UploadNameReservation");
 const reserveUploadName_1 = require("../../shared/utils/reserveUploadName");
 /**
  * Coded by Harith
@@ -501,6 +502,7 @@ router.post('/:id/files', (0, express_async_handler_1.default)((req, res) => __a
         res.status(409).json({ success: false, message: 'Project is being deleted or the selected folder no longer exists' });
         return;
     }
+    yield UploadNameReservation_1.UploadNameReservation.deleteMany({ scope: JSON.stringify({ projectId: String(project._id) }), name: newFile.originalName.toLowerCase() });
     res.status(201).json({ success: true, data: yield withSignedFileUrls(updatedProject) });
 })));
 router.delete('/:id/files/:fileId', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -530,6 +532,7 @@ router.delete('/:id/files/:fileId', (0, express_async_handler_1.default)((req, r
         res.status(409).json({ success: false, message: 'Project is being deleted' });
         return;
     }
+    yield UploadNameReservation_1.UploadNameReservation.deleteMany({ scope: JSON.stringify({ projectId: String(project._id) }), name: file.originalName.toLowerCase() });
     res.json({ success: true, data: yield withSignedFileUrls(updatedProject) });
 })));
 router.patch('/:id/files/:fileId', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {

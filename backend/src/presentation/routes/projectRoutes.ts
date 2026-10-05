@@ -1,3 +1,4 @@
+import { UploadNameReservation } from '../../domain/entities/UploadNameReservation';
 import { reserveUploadName } from '../../shared/utils/reserveUploadName';
 /**
  * Coded by Harith
@@ -546,6 +547,7 @@ router.post(
       res.status(409).json({ success: false, message: 'Project is being deleted or the selected folder no longer exists' });
       return;
     }
+    await UploadNameReservation.deleteMany({ scope: JSON.stringify({ projectId: String(project._id) }), name: newFile.originalName.toLowerCase() });
     res.status(201).json({ success: true, data: await withSignedFileUrls(updatedProject) });
   })
 );
@@ -581,6 +583,7 @@ router.delete(
       res.status(409).json({ success: false, message: 'Project is being deleted' });
       return;
     }
+    await UploadNameReservation.deleteMany({ scope: JSON.stringify({ projectId: String(project._id) }), name: file.originalName.toLowerCase() });
     res.json({ success: true, data: await withSignedFileUrls(updatedProject) });
   })
 );

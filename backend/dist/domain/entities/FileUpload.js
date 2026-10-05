@@ -32,8 +32,18 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FileUpload = void 0;
+const UploadNameReservation_1 = require("./UploadNameReservation");
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -72,4 +82,38 @@ FileUploadSchema.index({ orderId: 1, uploadedAt: -1 });
 FileUploadSchema.index({ userId: 1, uploadedAt: -1 });
 FileUploadSchema.index({ userId: 1, filename: 1 });
 FileUploadSchema.index({ shareSlug: 1, uploadedAt: -1 });
+function releaseUploadReservations(files) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const matches = files.flatMap(file => {
+            if (!file.originalName)
+                return [];
+            const key = file.taskId ? 'taskId' : file.orderId ? 'orderId' : 'userId';
+            if (!file[key])
+                return [];
+            return [{ scope: JSON.stringify({ [key]: String(file[key]) }), name: file.originalName.toLowerCase() }];
+        });
+        if (matches.length)
+            yield UploadNameReservation_1.UploadNameReservation.deleteMany({ $or: matches });
+    });
+}
+FileUploadSchema.post('save', function (doc) {
+    return __awaiter(this, void 0, void 0, function* () { yield releaseUploadReservations([doc]); });
+});
+FileUploadSchema.post('insertMany', function (docs) {
+    return __awaiter(this, void 0, void 0, function* () { yield releaseUploadReservations(docs); });
+});
+// Also clears locks created before metadata-completion cleanup was introduced.
+FileUploadSchema.pre('findOneAndDelete', function () {
+    return __awaiter(this, void 0, void 0, function* () {
+        const doc = yield this.model.findOne(this.getFilter()).lean();
+        if (doc)
+            yield releaseUploadReservations([doc]);
+    });
+});
+FileUploadSchema.pre('deleteMany', function () {
+    return __awaiter(this, void 0, void 0, function* () {
+        const docs = yield this.model.find(this.getFilter()).lean();
+        yield releaseUploadReservations(docs);
+    });
+});
 exports.FileUpload = mongoose_1.default.model('FileUpload', FileUploadSchema);

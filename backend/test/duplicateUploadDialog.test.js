@@ -10,6 +10,7 @@ for (const relative of ['../admin/src/utils/duplicateUpload.ts', '../../frontend
     const dialogs = [];
     const document = {
       body: { append: dialog => dialogs.push(dialog) },
+      querySelector: () => null,
       createElement: tag => ({ tag, style: {}, children: [], setAttribute() {}, append(...children) { this.children.push(...children); }, showModal() {}, close() {}, remove() {}, focus() {} }),
     };
     const exports = {};

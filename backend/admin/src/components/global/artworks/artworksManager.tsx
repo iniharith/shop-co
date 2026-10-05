@@ -263,9 +263,13 @@ export default function ArtworksManager() {
     }
   };
 
-  const handleBulkDelete = () => {
+  const [deletePrompt, setDeletePrompt] = useState<{ message: string; resolve: (accepted: boolean) => void } | null>(null);
+  const confirmDelete = (message: string) => new Promise<boolean>(resolve => setDeletePrompt({ message, resolve }));
+  const finishDeletePrompt = (accepted: boolean) => { deletePrompt?.resolve(accepted); setDeletePrompt(null); };
+
+  const handleBulkDelete = async () => {
     if (selectedFiles.length === 0) return;
-    if (confirm(`Are you sure you want to delete ${selectedFiles.length} files?`)) {
+    if (await confirmDelete(`Are you sure you want to delete ${selectedFiles.length} files?`)) {
       bulkDeleteMutate(selectedFiles, {
         onSuccess: () => {
           toast.success("Files deleted successfully");
@@ -299,8 +303,8 @@ export default function ArtworksManager() {
     );
   };
 
-  const handleDelete = (fileId: string) => {
-    if (!confirm("Are you sure you want to delete this file? This action cannot be undone.")) return;
+  const handleDelete = async (fileId: string) => {
+    if (!await confirmDelete("Are you sure you want to delete this file? This action cannot be undone.")) return;
     deleteFileMutate(fileId, {
       onSuccess: () => {
         toast.success("File deleted successfully!");
@@ -492,7 +496,7 @@ export default function ArtworksManager() {
 
   const handleDeleteFolder = async (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm(`Are you sure you want to delete ALL ${group.fileCount ?? 0} files in ${group.folderName}? This cannot be undone.`)) return;
+    if (!await confirmDelete(`Are you sure you want to delete ALL ${group.fileCount ?? 0} files in ${group.folderName}? This cannot be undone.`)) return;
 
     try {
       // The folder summary doesn't ship file records anymore — fetch the
@@ -1235,7 +1239,7 @@ export default function ArtworksManager() {
                                     </Button>
                                   </div>
                                   <div className="absolute top-2 right-2 z-20">
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10 bg-white/50" onClick={(e) => { e.stopPropagation(); if(confirm('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id); }}>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10 bg-white/50" onClick={async (e) => { e.stopPropagation(); if(await confirmDelete('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id); }}>
                                       <Trash2 className="w-3 h-3" />
                                     </Button>
                                   </div>
@@ -1261,7 +1265,7 @@ export default function ArtworksManager() {
                                    <Button variant="ghost" size="icon" className="hover:bg-blue-50 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); setRenameFolderTarget({ id: folder._id, name: folder.name, type: "subfolder" }); setRenamedFolderName(folder.name); }} title="Rename Folder">
                                      <Pencil className="w-4 h-4" />
                                    </Button>
-                                   <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); if(confirm('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id); }}>
+                                   <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={async (e) => { e.stopPropagation(); if(await confirmDelete('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id); }}>
                                      <Trash2 className="w-4 h-4" />
                                   </Button>
                                 </div>
@@ -1712,6 +1716,16 @@ export default function ArtworksManager() {
           </div>
         </div>
       )}
+      <Dialog open={Boolean(deletePrompt)} onOpenChange={open => { if (!open) finishDeletePrompt(false); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Delete artwork?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">{deletePrompt?.message}</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => finishDeletePrompt(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => finishDeletePrompt(true)}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
