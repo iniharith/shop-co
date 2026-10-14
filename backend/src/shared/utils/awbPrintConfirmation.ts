@@ -40,6 +40,18 @@ export function validatePrintReceipts(tags: string[], receipts: unknown): string
   });
 }
 
+// Device transfer reports are deliberately distinct from physical printer receipts.
+export function validateAwbCompletion(tags: string[], input: any): { mode: string; receipts: string[] } {
+  const mode = input?.confirmationMode || 'printer-receipt';
+  if (mode === 'printer-receipt') return { mode, receipts: validatePrintReceipts(tags, input?.receipts) };
+  if (mode === 'staff-override') return { mode, receipts: [] };
+  if (mode !== 'bluetooth-transfer') throw new AwbPrintError(400, 'Invalid AWB completion mode');
+  if (!tags.length || !Array.isArray(input?.receipts) || input.receipts.length !== tags.length
+      || tags.some((tag, i) => input.receipts[i] !== `SENT:${tag}`))
+    throw new AwbPrintError(409, 'Every AWB page must be sent before SHIPPED');
+  return { mode, receipts: input.receipts };
+}
+
 export async function createAwbPrintJob(token: unknown, input: any) {
   if (!isTaskAwbToken(token)) throw new AwbPrintError(400, 'Invalid task QR');
   if (typeof input?.printer !== 'string' || !input.printer.trim() || input.printer.length > 100)
@@ -65,11 +77,11 @@ export async function confirmAwbPrintJob(token: unknown, id: unknown, input: any
   const job: any = await AwbPrintJob.findOne({ _id: id, taskId: String(task._id) }).select('+secretHash').lean();
   if (!job || !timingSafeEqual(Buffer.from(hashPrintSecret(input.secret)), Buffer.from(job.secretHash)))
     throw new AwbPrintError(404, 'Print job not found');
-  const receipts = validatePrintReceipts(job.pages, input.receipts);
+  const { mode, receipts } = validateAwbCompletion(job.pages, input);
   if (job.state === 'confirmed') return { success: true, status: task.status, changed: false, alreadyConfirmed: true, taskId: String(task._id) };
   const alreadyApplied: any = await Task.findOne({ _id: task._id, awbPrintJobIds: id, isDeleted: { $ne: true } }).select('status').lean();
   if (alreadyApplied) {
-    await AwbPrintJob.updateOne({ _id: id }, { $set: { state: 'confirmed', receipts, confirmedAt: new Date() } });
+    await AwbPrintJob.updateOne({ _id: id }, { $set: { state: 'confirmed', confirmationMode: mode, receipts, confirmedAt: new Date() } });
     return { success: true, status: alreadyApplied.status, changed: false, alreadyConfirmed: true, taskId: String(task._id) };
   }
   if (closed.includes(task.status)) throw new AwbPrintError(409, 'Task changed after printing; it was not moved backwards to SHIPPED');
@@ -84,7 +96,7 @@ export async function confirmAwbPrintJob(token: unknown, id: unknown, input: any
   }, [{ $set: {
     status: 'SHIPPED',
     statusUpdatedAt: { $cond: [{ $eq: ['$status', 'SHIPPED'] }, '$statusUpdatedAt', now] },
-    awbPrintedAt: now,
+    ...(mode === 'printer-receipt' ? { awbPrintedAt: now } : {}),
     awbPrintJobIds: { $concatArrays: [{ $ifNull: ['$awbPrintJobIds', []] }, [id]] },
     statusHistory: { $concatArrays: [{ $ifNull: ['$statusHistory', []] }, { $cond: [
       { $eq: ['$status', 'SHIPPED'] }, [], [{
@@ -93,14 +105,14 @@ export async function confirmAwbPrintJob(token: unknown, id: unknown, input: any
       }],
     ] }] },
     activities: { $concatArrays: [{ $ifNull: ['$activities', []] }, [{
-      userId: 'qr-awb-printer', userName: 'Production AWB Printer', action: 'AWB_PRINT_CONFIRMED',
-      details: { $literal: `GP-1324D confirmed ${receipts.length} AWB page(s); task moved to SHIPPED. Job ${id}. Printer: ${job.printer}` }, createdAt: now,
+      userId: 'qr-awb-printer', userName: 'Production AWB Printer', action: mode === 'printer-receipt' ? 'AWB_PRINT_CONFIRMED' : mode === 'staff-override' ? 'AWB_SHIPMENT_OVERRIDE' : 'AWB_SENT_TO_PRINTER',
+      details: { $literal: `${mode === 'printer-receipt' ? 'GP-1324D confirmed ' + receipts.length + ' AWB page(s)' : mode === 'staff-override' ? 'Staff requested SHIPPED without printer confirmation' : 'Phone sent ' + receipts.length + ' AWB page(s) over Bluetooth; physical output unconfirmed'}; task moved to SHIPPED. Job ${id}. Printer: ${job.printer}` }, createdAt: now,
     }]] },
   } }], { new: true }).lean();
   if (!updated) {
     const done: any = await Task.findOne({ _id: task._id, awbPrintJobIds: id, isDeleted: { $ne: true } }).select('status').lean();
     if (!done) throw new AwbPrintError(409, 'Task changed. Printer completion saved locally; check this task');
   }
-  await AwbPrintJob.updateOne({ _id: id }, { $set: { state: 'confirmed', receipts, confirmedAt: now } });
+  await AwbPrintJob.updateOne({ _id: id }, { $set: { state: 'confirmed', confirmationMode: mode, receipts, confirmedAt: now } });
   return { success: true, status: updated?.status || 'SHIPPED', changed: !!updated, taskId: String(task._id) };
 }

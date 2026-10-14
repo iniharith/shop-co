@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { validatePrintPlan, validatePrintReceipts, confirmAwbPrintJob, hashPrintSecret } = require('../dist/shared/utils/awbPrintConfirmation');
+const { validatePrintPlan, validatePrintReceipts, validateAwbCompletion, confirmAwbPrintJob, hashPrintSecret } = require('../dist/shared/utils/awbPrintConfirmation');
 const { Task } = require('../dist/domain/entities/Task');
 const { AwbPrintJob } = require('../dist/domain/entities/AwbPrintJob');
 const tag = '0123456789abcdef', token = 'a'.repeat(48), id = 'b'.repeat(24), secret = 'c'.repeat(48);
@@ -76,5 +76,33 @@ test('complete current AWB proof atomically records SHIPPED, history and audit e
     assert.equal(data.statusHistory.$concatArrays[1].$cond[2][0].toStatus,'SHIPPED');
     assert.equal(data.activities.$concatArrays[1][0].action,'AWB_PRINT_CONFIRMED');
     assert.equal(marked.state,'confirmed');assert.deepEqual(marked.receipts,[receipt]);
+  } finally {Task.findOne=originals.find;Task.findOneAndUpdate=originals.update;AwbPrintJob.findOne=originals.jobFind;AwbPrintJob.updateOne=originals.jobUpdate;}
+});
+
+
+test('Bluetooth completion accepts all sent pages without printer receipts and rejects partial sends', () => {
+  assert.deepEqual(validateAwbCompletion([tag],{confirmationMode:'bluetooth-transfer',receipts:[`SENT:${tag}`]}),{mode:'bluetooth-transfer',receipts:[`SENT:${tag}`]});
+  for (const receipts of [[],['ready'],[receipt],['SENT:other']])
+    assert.throws(()=>validateAwbCompletion([tag],{confirmationMode:'bluetooth-transfer',receipts}));
+  assert.deepEqual(validateAwbCompletion([tag],{confirmationMode:'staff-override'}),{mode:'staff-override',receipts:[]});
+  assert.throws(()=>validateAwbCompletion([tag],{confirmationMode:'unknown'}));
+});
+
+for (const mode of ['bluetooth-transfer','staff-override']) test(`${mode} ships the selected task without claiming physical printer confirmation`, async () => {
+  const originals={find:Task.findOne,update:Task.findOneAndUpdate,jobFind:AwbPrintJob.findOne,jobUpdate:AwbPrintJob.updateOne};
+  let mutation,marked,jobFilter;
+  Task.findOne=query=>({select(){return this;},lean:async()=>query.awbPrintJobIds?null:{_id:'latest-task',status:'PACKAGING'}});
+  AwbPrintJob.findOne=filter=>{jobFilter=filter;return {select(){return this;},lean:async()=>({secretHash:hashPrintSecret(secret),pages:[tag],labels:[{id:'label1',version:'v1',pages:1}],printer:'1324D',state:'pending'})};};
+  Task.findOneAndUpdate=(filter,pipeline)=>{mutation={filter,pipeline};return {lean:async()=>({_id:'latest-task',status:'SHIPPED'})};};
+  AwbPrintJob.updateOne=async(filter,update)=>{marked=update.$set;};
+  try {
+    const input={secret,confirmationMode:mode,receipts:mode==='bluetooth-transfer'?[`SENT:${tag}`]:[]};
+    const result=await confirmAwbPrintJob(token,id,input,async()=>({labels:[{id:'label1',version:'v1'}]}));
+    assert.equal(result.status,'SHIPPED');assert.equal(jobFilter.taskId,'latest-task');assert.equal(mutation.filter._id,'latest-task');
+    const data=mutation.pipeline[0].$set;
+    assert.equal(data.awbPrintedAt,undefined);
+    assert.equal(data.activities.$concatArrays[1][0].action,mode==='staff-override'?'AWB_SHIPMENT_OVERRIDE':'AWB_SENT_TO_PRINTER');
+    assert.equal(marked.confirmationMode,mode);assert.equal(marked.state,'confirmed');
+    assert.ok(mutation.filter.status.$nin.includes('CANCELLED'));
   } finally {Task.findOne=originals.find;Task.findOneAndUpdate=originals.update;AwbPrintJob.findOne=originals.jobFind;AwbPrintJob.updateOne=originals.jobUpdate;}
 });

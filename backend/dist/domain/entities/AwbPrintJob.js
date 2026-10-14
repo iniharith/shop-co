@@ -43,6 +43,7 @@ const schema = new mongoose_1.Schema({
     pages: { type: [String], required: true },
     receipts: { type: [String], default: [] },
     state: { type: String, enum: ['pending', 'confirmed'], default: 'pending' },
+    confirmationMode: { type: String, enum: ['printer-receipt', 'bluetooth-transfer', 'staff-override'] },
     confirmedAt: Date,
 }, { timestamps: true });
 exports.AwbPrintJob = mongoose_1.default.models.AwbPrintJob || mongoose_1.default.model('AwbPrintJob', schema);
