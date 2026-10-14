@@ -135,7 +135,7 @@ router.post('/qr/:token/awb/jobs/:jobId/confirm', (0, express_async_handler_1.de
     res.set('Cache-Control', 'no-store');
     try {
         const result = yield (0, awbPrintConfirmation_1.confirmAwbPrintJob)(req.params.token, req.params.jobId, req.body);
-        if (result.changed && result.taskId) {
+        if (result.taskId) {
             yield (0, fileUploadRoutes_1.clearFolderGroupCache)().catch(() => { });
             const task = yield TaskRepository_1.taskRepository.findById(result.taskId);
             void (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task });

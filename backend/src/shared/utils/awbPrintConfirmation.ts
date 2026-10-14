@@ -66,11 +66,11 @@ export async function confirmAwbPrintJob(token: unknown, id: unknown, input: any
   if (!job || !timingSafeEqual(Buffer.from(hashPrintSecret(input.secret)), Buffer.from(job.secretHash)))
     throw new AwbPrintError(404, 'Print job not found');
   const receipts = validatePrintReceipts(job.pages, input.receipts);
-  if (job.state === 'confirmed') return { success: true, status: task.status, changed: false, alreadyConfirmed: true };
+  if (job.state === 'confirmed') return { success: true, status: task.status, changed: false, alreadyConfirmed: true, taskId: String(task._id) };
   const alreadyApplied: any = await Task.findOne({ _id: task._id, awbPrintJobIds: id, isDeleted: { $ne: true } }).select('status').lean();
   if (alreadyApplied) {
     await AwbPrintJob.updateOne({ _id: id }, { $set: { state: 'confirmed', receipts, confirmedAt: new Date() } });
-    return { success: true, status: alreadyApplied.status, changed: false, alreadyConfirmed: true };
+    return { success: true, status: alreadyApplied.status, changed: false, alreadyConfirmed: true, taskId: String(task._id) };
   }
   if (closed.includes(task.status)) throw new AwbPrintError(409, 'Task changed after printing; it was not moved backwards to SHIPPED');
   const manifest = await getManifest(token);

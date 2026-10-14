@@ -93,11 +93,11 @@ function confirmAwbPrintJob(token_1, id_1, input_1) {
             throw new AwbPrintError(404, 'Print job not found');
         const receipts = validatePrintReceipts(job.pages, input.receipts);
         if (job.state === 'confirmed')
-            return { success: true, status: task.status, changed: false, alreadyConfirmed: true };
+            return { success: true, status: task.status, changed: false, alreadyConfirmed: true, taskId: String(task._id) };
         const alreadyApplied = yield Task_1.Task.findOne({ _id: task._id, awbPrintJobIds: id, isDeleted: { $ne: true } }).select('status').lean();
         if (alreadyApplied) {
             yield AwbPrintJob_1.AwbPrintJob.updateOne({ _id: id }, { $set: { state: 'confirmed', receipts, confirmedAt: new Date() } });
-            return { success: true, status: alreadyApplied.status, changed: false, alreadyConfirmed: true };
+            return { success: true, status: alreadyApplied.status, changed: false, alreadyConfirmed: true, taskId: String(task._id) };
         }
         if (closed.includes(task.status))
             throw new AwbPrintError(409, 'Task changed after printing; it was not moved backwards to SHIPPED');

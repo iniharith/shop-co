@@ -84,7 +84,7 @@ router.post('/qr/:token/awb/jobs/:jobId/confirm', asyncHandler(async (req, res) 
   res.set('Cache-Control', 'no-store');
   try {
     const result = await confirmAwbPrintJob(req.params.token, req.params.jobId, req.body);
-    if (result.changed && result.taskId) {
+    if (result.taskId) {
       await clearFolderGroupCache().catch(() => {});
       const task = await taskRepository.findById(result.taskId);
       void emitTaskUpdated('task_updated', { task });
