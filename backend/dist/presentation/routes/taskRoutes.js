@@ -73,6 +73,7 @@ const aiProvider_1 = require("../../infrastructure/ai/aiProvider");
 const Task_1 = require("../../domain/entities/Task");
 const crypto_1 = require("crypto");
 const draftQrImage_1 = require("../../shared/utils/draftQrImage");
+const taskAwbManifest_1 = require("../../shared/utils/taskAwbManifest");
 const reindexTaskInBg = (task) => {
     if (!task || !(0, aiProvider_1.aiConfigured)())
         return;
@@ -115,6 +116,22 @@ const taskStorage = (0, multer_s3_1.default)({
 const taskUpload = (0, multer_1.default)({ storage: taskStorage });
 const router = (0, express_1.Router)();
 const STAFF_ROLES = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'];
+// Possession of this 192-bit QR capability permits AWB printing only. All
+// ordinary task reads and edits below retain their existing staff login checks.
+router.get('/qr/:token/awb', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    res.set('Cache-Control', 'no-store');
+    res.set('Referrer-Policy', 'no-referrer');
+    if (!(0, taskAwbManifest_1.isTaskAwbToken)(req.params.token)) {
+        res.status(400).json({ success: false, message: 'Invalid task QR code' });
+        return;
+    }
+    const manifest = yield (0, taskAwbManifest_1.taskAwbManifest)(req.params.token);
+    if (!manifest) {
+        res.status(404).json({ success: false, message: 'Task QR code not found' });
+        return;
+    }
+    res.json(Object.assign({ success: true }, manifest));
+})));
 // A QR never exposes the task id. The token is resolved only after the user
 // is authenticated, and clients receive a deliberately small task payload.
 router.get('/qr/:token', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
