@@ -84,6 +84,8 @@ const TaskSchema = new mongoose_1.Schema({
     isDone: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
     qrToken: { type: String, unique: true, sparse: true, index: true, default: () => (0, crypto_1.randomBytes)(24).toString('hex') },
+    awbPrintedAt: { type: Date },
+    awbPrintJobIds: { type: [String], default: [] },
     statusUpdatedAt: { type: Date, default: Date.now },
     files: [{
             url: { type: String, required: true },

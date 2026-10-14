@@ -31,7 +31,7 @@ const INACTIVE_SHIPMENTS = new Set(['cancelled', 'failed', 'returned', 'delivere
 const defaults = {
     bucket: s3_1.S3_BUCKET_NAME,
     findTask: token => Task_1.Task.findOne({ qrToken: token, isDeleted: { $ne: true } })
-        .select('_id title orderId files isDeleted updatedAt').read('primary').lean().exec(),
+        .select('_id title status orderId files isDeleted updatedAt').read('primary').lean().exec(),
     findFiles: taskId => FileUpload_1.FileUpload.find({ taskId })
         .select('path originalName filename tag mimetype size updatedAt').read('primary').lean().exec(),
     findParcels: orderId => Parcel_1.Parcel.find({
@@ -162,6 +162,6 @@ function taskAwbManifest(token_1) {
                 yield add(file.path, file.originalName || file.filename, null, file.mimetype, file.updatedAt, false);
             }
         }
-        return { task: { title: typeof task.title === 'string' ? task.title : '' }, labels };
+        return { task: { title: typeof task.title === 'string' ? task.title : '', status: typeof task.status === 'string' ? task.status : '' }, labels };
     });
 }

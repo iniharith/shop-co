@@ -28,6 +28,7 @@ import { Task } from '../../domain/entities/Task';
 import { randomBytes } from 'crypto';
 import { createDraftQrAsset, deleteDraftQrCompanions } from '../../shared/utils/draftQrImage';
 import { isTaskAwbToken, taskAwbManifest } from '../../shared/utils/taskAwbManifest';
+import { AwbPrintError, createAwbPrintJob, confirmAwbPrintJob } from '../../shared/utils/awbPrintConfirmation';
 
 const reindexTaskInBg = (task: any) => {
   if (!task || !aiConfigured()) return;
@@ -72,6 +73,26 @@ const taskUpload = multer({ storage: taskStorage });
 const router = Router();
 
 const STAFF_ROLES = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'];
+
+// The task QR capability grants only this narrow AWB completion workflow.
+router.post('/qr/:token/awb/jobs', asyncHandler(async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try { res.status(201).json({ success: true, job: await createAwbPrintJob(req.params.token, req.body) }); }
+  catch (error) { if (error instanceof AwbPrintError) { res.status(error.status).json({ success: false, message: error.message }); return; } throw error; }
+}));
+router.post('/qr/:token/awb/jobs/:jobId/confirm', asyncHandler(async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    const result = await confirmAwbPrintJob(req.params.token, req.params.jobId, req.body);
+    if (result.changed && result.taskId) {
+      await clearFolderGroupCache().catch(() => {});
+      const task = await taskRepository.findById(result.taskId);
+      void emitTaskUpdated('task_updated', { task });
+      reindexTaskInBg(task);
+    }
+    res.json({ success: true, status: result.status, alreadyConfirmed: !!result.alreadyConfirmed });
+  } catch (error) { if (error instanceof AwbPrintError) { res.status(error.status).json({ success: false, message: error.message }); return; } throw error; }
+}));
 
 // Possession of this 192-bit QR capability permits AWB printing only. All
 // ordinary task reads and edits below retain their existing staff login checks.

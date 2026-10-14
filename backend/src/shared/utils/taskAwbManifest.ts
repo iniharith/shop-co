@@ -24,7 +24,7 @@ export interface TaskAwbDependencies {
 const defaults: TaskAwbDependencies = {
   bucket: S3_BUCKET_NAME,
   findTask: token => Task.findOne({ qrToken: token, isDeleted: { $ne: true } })
-    .select('_id title orderId files isDeleted updatedAt').read('primary').lean().exec(),
+    .select('_id title status orderId files isDeleted updatedAt').read('primary').lean().exec(),
   findFiles: taskId => FileUpload.find({ taskId })
     .select('path originalName filename tag mimetype size updatedAt').read('primary').lean().exec(),
   findParcels: orderId => Parcel.find({
@@ -135,5 +135,5 @@ export async function taskAwbManifest(token: unknown, deps: TaskAwbDependencies 
       await add(file.path, file.originalName || file.filename, null, file.mimetype, file.updatedAt, false);
     }
   }
-  return { task: { title: typeof task.title === 'string' ? task.title : '' }, labels };
+  return { task: { title: typeof task.title === 'string' ? task.title : '', status: typeof task.status === 'string' ? task.status : '' }, labels };
 }

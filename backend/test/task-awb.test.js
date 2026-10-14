@@ -68,7 +68,7 @@ test('only AWB files are exposed and authoritative tags override stale embedded 
     ],
   });
   const result = await taskAwbManifest(token, deps);
-  assert.deepEqual(result.task, { title: 'Ready to ship' });
+  assert.deepEqual(result.task, { title: 'Ready to ship', status: '' });
   assert.deepEqual(Object.keys(result).sort(), ['labels', 'task']);
   assert.deepEqual(result.labels.map(label => label.name), ['Current AWB.pdf', 'Legacy AWB.pdf', 'Separate AWB.png']);
   assert.deepEqual(calls.signed.map(call => call.key), ['labels/retagged.pdf', 'labels/legacy.pdf', 'labels/attached.png']);
@@ -153,5 +153,5 @@ test('duplicate AWB paths print once and an unavailable AWB returns an empty lis
   assert.equal((await taskAwbManifest(token, deps)).labels.length, 1);
   assert.equal(calls.signed.length, 1);
   const empty = await taskAwbManifest(token, fixture().deps);
-  assert.deepEqual(empty, { task: { title: 'Production task' }, labels: [] });
+  assert.deepEqual(empty, { task: { title: 'Production task', status: '' }, labels: [] });
 });

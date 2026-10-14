@@ -65,6 +65,8 @@ export interface ITask extends Document {
   createdAt: Date;
   updatedAt: Date;
   qrToken?: string;
+  awbPrintedAt?: Date;
+  awbPrintJobIds?: string[];
 }
 
 const TaskCommentSchema = new Schema<ITaskComment>({
@@ -116,6 +118,8 @@ const TaskSchema = new Schema<ITask>(
     isDone: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
     qrToken: { type: String, unique: true, sparse: true, index: true, default: () => randomBytes(24).toString('hex') },
+    awbPrintedAt: { type: Date },
+    awbPrintJobIds: { type: [String], default: [] },
     statusUpdatedAt: { type: Date, default: Date.now },
     files: [{
       url: { type: String, required: true },
