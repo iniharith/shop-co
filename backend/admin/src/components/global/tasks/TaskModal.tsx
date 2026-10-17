@@ -3,6 +3,7 @@
  * Kampungcetak ®
  */
 "use client";
+import { isTaskId } from "@/utils/taskId";
 import { confirmUploadAction } from "@/utils/duplicateUpload";
 import { Badge } from "@/components/ui/badge";
 import React, { useState } from "react";
@@ -296,7 +297,19 @@ interface TaskModalProps {
   onClose: () => void;
 }
 
-export default function TaskModal({ task, isOpen, onClose }: TaskModalProps) {
+export default function TaskModal(props: TaskModalProps) {
+  if (!isTaskId(props.task?._id)) return (
+    <Dialog open={props.isOpen} onOpenChange={open => { if (!open) props.onClose(); }}>
+      <DialogContent><DialogHeader><DialogTitle>Task could not be opened</DialogTitle></DialogHeader>
+        <p>This task has no valid ID. Close this window and refresh the task list before saving or uploading.</p>
+        <Button onClick={props.onClose}>Close</Button>
+      </DialogContent>
+    </Dialog>
+  );
+  return <TaskModalContent {...props} />;
+}
+
+function TaskModalContent({ task, isOpen, onClose }: TaskModalProps) {
   const { mutate: updateTask, isPending: isUpdating } = useUpdateTask();
   const { mutate: addComment, isPending: isCommenting } = useAddTaskComment();
   const { mutate: deleteCommentApi, isPending: isDeletingComment } = useDeleteTaskComment();
@@ -2209,8 +2222,16 @@ return (
         </div>
         {pendingDropFiles && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => { setPendingDropFiles(null); setPendingDropFolderId(null); }}>
-            <div className="bg-background border border-border rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-background border border-border rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
               <h3 className="font-bold text-lg mb-1">Upload {pendingDropFiles.length} file{pendingDropFiles.length > 1 ? 's' : ''}</h3>
+              <ul aria-label="Files to upload" className="mb-3 max-h-32 overflow-y-auto rounded-xl border border-border bg-muted/30 px-3 py-2 text-sm">
+                {pendingDropFiles.map((file, index) => (
+                  <li key={`${file.name}-${index}`} className="flex items-start gap-2 py-1">
+                    <File className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <span className="min-w-0 break-all font-medium" title={file.name}>{file.name}</span>
+                  </li>
+                ))}
+              </ul>
               <p className="text-sm text-muted-foreground mb-3">What type of file is this?</p>
               {taskFolders.length > 0 && (
                 <div className="mb-5">

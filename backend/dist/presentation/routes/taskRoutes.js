@@ -50,6 +50,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Kampungcetak ®
  */
 const express_1 = require("express");
+const taskId_1 = require("../../shared/utils/taskId");
 const taskQrUrl_1 = require("../../shared/utils/taskQrUrl");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const TaskRepository_1 = require("../../infrastructure/repositories/TaskRepository");
@@ -116,6 +117,7 @@ const taskStorage = (0, multer_s3_1.default)({
 });
 const taskUpload = (0, multer_1.default)({ storage: taskStorage });
 const router = (0, express_1.Router)();
+router.param('id', taskId_1.validateTaskIdParam);
 const STAFF_ROLES = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'];
 // The task QR capability grants only this narrow AWB completion workflow.
 router.post('/qr/:token/awb/jobs', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {

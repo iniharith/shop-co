@@ -1,3 +1,4 @@
+import { uploadTaskId, INVALID_TASK_ID_MESSAGE } from '../../shared/utils/taskId';
 import { reserveUploadName } from '../../shared/utils/reserveUploadName';
 /**
  * Coded by Harith
@@ -180,11 +181,15 @@ router.post(
       return;
     }
 
+    let taskId: string | undefined;
+    try { taskId = uploadTaskId(req.body.taskId, folderPath); }
+    catch { res.status(400).json({ success: false, code: 'INVALID_TASK_ID', message: INVALID_TASK_ID_MESSAGE }); return; }
+
     const { PutObjectCommand } = require('@aws-sdk/client-s3');
     const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
     const userId = (req as any).userId || (req as any).user?.id || 'unknown';
     const folder = folderPath ? folderPath : userId;
-    const assignedName = await reserveUploadName(req, res, { taskId: req.body.taskId || (typeof folderPath === 'string' && folderPath.startsWith('tasks/') ? folderPath.slice(6) : undefined), orderId: req.body.orderId, userId: req.body.userId && ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes((req as any).role) ? req.body.userId : userId });
+    const assignedName = await reserveUploadName(req, res, { taskId, orderId: req.body.orderId, userId: req.body.userId && ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes((req as any).role) ? req.body.userId : userId });
     if (!assignedName) return;
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const key = `kampungcetak/uploads/${folder}/${uniqueSuffix}-${assignedName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;

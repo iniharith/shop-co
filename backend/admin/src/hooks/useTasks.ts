@@ -2,6 +2,7 @@
  * Coded by Harith
  * Kampungcetak ®
  */
+import { isTaskId, requireTaskId } from "@/utils/taskId";
 import { useSession } from "next-auth/react";
 import { useQueryData } from "./useQueryData";
 import { useMutationData } from "./useMutation";
@@ -89,7 +90,7 @@ export const useTask = (id: string | undefined) => {
     // Socket events via socketProvider will invalidate and refresh when a
     // teammate makes a change, keeping the modal up-to-date in real-time.
     return useQueryData(['task', id], () => getTask(session?.user?.token, id!), {
-        enabled: status === "authenticated" && !!id,
+        enabled: status === "authenticated" && isTaskId(id),
         staleTime: 30000,
     });
 }
@@ -109,6 +110,7 @@ export const useUpdateTask = () => {
         mutationKey: ['updateTask'],
         mutationFn: ({ id, data }) => updateTask(session?.user?.token, id, data),
         onMutate: async ({ id, data }) => {
+            requireTaskId(id);
             await client.cancelQueries({ queryKey: ['tasks'] });
             const previousTask = findTaskInCaches(client, id);
             const optimistic = { ...data };

@@ -46,6 +46,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.clearFolderGroupCache = void 0;
+const taskId_1 = require("../../shared/utils/taskId");
 const reserveUploadName_1 = require("../../shared/utils/reserveUploadName");
 /**
  * Coded by Harith
@@ -207,11 +208,19 @@ router.post('/presigned-url', auth_middileware_1.default, (0, express_async_hand
         res.status(400).json({ success: false, message: 'filename and contentType are required' });
         return;
     }
+    let taskId;
+    try {
+        taskId = (0, taskId_1.uploadTaskId)(req.body.taskId, folderPath);
+    }
+    catch (_b) {
+        res.status(400).json({ success: false, code: 'INVALID_TASK_ID', message: taskId_1.INVALID_TASK_ID_MESSAGE });
+        return;
+    }
     const { PutObjectCommand } = require('@aws-sdk/client-s3');
     const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
     const userId = req.userId || ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || 'unknown';
     const folder = folderPath ? folderPath : userId;
-    const assignedName = yield (0, reserveUploadName_1.reserveUploadName)(req, res, { taskId: req.body.taskId || (typeof folderPath === 'string' && folderPath.startsWith('tasks/') ? folderPath.slice(6) : undefined), orderId: req.body.orderId, userId: req.body.userId && ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(req.role) ? req.body.userId : userId });
+    const assignedName = yield (0, reserveUploadName_1.reserveUploadName)(req, res, { taskId, orderId: req.body.orderId, userId: req.body.userId && ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging'].includes(req.role) ? req.body.userId : userId });
     if (!assignedName)
         return;
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);

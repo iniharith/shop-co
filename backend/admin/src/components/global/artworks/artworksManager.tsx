@@ -1661,8 +1661,16 @@ export default function ArtworksManager() {
 
       {pendingArtworkDrop && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setPendingArtworkDrop(null)}>
-          <div className="bg-background border border-border rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-background border border-border rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-bold text-lg mb-1">Upload {pendingArtworkDrop.length} file{pendingArtworkDrop.length > 1 ? 's' : ''}</h3>
+            <ul aria-label="Files to upload" className="mb-3 max-h-32 overflow-y-auto rounded-xl border border-border bg-muted/30 px-3 py-2 text-sm">
+              {pendingArtworkDrop.map((file, index) => (
+                <li key={`${file.name}-${index}`} className="flex items-start gap-2 py-1">
+                  <File className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  <span className="min-w-0 break-all font-medium" title={file.name}>{file.name}</span>
+                </li>
+              ))}
+            </ul>
             <p className="text-sm text-muted-foreground mb-5">What type of file is this?</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <button

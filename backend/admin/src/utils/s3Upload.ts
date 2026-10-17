@@ -1,3 +1,4 @@
+import { requireTaskId } from "./taskId";
 import { requestUploadUrl } from "./duplicateUpload";
 /**
  * Coded by Harith
@@ -8,6 +9,8 @@ import AxiosInstance from "./axios";
 export type S3UploadResult = { fileUrl: string, key: string, name: string, type: string, size: number };
 
 export const uploadToS3Directly = async (token: string, file: File, folderPath?: string, onProgress?: (percent: number) => void, abortController?: AbortController, scope?: { taskId?: string; orderId?: string; userId?: string }) => {
+  if (scope?.taskId !== undefined && scope.taskId !== null && scope.taskId !== "") requireTaskId(scope.taskId);
+  if (folderPath?.startsWith("tasks/")) requireTaskId(folderPath.slice(6));
   // 1. Get presigned URL from backend
   const presignData = await requestUploadUrl(async (duplicateAction) => (await AxiosInstance(token).post("/api/files/presigned-url", {
     filename: file.name,

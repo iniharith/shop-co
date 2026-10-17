@@ -3,6 +3,7 @@
  * Kampungcetak ®
  */
 import { Router, Request, Response } from 'express';
+import { validateTaskIdParam } from '../../shared/utils/taskId';
 import { taskQrUrl } from '../../shared/utils/taskQrUrl';
 import asyncHandler from 'express-async-handler';
 import { taskRepository } from '../../infrastructure/repositories/TaskRepository';
@@ -71,6 +72,7 @@ const taskStorage = multerS3({
 const taskUpload = multer({ storage: taskStorage });
 
 const router = Router();
+router.param('id', validateTaskIdParam);
 
 const STAFF_ROLES = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'];
 

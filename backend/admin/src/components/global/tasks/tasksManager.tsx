@@ -1,4 +1,5 @@
 "use client";
+import { isTaskId, requireTaskId } from "@/utils/taskId";
 import { requestUploadUrl } from "@/utils/duplicateUpload";
 import React, { useState, useRef, useCallback, useEffect, useMemo, useTransition } from "react";
 import { createPortal } from "react-dom";
@@ -232,6 +233,7 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
     });
 
   const uploadFilesForTask = async (taskId: string, folderFiles?: { file: File; folderId: string }[]) => {
+    taskId = requireTaskId(taskId);
     const allFiles = [
       ...pendingFiles.map(file => ({ file, folderId: undefined as string | undefined })),
       ...(folderFiles || []),
@@ -295,6 +297,10 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
     createTask(newTask, {
       onSuccess: async (data: any) => {
         const taskId = data?.task?._id || data?._id;
+        if (!isTaskId(taskId)) {
+          toast.error("Task response has no valid ID. Refresh the task list before retrying; the task may already have been created.");
+          return;
+        }
         const taskTitle = data?.task?.title || newTask.title;
         if (taskId) {
           const token = session?.user?.token || localStorage.getItem('token') || "";

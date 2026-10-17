@@ -2,6 +2,7 @@
  * Coded by Harith
  * Kampungcetak ®
  */
+import { requireTaskId } from "@/utils/taskId";
 import AxiosInstance from "@/utils/axios";
 import { ITasksApiResponse } from "@/types/api";
 
@@ -18,6 +19,7 @@ export const getTasks = async (token?: string, filters?: Record<string, string |
 }
 
 export const getTask = async (token: string, id: string) => {
+    id = requireTaskId(id);
     const response = await AxiosInstance(token).get(`/api/tasks/${id}`);
     return response.data;
 }
@@ -28,26 +30,31 @@ export const createTask = async (token: string, data: any) => {
 }
 
 export const updateTask = async (token: string, id: string, data: any) => {
+    id = requireTaskId(id);
     const response = await AxiosInstance(token).put(`/api/tasks/${id}`, data);
     return response.data;
 }
 
 export const deleteTask = async (token: string, id: string) => {
+    id = requireTaskId(id);
     const response = await AxiosInstance(token).delete(`/api/tasks/${id}`);
     return response.data;
 }
 
 export const restoreTask = async (token: string | undefined, id: string) => {
+    id = requireTaskId(id);
     const response = await AxiosInstance(token).post(`/api/tasks/${id}/restore`);
     return response.data;
 }
 
 export const permanentDeleteTask = async (token: string, id: string) => {
+    id = requireTaskId(id);
     const response = await AxiosInstance(token).delete(`/api/tasks/${id}?permanent=true`);
     return response.data;
 }
 
 export const addTaskComment = async (token: string, id: string, text: string) => {
+    id = requireTaskId(id);
     const response = await AxiosInstance(token).post(`/api/tasks/${id}/comments`, { text });
     return response.data;
 }
@@ -55,6 +62,7 @@ export const addTaskComment = async (token: string, id: string, text: string) =>
 import { uploadToS3Directly } from "@/utils/s3Upload";
 
 export const uploadTaskFile = async (token: string, taskId: string, file: File, tag?: string, onProgress?: (percent: number) => void, abortController?: AbortController, folderId?: string) => {
+    taskId = requireTaskId(taskId);
     // 1. Upload directly to S3
     const uploadedData = await uploadToS3Directly(token, file, `tasks/${taskId}`, onProgress, abortController, { taskId });
     
@@ -72,20 +80,24 @@ export const uploadTaskFile = async (token: string, taskId: string, file: File, 
 }
 
 export const deleteTaskFile = async (token: string, taskId: string, fileId: string) => {
+    taskId = requireTaskId(taskId);
     const response = await AxiosInstance(token).delete(`/api/tasks/${taskId}/files/${fileId}`);
     return response.data;
 }
 export const updateTaskFileNotes = async (token: string, taskId: string, fileUrl: string, notes: string) => {
+    taskId = requireTaskId(taskId);
     const response = await AxiosInstance(token).put(`/api/tasks/${taskId}/files/notes`, { fileUrl, notes });
     return response.data;
 }
 
 export const deleteTaskComment = async (token: string, id: string, commentId: string) => {
+    id = requireTaskId(id);
     const response = await AxiosInstance(token).delete(`/api/tasks/${id}/comments/${commentId}`);
     return response.data;
 }
 
 export const pinTaskComment = async (token: string, id: string, commentId: string, pinned: boolean) => {
+    id = requireTaskId(id);
     const response = await AxiosInstance(token).put(`/api/tasks/${id}/comments/${commentId}/pin`, { pinned });
     return response.data;
 }
