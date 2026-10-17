@@ -2,6 +2,8 @@
  * Coded by Harith
  * Kampungcetak ®
  */
+import { useTrashUndo } from './useTrashUndo';
+import { useMutation } from '@tanstack/react-query';
 import { useSession } from "next-auth/react";
 import AxiosInstance from "@/utils/axios";
 import { useQueryData } from "./useQueryData";
@@ -179,14 +181,14 @@ export const useUpdateFileTag = () => {
 
 export const useDeleteFile = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['deleteFile'], (id: string) => deleteFile(session?.user?.token, id), ['groupedFiles', 'allFiles', 'tasks', 'fileIndex', 'folderGroup', 'filesByFolder']);
-    return { mutate, isPending };
+    const undo = useTrashUndo();
+    return useMutation({ mutationKey: ['deleteFile'], mutationFn: (id: string) => deleteFile(session?.user?.token, id), onSuccess: undo.offer, onSettled: undo.refresh, onError: (error: Error) => { void import('sonner').then(({ toast }) => toast.error('Could not delete file', { description: error.message })); } });
 }
 
 export const useBulkDeleteFiles = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(['bulkDeleteFiles'], (fileIds: string[]) => bulkDeleteFiles(session?.user?.token, fileIds), ['groupedFiles', 'allFiles', 'tasks', 'fileIndex', 'folderGroup', 'filesByFolder']);
-    return { mutate, isPending };
+    const undo = useTrashUndo();
+    return useMutation({ mutationKey: ['bulkDeleteFiles'], mutationFn: (ids: string[]) => bulkDeleteFiles(session?.user?.token, ids), onSuccess: undo.offer, onSettled: undo.refresh, onError: (error: Error) => { void import('sonner').then(({ toast }) => toast.error('Could not delete file', { description: error.message })); } });
 }
 
 export const useRenameFile = () => {

@@ -3,6 +3,7 @@
  * Kampungcetak ®
  */
 "use client";
+import { useUndoableMoves } from '@/hooks/useUndoableMoves';
 import React, { useState, useMemo } from "react";
 import { useFolderGroup, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles, useCreateShareLink, useFolders } from "@/hooks/useAdminDashboard";
 import { useOrder, useUpdateOrderStatus } from "@/hooks/useOrder";
@@ -154,34 +155,15 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
 
   const { mutate: updateOrderStatus, isPending: isUpdatingStatus } = useUpdateOrderStatus();
 
-  const handleBulkStatusMove = () => {
-    if (selectedFolderIds.length === 0) return;
+  const { move: moveWithUndo } = useUndoableMoves();
+  const handleBulkStatusMove = async () => {
+    if (!selectedFolderIds.length) return;
     if (!confirm(`Move ${selectedFolderIds.length} folder(s) to "${bulkTargetStatus.replace(/_/g, ' ')}"?`)) return;
-
     const targets = groupedFiles.filter((g: any) => selectedFolderIds.includes(`${g.folderName}-${g.orderId}-${g.taskId || ""}`));
-    // Optimistic: remove all selected folders instantly
-    setMovedFolderIds(prev => new Set([...prev, ...selectedFolderIds]));
-    setSelectedFolder(null);
-    let done = 0;
-    const total = targets.length;
-    const finish = () => {
-      done += 1;
-      if (done === total) {
-        toast.success(`Moved ${total} folder(s) to ${bulkTargetStatus.replace(/_/g, ' ')}`);
-        setSelectedFolderIds([]);
-        setBulkSelectMode(false);
-      }
-    };
-
-    targets.forEach((group: any) => {
-      if (group.taskId) {
-        updateTask({ id: group.taskId, data: { status: bulkTargetStatus }, skipUndo: true, silent: true }, { onSuccess: finish, onError: finish });
-      } else if (group.orderId) {
-        updateOrderStatus({ id: group.orderId, status: bulkTargetStatus, skipUndo: true, silent: true }, { onSuccess: finish, onError: finish });
-      } else {
-        finish();
-      }
-    });
+    await moveWithUndo(targets.filter((group: any) => group.taskId || group.orderId).map((group: any) => ({
+      id: group.taskId || group.orderId, kind: group.taskId ? 'task' as const : 'order' as const, previousStatus: group.orderStatus,
+    })), bulkTargetStatus, () => { setMovedFolderIds(new Set()); void refetch(); });
+    setSelectedFolder(null); setSelectedFolderIds([]); setBulkSelectMode(false);
   };
 
   const selectAllFolders = () => {
@@ -192,6 +174,8 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
   // The backend already returns the correct status queue, folder metadata and
   // file count. Reusing this light index avoids downloading/joining every
   // order, user and file whenever this page is opened.
+  React.useEffect(() => { setMovedFolderIds(new Set()); }, [folderGroupResponse]);
+
   const groupedFiles = useMemo(() => {
     return groupedFromServer.filter((group: any) => {
       const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
@@ -375,7 +359,7 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
 
   const handleDeleteFolder = async (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm(`Are you sure you want to delete ALL ${group.fileCount ?? 0} files in ${group.folderName}? This cannot be undone.`)) return;
+    if (!confirm(`Are you sure you want to delete ALL ${group.fileCount ?? 0} files in ${group.folderName}? You can Undo or restore these files from History → Trash.`)) return;
 
     try {
       // The folder summary doesn't ship file records anymore — fetch the

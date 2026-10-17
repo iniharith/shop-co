@@ -4,6 +4,7 @@
  */
 import { Task, ITask } from '../../domain/entities/Task';
 import mongoose from 'mongoose';
+import { randomUUID } from 'crypto';
 import { encodeCursor, TaskCursor } from '../../shared/utils/cursorPagination';
 
 export interface TaskFilters {
@@ -28,6 +29,8 @@ export interface TaskPage {
     nextCursor: string | null;
   };
 }
+
+export class TaskStatusConflictError extends Error { constructor() { super('Task changed again. Undo was not applied.'); } }
 
 export class TaskRepository {
   // Hard ceiling — no caller, present or future, can ever pull more than
@@ -176,7 +179,7 @@ export class TaskRepository {
   }
 
   async findById(id: string): Promise<ITask | null> {
-    return Task.findById(id);
+    return Task.findById(id).read('primary');
   }
 
   // Task history lives in embedded arrays and can grow without bound. Limit
@@ -190,25 +193,42 @@ export class TaskRepository {
       .maxTimeMS(10_000);
   }
 
-  async update(id: string, data: Partial<ITask>): Promise<ITask | null> {
+  async update(id: string, data: Partial<ITask>, expectedUpdatedAt?: string, expectedWorkflowVersion?: string): Promise<ITask | null> {
     const updateData: any = { ...data };
     delete updateData.statusHistory;
+    delete updateData.workflowVersion;
 
     for (let attempt = 0; attempt < 3; attempt++) {
-      const current = await Task.findById(id).select('status isDone').lean();
-      if (!current) return null;
+      const current = await Task.findById(id).select('status isDone updatedAt assignee isDeleted workflowVersion').read('primary').lean();
+      if (!current || current.isDeleted) return null;
+      const withPrevious = (task: any) => {
+        if (task) { task.$locals = task.$locals || {}; task.$locals.previousWorkflow = { status: current.status, assignee: current.assignee || null }; }
+        return task;
+      };
+      if (expectedWorkflowVersion && current.workflowVersion !== expectedWorkflowVersion) throw new TaskStatusConflictError();
+      if (expectedUpdatedAt && new Date(current.updatedAt).getTime() !== new Date(expectedUpdatedAt).getTime()) throw new TaskStatusConflictError();
 
       const currentIsDone = Boolean(current.isDone);
       const toStatus = data.status || current.status;
       const toIsDone = typeof data.isDone === 'boolean' ? data.isDone : currentIsDone;
       const workflowChanged = toStatus !== current.status || toIsDone !== currentIsDone;
-      if (!workflowChanged) return Task.findByIdAndUpdate(id, { $set: updateData }, { new: true });
+      if (workflowChanged || (data.assignee !== undefined && (data.assignee || null) !== (current.assignee || null))) updateData.workflowVersion = randomUUID();
+      if (!workflowChanged) {
+        const unchanged = await Task.findOneAndUpdate({ _id: id, isDeleted: { $ne: true }, updatedAt: current.updatedAt,
+          ...(expectedWorkflowVersion ? { workflowVersion: expectedWorkflowVersion } : {}),
+        }, { $set: updateData }, { new: true });
+        if (unchanged) return withPrevious(unchanged);
+        continue;
+      }
 
       const changedAt = new Date();
       const updated = await Task.findOneAndUpdate(
         {
           _id: id,
           status: current.status,
+          isDeleted: { $ne: true },
+          updatedAt: current.updatedAt,
+          ...(expectedWorkflowVersion ? { workflowVersion: expectedWorkflowVersion } : {}),
           ...(currentIsDone
             ? { isDone: true }
             : { $or: [{ isDone: false }, { isDone: null }, { isDone: { $exists: false } }] }),
@@ -232,7 +252,7 @@ export class TaskRepository {
         },
         { new: true },
       );
-      if (updated) return updated;
+      if (updated) return withPrevious(updated);
     }
 
     throw new Error('Task changed concurrently; retry the update');

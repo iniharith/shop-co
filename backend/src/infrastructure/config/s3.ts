@@ -24,7 +24,7 @@ export const deleteFromS3 = async (fileUrl: string) => {
     // e.g. https://bucket-name.s3.ap-southeast-1.amazonaws.com/uploads/folder/file.jpg
     const urlObj = new URL(fileUrl);
     // urlObj.pathname has a leading slash, e.g. /uploads/folder/file.jpg
-    const key = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+    const key = decodeURIComponent(urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname);
     
     const command = new DeleteObjectCommand({
       Bucket: S3_BUCKET_NAME,

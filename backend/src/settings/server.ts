@@ -3,6 +3,8 @@
  * Kampungcetak ®
  */
 import '../instrumentation';
+import { startTrashCleanup } from '../shared/utils/trash';
+import { TrashItem } from '../domain/entities/TrashItem';
 import app from './app';
 import connectDB from '../config/db.config';
 import { PORT } from '../shared/constants';
@@ -37,6 +39,7 @@ async function main() {
     await connectDB();
     // Checkout retries rely on the unique sparse key index being ready before HTTP traffic.
     await OrderModel.init();
+    await TrashItem.init();
     await initAdmin();
     redisService.connect();
     server = http.createServer(app);
@@ -57,6 +60,7 @@ async function main() {
             void Promise.all([ensureParcelIndexes(), initProduct()]).catch((error) => {
                 console.error('Background startup maintenance failed:', error);
             });
+            startTrashCleanup();
             startTrackingCronJob(); // Auto-sync parcels every 15 min
             startTaskAutoTransitionJob(); // Auto-move PACKAGING → DELIVERED after 14 days
             startAiReindexCron(); // Daily AI vector index refresh

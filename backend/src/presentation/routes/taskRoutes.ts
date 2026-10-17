@@ -1,3 +1,5 @@
+import { trashTask, trashTaskAttachment, restoreTrashedTask, purgeTrash, TrashError } from '../../shared/utils/trash';
+import { TrashItem } from '../../domain/entities/TrashItem';
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -6,10 +8,10 @@ import { Router, Request, Response } from 'express';
 import { validateTaskIdParam } from '../../shared/utils/taskId';
 import { taskQrUrl } from '../../shared/utils/taskQrUrl';
 import asyncHandler from 'express-async-handler';
-import { taskRepository } from '../../infrastructure/repositories/TaskRepository';
+import { taskRepository, TaskStatusConflictError } from '../../infrastructure/repositories/TaskRepository';
 import { OrderUsecase } from '../../application/usecases/orders/order.usecase';
 import authMiddilware from '../middlewares/auth.middileware';
-import { s3Client, S3_BUCKET_NAME, deleteFromS3 } from "../../infrastructure/config/s3";
+import { s3Client, S3_BUCKET_NAME } from "../../infrastructure/config/s3";
 import multerS3 from "multer-s3";
 import multer from "multer";
 import UserRepository from '../../infrastructure/db/repositories/user.repository';
@@ -27,7 +29,7 @@ import { pgVectorStore } from '../../infrastructure/vector/pgVectorStore';
 import { aiConfigured } from '../../infrastructure/ai/aiProvider';
 import { Task } from '../../domain/entities/Task';
 import { randomBytes } from 'crypto';
-import { createDraftQrAsset, deleteDraftQrCompanions } from '../../shared/utils/draftQrImage';
+import { createDraftQrAsset } from '../../shared/utils/draftQrImage';
 import { isTaskAwbToken, taskAwbManifest } from '../../shared/utils/taskAwbManifest';
 import { AwbPrintError, createAwbPrintJob, confirmAwbPrintJob } from '../../shared/utils/awbPrintConfirmation';
 
@@ -284,39 +286,21 @@ router.post(
   })
 );
 
-// Helper function to delete all files for a task
-const deleteAllTaskFiles = async (task: any) => {
-  try {
-    const { FileUpload } = await import('../../domain/entities/FileUpload');
-    const taskId = task._id.toString();
-
-    // Delete all FileUpload records referencing this task (share link uploads + direct uploads)
-    const uploadedFiles = await FileUpload.find({ taskId });
-    for (const uploadedFile of uploadedFiles) await deleteDraftQrCompanions(uploadedFile);
-    await FileUpload.deleteMany({ taskId });
-    void notifyFileClients();
-
-    // Delete files from S3 and clear task.files array
-    if (task.files && task.files.length > 0) {
-      for (const file of task.files) {
-        if (file.url) {
-          await deleteFromS3(file.url);
-        }
-      }
-      task.files = [];
-      await task.save();
-    }
-  } catch (e) {
-    console.error('Failed to delete task files:', e);
-  }
-};
-
 // PUT /api/tasks/:id
 router.put(
   '/:id',
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
+    const expectedWorkflowVersion = req.body.expectedWorkflowVersion;
+    delete req.body.expectedWorkflowVersion;
+    if (expectedWorkflowVersion !== undefined && (typeof expectedWorkflowVersion !== 'string' || !/^[a-f\d-]{36}$/i.test(expectedWorkflowVersion))) { res.status(400).json({ success: false, message: 'Invalid Undo workflow version' }); return; }
+    const expectedUpdatedAt = req.body.expectedUpdatedAt;
+    delete req.body.expectedUpdatedAt;
+    if (expectedUpdatedAt !== undefined && (typeof expectedUpdatedAt !== 'string' || !Number.isFinite(Date.parse(expectedUpdatedAt)))) {
+      res.status(400).json({ success: false, message: 'Invalid Undo version' }); return;
+    }
     const oldTask = await taskRepository.findById(req.params.id);
+    if (oldTask?.isDeleted) { res.status(409).json({ success: false, message: 'Restore this task from Trash before editing it.' }); return; }
     const isDoneChanged = typeof req.body.isDone === 'boolean' && req.body.isDone !== Boolean(oldTask?.isDone);
 
     // If someone is being newly assigned to a task that's still "In Progress",
@@ -330,7 +314,9 @@ router.put(
       req.body.status = 'IN_DESIGN';
     }
 
-    const task = await taskRepository.update(req.params.id, req.body);
+    let task;
+    try { task = await taskRepository.update(req.params.id, req.body, expectedUpdatedAt, expectedWorkflowVersion); }
+    catch (error) { if (error instanceof TaskStatusConflictError) { res.status(409).json({ success: false, message: error.message }); return; } throw error; }
     if (!task) {
       res.status(404).json({ success: false, message: 'Task not found' });
       return;
@@ -405,7 +391,7 @@ router.put(
 
     // Refetch to include newly added activities in the response and broadcast
     const freshTask = await taskRepository.findById(req.params.id);
-    res.json({ success: true, task: freshTask });
+    res.json({ success: true, task: freshTask, undoVersion: task.workflowVersion, previous: (task as any).$locals?.previousWorkflow || { status: oldTask?.status, assignee: oldTask?.assignee || null } });
     void emitTaskUpdated('task_updated', { task: freshTask });
     reindexTaskInBg(freshTask);
   })
@@ -416,19 +402,24 @@ router.delete(
   '/:id',
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
-    const task = await taskRepository.findById(req.params.id);
-    if (task) {
+    const authReq = req as any;
+    const actorId = String(authReq.userId || authReq.user?.id || 'staff');
+    try {
       if (req.query.permanent === 'true') {
-        await deleteAllTaskFiles(task);
-        await taskRepository.permanentDelete(req.params.id);
+        const task: any = await taskRepository.findById(req.params.id);
+        if (!task?.isDeleted) { res.status(409).json({ success: false, message: 'Move the task to Trash before permanently deleting it.' }); return; }
+        let entry: any = await TrashItem.findOne({ kind: 'task', itemId: req.params.id }).lean();
+        if (!entry) entry = await TrashItem.create({ kind: 'task', itemId: req.params.id, taskId: req.params.id, name: task.title, deletedBy: actorId, deletedAt: new Date(), purgeAt: new Date(), payload: {} });
+        if (!await purgeTrash(String(entry._id), true)) { res.status(409).json({ success: false, message: 'Permanent deletion is already in progress.' }); return; }
         removeTaskIndex(req.params.id);
+        res.json({ success: true, message: 'Task permanently deleted' });
       } else {
-        await taskRepository.delete(req.params.id);
+        const deletion = await trashTask(req.params.id, actorId);
+        res.json({ success: true, message: 'Task moved to Trash', ...deletion });
       }
       await clearFolderGroupCache().catch(() => {});
-    }
-    res.json({ success: true, message: req.query.permanent === 'true' ? 'Task permanently deleted' : 'Task deleted' });
-    emitTaskUpdated('task_deleted', { taskId: req.params.id });
+      void emitTaskUpdated('task_deleted', { taskId: req.params.id });
+    } catch (error) { if (error instanceof TrashError) { res.status(error.status).json({ success: false, message: error.message }); return; } throw error; }
   })
 );
 
@@ -437,7 +428,9 @@ router.post(
   '/:id/restore',
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
-    const task = await taskRepository.restore(req.params.id);
+    let task;
+    try { task = await restoreTrashedTask(req.params.id, String((req as any).userId || (req as any).user?.id || 'staff')); }
+    catch (error) { if (error instanceof TrashError) { res.status(error.status).json({ success: false, message: error.message }); return; } throw error; }
     if (!task) {
       res.status(404).json({ success: false, message: 'Deleted task not found' });
       return;
@@ -761,73 +754,13 @@ router.delete(
     }
     actorName = actorName || 'Admin';
 
-    // Find the file in the task's array
-    const fileIndex = task.files.findIndex((f: any) => f._id?.toString() === fileId || f.url.includes(fileId));
-    if (fileIndex === -1) {
-      // It might be a FileUpload document (customer file attached virtually)
-      try {
-        const { FileUpload } = await import('../../domain/entities/FileUpload');
-        const fileDoc = await FileUpload.findById(fileId);
-        if (fileDoc) {
-          if (fileDoc.path) await deleteFromS3(fileDoc.path).catch(console.error);
-          await deleteDraftQrCompanions(fileDoc);
-          await FileUpload.findByIdAndDelete(fileId);
-          removeFileIndex(fileId);
-
-          // Remove the matching entry from the task's files array too, so the
-          // file does not resurrect on the next refetch / socket update.
-          if (fileDoc.path) {
-            const tfIndex = task.files.findIndex((f: any) => f.url === fileDoc.path);
-            if (tfIndex !== -1) {
-              task.files.splice(tfIndex, 1);
-              await task.save();
-            }
-          }
-
-          void notifyFileClients();
-          await taskRepository.addActivity(id, actorId, actorName, `deleted file "${fileDoc.originalName || fileDoc.filename || 'attachment'}"`);
-          const freshTask = await taskRepository.findById(id);
-          res.json({ success: true, message: 'File deleted from task', task: freshTask });
-          void emitTaskUpdated('task_updated', { task: freshTask });
-          return;
-        }
-      } catch(e) {}
-      
-      res.status(404).json({ success: false, message: 'File not found in task' });
-      return;
-    }
-
-    const fileUrl = task.files[fileIndex].url;
-    const fileName = task.files[fileIndex].name || fileUrl.split('/').pop() || 'attachment';
-
-    // Delete from S3
     try {
-      if (fileUrl) {
-        await deleteFromS3(fileUrl);
-      }
-    } catch (e) {
-      console.error('Failed to delete file from S3:', e);
-    }
-
-    // Delete from task document
-    task.files.splice(fileIndex, 1);
-    await task.save();
-
-    // Delete from FileUpload collection
-    try {
-      const { FileUpload } = await import('../../domain/entities/FileUpload');
-      const fileDoc = await FileUpload.findOneAndDelete({ path: fileUrl });
-      if (fileDoc) await deleteDraftQrCompanions(fileDoc);
-      void notifyFileClients();
-    } catch (e) {
-      console.error('Failed to delete task file from FileUpload:', e);
-    }
-
-    await taskRepository.addActivity(id, actorId, actorName, `deleted file "${fileName}"`);
-
-    const freshTask = await taskRepository.findById(id);
-    res.json({ success: true, message: 'File deleted from task', task: freshTask });
-    void emitTaskUpdated('task_updated', { task: freshTask });
+      const deletion = await trashTaskAttachment(id, fileId, String(actorId));
+      await taskRepository.addActivity(id, actorId, actorName, 'moved file to Trash');
+      const freshTask = await taskRepository.findById(id);
+      res.json({ success: true, message: 'File moved to Trash', task: freshTask, ...deletion });
+      void emitTaskUpdated('task_updated', { task: freshTask });
+    } catch (error) { if (error instanceof TrashError) { res.status(error.status).json({ success: false, message: error.message }); return; } throw error; }
   })
 );
 

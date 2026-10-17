@@ -3,6 +3,7 @@
  * Kampungcetak ®
  */
 "use client";
+import TrashPanel from './TrashPanel';
 import React, { useState, useMemo } from "react";
 import { DataTableSkeleton } from "../table/data-table-skeleton";
 import { useOrders } from "@/hooks/useOrder";
@@ -130,6 +131,7 @@ const HistoryManager = ({ scrollParent }: HistoryManagerProps) => {
               <TabsTrigger value="DONE" className="rounded-lg">Done / Completed</TabsTrigger>
               <TabsTrigger value="CANCELLED" className="rounded-lg text-red-500 data-[state=active]:bg-red-500 data-[state=active]:text-white">Cancelled / Failed</TabsTrigger>
               <TabsTrigger value="ARCHIVED" className="rounded-lg text-indigo-500 data-[state=active]:bg-indigo-500 data-[state=active]:text-white">Archived</TabsTrigger>
+              <TabsTrigger value="TRASH" className="rounded-lg">Trash / Restore</TabsTrigger>
               <TabsTrigger value="DELETED_TASKS" className="rounded-lg text-slate-500 data-[state=active]:bg-slate-700 data-[state=active]:text-white">Deleted Tasks</TabsTrigger>
             </TabsList>
           </Tabs>
@@ -147,7 +149,7 @@ const HistoryManager = ({ scrollParent }: HistoryManagerProps) => {
             <Button variant="outline" size="icon" onClick={() => activeTab === 'DELETED_TASKS' ? refetchTasks() : refetch()} disabled={isFetching || isFetchingTasks} className="rounded-xl h-10 w-10 shadow-sm border-border shrink-0" title="Refresh History">
               <RefreshCw className={`w-4 h-4 text-muted-foreground ${(isFetching || isFetchingTasks) ? 'animate-spin' : ''}`} />
             </Button>
-            {activeTab !== 'DELETED_TASKS' && (
+            {activeTab !== 'DELETED_TASKS' && activeTab !== 'TRASH' && (
               <Button variant="destructive" onClick={handleDeleteAll} disabled={isDeleting || filteredOrders.length === 0} className="rounded-xl h-10 shadow-sm shrink-0" title="Delete All Displayed Orders">
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete All
@@ -156,7 +158,7 @@ const HistoryManager = ({ scrollParent }: HistoryManagerProps) => {
           </div>
         </div>
         
-        {activeTab === 'DELETED_TASKS' ? (
+        {activeTab === 'TRASH' ? <TrashPanel /> : activeTab === 'DELETED_TASKS' ? (
           filteredTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center bg-card rounded-2xl border border-dashed border-border/60">
               <div className="bg-muted w-16 h-16 rounded-full flex items-center justify-center mb-4">

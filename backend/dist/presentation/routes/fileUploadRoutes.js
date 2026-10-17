@@ -46,6 +46,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.clearFolderGroupCache = void 0;
+const TrashItem_1 = require("../../domain/entities/TrashItem");
+const trash_1 = require("../../shared/utils/trash");
 const taskId_1 = require("../../shared/utils/taskId");
 const reserveUploadName_1 = require("../../shared/utils/reserveUploadName");
 /**
@@ -198,6 +200,56 @@ router.post('/upload', auth_middileware_1.default, upload.array('files', 100), (
         count: savedFiles.length,
     });
     savedFiles.forEach(reindexFileInBg);
+})));
+// Recoverable deletion endpoints. Staff can restore from History / Trash.
+router.get('/trash', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const limit = 100;
+    const filter = {};
+    if (req.query.before) {
+        if (typeof req.query.before !== 'string' || !/^[a-f\d]{24}$/i.test(req.query.before)) {
+            res.status(400).json({ success: false, message: 'Invalid trash cursor' });
+            return;
+        }
+        filter._id = { $lt: req.query.before };
+    }
+    const rows = yield TrashItem_1.TrashItem.find(filter).select('kind itemId name taskId deletedAt purgeAt state').sort({ _id: -1 }).limit(limit + 1).lean();
+    res.json({ success: true, data: rows.slice(0, limit), nextCursor: rows.length > limit ? String(rows[limit - 1]._id) : null });
+})));
+router.delete('/trash/:trashId', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    if (!/^[a-f\d]{24}$/i.test(req.params.trashId) || ((_a = req.body) === null || _a === void 0 ? void 0 : _a.confirmation) !== 'DELETE') {
+        res.status(400).json({ success: false, message: 'Confirm permanent deletion first.' });
+        return;
+    }
+    const removed = yield (0, trash_1.purgeTrash)(req.params.trashId, true);
+    if (!removed) {
+        res.status(409).json({ success: false, message: 'Item is missing or permanent deletion is already in progress.' });
+        return;
+    }
+    res.json({ success: true, message: 'Permanently deleted' });
+})));
+router.post('/trash/:trashId/restore', auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'), (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    if (!/^[a-f\d]{24}$/i.test(req.params.trashId)) {
+        res.status(400).json({ success: false, message: 'Invalid trash item' });
+        return;
+    }
+    try {
+        const restored = yield (0, trash_1.restoreTrash)(req.params.trashId, String(req.userId || ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || 'staff'));
+        if (restored.kind === 'file' && /^[a-f\d]{24}$/i.test(restored.itemId)) {
+            const file = yield FileUpload_1.FileUpload.findById(restored.itemId);
+            if (file)
+                reindexFileInBg(file);
+        }
+        res.json(Object.assign({ success: true, message: 'Restored from Trash' }, restored));
+    }
+    catch (error) {
+        if (error instanceof trash_1.TrashError) {
+            res.status(error.status).json({ success: false, message: error.message });
+            return;
+        }
+        throw error;
+    }
 })));
 // ─── POST /api/files/presigned-url ────────────────────────
 // Get a presigned URL to upload file directly to S3
@@ -1576,6 +1628,29 @@ router.get('/s/:slug/files/:id/content', (0, express_async_handler_1.default)((r
         }
     }
 })));
+router.post('/s/:slug/trash/:trashId/restore', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
+    if (!link || !/^[a-f\d]{24}$/i.test(req.params.trashId)) {
+        res.status(404).json({ success: false, message: 'Deleted file not found' });
+        return;
+    }
+    const entry = yield TrashItem_1.TrashItem.findOne({ _id: req.params.trashId, kind: 'file', deletedBy: `share:${req.params.slug}` }).lean();
+    if (!entry) {
+        res.status(404).json({ success: false, message: 'Deleted file not found for this link' });
+        return;
+    }
+    try {
+        yield (0, trash_1.restoreTrash)(req.params.trashId, `share:${req.params.slug}`);
+        res.json({ success: true, message: 'File restored' });
+    }
+    catch (error) {
+        if (error instanceof trash_1.TrashError) {
+            res.status(error.status).json({ success: false, message: error.message });
+            return;
+        }
+        throw error;
+    }
+})));
 // 🌐 Public: Delete a file from a shared folder (slug acts as auth)
 router.delete('/s/:slug/files/:id', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const link = yield ShareLinkRepository_1.shareLinkRepository.findBySlug(req.params.slug);
@@ -1588,20 +1663,9 @@ router.delete('/s/:slug/files/:id', (0, express_async_handler_1.default)((req, r
         res.status(404).json({ success: false, message: 'File not found' });
         return;
     }
-    try {
-        if (file.path)
-            yield (0, s3_1.deleteFromS3)(file.path);
-        yield (0, draftQrImage_1.deleteDraftQrCompanions)(file);
-    }
-    catch (err) {
-        console.warn('[SharedDelete] S3 delete failed:', err.message);
-    }
-    yield FileUploadRepository_1.fileUploadRepository.delete(req.params.id);
+    const deletion = yield (0, trash_1.trashFile)(file, `share:${req.params.slug}`);
     removeFileIndex(req.params.id);
-    if (file.path) {
-        yield Task_1.Task.updateMany({ "files.url": file.path }, { $pull: { files: { url: file.path } } });
-    }
-    res.json({ success: true, message: 'File deleted' });
+    res.json(Object.assign({ success: true, message: 'File moved to Trash' }, deletion));
 })));
 // 🌐 Public: Add/update a note on a file from a shared folder
 router.patch('/s/:slug/files/:id/note', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -1876,6 +1940,8 @@ router.post('/bulk-delete', auth_middileware_1.default, (0, express_async_handle
         return;
     }
     let deletedCount = 0;
+    const trashIds = [];
+    let purgeAt;
     const errors = [];
     for (const id of fileIds) {
         try {
@@ -1885,21 +1951,18 @@ router.post('/bulk-delete', auth_middileware_1.default, (0, express_async_handle
             if (!isAdmin && ((_b = file.userId) === null || _b === void 0 ? void 0 : _b.toString()) !== userId.toString()) {
                 continue; // skip if unauthorized
             }
-            yield FileUploadRepository_1.fileUploadRepository.delete(id);
+            const deletion = yield (0, trash_1.trashFile)(file, String(userId));
+            trashIds.push(deletion.trashId);
+            if (!purgeAt || deletion.purgeAt < purgeAt)
+                purgeAt = deletion.purgeAt;
             removeFileIndex(id);
-            if (file.path) {
-                yield (0, s3_1.deleteFromS3)(file.path);
-                yield (0, draftQrImage_1.deleteDraftQrCompanions)(file);
-                // Remove file from any Task that references it
-                yield Task_1.Task.updateMany({ "files.url": file.path }, { $pull: { files: { url: file.path } } });
-            }
             deletedCount++;
         }
         catch (err) {
             errors.push({ id, error: err.message });
         }
     }
-    res.json({ success: true, deletedCount, errors });
+    res.json({ success: true, deletedCount, trashIds, purgeAt, errors });
 })));
 // 🟨🟨🟨 DELETE /api/files/:id 🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨🟨
 // Admin or file owner deletes file from DB and Cloudinary
@@ -1922,21 +1985,9 @@ router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.de
         res.status(403).json({ success: false, message: 'Tiada kebenaran untuk memadam fail ini' });
         return;
     }
-    // Delete from S3 using the helper
-    try {
-        if (file.path) {
-            yield (0, s3_1.deleteFromS3)(file.path);
-            yield (0, draftQrImage_1.deleteDraftQrCompanions)(file);
-            // Remove file from any Task that references it
-            yield Task_1.Task.updateMany({ "files.url": file.path }, { $pull: { files: { url: file.path } } });
-        }
-    }
-    catch (err) {
-        console.warn('[FileUpload] Could not delete from S3:', err.message);
-    }
-    yield FileUploadRepository_1.fileUploadRepository.delete(req.params.id);
+    const deletion = yield (0, trash_1.trashFile)(file, String(userId));
     removeFileIndex(req.params.id);
-    res.json({ success: true, message: 'Fail berjaya dipadam' });
+    res.json(Object.assign({ success: true, message: 'File moved to Trash' }, deletion));
 })));
 // ─── PUT /api/files/:id/move ─────────────────────────────────
 // Admin moves a file to a folder

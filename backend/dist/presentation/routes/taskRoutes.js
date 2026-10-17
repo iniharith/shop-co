@@ -45,6 +45,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const trash_1 = require("../../shared/utils/trash");
+const TrashItem_1 = require("../../domain/entities/TrashItem");
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -311,36 +313,26 @@ router.post('/', auth_middileware_1.default, (0, express_async_handler_1.default
     void (0, taskBroadcast_1.emitTaskUpdated)('task_created', { task: freshTask });
     reindexTaskInBg(freshTask);
 })));
-// Helper function to delete all files for a task
-const deleteAllTaskFiles = (task) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { FileUpload } = yield Promise.resolve().then(() => __importStar(require('../../domain/entities/FileUpload')));
-        const taskId = task._id.toString();
-        // Delete all FileUpload records referencing this task (share link uploads + direct uploads)
-        const uploadedFiles = yield FileUpload.find({ taskId });
-        for (const uploadedFile of uploadedFiles)
-            yield (0, draftQrImage_1.deleteDraftQrCompanions)(uploadedFile);
-        yield FileUpload.deleteMany({ taskId });
-        void (0, FileUploadRepository_1.notifyFileClients)();
-        // Delete files from S3 and clear task.files array
-        if (task.files && task.files.length > 0) {
-            for (const file of task.files) {
-                if (file.url) {
-                    yield (0, s3_1.deleteFromS3)(file.url);
-                }
-            }
-            task.files = [];
-            yield task.save();
-        }
-    }
-    catch (e) {
-        console.error('Failed to delete task files:', e);
-    }
-});
 // PUT /api/tasks/:id
 router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+    const expectedWorkflowVersion = req.body.expectedWorkflowVersion;
+    delete req.body.expectedWorkflowVersion;
+    if (expectedWorkflowVersion !== undefined && (typeof expectedWorkflowVersion !== 'string' || !/^[a-f\d-]{36}$/i.test(expectedWorkflowVersion))) {
+        res.status(400).json({ success: false, message: 'Invalid Undo workflow version' });
+        return;
+    }
+    const expectedUpdatedAt = req.body.expectedUpdatedAt;
+    delete req.body.expectedUpdatedAt;
+    if (expectedUpdatedAt !== undefined && (typeof expectedUpdatedAt !== 'string' || !Number.isFinite(Date.parse(expectedUpdatedAt)))) {
+        res.status(400).json({ success: false, message: 'Invalid Undo version' });
+        return;
+    }
     const oldTask = yield TaskRepository_1.taskRepository.findById(req.params.id);
+    if (oldTask === null || oldTask === void 0 ? void 0 : oldTask.isDeleted) {
+        res.status(409).json({ success: false, message: 'Restore this task from Trash before editing it.' });
+        return;
+    }
     const isDoneChanged = typeof req.body.isDone === 'boolean' && req.body.isDone !== Boolean(oldTask === null || oldTask === void 0 ? void 0 : oldTask.isDone);
     // If someone is being newly assigned to a task that's still "In Progress",
     // automatically advance it to "In Design" — being assigned implies design work
@@ -352,7 +344,17 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
     if (isNewAssignment && preDesignStatuses.includes(currentStatus) && (!req.body.status || req.body.status === currentStatus)) {
         req.body.status = 'IN_DESIGN';
     }
-    const task = yield TaskRepository_1.taskRepository.update(req.params.id, req.body);
+    let task;
+    try {
+        task = yield TaskRepository_1.taskRepository.update(req.params.id, req.body, expectedUpdatedAt, expectedWorkflowVersion);
+    }
+    catch (error) {
+        if (error instanceof TaskRepository_1.TaskStatusConflictError) {
+            res.status(409).json({ success: false, message: error.message });
+            return;
+        }
+        throw error;
+    }
     if (!task) {
         res.status(404).json({ success: false, message: 'Task not found' });
         return;
@@ -417,38 +419,68 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
     }
     // Refetch to include newly added activities in the response and broadcast
     const freshTask = yield TaskRepository_1.taskRepository.findById(req.params.id);
-    res.json({ success: true, task: freshTask });
+    res.json({ success: true, task: freshTask, undoVersion: task.workflowVersion, previous: ((_j = task.$locals) === null || _j === void 0 ? void 0 : _j.previousWorkflow) || { status: oldTask === null || oldTask === void 0 ? void 0 : oldTask.status, assignee: (oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) || null } });
     void (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: freshTask });
     reindexTaskInBg(freshTask);
 })));
 // DELETE /api/tasks/:id
 router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const task = yield TaskRepository_1.taskRepository.findById(req.params.id);
-    if (task) {
+    var _a;
+    const authReq = req;
+    const actorId = String(authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id) || 'staff');
+    try {
         if (req.query.permanent === 'true') {
-            yield deleteAllTaskFiles(task);
-            yield TaskRepository_1.taskRepository.permanentDelete(req.params.id);
+            const task = yield TaskRepository_1.taskRepository.findById(req.params.id);
+            if (!(task === null || task === void 0 ? void 0 : task.isDeleted)) {
+                res.status(409).json({ success: false, message: 'Move the task to Trash before permanently deleting it.' });
+                return;
+            }
+            let entry = yield TrashItem_1.TrashItem.findOne({ kind: 'task', itemId: req.params.id }).lean();
+            if (!entry)
+                entry = yield TrashItem_1.TrashItem.create({ kind: 'task', itemId: req.params.id, taskId: req.params.id, name: task.title, deletedBy: actorId, deletedAt: new Date(), purgeAt: new Date(), payload: {} });
+            if (!(yield (0, trash_1.purgeTrash)(String(entry._id), true))) {
+                res.status(409).json({ success: false, message: 'Permanent deletion is already in progress.' });
+                return;
+            }
             removeTaskIndex(req.params.id);
+            res.json({ success: true, message: 'Task permanently deleted' });
         }
         else {
-            yield TaskRepository_1.taskRepository.delete(req.params.id);
+            const deletion = yield (0, trash_1.trashTask)(req.params.id, actorId);
+            res.json(Object.assign({ success: true, message: 'Task moved to Trash' }, deletion));
         }
         yield (0, fileUploadRoutes_1.clearFolderGroupCache)().catch(() => { });
+        void (0, taskBroadcast_1.emitTaskUpdated)('task_deleted', { taskId: req.params.id });
     }
-    res.json({ success: true, message: req.query.permanent === 'true' ? 'Task permanently deleted' : 'Task deleted' });
-    (0, taskBroadcast_1.emitTaskUpdated)('task_deleted', { taskId: req.params.id });
+    catch (error) {
+        if (error instanceof trash_1.TrashError) {
+            res.status(error.status).json({ success: false, message: error.message });
+            return;
+        }
+        throw error;
+    }
 })));
 // POST /api/tasks/:id/restore
 router.post('/:id/restore', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d;
-    const task = yield TaskRepository_1.taskRepository.restore(req.params.id);
+    var _a, _b, _c, _d, _e;
+    let task;
+    try {
+        task = yield (0, trash_1.restoreTrashedTask)(req.params.id, String(req.userId || ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id) || 'staff'));
+    }
+    catch (error) {
+        if (error instanceof trash_1.TrashError) {
+            res.status(error.status).json({ success: false, message: error.message });
+            return;
+        }
+        throw error;
+    }
     if (!task) {
         res.status(404).json({ success: false, message: 'Deleted task not found' });
         return;
     }
     const authReq = req;
-    const userId = authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a._id) || ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.id) || 'system';
-    const userName = ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.name) || ((_d = authReq.user) === null || _d === void 0 ? void 0 : _d.email) || 'System';
+    const userId = authReq.userId || ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b._id) || ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c.id) || 'system';
+    const userName = ((_d = authReq.user) === null || _d === void 0 ? void 0 : _d.name) || ((_e = authReq.user) === null || _e === void 0 ? void 0 : _e.email) || 'System';
     yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, 'restored this task');
     yield (0, fileUploadRoutes_1.clearFolderGroupCache)().catch(() => { });
     const freshTask = yield TaskRepository_1.taskRepository.findById(req.params.id);
@@ -705,69 +737,20 @@ router.delete('/:id/files/:fileId', auth_middileware_1.default, (0, express_asyn
         catch (error) { }
     }
     actorName = actorName || 'Admin';
-    // Find the file in the task's array
-    const fileIndex = task.files.findIndex((f) => { var _a; return ((_a = f._id) === null || _a === void 0 ? void 0 : _a.toString()) === fileId || f.url.includes(fileId); });
-    if (fileIndex === -1) {
-        // It might be a FileUpload document (customer file attached virtually)
-        try {
-            const { FileUpload } = yield Promise.resolve().then(() => __importStar(require('../../domain/entities/FileUpload')));
-            const fileDoc = yield FileUpload.findById(fileId);
-            if (fileDoc) {
-                if (fileDoc.path)
-                    yield (0, s3_1.deleteFromS3)(fileDoc.path).catch(console.error);
-                yield (0, draftQrImage_1.deleteDraftQrCompanions)(fileDoc);
-                yield FileUpload.findByIdAndDelete(fileId);
-                removeFileIndex(fileId);
-                // Remove the matching entry from the task's files array too, so the
-                // file does not resurrect on the next refetch / socket update.
-                if (fileDoc.path) {
-                    const tfIndex = task.files.findIndex((f) => f.url === fileDoc.path);
-                    if (tfIndex !== -1) {
-                        task.files.splice(tfIndex, 1);
-                        yield task.save();
-                    }
-                }
-                void (0, FileUploadRepository_1.notifyFileClients)();
-                yield TaskRepository_1.taskRepository.addActivity(id, actorId, actorName, `deleted file "${fileDoc.originalName || fileDoc.filename || 'attachment'}"`);
-                const freshTask = yield TaskRepository_1.taskRepository.findById(id);
-                res.json({ success: true, message: 'File deleted from task', task: freshTask });
-                void (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: freshTask });
-                return;
-            }
-        }
-        catch (e) { }
-        res.status(404).json({ success: false, message: 'File not found in task' });
-        return;
-    }
-    const fileUrl = task.files[fileIndex].url;
-    const fileName = task.files[fileIndex].name || fileUrl.split('/').pop() || 'attachment';
-    // Delete from S3
     try {
-        if (fileUrl) {
-            yield (0, s3_1.deleteFromS3)(fileUrl);
+        const deletion = yield (0, trash_1.trashTaskAttachment)(id, fileId, String(actorId));
+        yield TaskRepository_1.taskRepository.addActivity(id, actorId, actorName, 'moved file to Trash');
+        const freshTask = yield TaskRepository_1.taskRepository.findById(id);
+        res.json(Object.assign({ success: true, message: 'File moved to Trash', task: freshTask }, deletion));
+        void (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: freshTask });
+    }
+    catch (error) {
+        if (error instanceof trash_1.TrashError) {
+            res.status(error.status).json({ success: false, message: error.message });
+            return;
         }
+        throw error;
     }
-    catch (e) {
-        console.error('Failed to delete file from S3:', e);
-    }
-    // Delete from task document
-    task.files.splice(fileIndex, 1);
-    yield task.save();
-    // Delete from FileUpload collection
-    try {
-        const { FileUpload } = yield Promise.resolve().then(() => __importStar(require('../../domain/entities/FileUpload')));
-        const fileDoc = yield FileUpload.findOneAndDelete({ path: fileUrl });
-        if (fileDoc)
-            yield (0, draftQrImage_1.deleteDraftQrCompanions)(fileDoc);
-        void (0, FileUploadRepository_1.notifyFileClients)();
-    }
-    catch (e) {
-        console.error('Failed to delete task file from FileUpload:', e);
-    }
-    yield TaskRepository_1.taskRepository.addActivity(id, actorId, actorName, `deleted file "${fileName}"`);
-    const freshTask = yield TaskRepository_1.taskRepository.findById(id);
-    res.json({ success: true, message: 'File deleted from task', task: freshTask });
-    void (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: freshTask });
 })));
 router.get('/gantt', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { startDate, endDate, category, assignee } = req.query;

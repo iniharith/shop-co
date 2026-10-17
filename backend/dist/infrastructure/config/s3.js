@@ -36,7 +36,7 @@ const deleteFromS3 = (fileUrl) => __awaiter(void 0, void 0, void 0, function* ()
         // e.g. https://bucket-name.s3.ap-southeast-1.amazonaws.com/uploads/folder/file.jpg
         const urlObj = new URL(fileUrl);
         // urlObj.pathname has a leading slash, e.g. /uploads/folder/file.jpg
-        const key = urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname;
+        const key = decodeURIComponent(urlObj.pathname.startsWith('/') ? urlObj.pathname.substring(1) : urlObj.pathname);
         const command = new client_s3_1.DeleteObjectCommand({
             Bucket: exports.S3_BUCKET_NAME,
             Key: key,

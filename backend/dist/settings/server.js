@@ -50,6 +50,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Kampungcetak ®
  */
 require("../instrumentation");
+const trash_1 = require("../shared/utils/trash");
+const TrashItem_1 = require("../domain/entities/TrashItem");
 const app_1 = __importDefault(require("./app"));
 const db_config_1 = __importDefault(require("../config/db.config"));
 const constants_1 = require("../shared/constants");
@@ -79,6 +81,7 @@ function main() {
         yield (0, db_config_1.default)();
         // Checkout retries rely on the unique sparse key index being ready before HTTP traffic.
         yield order_model_1.default.init();
+        yield TrashItem_1.TrashItem.init();
         yield (0, initAdmin_1.initAdmin)();
         redisService.connect();
         server = http_1.default.createServer(app_1.default);
@@ -97,6 +100,7 @@ function main() {
                 void Promise.all([(0, Parcel_1.ensureParcelIndexes)(), (0, initProduct_script_1.default)()]).catch((error) => {
                     console.error('Background startup maintenance failed:', error);
                 });
+                (0, trash_1.startTrashCleanup)();
                 (0, TrackingCronJob_1.startTrackingCronJob)(); // Auto-sync parcels every 15 min
                 (0, TaskStatusAutoTransition_1.startTaskAutoTransitionJob)(); // Auto-move PACKAGING → DELIVERED after 14 days
                 (0, AiReindexJob_1.startAiReindexCron)(); // Daily AI vector index refresh

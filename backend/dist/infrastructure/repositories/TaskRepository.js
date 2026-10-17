@@ -23,14 +23,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.taskRepository = exports.TaskRepository = void 0;
+exports.taskRepository = exports.TaskRepository = exports.TaskStatusConflictError = void 0;
 /**
  * Coded by Harith
  * Kampungcetak ®
  */
 const Task_1 = require("../../domain/entities/Task");
 const mongoose_1 = __importDefault(require("mongoose"));
+const crypto_1 = require("crypto");
 const cursorPagination_1 = require("../../shared/utils/cursorPagination");
+class TaskStatusConflictError extends Error {
+    constructor() { super('Task changed again. Undo was not applied.'); }
+}
+exports.TaskStatusConflictError = TaskStatusConflictError;
 class TaskRepository {
     create(data) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -170,7 +175,7 @@ class TaskRepository {
     }
     findById(id) {
         return __awaiter(this, void 0, void 0, function* () {
-            return Task_1.Task.findById(id);
+            return Task_1.Task.findById(id).read('primary');
         });
     }
     // Task history lives in embedded arrays and can grow without bound. Limit
@@ -185,22 +190,40 @@ class TaskRepository {
                 .maxTimeMS(10000);
         });
     }
-    update(id, data) {
+    update(id, data, expectedUpdatedAt, expectedWorkflowVersion) {
         return __awaiter(this, void 0, void 0, function* () {
             const updateData = Object.assign({}, data);
             delete updateData.statusHistory;
+            delete updateData.workflowVersion;
             for (let attempt = 0; attempt < 3; attempt++) {
-                const current = yield Task_1.Task.findById(id).select('status isDone').lean();
-                if (!current)
+                const current = yield Task_1.Task.findById(id).select('status isDone updatedAt assignee isDeleted workflowVersion').read('primary').lean();
+                if (!current || current.isDeleted)
                     return null;
+                const withPrevious = (task) => {
+                    if (task) {
+                        task.$locals = task.$locals || {};
+                        task.$locals.previousWorkflow = { status: current.status, assignee: current.assignee || null };
+                    }
+                    return task;
+                };
+                if (expectedWorkflowVersion && current.workflowVersion !== expectedWorkflowVersion)
+                    throw new TaskStatusConflictError();
+                if (expectedUpdatedAt && new Date(current.updatedAt).getTime() !== new Date(expectedUpdatedAt).getTime())
+                    throw new TaskStatusConflictError();
                 const currentIsDone = Boolean(current.isDone);
                 const toStatus = data.status || current.status;
                 const toIsDone = typeof data.isDone === 'boolean' ? data.isDone : currentIsDone;
                 const workflowChanged = toStatus !== current.status || toIsDone !== currentIsDone;
-                if (!workflowChanged)
-                    return Task_1.Task.findByIdAndUpdate(id, { $set: updateData }, { new: true });
+                if (workflowChanged || (data.assignee !== undefined && (data.assignee || null) !== (current.assignee || null)))
+                    updateData.workflowVersion = (0, crypto_1.randomUUID)();
+                if (!workflowChanged) {
+                    const unchanged = yield Task_1.Task.findOneAndUpdate(Object.assign({ _id: id, isDeleted: { $ne: true }, updatedAt: current.updatedAt }, (expectedWorkflowVersion ? { workflowVersion: expectedWorkflowVersion } : {})), { $set: updateData }, { new: true });
+                    if (unchanged)
+                        return withPrevious(unchanged);
+                    continue;
+                }
                 const changedAt = new Date();
-                const updated = yield Task_1.Task.findOneAndUpdate(Object.assign({ _id: id, status: current.status }, (currentIsDone
+                const updated = yield Task_1.Task.findOneAndUpdate(Object.assign(Object.assign({ _id: id, status: current.status, isDeleted: { $ne: true }, updatedAt: current.updatedAt }, (expectedWorkflowVersion ? { workflowVersion: expectedWorkflowVersion } : {})), (currentIsDone
                     ? { isDone: true }
                     : { $or: [{ isDone: false }, { isDone: null }, { isDone: { $exists: false } }] })), {
                     $set: Object.assign(Object.assign({}, updateData), (toStatus !== current.status ? { statusUpdatedAt: changedAt } : {})),
@@ -215,7 +238,7 @@ class TaskRepository {
                     },
                 }, { new: true });
                 if (updated)
-                    return updated;
+                    return withPrevious(updated);
             }
             throw new Error('Task changed concurrently; retry the update');
         });

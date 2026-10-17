@@ -143,13 +143,24 @@ export default function PublicSlugFolderView({ params }: { params: Promise<{ slu
   };
 
   const handleDelete = async (fileId: string) => {
-    if (!confirm("Delete this file? This cannot be undone.")) return;
+    if (!confirm("Move this file to Trash? You have 15 minutes to Undo.")) return;
     setDeletingId(fileId);
     try {
       const res = await publicApiFetch(`${BACKEND}/api/files/s/${slug}/files/${fileId}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Delete failed");
-      toast.success("File deleted");
+      toast.success("File moved to Trash", {
+        duration: Math.max(1, new Date(data.purgeAt).getTime() - Date.now()),
+        description: 'Undo within 15 minutes before permanent deletion.',
+        action: { label: 'Undo', onClick: () => { void (async () => {
+          try {
+            const restored = await publicApiFetch(`${BACKEND}/api/files/s/${slug}/trash/${data.trashId}/restore`, { method: 'POST' });
+            const result = await restored.json();
+            if (!restored.ok) throw new Error(result.message || 'Could not restore file');
+            await fetchFiles(); toast.success('File restored');
+          } catch (error: any) { toast.error(error.message || 'Could not restore file'); }
+        })(); } },
+      });
       setFiles(prev => prev.filter(f => f._id !== fileId));
     } catch (err: any) {
       toast.error(err.message || "Failed to delete file");

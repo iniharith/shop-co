@@ -2,6 +2,7 @@
  * Coded by Harith
  * Kampungcetak ®
  */
+import { useTrashUndo, UNDO_DURATION } from './useTrashUndo';
 import { isTaskId, requireTaskId } from "@/utils/taskId";
 import { useSession } from "next-auth/react";
 import { useQueryData } from "./useQueryData";
@@ -134,26 +135,29 @@ export const useUpdateTask = () => {
             const changesStatus = variables.data.status !== undefined;
             const changesAssignee = variables.data.assignee !== undefined;
             if (!variables.silent && !variables.skipUndo && (changesStatus || changesAssignee)) {
-                const canUndo = Boolean(context?.previousTask) && (!changesStatus || variables.data.status !== 'DELIVERED');
+                const undoExpiresAt = Date.now() + UNDO_DURATION;
+                const previous = data?.previous || context?.previousTask;
+                const canUndo = Boolean(previous?.status);
                 toast.success(changesAssignee ? "Assignment updated" : "Status updated", canUndo ? {
-                    duration: 5000,
+                    duration: UNDO_DURATION,
                     action: {
                         label: "Undo",
                         onClick: () => {
+                            if (Date.now() >= undoExpiresAt) { toast.info('The 15-minute Undo window has expired.'); return; }
                             const current = findTaskInCaches(client, variables.id);
                             const applied = data?.task || context?.optimistic;
                             const stillCurrent = changesAssignee
                                 ? current?.assignee === applied?.assignee && current?.status === applied?.status
                                 : current?.status === applied?.status;
-                            if (!stillCurrent) {
+                            if (current && !stillCurrent) {
                                 toast.info("Task changed again; Undo is no longer available");
                                 return;
                             }
                             mutation.mutate({
                                 id: variables.id,
                                 data: changesAssignee
-                                    ? { assignee: context?.previousTask?.assignee || null, status: context?.previousTask?.status }
-                                    : { status: context?.previousTask?.status },
+                                    ? { assignee: previous?.assignee || null, status: previous?.status, ...(data?.undoVersion ? { expectedWorkflowVersion: data.undoVersion } : { expectedUpdatedAt: data?.task?.updatedAt }) }
+                                    : { status: previous?.status, ...(data?.undoVersion ? { expectedWorkflowVersion: data.undoVersion } : { expectedUpdatedAt: data?.task?.updatedAt }) },
                                 skipUndo: true,
                             });
                         },
@@ -185,7 +189,7 @@ export const useDeleteTask = () => {
             if (data?.task?._id) client.setQueryData(['task', data.task._id], { success: true, task: data.task });
         },
         onError: (_error, { id }) => removeTaskFromCaches(client, id),
-        onSettled: () => client.invalidateQueries({ queryKey: ['tasks'] }),
+        onSettled: () => ['tasks', 'task', 'folderGroup', 'fileIndex', 'filesByFolder', 'trash'].forEach(key => client.invalidateQueries({ queryKey: [key] })),
     });
     const mutation = useMutation({
         mutationKey: ['deleteTask'],
@@ -201,17 +205,18 @@ export const useDeleteTask = () => {
             if (context?.task) restoreTaskToCaches(client, context.task, context.locations);
             toast.error("Failed to delete task", { description: error.message });
         },
-        onSuccess: (_data, id, context) => toast.success("Task deleted", {
-            duration: 5000,
+        onSuccess: (_data, id, context) => toast.success("Task moved to Trash", {
+            duration: UNDO_DURATION,
             action: {
                 label: "Undo",
                 onClick: () => {
+                    if (_data?.purgeAt && Date.now() >= new Date(_data.purgeAt).getTime()) { toast.info('The 15-minute recovery window has expired.'); return; }
                     if (context?.task) restoreTaskToCaches(client, { ...context.task, isDeleted: false }, context.locations);
                     restoreMutation.mutate({ id });
                 },
             },
         }),
-        onSettled: () => ["tasks", "allFiles", "groupedFiles"].forEach(key => client.invalidateQueries({ queryKey: [key] })),
+        onSettled: () => ["tasks", "allFiles", "groupedFiles", "folderGroup", "fileIndex", "filesByFolder", "trash"].forEach(key => client.invalidateQueries({ queryKey: [key] })),
     });
     return { mutate: mutation.mutate, isPending: mutation.isPending };
 }
@@ -248,12 +253,15 @@ export const useUploadTaskFile = () => {
 
 export const useDeleteTaskFile = () => {
     const { data: session } = useSession();
-    const { mutate, isPending } = useMutationData(
-        ['deleteTaskFile'],
-        (data: { id: string, fileId: string }) => import("@/api/tasks").then(m => m.deleteTaskFile(session?.user?.token, data.id, data.fileId)),
-        ["tasks", "allFiles", "groupedFiles", "fileIndex", "filesByFolder", "task"]
-    )
-    return { mutate, isPending }
+    const undo = useTrashUndo();
+    const mutation = useMutation({
+        mutationKey: ['deleteTaskFile'],
+        mutationFn: (data: { id: string, fileId: string }) => import('@/api/tasks').then(m => m.deleteTaskFile(session?.user?.token, data.id, data.fileId)),
+        onSuccess: undo.offer,
+        onSettled: undo.refresh,
+        onError: (error: Error) => toast.error('Could not delete file', { description: error.message }),
+    });
+    return { mutate: mutation.mutate, isPending: mutation.isPending };
 }
 
 export const useAddTaskComment = () => {

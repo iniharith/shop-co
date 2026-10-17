@@ -1,4 +1,5 @@
 "use client";
+import { useUndoableMoves } from '@/hooks/useUndoableMoves';
 import { isTaskId, requireTaskId } from "@/utils/taskId";
 import { requestUploadUrl } from "@/utils/duplicateUpload";
 import React, { useState, useRef, useCallback, useEffect, useMemo, useTransition } from "react";
@@ -675,12 +676,17 @@ export default function TasksManager() {
     lastClickedIdRef.current = null;
   }, []);
 
+  const { move: moveWithUndo } = useUndoableMoves();
   const applyBulkUpdate = useCallback((data: Record<string, any>) => {
     const ids = Array.from(selectedIds);
+    if (data.status) {
+      void moveWithUndo(ids.map(id => ({ id, kind: 'task' as const })), data.status);
+      clearSelection(); return;
+    }
     ids.forEach(id => updateTask({ id, data, skipUndo: true, silent: true }));
     toast.success(`Updated ${ids.length} task${ids.length > 1 ? "s" : ""}`);
     clearSelection();
-  }, [selectedIds, updateTask, clearSelection]);
+  }, [selectedIds, updateTask, clearSelection, moveWithUndo]);
 
   // ── Bulk toolbar popover state ────────────────────────────────────────────
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);

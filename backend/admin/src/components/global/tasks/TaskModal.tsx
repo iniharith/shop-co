@@ -251,7 +251,7 @@ const FileAttachmentCard = ({ task, file, deleteFile, isDeletingFile, onPreview,
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (await confirmUploadAction('Delete artwork?', 'Are you sure you want to delete this file? This action cannot be undone.', 'Cancel', 'Delete')) {
+                  if (await confirmUploadAction('Delete artwork?', 'Move this file to Trash? You have 15 minutes to Undo before permanent deletion.', 'Cancel', 'Delete')) {
                     const fid = file._id || file.url.split('/').pop();
                     if (onDeleteLocal) onDeleteLocal(fid);
                     deleteFile({ id: task._id, fileId: fid });

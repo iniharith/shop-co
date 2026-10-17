@@ -3,6 +3,7 @@
  * Kampungcetak ®
  */
 "use client";
+import { useUndoableMoves } from '@/hooks/useUndoableMoves';
 import React, { useState, useMemo } from "react";
 import { useFolderGroup, useFilesByFolder, useReviewFile, useDeleteFile, useBulkDeleteFiles, useRenameFile, useCreateShareLink, useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, useMoveFile } from "@/hooks/useAdminDashboard";
 import { useOrder, useUpdateOrderStatus } from "@/hooks/useOrder";
@@ -467,36 +468,20 @@ export default function ArtworksManager() {
   };
 
   // Sysadmin: move every selected folder (task or order) to a new status in one click
-  const handleBulkStatusMove = () => {
-    if (selectedFolderIds.length === 0) return;
+  const { move: moveWithUndo } = useUndoableMoves();
+  const handleBulkStatusMove = async () => {
+    if (!selectedFolderIds.length) return;
     if (!confirm(`Move ${selectedFolderIds.length} folder(s) to "${bulkTargetStatus.replace(/_/g, ' ')}"?`)) return;
-
     const targets = groupedFromServer.filter((g: any) => selectedFolderIds.includes(`${g.folderName}-${g.orderId}-${g.taskId}`));
-    let done = 0;
-    const total = targets.length;
-    const finish = () => {
-      done += 1;
-      if (done === total) {
-        toast.success(`Moved ${total} folder(s) to ${bulkTargetStatus.replace(/_/g, ' ')}`);
-        setSelectedFolderIds([]);
-        setBulkSelectMode(false);
-      }
-    };
-
-    targets.forEach((group: any) => {
-      if (group.taskId) {
-        updateTask({ id: group.taskId, data: { status: bulkTargetStatus }, skipUndo: true, silent: true }, { onSuccess: finish, onError: finish });
-      } else if (group.orderId) {
-        updateOrderStatus({ id: group.orderId, status: bulkTargetStatus, skipUndo: true, silent: true }, { onSuccess: finish, onError: finish });
-      } else {
-        finish();
-      }
-    });
+    await moveWithUndo(targets.filter((group: any) => group.taskId || group.orderId).map((group: any) => ({
+      id: group.taskId || group.orderId, kind: group.taskId ? 'task' as const : 'order' as const, previousStatus: group.orderStatus,
+    })), bulkTargetStatus, () => { void refetch(); });
+    setSelectedFolder(null); setSelectedFolderIds([]); setBulkSelectMode(false);
   };
 
   const handleDeleteFolder = async (group: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!await confirmDelete(`Are you sure you want to delete ALL ${group.fileCount ?? 0} files in ${group.folderName}? This cannot be undone.`)) return;
+    if (!await confirmDelete(`Are you sure you want to delete ALL ${group.fileCount ?? 0} files in ${group.folderName}? You can Undo or restore these files from History → Trash.`)) return;
 
     try {
       // The folder summary doesn't ship file records anymore — fetch the
@@ -1239,7 +1224,7 @@ export default function ArtworksManager() {
                                     </Button>
                                   </div>
                                   <div className="absolute top-2 right-2 z-20">
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10 bg-white/50" onClick={async (e) => { e.stopPropagation(); if(await confirmDelete('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id); }}>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/10 bg-white/50" onClick={async (e) => { e.stopPropagation(); if(await confirmDelete('Delete folder and ALL files inside it? You can Undo or restore these files from History → Trash.')) deleteFolderMutate(folder._id); }}>
                                       <Trash2 className="w-3 h-3" />
                                     </Button>
                                   </div>
@@ -1265,7 +1250,7 @@ export default function ArtworksManager() {
                                    <Button variant="ghost" size="icon" className="hover:bg-blue-50 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); setRenameFolderTarget({ id: folder._id, name: folder.name, type: "subfolder" }); setRenamedFolderName(folder.name); }} title="Rename Folder">
                                      <Pencil className="w-4 h-4" />
                                    </Button>
-                                   <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={async (e) => { e.stopPropagation(); if(await confirmDelete('Delete folder and ALL files inside it? This cannot be undone.')) deleteFolderMutate(folder._id); }}>
+                                   <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={async (e) => { e.stopPropagation(); if(await confirmDelete('Delete folder and ALL files inside it? You can Undo or restore these files from History → Trash.')) deleteFolderMutate(folder._id); }}>
                                      <Trash2 className="w-4 h-4" />
                                   </Button>
                                 </div>

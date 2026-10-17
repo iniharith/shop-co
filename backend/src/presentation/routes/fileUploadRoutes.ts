@@ -1,3 +1,5 @@
+import { TrashItem } from '../../domain/entities/TrashItem';
+import { trashFile, restoreTrash, purgeTrash, TrashError } from '../../shared/utils/trash';
 import { uploadTaskId, INVALID_TASK_ID_MESSAGE } from '../../shared/utils/taskId';
 import { reserveUploadName } from '../../shared/utils/reserveUploadName';
 /**
@@ -169,6 +171,32 @@ router.post(
     savedFiles.forEach(reindexFileInBg);
   })
 );
+// Recoverable deletion endpoints. Staff can restore from History / Trash.
+router.get('/trash', authMiddilware, authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'), asyncHandler(async (req, res) => {
+  const limit = 100;
+  const filter: any = {};
+  if (req.query.before) {
+    if (typeof req.query.before !== 'string' || !/^[a-f\d]{24}$/i.test(req.query.before)) { res.status(400).json({ success: false, message: 'Invalid trash cursor' }); return; }
+    filter._id = { $lt: req.query.before };
+  }
+  const rows: any[] = await TrashItem.find(filter).select('kind itemId name taskId deletedAt purgeAt state').sort({ _id: -1 }).limit(limit + 1).lean();
+  res.json({ success: true, data: rows.slice(0, limit), nextCursor: rows.length > limit ? String(rows[limit - 1]._id) : null });
+}));
+router.delete('/trash/:trashId', authMiddilware, authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'), asyncHandler(async (req, res) => {
+  if (!/^[a-f\d]{24}$/i.test(req.params.trashId) || req.body?.confirmation !== 'DELETE') { res.status(400).json({ success: false, message: 'Confirm permanent deletion first.' }); return; }
+  const removed = await purgeTrash(req.params.trashId, true);
+  if (!removed) { res.status(409).json({ success: false, message: 'Item is missing or permanent deletion is already in progress.' }); return; }
+  res.json({ success: true, message: 'Permanently deleted' });
+}));
+router.post('/trash/:trashId/restore', authMiddilware, authorizeRoles('admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'), asyncHandler(async (req, res) => {
+  if (!/^[a-f\d]{24}$/i.test(req.params.trashId)) { res.status(400).json({ success: false, message: 'Invalid trash item' }); return; }
+  try {
+    const restored = await restoreTrash(req.params.trashId, String((req as any).userId || (req as any).user?.id || 'staff'));
+    if (restored.kind === 'file' && /^[a-f\d]{24}$/i.test(restored.itemId)) { const file = await FileUpload.findById(restored.itemId); if (file) reindexFileInBg(file); }
+    res.json({ success: true, message: 'Restored from Trash', ...restored });
+  } catch (error) { if (error instanceof TrashError) { res.status(error.status).json({ success: false, message: error.message }); return; } throw error; }
+}));
+
 // ─── POST /api/files/presigned-url ────────────────────────
 // Get a presigned URL to upload file directly to S3
 router.post(
@@ -1799,6 +1827,15 @@ router.get(
   })
 );
 
+router.post('/s/:slug/trash/:trashId/restore', asyncHandler(async (req, res) => {
+  const link = await shareLinkRepository.findBySlug(req.params.slug);
+  if (!link || !/^[a-f\d]{24}$/i.test(req.params.trashId)) { res.status(404).json({ success: false, message: 'Deleted file not found' }); return; }
+  const entry = await TrashItem.findOne({ _id: req.params.trashId, kind: 'file', deletedBy: `share:${req.params.slug}` }).lean();
+  if (!entry) { res.status(404).json({ success: false, message: 'Deleted file not found for this link' }); return; }
+  try { await restoreTrash(req.params.trashId, `share:${req.params.slug}`); res.json({ success: true, message: 'File restored' }); }
+  catch (error) { if (error instanceof TrashError) { res.status(error.status).json({ success: false, message: error.message }); return; } throw error; }
+}));
+
 // 🌐 Public: Delete a file from a shared folder (slug acts as auth)
 router.delete(
   '/s/:slug/files/:id',
@@ -1813,21 +1850,9 @@ router.delete(
       res.status(404).json({ success: false, message: 'File not found' });
       return;
     }
-    try {
-      if (file.path) await deleteFromS3(file.path);
-      await deleteDraftQrCompanions(file);
-    } catch (err: any) {
-      console.warn('[SharedDelete] S3 delete failed:', err.message);
-    }
-    await fileUploadRepository.delete(req.params.id);
+    const deletion = await trashFile(file, `share:${req.params.slug}`);
     removeFileIndex(req.params.id);
-    if (file.path) {
-      await Task.updateMany(
-        { "files.url": file.path },
-        { $pull: { files: { url: file.path } } }
-      );
-    }
-    res.json({ success: true, message: 'File deleted' });
+    res.json({ success: true, message: 'File moved to Trash', ...deletion });
   })
 );
 
@@ -2166,6 +2191,8 @@ router.post(
     }
 
     let deletedCount = 0;
+    const trashIds: string[] = [];
+    let purgeAt: Date | undefined;
     const errors = [];
 
     for (const id of fileIds) {
@@ -2177,24 +2204,17 @@ router.post(
           continue; // skip if unauthorized
         }
 
-        await fileUploadRepository.delete(id);
+        const deletion = await trashFile(file, String(userId));
+        trashIds.push(deletion.trashId);
+        if (!purgeAt || deletion.purgeAt < purgeAt) purgeAt = deletion.purgeAt;
         removeFileIndex(id);
-        if (file.path) {
-          await deleteFromS3(file.path);
-          await deleteDraftQrCompanions(file);
-          // Remove file from any Task that references it
-          await Task.updateMany(
-            { "files.url": file.path },
-            { $pull: { files: { url: file.path } } }
-          );
-        }
         deletedCount++;
       } catch (err: any) {
         errors.push({ id, error: err.message });
       }
     }
 
-    res.json({ success: true, deletedCount, errors });
+    res.json({ success: true, deletedCount, trashIds, purgeAt, errors });
   })
 );
 
@@ -2225,24 +2245,9 @@ router.delete(
       return;
     }
 
-    // Delete from S3 using the helper
-    try {
-      if (file.path) {
-        await deleteFromS3(file.path);
-        await deleteDraftQrCompanions(file);
-        // Remove file from any Task that references it
-        await Task.updateMany(
-          { "files.url": file.path },
-          { $pull: { files: { url: file.path } } }
-        );
-      }
-    } catch (err: any) {
-      console.warn('[FileUpload] Could not delete from S3:', err.message);
-    }
-
-    await fileUploadRepository.delete(req.params.id);
+    const deletion = await trashFile(file, String(userId));
     removeFileIndex(req.params.id);
-    res.json({ success: true, message: 'Fail berjaya dipadam' });
+    res.json({ success: true, message: 'File moved to Trash', ...deletion });
   })
 );
 
