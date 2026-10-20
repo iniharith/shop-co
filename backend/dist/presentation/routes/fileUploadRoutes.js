@@ -539,11 +539,11 @@ function buildFolderGroups(taskStatusFilter, q) {
         // 3. Load all tasks in this queue & all referenced tasks by ID
         const [tasks, orders, users, allReferencedTasks] = yield Promise.all([
             Task_1.Task.find({ status: { $in: statusQueryValues }, isDeleted: { $ne: true } })
-                .select('title status orderId category lineItems')
+                .select('title status orderId category lineItems statusHistory statusUpdatedAt')
                 .lean(),
-            orderIds.length ? order_model_1.default.find({ _id: { $in: orderIds } }).select('orderStatus userId easyparcelAwb easyparcelBookingStatus awbUrl awbUrlsByFormat').lean() : [],
+            orderIds.length ? order_model_1.default.find({ _id: { $in: orderIds } }).select('orderStatus userId easyparcelAwb easyparcelBookingStatus awbUrl awbUrlsByFormat statusUpdatedAt').lean() : [],
             userIds.length ? user_model_1.default.find({ _id: { $in: userIds } }).select('name').lean() : [],
-            allTaskIds.length ? Task_1.Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category lineItems isDeleted').lean() : [],
+            allTaskIds.length ? Task_1.Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category lineItems isDeleted statusHistory statusUpdatedAt').lean() : [],
         ]);
         const taskMap = new Map(tasks.map((t) => [t._id.toString(), t]));
         const allTaskMap = new Map(allReferencedTasks.map((t) => [t._id.toString(), t]));
@@ -654,7 +654,15 @@ function buildFolderGroups(taskStatusFilter, q) {
                     printUrl: awbUrls.A6 || awbUrls.A4 || order.awbUrl || '',
                 };
             }
+            const task = g.taskId ? (taskMap.get(g.taskId) || allTaskMap.get(g.taskId)) : null;
+            const queueRecord = task || order;
+            const matchingTransitions = ((task === null || task === void 0 ? void 0 : task.statusHistory) || []).filter((entry) => entry.toStatus === orderStatus && Number.isFinite(new Date(entry.changedAt).getTime()));
+            const queueEnteredAt = matchingTransitions.reduce((latest, entry) => {
+                const date = new Date(entry.changedAt);
+                return !latest || date > latest ? date : latest;
+            }, null) || (queueRecord === null || queueRecord === void 0 ? void 0 : queueRecord.statusUpdatedAt) || null;
             return {
+                queueEnteredAt,
                 folderName: g.folderName,
                 orderId: g.orderId,
                 taskId: g.taskId,

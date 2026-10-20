@@ -529,11 +529,11 @@ async function buildFolderGroups(taskStatusFilter: string[], q?: string): Promis
   // 3. Load all tasks in this queue & all referenced tasks by ID
   const [tasks, orders, users, allReferencedTasks] = await Promise.all([
     Task.find({ status: { $in: statusQueryValues }, isDeleted: { $ne: true } })
-      .select('title status orderId category lineItems')
+      .select('title status orderId category lineItems statusHistory statusUpdatedAt')
       .lean(),
-    orderIds.length ? OrderModel.find({ _id: { $in: orderIds } }).select('orderStatus userId easyparcelAwb easyparcelBookingStatus awbUrl awbUrlsByFormat').lean() : [],
+    orderIds.length ? OrderModel.find({ _id: { $in: orderIds } }).select('orderStatus userId easyparcelAwb easyparcelBookingStatus awbUrl awbUrlsByFormat statusUpdatedAt').lean() : [],
     userIds.length ? User.find({ _id: { $in: userIds } }).select('name').lean() : [],
-    allTaskIds.length ? Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category lineItems isDeleted').lean() : [],
+    allTaskIds.length ? Task.find({ _id: { $in: allTaskIds } }).select('title status orderId category lineItems isDeleted statusHistory statusUpdatedAt').lean() : [],
   ]);
 
   const taskMap = new Map(tasks.map((t: any) => [t._id.toString(), t]));
@@ -646,7 +646,17 @@ async function buildFolderGroups(taskStatusFilter: string[], q?: string): Promis
         printUrl: awbUrls.A6 || awbUrls.A4 || order.awbUrl || '',
       };
     }
+    const task = g.taskId ? (taskMap.get(g.taskId) || allTaskMap.get(g.taskId)) as any : null;
+    const queueRecord = task || order;
+    const matchingTransitions = (task?.statusHistory || []).filter((entry: any) =>
+      entry.toStatus === orderStatus && Number.isFinite(new Date(entry.changedAt).getTime())
+    );
+    const queueEnteredAt = matchingTransitions.reduce((latest: Date | null, entry: any) => {
+      const date = new Date(entry.changedAt);
+      return !latest || date > latest ? date : latest;
+    }, null) || queueRecord?.statusUpdatedAt || null;
     return {
+      queueEnteredAt,
       folderName: g.folderName,
       orderId: g.orderId,
       taskId: g.taskId,

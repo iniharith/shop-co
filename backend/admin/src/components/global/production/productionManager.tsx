@@ -81,6 +81,18 @@ const getFolderItemKey = (index: number, group: any) =>
         ? `user:${group.userId}`
         : `folder:${group.folderName || "unnamed"}:${index}`;
 
+const queueDateFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Kuala_Lumpur', day: '2-digit', month: 'short', year: 'numeric',
+});
+const getQueueTime = (group: any): number => {
+  const time = group.queueEnteredAt ? new Date(group.queueEnteredAt).getTime() : NaN;
+  return Number.isFinite(time) ? time : Infinity;
+};
+const getQueueDateLabel = (group: any): string => {
+  const time = getQueueTime(group);
+  return Number.isFinite(time) ? queueDateFormatter.format(time) : 'Date unavailable';
+};
+
 export default function ProductionManager() {
   const lowPower = useLowPowerAnimations();
   const { data: session } = useSession();
@@ -183,6 +195,10 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
       if (group.orderStatus !== activeSubTab) return false;
       if (activeTab !== "ALL" && !(Array.isArray(group.categories) ? group.categories.includes(activeTab) : group.category === activeTab)) return false;
       return true;
+    }).sort((a, b) => {
+      const first = getQueueTime(a);
+      const second = getQueueTime(b);
+      return first === second ? 0 : first < second ? -1 : 1;
     });
   }, [groupedFromServer, activeTab, activeSubTab, movedFolderIds]);
 
@@ -708,8 +724,15 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
                   const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
                   const isSelected = selectedFolder === folderId;
                   const isBulkChecked = selectedFolderIds.includes(folderId);
+                  const dateLabel = getQueueDateLabel(group);
+                  const showDate = index === 0 || dateLabel !== getQueueDateLabel(groupedFiles[index - 1]);
                   return (
                     <div className={`px-3 pb-2 ${index === 0 ? "pt-3" : ""}`}>
+                      {showDate && (
+                        <div className={`pl-1 pb-2 text-[11px] font-medium text-muted-foreground ${index > 0 ? "pt-3" : ""}`}>
+                          {dateLabel}
+                        </div>
+                      )}
                       <div
                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
                       isSelected 
