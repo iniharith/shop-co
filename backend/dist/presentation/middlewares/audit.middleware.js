@@ -1,12 +1,23 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.auditMiddleware = void 0;
 const AuditLog_1 = require("../../domain/entities/AuditLog");
+const Task_1 = require("../../domain/entities/Task");
 const mutatingMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const hiddenRoutes = ['/api/auth', '/api/audit-logs'];
 const describeRequest = (req) => {
     var _a, _b, _c, _d, _e;
-    const parts = req.path.split('/').filter(Boolean);
+    // req.path can be shortened by a mounted router by the time 'finish' fires.
+    const parts = req.originalUrl.split('?')[0].split('/').filter(Boolean);
     const apiIndex = parts.indexOf('api');
     const entityType = parts[apiIndex + 1] || parts[0] || 'website';
     const entityId = parts.find((part, index) => index > apiIndex + 1 && /^[a-f\d]{24}$/i.test(part));
@@ -31,15 +42,21 @@ const auditMiddleware = (req, res, next) => {
         return;
     }
     res.on('finish', () => {
-        var _a, _b, _c, _d;
         if (res.statusCode >= 400)
             return;
         const details = describeRequest(req);
         const authReq = req;
-        void AuditLog_1.AuditLog.create(Object.assign(Object.assign({}, details), { actorId: authReq.userId, actorName: ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.name) || ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.email) || (authReq.userId ? 'Staff' : 'External user'), actorRole: authReq.role || (authReq.userId ? 'staff' : 'public'), source: authReq.userId ? 'admin' : req.originalUrl.includes('/share') || req.originalUrl.includes('/s/') ? 'public_share' : 'public', metadata: {
-                status: typeof ((_c = req.body) === null || _c === void 0 ? void 0 : _c.status) === 'string' ? req.body.status : undefined,
-                fileCount: Array.isArray((_d = req.body) === null || _d === void 0 ? void 0 : _d.files) ? req.body.files.length : undefined,
-            }, method: req.method, route: req.originalUrl.split('?')[0], ip: req.ip, userAgent: req.get('user-agent') })).catch(error => console.error('[AuditLog] Failed to write:', error.message));
+        void (() => __awaiter(void 0, void 0, void 0, function* () {
+            var _a, _b, _c, _d;
+            const task = details.action === 'status_change' && details.entityType === 'tasks' && details.entityId
+                ? yield Task_1.Task.findById(details.entityId).select('title').read('primary').lean().catch(() => null) : null;
+            if (task === null || task === void 0 ? void 0 : task.title)
+                details.summary = `status change: ${String(task.title).slice(0, 300)}`;
+            yield AuditLog_1.AuditLog.create(Object.assign(Object.assign({}, details), { actorId: authReq.userId, actorName: ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.name) || ((_b = authReq.user) === null || _b === void 0 ? void 0 : _b.email) || (authReq.userId ? 'Staff' : 'External user'), actorRole: authReq.role || (authReq.userId ? 'staff' : 'public'), source: authReq.userId ? 'admin' : req.originalUrl.includes('/share') || req.originalUrl.includes('/s/') ? 'public_share' : 'public', metadata: {
+                    status: typeof ((_c = req.body) === null || _c === void 0 ? void 0 : _c.status) === 'string' ? req.body.status : undefined,
+                    fileCount: Array.isArray((_d = req.body) === null || _d === void 0 ? void 0 : _d.files) ? req.body.files.length : undefined,
+                }, method: req.method, route: req.originalUrl.split('?')[0], ip: req.ip, userAgent: req.get('user-agent') }));
+        }))().catch(error => console.error('[AuditLog] Failed to write:', error.message));
     });
     next();
 };

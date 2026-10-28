@@ -1,5 +1,6 @@
 "use client";
 import { useUndoableMoves } from '@/hooks/useUndoableMoves';
+import { taskIdFromSearch, taskUrlForSelection, shouldOpenLinkedTask } from "@/utils/taskNavigation";
 import { isTaskId, requireTaskId } from "@/utils/taskId";
 import { requestUploadUrl } from "@/utils/duplicateUpload";
 import React, { useState, useRef, useCallback, useEffect, useMemo, useTransition } from "react";
@@ -578,7 +579,8 @@ export default function TasksManager() {
         ...(assigneeFilter !== "all" ? { assignee: assigneeFilter } : {}),
       };
   const columnQueries = useTaskColumns(TASK_COLUMNS, hiddenColumns, taskFilters);
-  const linkedTaskId = useSearchParams().get("taskId") || undefined;
+  const searchParams = useSearchParams();
+  const linkedTaskId = taskIdFromSearch(searchParams);
   const { data: linkedTaskResponse } = useTask(linkedTaskId);
   const tasks = useMemo(() => {
     const byId = new Map<string, any>();
@@ -603,12 +605,26 @@ export default function TasksManager() {
   const [sortOption, setSortOption]                 = useState<"dateDesc"|"dateAsc"|"nameAsc"|"nameDesc">("dateDesc");
   const [visibleTaskCounts, setVisibleTaskCounts]   = useState<Record<string, number>>({});
 
+  const openedLinkedTaskId = useRef<string | null>(null);
+  const openTask = useCallback((task: any) => {
+    if (!isTaskId(task?._id)) return;
+    openedLinkedTaskId.current = task._id.toLowerCase();
+    window.history.replaceState(null, "", taskUrlForSelection(window.location.href, task._id));
+    setSelectedTask(task);
+  }, []);
+  const closeTask = useCallback(() => {
+    openedLinkedTaskId.current = null;
+    window.history.replaceState(null, "", taskUrlForSelection(window.location.href));
+    setSelectedTask(null);
+  }, []);
+
   useEffect(() => {
     const linkedTask = (linkedTaskResponse as any)?.task;
-    if (linkedTask?._id) {
-      setSelectedTask(current => current?._id === linkedTask._id ? current : linkedTask);
+    if (shouldOpenLinkedTask(window.location.href, linkedTaskId, linkedTask, openedLinkedTaskId.current)) {
+      openedLinkedTaskId.current = linkedTaskId!;
+      setSelectedTask(linkedTask);
     }
-  }, [linkedTaskResponse]);
+  }, [linkedTaskId, linkedTaskResponse]);
 
   const { mutate: updateTask }  = useUpdateTask();
   const { mutate: deleteTask }  = useDeleteTask();
@@ -664,11 +680,11 @@ export default function TasksManager() {
         lastClickedIdRef.current = task._id;
       } else {
         // Normal click — open modal
-        setSelectedTask(task);
+        openTask(task);
         lastClickedIdRef.current = task._id;
       }
     },
-    [selectedIds]
+    [selectedIds, openTask]
   );
 
   const clearSelection = useCallback(() => {
@@ -876,7 +892,7 @@ export default function TasksManager() {
           }}>
             Run Migration Fix
           </Button>
-          <CreateTaskDialog onTaskCreated={(task) => setSelectedTask(task)} />
+          <CreateTaskDialog onTaskCreated={openTask} />
         </div>
       </div>
 
@@ -908,7 +924,7 @@ export default function TasksManager() {
                         ) : (
                           <>
                         {displayedTasks.map((task: any) => (
-                          <Card key={task._id} className={`cursor-pointer hover:shadow-md transition-shadow group border border-border/50 ${task.isDone ? "opacity-60 bg-muted/20" : ""}`} onClick={() => setSelectedTask(task)}>
+                          <Card key={task._id} className={`cursor-pointer hover:shadow-md transition-shadow group border border-border/50 ${task.isDone ? "opacity-60 bg-muted/20" : ""}`} onClick={() => openTask(task)}>
                             <CardContent className="p-3 flex flex-col gap-2">
                               <div className="flex justify-between items-start gap-2">
                                 <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -1121,7 +1137,7 @@ export default function TasksManager() {
         <TaskModal
           task={tasks.find((t: any) => t._id === selectedTask._id) || selectedTask}
           isOpen={!!selectedTask}
-          onClose={() => setSelectedTask(null)}
+          onClose={closeTask}
         />
       )}
 

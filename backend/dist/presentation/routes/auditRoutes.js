@@ -48,6 +48,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const AuditLog_1 = require("../../domain/entities/AuditLog");
+const Task_1 = require("../../domain/entities/Task");
 const auth_middileware_1 = __importStar(require("../middlewares/auth.middileware"));
 const router = (0, express_1.Router)();
 router.use(auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('sysadmin', 'admin', 'boss'));
@@ -86,8 +87,14 @@ router.get('/', (0, express_async_handler_1.default)((req, res) => __awaiter(voi
     const filter = {};
     if (typeof req.query.action === 'string' && req.query.action)
         filter.action = req.query.action;
-    if (typeof req.query.entityType === 'string' && req.query.entityType)
-        filter.entityType = req.query.entityType;
+    if (typeof req.query.entityType === 'string' && req.query.entityType) {
+        if (req.query.entityType === 'tasks')
+            filter.$and = [{ $or: [
+                        { entityType: 'tasks' }, { route: { $regex: '^/api/tasks(?:/|$)', $options: 'i' } },
+                    ] }];
+        else
+            filter.entityType = req.query.entityType;
+    }
     if (typeof req.query.actorRole === 'string' && req.query.actorRole)
         filter.actorRole = req.query.actorRole;
     if (typeof req.query.actor === 'string') {
@@ -103,8 +110,20 @@ router.get('/', (0, express_async_handler_1.default)((req, res) => __awaiter(voi
     if (to && !Number.isNaN(to.getTime()))
         filter.createdAt = Object.assign(Object.assign({}, filter.createdAt), { $lte: to });
     if (typeof req.query.q === 'string' && req.query.q.trim()) {
-        const q = req.query.q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').slice(0, 100);
-        filter.$or = [{ summary: { $regex: q, $options: 'i' } }, { actorName: { $regex: q, $options: 'i' } }];
+        const q = req.query.q.trim().slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const matchingTasks = yield Task_1.Task.find({ title: { $regex: q, $options: 'i' } }).select('_id').read('primary').lean();
+        const ids = matchingTasks.map(task => String(task._id));
+        filter.$or = [
+            { summary: { $regex: q, $options: 'i' } },
+            { actorName: { $regex: q, $options: 'i' } },
+            { entityId: { $regex: q, $options: 'i' } },
+            { action: 'status_change', entityType: 'tasks', entityId: { $in: ids },
+                $expr: { $eq: ['$summary', { $concat: ['status change: ', '$entityId'] }] } },
+            // Old logs accidentally recorded the task ID as entityType. Restrict
+            // this fallback to task routes and ID-only summaries.
+            { action: 'status_change', entityType: { $in: ids }, route: { $regex: '^/api/tasks/', $options: 'i' },
+                $expr: { $eq: ['$summary', { $concat: ['status change: ', '$entityType'] }] } },
+        ];
     }
     const sortFields = { date: 'createdAt', user: 'actorName', action: 'action' };
     const sortField = sortFields[typeof req.query.sortBy === 'string' ? req.query.sortBy : 'date'] || 'createdAt';
@@ -122,6 +141,22 @@ router.get('/', (0, express_async_handler_1.default)((req, res) => __awaiter(voi
         logsQuery,
         countQuery,
     ]);
-    res.json({ success: true, data: logs, pagination: { page, limit, total, pages: Math.ceil(total / limit) } });
+    const taskIdForLegacySummary = (log) => {
+        var _a;
+        if (log.action !== 'status_change')
+            return null;
+        const routeId = typeof log.route === 'string' ? (_a = /^\/api\/tasks\/([a-f\d]{24})(?:\/|$)/i.exec(log.route)) === null || _a === void 0 ? void 0 : _a[1] : undefined;
+        const taskId = routeId || (log.entityType === 'tasks' ? log.entityId : undefined);
+        return typeof taskId === 'string' && /^[a-f\d]{24}$/i.test(taskId) && log.summary === `status change: ${taskId}` ? taskId : null;
+    };
+    const ids = [...new Set(logs.map(taskIdForLegacySummary).filter((id) => id !== null))];
+    const tasks = ids.length ? yield Task_1.Task.find({ _id: { $in: ids } }).select('title').read('primary').lean() : [];
+    const titles = new Map(tasks.map((task) => [String(task._id).toLowerCase(), task.title]));
+    const displayLogs = logs.map((log) => {
+        const id = taskIdForLegacySummary(log);
+        const title = id && titles.get(id.toLowerCase());
+        return title ? Object.assign(Object.assign({}, log), { summary: `status change: ${title}` }) : log;
+    });
+    res.json({ success: true, data: displayLogs, pagination: { page, limit, total, pages: Math.ceil(total / limit) } });
 })));
 exports.default = router;

@@ -112,7 +112,7 @@ export default function AuditLogPage() {
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <div className="relative md:col-span-2">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={event => { setSearch(event.target.value); setPage(1); }} placeholder="Search user or summary..." className="pl-9" />
+              <Input value={search} onChange={event => { setSearch(event.target.value); setPage(1); }} placeholder="Search task, user or details..." className="pl-9" />
             </div>
             <Select value={actor} onValueChange={value => { setActor(value); setPage(1); }}>
               <SelectTrigger><Users className="mr-2 size-4 text-muted-foreground" /><SelectValue placeholder="All users" /></SelectTrigger>

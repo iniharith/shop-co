@@ -1,11 +1,13 @@
 import { NextFunction, Request, Response } from 'express';
 import { AuditLog } from '../../domain/entities/AuditLog';
+import { Task } from '../../domain/entities/Task';
 
 const mutatingMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const hiddenRoutes = ['/api/auth', '/api/audit-logs'];
 
 const describeRequest = (req: Request) => {
-  const parts = req.path.split('/').filter(Boolean);
+  // req.path can be shortened by a mounted router by the time 'finish' fires.
+  const parts = req.originalUrl.split('?')[0].split('/').filter(Boolean);
   const apiIndex = parts.indexOf('api');
   const entityType = parts[apiIndex + 1] || parts[0] || 'website';
   const entityId = parts.find((part, index) => index > apiIndex + 1 && /^[a-f\d]{24}$/i.test(part));
@@ -34,7 +36,11 @@ export const auditMiddleware = (req: Request, res: Response, next: NextFunction)
     if (res.statusCode >= 400) return;
     const details = describeRequest(req);
     const authReq = req as any;
-    void AuditLog.create({
+    void (async () => {
+      const task = details.action === 'status_change' && details.entityType === 'tasks' && details.entityId
+        ? await Task.findById(details.entityId).select('title').read('primary').lean().catch(() => null) : null;
+      if (task?.title) details.summary = `status change: ${String(task.title).slice(0, 300)}`;
+      await AuditLog.create({
       ...details,
       actorId: authReq.userId,
       actorName: authReq.user?.name || authReq.user?.email || (authReq.userId ? 'Staff' : 'External user'),
@@ -48,7 +54,8 @@ export const auditMiddleware = (req: Request, res: Response, next: NextFunction)
       route: req.originalUrl.split('?')[0],
       ip: req.ip,
       userAgent: req.get('user-agent'),
-    }).catch(error => console.error('[AuditLog] Failed to write:', error.message));
+      });
+    })().catch(error => console.error('[AuditLog] Failed to write:', error.message));
   });
   next();
 };
