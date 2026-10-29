@@ -206,6 +206,13 @@ router.get('/ops-overview', (0, express_async_handler_1.default)((_req, res) => 
         tasks, orders, users, images,
         sessions: (0, socketHandler_1.getOnlineUsersCount)(),
     }));
+    const connections = (0, socketHandler_1.getOnlineConnections)();
+    const registeredUsers = yield user_model_1.default.find({ isDeleted: { $ne: true } }).select('_id name').lean();
+    const users = registeredUsers.map(user => ({
+        id: String(user._id),
+        name: String(user.name || 'Unknown user'),
+        connections: connections.filter(connection => connection.userId === String(user._id)).length,
+    }));
     res.json({
         success: true,
         data: {
@@ -213,6 +220,7 @@ router.get('/ops-overview', (0, express_async_handler_1.default)((_req, res) => 
             telemetry: (0, requestTelemetry_1.getOperationalTelemetry)(),
             dependencies: { mongo, redis, s3, vercel, railway },
             counts,
+            users,
             network: {
                 sampleIntervalSeconds: 5,
                 bandwidth: bandwidthTracker_1.bandwidthHistory.slice(-60),

@@ -12,6 +12,7 @@ import { REDIS_CHANNELS } from "../../shared/constants/redis.constant";
 
 
 const userSocketMap = new Map<string, string>()
+const onlineConnections = new Map<string, { userId: string; name: string }>();
 
 export const socketIoSetup = async (io: Namespace<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>) => {
     const userRepository = new UserRepository();
@@ -50,9 +51,10 @@ export const socketIoSetup = async (io: Namespace<DefaultEventsMap, DefaultEvent
         if (userId && userId !== null && !!userId) {
             try {
                 const user = socket.data.user || await userRepository.findById(userId as string);
-                if (user) {
+                if (user && socket.connected) {
                     // socket.join(userId as string)
                     userSocketMap.set(userId as string, socket.id)
+                    onlineConnections.set(socket.id, { userId: String(userId), name: String(user.name || user.email || "Unknown user") });
                     io.to(socket.id).emit("joined", {
                         message: `🔵 user:${user?.name} joined room `
                     })
@@ -95,12 +97,13 @@ export const socketIoSetup = async (io: Namespace<DefaultEventsMap, DefaultEvent
                         }
                     });
                     socket.on('disconnect', () => {
+                        onlineConnections.delete(socket.id);
                         if (realtimeStatusInterval) clearInterval(realtimeStatusInterval);
                         if (userSocketMap.get(userId as string) === socket.id) {
                             userSocketMap.delete(userId as string);
                         }
                     });
-                } else {
+                } else if (!user) {
                     userSocketMap.delete(userId as string)
                     console.log("🔴 user is not found");
                     socket.disconnect();
@@ -127,3 +130,5 @@ export const getReceiverSocketId = (userId: string) => {
 export const getOnlineUsersCount = () => {
     return userSocketMap.size;
 }
+
+export const getOnlineConnections = () => Array.from(onlineConnections.entries(), ([id, user]) => ({ id, ...user }));

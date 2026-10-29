@@ -24,7 +24,7 @@ import { taskRepository } from '../../infrastructure/repositories/TaskRepository
 import User from '../../infrastructure/db/models/user.model';
 import { aggregateCompletionAnalytics, COMPLETION_STATUSES } from '../../shared/utils/queueAnalytics';
 
-import { getOnlineUsersCount } from '../../infrastructure/socket/socketHandler';
+import { getOnlineUsersCount, getOnlineConnections } from '../../infrastructure/socket/socketHandler';
 import { RedisService } from '../../infrastructure/redis/redis';
 
 const router = Router();
@@ -192,6 +192,14 @@ const counts = await Promise.all([
       sessions: getOnlineUsersCount(),
     }));
 
+    const connections = getOnlineConnections();
+    const registeredUsers = await User.find({ isDeleted: { $ne: true } }).select('_id name').lean();
+    const users = registeredUsers.map(user => ({
+      id: String(user._id),
+      name: String(user.name || 'Unknown user'),
+      connections: connections.filter(connection => connection.userId === String(user._id)).length,
+    }));
+
     res.json({
       success: true,
       data: {
@@ -199,6 +207,7 @@ const counts = await Promise.all([
         telemetry: getOperationalTelemetry(),
         dependencies: { mongo, redis, s3, vercel, railway },
         counts,
+        users,
         network: {
           sampleIntervalSeconds: 5,
           bandwidth: bandwidthHistory.slice(-60),

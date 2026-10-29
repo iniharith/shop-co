@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getOnlineUsersCount = exports.getReceiverSocketId = exports.socketIoSetup = void 0;
+exports.getOnlineConnections = exports.getOnlineUsersCount = exports.getReceiverSocketId = exports.socketIoSetup = void 0;
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -22,6 +22,7 @@ const jwt_1 = __importDefault(require("../../shared/utils/jwt"));
 const redis_1 = require("../redis/redis");
 const redis_constant_1 = require("../../shared/constants/redis.constant");
 const userSocketMap = new Map();
+const onlineConnections = new Map();
 const socketIoSetup = (io) => __awaiter(void 0, void 0, void 0, function* () {
     const userRepository = new user_repository_1.UserRepository();
     const redisService = new redis_1.RedisService();
@@ -56,9 +57,10 @@ const socketIoSetup = (io) => __awaiter(void 0, void 0, void 0, function* () {
         if (userId && userId !== null && !!userId) {
             try {
                 const user = socket.data.user || (yield userRepository.findById(userId));
-                if (user) {
+                if (user && socket.connected) {
                     // socket.join(userId as string)
                     userSocketMap.set(userId, socket.id);
+                    onlineConnections.set(socket.id, { userId: String(userId), name: String(user.name || user.email || "Unknown user") });
                     io.to(socket.id).emit("joined", {
                         message: `🔵 user:${user === null || user === void 0 ? void 0 : user.name} joined room `
                     });
@@ -95,6 +97,7 @@ const socketIoSetup = (io) => __awaiter(void 0, void 0, void 0, function* () {
                         }
                     }));
                     socket.on('disconnect', () => {
+                        onlineConnections.delete(socket.id);
                         if (realtimeStatusInterval)
                             clearInterval(realtimeStatusInterval);
                         if (userSocketMap.get(userId) === socket.id) {
@@ -102,7 +105,7 @@ const socketIoSetup = (io) => __awaiter(void 0, void 0, void 0, function* () {
                         }
                     });
                 }
-                else {
+                else if (!user) {
                     userSocketMap.delete(userId);
                     console.log("🔴 user is not found");
                     socket.disconnect();
@@ -127,3 +130,5 @@ const getOnlineUsersCount = () => {
     return userSocketMap.size;
 };
 exports.getOnlineUsersCount = getOnlineUsersCount;
+const getOnlineConnections = () => Array.from(onlineConnections.entries(), ([id, user]) => (Object.assign({ id }, user)));
+exports.getOnlineConnections = getOnlineConnections;

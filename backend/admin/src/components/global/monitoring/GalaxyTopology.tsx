@@ -1896,14 +1896,16 @@ function hover(sim: Sim) {
   }
   if (!n) { sim.tip.style.display = "none"; return; }
   const sc = n.status === "down" ? hex(PAL.alert) : n.status === "unknown" ? hex(PAL.unk) : n.status === "warn" ? hex(PAL.warn) : hex(PAL.ok);
-  const statusText = n.status === "warn" ? "degraded" : n.status;
-  const rows = [`<b>${n.label || n.id}</b> · <span style="color:${sc}">${statusText}</span>`];
+  const statusText = n.id.startsWith("user:") ? (n.status === "up" ? "connected" : "offline") : n.status === "warn" ? "degraded" : n.status;
+  const safeLabel = (n.label || n.id).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c] || c));
+  const rows = [`<b>${safeLabel}</b> · <span style="color:${sc}">${statusText}</span>`];
   const l2: string[] = [];
   if (n.ip) l2.push(n.ip);
   l2.push(n.kind);
   if (n.meta && n.meta.model) l2.push(n.meta.model);
   rows.push(l2.join(" · "));
-  rows.push(`<span style="color:${hex(PAL.cyan)}">↓ ${fmtRate(n.rx)}</span> · <span style="color:${hex(PAL.magenta)}">↑ ${fmtRate(n.tx)}</span>`);
+  if (n.id.startsWith("user:")) rows.push(`${Number(n.meta?.count || 0)} active connections`);
+  else rows.push(`<span style="color:${hex(PAL.cyan)}">↓ ${fmtRate(n.rx)}</span> · <span style="color:${hex(PAL.magenta)}">↑ ${fmtRate(n.tx)}</span>`);
   if (n._count !== undefined) rows.push(`<span style="color:${hex(PAL.dim)}">${n._count.toLocaleString()} records</span>`);
   if (n.meta && (n.meta.cpu != null || n.meta.mem_pct != null)) {
     const m3: string[] = [];
@@ -1921,7 +1923,7 @@ function hover(sim: Sim) {
 }
 
 /* ============================ data model ============================ */
-function buildTopology(deps: Dependencies, bytesIn: number, bytesOut: number, sampleInterval: number, extras: { cpu?: number; rpm?: number; p95?: number; counts?: Partial<Record<string, number>> }) {
+function buildTopology(deps: Dependencies, bytesIn: number, bytesOut: number, sampleInterval: number, extras: { cpu?: number; rpm?: number; p95?: number; counts?: Partial<Record<string, number>>; users?: TopologyUser[] }) {
   const sec = Math.max(sampleInterval, 1);
   const rxTotal = bytesIn / sec;
   const txTotal = bytesOut / sec;
@@ -1941,7 +1943,6 @@ function buildTopology(deps: Dependencies, bytesIn: number, bytesOut: number, sa
   const guests: Array<[string, string, string]> = [
     ["tasks", "mongo", "tasks"],
     ["orders", "mongo", "orders"],
-    ["users", "mongo", "users"],
     ["sessions", "redis", "web"],
     ["jobs", "redis", "jobs"],
     ["images", "s3", "media"],
@@ -1955,12 +1956,18 @@ function buildTopology(deps: Dependencies, bytesIn: number, bytesOut: number, sa
     }
     nodes.push(node);
   });
+  (extras.users || []).forEach(user => {
+    const node = mkNode(`user:${user.id}`, "guest", "gateway", user.name, "", user.connections > 0 ? "up" : "unknown", 0, 0, "users");
+    node.meta = { cat: "users", count: user.connections } as NodeMeta;
+    nodes.push(node);
+  });
   const links: TopoLink[] = [
     { source: "wan", target: "gateway", measured: true, bps: rxTotal + txTotal },
     { source: "gateway", target: "mongo", measured: true, bps: (rxTotal + txTotal) * SHARE.mongo },
     { source: "gateway", target: "redis", measured: true, bps: (rxTotal + txTotal) * SHARE.redis },
     { source: "gateway", target: "s3", measured: true, bps: (rxTotal + txTotal) * SHARE.s3 },
   ];
+  (extras.users || []).filter(user => user.connections > 0).forEach(user => links.push({ source: "gateway", target: `user:${user.id}`, measured: false, bps: 0 }));
   guests.forEach(([id, host]) => { links.push({ source: host, target: id, measured: false, bps: 0 }); });
   return { nodes, links };
 }
@@ -2011,9 +2018,16 @@ function buildGraph(sim: Sim, topo: TopoTopo, setTourText: (t: string) => void) 
   Object.values(guestsByParent).forEach(list => {
     // Each shape has its own mesh and node ID mapping for picking.
     list.forEach(node => {
-      const geometry = node.id === "users" ? geos().monitor : (geos()[node.id] || geos().guest);
+      const geometry = node.id.startsWith("user:") ? geos().monitor : (geos()[node.id] || geos().guest);
       const im = makeInstanced(sim, geometry, [node]);
       if (im) { sim.guestIM = im; sim.guestIMs.push(im); }
+      if (node.id.startsWith("user:")) {
+        const label = textSprite([{ text: node.label, size: 40, bold: true, color: "#e2f2ff" }], 55, { depthTest: false }, sim.labels);
+        label.position.set(node._x, node._y + 12, node._z);
+        label.userData.focN = node;
+        node._lbl = label;
+        graph.add(label);
+      }
     });
   });
 
@@ -2066,6 +2080,8 @@ function applyLive(sim: Sim, topo: TopoTopo) {
 }
 
 /* ============================ component ============================ */
+type TopologyUser = { id: string; name: string; connections: number };
+
 export default function GalaxyTopology({
   dependencies,
   bytesIn,
@@ -2078,6 +2094,7 @@ export default function GalaxyTopology({
   eventLoopLagMs = 0,
   uptimeSeconds = 0,
   counts,
+  users,
 }: {
   dependencies: Dependencies;
   bytesIn: number;
@@ -2090,7 +2107,9 @@ export default function GalaxyTopology({
   eventLoopLagMs?: number;
   uptimeSeconds?: number;
   counts?: Partial<Record<string, number>>;
+  users?: TopologyUser[];
 }) {
+  const connectionKey = JSON.stringify((users || []).map(({ id, name, connections }) => ({ id, name, connections })).sort((a, b) => a.id.localeCompare(b.id)));
   const canvasHostRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const tourRef = useRef<HTMLParagraphElement>(null);
@@ -2199,7 +2218,7 @@ export default function GalaxyTopology({
     scene.add(sim.background);
     simRef.current = sim;
 
-    const initialTopo = buildTopology(dependencies, bytesIn, bytesOut, sampleInterval, { cpu: cpuPercent, counts: countsRef.current });
+    const initialTopo = buildTopology(dependencies, bytesIn, bytesOut, sampleInterval, { cpu: cpuPercent, counts: countsRef.current, users: JSON.parse(connectionKey) as TopologyUser[] });
     buildGraph(sim, initialTopo, setTourTextSafe);
 
     /* camera initial pose at overview */
@@ -2392,6 +2411,7 @@ export default function GalaxyTopology({
       composer.dispose();
       flowS.dispose();
       renderer.dispose();
+      GEO = null;
       renderer.domElement.remove();
       simRef.current = null;
     };
@@ -2399,7 +2419,7 @@ export default function GalaxyTopology({
 
     return dispose;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [connectionKey]);
 
   useEffect(() => {
     simRef.current?.applyLive?.(dependencies, bytesIn, bytesOut, sampleInterval, { cpu: cpuPercent, counts: countsRef.current });
