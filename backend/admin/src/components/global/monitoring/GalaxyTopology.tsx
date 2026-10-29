@@ -755,7 +755,44 @@ const AX = new THREE.Vector3(0, 0, 1);
 let GEO: Record<string, THREE.BufferGeometry> | null = null;
 function geos() {
   if (GEO) return GEO;
+  const monitorShape = new THREE.Shape();
+  monitorShape.moveTo(-7, 5); monitorShape.lineTo(7, 5); monitorShape.lineTo(7, -3);
+  monitorShape.lineTo(1.5, -3); monitorShape.lineTo(1.5, -5);
+  monitorShape.lineTo(4, -5); monitorShape.lineTo(4, -6);
+  monitorShape.lineTo(-4, -6); monitorShape.lineTo(-4, -5);
+  monitorShape.lineTo(-1.5, -5); monitorShape.lineTo(-1.5, -3);
+  monitorShape.lineTo(-7, -3); monitorShape.closePath();
+  // Cutouts keep each small silhouette recognizable from the front and back.
+  const icon = (points: Array<[number, number]>, holes: Array<Array<[number, number]>> = []) => {
+    const shape = new THREE.Shape();
+    points.forEach(([x, y], i) => i ? shape.lineTo(x, y) : shape.moveTo(x, y));
+    shape.closePath();
+    holes.forEach(points => {
+      const hole = new THREE.Path();
+      points.forEach(([x, y], i) => i ? hole.lineTo(x, y) : hole.moveTo(x, y));
+      hole.closePath();
+      shape.holes.push(hole);
+    });
+    return new THREE.ExtrudeGeometry(shape, { depth: 1.5, bevelEnabled: false }).translate(0, 0, -0.75);
+  };
+  const rect = (x1: number, y1: number, x2: number, y2: number): Array<[number, number]> => [[x1, y1], [x1, y2], [x2, y2], [x2, y1]];
+  const gear: Array<[number, number]> = Array.from({ length: 32 }, (_, i) => {
+    const angle = i * Math.PI / 16;
+    const radius = i % 4 < 2 ? 7 : 5.5;
+    return [Math.cos(angle) * radius, Math.sin(angle) * radius];
+  });
+  const gearHole: Array<[number, number]> = Array.from({ length: 16 }, (_, i) => {
+    const angle = -i * Math.PI / 8;
+    return [Math.cos(angle) * 2, Math.sin(angle) * 2];
+  });
   GEO = {
+    tasks: icon([[-5,-7],[5,-7],[5,6],[2,6],[2,7],[-2,7],[-2,6],[-5,6]], [rect(-3,2,3,3), rect(-3,-1,3,0), rect(-3,-4,3,-3)]),
+    orders: icon([[-6,-6],[6,-6],[5,4],[3,4],[3,6],[2,7],[-2,7],[-3,6],[-3,4],[-5,4]], [rect(-1.5,4,1.5,5.5)]),
+    sessions: icon([[-7,-5],[7,-5],[7,5],[-7,5]], [rect(-5,-3,5,2), rect(-5,3,-3,4)]),
+    jobs: icon(gear, [gearHole]),
+    images: icon([[-7,-5],[7,-5],[7,5],[-7,5]], [[[-5,-3],[-3,0],[-1,-2],[1,1],[5,-3]], rect(-4,2,-2,3)]),
+    exports: icon([[-7,-6],[7,-6],[7,-2],[5,-2],[5,-4],[1,-4],[1,1],[3,1],[0,-2],[-3,1],[-1,1],[-1,-4],[-5,-4],[-5,-2],[-7,-2]]),
+    monitor: new THREE.ExtrudeGeometry(monitorShape, { depth: 1.5, bevelEnabled: false }).translate(0, 0, -0.75),
     gateway: new THREE.BoxGeometry(44, 13, 21),
     switch: new THREE.BoxGeometry(38, 10, 17),
     pvehost: new THREE.BoxGeometry(22, 30, 22),
@@ -1016,14 +1053,23 @@ function makeInfraNode(sim: Sim, n: SceneNode) {
     grp.add(body, wire);
     n._h = 25;
   } else {
-    const geo = G[n.kind] || G.external;
+    const isServer = ["gateway", "mongo", "redis", "s3"].includes(n.id);
+    const geo = isServer ? G.pvehost : (G[n.kind] || G.external);
     const mat = new THREE.MeshStandardMaterial({ color: PAL.body, roughness: 0.5, metalness: 0.45, emissive: 0x0a1624, emissiveIntensity: 0.55 });
     body = new THREE.Mesh(geo, mat);
     edge = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: acc, transparent: true, opacity: 0.85 }));
     grp.add(body, edge);
-    n._h = { gateway: 7, switch: 6, pvehost: 16, ap: 3, external: 8 }[n.kind] || 8;
+    if (isServer) {
+      // Three illuminated bays make the service read as a server rack.
+      for (const y of [-9, 0, 9]) {
+        const panel = new THREE.Mesh(new THREE.BoxGeometry(17, 5, 0.6), new THREE.MeshBasicMaterial({ color: acc, transparent: true, opacity: 0.35 }));
+        panel.position.set(0, y, 11.4);
+        grp.add(panel);
+      }
+    }
+    n._h = isServer ? 16 : { gateway: 7, switch: 6, pvehost: 16, ap: 3, external: 8 }[n.kind] || 8;
   }
-  n._r = { wan: 22, gateway: 26, switch: 23, pvehost: 19, ap: 14, external: 14 }[n.kind] || 14;
+  n._r = ["gateway", "mongo", "redis", "s3"].includes(n.id) ? 19 : { wan: 22, gateway: 26, switch: 23, pvehost: 19, ap: 14, external: 14 }[n.kind] || 14;
   grp.position.set(n._x, n._y, n._z);
   body.userData.nsId = n.id;
   sim.pick.push(body);
@@ -1055,6 +1101,7 @@ function makeInstanced(sim: Sim, geo: THREE.BufferGeometry, list: SceneNode[]) {
   if (im.instanceColor) im.instanceColor.needsUpdate = true;
   sim.graph!.add(im);
   im.userData.nsInstanced = "guestIdx";
+  im.userData.nodeIds = list.map(n => n.id);
   sim.pick.push(im);
   return im;
 }
@@ -1845,7 +1892,7 @@ function hover(sim: Sim) {
   if (hits.length) {
     const h = hits[0];
     if (h.object.userData.nsId) n = sim.byId[h.object.userData.nsId as string];
-    else if (h.object.userData.nsInstanced && h.instanceId !== undefined) n = sim.byId[sim.guestIdx[h.instanceId]];
+    else if (h.object.userData.nsInstanced && h.instanceId !== undefined) n = sim.byId[h.object.userData.nodeIds[h.instanceId]];
   }
   if (!n) { sim.tip.style.display = "none"; return; }
   const sc = n.status === "down" ? hex(PAL.alert) : n.status === "unknown" ? hex(PAL.unk) : n.status === "warn" ? hex(PAL.warn) : hex(PAL.ok);
@@ -1962,8 +2009,12 @@ function buildGraph(sim: Sim, topo: TopoTopo, setTourText: (t: string) => void) 
   });
 
   Object.values(guestsByParent).forEach(list => {
-    const im = makeInstanced(sim, geos().guest, list);
-    if (im) { sim.guestIM = im; sim.guestIMs.push(im); }
+    // Each shape has its own mesh and node ID mapping for picking.
+    list.forEach(node => {
+      const geometry = node.id === "users" ? geos().monitor : (geos()[node.id] || geos().guest);
+      const im = makeInstanced(sim, geometry, [node]);
+      if (im) { sim.guestIM = im; sim.guestIMs.push(im); }
+    });
   });
 
   buildLinks(sim, topo);
