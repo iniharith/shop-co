@@ -1,0 +1,8 @@
+{
+  "name": "shop-co-admin-monitor",
+  "version": "1.0.0",
+  "private": true,
+  "engines": { "node": ">=20" },
+  "scripts": { "start": "node monitor.js", "check": "node --check monitor.js" },
+  "dependencies": { "mongodb": "^6.20.0" }
+}
