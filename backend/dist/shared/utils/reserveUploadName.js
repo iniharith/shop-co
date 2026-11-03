@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.reserveUploadName = reserveUploadName;
+const crypto_1 = require("crypto");
 const Project_1 = require("../../domain/entities/Project");
 const FileUpload_1 = require("../../domain/entities/FileUpload");
 const Task_1 = require("../../domain/entities/Task");
@@ -46,7 +47,10 @@ function reserveUploadName(req, res, scope) {
                 return null;
             }
             try {
-                yield UploadNameReservation_1.UploadNameReservation.create({ scope: scopeKey, name: assignedName.toLowerCase(), expiresAt: new Date(Date.now() + 3600000) });
+                const releaseToken = (0, crypto_1.randomUUID)();
+                yield UploadNameReservation_1.UploadNameReservation.create({ scope: scopeKey, name: assignedName.toLowerCase(), releaseToken, expiresAt: new Date(Date.now() + 3600000) });
+                res.locals = res.locals || {};
+                res.locals.uploadReservationToken = releaseToken;
                 return assignedName;
             }
             catch (error) {

@@ -38,6 +38,7 @@ const mongoose_1 = __importStar(require("mongoose"));
 const schema = new mongoose_1.Schema({
     scope: { type: String, required: true },
     name: { type: String, required: true },
+    releaseToken: { type: String, index: true },
     expiresAt: { type: Date, required: true },
 });
 schema.index({ scope: 1, name: 1 }, { unique: true });

@@ -11,6 +11,7 @@ export type S3UploadResult = { fileUrl: string, key: string, name: string, type:
 export const uploadToS3Directly = async (token: string, file: File, folderPath?: string, onProgress?: (percent: number) => void, abortController?: AbortController, scope?: { taskId?: string; orderId?: string; userId?: string }) => {
   if (scope?.taskId !== undefined && scope.taskId !== null && scope.taskId !== "") requireTaskId(scope.taskId);
   if (folderPath?.startsWith("tasks/")) requireTaskId(folderPath.slice(6));
+  if (abortController?.signal.aborted) throw new Error('Upload cancelled');
   // 1. Get presigned URL from backend
   const presignData = await requestUploadUrl(async (duplicateAction) => (await AxiosInstance(token).post("/api/files/presigned-url", {
     filename: file.name,
@@ -19,57 +20,66 @@ export const uploadToS3Directly = async (token: string, file: File, folderPath?:
     ...scope,
     duplicateAction
   })).data);
-  
+
   if (!presignData.success) {
     throw new Error(presignData.message || "Failed to get presigned URL");
   }
-  
-  const { signedUrl, fileUrl, key, assignedName } = presignData;
 
-  if (abortController?.signal.aborted) throw new Error('Upload cancelled');
+  const { signedUrl, fileUrl, key, assignedName, reservationToken } = presignData;
+  const releaseReservation = async () => {
+    if (reservationToken) await AxiosInstance(token).post('/api/files/cancel-upload', { reservationToken });
+  };
 
-  // 2. Upload file directly to S3 using XHR to track progress
-  return new Promise<S3UploadResult>((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
+  try {
+    if (abortController?.signal.aborted) throw new Error('Upload cancelled');
 
-    // Allow roughly 128 KB/s for large artwork, bounded to 5-30 minutes.
-    xhr.timeout = Math.min(30 * 60 * 1000, Math.max(5 * 60 * 1000, Math.ceil(file.size / (128 * 1024) * 1000)));
+    // 2. Upload file directly to S3 using XHR to track progress
+    return await new Promise<S3UploadResult>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
 
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable && onProgress) {
-        const percentComplete = (event.loaded / event.total) * 100;
-        onProgress(Math.round(percentComplete));
-      }
-    };
-    
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve({
-          fileUrl,
-          key,
-          name: assignedName || file.name,
-          type: file.type || "application/octet-stream",
-          size: file.size
+      // Allow roughly 128 KB/s for large artwork, bounded to 5-30 minutes.
+      xhr.timeout = Math.min(30 * 60 * 1000, Math.max(5 * 60 * 1000, Math.ceil(file.size / (128 * 1024) * 1000)));
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const percentComplete = (event.loaded / event.total) * 100;
+          onProgress(Math.round(percentComplete));
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve({
+            fileUrl,
+            key,
+            name: assignedName || file.name,
+            type: file.type || "application/octet-stream",
+            size: file.size
+          });
+        } else {
+          reject(new Error(`S3 upload failed with status ${xhr.status}`));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error("Network error during upload. Please check your connection and try again."));
+      xhr.ontimeout = () => reject(new Error("Upload timed out. Please check your connection and try again."));
+
+      if (abortController) {
+        abortController.signal.addEventListener('abort', () => {
+          xhr.abort();
+          reject(new Error("Upload cancelled"));
         });
-      } else {
-        reject(new Error(`S3 upload failed with status ${xhr.status}`));
       }
-    };
-    
-    xhr.onerror = () => reject(new Error("Network error during upload. Please check your connection and try again."));
-    xhr.ontimeout = () => reject(new Error("Upload timed out. Please check your connection and try again."));
-    
-    if (abortController) {
-      abortController.signal.addEventListener('abort', () => {
-        xhr.abort();
-        reject(new Error("Upload cancelled"));
-      });
-    }
 
-    xhr.open("PUT", signedUrl, true);
-    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
-    xhr.send(file);
-  });
+      xhr.open("PUT", signedUrl, true);
+      xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+      xhr.send(file);
+    });
+  } catch (error) {
+    // Wait for cleanup before allowing a retry with the same filename.
+    try { await releaseReservation(); } catch (cleanupError) { console.error('Failed to release upload filename', cleanupError); }
+    throw error;
+  }
 };
 
 export const uploadFilesToS3Directly = async (

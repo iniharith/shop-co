@@ -49,6 +49,7 @@ exports.clearFolderGroupCache = void 0;
 const TrashItem_1 = require("../../domain/entities/TrashItem");
 const trash_1 = require("../../shared/utils/trash");
 const taskId_1 = require("../../shared/utils/taskId");
+const UploadNameReservation_1 = require("../../domain/entities/UploadNameReservation");
 const reserveUploadName_1 = require("../../shared/utils/reserveUploadName");
 /**
  * Coded by Harith
@@ -251,6 +252,16 @@ router.post('/trash/:trashId/restore', auth_middileware_1.default, (0, auth_midd
         throw error;
     }
 })));
+// Release only the caller's exact reservation using its unguessable capability.
+router.post('/cancel-upload', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { reservationToken } = req.body;
+    if (typeof reservationToken !== 'string' || !/^[0-9a-f-]{36}$/i.test(reservationToken)) {
+        res.status(400).json({ success: false, message: 'Invalid upload reservation' });
+        return;
+    }
+    yield UploadNameReservation_1.UploadNameReservation.deleteOne({ releaseToken: reservationToken });
+    res.json({ success: true });
+})));
 // ─── POST /api/files/presigned-url ────────────────────────
 // Get a presigned URL to upload file directly to S3
 router.post('/presigned-url', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -284,7 +295,7 @@ router.post('/presigned-url', auth_middileware_1.default, (0, express_async_hand
     });
     const signedUrl = yield getSignedUrl(s3_1.s3Client, command, { expiresIn: 3600 });
     const fileUrl = `https://${s3_1.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-southeast-5'}.amazonaws.com/${key}`;
-    res.json({ success: true, signedUrl, fileUrl, key, assignedName });
+    res.json({ success: true, signedUrl, fileUrl, key, assignedName, reservationToken: res.locals.uploadReservationToken });
 })));
 // ─── POST /api/files/resolve-by-path ──────────────────────
 // Used by the "Share" button on a file that doesn't have a locally-known

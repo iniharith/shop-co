@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Project } from '../../domain/entities/Project';
 import { Request, Response } from 'express';
 import { FileUpload } from '../../domain/entities/FileUpload';
@@ -36,7 +37,10 @@ export async function reserveUploadName(req: Request, res: Response, scope: Scop
       return null;
     }
     try {
-      await UploadNameReservation.create({ scope: scopeKey, name: assignedName.toLowerCase(), expiresAt: new Date(Date.now() + 3600000) });
+      const releaseToken = randomUUID();
+      await UploadNameReservation.create({ scope: scopeKey, name: assignedName.toLowerCase(), releaseToken, expiresAt: new Date(Date.now() + 3600000) });
+      res.locals = res.locals || {};
+      res.locals.uploadReservationToken = releaseToken;
       return assignedName;
     } catch (error: any) {
       if (error.code !== 11000) throw error;

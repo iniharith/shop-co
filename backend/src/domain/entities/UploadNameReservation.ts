@@ -3,6 +3,7 @@ import mongoose, { Schema } from 'mongoose';
 const schema = new Schema({
   scope: { type: String, required: true },
   name: { type: String, required: true },
+  releaseToken: { type: String, index: true },
   expiresAt: { type: Date, required: true },
 });
 schema.index({ scope: 1, name: 1 }, { unique: true });

@@ -1,6 +1,7 @@
 import { TrashItem } from '../../domain/entities/TrashItem';
 import { trashFile, restoreTrash, purgeTrash, TrashError } from '../../shared/utils/trash';
 import { uploadTaskId, INVALID_TASK_ID_MESSAGE } from '../../shared/utils/taskId';
+import { UploadNameReservation } from '../../domain/entities/UploadNameReservation';
 import { reserveUploadName } from '../../shared/utils/reserveUploadName';
 /**
  * Coded by Harith
@@ -197,6 +198,17 @@ router.post('/trash/:trashId/restore', authMiddilware, authorizeRoles('admin', '
   } catch (error) { if (error instanceof TrashError) { res.status(error.status).json({ success: false, message: error.message }); return; } throw error; }
 }));
 
+// Release only the caller's exact reservation using its unguessable capability.
+router.post('/cancel-upload', authMiddilware, asyncHandler(async (req: Request, res: Response) => {
+  const { reservationToken } = req.body;
+  if (typeof reservationToken !== 'string' || !/^[0-9a-f-]{36}$/i.test(reservationToken)) {
+    res.status(400).json({ success: false, message: 'Invalid upload reservation' });
+    return;
+  }
+  await UploadNameReservation.deleteOne({ releaseToken: reservationToken });
+  res.json({ success: true });
+}));
+
 // ─── POST /api/files/presigned-url ────────────────────────
 // Get a presigned URL to upload file directly to S3
 router.post(
@@ -231,7 +243,7 @@ router.post(
     const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
     const fileUrl = `https://${S3_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-southeast-5'}.amazonaws.com/${key}`;
 
-    res.json({ success: true, signedUrl, fileUrl, key, assignedName });
+    res.json({ success: true, signedUrl, fileUrl, key, assignedName, reservationToken: res.locals.uploadReservationToken });
   })
 );
 
