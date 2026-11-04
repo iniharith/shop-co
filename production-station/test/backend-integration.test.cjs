@@ -41,6 +41,9 @@ test('isolated backend: staff auth, pairing approval, scan acknowledgement and a
     const device = await request('/pair', { token: null, body: { stationId: id, secret: pairing.body.secret, phoneName: 'Android test' } }); assert.equal(device.status, 200);
     assert.equal((await request('/pair', { token: null, body: { stationId: id, secret: pairing.body.secret } })).status, 410);
     const phoneHeaders = { 'X-Station-ID': id, 'X-Phone-Key': device.body.deviceSecret };
+    const botAttempt = await request(`/stations/${id}/pairing`, { body: {} });
+    assert.equal((await request('/pair', { token: null, body: { stationId:id, secret:botAttempt.body.secret, phoneName:'Telegram bot' } })).status, 410);
+    assert.equal((await request('/phone-status', { token: null, headers:phoneHeaders })).status, 200, 'existing phone credential must remain valid');
     const code = 'ab'.repeat(24), event = { code, requestId: 'request-0000000001' };
     assert.equal((await request('/scan', { token: null, headers: phoneHeaders, body: event })).status, 403);
     assert.equal((await request(`/stations/${id}/approve`, { body: {} })).status, 200);

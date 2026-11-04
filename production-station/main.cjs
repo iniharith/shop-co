@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, Tray, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, Tray, Menu, clipboard } = require('electron');
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
@@ -12,6 +12,7 @@ const { print } = require('pdf-to-printer');
 const { buildSheet, imagePdf } = require('./lib/layout.cjs');
 const { tokenFromScan, safeName, fileKey, atomicWrite, loadState } = require('./lib/core.cjs');
 const { download } = require('./lib/download.cjs');
+const { pairBot } = require('./lib/bot-pair.cjs');
 
 const DEFAULT_BACKEND = 'https://shop-co-production.up.railway.app';
 let win, tray, quitting = false, state, settings, session = null, storePath, settingsPath, credentialsPath;
@@ -226,6 +227,32 @@ function registerHandlers() {
     const data = await api(`/api/production/stations/${settings.stationId}/pairing`, 'POST');
     const url = `${settings.backend}/api/production/phone#station=${settings.stationId}&secret=${data.secret}`;
     return { url, expiresAt: data.expiresAt, qr: await QRCode.toDataURL(url, { width: 360, margin: 2 }) };
+  });
+  handle('pairBot', async () => {
+    if (!session) throw new Error('Sign in to Shop-Co first');
+    if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows credential encryption is unavailable');
+    if (!settings.stationId) { const station = await api('/api/production/stations', 'POST', { name: settings.stationName }); settings.stationId = station.id; saveSettings(); }
+    const result = await pairBot({ stationId:settings.stationId, ownerId:settings.ownerId, api,
+      register:async body => {
+        const response = await fetch(settings.backend + '/api/production/pair', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error('Bot pairing failed. Check the station before retrying.');
+        return data;
+      },
+      persist:async credential => { try { await fsp.writeFile(path.join(app.getPath('userData'),'bot-credential.bin'), safeStorage.encryptString(JSON.stringify(credential))); } catch { throw new Error('Credential could not be saved. Unpair the bot on this PC before retrying.'); } }
+    });
+    await poll(); return result;
+  });
+  handle('copyBotCredential', async kind => {
+    if (!session || !['stationId','deviceSecret'].includes(kind)) throw new Error('Sign in and select a credential field');
+    let credential; try { credential = JSON.parse(safeStorage.decryptString(await fsp.readFile(path.join(app.getPath('userData'),'bot-credential.bin')))); } catch { throw new Error('No saved bot credential. Pair the Telegram bot first.'); }
+    if (credential.ownerId !== settings.ownerId || credential.stationId !== settings.stationId) throw new Error('Saved bot credential does not belong to this station');
+    const current = await api(`/api/production/stations/${settings.stationId}`);
+    if (current.phoneName !== 'Telegram bot') throw new Error('This bot credential is no longer paired');
+    const check = await fetch(settings.backend + '/api/production/phone-status', {headers:{'X-Station-ID':credential.stationId,'X-Phone-Key':credential.deviceSecret},signal:AbortSignal.timeout(15000)});
+    if (!check.ok) throw new Error('This bot credential has been revoked. Pair the bot again.');
+    const value=credential[kind]; clipboard.writeText(value);
+    setTimeout(() => { if (clipboard.readText() === value) clipboard.clear(); }, 60000).unref();
   });
   handle('approve', () => api(`/api/production/stations/${settings.stationId}/approve`, 'POST').then(() => poll()));
   handle('unpair', async () => { await api(`/api/production/stations/${settings.stationId}/phone`, 'DELETE'); state.phone = null; notify(); });
