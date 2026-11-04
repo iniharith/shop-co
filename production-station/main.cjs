@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, safeStorage, Tray, Menu } = require('electron');
 const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
@@ -14,7 +14,7 @@ const { tokenFromScan, safeName, fileKey, atomicWrite, loadState } = require('./
 const { download } = require('./lib/download.cjs');
 
 const DEFAULT_BACKEND = 'https://shop-co-production.up.railway.app';
-let win, state, settings, session = null, storePath, settingsPath, credentialsPath;
+let win, tray, quitting = false, state, settings, session = null, storePath, settingsPath, credentialsPath;
 let processing = false, polling = false, printing = false, pollTimer;
 let refreshing = null;
 const trustedRenderer = pathToFileURL(path.join(__dirname, 'ui/index.html')).href;
@@ -306,7 +306,8 @@ function registerHandlers() {
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-  app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
+  app.on('before-quit', () => { quitting = true; });
+  app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });
   app.whenReady().then(() => {
     app.setAppUserModelId('com.kampungcetak.production');
     storePath = path.join(app.getPath('userData'), 'production-state.json');
@@ -317,12 +318,16 @@ else {
     state = loadState(storePath); save();
     try { if (fs.existsSync(credentialsPath)) session = JSON.parse(safeStorage.decryptString(fs.readFileSync(credentialsPath))); } catch { session = null; }
     registerHandlers();
-    win = new BrowserWindow({ width: 1440, height: 940, minWidth: 1100, minHeight: 760, icon: path.join(__dirname, 'assets/icon.png'), backgroundColor: '#f5f6f8', title: 'KC Production Station', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true } });
+    win = new BrowserWindow({ show: !process.argv.includes('--background'), width: 1440, height: 940, minWidth: 1100, minHeight: 760, icon: path.join(__dirname, 'assets/icon.png'), backgroundColor: '#f5f6f8', title: 'KC Production Station', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true } });
+    tray = new Tray(path.join(__dirname, 'assets/icon.ico'));
+    tray.setToolTip('KC Production Station');
+    tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Open Production Station', click: () => { win.show(); win.focus(); } }, { label: 'Quit', click: () => { quitting = true; app.quit(); } }]));
+    tray.on('double-click', () => { win.show(); win.focus(); });
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     win.webContents.on('will-navigate', (event, url) => { if (url !== trustedRenderer) event.preventDefault(); });
     win.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
     win.loadFile(path.join(__dirname, 'ui/index.html'));
-    win.on('close', event => { if (processing || printing) { event.preventDefault(); void dialog.showMessageBox(win, { message: 'Please wait for the active download or print submission to finish.' }); } });
+    win.on('close', event => { if (processing || printing) { event.preventDefault(); void dialog.showMessageBox(win, { message: 'Please wait for the active download or print submission to finish.' }); } else if (!quitting) { event.preventDefault(); win.hide(); } });
     pollTimer = setInterval(() => void poll(), 2500); void processQueue();
   }).catch(error => { dialog.showErrorBox('KC Production Station', error.message); app.quit(); });
   app.on('window-all-closed', () => { clearInterval(pollTimer); app.quit(); });
