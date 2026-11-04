@@ -54,6 +54,7 @@ const scanSchema = new mongoose_1.Schema({
     requestId: { type: String, required: true },
     token: { type: String, required: true },
     test: { type: Boolean, default: false },
+    batch: { type: new mongoose_1.Schema({ tokens: [String], folder: String }, { _id: false }), default: undefined },
     source: { type: String, enum: ['phone', 'bot'], default: 'phone' },
     status: { type: String, enum: ['queued', 'received', 'ready', 'error'], default: 'queued' },
     message: String,

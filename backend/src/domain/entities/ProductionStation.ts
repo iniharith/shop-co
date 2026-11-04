@@ -20,6 +20,7 @@ const scanSchema = new Schema({
   requestId: { type: String, required: true },
   token: { type: String, required: true },
   test: { type: Boolean, default: false },
+  batch: { type: new Schema({ tokens: [String], folder: String }, { _id: false }), default: undefined },
   source: { type: String, enum: ['phone', 'bot'], default: 'phone' },
   status: { type: String, enum: ['queued', 'received', 'ready', 'error'], default: 'queued' },
   message: String,

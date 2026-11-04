@@ -89,7 +89,7 @@ function productionManifest(token) {
             }
         }
         return {
-            task: { id: taskId, title: task.title, orderId: task.orderId || null, customer: task.customerUsername || '', product: task.productName || '', category: task.category || '', status: task.status, lineItems: task.lineItems || [] },
+            task: { id: taskId, title: task.title, orderId: task.orderId || null, customer: task.customerUsername || '', product: task.productName || '', category: task.category || '', status: task.status, updatedAt: task.updatedAt, lineItems: task.lineItems || [] },
             files: result.filter(file => file.tag !== 'awb'), labels,
             warnings: [!result.some(file => file.tag === 'for_print') ? 'No TO PRINT files' : '', !result.some(file => file.tag === 'draft') ? 'No DRAFT files' : '', !labels.length ? 'AWB unavailable — upload or create the label in Shop-Co' : ''].filter(Boolean),
         };

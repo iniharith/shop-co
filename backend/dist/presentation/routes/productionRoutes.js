@@ -128,8 +128,16 @@ router.post('/scan', phoneAuth, (0, express_async_handler_1.default)((req, res) 
         return;
     }
     const requestId = req.body.requestId;
-    const test = req.body.test === true;
-    const token = test ? 'TEST' : (0, productionManifest_1.productionToken)(req.body.code);
+    const batch = req.body.batch;
+    if (batch !== undefined && (!(req.isBot) ||
+        !Array.isArray(batch === null || batch === void 0 ? void 0 : batch.tokens) || batch.tokens.length < 1 || batch.tokens.length > 100 ||
+        batch.tokens.some((value) => typeof value !== 'string' || !/^[a-f0-9]{48}$/.test(value)) ||
+        typeof batch.folder !== 'string' || !/^[a-z0-9_-]{1,64}$/i.test(batch.folder))) {
+        res.status(400).json({ message: 'Invalid Telegram production batch' });
+        return;
+    }
+    const test = !batch && req.body.test === true;
+    const token = batch ? 'BATCH' : test ? 'TEST' : (0, productionManifest_1.productionToken)(req.body.code);
     if (!token || typeof requestId !== 'string' || !/^[a-zA-Z0-9-]{10,80}$/.test(requestId)) {
         res.status(400).json({ message: 'Scan a valid Shop-Co task QR' });
         return;
@@ -153,7 +161,9 @@ router.post('/scan', phoneAuth, (0, express_async_handler_1.default)((req, res) 
         return;
     }
     try {
-        const scan = yield ProductionStation_1.ProductionScan.create({ stationId: String(station._id), requestId, token, test, source: req.isBot ? 'bot' : 'phone', expiresAt: expiry() });
+        const scan = yield ProductionStation_1.ProductionScan.create({ stationId: String(station._id), requestId, token, test,
+            batch: batch ? { tokens: [...new Set(batch.tokens)], folder: batch.folder } : undefined,
+            source: req.isBot ? 'bot' : 'phone', expiresAt: expiry() });
         res.json({ id: String(scan._id), status: scan.status });
     }
     catch (error) {

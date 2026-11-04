@@ -61,8 +61,15 @@ router.post('/scan', phoneAuth, asyncHandler(async (req, res) => {
   const station = (req as any).station;
   if (!((req as any).isBot ? station.botApproved : station.deviceApproved)) { res.status(403).json({ message: 'Approve this device on the PC first' }); return; }
   const requestId = req.body.requestId;
-  const test = req.body.test === true;
-  const token = test ? 'TEST' : productionToken(req.body.code);
+  const batch = req.body.batch;
+  if (batch !== undefined && (!((req as any).isBot) ||
+      !Array.isArray(batch?.tokens) || batch.tokens.length < 1 || batch.tokens.length > 100 ||
+      batch.tokens.some((value: unknown) => typeof value !== 'string' || !/^[a-f0-9]{48}$/.test(value)) ||
+      typeof batch.folder !== 'string' || !/^[a-z0-9_-]{1,64}$/i.test(batch.folder))) {
+    res.status(400).json({ message: 'Invalid Telegram production batch' }); return;
+  }
+  const test = !batch && req.body.test === true;
+  const token = batch ? 'BATCH' : test ? 'TEST' : productionToken(req.body.code);
   if (!token || typeof requestId !== 'string' || !/^[a-zA-Z0-9-]{10,80}$/.test(requestId)) { res.status(400).json({ message: 'Scan a valid Shop-Co task QR' }); return; }
   const existing = await ProductionScan.findOne({ stationId: String(station._id), requestId }).read('primary').lean();
   if (existing) { res.json({ id: String(existing._id), status: existing.status }); return; }
@@ -71,7 +78,9 @@ router.post('/scan', phoneAuth, asyncHandler(async (req, res) => {
   if (last?.requestId === requestId) { res.json({ id: String(last._id), status: last.status }); return; }
   if (last && Date.now() - new Date(last.createdAt).getTime() < 1000) { res.status(429).json({ message: 'Please wait a moment between scans' }); return; }
   try {
-    const scan = await ProductionScan.create({ stationId: String(station._id), requestId, token, test, source:(req as any).isBot ? 'bot' : 'phone', expiresAt: expiry() });
+    const scan = await ProductionScan.create({ stationId: String(station._id), requestId, token, test,
+      batch: batch ? { tokens: [...new Set(batch.tokens)], folder: batch.folder } : undefined,
+      source: (req as any).isBot ? 'bot' : 'phone', expiresAt: expiry() });
     res.json({ id: String(scan._id), status: scan.status });
   } catch (error: any) {
     if (error.code !== 11000) throw error;
