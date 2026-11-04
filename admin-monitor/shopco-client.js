@@ -32,6 +32,23 @@ function createShopCoClient({ baseUrl, getAccessToken, refreshAccessToken, fetch
     return body;
   }
   return {
+    async productionTasks(day) {
+      const start = Date.parse(`${day}T00:00:00+08:00`);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isFinite(start) ||
+          new Date(start + 8 * 3600000).toISOString().slice(0, 10) !== day) {
+        throw new Error('Use a valid date in YYYY-MM-DD format');
+      }
+      const { data } = await request('/api/files/folder-group?taskStatuses=IN_PRODUCTION');
+      if (!Array.isArray(data)) throw new Error('Production queue response is unavailable');
+      const tasks = new Map();
+      for (const group of data) {
+        const entered = Date.parse(group.queueEnteredAt);
+        if (group.orderStatus !== 'IN_PRODUCTION' || !TASK_ID.test(group.taskId || '') ||
+            !Number.isFinite(entered) || entered < start || entered >= start + 86400000) continue;
+        tasks.set(group.taskId, { id: group.taskId, name: group.folderName || group.taskId });
+      }
+      return [...tasks.values()];
+    },
     async getTask(id) { if (!TASK_ID.test(id)) throw new Error('Invalid task ID'); const data=await request(`/api/tasks/${id}`); if(!data.task || data.task.isDeleted) throw new Error('Task not found'); return data.task; },
     async getTaskQr(id) { if (!TASK_ID.test(id)) throw new Error('Invalid task ID'); const data=await request(`/api/tasks/${id}/qr`); if(!/^[a-f\d]{48}$/i.test(data.token || '')) throw new Error('Task QR is unavailable'); return data.token; },
     async updateTask(id, changes, expectedUpdatedAt) {

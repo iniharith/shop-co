@@ -12,6 +12,16 @@ function createStationClient({baseUrl,stationId,deviceKey,fetchImpl=fetch}) {
     return data;
   }
   return {
+    async submitBatch(tokens, folder, requestId) {
+      const status = await request('/api/production/phone-status');
+      if (!status.approved || !status.pcOnline) throw new Error('Production Station is offline or awaiting approval');
+      const result = await request('/api/production/scan', {
+        method: 'POST',
+        body: JSON.stringify({ requestId, batch: { tokens, folder } }),
+      });
+      if (!/^[a-f\d]{24}$/i.test(result.id || '')) throw new Error('Invalid station response');
+      return result;
+    },
     async submit(token,requestId=randomUUID()) {
       if(!/^[a-f\d]{48}$/i.test(token||''))throw new Error('Invalid task QR token');
       if(!/^[a-z\d-]{10,80}$/i.test(requestId))throw new Error('Invalid request ID');

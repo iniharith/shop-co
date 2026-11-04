@@ -126,6 +126,26 @@ async function handle(msg) {
   if(!checkpoint && /^\/(?:move|update|awb)(?:@\w+)?(?:\s|$)/.test(text)) return send('Task changes and AWB jobs are unavailable until persistent bot state is configured.');
   if (/^\/(start|help)(@\w+)?$/.test(text)) return send('Shop-Co admin monitor\n/status — website and DNS status\n/task QUERY — search tasks\n/move TASK_ID STATUS — move one task\n/update TASK_ID FIELD VALUE — update title, description or dueDate\n/awb TASK_ID — queue a task at the production station\n/awbstatus JOB_ID — check the station result\n/uploads [YYYY-MM-DD] — uploaded tasks\nAll report dates use Malaysia time.');
   if (/^\/status(@\w+)?$/.test(text)) return send(formatStatus(await check()));
+  const batch = text.match(/^\/production\s+(today|\d{4}-\d{2}-\d{2})\s+([a-z0-9_-]{1,64})$/i) ||
+    text.match(/^download (today|\d{4}-\d{2}-\d{2})(?:'s)? production files (?:to|into) ([a-z0-9_-]{1,64}), print (?:the )?drafts four per a4, and move (?:the )?(?:downloaded )?tasks to print awb\.?$/i);
+  if (batch) {
+    if (!checkpoint) return send('Production batches require persistent bot state.');
+    const day = batch[1].toLowerCase() === 'today' ? malaysiaDay() : batch[1];
+    const tasks = await shopco.productionTasks(day);
+    if (!tasks.length) return send(`No Production tasks for ${day}.`);
+    if (tasks.length > 100) return send('This batch exceeds the station limit of 100 tasks.');
+    const tokens = [];
+    for (const task of tasks) tokens.push(await shopco.getTaskQr(task.id));
+    const job = await station.submitBatch(tokens, batch[2], `production-${msg.message_id}`);
+    return send(`Queued ${tasks.length} Production tasks for ${day}. Use /awbstatus ${job.id} to check the batch result.`);
+  }
+  const production = text.match(/^\/production(?:@\w+)?(?:\s+(\d{4}-\d{2}-\d{2}))?$/i);
+  if (production) {
+    const day = production[1] || malaysiaDay();
+    const tasks = await shopco.productionTasks(day);
+    const names = tasks.map(task => `• ${task.name}`).join('\n');
+    return send(`Production batch preview — ${day} (Malaysia time)\n${tasks.length} tasks${names ? '\n\n' + names : ''}`);
+  }
   if (/^\/task(?:@\w+)?(?:\s|$)/.test(text)) return send(await searchTasks(text.replace(/^\/task(?:@\w+)?\s*/, '')));
   if (/^\/move(?:@\w+)?(?:\s|$)/.test(text)) {
     const parts=text.split(/\s+/); if(parts.length!==3) return send('Use /move TASK_ID STATUS, for example /move TASK_ID PRINT_AWB.');
