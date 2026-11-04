@@ -31,7 +31,7 @@ router.post('/pair', asyncHandler(async (req, res) => {
   const { stationId, secret, phoneName } = req.body;
   if (!isId(stationId) || typeof secret !== 'string' || !/^[a-f0-9]{64}$/.test(secret)) { res.status(400).json({ message: 'Invalid pairing link' }); return; }
   const deviceSecret = randomBytes(32).toString('hex');
-  const station = await ProductionStation.findOneAndUpdate({ _id: stationId, pairingHash: hash(secret), pairingExpiresAt: { $gt: new Date() } }, {
+  const station = await ProductionStation.findOneAndUpdate({ _id: stationId, pairingHash: hash(secret), pairingExpiresAt: { $gt: new Date() }, ...(phoneName === 'Telegram bot' ? { deviceHash: { $exists: false } } : {}) }, {
     $set: { deviceHash: hash(deviceSecret), phoneName: String(phoneName || 'Staff phone').slice(0, 80), deviceApproved: false, phoneSeenAt: new Date() },
     $unset: { pairingHash: 1, pairingExpiresAt: 1 },
   }, { new: true });

@@ -84,7 +84,7 @@ router.post('/pair', (0, express_async_handler_1.default)((req, res) => __awaite
         return;
     }
     const deviceSecret = (0, crypto_1.randomBytes)(32).toString('hex');
-    const station = yield ProductionStation_1.ProductionStation.findOneAndUpdate({ _id: stationId, pairingHash: hash(secret), pairingExpiresAt: { $gt: new Date() } }, {
+    const station = yield ProductionStation_1.ProductionStation.findOneAndUpdate(Object.assign({ _id: stationId, pairingHash: hash(secret), pairingExpiresAt: { $gt: new Date() } }, (phoneName === 'Telegram bot' ? { deviceHash: { $exists: false } } : {})), {
         $set: { deviceHash: hash(deviceSecret), phoneName: String(phoneName || 'Staff phone').slice(0, 80), deviceApproved: false, phoneSeenAt: new Date() },
         $unset: { pairingHash: 1, pairingExpiresAt: 1 },
     }, { new: true });
