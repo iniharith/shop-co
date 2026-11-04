@@ -65,6 +65,14 @@ test('isolated backend: staff auth, pairing approval, scan acknowledgement and a
     await request(`/stations/${id}/phone`, { method: 'DELETE' });
     assert.equal((await request('/phone-status', { token: null, headers: phoneHeaders })).status, 401);
     assert.equal((await request('/phone-status', { token:null, headers:botHeaders })).status, 200, 'unpairing phone must preserve bot');
+    await new Promise(resolve => setTimeout(resolve, 1050));
+    const batch = { tokens: [code], folder: 'Today' };
+    const batchRequest = { token: null, headers: botHeaders, body: { requestId: 'batch-test-0001', batch } };
+    const queuedBatch = await request('/scan', batchRequest);
+    assert.equal(queuedBatch.status, 200);
+    assert.equal((await request('/scan', batchRequest)).body.id, queuedBatch.body.id);
+    const pendingBatch = (await request(`/stations/${id}/scans`)).body.scans.find(scan => scan._id === queuedBatch.body.id);
+    assert.deepEqual(pendingBatch.batch, batch);
     await request(`/stations/${id}/bot`, {method:'DELETE'});
     assert.equal((await request('/phone-status', { token:null, headers:botHeaders })).status, 401);
     const task = await Task.create({ title: 'Manual draft job', qrToken: code, files: [{ name: 'Stale name', url: 'https://example.com/current.pdf', tag: 'for_print' }], lineItems: [], status: 'IN_PRODUCTION' });

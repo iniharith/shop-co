@@ -113,20 +113,22 @@ async function printLabel(label, explicit = false) {
   } catch (error) { state.printed[key].status = 'uncertain'; state.printed[key].error = error.message; label.printStatus = 'Check printer before reprinting'; throw error; }
   finally { printing = false; save(); notify(); }
 }
-async function runJob(job) {
+async function runJob(job, batchRoot) {
   job.status = 'downloading'; job.error = null; job.finishedAt = null; save(); notify();
   try {
     const manifest = await api('/api/production/manifest/' + job.token);
+    if (batchRoot && manifest.task.status !== 'IN_PRODUCTION') throw new Error('Task is no longer in Production');
     job.title = manifest.task.title; job.task = manifest.task; job.warnings = manifest.warnings;
-    const root = job.folder || path.join(settings.downloadRoot, safeName(`${manifest.task.orderId || 'MANUAL'}_${manifest.task.id.slice(-8)}`));
+    const root = batchRoot || job.folder || path.join(settings.downloadRoot, safeName(`${manifest.task.orderId || 'MANUAL'}_${manifest.task.id.slice(-8)}`));
     job.folder = root; await fsp.mkdir(root, { recursive: true });
-    const selectedFiles = manifest.files.filter(file => file.tag === 'for_print' ? settings.downloadToPrint : file.tag === 'draft' ? settings.downloadDrafts : false);
-    const all = [...selectedFiles, ...manifest.labels.map(label => ({ ...label, tag: 'awb' }))];
+    const selectedFiles = manifest.files.filter(file => file.tag === 'for_print' ? batchRoot || settings.downloadToPrint : file.tag === 'draft' && (batchRoot || settings.downloadDrafts));
+    if (batchRoot && !selectedFiles.length) throw new Error('No Draft or For Print files found');
+    const all = batchRoot ? selectedFiles : [...selectedFiles, ...manifest.labels.map(label => ({ ...label, tag: 'awb' }))];
     if (all.length > 500) throw new Error('Task exceeds 500 files');
     const downloaded = [];
     for (const file of all) {
       const key = fileKey(file);
-      const folder = path.join(root, file.tag === 'for_print' ? 'TO PRINT' : file.tag === 'draft' ? 'DRAFT' : 'AWB');
+      const folder = batchRoot && file.tag === 'for_print' ? root : path.join(root, file.tag === 'for_print' ? 'TO PRINT' : file.tag === 'draft' ? 'DRAFT' : 'AWB');
       await fsp.mkdir(folder, { recursive: true });
       const filename = path.join(folder, `${key.slice(0, 10)}_${safeName(file.name)}`);
       if (!fs.existsSync(filename)) await download(file.url, filename, file.size);
@@ -146,6 +148,36 @@ async function runJob(job) {
   } catch (error) { job.status = 'error'; job.error = error.message; }
   job.finishedAt = new Date().toISOString(); save(); notify();
 }
+async function runProductionBatch(batch) {
+  if (!/^[a-z0-9_-]{1,64}$/i.test(batch.folder) || safeName(batch.folder) !== batch.folder) throw new Error('Invalid batch folder name');
+  const root = path.join(settings.downloadRoot, batch.folder);
+  const completed = [];
+  let failed = 0;
+  for (const token of batch.tokens) {
+    const job = { id: crypto.randomUUID(), token, title: 'Production batch task', files: [], labels: [], warnings: [] };
+    await runJob(job, root);
+    if (job.status === 'downloaded') completed.push(job);
+    else failed++;
+  }
+  const draftKeys = new Set(completed.flatMap(job => job.files.filter(file => file.tag === 'draft').map(file => file.key)));
+  const assets = state.assets.filter(asset => draftKeys.has(asset.key) && !asset.printedAt);
+  if ([...draftKeys].some(key => !state.assets.some(asset => asset.key === key))) throw new Error('A downloaded draft could not be arranged. Check the batch folder before retrying.');
+  if (state.sheets.some(sheet => sheet.status === 'uncertain' && sheet.assetIds.some(id => assets.some(asset => asset.id === id)))) throw new Error('A prior draft print is uncertain. Check the printer before retrying.');
+  for (let index = 0; index < assets.length; index += 4) {
+    const slots = assets.slice(index, index + 4).map(asset => ({ id: asset.id }));
+    while (slots.length < 4) slots.push(null);
+    await submitDraftSheet({ slots, margin: 5, gap: 3 });
+  }
+  let moved = 0;
+  for (const job of completed) {
+    try {
+      if (!job.task.updatedAt) throw new Error('Task version unavailable');
+      await api('/api/tasks/' + job.task.id, 'PUT', { status: 'PRINT_AWB', expectedUpdatedAt: job.task.updatedAt });
+      moved++;
+    } catch { failed++; }
+  }
+  return { status: failed ? 'error' : 'ready', message: `${completed.length} tasks downloaded, ${Math.ceil(assets.length / 4)} A4 sheets submitted, ${moved} moved to Print AWB, ${failed} need attention. Folder: ${batch.folder}` };
+}
 async function processQueue() {
   if (processing || !session) return;
   processing = true; notify();
@@ -159,6 +191,21 @@ async function poll() {
     state.phone = await api(`/api/production/stations/${settings.stationId}`);
     const { scans } = await api(`/api/production/stations/${settings.stationId}/scans`);
     for (const scan of scans) {
+      if (scan.batch) {
+        if (processing || printing) break;
+        state.batchResults ||= {};
+        const id = String(scan._id);
+        if (!state.batchResults[id]) {
+          state.batchResults[id] = { status: 'error', message: 'Batch interrupted. Check files, printer and task statuses before retrying.' };
+          save();
+          processing = true;
+          try { state.batchResults[id] = await runProductionBatch(scan.batch); }
+          catch (error) { state.batchResults[id] = { status: 'error', message: error.message }; }
+          finally { processing = false; save(); notify(); void processQueue(); }
+        }
+        await api(`/api/production/stations/${settings.stationId}/scans/${id}/ack`, 'POST', state.batchResults[id]);
+        continue;
+      }
       let message = 'Job received by PC', status = 'received';
       if (!state.receipts.includes(String(scan._id))) {
         try {
@@ -197,6 +244,30 @@ function handle(name, action) {
     catch (error) { return { ok: false, error: error.message }; }
   });
 }
+async function submitDraftSheet({ slots, margin, gap }) {
+  if (!settings.draftPrinter) throw new Error('Select a draft printer in Settings');
+  if (printing) throw new Error('Printer queue is busy');
+  printing = true;
+  let sheet;
+  try {
+    const pdf = await buildSheet(sheetItems(slots), { margin: Number(margin), gap: Number(gap) });
+    const folder = path.join(settings.downloadRoot, 'Printed sheets');
+    await fsp.mkdir(folder, { recursive: true });
+    const id = crypto.randomUUID();
+    sheet = { id, at: new Date().toISOString(), assetIds: slots.filter(Boolean).map(slot => slot.id), status: 'submitting', printer: settings.draftPrinter, path: path.join(folder, `${id}-A4.pdf`) };
+    await fsp.writeFile(sheet.path, pdf);
+    state.sheets.unshift(sheet);
+    save(); notify();
+    await print(sheet.path, { printer: settings.draftPrinter, paperSize: 'A4', scale: 'noscale', orientation: 'portrait', copies: 1, silent: true, printDialog: false, side: 'simplex' });
+    sheet.status = 'sent'; for (const id of sheet.assetIds) assetById(id).printedAt = sheet.at;
+  } catch (error) {
+    if (sheet && state.sheets.includes(sheet)) { sheet.status = 'uncertain'; sheet.error = error.message; }
+    throw error;
+  }
+  finally { printing = false; save(); notify(); }
+  return sheet.id;
+}
+
 function registerHandlers() {
   handle('state', () => publicState());
   handle('login', async ({ email, password }) => {
@@ -307,20 +378,7 @@ function registerHandlers() {
     if (result.canceled) return null;
     await fsp.mkdir(path.dirname(result.filePath), { recursive: true }); await fsp.writeFile(result.filePath, pdf); return result.filePath;
   });
-  handle('printSheet', async ({ slots, margin, gap }) => {
-    if (!settings.draftPrinter) throw new Error('Select a draft printer in Settings');
-    if (printing) throw new Error('Printer queue is busy');
-    const items = sheetItems(slots); const pdf = await buildSheet(items, { margin: Number(margin), gap: Number(gap) });
-    const folder = path.join(settings.downloadRoot, 'Printed sheets'); await fsp.mkdir(folder, { recursive: true });
-    const sheet = { id: crypto.randomUUID(), at: new Date().toISOString(), assetIds: slots.filter(Boolean).map(slot => slot.id), status: 'submitting', printer: settings.draftPrinter, path: path.join(folder, `${Date.now()}-A4.pdf`) };
-    await fsp.writeFile(sheet.path, pdf); state.sheets.unshift(sheet); printing = true; save(); notify();
-    try {
-      await print(sheet.path, { printer: settings.draftPrinter, paperSize: 'A4', scale: 'noscale', orientation: 'portrait', copies: 1, silent: true, printDialog: false, side: 'simplex' });
-      sheet.status = 'sent'; for (const id of sheet.assetIds) assetById(id).printedAt = sheet.at;
-    } catch (error) { sheet.status = 'uncertain'; sheet.error = error.message; throw error; }
-    finally { printing = false; save(); notify(); }
-    return sheet.id;
-  });
+  handle('printSheet', submitDraftSheet);
   handle('printAwb', async ({ jobId, labelKey, reprint }) => {
     const label = state.jobs.find(job => job.id === jobId)?.labels?.find(item => item.key === labelKey);
     if (!label) throw new Error('AWB not downloaded');
