@@ -162,9 +162,9 @@ async function poll() {
       let message = 'Job received by PC', status = 'received';
       if (!state.receipts.includes(String(scan._id))) {
         try {
-          if (scan.test) { state.lastTest = { source: state.phone.phoneName || 'Phone', at: new Date().toISOString() }; message = 'Test scan received by PC'; }
+          if (scan.test) { state.lastTest = { source: scan.source === 'bot' ? 'Telegram bot' : state.phone.phoneName || 'Phone', at: new Date().toISOString() }; message = 'Test scan received by PC'; }
           else {
-            const result = await enqueue(scan.token, state.phone.phoneName || 'Phone');
+            const result = await enqueue(scan.token, scan.source === 'bot' ? 'Telegram bot' : state.phone.phoneName || 'Phone');
             const job = state.jobs.find(item => item.id === result.id);
             if (result.duplicate) {
               status = 'ready';
@@ -248,13 +248,15 @@ function registerHandlers() {
     let credential; try { credential = JSON.parse(safeStorage.decryptString(await fsp.readFile(path.join(app.getPath('userData'),'bot-credential.bin')))); } catch { throw new Error('No saved bot credential. Pair the Telegram bot first.'); }
     if (credential.ownerId !== settings.ownerId || credential.stationId !== settings.stationId) throw new Error('Saved bot credential does not belong to this station');
     const current = await api(`/api/production/stations/${settings.stationId}`);
-    if (current.phoneName !== 'Telegram bot') throw new Error('This bot credential is no longer paired');
+    if (!current.botPaired) throw new Error('This bot credential is no longer paired');
     const check = await fetch(settings.backend + '/api/production/phone-status', {headers:{'X-Station-ID':credential.stationId,'X-Phone-Key':credential.deviceSecret},signal:AbortSignal.timeout(15000)});
     if (!check.ok) throw new Error('This bot credential has been revoked. Pair the bot again.');
     const value=credential[kind]; clipboard.writeText(value);
     setTimeout(() => { if (clipboard.readText() === value) clipboard.clear(); }, 60000).unref();
   });
   handle('approve', () => api(`/api/production/stations/${settings.stationId}/approve`, 'POST').then(() => poll()));
+  handle('approveBot', () => api(`/api/production/stations/${settings.stationId}/approve-bot`, 'POST').then(() => poll()));
+  handle('unpairBot', async () => { await api(`/api/production/stations/${settings.stationId}/bot`, 'DELETE'); await fsp.rm(path.join(app.getPath('userData'),'bot-credential.bin'),{force:true}); await poll(); });
   handle('unpair', async () => { await api(`/api/production/stations/${settings.stationId}/phone`, 'DELETE'); state.phone = null; notify(); });
   handle('reconnect', poll);
   handle('bluetooth', () => shell.openExternal('ms-settings:bluetooth'));

@@ -5,7 +5,8 @@
 async function pairBot({stationId, api, register, persist, ownerId}) {
   if (!/^[a-f\d]{24}$/i.test(stationId || '')) throw new Error('Create a station before pairing the bot');
   const current = await api(`/api/production/stations/${stationId}`);
-  if (current.phoneName) throw new Error('A device is already paired. Unpair it explicitly before pairing the bot.');
+  if (current.supportsSeparateBot !== true) throw new Error('Shop-Co must be updated before pairing a separate Telegram bot.');
+  if (current.botPaired) throw new Error('A Telegram bot is already paired. Unpair it explicitly before pairing another bot.');
   const pairing = await api(`/api/production/stations/${stationId}/pairing`, 'POST');
   if (!/^[a-f\d]{64}$/i.test(pairing.secret || '')) throw new Error('Invalid pairing response');
   const device = await register({stationId, secret:pairing.secret, phoneName:'Telegram bot'});

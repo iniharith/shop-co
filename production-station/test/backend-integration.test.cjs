@@ -42,8 +42,15 @@ test('isolated backend: staff auth, pairing approval, scan acknowledgement and a
     assert.equal((await request('/pair', { token: null, body: { stationId: id, secret: pairing.body.secret } })).status, 410);
     const phoneHeaders = { 'X-Station-ID': id, 'X-Phone-Key': device.body.deviceSecret };
     const botAttempt = await request(`/stations/${id}/pairing`, { body: {} });
-    assert.equal((await request('/pair', { token: null, body: { stationId:id, secret:botAttempt.body.secret, phoneName:'Telegram bot' } })).status, 410);
+    const botDevice=await request('/pair', { token: null, body: { stationId:id, secret:botAttempt.body.secret, phoneName:'Telegram bot' } }); assert.equal(botDevice.status, 200);
     assert.equal((await request('/phone-status', { token: null, headers:phoneHeaders })).status, 200, 'existing phone credential must remain valid');
+    const botHeaders={'X-Station-ID':id,'X-Phone-Key':botDevice.body.deviceSecret};
+    assert.equal((await request('/phone-status',{token:null,headers:botHeaders})).body.approved,false);
+    assert.equal((await request('/scan',{token:null,headers:botHeaders,body:{test:true,requestId:'bot-test-000000001'}})).status,403);
+    assert.equal((await request(`/stations/${id}/approve-bot`,{body:{}})).status,200);
+    assert.equal((await request('/phone-status',{token:null,headers:botHeaders})).body.approved,true);
+    const secondBotPair=await request(`/stations/${id}/pairing`,{body:{}});
+    assert.equal((await request('/pair',{token:null,body:{stationId:id,secret:secondBotPair.body.secret,phoneName:'Telegram bot'}})).status,410);
     const code = 'ab'.repeat(24), event = { code, requestId: 'request-0000000001' };
     assert.equal((await request('/scan', { token: null, headers: phoneHeaders, body: event })).status, 403);
     assert.equal((await request(`/stations/${id}/approve`, { body: {} })).status, 200);
@@ -57,6 +64,9 @@ test('isolated backend: staff auth, pairing approval, scan acknowledgement and a
     assert.equal((await request(`/scan/${duplicate[0].body.id}`, { token: null, headers: phoneHeaders })).body.status, 'ready');
     await request(`/stations/${id}/phone`, { method: 'DELETE' });
     assert.equal((await request('/phone-status', { token: null, headers: phoneHeaders })).status, 401);
+    assert.equal((await request('/phone-status', { token:null, headers:botHeaders })).status, 200, 'unpairing phone must preserve bot');
+    await request(`/stations/${id}/bot`, {method:'DELETE'});
+    assert.equal((await request('/phone-status', { token:null, headers:botHeaders })).status, 401);
     const task = await Task.create({ title: 'Manual draft job', qrToken: code, files: [{ name: 'Stale name', url: 'https://example.com/current.pdf', tag: 'for_print' }], lineItems: [], status: 'IN_PRODUCTION' });
     await FileUpload.collection.insertMany([
       { taskId: String(task._id), userId: String(owner._id), path: 'https://example.com/current.pdf', filename: 'Draft.pdf', originalName: 'Authoritative draft.pdf', tag: 'draft', size: 42, updatedAt: new Date() },

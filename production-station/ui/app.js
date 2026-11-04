@@ -156,6 +156,8 @@ $('printSheet').onclick = () => action($('printSheet'), async () => { await call
 
 function renderPhone() {
   const phone = state.phone; $('phoneDetails').replaceChildren(element('strong', '', phone?.phoneName || 'No phone paired'), element('small', '', !phone?.phoneName ? 'Generate a pairing QR to connect your phone.' : !phone.approved ? 'Waiting for your approval' : phone.phoneOnline ? 'Approved · phone online' : 'Approved · phone offline'));
+  $('botDetails').textContent = !phone?.botPaired ? 'Telegram bot not paired' : !phone.botApproved ? 'Telegram bot waiting for approval' : phone.botOnline ? 'Telegram bot approved · online' : 'Telegram bot approved · offline';
+  $('approveTelegramBot').hidden = !phone?.botPaired || phone.botApproved; $('unpairTelegramBot').disabled = !phone?.botPaired; $('pairTelegramBot').disabled = !!phone?.botPaired;
   $('approvePhone').hidden = !phone?.phoneName || phone.approved; $('unpairPhone').disabled = !phone?.phoneName;
   $('pairError').textContent = state.connectionError || 'Phone pairing grants scan access only. Task downloads stay on this PC.';
   if (state.lastTest) { $('testStatus').textContent = `Test received from ${state.lastTest.source} at ${date(state.lastTest.at)}`; $('btResult').textContent = $('testStatus').textContent; }
@@ -164,6 +166,8 @@ $('generatePair').onclick = () => action($('generatePair'), async () => { const 
 $('pairTelegramBot').onclick = () => action($('pairTelegramBot'), async () => { await call('pairBot'); toast('Telegram bot paired. Approve it here, then copy its credentials to Railway.'); });
 $('copyBotStation').onclick = () => action($('copyBotStation'), async () => { await call('copyBotCredential', 'stationId'); toast('Station ID copied for Railway.'); });
 $('copyBotKey').onclick = () => action($('copyBotKey'), async () => { await call('copyBotCredential', 'deviceSecret'); toast('Bot key copied. Paste only into Railway; clipboard clears in one minute.'); });
+$('approveTelegramBot').onclick = () => action($('approveTelegramBot'), () => call('approveBot'));
+$('unpairTelegramBot').onclick = () => action($('unpairTelegramBot'), () => call('unpairBot'));
 $('approvePhone').onclick = () => action($('approvePhone'), () => call('approve')); $('unpairPhone').onclick = () => action($('unpairPhone'), () => call('unpair')); $('reconnectPhone').onclick = () => action($('reconnectPhone'), () => call('reconnect'));
 $('wifiTab').onclick = () => { $('wifiPanel').hidden = false; $('bluetoothPanel').hidden = true; $('wifiTab').classList.add('active'); $('bluetoothTab').classList.remove('active'); };
 $('bluetoothTab').onclick = () => { $('wifiPanel').hidden = true; $('bluetoothPanel').hidden = false; $('bluetoothTab').classList.add('active'); $('wifiTab').classList.remove('active'); $('btCode').focus(); };
