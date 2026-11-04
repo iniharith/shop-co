@@ -84,8 +84,9 @@ router.post('/pair', (0, express_async_handler_1.default)((req, res) => __awaite
         return;
     }
     const deviceSecret = (0, crypto_1.randomBytes)(32).toString('hex');
-    const station = yield ProductionStation_1.ProductionStation.findOneAndUpdate(Object.assign({ _id: stationId, pairingHash: hash(secret), pairingExpiresAt: { $gt: new Date() } }, (phoneName === 'Telegram bot' ? { deviceHash: { $exists: false } } : {})), {
-        $set: { deviceHash: hash(deviceSecret), phoneName: String(phoneName || 'Staff phone').slice(0, 80), deviceApproved: false, phoneSeenAt: new Date() },
+    const isBot = phoneName === 'Telegram bot';
+    const station = yield ProductionStation_1.ProductionStation.findOneAndUpdate(Object.assign({ _id: stationId, pairingHash: hash(secret), pairingExpiresAt: { $gt: new Date() } }, (isBot ? { botHash: { $exists: false } } : {})), {
+        $set: isBot ? { botHash: hash(deviceSecret), botApproved: false, botSeenAt: new Date() } : { deviceHash: hash(deviceSecret), phoneName: String(phoneName || 'Staff phone').slice(0, 80), deviceApproved: false, phoneSeenAt: new Date() },
         $unset: { pairingHash: 1, pairingExpiresAt: 1 },
     }, { new: true });
     if (!station) {
@@ -101,22 +102,29 @@ const phoneAuth = (0, express_async_handler_1.default)((req, res, next) => __awa
         res.status(401).json({ message: 'Pair this phone again' });
         return;
     }
-    const station = yield ProductionStation_1.ProductionStation.findOneAndUpdate({ _id: id, deviceHash: hash(secret) }, { $set: { phoneSeenAt: new Date() } }, { new: true });
+    const secretHash = hash(secret);
+    let station = yield ProductionStation_1.ProductionStation.findOneAndUpdate({ _id: id, deviceHash: secretHash }, { $set: { phoneSeenAt: new Date() } }, { new: true });
+    let isBot = false;
+    if (!station) {
+        station = yield ProductionStation_1.ProductionStation.findOneAndUpdate({ _id: id, botHash: secretHash }, { $set: { botSeenAt: new Date() } }, { new: true });
+        isBot = !!station;
+    }
     if (!station) {
         res.status(401).json({ message: 'Phone unpaired. Pair again on the PC.' });
         return;
     }
     req.station = station;
+    req.isBot = isBot;
     next();
 }));
 router.get('/phone-status', phoneAuth, (req, res) => {
     const station = req.station;
-    res.json({ stationName: station.name, approved: station.deviceApproved, pcOnline: !!station.pcSeenAt && Date.now() - station.pcSeenAt.getTime() < 15000 });
+    res.json({ stationName: station.name, approved: req.isBot ? station.botApproved : station.deviceApproved, pcOnline: !!station.pcSeenAt && Date.now() - station.pcSeenAt.getTime() < 15000 });
 });
 router.post('/scan', phoneAuth, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const station = req.station;
-    if (!station.deviceApproved) {
-        res.status(403).json({ message: 'Approve this phone on the PC first' });
+    if (!(req.isBot ? station.botApproved : station.deviceApproved)) {
+        res.status(403).json({ message: 'Approve this device on the PC first' });
         return;
     }
     const requestId = req.body.requestId;
@@ -145,7 +153,7 @@ router.post('/scan', phoneAuth, (0, express_async_handler_1.default)((req, res) 
         return;
     }
     try {
-        const scan = yield ProductionStation_1.ProductionScan.create({ stationId: String(station._id), requestId, token, test, expiresAt: expiry() });
+        const scan = yield ProductionStation_1.ProductionScan.create({ stationId: String(station._id), requestId, token, test, source: req.isBot ? 'bot' : 'phone', expiresAt: expiry() });
         res.json({ id: String(scan._id), status: scan.status });
     }
     catch (error) {
@@ -187,7 +195,7 @@ router.use('/stations/:id', (0, express_async_handler_1.default)((req, res, next
 })));
 router.get('/stations/:id', (req, res) => {
     const station = req.station;
-    res.json({ id: String(station._id), name: station.name, phoneName: station.phoneName || null, approved: station.deviceApproved, phoneOnline: !!station.phoneSeenAt && Date.now() - station.phoneSeenAt.getTime() < 15000 });
+    res.json({ id: String(station._id), name: station.name, phoneName: station.phoneName || null, approved: station.deviceApproved, phoneOnline: !!station.phoneSeenAt && Date.now() - station.phoneSeenAt.getTime() < 15000, supportsSeparateBot: true, botPaired: !!station.botHash, botApproved: station.botApproved, botOnline: !!station.botSeenAt && Date.now() - station.botSeenAt.getTime() < 15000 });
 });
 router.post('/stations/:id/pairing', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const secret = (0, crypto_1.randomBytes)(32).toString('hex');
@@ -202,6 +210,19 @@ router.post('/stations/:id/approve', (0, express_async_handler_1.default)((req, 
         return;
     }
     yield ProductionStation_1.ProductionStation.updateOne({ _id: station._id, deviceHash: station.deviceHash }, { $set: { deviceApproved: true } });
+    res.json({ success: true });
+})));
+router.post('/stations/:id/approve-bot', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const station = req.station;
+    if (!station.botHash) {
+        res.status(409).json({ message: 'No bot waiting for approval' });
+        return;
+    }
+    yield ProductionStation_1.ProductionStation.updateOne({ _id: station._id, botHash: station.botHash }, { $set: { botApproved: true } });
+    res.json({ success: true });
+})));
+router.delete('/stations/:id/bot', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    yield ProductionStation_1.ProductionStation.updateOne({ _id: req.params.id }, { $unset: { botHash: 1, botSeenAt: 1 }, $set: { botApproved: false } });
     res.json({ success: true });
 })));
 router.delete('/stations/:id/phone', (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {

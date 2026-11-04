@@ -44,6 +44,9 @@ const stationSchema = new mongoose_1.Schema({
     phoneName: String,
     deviceApproved: { type: Boolean, default: false },
     phoneSeenAt: Date,
+    botHash: String,
+    botApproved: { type: Boolean, default: false },
+    botSeenAt: Date,
     pcSeenAt: Date,
 }, { timestamps: true });
 const scanSchema = new mongoose_1.Schema({
@@ -51,6 +54,7 @@ const scanSchema = new mongoose_1.Schema({
     requestId: { type: String, required: true },
     token: { type: String, required: true },
     test: { type: Boolean, default: false },
+    source: { type: String, enum: ['phone', 'bot'], default: 'phone' },
     status: { type: String, enum: ['queued', 'received', 'ready', 'error'], default: 'queued' },
     message: String,
     expiresAt: { type: Date, required: true },
