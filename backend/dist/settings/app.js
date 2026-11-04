@@ -30,6 +30,7 @@ const fileUploadRoutes_1 = __importDefault(require("../presentation/routes/fileU
 const fileAnnotationRoutes_1 = __importDefault(require("../presentation/routes/fileAnnotationRoutes"));
 const virtualFolderRoutes_1 = __importDefault(require("../presentation/routes/virtualFolderRoutes"));
 const taskRoutes_1 = __importDefault(require("../presentation/routes/taskRoutes"));
+const productionRoutes_1 = __importDefault(require("../presentation/routes/productionRoutes"));
 const toolsRoutes_1 = __importDefault(require("../presentation/routes/toolsRoutes"));
 const WhatsAppWebhookService_1 = __importDefault(require("../infrastructure/services/WhatsAppWebhookService"));
 const user_route_1 = __importDefault(require("../presentation/routes/user.route"));
@@ -123,6 +124,7 @@ app.use('/api/parcels', parcelRoutes_1.default);
 app.use('/api/files', fileUploadRoutes_1.default);
 app.use('/api/file-annotations', fileAnnotationRoutes_1.default);
 app.use('/api/tasks', taskRoutes_1.default);
+app.use('/api/production', productionRoutes_1.default);
 app.use('/api/projects', projectRoutes_1.default);
 app.use('/api/audit-logs', auditRoutes_1.default);
 app.use('/api/tools', toolsRoutes_1.default);

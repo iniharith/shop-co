@@ -68,6 +68,7 @@ const TrackingCronJob_1 = require("../infrastructure/jobs/TrackingCronJob");
 const TaskStatusAutoTransition_1 = require("../infrastructure/jobs/TaskStatusAutoTransition");
 const AiReindexJob_1 = require("../infrastructure/jobs/AiReindexJob");
 const Parcel_1 = require("../domain/entities/Parcel");
+const ProductionStation_1 = require("../domain/entities/ProductionStation");
 const mongoose_1 = __importDefault(require("mongoose"));
 const order_model_1 = __importDefault(require("../infrastructure/db/models/order.model"));
 const Sentry = __importStar(require("@sentry/node"));
@@ -82,6 +83,7 @@ function main() {
         // Checkout retries rely on the unique sparse key index being ready before HTTP traffic.
         yield order_model_1.default.init();
         yield TrashItem_1.TrashItem.init();
+        yield Promise.all([ProductionStation_1.ProductionStation.init(), ProductionStation_1.ProductionScan.init()]);
         yield (0, initAdmin_1.initAdmin)();
         redisService.connect();
         server = http_1.default.createServer(app_1.default);

@@ -23,6 +23,7 @@ import { startTrackingCronJob } from '../infrastructure/jobs/TrackingCronJob';
 import { startTaskAutoTransitionJob } from '../infrastructure/jobs/TaskStatusAutoTransition';
 import { startAiReindexCron } from '../infrastructure/jobs/AiReindexJob';
 import { ensureParcelIndexes } from '../domain/entities/Parcel';
+import { ProductionStation, ProductionScan } from '../domain/entities/ProductionStation';
 import mongoose from 'mongoose';
 import OrderModel from '../infrastructure/db/models/order.model';
 import * as Sentry from '@sentry/node';
@@ -40,6 +41,7 @@ async function main() {
     // Checkout retries rely on the unique sparse key index being ready before HTTP traffic.
     await OrderModel.init();
     await TrashItem.init();
+    await Promise.all([ProductionStation.init(), ProductionScan.init()]);
     await initAdmin();
     redisService.connect();
     server = http.createServer(app);
