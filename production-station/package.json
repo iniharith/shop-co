@@ -1,0 +1,60 @@
+{
+  "name": "kc-production-station",
+  "version": "1.0.0",
+  "description": "QR downloads, AWB printing and four-up A4 draft production station",
+  "main": "main.cjs",
+  "author": "Kampung Cetak",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "prebuild": "node build-icon.cjs",
+    "test": "node --test test/*.test.cjs",
+    "test:electron": "electron test/electron-smoke.cjs",
+    "build": "electron-builder --win nsis --x64",
+    "build:portable": "electron-builder --win portable --x64"
+  },
+  "dependencies": {
+    "pdf-lib": "1.17.1",
+    "pdf-to-printer": "5.8.1",
+    "pdfjs-dist": "5.4.624",
+    "qrcode": "1.5.4",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "electron": "44.5.1",
+    "electron-builder": "25.0.5",
+    "jsqr": "1.4.0",
+    "mongodb-memory-server": "10.4.1"
+  },
+  "build": {
+    "appId": "com.kampungcetak.production",
+    "productName": "KC Production Station",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "lib/**/*",
+      "ui/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/pdf-to-printer/**/*",
+      "node_modules/@img/**/*",
+      "node_modules/sharp/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico",
+      "artifactName": "KC-Production-Station-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
