@@ -8,3 +8,22 @@ test('authenticated PC worker claims and completes a model request',async()=>{
   }finally{await bridge.close()}
 });
 test('requests fail when no worker has connected',()=>{const b=createModelBridge({secret:'b'.repeat(40)});assert.throws(()=>b.infer({}),/offline/)});
+test('PC approvals require an active claimed PC job and accept one decision only',async()=>{
+ const secret='c'.repeat(40),seen=[],b=createModelBridge({secret,onPcApproval:async(id,summary)=>seen.push({id,summary}),onPcTool:async name=>'live '+name});
+ await new Promise(resolve=>b.server.listen(0,'127.0.0.1',resolve));const url=`http://127.0.0.1:${b.server.address().port}`,headers={Authorization:`Bearer ${secret}`,'Content-Type':'application/json'};
+ const request=(route,body)=>fetch(url+route,{headers,...(body?{method:'POST',body:JSON.stringify(body)}:{})});
+ try{
+ await request('/work');const result=b.infer({kind:'pc',text:'Inspect folder'});const rejection=assert.rejects(result,/cancelled/);
+ const {job}=await (await request('/work')).json();
+ assert.equal((await request('/approval',{jobId:'wrong',summary:'Do something'})).status,409);
+ const {id}=await (await request('/approval',{jobId:job.id,summary:'Inspect folder'})).json();assert.equal(seen[0].summary,'Inspect folder');
+ assert.equal((await (await request('/approval/'+id)).json()).decision,null);
+ assert.equal(b.decideApproval(id,true),true);assert.equal(b.decideApproval(id,true),false);
+ assert.equal((await (await request('/approval/'+id)).json()).decision,'accept');
+ assert.equal((await (await request('/tool',{jobId:job.id,operation:'task_report'})).json()).result,'live task_report');
+ b.cancelPc();await rejection;
+ assert.equal((await (await request('/state/'+job.id)).json()).active,false);
+ assert.equal((await request('/approval/'+id)).status,410);
+ assert.equal((await request('/tool',{jobId:job.id,operation:'task_report'})).status,409);
+ }finally{await b.close();}
+});

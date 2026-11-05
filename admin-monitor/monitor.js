@@ -5,7 +5,7 @@ const { createShopCoClient } = require('./shopco-client');
 const { createSession } = require('./shopco-session');
 const { createAssistant } = require('./assistant');
 const { createChatOperations } = require('./chat-operations');
-const { allTaskReport,taskReportIntent,resolveDay } = require('./task-report');
+const { allTaskReport,completedTaskReport,taskReportIntent,resolveDay } = require('./task-report');
 const { createStationClient } = require('./station-client');
 const { searchIndex,readLimited } = require('./image-index');
 const { extractSearchCandidates } = require('./image-match');
@@ -31,7 +31,8 @@ const shopcoUrl = process.env.SHOPCO_API_URL || 'https://shop-co-production.up.r
 const shopcoSession = createSession({baseUrl:shopcoUrl,email:process.env.SHOPCO_BOT_EMAIL,password:process.env.SHOPCO_BOT_PASSWORD});
 const shopco = createShopCoClient({baseUrl:shopcoUrl,...shopcoSession});
 const station = createStationClient({baseUrl:shopcoUrl,stationId:process.env.PRODUCTION_STATION_ID,deviceKey:process.env.PRODUCTION_STATION_DEVICE_KEY});
-const chatOperations=createChatOperations({shopco,station,report,taskReport,today:malaysiaDay,enabled:()=>Boolean(checkpoint)});
+const chatOperations=createChatOperations({shopco,station,report,taskReport,workReport,today:malaysiaDay,enabled:()=>Boolean(checkpoint)});
+let pcBusy=false;
 let assistant;
 let modelBridge;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -71,6 +72,11 @@ async function taskReport(day='today'){
   if(!mongo)return 'Task reports are not configured.';
   if(!dbClient){const client=new MongoClient(mongo,{serverSelectionTimeoutMS:10000});await client.connect();dbClient=client;}
   return allTaskReport(dbClient.db(process.env.ADMIN_REPORT_DB||'shop-co'),day);
+}
+async function workReport(day='today'){
+ if(!mongo||!ObjectId.isValid(actor||''))return 'Work reports are not configured.';
+ if(!dbClient){const client=new MongoClient(mongo,{serverSelectionTimeoutMS:10000});await client.connect();dbClient=client;}
+ return completedTaskReport(dbClient.db(process.env.ADMIN_REPORT_DB||'shop-co'),actor,day);
 }
 async function searchTasks(query) {
   if (!mongo) return 'Task search is not configured.';
@@ -126,6 +132,19 @@ async function searchPhoto(photo){
   else sections.push('Text recognition is not configured.');
   return sections.join('\n\n');
 }
+async function pcChat(text){
+  if(!checkpoint||!modelBridge)return send('PC connection is not configured.');
+  if(pcBusy)return send('A PC task is running. Send /pcstop to cancel it, or wait for its result.');
+  pcBusy=true;
+  try{await send('Working on your PC…');}catch(error){pcBusy=false;throw error;}
+  Promise.resolve().then(()=>modelBridge.infer({kind:'pc',text})).then(result=>send(result.message?.content||'PC task returned no result.')).catch(()=>send('PC task failed, was cancelled, or the PC is offline. Check the PC before retrying a print or other action.')).finally(()=>{pcBusy=false;});
+}
+async function handleCallback(query){
+  if(String(query?.from?.id)!==owner||String(query?.message?.chat?.id)!==chat||query?.message?.chat?.type!=='private')return;
+  const match=String(query.data||'').match(/^pc:(yes|no):([a-f0-9]{24})$/);
+  const accepted=match&&modelBridge?.decideApproval(match[2],match[1]==='yes');
+  await api('answerCallbackQuery',{callback_query_id:query.id,text:accepted?'Decision sent to PC':'This approval has expired or was already answered.'});
+}
 async function handle(msg) {
   if (!msg || String(msg.from?.id) !== owner || String(msg.chat?.id) !== chat || msg.chat?.type !== 'private') return;
   const photo=Array.isArray(msg.photo)&&msg.photo.length?msg.photo[msg.photo.length-1]:(msg.document?.mime_type?.startsWith('image/')?msg.document:null);
@@ -136,13 +155,15 @@ async function handle(msg) {
   if(/^(?:yes|ya|confirm)$/i.test(text))return send(await chatOperations.confirmLatest());
   if(/^(?:cancel|batal)$/i.test(text))return send(chatOperations.cancel());
   const tasksCommand=text.match(/^\/tasks(?:@\w+)?(?:\s+(today|yesterday|\d{4}-\d{2}-\d{2}))?$/i);
-  if(tasksCommand)return send(await taskReport(tasksCommand[1]||'today'));
+  if(tasksCommand)return send(await workReport(tasksCommand[1]||'today'));
   const dailyTasks=taskReportIntent(text);
-  if(dailyTasks)return send(await taskReport(resolveDay(dailyTasks)));
+  if(dailyTasks)return send(await (/\b(?:created|new|dibuat)\b/i.test(text)?taskReport:workReport)(resolveDay(dailyTasks)));
   const confirmation=text.match(/^\/confirm(?:@\w+)?\s+([a-f0-9]{16})$/i);
   if(confirmation)return send(await chatOperations.confirm(confirmation[1]));
   if(/^\/cancel(?:@\w+)?$/i.test(text))return send(chatOperations.cancel());
-  if (/^\/(start|help)(@\w+)?$/.test(text)) return send('Shop-Co Telegram assistant\n/tasks [today|yesterday|YYYY-MM-DD] — all tasks from the Tasks page\nChat normally to ask questions, request reports, or prepare task and Production actions.\n/confirm CODE — execute a prepared action\n/cancel — discard a prepared action\n/production [YYYY-MM-DD] — preview Production tasks\n/production today FOLDER — download, print four-up drafts and move downloaded tasks\n/status — website and DNS status\n/task QUERY — search tasks\n/move TASK_ID STATUS — move one task\n/update TASK_ID FIELD VALUE — update title, description or dueDate\n/awb TASK_ID — queue a task at the production station\n/awbstatus JOB_ID — check the station result\n/uploads [YYYY-MM-DD] — uploaded tasks\nAll report dates use Malaysia time.');
+  if(/^\/pcstop(?:@\w+)?$/i.test(text)){modelBridge?.cancelPc();return send('PC cancellation requested. Check the PC before repeating any action.');}
+  if(/^\/pc(?:@\w+)?\s+/i.test(text))return pcChat(text.replace(/^\/pc(?:@\w+)?\s+/i,''));
+  if (/^\/(start|help)(@\w+)?$/.test(text)) return send('Shop-Co Telegram assistant\n/pc REQUEST — ask Codex on this PC\n/pcstop — cancel current PC task\n/tasks [today|yesterday|YYYY-MM-DD] — HARITH completed designs, all statuses\nChat normally to ask questions, request reports, or prepare task and Production actions.\n/confirm CODE — execute a prepared action\n/cancel — discard a prepared action\n/production [YYYY-MM-DD] — preview Production tasks\n/production today FOLDER — download, print four-up drafts and move downloaded tasks\n/status — website and DNS status\n/task QUERY — search tasks\n/move TASK_ID STATUS — move one task\n/update TASK_ID FIELD VALUE — update title, description or dueDate\n/awb TASK_ID — queue a task at the production station\n/awbstatus JOB_ID — check the station result\n/uploads [YYYY-MM-DD] — uploaded tasks\nAll report dates use Malaysia time.');
   if (/^\/status(@\w+)?$/.test(text)) return send(formatStatus(await check()));
   const batch = text.match(/^\/production\s+(today|\d{4}-\d{2}-\d{2})\s+([a-z0-9_-]{1,64})$/i) ||
     text.match(/^download (today|\d{4}-\d{2}-\d{2})(?:'s)? production files (?:to|into) ([a-z0-9_-]{1,64}), print (?:the )?drafts four per a4, and move (?:the )?(?:downloaded )?tasks to print awb\.?$/i);
@@ -200,6 +221,7 @@ async function handle(msg) {
         return send(await report(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'}).format(day)));
       }
     }
+    if(process.env.TELEGRAM_PC_ENABLED==='true')return pcChat(text);
     const active=getAssistant();if(!active)return send('AI chat is not configured yet. Use /help for available commands.');
     return send(await active.chat(text));
   }
@@ -238,8 +260,8 @@ async function checkIssues() {
 async function pollIssues() { try { await checkIssues(); } catch { console.error('Sentry issue check failed; will retry.'); } }
 async function main() {
   if(checkpoint)offset=await checkpoint.read();
-  if(process.env.MODEL_BRIDGE_SECRET){modelBridge=createModelBridge({secret:process.env.MODEL_BRIDGE_SECRET});await new Promise((resolve,reject)=>{modelBridge.server.once('error',reject);modelBridge.server.listen(Number(process.env.PORT||3000),'0.0.0.0',resolve)});console.log('Authenticated model bridge started.');}
+  if(process.env.MODEL_BRIDGE_SECRET){modelBridge=createModelBridge({secret:process.env.MODEL_BRIDGE_SECRET,onPcTool:async(name,args)=>name==='search_tasks'?searchTasks(args.query):name==='website_status'?formatStatus(await check()):chatOperations.run(name,args),onPcApproval:async(id,summary)=>api('sendMessage',{chat_id:chat,text:'PC approval required\n'+summary,reply_markup:{inline_keyboard:[[{text:'Approve once',callback_data:'pc:yes:'+id},{text:'Decline',callback_data:'pc:no:'+id}]]}})});await new Promise((resolve,reject)=>{modelBridge.server.once('error',reject);modelBridge.server.listen(Number(process.env.PORT||3000),'0.0.0.0',resolve)});console.log('Authenticated model bridge started.');}
   await monitor(); await pollIssues(); setInterval(() => void monitor(), 300000).unref(); setInterval(() => void pollIssues(), 300000).unref();
-  for (;;) { try { const updates = await api('getUpdates',{offset,timeout:25,allowed_updates:['message']}); for (const u of updates) { const next=u.update_id+1; if(checkpoint)await checkpoint.write(next); offset=next; try { await handle(u.message); } catch (error) { console.error('Command failed:', error?.name || 'Error', typeof error?.code==='number'?error.code:''); try { await send('Could not complete the request. Check the current task or station status before retrying.'); } catch {} } } } catch { console.error('Telegram polling or checkpoint failed; retrying.'); await sleep(5000); } }
+  for (;;) { try { const updates = await api('getUpdates',{offset,timeout:25,allowed_updates:['message','callback_query']}); for (const u of updates) { const next=u.update_id+1; if(checkpoint)await checkpoint.write(next); offset=next; try { if(u.callback_query)await handleCallback(u.callback_query);else await handle(u.message); } catch (error) { console.error('Command failed:', error?.name || 'Error', typeof error?.code==='number'?error.code:''); try { await send('Could not complete the request. Check the current task or station status before retrying.'); } catch {} } } } catch { console.error('Telegram polling or checkpoint failed; retrying.'); await sleep(5000); } }
 }
 main().catch(() => { console.error('Monitor stopped.'); process.exit(1); });

@@ -18,4 +18,14 @@ async function allTaskReport(db,value,now=new Date()){
  tasks.sort((a,b)=>String(a.title||'').localeCompare(String(b.title||''),undefined,{sensitivity:'base'}));
  return `All tasks created on ${day} (Malaysia time)\n${tasks.length} tasks · all statuses · alphabetical\n\n`+(tasks.map(t=>`• ${t.title||'(untitled)'} — ${t.status||'Unknown'}`).join('\n')||'No tasks were created on this date.');
 }
-module.exports={resolveDay,taskDayQuery,taskReportIntent,allTaskReport};
+function completedDayQuery(actor,day){
+ const window=taskDayQuery(day).createdAt;
+ return {activities:{$elemMatch:{userId:actor,createdAt:window,action:/^changed status from .+ to DONE DESIGN$/}}};
+}
+async function completedTaskReport(db,actor,value='today',now=new Date()){
+ const day=resolveDay(value,now);
+ const tasks=await db.collection('tasks').find(completedDayQuery(actor,day),{projection:{title:1,status:1,isDeleted:1},maxTimeMS:10000}).toArray();
+ tasks.sort((a,b)=>String(a.title||'').localeCompare(String(b.title||''),undefined,{sensitivity:'base'}));
+ return `HARITH completed designs — ${day} (Malaysia time)\n${tasks.length} distinct tasks · all current statuses · alphabetical\nCounted when HARITH moved the task to DONE DESIGN on this date, including tasks created earlier.\n\n`+(tasks.map(t=>`• ${t.title||'(untitled)'} — ${t.status||'Unknown'}${t.isDeleted?' (in Trash)':''}`).join('\n')||'No recorded design completions on this date.');
+}
+module.exports={resolveDay,taskDayQuery,taskReportIntent,allTaskReport,completedDayQuery,completedTaskReport};

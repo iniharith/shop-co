@@ -3,7 +3,7 @@ const {randomBytes}=require('node:crypto');
 const {validateChanges}=require('./shopco-client');
 const {resolveDay}=require('./task-report');
 
-function createChatOperations({shopco,station,report,taskReport,today,enabled,now=Date.now}) {
+function createChatOperations({shopco,station,report,taskReport,workReport,today,enabled,now=Date.now}) {
   let pending;
   function day(value){return resolveDay(value||'today',new Date(today()+'T12:00:00+08:00'));}
   function prepare(summary,execute){
@@ -13,6 +13,7 @@ function createChatOperations({shopco,station,report,taskReport,today,enabled,no
     return `Prepared only; nothing has executed.\n${summary}\nReply YES within 10 minutes to continue, or CANCEL. You can also use /confirm ${id}. This replaces any previous proposal.`;
   }
   async function run(name,args={}){
+    if(name==='work_report')return workReport(day(args.day));
     if(name==='task_report')return taskReport(day(args.day));
     if(name==='upload_report')return report(day(args.day));
     if(name==='production_preview'){
