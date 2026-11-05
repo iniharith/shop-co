@@ -1,17 +1,19 @@
 'use strict';
 const {randomBytes}=require('node:crypto');
 const {validateChanges}=require('./shopco-client');
+const {resolveDay}=require('./task-report');
 
-function createChatOperations({shopco,station,report,today,enabled,now=Date.now}) {
+function createChatOperations({shopco,station,report,taskReport,today,enabled,now=Date.now}) {
   let pending;
-  function day(value){return !value||value==='today'?today():value;}
+  function day(value){return resolveDay(value||'today',new Date(today()+'T12:00:00+08:00'));}
   function prepare(summary,execute){
     if(!enabled())throw new Error('Persistent bot state is required before enabling actions');
     const id=randomBytes(8).toString('hex');
     pending={id,summary,execute,expires:now()+10*60000};
-    return `Prepared only; nothing has executed.\n${summary}\nSend /confirm ${id} within 10 minutes, or /cancel. This replaces any previous proposal.`;
+    return `Prepared only; nothing has executed.\n${summary}\nReply YES within 10 minutes to continue, or CANCEL. You can also use /confirm ${id}. This replaces any previous proposal.`;
   }
   async function run(name,args={}){
+    if(name==='task_report')return taskReport(day(args.day));
     if(name==='upload_report')return report(day(args.day));
     if(name==='production_preview'){
       const date=day(args.day),tasks=await shopco.productionTasks(date);
@@ -54,6 +56,6 @@ function createChatOperations({shopco,station,report,today,enabled,now=Date.now}
     const action=pending;pending=null; // Consume before side effects; never retry uncertain print submissions.
     return action.execute();
   }
-  return {run,confirm,cancel:()=>{pending=null;return 'Pending action cancelled.';}};
+  return {run,confirm,confirmLatest:()=>confirm(pending?.id),cancel:()=>{pending=null;return 'Pending action cancelled.';}};
 }
 module.exports={createChatOperations};

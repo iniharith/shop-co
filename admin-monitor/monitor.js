@@ -5,6 +5,7 @@ const { createShopCoClient } = require('./shopco-client');
 const { createSession } = require('./shopco-session');
 const { createAssistant } = require('./assistant');
 const { createChatOperations } = require('./chat-operations');
+const { allTaskReport,taskReportIntent,resolveDay } = require('./task-report');
 const { createStationClient } = require('./station-client');
 const { searchIndex,readLimited } = require('./image-index');
 const { extractSearchCandidates } = require('./image-match');
@@ -30,7 +31,7 @@ const shopcoUrl = process.env.SHOPCO_API_URL || 'https://shop-co-production.up.r
 const shopcoSession = createSession({baseUrl:shopcoUrl,email:process.env.SHOPCO_BOT_EMAIL,password:process.env.SHOPCO_BOT_PASSWORD});
 const shopco = createShopCoClient({baseUrl:shopcoUrl,...shopcoSession});
 const station = createStationClient({baseUrl:shopcoUrl,stationId:process.env.PRODUCTION_STATION_ID,deviceKey:process.env.PRODUCTION_STATION_DEVICE_KEY});
-const chatOperations=createChatOperations({shopco,station,report,today:malaysiaDay,enabled:()=>Boolean(checkpoint)});
+const chatOperations=createChatOperations({shopco,station,report,taskReport,today:malaysiaDay,enabled:()=>Boolean(checkpoint)});
 let assistant;
 let modelBridge;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -66,6 +67,11 @@ async function report(day) {
   return `HARITH uploads — ${day} (Malaysia time)\n${ids.length} tasks; ${tasks.length} titles found\n\n` + (tasks.map(t => `• ${t.title || '(untitled)'}`).join('\n') || 'No recorded uploads.');
 }
 function malaysiaDay() { return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()); }
+async function taskReport(day='today'){
+  if(!mongo)return 'Task reports are not configured.';
+  if(!dbClient){const client=new MongoClient(mongo,{serverSelectionTimeoutMS:10000});await client.connect();dbClient=client;}
+  return allTaskReport(dbClient.db(process.env.ADMIN_REPORT_DB||'shop-co'),day);
+}
 async function searchTasks(query) {
   if (!mongo) return 'Task search is not configured.';
   query = query.trim();
@@ -127,10 +133,16 @@ async function handle(msg) {
   const text = (msg.text || '').trim();
   console.log('Owner request accepted:', msg.message_id, text.startsWith('/') ? 'command' : 'chat');
   if(!checkpoint && /^\/(?:move|update|awb)(?:@\w+)?(?:\s|$)/.test(text)) return send('Task changes and AWB jobs are unavailable until persistent bot state is configured.');
+  if(/^(?:yes|ya|confirm)$/i.test(text))return send(await chatOperations.confirmLatest());
+  if(/^(?:cancel|batal)$/i.test(text))return send(chatOperations.cancel());
+  const tasksCommand=text.match(/^\/tasks(?:@\w+)?(?:\s+(today|yesterday|\d{4}-\d{2}-\d{2}))?$/i);
+  if(tasksCommand)return send(await taskReport(tasksCommand[1]||'today'));
+  const dailyTasks=taskReportIntent(text);
+  if(dailyTasks)return send(await taskReport(resolveDay(dailyTasks)));
   const confirmation=text.match(/^\/confirm(?:@\w+)?\s+([a-f0-9]{16})$/i);
   if(confirmation)return send(await chatOperations.confirm(confirmation[1]));
   if(/^\/cancel(?:@\w+)?$/i.test(text))return send(chatOperations.cancel());
-  if (/^\/(start|help)(@\w+)?$/.test(text)) return send('Shop-Co Telegram assistant\nChat normally to ask questions, request reports, or prepare task and Production actions.\n/confirm CODE — execute a prepared action\n/cancel — discard a prepared action\n/production [YYYY-MM-DD] — preview Production tasks\n/production today FOLDER — download, print four-up drafts and move downloaded tasks\n/status — website and DNS status\n/task QUERY — search tasks\n/move TASK_ID STATUS — move one task\n/update TASK_ID FIELD VALUE — update title, description or dueDate\n/awb TASK_ID — queue a task at the production station\n/awbstatus JOB_ID — check the station result\n/uploads [YYYY-MM-DD] — uploaded tasks\nAll report dates use Malaysia time.');
+  if (/^\/(start|help)(@\w+)?$/.test(text)) return send('Shop-Co Telegram assistant\n/tasks [today|yesterday|YYYY-MM-DD] — all tasks from the Tasks page\nChat normally to ask questions, request reports, or prepare task and Production actions.\n/confirm CODE — execute a prepared action\n/cancel — discard a prepared action\n/production [YYYY-MM-DD] — preview Production tasks\n/production today FOLDER — download, print four-up drafts and move downloaded tasks\n/status — website and DNS status\n/task QUERY — search tasks\n/move TASK_ID STATUS — move one task\n/update TASK_ID FIELD VALUE — update title, description or dueDate\n/awb TASK_ID — queue a task at the production station\n/awbstatus JOB_ID — check the station result\n/uploads [YYYY-MM-DD] — uploaded tasks\nAll report dates use Malaysia time.');
   if (/^\/status(@\w+)?$/.test(text)) return send(formatStatus(await check()));
   const batch = text.match(/^\/production\s+(today|\d{4}-\d{2}-\d{2})\s+([a-z0-9_-]{1,64})$/i) ||
     text.match(/^download (today|\d{4}-\d{2}-\d{2})(?:'s)? production files (?:to|into) ([a-z0-9_-]{1,64}), print (?:the )?drafts four per a4, and move (?:the )?(?:downloaded )?tasks to print awb\.?$/i);
