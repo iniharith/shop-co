@@ -136,6 +136,7 @@ function trashTask(taskId, actorId) {
 function restoreTrash(trashId, actorId) {
     return __awaiter(this, void 0, void 0, function* () {
         const result = yield transaction((session) => __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
             const entry = yield TrashItem_1.TrashItem.findOne({ _id: trashId, state: 'deleted', $or: [{ purgeAt: { $exists: false } }, { purgeAt: { $gt: new Date() } }] }).session(session).lean();
             if (!entry)
                 throw new TrashError(409, 'This item is no longer recoverable or permanent deletion has started.');
@@ -154,7 +155,7 @@ function restoreTrash(trashId, actorId) {
                     if (!task || task.isDeleted)
                         throw new TrashError(409, 'Restore the parent task before restoring this file.');
                 }
-                const file = entry.payload.file;
+                const file = (_a = entry.payload) === null || _a === void 0 ? void 0 : _a.file;
                 if (file) {
                     const scope = file.taskId ? { taskId: file.taskId } : file.orderId ? { orderId: file.orderId } : { userId: file.userId };
                     const collision = yield FileUpload_1.FileUpload.findOne(Object.assign(Object.assign({}, scope), { originalName: file.originalName })).session(session).lean();
@@ -162,7 +163,7 @@ function restoreTrash(trashId, actorId) {
                         throw new TrashError(409, 'A file with this name already exists. Rename it before restoring this file.');
                     yield FileUpload_1.FileUpload.create([file], { session });
                 }
-                for (const link of entry.payload.links || []) {
+                for (const link of ((_b = entry.payload) === null || _b === void 0 ? void 0 : _b.links) || []) {
                     yield Task_1.Task.updateOne({ _id: link.taskId, 'files.url': { $ne: link.attachment.url } }, { $push: { files: link.attachment } }, { session });
                 }
             }
@@ -191,6 +192,7 @@ function restoreTrashedTask(taskId, actorId) {
 }
 function purgeTrash(trashId_1) {
     return __awaiter(this, arguments, void 0, function* (trashId, force = false) {
+        var _a, _b, _c;
         const now = new Date(), stale = new Date(now.getTime() - 15 * 60000);
         const entry = yield TrashItem_1.TrashItem.findOneAndUpdate(Object.assign(Object.assign({ _id: trashId }, (force ? {} : { purgeAt: { $lte: now } })), { $or: [{ state: 'deleted' }, { state: 'purging', purgeLeaseAt: { $lt: stale } }] }), { $set: { state: 'purging', purgeLeaseAt: now } }, { new: true }).lean();
         if (!entry)
@@ -204,13 +206,13 @@ function purgeTrash(trashId_1) {
                     throw new Error('Task is not deleted; permanent deletion stopped.');
                 files = yield FileUpload_1.FileUpload.find({ taskId: entry.itemId }).read('primary').lean();
             }
-            else if (entry.payload.file)
-                files = [entry.payload.file];
+            else if ((_a = entry.payload) === null || _a === void 0 ? void 0 : _a.file)
+                files = [(_b = entry.payload) === null || _b === void 0 ? void 0 : _b.file];
             const paths = [...new Set([
                     ...(entry.purgePaths || []), ...files.flatMap(storedPaths),
                     ...((task === null || task === void 0 ? void 0 : task.files) || []).map((f) => f.url),
-                    ...(entry.payload.links || []).map((link) => link.attachment.url),
-                    ...children.flatMap(child => [...storedPaths(child.payload.file), ...(child.payload.links || []).map((link) => link.attachment.url)]),
+                    ...(((_c = entry.payload) === null || _c === void 0 ? void 0 : _c.links) || []).map((link) => link.attachment.url),
+                    ...children.flatMap(child => { var _a, _b; return [...storedPaths((_a = child.payload) === null || _a === void 0 ? void 0 : _a.file), ...(((_b = child.payload) === null || _b === void 0 ? void 0 : _b.links) || []).map((link) => link.attachment.url)]; }),
                 ].filter(Boolean))];
             yield TrashItem_1.TrashItem.updateOne({ _id: entry._id, state: 'purging' }, { $set: { purgePaths: paths } });
             for (const value of paths) {

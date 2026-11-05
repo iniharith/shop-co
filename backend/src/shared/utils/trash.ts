@@ -101,14 +101,14 @@ export async function restoreTrash(trashId: string, actorId: string) {
         const task: any = await Task.findById(entry.taskId).session(session).lean();
         if (!task || task.isDeleted) throw new TrashError(409, 'Restore the parent task before restoring this file.');
       }
-      const file = entry.payload.file;
+      const file = entry.payload?.file;
       if (file) {
         const scope = file.taskId ? { taskId: file.taskId } : file.orderId ? { orderId: file.orderId } : { userId: file.userId };
         const collision = await FileUpload.findOne({ ...scope, originalName: file.originalName }).session(session).lean();
         if (collision) throw new TrashError(409, 'A file with this name already exists. Rename it before restoring this file.');
         await FileUpload.create([file], { session });
       }
-      for (const link of entry.payload.links || []) {
+      for (const link of entry.payload?.links || []) {
         await Task.updateOne({ _id: link.taskId, 'files.url': { $ne: link.attachment.url } }, { $push: { files: link.attachment } }, { session });
       }
     }
@@ -144,12 +144,12 @@ export async function purgeTrash(trashId: string, force = false) {
       task = await Task.findOne({ _id: entry.itemId, isDeleted: true }).read('primary').lean();
       if (!task) throw new Error('Task is not deleted; permanent deletion stopped.');
       files = await FileUpload.find({ taskId: entry.itemId }).read('primary').lean();
-    } else if (entry.payload.file) files = [entry.payload.file];
+    } else if (entry.payload?.file) files = [entry.payload?.file];
     const paths = [...new Set<string>([
       ...(entry.purgePaths || []), ...files.flatMap(storedPaths),
       ...(task?.files || []).map((f: any) => f.url),
-      ...(entry.payload.links || []).map((link: any) => link.attachment.url),
-      ...children.flatMap(child => [...storedPaths(child.payload.file), ...(child.payload.links || []).map((link: any) => link.attachment.url)]),
+      ...(entry.payload?.links || []).map((link: any) => link.attachment.url),
+      ...children.flatMap(child => [...storedPaths(child.payload?.file), ...(child.payload?.links || []).map((link: any) => link.attachment.url)]),
     ].filter(Boolean))];
     await TrashItem.updateOne({ _id: entry._id, state: 'purging' }, { $set: { purgePaths: paths } });
     for (const value of paths) {

@@ -13,7 +13,7 @@ const schema = new Schema({
   payload: { type: Schema.Types.Mixed, required: true },
   purgePaths: [String],
   lastPurgeError: String,
-}, { timestamps: true });
+}, { timestamps: true, minimize: false });
 schema.index({ kind: 1, itemId: 1 }, { unique: true });
 schema.index({ state: 1, purgeAt: 1 });
 // No TTL index: permanent deletion must successfully remove stored objects before metadata.

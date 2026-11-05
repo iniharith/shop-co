@@ -86,3 +86,21 @@ test('task permanent deletion keeps objects referenced by another recoverable ta
  const r=runtime();r.data.files.push(clone(file));r.data.tasks.push(task(),{...task(),_id:'other',isDeleted:true});const result=await r.api.trashTask(file.taskId,'staff');r.data.trash[0].purgeAt=new Date(Date.now()-1);
  await r.api.purgeTrash(result.trashId);assert.equal(r.data.tasks.length,1);assert.ok(!r.deletedObjects.includes(file.path));assert.equal(r.data.files.length,0);
 });
+
+test('task purge tolerates omitted empty payload from persisted Mongo documents',async()=>{
+ const r=runtime();r.data.files.push(clone(file));r.data.tasks.push(task());
+ const result=await r.api.trashTask(file.taskId,'staff');
+ delete r.data.trash[0].payload;
+ r.data.trash[0].purgeAt=new Date(Date.now()-1);
+ assert.equal(await r.api.purgeTrash(result.trashId),true);
+ assert.equal(r.data.tasks.length,0);assert.equal(r.data.files.length,0);assert.equal(r.data.trash.length,0);
+ assert.ok(r.deletedObjects.includes(file.path));
+});
+test('parent purge tolerates legacy child trash entries without payload',async()=>{
+ const r=runtime();r.data.tasks.push(task());
+ const result=await r.api.trashTask(file.taskId,'staff');
+ r.data.trash.push({_id:'child',kind:'file',taskId:file.taskId,state:'deleted'});
+ r.data.trash[0].purgeAt=new Date(Date.now()-1);
+ assert.equal(await r.api.purgeTrash(result.trashId),true);
+ assert.equal(r.data.trash.length,0);assert.equal(r.data.tasks.length,0);
+});

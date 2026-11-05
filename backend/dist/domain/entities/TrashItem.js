@@ -49,7 +49,7 @@ const schema = new mongoose_1.Schema({
     payload: { type: mongoose_1.Schema.Types.Mixed, required: true },
     purgePaths: [String],
     lastPurgeError: String,
-}, { timestamps: true });
+}, { timestamps: true, minimize: false });
 schema.index({ kind: 1, itemId: 1 }, { unique: true });
 schema.index({ state: 1, purgeAt: 1 });
 // No TTL index: permanent deletion must successfully remove stored objects before metadata.
