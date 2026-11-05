@@ -42,7 +42,7 @@ import LoadingAnimation from "@/components/global/LoadingAnimation";
 import { useLowPowerAnimations } from "@/hooks/useLowPowerAnimations";
 import SavedViewsControl from "@/components/global/SavedViewsControl";
 
-// â”€â”€â”€ Due Date Display â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Due Date Display ─────────────────────────────────────────────────────────
 const DueDateDisplay = ({ task, updateTask, className }: { task: any; updateTask: any; className?: string }) => {
   const dateObj = task.dueDate ? new Date(task.dueDate) : null;
   let displayText = "Set Due Date";
@@ -74,7 +74,7 @@ const DueDateDisplay = ({ task, updateTask, className }: { task: any; updateTask
   );
 };
 
-// â”€â”€â”€ Task status columns â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Task status columns ───────────────────────────────────────────────────────
 // Hoisted to module scope so it can be used as the initial (default-closed)
 // value for collapsedSections below, before the component's other state exists.
 const TASK_COLUMNS = [
@@ -101,8 +101,8 @@ const isTaskSavedView = (value: unknown): value is TaskSavedView => {
 };
 
 // Create New Task dialog with optional artwork upload that copies the
-// customer upload portal flow: presigned URL â†’ direct S3 upload â†’ save
-// metadata. No share link is created â€” files go straight to the task's own
+// customer upload portal flow: presigned URL → direct S3 upload → save
+// metadata. No share link is created — files go straight to the task's own
 // folder via /api/tasks/:id/files/save-metadata, which attaches the taskId
 // server-side so the Artworks Manager groups them under the task name (never
 // a user folder). The upload simply creates the folder; nothing opens in a
@@ -245,8 +245,8 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
     try {
       const token = session?.user?.token || localStorage.getItem('token') || "";
 
-      // Portal-style upload WITHOUT a share link: presigned URL â†’ direct S3
-      // PUT â†’ task save-metadata. The backend attaches the taskId to each
+      // Portal-style upload WITHOUT a share link: presigned URL → direct S3
+      // PUT → task save-metadata. The backend attaches the taskId to each
       // FileUpload record, so the Artworks Manager groups the files under the
       // task's own folder (named after the task), never a user folder.
       const results = await Promise.allSettled(allFiles.map(async ({ file, folderId }) => {
@@ -323,7 +323,7 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
           await uploadFilesForTask(taskId, folderFiles);
         }
         toast.success("Task created!");
-        // Open the task detail in place â€” no new tab, no extra navigation.
+        // Open the task detail in place — no new tab, no extra navigation.
         onTaskCreated?.({ _id: taskId, title: taskTitle, ...newTask, ...(data?.task || {}) });
         setIsOpen(false);
         resetForm();
@@ -347,7 +347,7 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Description</label>
-            <Textarea placeholder="Task detailsâ€¦" value={newTask.description} onChange={e => setNewTask({ ...newTask, description: e.target.value })} />
+            <Textarea placeholder="Task details…" value={newTask.description} onChange={e => setNewTask({ ...newTask, description: e.target.value })} />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Category</label>
@@ -360,13 +360,13 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
                 onClick={() => setCategoryOpen(open => !open)}
                 className="w-full justify-between h-10 font-normal"
               >
-                {newTask.category === "UNASSIGNED" ? "Select category or type a product nameâ€¦" : newTask.category}
+                {newTask.category === "UNASSIGNED" ? "Select category or type a product name…" : newTask.category}
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
               {categoryOpen && (
                 <div className="absolute left-0 right-0 top-full z-50 mt-2 rounded-md border bg-popover text-popover-foreground shadow-md max-h-[min(55vh,360px)] overflow-hidden flex flex-col">
                   <Command className="h-auto flex-1">
-                    <CommandInput placeholder="Type a product name or categoryâ€¦" />
+                    <CommandInput placeholder="Type a product name or category…" />
                     <CommandList className="overflow-y-auto">
                       <CommandEmpty>No matching product or category.</CommandEmpty>
                       <CommandGroup heading="Categories">
@@ -569,7 +569,7 @@ const CreateTaskDialog = ({ onTaskCreated }: { onTaskCreated?: (task: any) => vo
   );
 };
 
-// â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function TasksManager() {
   const lowPower = useLowPowerAnimations();
   const taskRenderBatch = lowPower ? 10 : TASK_RENDER_BATCH;
@@ -596,7 +596,7 @@ export default function TasksManager() {
   const [viewMode, setViewMode]                     = useState<"board" | "list">("list");
   const [, startViewTransition]                     = useTransition();
   const [selectedTask, setSelectedTask]             = useState<any>(null);
-  // Sections start closed (all statuses "collapsed") â€” matches the previous
+  // Sections start closed (all statuses "collapsed") — matches the previous
   // behaviour where you had to click a section to open it, instead of every
   // section dropping open the moment the Tasks page loads.
   const [collapsedSections, setCollapsedSections]   = useState<string[]>(TASK_COLUMNS);
@@ -629,7 +629,7 @@ export default function TasksManager() {
   const { mutate: updateTask }  = useUpdateTask();
   const { mutate: deleteTask }  = useDeleteTask();
 
-  // â”€â”€ Asana-style multi-select â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Asana-style multi-select ──────────────────────────────────────────────
   // No checkboxes. Click a row to open it. Shift+click to add to selection.
   // Clicking outside any row clears the selection.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -643,7 +643,7 @@ export default function TasksManager() {
   }, []);
 
   // Flat ordered list used for shift-click range selection (list view only).
-  // Keep this stable â€” it's the same order the rows are rendered in.
+  // Keep this stable — it's the same order the rows are rendered in.
   const flatOrderedIds: string[] = [];
 
   const handleRowClick = useCallback(
@@ -662,7 +662,7 @@ export default function TasksManager() {
             return next;
           });
         } else {
-          // No prior anchor â€” just toggle this one
+          // No prior anchor — just toggle this one
           setSelectedIds(prev => {
             const next = new Set(prev);
             next.has(task._id) ? next.delete(task._id) : next.add(task._id);
@@ -671,7 +671,7 @@ export default function TasksManager() {
         }
         lastClickedIdRef.current = task._id;
       } else if (selectedIds.size > 0) {
-        // Selection mode active â€” single click toggles without opening modal
+        // Selection mode active — single click toggles without opening modal
         setSelectedIds(prev => {
           const next = new Set(prev);
           next.has(task._id) ? next.delete(task._id) : next.add(task._id);
@@ -679,7 +679,7 @@ export default function TasksManager() {
         });
         lastClickedIdRef.current = task._id;
       } else {
-        // Normal click â€” open modal
+        // Normal click — open modal
         openTask(task);
         lastClickedIdRef.current = task._id;
       }
@@ -704,12 +704,12 @@ export default function TasksManager() {
     clearSelection();
   }, [selectedIds, updateTask, clearSelection, moveWithUndo]);
 
-  // â”€â”€ Bulk toolbar popover state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Bulk toolbar popover state ────────────────────────────────────────────
   const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
   const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
   const [bulkDateOpen,   setBulkDateOpen]   = useState(false);
 
-  // â”€â”€ Standard handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Standard handlers ─────────────────────────────────────────────────────
   const handleStatusChange = (taskId: string, newStatus: string) => {
     updateTask({ id: taskId, data: { status: newStatus } });
   };
@@ -734,7 +734,7 @@ export default function TasksManager() {
     updateTask({ id: task._id, data: { isDone: !task.isDone } });
   };
 
-  // â”€â”€ Columns / visibility â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Columns / visibility ──────────────────────────────────────────────────
   const columns = TASK_COLUMNS;
   const visibleColumns = useMemo(
     () => columns.filter(s => !hiddenColumns.includes(s)),
@@ -754,7 +754,7 @@ export default function TasksManager() {
   const refetchAll = () => visibleColumns.forEach(s => columnQueries[s]?.refetch());
   const isAnyFetching = visibleColumns.some(s => columnQueries[s]?.isFetching);
 
-  // â”€â”€ Sorted / filtered task list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Sorted / filtered task list ───────────────────────────────────────────
   const sortedTasks = useMemo(() => {
     return [...tasks]
       .filter((t: any) => {
@@ -791,7 +791,7 @@ export default function TasksManager() {
   return (
     <div className="flex flex-col gap-6 w-full max-w-full min-w-0 overflow-hidden px-1">
 
-      {/* â”€â”€ Top Toolbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Top Toolbar ─────────────────────────────────────────────────── */}
       <div className="flex justify-between items-center bg-card p-4 rounded-xl border border-border/50 shadow-sm flex-wrap gap-4">
         <div className="flex items-center gap-4 flex-wrap">
           {/* View toggle */}
@@ -847,12 +847,12 @@ export default function TasksManager() {
             <SelectContent>
               <SelectItem value="dateDesc">Newest First</SelectItem>
               <SelectItem value="dateAsc">Oldest First</SelectItem>
-              <SelectItem value="nameAsc">Name (Aâ€“Z)</SelectItem>
-              <SelectItem value="nameDesc">Name (Zâ€“A)</SelectItem>
+              <SelectItem value="nameAsc">Name (A–Z)</SelectItem>
+              <SelectItem value="nameDesc">Name (Z–A)</SelectItem>
             </SelectContent>
           </Select>
 
-          {/* Assignee filter â€” "All Users" shows every task, or narrow to one person */}
+          {/* Assignee filter — "All Users" shows every task, or narrow to one person */}
           <Select value={assigneeFilter} onValueChange={(v: any) => setAssigneeFilter(v)}>
             <SelectTrigger className="h-8 px-3 text-sm rounded-md w-44 gap-2 font-medium">
               <UserCheck className="w-4 h-4 shrink-0" /><SelectValue />
@@ -881,7 +881,7 @@ export default function TasksManager() {
             className="h-8 px-3 gap-2"
           />
 
-          {/* Hint â€” only visible in list view when nothing is selected */}
+          {/* Hint — only visible in list view when nothing is selected */}
           {viewMode === "list" && selectedIds.size === 0 && (
             <span className="text-xs text-muted-foreground hidden md:inline select-none">
               Shift+click rows to select multiple
@@ -906,7 +906,7 @@ export default function TasksManager() {
         </div>
       </div>
 
-      {/* â”€â”€ Board View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Board View ──────────────────────────────────────────────────── */}
       {viewMode === "board" && (
         <div className="relative w-full flex-1" style={{ minHeight: "calc(100vh - 200px)" }}>
           <div className="absolute inset-0 overflow-x-auto pb-4">
@@ -1004,7 +1004,7 @@ export default function TasksManager() {
         </div>
       )}
 
-      {/* â”€â”€ List View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── List View ───────────────────────────────────────────────────── */}
       {viewMode === "list" && (
         <div className="flex flex-col gap-4" onClick={e => {
           // Clicking the list container background (not a row) clears selection
@@ -1142,7 +1142,7 @@ export default function TasksManager() {
         </div>
       )}
 
-      {/* â”€â”€ Task Detail Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── Task Detail Modal ────────────────────────────────────────────── */}
       {selectedTask && (
         <TaskModal
           task={tasks.find((t: any) => t._id === selectedTask._id) || selectedTask}
@@ -1151,10 +1151,10 @@ export default function TasksManager() {
         />
       )}
 
-      {/* â”€â”€ Floating Bulk Action Toolbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      {/* ── Floating Bulk Action Toolbar ─────────────────────────────────────
           Rendered via portal directly on document.body so it escapes the
           ScrollArea's overflow clipping that would otherwise hide it.
-      â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      ─────────────────────────────────────────────────────────────────────── */}
       {selectedIds.size > 0 && typeof document !== "undefined" && createPortal(
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-1 bg-card border border-border shadow-2xl rounded-2xl px-3 py-2 animate-in slide-in-from-bottom-3 duration-150">
 
@@ -1165,7 +1165,7 @@ export default function TasksManager() {
 
           <div className="w-px h-5 bg-border mx-1" />
 
-          {/* â”€â”€ Assign â”€â”€ */}
+          {/* ── Assign ── */}
           <Popover open={bulkAssignOpen} onOpenChange={setBulkAssignOpen}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-1.5 text-xs font-medium h-8 px-3 rounded-lg">
@@ -1194,7 +1194,7 @@ export default function TasksManager() {
             </PopoverContent>
           </Popover>
 
-          {/* â”€â”€ Set Status â”€â”€ */}
+          {/* ── Set Status ── */}
           <Popover open={bulkStatusOpen} onOpenChange={setBulkStatusOpen}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-1.5 text-xs font-medium h-8 px-3 rounded-lg">
@@ -1216,7 +1216,7 @@ export default function TasksManager() {
             </PopoverContent>
           </Popover>
 
-          {/* â”€â”€ Due Date â”€â”€ */}
+          {/* ── Due Date ── */}
           <Popover open={bulkDateOpen} onOpenChange={setBulkDateOpen}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-1.5 text-xs font-medium h-8 px-3 rounded-lg">
@@ -1243,7 +1243,7 @@ export default function TasksManager() {
 
           <div className="w-px h-5 bg-border mx-1" />
 
-          {/* â”€â”€ Dismiss â”€â”€ */}
+          {/* ── Dismiss ── */}
           <Button
             variant="ghost" size="icon"
             className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
