@@ -4,6 +4,7 @@ const { MongoClient, ObjectId } = require('mongodb');
 const { createShopCoClient } = require('./shopco-client');
 const { createSession } = require('./shopco-session');
 const { createAssistant } = require('./assistant');
+const { createChatOperations } = require('./chat-operations');
 const { createStationClient } = require('./station-client');
 const { searchIndex,readLimited } = require('./image-index');
 const { extractSearchCandidates } = require('./image-match');
@@ -29,6 +30,7 @@ const shopcoUrl = process.env.SHOPCO_API_URL || 'https://shop-co-production.up.r
 const shopcoSession = createSession({baseUrl:shopcoUrl,email:process.env.SHOPCO_BOT_EMAIL,password:process.env.SHOPCO_BOT_PASSWORD});
 const shopco = createShopCoClient({baseUrl:shopcoUrl,...shopcoSession});
 const station = createStationClient({baseUrl:shopcoUrl,stationId:process.env.PRODUCTION_STATION_ID,deviceKey:process.env.PRODUCTION_STATION_DEVICE_KEY});
+const chatOperations=createChatOperations({shopco,station,report,today:malaysiaDay,enabled:()=>Boolean(checkpoint)});
 let assistant;
 let modelBridge;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -78,7 +80,7 @@ async function searchTasks(query) {
 function getAssistant(){
   if((!process.env.MODEL_API_URL && !modelBridge) || !process.env.MODEL_NAME)return null;
   const fetchImpl=modelBridge?async(_url,options)=>new Response(JSON.stringify(await modelBridge.infer(JSON.parse(options.body))),{status:200}):undefined;
-  if(!assistant)assistant=createAssistant({baseUrl:process.env.MODEL_API_URL||'http://127.0.0.1:11434',model:process.env.MODEL_NAME,apiToken:process.env.MODEL_API_TOKEN,fetchImpl,tools:{searchTasks,websiteStatus:async()=>formatStatus(await check())}});
+  if(!assistant)assistant=createAssistant({baseUrl:process.env.MODEL_API_URL||'http://127.0.0.1:11434',model:process.env.MODEL_NAME,apiToken:process.env.MODEL_API_TOKEN,fetchImpl,tools:{searchTasks,websiteStatus:async()=>formatStatus(await check()),operations:chatOperations.run}});
   return assistant;
 }
 async function searchFileText(query){
@@ -124,7 +126,10 @@ async function handle(msg) {
   if(photo)return send(await searchPhoto(photo));
   const text = (msg.text || '').trim();
   if(!checkpoint && /^\/(?:move|update|awb)(?:@\w+)?(?:\s|$)/.test(text)) return send('Task changes and AWB jobs are unavailable until persistent bot state is configured.');
-  if (/^\/(start|help)(@\w+)?$/.test(text)) return send('Shop-Co admin monitor\n/status — website and DNS status\n/task QUERY — search tasks\n/move TASK_ID STATUS — move one task\n/update TASK_ID FIELD VALUE — update title, description or dueDate\n/awb TASK_ID — queue a task at the production station\n/awbstatus JOB_ID — check the station result\n/uploads [YYYY-MM-DD] — uploaded tasks\nAll report dates use Malaysia time.');
+  const confirmation=text.match(/^\/confirm(?:@\w+)?\s+([a-f0-9]{16})$/i);
+  if(confirmation)return send(await chatOperations.confirm(confirmation[1]));
+  if(/^\/cancel(?:@\w+)?$/i.test(text))return send(chatOperations.cancel());
+  if (/^\/(start|help)(@\w+)?$/.test(text)) return send('Shop-Co Telegram assistant\nChat normally to ask questions, request reports, or prepare task and Production actions.\n/confirm CODE — execute a prepared action\n/cancel — discard a prepared action\n/production [YYYY-MM-DD] — preview Production tasks\n/production today FOLDER — download, print four-up drafts and move downloaded tasks\n/status — website and DNS status\n/task QUERY — search tasks\n/move TASK_ID STATUS — move one task\n/update TASK_ID FIELD VALUE — update title, description or dueDate\n/awb TASK_ID — queue a task at the production station\n/awbstatus JOB_ID — check the station result\n/uploads [YYYY-MM-DD] — uploaded tasks\nAll report dates use Malaysia time.');
   if (/^\/status(@\w+)?$/.test(text)) return send(formatStatus(await check()));
   const batch = text.match(/^\/production\s+(today|\d{4}-\d{2}-\d{2})\s+([a-z0-9_-]{1,64})$/i) ||
     text.match(/^download (today|\d{4}-\d{2}-\d{2})(?:'s)? production files (?:to|into) ([a-z0-9_-]{1,64}), print (?:the )?drafts four per a4, and move (?:the )?(?:downloaded )?tasks to print awb\.?$/i);

@@ -30,3 +30,11 @@ WhatsApp is not configured here. Business-initiated alerts generally need a conf
 Sentry alerts depend on Sentry being enabled and capturing errors in each deployed application; a healthy homepage does not prove every feature works. Add targeted checks and Sentry alert rules for important workflows, and monitor the monitor independently. This service cannot detect every bug or issue.
 
 Image similarity uses perceptual hashes, so it primarily finds visually similar copies rather than concepts or semantically related designs. Vision model OCR is probabilistic; verify extracted text. Neither the end-to-end image search nor Telegram AWB printing has been validated on production. AWB status distinguishes a request or spool submission from confirmed physical output. Pairing and station routes in this checkout may not yet exist on the deployed backend; verify before configuration.
+
+## Telegram as the Shop-Co control point
+
+Ordinary chat can retrieve website status, task search, HARITH upload reports and Production queue previews. Reports use Malaysia dates and alphabetically sorted uploaded-file tasks. The assistant can prepare task updates, AWB jobs, or a Production batch. Each chat action returns an exact summary and a one-use /confirm CODE; /cancel discards it. Proposals expire after ten minutes or a restart, and a newer proposal replaces the old one. Production confirms the queue has not changed before submitting. Task updates retain optimistic concurrency protection.
+
+Examples: “Show HARITH uploads for 2026-11-05”, “Find kakasenior2”, “Check my websites”, and “Download today's Production to Today, print drafts four per A4 and move downloaded tasks to Print AWB”. Folder names currently allow letters, digits, underscores and hyphens under the workstation's configured download root. The bot cannot execute arbitrary Windows commands or change arbitrary website settings. Chat actions need persistent BOT_STATE_PATH, authenticated Shop-Co credentials, and approved station credentials for downloads and printing.
+
+This is a separate AI assistant integrated with Shop-Co and the Windows station. It does not automatically share the desktop Codex conversation. Local-model chat requires the PC/model worker online. Monitoring and reports run independently on Railway. No system can guarantee detection of every application bug.
