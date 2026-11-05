@@ -125,6 +125,7 @@ async function handle(msg) {
   const photo=Array.isArray(msg.photo)&&msg.photo.length?msg.photo[msg.photo.length-1]:(msg.document?.mime_type?.startsWith('image/')?msg.document:null);
   if(photo)return send(await searchPhoto(photo));
   const text = (msg.text || '').trim();
+  console.log('Owner request accepted:', msg.message_id, text.startsWith('/') ? 'command' : 'chat');
   if(!checkpoint && /^\/(?:move|update|awb)(?:@\w+)?(?:\s|$)/.test(text)) return send('Task changes and AWB jobs are unavailable until persistent bot state is configured.');
   const confirmation=text.match(/^\/confirm(?:@\w+)?\s+([a-f0-9]{16})$/i);
   if(confirmation)return send(await chatOperations.confirm(confirmation[1]));
@@ -176,6 +177,17 @@ async function handle(msg) {
   }
   if (/^\/uploads(?:@\w+)?(?:\s|$)/.test(text)) return send(await report(text.split(/\s+/)[1] || malaysiaDay()));
   if (text && !text.startsWith('/')) {
+    // Preserve exact report rows and sorting instead of asking the model to
+    // summarize a potentially long upload list.
+    if (/\b(?:upload(?:ed|s)?|report)\b/i.test(text) && /\bharith\b/i.test(text)) {
+      const date=text.match(/\b\d{4}-\d{2}-\d{2}\b/);
+      if(date)return send(await report(date[0]));
+      if(/\b(?:today|hari ini)\b/i.test(text))return send(await report(malaysiaDay()));
+      if(/\b(?:yesterday|semalam)\b/i.test(text)){
+        const day=new Date(Date.parse(malaysiaDay()+'T00:00:00+08:00')-86400000);
+        return send(await report(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'}).format(day)));
+      }
+    }
     const active=getAssistant();if(!active)return send('AI chat is not configured yet. Use /help for available commands.');
     return send(await active.chat(text));
   }
@@ -216,6 +228,6 @@ async function main() {
   if(checkpoint)offset=await checkpoint.read();
   if(process.env.MODEL_BRIDGE_SECRET){modelBridge=createModelBridge({secret:process.env.MODEL_BRIDGE_SECRET});await new Promise((resolve,reject)=>{modelBridge.server.once('error',reject);modelBridge.server.listen(Number(process.env.PORT||3000),'0.0.0.0',resolve)});console.log('Authenticated model bridge started.');}
   await monitor(); await pollIssues(); setInterval(() => void monitor(), 300000).unref(); setInterval(() => void pollIssues(), 300000).unref();
-  for (;;) { try { const updates = await api('getUpdates',{offset,timeout:25,allowed_updates:['message']}); for (const u of updates) { const next=u.update_id+1; if(checkpoint)await checkpoint.write(next); offset=next; try { await handle(u.message); } catch { console.error('Command failed.'); try { await send('Could not complete the request. Check the current task or station status before retrying.'); } catch {} } } } catch { console.error('Telegram polling or checkpoint failed; retrying.'); await sleep(5000); } }
+  for (;;) { try { const updates = await api('getUpdates',{offset,timeout:25,allowed_updates:['message']}); for (const u of updates) { const next=u.update_id+1; if(checkpoint)await checkpoint.write(next); offset=next; try { await handle(u.message); } catch (error) { console.error('Command failed:', error?.name || 'Error', typeof error?.code==='number'?error.code:''); try { await send('Could not complete the request. Check the current task or station status before retrying.'); } catch {} } } } catch { console.error('Telegram polling or checkpoint failed; retrying.'); await sleep(5000); } }
 }
 main().catch(() => { console.error('Monitor stopped.'); process.exit(1); });
