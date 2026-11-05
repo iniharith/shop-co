@@ -8,11 +8,13 @@ if ($secret -isnot [securestring]) { throw 'The model-worker credential is inval
 $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secret)
 try {
     $env:MODEL_BRIDGE_URL = $config.bridgeUrl
-    if ($config.codexExecutable) { $env:CODEX_PC_EXECUTABLE = $config.codexExecutable }
+    $currentCodex = Get-Command codex.exe -ErrorAction SilentlyContinue
+    if ($currentCodex) { $env:CODEX_PC_EXECUTABLE = $currentCodex.Source }
+    elseif ($config.codexExecutable) { $env:CODEX_PC_EXECUTABLE = $config.codexExecutable }
     if ($config.codexCwd) { $env:CODEX_PC_CWD = $config.codexCwd }
     $env:MODEL_BRIDGE_SECRET = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
-    & $config.nodePath $config.workerPath
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    $worker = Start-Process -FilePath $config.nodePath -ArgumentList ('"' + $config.workerPath + '"') -WorkingDirectory $configDir -WindowStyle Hidden -PassThru -Wait
+    if ($worker.ExitCode -ne 0) { exit $worker.ExitCode }
 } finally {
     Remove-Item Env:MODEL_BRIDGE_SECRET -ErrorAction SilentlyContinue
     Remove-Item Env:MODEL_BRIDGE_URL -ErrorAction SilentlyContinue
