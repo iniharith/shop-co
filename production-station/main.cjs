@@ -395,7 +395,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('before-quit', () => { quitting = true; });
   app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
     app.setAppUserModelId('com.kampungcetak.production');
     storePath = path.join(app.getPath('userData'), 'production-state.json');
     settingsPath = path.join(app.getPath('userData'), 'settings.json'); credentialsPath = path.join(app.getPath('userData'), 'credentials.bin');
@@ -406,14 +406,18 @@ else {
     try { if (fs.existsSync(credentialsPath)) session = JSON.parse(safeStorage.decryptString(fs.readFileSync(credentialsPath))); } catch { session = null; }
     registerHandlers();
     win = new BrowserWindow({ show: !process.argv.includes('--background'), width: 1440, height: 940, minWidth: 1100, minHeight: 760, icon: path.join(__dirname, 'assets/icon.png'), backgroundColor: '#f5f6f8', title: 'KC Production Station', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true } });
-    tray = new Tray(path.join(__dirname, 'assets/icon.ico'));
-    tray.setToolTip('KC Production Station');
-    tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Open Production Station', click: () => { win.show(); win.focus(); } }, { label: 'Quit', click: () => { quitting = true; app.quit(); } }]));
-    tray.on('double-click', () => { win.show(); win.focus(); });
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     win.webContents.on('will-navigate', (event, url) => { if (url !== trustedRenderer) event.preventDefault(); });
     win.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
-    win.loadFile(path.join(__dirname, 'ui/index.html'));
+    await win.loadFile(path.join(__dirname, 'ui/index.html'));
+    // Some Windows multiseat shells block Electron Tray construction. Keep it opt-in
+    // so downloads, IPC and polling can start reliably in the background.
+    if (process.env.KC_ENABLE_TRAY === '1') {
+      tray = new Tray(path.join(__dirname, 'assets/icon.ico'));
+      tray.setToolTip('KC Production Station');
+      tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Open Production Station', click: () => { win.show(); win.focus(); } }, { label: 'Quit', click: () => { quitting = true; app.quit(); } }]));
+      tray.on('double-click', () => { win.show(); win.focus(); });
+    }
     win.on('close', event => { if (processing || printing) { event.preventDefault(); void dialog.showMessageBox(win, { message: 'Please wait for the active download or print submission to finish.' }); } else if (!quitting) { event.preventDefault(); win.hide(); } });
     pollTimer = setInterval(() => void poll(), 2500); void processQueue();
   }).catch(error => { dialog.showErrorBox('KC Production Station', error.message); app.quit(); });
