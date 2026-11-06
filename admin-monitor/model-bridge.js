@@ -10,6 +10,7 @@ function createModelBridge({secret,timeoutMs=180000,maxPending=4,onPcApproval,on
   const server=http.createServer(async(req,res)=>{
     if(!authorized(req.headers.authorization))return send(res,401,{error:'Unauthorized'});
     try {
+      if(req.method==='GET'&&req.url==='/heartbeat'){lastWorkerAt=Date.now();return send(res,200,{ok:true});}
       if(req.method==='GET'&&req.url==='/health')return send(res,200,{ok:true,...workerStatus()});
       if(req.method==='GET'&&req.url==='/work'){
         const workerId=String(req.headers['x-worker-id']||'legacy').slice(0,100);

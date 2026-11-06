@@ -13,7 +13,7 @@ const base=new URL(cloud);if(base.protocol!=='https:'&&!(base.protocol==='http:'
 if(base.username||base.password||base.search||base.hash){console.error('Invalid bridge URL.');process.exit(1)}
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function bridge(path,options={}){heartbeat('connecting');const r=await fetch(new URL(path,base),{...options,headers:{Authorization:`Bearer ${secret}`,'Content-Type':'application/json','X-Worker-ID':workerId},signal:AbortSignal.timeout(15000)});if(!r.ok)throw new Error(`Bridge returned ${r.status}`);heartbeat('connected');return r.json()}
-async function main(){for(;;){try{const data=await bridge('/work');if(!data.job){await sleep(2000);continue}let result;
+async function main(){setInterval(()=>void bridge('/heartbeat').catch(()=>{}),10000).unref();for(;;){try{const data=await bridge('/work');if(!data.job){await sleep(2000);continue}let result;
 if(data.job.request?.kind==='pc'){
   if(!process.env.CODEX_PC_EXECUTABLE){await bridge('/result',{method:'POST',body:JSON.stringify({id:data.job.id,error:'PC agent is not configured'})});continue;}
   pc ||= new CodexPc({executable:process.env.CODEX_PC_EXECUTABLE,cwd:process.env.CODEX_PC_CWD||process.cwd(),stateFile:path.join(__dirname,'codex-session.json')});
