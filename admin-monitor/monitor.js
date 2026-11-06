@@ -32,6 +32,7 @@ const shopcoSession = createSession({baseUrl:shopcoUrl,email:process.env.SHOPCO_
 const shopco = createShopCoClient({baseUrl:shopcoUrl,...shopcoSession});
 const station = createStationClient({baseUrl:shopcoUrl,stationId:process.env.PRODUCTION_STATION_ID,deviceKey:process.env.PRODUCTION_STATION_DEVICE_KEY});
 const chatOperations=createChatOperations({shopco,station,report,taskReport,workReport,today:malaysiaDay,enabled:()=>Boolean(checkpoint)});
+let lastPcOnline=null;
 let pcBusy=false;
 let assistant;
 let modelBridge;
@@ -134,6 +135,7 @@ async function searchPhoto(photo){
 }
 async function pcChat(text){
   if(!checkpoint||!modelBridge)return send('PC connection is not configured.');
+  if(!modelBridge.workerStatus().online)return send('The PC worker is offline. It will reconnect automatically while Windows is signed in and connected. Website monitoring and task reports still work.');
   if(pcBusy)return send('A PC task is running. Send /pcstop to cancel it, or wait for its result.');
   pcBusy=true;
   try{await send('Working on your PC…');}catch(error){pcBusy=false;throw error;}
@@ -226,6 +228,13 @@ async function handle(msg) {
     return send(await active.chat(text));
   }
 }
+async function monitorPc(){
+ if(!modelBridge||process.env.TELEGRAM_PC_ENABLED!=='true')return;
+ const online=modelBridge.workerStatus().online;
+ if(lastPcOnline===null&&!online)await send('PC worker is offline. PC actions are unavailable until Windows reconnects. Website monitoring and task reports remain available.');
+ else if(lastPcOnline!==null&&online!==lastPcOnline)await send(online?'PC worker is back online. Telegram PC requests are available.':'PC worker went offline. Automatic recovery is enabled on Windows; PC actions will resume when it reconnects.');
+ lastPcOnline=online;
+}
 async function monitor() {
   try { const results = await check(); const key = results.map(x => x.ok ? '1':'0').join('');
     if (lastStatus === null) { if (results.some(x=>!x.ok)) await send('Monitor started with an outage.\n'+formatStatus(results)); lastStatus = key; }
@@ -261,7 +270,8 @@ async function pollIssues() { try { await checkIssues(); } catch { console.error
 async function main() {
   if(checkpoint)offset=await checkpoint.read();
   if(process.env.MODEL_BRIDGE_SECRET){modelBridge=createModelBridge({secret:process.env.MODEL_BRIDGE_SECRET,onPcTool:async(name,args)=>name==='search_tasks'?searchTasks(args.query):name==='website_status'?formatStatus(await check()):chatOperations.run(name,args),onPcApproval:async(id,summary)=>api('sendMessage',{chat_id:chat,text:'PC approval required\n'+summary,reply_markup:{inline_keyboard:[[{text:'Approve once',callback_data:'pc:yes:'+id},{text:'Decline',callback_data:'pc:no:'+id}]]}})});await new Promise((resolve,reject)=>{modelBridge.server.once('error',reject);modelBridge.server.listen(Number(process.env.PORT||3000),'0.0.0.0',resolve)});console.log('Authenticated model bridge started.');}
+  setInterval(()=>void monitorPc().catch(()=>console.error('PC connection notification failed; retrying.')),60000).unref();
   await monitor(); await pollIssues(); setInterval(() => void monitor(), 300000).unref(); setInterval(() => void pollIssues(), 300000).unref();
-  for (;;) { try { const updates = await api('getUpdates',{offset,timeout:25,allowed_updates:['message','callback_query']}); for (const u of updates) { const next=u.update_id+1; if(checkpoint)await checkpoint.write(next); offset=next; try { if(u.callback_query)await handleCallback(u.callback_query);else await handle(u.message); } catch (error) { console.error('Command failed:', error?.name || 'Error', typeof error?.code==='number'?error.code:''); try { await send('Could not complete the request. Check the current task or station status before retrying.'); } catch {} } } } catch { console.error('Telegram polling or checkpoint failed; retrying.'); await sleep(5000); } }
+  for (;;) { try { const updates = await api('getUpdates',{offset,timeout:25,allowed_updates:['message','callback_query']}); for (const u of updates) { const next=u.update_id+1; if(checkpoint)await checkpoint.write(next); offset=next; try { if(u.callback_query)await handleCallback(u.callback_query);else await handle(u.message); } catch (error) { console.error('Command failed:', error?.name || 'Error', typeof error?.code==='number'?error.code:''); try { await send('Could not complete the request. Check the current task or station status before retrying.'); } catch {} } } } catch(error) { console.error('Telegram polling/checkpoint failed:',error?.name||'Error', typeof error?.code==='number'?error.code:'',String(error?.message||'').startsWith('Telegram ')?error.message:''); await sleep(5000); } }
 }
 main().catch(() => { console.error('Monitor stopped.'); process.exit(1); });

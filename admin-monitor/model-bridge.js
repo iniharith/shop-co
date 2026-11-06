@@ -3,16 +3,25 @@ const http=require('node:http');const crypto=require('node:crypto');
 const MAX_BODY=16*1024*1024;
 function createModelBridge({secret,timeoutMs=180000,maxPending=4,onPcApproval,onPcTool}){
   if(typeof secret!=='string'||secret.length<32)throw new Error('Model bridge secret must be at least 32 characters');
-  const pending=new Map(),approvals=new Map();let lastWorkerAt=0;
+  const pending=new Map(),approvals=new Map();let lastWorkerAt=0,lastWorkerId=null;
   function authorized(value){const expected=Buffer.from(`Bearer ${secret}`),actual=Buffer.from(value||'');return expected.length===actual.length&&crypto.timingSafeEqual(expected,actual);}
   async function body(req){let chunks=[],size=0;for await(const chunk of req){size+=chunk.length;if(size>MAX_BODY)throw new Error('Body too large');chunks.push(chunk)}return JSON.parse(Buffer.concat(chunks).toString('utf8'));}
   function send(res,status,data){const out=JSON.stringify(data);res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(out);}
   const server=http.createServer(async(req,res)=>{
     if(!authorized(req.headers.authorization))return send(res,401,{error:'Unauthorized'});
     try {
+      if(req.method==='GET'&&req.url==='/health')return send(res,200,{ok:true,...workerStatus()});
       if(req.method==='GET'&&req.url==='/work'){
-        lastWorkerAt=Date.now();const entry=[...pending.values()].find(x=>!x.claimed);
-        if(!entry)return send(res,200,{job:null});entry.claimed=true;return send(res,200,{job:{id:entry.id,request:entry.request}});
+        const workerId=String(req.headers['x-worker-id']||'legacy').slice(0,100);
+        if(lastWorkerId!==null&&lastWorkerId!==workerId){
+          for(const [id,job]of pending)if(job.claimed&&job.workerId!==workerId){
+            pending.delete(id);clearTimeout(job.timer);
+            for(const [approvalId,a]of approvals)if(a.jobId===id)approvals.delete(approvalId);
+            job.reject(new Error('PC worker restarted; the previous task was interrupted. Check for partial side effects before retrying.'));
+          }
+        }
+        lastWorkerId=workerId;lastWorkerAt=Date.now();const entry=[...pending.values()].find(x=>!x.claimed);
+        if(!entry)return send(res,200,{job:null});entry.claimed=true;entry.workerId=workerId;return send(res,200,{job:{id:entry.id,request:entry.request}});
       }
       if(req.method==='POST'&&req.url==='/tool'){
         const data=await body(req),job=pending.get(data.jobId);
@@ -35,7 +44,7 @@ function createModelBridge({secret,timeoutMs=180000,maxPending=4,onPcApproval,on
         if(!entry||!pending.has(entry.jobId))return send(res,410,{error:'Approval expired'});
         return send(res,200,{decision:entry.decision});
       }
-      if(req.method==='GET'&&req.url.startsWith('/state/'))return send(res,200,{active:pending.has(req.url.slice(7))});
+      if(req.method==='GET'&&req.url.startsWith('/state/')){lastWorkerAt=Date.now();return send(res,200,{active:pending.has(req.url.slice(7))});}
       if(req.method==='POST'&&req.url==='/result'){
         const result=await body(req);const entry=pending.get(result.id);
         if(!entry||!entry.claimed)return send(res,404,{error:'Job expired'});
@@ -55,6 +64,7 @@ function createModelBridge({secret,timeoutMs=180000,maxPending=4,onPcApproval,on
   function close(){for(const entry of pending.values()){clearTimeout(entry.timer);entry.reject(new Error('Model bridge stopped'));}pending.clear();return new Promise(resolve=>server.close(resolve));}
   function decideApproval(id,accept){const a=approvals.get(id);if(!a||!pending.has(a.jobId)||a.decision!==null)return false;a.decision=accept?'accept':'decline';return true;}
   function cancelPc(){for(const [id,e]of pending)if(e.request.kind==='pc'){pending.delete(id);clearTimeout(e.timer);e.reject(new Error('PC task cancelled. Check the PC before retrying any side effect.'));}}
-  return {server,infer,close,decideApproval,cancelPc};
+  function workerStatus(){return {online:!!lastWorkerAt&&Date.now()-lastWorkerAt<30000,lastSeenAt:lastWorkerAt||null};}
+  return {server,infer,close,decideApproval,cancelPc,workerStatus};
 }
 module.exports={createModelBridge};

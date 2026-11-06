@@ -3,13 +3,16 @@
 // kept bound to loopback. Do not expose its port on the public network.
 const {CodexPc}=require('./codex-pc');
 const path=require('node:path');
+const fs=require('node:fs');
+const workerId=require('node:crypto').randomUUID();
+function heartbeat(state){try{fs.writeFileSync(path.join(__dirname,'worker-health.json'),JSON.stringify({updatedAt:new Date().toISOString(),state}));}catch{}}
 let pc;
 const cloud=process.env.MODEL_BRIDGE_URL,secret=process.env.MODEL_BRIDGE_SECRET;
 if(!cloud||!secret||secret.length<32){console.error('Set MODEL_BRIDGE_URL and MODEL_BRIDGE_SECRET.');process.exit(1)}
 const base=new URL(cloud);if(base.protocol!=='https:'&&!(base.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(base.hostname))){console.error('Bridge must use HTTPS.');process.exit(1)}
 if(base.username||base.password||base.search||base.hash){console.error('Invalid bridge URL.');process.exit(1)}
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function bridge(path,options={}){const r=await fetch(new URL(path,base),{...options,headers:{Authorization:`Bearer ${secret}`,'Content-Type':'application/json'},signal:AbortSignal.timeout(15000)});if(!r.ok)throw new Error(`Bridge returned ${r.status}`);return r.json()}
+async function bridge(path,options={}){heartbeat('connecting');const r=await fetch(new URL(path,base),{...options,headers:{Authorization:`Bearer ${secret}`,'Content-Type':'application/json','X-Worker-ID':workerId},signal:AbortSignal.timeout(15000)});if(!r.ok)throw new Error(`Bridge returned ${r.status}`);heartbeat('connected');return r.json()}
 async function main(){for(;;){try{const data=await bridge('/work');if(!data.job){await sleep(2000);continue}let result;
 if(data.job.request?.kind==='pc'){
   if(!process.env.CODEX_PC_EXECUTABLE){await bridge('/result',{method:'POST',body:JSON.stringify({id:data.job.id,error:'PC agent is not configured'})});continue;}
@@ -23,7 +26,7 @@ if(data.job.request?.kind==='pc'){
       for(;;){if(controller.signal.aborted)return false;const status=await bridge('/approval/'+a.id);if(status.decision)return status.decision==='accept';await sleep(1000);}
     }});
     result={id:data.job.id,response:{message:{role:'assistant',content:answer}}};
-  }catch{result={id:data.job.id,error:'PC agent failed or was cancelled. Check the PC before retrying.'};}
+  }catch(error){console.error('PC agent failed:',error?.name||'Error');result={id:data.job.id,error:'PC agent failed or was cancelled. Check the PC before retrying.'};}
   finally{clearInterval(timer);}
   await bridge('/result',{method:'POST',body:JSON.stringify(result)});continue;
 }

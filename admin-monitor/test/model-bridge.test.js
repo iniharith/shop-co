@@ -27,3 +27,14 @@ test('PC approvals require an active claimed PC job and accept one decision only
  assert.equal((await request('/tool',{jobId:job.id,operation:'task_report'})).status,409);
  }finally{await b.close();}
 });
+test('a restarted PC worker releases an interrupted job without replaying it',async()=>{
+ const secret='d'.repeat(40),b=createModelBridge({secret});await new Promise(resolve=>b.server.listen(0,'127.0.0.1',resolve));
+ const url=`http://127.0.0.1:${b.server.address().port}`;
+ const work=id=>fetch(url+'/work',{headers:{Authorization:`Bearer ${secret}`,'X-Worker-ID':id}});
+ try{
+ await work('first-process');const result=b.infer({kind:'pc',text:'Print once'});const rejected=assert.rejects(result,/restarted/);
+ assert.ok((await (await work('first-process')).json()).job);
+ assert.equal((await (await work('second-process')).json()).job,null);await rejected;
+ assert.equal(b.workerStatus().online,true);
+ }finally{await b.close();}
+});

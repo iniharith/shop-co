@@ -2,16 +2,25 @@
 const {spawn}=require('node:child_process');
 const readline=require('node:readline');
 const fs=require('node:fs');
+const path=require('node:path');
 const {runWindows,cleanEnvironment}=require('./windows-actions');
 const WINDOWS_TOOL={type:'function',name:'windows',description:'Operate this Windows PC. pc_info and list_files are read-only. run_command executes a PowerShell command only after the owner approves the exact command in Telegram. Use this instead of the builtin shell if its Windows directory handling fails. Never put passwords or tokens in commands.',inputSchema:{type:'object',properties:{operation:{type:'string',enum:['pc_info','list_files','run_command']},path:{type:'string'},command:{type:'string'}},required:['operation'],additionalProperties:false}};
 const SHOPCO_TOOL={type:'function',name:'shopco',description:'Access the owner Shop-Co system. Use work_report for what tasks I did today/yesterday: HARITH design completions across all statuses. Use task_report ONLY for tasks created on a date; upload_report only for HARITH uploads; production_preview only for the Production queue. Prepared mutations require owner Yes/Cancel in Telegram. Never scrape credentials.',inputSchema:{type:'object',properties:{operation:{type:'string',enum:['search_tasks','website_status','work_report','task_report','upload_report','production_preview','prepare_production','prepare_task_update','prepare_awb','station_job_status']},arguments:{type:'object'}},required:['operation','arguments'],additionalProperties:false}};
+function resolveExecutable(configured){
+ if(fs.existsSync(configured))return configured;
+ const bin=path.dirname(path.dirname(configured));
+ const candidates=fs.readdirSync(bin,{withFileTypes:true}).filter(x=>x.isDirectory()).map(x=>path.join(bin,x.name,'codex.exe')).filter(x=>fs.existsSync(x));
+ candidates.sort((a,b)=>fs.statSync(b).mtimeMs-fs.statSync(a).mtimeMs);
+ if(!candidates.length)throw Error('Codex installation was updated or removed; no executable is available');
+ return candidates[0];
+}
 class CodexPc {
  constructor({executable,cwd,stateFile,spawnImpl=spawn}){this.executable=executable;this.cwd=cwd;this.stateFile=stateFile;this.spawnImpl=spawnImpl;this.seq=0;this.pending=new Map();this.items=new Map();}
  send(message){this.child.stdin.write(JSON.stringify(message)+'\n');}
  rpc(method,params){const id=++this.seq;return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{this.pending.delete(id);reject(Error('Codex connection timed out'));},60000);this.pending.set(id,{resolve,reject,timer});this.send({id,method,params});});}
  async start(){
   if(this.child)return;
-  this.child=this.spawnImpl(this.executable,['app-server','--stdio'],{cwd:this.cwd,windowsHide:true,env:cleanEnvironment(),stdio:['pipe','pipe','pipe']});
+  this.child=this.spawnImpl(this.spawnImpl===spawn?resolveExecutable(this.executable):this.executable,['app-server','--stdio'],{cwd:this.cwd,windowsHide:true,env:cleanEnvironment(),stdio:['pipe','pipe','pipe']});
   this.child.stderr.on('data',()=>{});
   readline.createInterface({input:this.child.stdout}).on('line',line=>{try{void this.receive(JSON.parse(line)).catch(()=>this.fail(Error('Codex protocol handling failed')));}catch{}});
   this.child.on('error',()=>this.fail(Error('Could not start the installed Codex agent')));
@@ -56,6 +65,8 @@ class CodexPc {
   }
  }
  async run(text,{onApproval,onTool,signal}){
+  let context='';try{context=fs.readFileSync(path.join(path.dirname(this.stateFile),'operator-context.md'),'utf8').slice(0,12000);}catch{}
+  if(context)text='Saved workstation context (no credentials):\n'+context+'\n\nOwner request:\n'+text;
   if(this.active)throw Error('A PC task is already running');
   await this.start();
   if(!this.threadId){
@@ -76,4 +87,4 @@ class CodexPc {
  }
  close(){this.child?.kill();this.child=null;}
 }
-module.exports={CodexPc};
+module.exports={CodexPc,resolveExecutable};

@@ -1,5 +1,13 @@
 const test=require('node:test'),assert=require('node:assert/strict'),{EventEmitter}=require('node:events'),{PassThrough,Writable}=require('node:stream'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
 const {CodexPc}=require('../codex-pc');
+const {resolveExecutable}=require('../codex-pc');
+test('Codex app update recovers an executable whose old version directory was removed',()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'kc-codex-bin-'));
+ try{const current=path.join(root,'new-version');fs.mkdirSync(current);const exe=path.join(current,'codex.exe');fs.writeFileSync(exe,'test');
+ assert.equal(resolveExecutable(path.join(root,'removed-version','codex.exe')),exe);
+ assert.equal(resolveExecutable(exe),exe);
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
 function fixture(){
  const proc=new EventEmitter();proc.stdout=new PassThrough();proc.stderr=new PassThrough();proc.kill=()=>proc.emit('exit');
  const sent=[];const emit=m=>proc.stdout.write(JSON.stringify(m)+'\n');
