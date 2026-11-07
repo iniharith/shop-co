@@ -1605,7 +1605,7 @@ function TaskModalContent({ task, isOpen, onClose }: TaskModalProps) {
                       {[...(fullTask.comments || [])].sort((a: any, b: any) => {
                         if (a.pinned && !b.pinned) return -1;
                         if (!a.pinned && b.pinned) return 1;
-                        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
                       }).map((comment: any, idx: number) => (
                         <div key={comment._id || idx} className="flex gap-3">
                           <Avatar className="w-8 h-8 shrink-0">
