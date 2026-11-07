@@ -1595,7 +1595,7 @@ function TaskModalContent({ task, isOpen, onClose }: TaskModalProps) {
                       <TabsTrigger value="activity" className="text-xs data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:font-bold data-[state=active]:underline underline-offset-8 decoration-2 decoration-primary px-4">
                         All activity
                       </TabsTrigger>
-                      <TabsTrigger value="description-history" className="text-xs px-3">Description history</TabsTrigger>
+                      <TabsTrigger value="description-history" className="text-xs data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:font-bold data-[state=active]:underline underline-offset-8 decoration-2 decoration-primary px-4">Description history</TabsTrigger>
                     </TabsList>
                   </div>
 
@@ -1603,9 +1603,7 @@ function TaskModalContent({ task, isOpen, onClose }: TaskModalProps) {
                   <TabsContent value="comments" className="mt-0 bg-transparent" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" translate="no">
                     <div className="space-y-4 bg-transparent">
                       {[...(fullTask.comments || [])].sort((a: any, b: any) => {
-                        if (a.pinned && !b.pinned) return -1;
-                        if (!a.pinned && b.pinned) return 1;
-                        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
                       }).map((comment: any, idx: number) => (
                         <div key={idx} className="flex gap-3">
                           <Avatar className="w-8 h-8 shrink-0">
@@ -1667,18 +1665,6 @@ function TaskModalContent({ task, isOpen, onClose }: TaskModalProps) {
                               <div className="text-sm text-muted-foreground text-center py-4 bg-transparent">No activity yet.</div>
                             ) : (
                               <>
-                                {fullTask.createdAt && (
-                                  <div className="flex gap-3 items-center text-sm py-1">
-                                    <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/30 shrink-0 flex items-center justify-center">
-                                      <span className="text-[9px] font-bold text-primary">✦</span>
-                                    </div>
-                                    <div className="flex-1 text-muted-foreground">
-                                      <span className="font-semibold text-foreground mr-1">Task</span>
-                                      created
-                                      <span className="text-[10px] ml-2 text-muted-foreground/70">• {format(new Date(fullTask.createdAt), "MMM d, h:mm a")}</span>
-                                    </div>
-                                  </div>
-                                )}
                                 {activityItems.map((item: any, idx: number) => {
                                   const isUpload = item.action.includes('uploaded a file');
                                   const isDoneActivity = item.action === 'marked task as done';
@@ -1716,6 +1702,18 @@ return (
                                     </div>
                                   );
                                 })}
+                                {fullTask.createdAt && (
+                                  <div className="flex gap-3 items-center text-sm py-1">
+                                    <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/30 shrink-0 flex items-center justify-center">
+                                      <span className="text-[9px] font-bold text-primary">✦</span>
+                                    </div>
+                                    <div className="flex-1 text-muted-foreground">
+                                      <span className="font-semibold text-foreground mr-1">Task</span>
+                                      created
+                                      <span className="text-[10px] ml-2 text-muted-foreground/70">• {format(new Date(fullTask.createdAt), "MMM d, h:mm a")}</span>
+                                    </div>
+                                  </div>
+                                )}
                               </>
                             )}
                           </div>
