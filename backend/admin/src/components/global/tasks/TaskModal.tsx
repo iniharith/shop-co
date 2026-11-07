@@ -1603,9 +1603,11 @@ function TaskModalContent({ task, isOpen, onClose }: TaskModalProps) {
                   <TabsContent value="comments" className="mt-0 bg-transparent" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" translate="no">
                     <div className="space-y-4 bg-transparent">
                       {[...(fullTask.comments || [])].sort((a: any, b: any) => {
-                        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                        if (a.pinned && !b.pinned) return -1;
+                        if (!a.pinned && b.pinned) return 1;
+                        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
                       }).map((comment: any, idx: number) => (
-                        <div key={idx} className="flex gap-3">
+                        <div key={comment._id || idx} className="flex gap-3">
                           <Avatar className="w-8 h-8 shrink-0">
                             <AvatarFallback className="text-xs" style={{ background: 'transparent' }}>{comment.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
