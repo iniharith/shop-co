@@ -1,3 +1,4 @@
+import { TaskDescriptionRevision } from '../../../domain/entities/TaskDescriptionRevision';
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -137,7 +138,7 @@ export class AdminUsecase {
                     manualItemCategory,
                 }], { session });
                 order = createdOrder;
-                await Task.create([{
+                const [createdTask] = await Task.create([{
                     title: `Order: ${createdOrder._id.toString().slice(-6).toUpperCase()} - ${data.customerName}`,
                     description: `Manual order task for Order ${createdOrder._id.toString()}.`,
                     orderId: createdOrder._id.toString(),
@@ -151,6 +152,7 @@ export class AdminUsecase {
                     lineItems,
                     status: data.orderStatus || 'PLACED',
                 }], { session });
+                await TaskDescriptionRevision.create([{ taskId: String(createdTask._id), taskTitle: createdTask.title, kind: 'created', beforeHtml: '', afterHtml: createdTask.description || '', actorId: 'system', actorName: 'System', capturedAt: new Date() }], { session });
 
                 if (data.trackingNumber) {
                     await Parcel.create([{

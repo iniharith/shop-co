@@ -132,6 +132,7 @@ export const useUpdateTask = () => {
         },
         onSuccess: (data, variables, context) => {
             updateTaskCaches(client, data?.task);
+            if (variables.data.description !== undefined) client.invalidateQueries({ queryKey: ['task-description-history', variables.id] });
             const changesStatus = variables.data.status !== undefined;
             const changesAssignee = variables.data.assignee !== undefined;
             if (!variables.silent && !variables.skipUndo && (changesStatus || changesAssignee)) {

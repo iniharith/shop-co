@@ -30,6 +30,7 @@ exports.taskRepository = exports.TaskRepository = exports.TaskStatusConflictErro
  */
 const Task_1 = require("../../domain/entities/Task");
 const mongoose_1 = __importDefault(require("mongoose"));
+const TaskDescriptionRevision_1 = require("../../domain/entities/TaskDescriptionRevision");
 const crypto_1 = require("crypto");
 const cursorPagination_1 = require("../../shared/utils/cursorPagination");
 class TaskStatusConflictError extends Error {
@@ -37,19 +38,31 @@ class TaskStatusConflictError extends Error {
 }
 exports.TaskStatusConflictError = TaskStatusConflictError;
 class TaskRepository {
-    create(data) {
-        return __awaiter(this, void 0, void 0, function* () {
+    create(data_1) {
+        return __awaiter(this, arguments, void 0, function* (data, actor = { id: 'system', name: 'System' }) {
             const status = data.status || 'PLACED';
             const isDone = Boolean(data.isDone);
             const changedAt = new Date();
-            return Task_1.Task.create(Object.assign(Object.assign({}, data), { status,
-                isDone, statusUpdatedAt: changedAt, statusHistory: [{
-                        fromStatus: null,
-                        toStatus: status,
-                        fromIsDone: false,
-                        toIsDone: isDone,
-                        changedAt,
-                    }] }));
+            const session = yield mongoose_1.default.startSession();
+            try {
+                let created;
+                yield session.withTransaction(() => __awaiter(this, void 0, void 0, function* () {
+                    const [task] = yield Task_1.Task.create([Object.assign(Object.assign({}, data), { status,
+                            isDone, statusUpdatedAt: changedAt, statusHistory: [{
+                                    fromStatus: null,
+                                    toStatus: status,
+                                    fromIsDone: false,
+                                    toIsDone: isDone,
+                                    changedAt,
+                                }] })], { session });
+                    yield TaskDescriptionRevision_1.TaskDescriptionRevision.create([{ taskId: String(task._id), taskTitle: task.title, kind: 'created', beforeHtml: '', afterHtml: task.description || '', actorId: actor.id, actorName: actor.name, capturedAt: changedAt }], { session });
+                    created = task;
+                }), { readPreference: 'primary' });
+                return created;
+            }
+            finally {
+                yield session.endSession();
+            }
         });
     }
     buildQuery(filters) {
@@ -190,19 +203,49 @@ class TaskRepository {
                 .maxTimeMS(10000);
         });
     }
-    update(id, data, expectedUpdatedAt, expectedWorkflowVersion) {
+    update(id_1, data_1, expectedUpdatedAt_1, expectedWorkflowVersion_1) {
+        return __awaiter(this, arguments, void 0, function* (id, data, expectedUpdatedAt, expectedWorkflowVersion, actor = { id: 'system', name: 'System' }) {
+            if (data.description === undefined)
+                return this.updateCore(id, data, expectedUpdatedAt, expectedWorkflowVersion);
+            if (data.description !== null && typeof data.description !== 'string')
+                throw new Error('Description must be text');
+            const session = yield mongoose_1.default.startSession();
+            try {
+                let saved = null;
+                yield session.withTransaction(() => __awaiter(this, void 0, void 0, function* () {
+                    saved = yield this.updateCore(id, Object.assign(Object.assign({}, data), { description: data.description || '' }), expectedUpdatedAt, expectedWorkflowVersion, session);
+                    if (!saved)
+                        return;
+                    const previous = saved.$locals.previousDescription || '';
+                    const changed = previous !== (saved.description || '');
+                    saved.$locals.descriptionChanged = changed;
+                    if (changed)
+                        yield TaskDescriptionRevision_1.TaskDescriptionRevision.create([{ taskId: id, taskTitle: saved.title, kind: 'edit', beforeHtml: previous, afterHtml: saved.description || '', actorId: actor.id, actorName: actor.name, capturedAt: new Date() }], { session });
+                }), { readPreference: 'primary' });
+                return saved;
+            }
+            finally {
+                yield session.endSession();
+            }
+        });
+    }
+    updateCore(id, data, expectedUpdatedAt, expectedWorkflowVersion, session) {
         return __awaiter(this, void 0, void 0, function* () {
             const updateData = Object.assign({}, data);
             delete updateData.statusHistory;
             delete updateData.workflowVersion;
             for (let attempt = 0; attempt < 3; attempt++) {
-                const current = yield Task_1.Task.findById(id).select('status isDone updatedAt assignee isDeleted workflowVersion').read('primary').lean();
+                const currentQuery = Task_1.Task.findById(id).select('status isDone updatedAt assignee isDeleted workflowVersion' + (data.description !== undefined ? ' description' : ''));
+                if (session)
+                    currentQuery.session(session);
+                const current = yield currentQuery.read('primary').lean();
                 if (!current || current.isDeleted)
                     return null;
                 const withPrevious = (task) => {
                     if (task) {
                         task.$locals = task.$locals || {};
                         task.$locals.previousWorkflow = { status: current.status, assignee: current.assignee || null };
+                        task.$locals.previousDescription = current.description || '';
                     }
                     return task;
                 };
@@ -217,7 +260,7 @@ class TaskRepository {
                 if (workflowChanged || (data.assignee !== undefined && (data.assignee || null) !== (current.assignee || null)))
                     updateData.workflowVersion = (0, crypto_1.randomUUID)();
                 if (!workflowChanged) {
-                    const unchanged = yield Task_1.Task.findOneAndUpdate(Object.assign({ _id: id, isDeleted: { $ne: true }, updatedAt: current.updatedAt }, (expectedWorkflowVersion ? { workflowVersion: expectedWorkflowVersion } : {})), { $set: updateData }, { new: true });
+                    const unchanged = yield Task_1.Task.findOneAndUpdate(Object.assign({ _id: id, isDeleted: { $ne: true }, updatedAt: current.updatedAt }, (expectedWorkflowVersion ? { workflowVersion: expectedWorkflowVersion } : {})), { $set: updateData }, { new: true, session });
                     if (unchanged)
                         return withPrevious(unchanged);
                     continue;
@@ -236,7 +279,7 @@ class TaskRepository {
                             changedAt,
                         },
                     },
-                }, { new: true });
+                }, { new: true, session });
                 if (updated)
                     return withPrevious(updated);
             }
@@ -245,6 +288,12 @@ class TaskRepository {
     }
     updateByOrderId(orderId, data) {
         return __awaiter(this, void 0, void 0, function* () {
+            if (data.description !== undefined) {
+                const tasks = yield Task_1.Task.find({ orderId, isDeleted: { $ne: true } }).select('_id').lean();
+                for (const task of tasks)
+                    yield this.update(String(task._id), data);
+                return;
+            }
             if (!data.status) {
                 yield Task_1.Task.updateMany({ orderId }, { $set: data });
                 return;

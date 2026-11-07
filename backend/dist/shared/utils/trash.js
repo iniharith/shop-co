@@ -22,6 +22,7 @@ exports.restoreTrashedTask = restoreTrashedTask;
 exports.purgeTrash = purgeTrash;
 exports.cleanupTrash = cleanupTrash;
 exports.startTrashCleanup = startTrashCleanup;
+const TaskDescriptionRevision_1 = require("../../domain/entities/TaskDescriptionRevision");
 const mongoose_1 = __importDefault(require("mongoose"));
 const Task_1 = require("../../domain/entities/Task");
 const FileUpload_1 = require("../../domain/entities/FileUpload");
@@ -109,8 +110,8 @@ function trashTaskAttachment(taskId, fileId, actorId) {
         return result;
     });
 }
-function trashTask(taskId, actorId) {
-    return __awaiter(this, void 0, void 0, function* () {
+function trashTask(taskId_1, actorId_1) {
+    return __awaiter(this, arguments, void 0, function* (taskId, actorId, actorName = 'Staff') {
         const now = new Date();
         const result = yield transaction((session) => __awaiter(this, void 0, void 0, function* () {
             const task = yield Task_1.Task.findOne({ _id: taskId, isDeleted: { $ne: true } }).session(session).lean();
@@ -120,6 +121,7 @@ function trashTask(taskId, actorId) {
                     return { trashId: String(existing._id), purgeAt: existing.purgeAt };
                 throw new TrashError(404, 'Task not found');
             }
+            yield TaskDescriptionRevision_1.TaskDescriptionRevision.create([{ taskId, taskTitle: task.title, kind: 'trash', beforeHtml: task.description || '', afterHtml: task.description || '', actorId, actorName, capturedAt: now }], { session });
             const [entry] = yield TrashItem_1.TrashItem.create([{
                     kind: 'task', itemId: taskId, name: task.title, taskId, deletedBy: actorId, deletedAt: now, purgeAt: (0, exports.trashDeadline)(now), payload: {},
                 }], { session });

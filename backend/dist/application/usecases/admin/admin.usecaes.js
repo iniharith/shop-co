@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminUsecase = void 0;
+const TaskDescriptionRevision_1 = require("../../../domain/entities/TaskDescriptionRevision");
 const user_repository_1 = require("../../../infrastructure/db/repositories/user.repository");
 const jwt_1 = __importDefault(require("../../../shared/utils/jwt"));
 const user_type_1 = require("../../../domain/types/user.type");
@@ -138,7 +139,7 @@ class AdminUsecase {
                             manualItemDescription,
                             manualItemCategory })], { session });
                     order = createdOrder;
-                    yield Task_1.Task.create([{
+                    const [createdTask] = yield Task_1.Task.create([{
                             title: `Order: ${createdOrder._id.toString().slice(-6).toUpperCase()} - ${data.customerName}`,
                             description: `Manual order task for Order ${createdOrder._id.toString()}.`,
                             orderId: createdOrder._id.toString(),
@@ -152,6 +153,7 @@ class AdminUsecase {
                             lineItems,
                             status: data.orderStatus || 'PLACED',
                         }], { session });
+                    yield TaskDescriptionRevision_1.TaskDescriptionRevision.create([{ taskId: String(createdTask._id), taskTitle: createdTask.title, kind: 'created', beforeHtml: '', afterHtml: createdTask.description || '', actorId: 'system', actorName: 'System', capturedAt: new Date() }], { session });
                     if (data.trackingNumber) {
                         yield Parcel_1.Parcel.create([{
                                 orderId: createdOrder._id.toString(),

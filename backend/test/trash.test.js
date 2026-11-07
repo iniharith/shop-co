@@ -36,6 +36,7 @@ function runtime(){
  const exports={};
  vm.runInNewContext(fs.readFileSync(require.resolve('../dist/shared/utils/trash'),'utf8'),{exports,require:name=>{
   if(name==='mongoose')return mongoose;
+  if(name.endsWith('/entities/TaskDescriptionRevision'))return {TaskDescriptionRevision:{create:async()=>[]}};
   if(name.endsWith('/entities/Task'))return {Task:mocks.Task};if(name.endsWith('/entities/FileUpload'))return {FileUpload:mocks.FileUpload};if(name.endsWith('/entities/TrashItem'))return {TrashItem:mocks.TrashItem};
   if(name.endsWith('/config/s3'))return {S3_BUCKET_NAME:'bucket',deleteFromS3:async url=>{deletedObjects.push(url);return !failDelete;}};
   if(name.endsWith('/FileUploadRepository'))return {notifyFileClients:()=>events.push('files')};

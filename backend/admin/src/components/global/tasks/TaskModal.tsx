@@ -3,6 +3,7 @@
  * Kampungcetak ®
  */
 "use client";
+import TaskDescriptionHistory from "./TaskDescriptionHistory";
 import { isTaskId } from "@/utils/taskId";
 import { confirmUploadAction } from "@/utils/duplicateUpload";
 import { Badge } from "@/components/ui/badge";
@@ -1594,9 +1595,11 @@ function TaskModalContent({ task, isOpen, onClose }: TaskModalProps) {
                       <TabsTrigger value="activity" className="text-xs data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:font-bold data-[state=active]:underline underline-offset-8 decoration-2 decoration-primary px-4">
                         All activity
                       </TabsTrigger>
+                      <TabsTrigger value="description-history" className="text-xs px-3">Description history</TabsTrigger>
                     </TabsList>
                   </div>
 
+                  <TabsContent value="description-history"><TaskDescriptionHistory taskId={task._id} enabled={isOpen && activeTab === "description-history"} /></TabsContent>
                   <TabsContent value="comments" className="mt-0 bg-transparent" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" translate="no">
                     <div className="space-y-4 bg-transparent">
                       {[...(fullTask.comments || [])].sort((a: any, b: any) => {

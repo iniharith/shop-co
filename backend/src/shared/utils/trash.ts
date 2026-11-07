@@ -1,3 +1,4 @@
+import { TaskDescriptionRevision } from '../../domain/entities/TaskDescriptionRevision';
 import mongoose from 'mongoose';
 import { Task } from '../../domain/entities/Task';
 import { FileUpload } from '../../domain/entities/FileUpload';
@@ -65,7 +66,7 @@ export async function trashTaskAttachment(taskId: string, fileId: string, actorI
   refresh(); return result;
 }
 
-export async function trashTask(taskId: string, actorId: string) {
+export async function trashTask(taskId: string, actorId: string, actorName = 'Staff') {
   const now = new Date();
   const result = await transaction(async session => {
     const task: any = await Task.findOne({ _id: taskId, isDeleted: { $ne: true } }).session(session).lean();
@@ -74,6 +75,7 @@ export async function trashTask(taskId: string, actorId: string) {
       if (existing) return { trashId: String(existing._id), purgeAt: existing.purgeAt };
       throw new TrashError(404, 'Task not found');
     }
+    await TaskDescriptionRevision.create([{ taskId, taskTitle: task.title, kind: 'trash', beforeHtml: task.description || '', afterHtml: task.description || '', actorId, actorName, capturedAt: now }], { session });
     const [entry]: any[] = await TrashItem.create([{
       kind: 'task', itemId: taskId, name: task.title, taskId, deletedBy: actorId, deletedAt: now, purgeAt: trashDeadline(now), payload: {},
     }], { session });

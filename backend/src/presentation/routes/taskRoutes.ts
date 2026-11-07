@@ -1,3 +1,4 @@
+import taskDescriptionHistoryRoutes from './taskDescriptionHistoryRoutes';
 import { trashTask, trashTaskAttachment, restoreTrashedTask, purgeTrash, TrashError } from '../../shared/utils/trash';
 import { TrashItem } from '../../domain/entities/TrashItem';
 /**
@@ -74,6 +75,7 @@ const taskStorage = multerS3({
 const taskUpload = multer({ storage: taskStorage });
 
 const router = Router();
+router.use('/:id/description-history', taskDescriptionHistoryRoutes);
 router.param('id', validateTaskIdParam);
 
 const STAFF_ROLES = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'];
@@ -252,7 +254,8 @@ router.post(
   '/',
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
-    const task = await taskRepository.create(req.body);
+    const creationUser = (req as any).user;
+    const task = await taskRepository.create(req.body, { id: String((req as any).userId || 'system'), name: creationUser?.name || creationUser?.email || 'System' });
 
     // Log the initial state as activity — otherwise a task created with an
     // assignee/status already filled in shows an empty feed, since those
@@ -291,6 +294,7 @@ router.put(
   '/:id',
   authMiddilware,
   asyncHandler(async (req: Request, res: Response) => {
+    if (req.body.description !== undefined && req.body.description !== null && typeof req.body.description !== 'string') { res.status(400).json({ success: false, message: 'Description must be text' }); return; }
     const expectedWorkflowVersion = req.body.expectedWorkflowVersion;
     delete req.body.expectedWorkflowVersion;
     if (expectedWorkflowVersion !== undefined && (typeof expectedWorkflowVersion !== 'string' || !/^[a-f\d-]{36}$/i.test(expectedWorkflowVersion))) { res.status(400).json({ success: false, message: 'Invalid Undo workflow version' }); return; }
@@ -315,7 +319,7 @@ router.put(
     }
 
     let task;
-    try { task = await taskRepository.update(req.params.id, req.body, expectedUpdatedAt, expectedWorkflowVersion); }
+    try { task = await taskRepository.update(req.params.id, req.body, expectedUpdatedAt, expectedWorkflowVersion, { id: String((req as any).userId || 'system'), name: (req as any).user?.name || 'System' }); }
     catch (error) { if (error instanceof TaskStatusConflictError) { res.status(409).json({ success: false, message: error.message }); return; } throw error; }
     if (!task) {
       res.status(404).json({ success: false, message: 'Task not found' });
@@ -355,9 +359,8 @@ router.put(
         await taskRepository.addActivity(req.params.id, userId, userName, `unassigned this task`);
       }
     }
-    if (req.body.description !== undefined && req.body.description !== oldTask?.description) {
-      const trunc = (s: string | undefined | null, max: number) => { const t = s || ''; return t.length > max ? t.substring(0, max) + '...' : (t || '(empty)'); };
-      await taskRepository.addActivity(req.params.id, userId, userName, `changed description`, `from "${trunc(oldTask?.description, 80)}" to "${trunc(req.body.description, 80)}"`);
+    if ((task as any).$locals?.descriptionChanged) {
+      await taskRepository.addActivity(req.params.id, userId, userName, 'changed description', 'Full before/after text saved in Description history.');
     }
     if (req.body.title !== undefined && req.body.title !== oldTask?.title) {
       await taskRepository.addActivity(req.params.id, userId, userName, `changed title`, `from "${oldTask?.title || '(empty)'}" to "${req.body.title}"`);
@@ -414,7 +417,7 @@ router.delete(
         removeTaskIndex(req.params.id);
         res.json({ success: true, message: 'Task permanently deleted' });
       } else {
-        const deletion = await trashTask(req.params.id, actorId);
+        const deletion = await trashTask(req.params.id, actorId, (req as any).user?.name || 'Staff');
         res.json({ success: true, message: 'Task moved to Trash', ...deletion });
       }
       await clearFolderGroupCache().catch(() => {});

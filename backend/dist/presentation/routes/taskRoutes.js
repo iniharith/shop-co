@@ -45,6 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const taskDescriptionHistoryRoutes_1 = __importDefault(require("./taskDescriptionHistoryRoutes"));
 const trash_1 = require("../../shared/utils/trash");
 const TrashItem_1 = require("../../domain/entities/TrashItem");
 /**
@@ -119,6 +120,7 @@ const taskStorage = (0, multer_s3_1.default)({
 });
 const taskUpload = (0, multer_1.default)({ storage: taskStorage });
 const router = (0, express_1.Router)();
+router.use('/:id/description-history', taskDescriptionHistoryRoutes_1.default);
 router.param('id', taskId_1.validateTaskIdParam);
 const STAFF_ROLES = ['admin', 'sysadmin', 'boss', 'designer', 'production', 'packaging', 'awapparel'];
 // The task QR capability grants only this narrow AWB completion workflow.
@@ -282,7 +284,8 @@ router.get('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
 // POST /api/tasks
 router.post('/', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
-    const task = yield TaskRepository_1.taskRepository.create(req.body);
+    const creationUser = req.user;
+    const task = yield TaskRepository_1.taskRepository.create(req.body, { id: String(req.userId || 'system'), name: (creationUser === null || creationUser === void 0 ? void 0 : creationUser.name) || (creationUser === null || creationUser === void 0 ? void 0 : creationUser.email) || 'System' });
     // Log the initial state as activity — otherwise a task created with an
     // assignee/status already filled in shows an empty feed, since those
     // values were never "changed" via a later update.
@@ -315,7 +318,11 @@ router.post('/', auth_middileware_1.default, (0, express_async_handler_1.default
 })));
 // PUT /api/tasks/:id
 router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+    if (req.body.description !== undefined && req.body.description !== null && typeof req.body.description !== 'string') {
+        res.status(400).json({ success: false, message: 'Description must be text' });
+        return;
+    }
     const expectedWorkflowVersion = req.body.expectedWorkflowVersion;
     delete req.body.expectedWorkflowVersion;
     if (expectedWorkflowVersion !== undefined && (typeof expectedWorkflowVersion !== 'string' || !/^[a-f\d-]{36}$/i.test(expectedWorkflowVersion))) {
@@ -346,7 +353,7 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
     }
     let task;
     try {
-        task = yield TaskRepository_1.taskRepository.update(req.params.id, req.body, expectedUpdatedAt, expectedWorkflowVersion);
+        task = yield TaskRepository_1.taskRepository.update(req.params.id, req.body, expectedUpdatedAt, expectedWorkflowVersion, { id: String(req.userId || 'system'), name: ((_b = req.user) === null || _b === void 0 ? void 0 : _b.name) || 'System' });
     }
     catch (error) {
         if (error instanceof TaskRepository_1.TaskStatusConflictError) {
@@ -359,7 +366,7 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
         res.status(404).json({ success: false, message: 'Task not found' });
         return;
     }
-    if (req.body.assignee && ((_b = oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) === null || _b === void 0 ? void 0 : _b.toString()) !== req.body.assignee) {
+    if (req.body.assignee && ((_c = oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) === null || _c === void 0 ? void 0 : _c.toString()) !== req.body.assignee) {
         const { NotificationRepository } = yield Promise.resolve().then(() => __importStar(require('../../infrastructure/db/repositories/notification.repository')));
         const notifRepo = new NotificationRepository();
         const newNotif = yield notifRepo.createNotification({
@@ -373,14 +380,14 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
     }
     // Log activities
     const authReq = req;
-    const userId = authReq.userId || ((_c = authReq.user) === null || _c === void 0 ? void 0 : _c._id) || ((_d = authReq.user) === null || _d === void 0 ? void 0 : _d.id) || 'system';
-    const userName = ((_e = authReq.user) === null || _e === void 0 ? void 0 : _e.name) || ((_f = authReq.user) === null || _f === void 0 ? void 0 : _f.email) || 'System';
+    const userId = authReq.userId || ((_d = authReq.user) === null || _d === void 0 ? void 0 : _d._id) || ((_e = authReq.user) === null || _e === void 0 ? void 0 : _e.id) || 'system';
+    const userName = ((_f = authReq.user) === null || _f === void 0 ? void 0 : _f.name) || ((_g = authReq.user) === null || _g === void 0 ? void 0 : _g.email) || 'System';
     if (req.body.status && req.body.status !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.status)) {
         const oldStatus = ((oldTask === null || oldTask === void 0 ? void 0 : oldTask.status) || 'PLACED').replace(/_/g, ' ');
         const newStatus = req.body.status.replace(/_/g, ' ');
         yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `changed status from ${oldStatus} to ${newStatus}`);
     }
-    if (req.body.assignee !== undefined && ((_g = oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) === null || _g === void 0 ? void 0 : _g.toString()) !== ((_h = (req.body.assignee || undefined)) === null || _h === void 0 ? void 0 : _h.toString())) {
+    if (req.body.assignee !== undefined && ((_h = oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) === null || _h === void 0 ? void 0 : _h.toString()) !== ((_j = (req.body.assignee || undefined)) === null || _j === void 0 ? void 0 : _j.toString())) {
         if (req.body.assignee) {
             const assignedUser = yield user_repository_1.default.findById(req.body.assignee);
             const assigneeName = assignedUser ? (assignedUser.name || assignedUser.email) : 'Unknown User';
@@ -390,9 +397,8 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
             yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `unassigned this task`);
         }
     }
-    if (req.body.description !== undefined && req.body.description !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.description)) {
-        const trunc = (s, max) => { const t = s || ''; return t.length > max ? t.substring(0, max) + '...' : (t || '(empty)'); };
-        yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `changed description`, `from "${trunc(oldTask === null || oldTask === void 0 ? void 0 : oldTask.description, 80)}" to "${trunc(req.body.description, 80)}"`);
+    if ((_k = task.$locals) === null || _k === void 0 ? void 0 : _k.descriptionChanged) {
+        yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, 'changed description', 'Full before/after text saved in Description history.');
     }
     if (req.body.title !== undefined && req.body.title !== (oldTask === null || oldTask === void 0 ? void 0 : oldTask.title)) {
         yield TaskRepository_1.taskRepository.addActivity(req.params.id, userId, userName, `changed title`, `from "${(oldTask === null || oldTask === void 0 ? void 0 : oldTask.title) || '(empty)'}" to "${req.body.title}"`);
@@ -419,13 +425,13 @@ router.put('/:id', auth_middileware_1.default, (0, express_async_handler_1.defau
     }
     // Refetch to include newly added activities in the response and broadcast
     const freshTask = yield TaskRepository_1.taskRepository.findById(req.params.id);
-    res.json({ success: true, task: freshTask, undoVersion: task.workflowVersion, previous: ((_j = task.$locals) === null || _j === void 0 ? void 0 : _j.previousWorkflow) || { status: oldTask === null || oldTask === void 0 ? void 0 : oldTask.status, assignee: (oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) || null } });
+    res.json({ success: true, task: freshTask, undoVersion: task.workflowVersion, previous: ((_l = task.$locals) === null || _l === void 0 ? void 0 : _l.previousWorkflow) || { status: oldTask === null || oldTask === void 0 ? void 0 : oldTask.status, assignee: (oldTask === null || oldTask === void 0 ? void 0 : oldTask.assignee) || null } });
     void (0, taskBroadcast_1.emitTaskUpdated)('task_updated', { task: freshTask });
     reindexTaskInBg(freshTask);
 })));
 // DELETE /api/tasks/:id
 router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     const authReq = req;
     const actorId = String(authReq.userId || ((_a = authReq.user) === null || _a === void 0 ? void 0 : _a.id) || 'staff');
     try {
@@ -446,7 +452,7 @@ router.delete('/:id', auth_middileware_1.default, (0, express_async_handler_1.de
             res.json({ success: true, message: 'Task permanently deleted' });
         }
         else {
-            const deletion = yield (0, trash_1.trashTask)(req.params.id, actorId);
+            const deletion = yield (0, trash_1.trashTask)(req.params.id, actorId, ((_b = req.user) === null || _b === void 0 ? void 0 : _b.name) || 'Staff');
             res.json(Object.assign({ success: true, message: 'Task moved to Trash' }, deletion));
         }
         yield (0, fileUploadRoutes_1.clearFolderGroupCache)().catch(() => { });

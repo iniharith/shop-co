@@ -1,3 +1,4 @@
+import automaticBackupRoutes from './automaticBackupRoutes';
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -20,6 +21,7 @@ import {
 } from '../../infrastructure/services/DatabaseBackupService';
 
 const router = Router();
+router.use('/database-backups', automaticBackupRoutes);
 
 // In-memory only — this file never touches S3 or the database. It's
 // processed and handed straight back to the browser as a data URL.

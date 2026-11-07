@@ -45,6 +45,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const AutomaticDatabaseBackupService_1 = require("../infrastructure/services/AutomaticDatabaseBackupService");
+const TaskDescriptionRevision_1 = require("../domain/entities/TaskDescriptionRevision");
+const DatabaseBackup_1 = require("../domain/entities/DatabaseBackup");
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -83,6 +86,7 @@ function main() {
         // Checkout retries rely on the unique sparse key index being ready before HTTP traffic.
         yield order_model_1.default.init();
         yield TrashItem_1.TrashItem.init();
+        yield Promise.all([TaskDescriptionRevision_1.TaskDescriptionRevision.init(), DatabaseBackup_1.DatabaseBackup.init(), DatabaseBackup_1.DatabaseBackupLock.init()]);
         yield Promise.all([ProductionStation_1.ProductionStation.init(), ProductionStation_1.ProductionScan.init()]);
         yield (0, initAdmin_1.initAdmin)();
         redisService.connect();
@@ -102,6 +106,7 @@ function main() {
                 void Promise.all([(0, Parcel_1.ensureParcelIndexes)(), (0, initProduct_script_1.default)()]).catch((error) => {
                     console.error('Background startup maintenance failed:', error);
                 });
+                (0, AutomaticDatabaseBackupService_1.startAutomaticDatabaseBackups)();
                 (0, trash_1.startTrashCleanup)();
                 (0, TrackingCronJob_1.startTrackingCronJob)(); // Auto-sync parcels every 15 min
                 (0, TaskStatusAutoTransition_1.startTaskAutoTransitionJob)(); // Auto-move PACKAGING → DELIVERED after 14 days

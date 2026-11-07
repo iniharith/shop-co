@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import AutomaticBackups from "@/components/global/AutomaticBackups";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Activity, ArrowUpRight, Bot, CalendarRange, ChartNoAxesCombined, ClipboardList, Cloud, Database, Download, Globe2, Layers3, Loader2, Sparkles } from "lucide-react";
@@ -268,6 +269,8 @@ export default function ToolsPage() {
               </Button>
             </div>
           </section>
+
+          {["sysadmin", "admin", "boss"].includes(session?.user?.role || "") && <AutomaticBackups token={token} />}
 
           <section aria-labelledby="server-ip-title" className="relative overflow-hidden rounded-2xl border border-border/70 bg-card/45 shadow-sm">
             <div className="relative flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">

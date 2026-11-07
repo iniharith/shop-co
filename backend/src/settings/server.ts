@@ -1,3 +1,6 @@
+import { startAutomaticDatabaseBackups } from '../infrastructure/services/AutomaticDatabaseBackupService';
+import { TaskDescriptionRevision } from '../domain/entities/TaskDescriptionRevision';
+import { DatabaseBackup, DatabaseBackupLock } from '../domain/entities/DatabaseBackup';
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -41,6 +44,7 @@ async function main() {
     // Checkout retries rely on the unique sparse key index being ready before HTTP traffic.
     await OrderModel.init();
     await TrashItem.init();
+    await Promise.all([TaskDescriptionRevision.init(), DatabaseBackup.init(), DatabaseBackupLock.init()]);
     await Promise.all([ProductionStation.init(), ProductionScan.init()]);
     await initAdmin();
     redisService.connect();
@@ -62,6 +66,7 @@ async function main() {
             void Promise.all([ensureParcelIndexes(), initProduct()]).catch((error) => {
                 console.error('Background startup maintenance failed:', error);
             });
+            startAutomaticDatabaseBackups();
             startTrashCleanup();
             startTrackingCronJob(); // Auto-sync parcels every 15 min
             startTaskAutoTransitionJob(); // Auto-move PACKAGING → DELIVERED after 14 days

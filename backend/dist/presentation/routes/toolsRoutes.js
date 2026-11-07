@@ -45,6 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const automaticBackupRoutes_1 = __importDefault(require("./automaticBackupRoutes"));
 /**
  * Coded by Harith
  * Kampungcetak ®
@@ -61,6 +62,7 @@ const auth_middileware_1 = __importStar(require("../middlewares/auth.middileware
 const LocalUpscaleService_1 = require("../../infrastructure/services/LocalUpscaleService");
 const DatabaseBackupService_1 = require("../../infrastructure/services/DatabaseBackupService");
 const router = (0, express_1.Router)();
+router.use('/database-backups', automaticBackupRoutes_1.default);
 // In-memory only — this file never touches S3 or the database. It's
 // processed and handed straight back to the browser as a data URL.
 const upload = (0, multer_1.default)({

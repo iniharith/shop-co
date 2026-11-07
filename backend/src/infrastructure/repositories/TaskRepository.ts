@@ -4,6 +4,7 @@
  */
 import { Task, ITask } from '../../domain/entities/Task';
 import mongoose from 'mongoose';
+import { TaskDescriptionRevision, DescriptionActor } from '../../domain/entities/TaskDescriptionRevision';
 import { randomUUID } from 'crypto';
 import { encodeCursor, TaskCursor } from '../../shared/utils/cursorPagination';
 
@@ -41,11 +42,14 @@ export class TaskRepository {
   private static readonly MAX_LIMIT = 1000;
   private static readonly DEFAULT_LIMIT = 500;
 
-  async create(data: Partial<ITask>): Promise<ITask> {
+  async create(data: Partial<ITask>, actor: DescriptionActor = { id: 'system', name: 'System' }): Promise<ITask> {
     const status = data.status || 'PLACED';
     const isDone = Boolean(data.isDone);
     const changedAt = new Date();
-    return Task.create({
+    const session = await mongoose.startSession();
+    try { let created: ITask | undefined;
+    await session.withTransaction(async () => {
+    const [task] = await Task.create([{
       ...data,
       status,
       isDone,
@@ -57,7 +61,12 @@ export class TaskRepository {
         toIsDone: isDone,
         changedAt,
       }],
-    });
+    }], { session });
+    await TaskDescriptionRevision.create([{ taskId: String(task._id), taskTitle: task.title, kind: 'created', beforeHtml: '', afterHtml: task.description || '', actorId: actor.id, actorName: actor.name, capturedAt: changedAt }], { session });
+    created = task;
+    }, { readPreference: 'primary' });
+    return created!;
+    } finally { await session.endSession(); }
   }
 
   private buildQuery(filters?: TaskFilters): any {
@@ -193,16 +202,36 @@ export class TaskRepository {
       .maxTimeMS(10_000);
   }
 
-  async update(id: string, data: Partial<ITask>, expectedUpdatedAt?: string, expectedWorkflowVersion?: string): Promise<ITask | null> {
+  async update(id: string, data: Partial<ITask>, expectedUpdatedAt?: string, expectedWorkflowVersion?: string, actor: DescriptionActor = { id: 'system', name: 'System' }): Promise<ITask | null> {
+    if (data.description === undefined) return this.updateCore(id, data, expectedUpdatedAt, expectedWorkflowVersion);
+    if (data.description !== null && typeof data.description !== 'string') throw new Error('Description must be text');
+    const session = await mongoose.startSession();
+    try {
+      let saved: ITask | null = null;
+      await session.withTransaction(async () => {
+        saved = await this.updateCore(id, { ...data, description: data.description || '' }, expectedUpdatedAt, expectedWorkflowVersion, session);
+        if (!saved) return;
+        const previous = (saved as any).$locals.previousDescription || '';
+        const changed = previous !== (saved.description || '');
+        (saved as any).$locals.descriptionChanged = changed;
+        if (changed) await TaskDescriptionRevision.create([{ taskId: id, taskTitle: saved.title, kind: 'edit', beforeHtml: previous, afterHtml: saved.description || '', actorId: actor.id, actorName: actor.name, capturedAt: new Date() }], { session });
+      }, { readPreference: 'primary' });
+      return saved;
+    } finally { await session.endSession(); }
+  }
+
+  private async updateCore(id: string, data: Partial<ITask>, expectedUpdatedAt?: string, expectedWorkflowVersion?: string, session?: mongoose.ClientSession): Promise<ITask | null> {
     const updateData: any = { ...data };
     delete updateData.statusHistory;
     delete updateData.workflowVersion;
 
     for (let attempt = 0; attempt < 3; attempt++) {
-      const current = await Task.findById(id).select('status isDone updatedAt assignee isDeleted workflowVersion').read('primary').lean();
+      const currentQuery = Task.findById(id).select('status isDone updatedAt assignee isDeleted workflowVersion' + (data.description !== undefined ? ' description' : ''));
+      if (session) currentQuery.session(session);
+      const current = await currentQuery.read('primary').lean();
       if (!current || current.isDeleted) return null;
       const withPrevious = (task: any) => {
-        if (task) { task.$locals = task.$locals || {}; task.$locals.previousWorkflow = { status: current.status, assignee: current.assignee || null }; }
+        if (task) { task.$locals = task.$locals || {}; task.$locals.previousWorkflow = { status: current.status, assignee: current.assignee || null }; task.$locals.previousDescription = (current as any).description || ''; }
         return task;
       };
       if (expectedWorkflowVersion && current.workflowVersion !== expectedWorkflowVersion) throw new TaskStatusConflictError();
@@ -216,7 +245,7 @@ export class TaskRepository {
       if (!workflowChanged) {
         const unchanged = await Task.findOneAndUpdate({ _id: id, isDeleted: { $ne: true }, updatedAt: current.updatedAt,
           ...(expectedWorkflowVersion ? { workflowVersion: expectedWorkflowVersion } : {}),
-        }, { $set: updateData }, { new: true });
+        }, { $set: updateData }, { new: true, session });
         if (unchanged) return withPrevious(unchanged);
         continue;
       }
@@ -250,7 +279,7 @@ export class TaskRepository {
             },
           },
         },
-        { new: true },
+        { new: true, session },
       );
       if (updated) return withPrevious(updated);
     }
@@ -259,6 +288,11 @@ export class TaskRepository {
   }
 
   async updateByOrderId(orderId: string, data: Partial<ITask>): Promise<void> {
+    if (data.description !== undefined) {
+      const tasks = await Task.find({ orderId, isDeleted: { $ne: true } }).select('_id').lean();
+      for (const task of tasks) await this.update(String(task._id), data);
+      return;
+    }
     if (!data.status) {
       await Task.updateMany({ orderId }, { $set: data });
       return;
