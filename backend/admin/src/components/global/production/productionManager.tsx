@@ -340,6 +340,23 @@ const ALL_MOVE_STATUSES = ["PLACED", "IN_PROGRESS", "PENDING_ARTWORK", "ARTWORK_
     else return;
     const nextLabel = nextStatus.replace(/_/g, " ");
 
+    if (activeSubTab === "IN_PRODUCTION") {
+      const task = (taskDetailResponse as any)?.task;
+      const productCategories = Array.from(new Set<string>([
+        ...(Array.isArray(group.categories) ? group.categories : []),
+        group.category,
+        ...(group.taskId && task?._id === group.taskId
+          ? [task.category, ...(task.lineItems || []).map((item: any) => item?.category)]
+          : []),
+      ].filter((category): category is string => typeof category === "string")
+        .map(category => category.trim().replace(/_/g, " ").toUpperCase())
+        .filter(category => category && category !== "UNASSIGNED")));
+
+      if (productCategories.length >= 2 && !window.confirm(
+        `This task has ${productCategories.length} separate product categories:\n\n${productCategories.join("\n")}\n\nMake sure ALL categories have finished printing. Clicking OK will move the entire task to Print AWB.\n\nHave all categories finished printing?`
+      )) return;
+    }
+
     // Optimistic: instantly remove from list and clear selection
     const folderId = `${group.folderName}-${group.orderId}-${group.taskId || ""}`;
     setMovedFolderIds(prev => new Set([...prev, folderId]));
