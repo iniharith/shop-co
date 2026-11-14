@@ -57,7 +57,9 @@ const exceljs_1 = __importDefault(require("exceljs"));
 const auth_middileware_1 = __importStar(require("../middlewares/auth.middileware"));
 const monthlyReport_1 = require("../../shared/utils/monthlyReport");
 const MonthlyReportRepository_1 = __importDefault(require("../../infrastructure/repositories/MonthlyReportRepository"));
+const designerReports_route_1 = __importDefault(require("./designerReports.route"));
 const router = (0, express_1.Router)();
+router.use('/designer', designerReports_route_1.default);
 router.use(auth_middileware_1.default, (0, auth_middileware_1.authorizeRoles)('admin', 'sysadmin', 'boss'));
 const parseMonth = (value) => {
     const month = typeof value === 'string' ? value : '';

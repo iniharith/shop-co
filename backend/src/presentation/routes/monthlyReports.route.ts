@@ -10,9 +10,11 @@ import ExcelJS from 'exceljs';
 import authMiddilware, { authorizeRoles } from '../middlewares/auth.middileware';
 import { getMonthWindow } from '../../shared/utils/monthlyReport';
 import monthlyReportRepository from '../../infrastructure/repositories/MonthlyReportRepository';
+import designerReportsRoutes from './designerReports.route';
 
 const router = Router();
 
+router.use('/designer', designerReportsRoutes);
 router.use(authMiddilware, authorizeRoles('admin', 'sysadmin', 'boss'));
 
 const parseMonth = (value: unknown): { month: string; timezone: string } => {

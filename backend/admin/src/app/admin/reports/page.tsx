@@ -13,8 +13,9 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import LoadingAnimation from "@/components/global/LoadingAnimation";
 import AxiosInstance from "@/utils/axios";
+import DesignerReport from "@/components/global/DesignerReport";
 
-type ReportTab = "staff" | "monthly";
+type ReportTab = "staff" | "monthly" | "designer";
 
 const toNum = (v: any) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 const toStr = (v: any, fallback = "") => {
@@ -162,6 +163,9 @@ export default function ReportsPage() {
           </div>
 
           <div className="flex gap-2">
+            <Button variant={tab === "designer" ? "default" : "outline"} onClick={() => setTab("designer")} className={tab === "designer" ? "bg-blue-600 hover:bg-blue-700" : "text-white border-gray-700 hover:bg-gray-800"}>
+              Designer Report
+            </Button>
             <Button
               variant={tab === "staff" ? "default" : "outline"}
               onClick={() => setTab("staff")}
@@ -178,6 +182,8 @@ export default function ReportsPage() {
             </Button>
           </div>
         </div>
+
+        {tab === "designer" && <DesignerReport token={token} users={users} ownUserId={toStr((session?.user as any)?.id || (session?.user as any)?._id)} />}
 
         {tab === "staff" && (
           <>
