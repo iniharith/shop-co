@@ -48,11 +48,11 @@ export default function AssistantPage() {
       <Button variant="outline" size="sm" onClick={async () => { try { await navigator.clipboard.writeText('Shared Website / Telegram conversation — handoff for Codex\n\n' + messages.map(m => `[${m.role} · ${m.source} · ${m.status}] ${m.text}`).join('\n\n')); toast.success('Handoff copied. Paste into your Codex chat.'); } catch { toast.error('Could not copy the handoff.'); } }}><Copy className="mr-2 h-4 w-4" />Copy for Codex</Button>
     </div>
     {error && <p role="alert" className="mb-3 rounded-md border border-destructive/30 p-3 text-sm text-destructive">{error}</p>}
-    <div className="flex-1 space-y-4 overflow-y-auto rounded-xl border bg-muted/10 p-4" aria-live="polite">
+    <div className="flex-1 space-y-4 overflow-y-auto rounded-xl border border-border/60 bg-background/30 p-4 backdrop-blur-md" aria-live="polite">
       {!messages.length && !error && <p className="py-10 text-center text-sm text-muted-foreground">Ask about a task, find a filename, or continue a conversation from Telegram.</p>}
       {messages.map(m => {
         const pending = m.approval?.id && !m.approval.decision && messages.some(parent => parent._id === m.parentId && parent.status === 'running');
-        return <div key={m._id} className={`max-w-[95%] rounded-xl border p-3 sm:max-w-[85%] ${m.role === 'user' ? 'ml-auto bg-primary/5' : 'bg-background'}`}>
+        return <div key={m._id} className={`max-w-[95%] rounded-xl border p-3 shadow-sm sm:max-w-[85%] ${m.role === 'user' ? 'ml-auto border-primary/30 bg-[color-mix(in_srgb,hsl(var(--primary))_12%,hsl(var(--card)))] text-card-foreground' : 'border-border bg-card/100 text-card-foreground'}`}>
           <div className="mb-2 flex flex-wrap justify-between gap-2 text-xs text-muted-foreground"><span>{m.role === 'user' ? 'You' : m.approval?.id ? 'Approval required' : 'Assistant'} · {m.source === 'codex' ? 'Codex' : m.source === 'telegram' ? 'Telegram' : 'Website'}</span><time>{new Date(m.createdAt).toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur', dateStyle: 'short', timeStyle: 'short' })}</time></div>
           <p className="whitespace-pre-wrap break-words text-sm">{m.text}</p>
           {m.role === 'user' && <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground"><span>{m.status === 'queued' ? 'Waiting' : m.status === 'running' ? 'Working…' : m.status === 'failed' ? 'Failed — check the result before retrying' : m.status}</span>{['queued', 'running'].includes(m.status) && <button className="underline" onClick={async () => { try { await AxiosInstance(token).post(`/api/owner-chat/messages/${m._id}/cancel`); await refresh(); } catch { toast.error('Cancellation was not confirmed.'); } }}>Cancel</button>}</div>}
