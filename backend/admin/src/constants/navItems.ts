@@ -86,7 +86,7 @@ export const AdminNavItems: NavItem[] = [
     {
         title: 'AI Assistant',
         url: '/admin/assistant',
-        icon: 'message',
+        icon: 'bot',
         isActive: false,
     },
     {
