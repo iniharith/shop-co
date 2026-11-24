@@ -10,6 +10,7 @@ const { extractSearchCandidates } = require('./image-match');
 const { createModelBridge } = require('./model-bridge');
 const { createCheckpoint } = require('./update-checkpoint');
 const { downloadDesignerReport, sendDesignerReport } = require('./designer-report');
+const { createSharedChat } = require('./shared-chat');
 
 const token = process.env.ADMIN_BOT_TOKEN;
 const owner = process.env.ADMIN_TELEGRAM_USER_ID;
@@ -32,6 +33,7 @@ const shopco = createShopCoClient({baseUrl:shopcoUrl,...shopcoSession});
 const station = createStationClient({baseUrl:shopcoUrl,stationId:process.env.PRODUCTION_STATION_ID,deviceKey:process.env.PRODUCTION_STATION_DEVICE_KEY});
 let assistant;
 let modelBridge;
+const sharedChat = process.env.OWNER_CHAT_BRIDGE_SECRET ? createSharedChat({baseUrl:shopcoUrl,secret:process.env.OWNER_CHAT_BRIDGE_SECRET,send}) : null;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function api(method, body) {
   const r = await fetch(`https://api.telegram.org/bot${token}/${method}`, {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(body), signal:AbortSignal.timeout(35000)});
@@ -124,6 +126,9 @@ async function handle(msg) {
   const photo=Array.isArray(msg.photo)&&msg.photo.length?msg.photo[msg.photo.length-1]:(msg.document?.mime_type?.startsWith('image/')?msg.document:null);
   if(photo)return send(await searchPhoto(photo));
   const text = (msg.text || '').trim();
+  const approval = text.match(/^\/(approve|decline)(?:@\w+)?\s+([a-f\d]{24})$/i);
+  if(approval && sharedChat){await sharedChat.decide(approval[2],approval[1].toLowerCase()==='approve'?'accept':'decline');return send('Decision saved in the shared AI conversation.');}
+  if(/^\/assistant(?:@\w+)?$/i.test(text))return send('Shared AI Assistant: https://admin.kampungcetak.com/admin/assistant\nSend ordinary text here to continue the same conversation. Website messages and AI replies are mirrored here.');
   if(!checkpoint && /^\/(?:move|update|awb)(?:@\w+)?(?:\s|$)/.test(text)) return send('Task changes and AWB jobs are unavailable until persistent bot state is configured.');
   if (/^\/(start|help)(@\w+)?$/.test(text)) return send('Shop-Co admin monitor\n/status — website and DNS status\n/task QUERY — search tasks\n/move TASK_ID STATUS — move one task\n/update TASK_ID FIELD VALUE — update title, description or dueDate\n/awb TASK_ID — queue a task at the production station\n/awbstatus JOB_ID — check the station result\n/uploads [YYYY-MM-DD] — uploaded tasks\n/designer [YYYY-MM-DD [YYYY-MM-DD]] — daily designer PDF\n/designer week — this week, one A4 per day\nAll report dates use Malaysia time.');
   if (/^\/status(@\w+)?$/.test(text)) return send(formatStatus(await check()));
@@ -179,6 +184,7 @@ async function handle(msg) {
   }
   if (/^\/uploads(?:@\w+)?(?:\s|$)/.test(text)) return send(await report(text.split(/\s+/)[1] || malaysiaDay()));
   if (text && !text.startsWith('/')) {
+    if(sharedChat){const result=await sharedChat.submit(text,chat,msg.message_id);if(!result.duplicate)await send('Added to your shared AI conversation.');return;}
     const active=getAssistant();if(!active)return send('AI chat is not configured yet. Use /help for available commands.');
     return send(await active.chat(text));
   }
@@ -219,6 +225,7 @@ async function main() {
   if(checkpoint)offset=await checkpoint.read();
   if(process.env.MODEL_BRIDGE_SECRET){modelBridge=createModelBridge({secret:process.env.MODEL_BRIDGE_SECRET});await new Promise((resolve,reject)=>{modelBridge.server.once('error',reject);modelBridge.server.listen(Number(process.env.PORT||3000),'0.0.0.0',resolve)});console.log('Authenticated model bridge started.');}
   await monitor(); await pollIssues(); setInterval(() => void monitor(), 300000).unref(); setInterval(() => void pollIssues(), 300000).unref();
+  if(sharedChat){const relay=()=>void sharedChat.relay().catch(()=>console.error('Shared chat delivery unavailable; retrying.'));relay();setInterval(relay,3000).unref();}
   for (;;) { try { const updates = await api('getUpdates',{offset,timeout:25,allowed_updates:['message']}); for (const u of updates) { const next=u.update_id+1; if(checkpoint)await checkpoint.write(next); offset=next; try { await handle(u.message); } catch { console.error('Command failed.'); try { await send('Could not complete the request. Check the current task or station status before retrying.'); } catch {} } } } catch { console.error('Telegram polling or checkpoint failed; retrying.'); await sleep(5000); } }
 }
 main().catch(() => { console.error('Monitor stopped.'); process.exit(1); });

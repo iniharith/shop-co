@@ -1,0 +1,57 @@
+const test=require('node:test'),assert=require('node:assert/strict');
+const {MongoMemoryReplSet}=require('mongodb-memory-server-core');
+const mongoose=require('mongoose'),express=require('express'),jwt=require('jsonwebtoken');
+process.env.JWT_ACCESS_SECRET='owner-chat-access-test';process.env.JWT_REFRESH_SECRET='owner-chat-refresh-test';process.env.JWT_TOKEN='owner-chat-token-test';
+process.env.OWNER_CHAT_USER_ID='0123456789abcdef01234567';process.env.OWNER_CHAT_BRIDGE_SECRET='isolated-owner-chat-bridge-secret-0123456789';
+const router=require('../dist/presentation/routes/ownerChatRoutes').default;
+const{OwnerChatMessage:Message,OwnerChatRoom:Room}=require('../dist/domain/entities/OwnerChat');
+test('private shared conversation serializes commands, rejects other users, and never retries uncertain work',async()=>{
+ const repl=await MongoMemoryReplSet.create({replSet:{count:1}});let server;
+ try{
+  await mongoose.connect(repl.getUri(),{dbName:'owner-chat-isolated'});await Promise.all([Message.init(),Room.init()]);
+  const owner=process.env.OWNER_CHAT_USER_ID,other='fedcba987654321001234567';
+  await mongoose.connection.db.collection('users').insertMany([{_id:new mongoose.Types.ObjectId(owner),name:'Owner',email:'owner@isolated.invalid',role:'admin'},{_id:new mongoose.Types.ObjectId(other),name:'Other boss',email:'other@isolated.invalid',role:'boss'}]);
+  const app=express();app.use(express.json());app.use('/api/owner-chat',router);app.use((e,req,res,next)=>res.status(500).json({error:e.message}));
+  server=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});
+  const base='http://127.0.0.1:'+server.address().port+'/api/owner-chat';
+  const tokens={owner:jwt.sign({userId:owner},process.env.JWT_ACCESS_SECRET),other:jwt.sign({userId:other},process.env.JWT_ACCESS_SECRET),bridge:process.env.OWNER_CHAT_BRIDGE_SECRET};
+  async function call(path='',body,who='owner'){const r=await fetch(base+path,{method:body===undefined?'GET':'POST',headers:{Authorization:'Bearer '+tokens[who],'Content-Type':'application/json'},...(body===undefined?{}:{body:JSON.stringify(body)})});return{status:r.status,data:await r.json()};}
+  assert.equal((await call('',undefined,'other')).status,403);
+  assert.equal((await call('/worker/claim',{})).status,403);
+  assert.equal((await call('/messages',{text:'x'.repeat(12001),clientId:'too-long'})).status,400);
+  const requests=await Promise.all(Array.from({length:4},()=>call('/messages',{text:'Find IKHS-5 (HITAM)',clientId:'same-request',source:'telegram'})));
+  assert.equal(await Message.countDocuments({role:'user'}),1);
+  const first=requests[0].data.message;assert.equal(first.source,'website');
+  const second=(await call('/messages',{text:'Then check the PC',clientId:'telegram:22'},'bridge')).data.message;
+  assert.equal(second.source,'telegram');
+  const claims=await Promise.all([call('/worker/claim',{},'bridge'),call('/worker/claim',{},'bridge')]);
+  const jobs=claims.map(c=>c.data.job).filter(Boolean);assert.equal(jobs.length,1);assert.equal(jobs[0]._id,first._id);
+  const identity={messageId:first._id,leaseToken:jobs[0].leaseToken};
+  const publicRows=(await call()).data.messages;assert.ok(publicRows.every(m=>!('leaseToken'in m)));
+  assert.equal((await call('/worker/result',{...identity,leaseToken:'wrong',text:'Do not accept'},'bridge')).status,409);
+  const approval=(await call('/worker/approval',{...identity,prompt:'Run Get-Date?',approvalId:'approval-test'},'bridge')).data.message;
+  assert.equal((await call('/approvals/'+approval._id,{decision:'accept'},'other')).status,403);
+  assert.equal((await call('/approvals/'+approval._id,{decision:'accept'})).status,200);
+  assert.equal((await call('/approvals/'+approval._id,{decision:'accept'})).status,409);
+  assert.equal((await call('/worker/state',{...identity,approvalMessageId:approval._id},'bridge')).data.decision,'accept');
+  assert.equal((await call('/worker/result',{...identity,text:'Found it',codexThreadId:'shared-thread'},'bridge')).status,200);
+  assert.equal((await call('/worker/result',{...identity,text:'Duplicate'},'bridge')).status,409);
+  assert.equal(await Message.countDocuments({role:'assistant',parentId:first._id}),1);
+  const next=(await call('/worker/claim',{},'bridge')).data.job;assert.equal(next._id,second._id);
+  await Room.updateOne({_id:owner},{$set:{leaseUntil:new Date(Date.now()-1000)}});
+  const third=(await call('/messages',{text:'New work',clientId:'third'})).data.message;
+  const afterCrash=(await call('/worker/claim',{},'bridge')).data.job;assert.equal(afterCrash._id,third._id);
+  assert.equal((await Message.findById(second._id).lean()).status,'failed');
+  assert.equal((await call('/worker/result',{messageId:second._id,leaseToken:next.leaseToken,text:'Late result'},'bridge')).status,409);
+  await call('/messages/'+third._id+'/cancel',{});
+  assert.equal((await call('/worker/heartbeat',{messageId:third._id,leaseToken:afterCrash.leaseToken},'bridge')).data.active,false);
+  assert.equal((await call('/worker/result',{messageId:third._id,leaseToken:afterCrash.leaseToken,text:'Cancelled'},'bridge')).status,200);
+  assert.equal(await Message.countDocuments({role:'assistant',parentId:third._id}),0);
+  assert.equal((await call('/worker/claim',{},'bridge')).data.job,null);
+  const relay=(await call('/relay',undefined,'bridge')).data.messages;
+  assert.ok(relay.some(m=>m.role==='assistant'));
+  assert.ok(!relay.some(m=>m.role==='user'&&m.source==='telegram'));
+  assert.equal((await call('/relay')).status,403);
+  assert.equal((await call()).data.codexThreadId,'shared-thread');
+ }finally{if(server)await new Promise(r=>server.close(r));await mongoose.disconnect();await repl.stop();}
+});

@@ -59,7 +59,7 @@ test('task entity filter includes legacy task routes without matching order rout
 });
 
 test('performance telemetry is not duplicated into audit history, while similarly named business routes remain audited',async()=>{
- for(const route of ['/api/web-vitals','/api/web-vitals/?batch=1','/api/web-vitals-settings']){
+ for(const route of ['/api/web-vitals','/api/web-vitals/?batch=1','/api/owner-chat/worker/claim','/api/web-vitals-settings']){
   const writes=[];
   const {auditMiddleware}=load('middlewares/audit.middleware.ts',{'../../domain/entities/AuditLog':{AuditLog:{create:async value=>writes.push(value)}},'../../domain/entities/Task':{Task:{}}});
   let finish,nextCalls=0;

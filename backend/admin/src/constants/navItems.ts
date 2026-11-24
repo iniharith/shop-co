@@ -84,6 +84,12 @@ export const AdminNavItems: NavItem[] = [
         isActive: false,
     },
     {
+        title: 'AI Assistant',
+        url: '/admin/assistant',
+        icon: 'message',
+        isActive: false,
+    },
+    {
         title: 'Production',
         url: '/admin/production',
         icon: 'printer',
@@ -140,7 +146,7 @@ export const roleByNavItems = (role: string) => {
         allowedTitles = ['Sublimation'];
     } else if (role !== "sysadmin" && role !== "admin" && role !== "boss") {
         // Only sysadmin, admin, and boss can access administrative tools and catalog.
-        allowedTitles = allowedTitles.filter(title => title !== 'Server Status' && title !== 'Tools' && title !== 'Monitoring' && title !== 'Catalog');
+        allowedTitles = allowedTitles.filter(title => title !== 'Server Status' && title !== 'Tools' && title !== 'Monitoring' && title !== 'Catalog' && title !== 'AI Assistant');
     }
 
     // Route and implementation remain available; only hide it from navigation for now.

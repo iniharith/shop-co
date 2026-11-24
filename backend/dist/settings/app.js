@@ -38,6 +38,7 @@ const sysadminRoutes_1 = __importDefault(require("../presentation/routes/sysadmi
 const templateFontRoutes_1 = __importDefault(require("../presentation/routes/templateFontRoutes"));
 const diyTemplateRoutes_1 = __importDefault(require("../presentation/routes/diyTemplateRoutes"));
 const chatRoutes_1 = __importDefault(require("../presentation/routes/chatRoutes"));
+const ownerChatRoutes_1 = __importDefault(require("../presentation/routes/ownerChatRoutes"));
 const appRoutes_1 = __importDefault(require("../presentation/routes/appRoutes"));
 const webhook_route_1 = __importDefault(require("../presentation/routes/webhook.route"));
 const projectRoutes_1 = __importDefault(require("../presentation/routes/projectRoutes"));
@@ -129,6 +130,7 @@ app.use('/api/projects', projectRoutes_1.default);
 app.use('/api/audit-logs', auditRoutes_1.default);
 app.use('/api/tools', toolsRoutes_1.default);
 app.use('/api/chat', chatRoutes_1.default);
+app.use('/api/owner-chat', ownerChatRoutes_1.default);
 app.use('/api/sysadmin', sysadminRoutes_1.default);
 app.use('/api/template-fonts', templateFontRoutes_1.default);
 app.use('/api/diy-templates', diyTemplateRoutes_1.default);

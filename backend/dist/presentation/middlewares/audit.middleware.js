@@ -39,7 +39,9 @@ const describeRequest = (req) => {
 const auditMiddleware = (req, res, next) => {
     const requestPath = req.originalUrl.split('?')[0];
     const isPerformanceTelemetry = requestPath === '/api/web-vitals' || requestPath.startsWith('/api/web-vitals/');
-    if (!mutatingMethods.has(req.method) || isPerformanceTelemetry || hiddenRoutes.some(route => req.originalUrl.startsWith(route))) {
+    // The assistant has its own durable transcript; polling/leases must not flood audit storage.
+    const isOwnerChat = requestPath === '/api/owner-chat' || requestPath.startsWith('/api/owner-chat/');
+    if (!mutatingMethods.has(req.method) || isPerformanceTelemetry || isOwnerChat || hiddenRoutes.some(route => req.originalUrl.startsWith(route))) {
         next();
         return;
     }
