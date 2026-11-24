@@ -50,6 +50,7 @@ const AuditLogSchema = new mongoose_1.Schema({
     ip: { type: String },
     userAgent: { type: String },
 }, { timestamps: true });
-AuditLogSchema.index({ createdAt: -1 });
+// Older history remains recoverable from the daily encrypted database backups.
+AuditLogSchema.index({ createdAt: -1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
 AuditLogSchema.index({ entityType: 1, entityId: 1, createdAt: -1 });
 exports.AuditLog = mongoose_1.default.model('AuditLog', AuditLogSchema);

@@ -28,7 +28,9 @@ const describeRequest = (req: Request) => {
 };
 
 export const auditMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  if (!mutatingMethods.has(req.method) || hiddenRoutes.some(route => req.originalUrl.startsWith(route))) {
+  const requestPath = req.originalUrl.split('?')[0];
+  const isPerformanceTelemetry = requestPath === '/api/web-vitals' || requestPath.startsWith('/api/web-vitals/');
+  if (!mutatingMethods.has(req.method) || isPerformanceTelemetry || hiddenRoutes.some(route => req.originalUrl.startsWith(route))) {
     next();
     return;
   }

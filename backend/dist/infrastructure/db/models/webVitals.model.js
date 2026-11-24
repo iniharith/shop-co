@@ -84,5 +84,6 @@ const WebVitalsSchema = new mongoose_1.Schema({
 });
 WebVitalsSchema.index({ metric: 1, timestamp: -1 });
 WebVitalsSchema.index({ route: 1, metric: 1 });
-WebVitalsSchema.index({ timestamp: -1 });
+// The report supports up to 90 days; do not retain raw telemetry indefinitely.
+WebVitalsSchema.index({ timestamp: -1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
 exports.WebVitalsModel = mongoose_1.default.model("WebVitals", WebVitalsSchema);

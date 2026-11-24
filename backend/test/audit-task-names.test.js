@@ -57,3 +57,15 @@ test('new task status log captures task name and a failed lookup falls back to i
 test('task entity filter includes legacy task routes without matching order routes',async()=>{
  const result=await getLogs('A+B (Poster)','tasks');assert.deepEqual(result.data.map(r=>r._id),['1','5']);assert.equal(result.pagination.total,2);
 });
+
+test('performance telemetry is not duplicated into audit history, while similarly named business routes remain audited',async()=>{
+ for(const route of ['/api/web-vitals','/api/web-vitals/?batch=1','/api/web-vitals-settings']){
+  const writes=[];
+  const {auditMiddleware}=load('middlewares/audit.middleware.ts',{'../../domain/entities/AuditLog':{AuditLog:{create:async value=>writes.push(value)}},'../../domain/entities/Task':{Task:{}}});
+  let finish,nextCalls=0;
+  auditMiddleware({method:'POST',originalUrl:route,body:{},get:()=>''},{statusCode:200,on(_event,fn){finish=fn}},()=>nextCalls++);
+  if(finish){finish();await new Promise(resolve=>setImmediate(resolve));}
+  assert.equal(nextCalls,1);
+  assert.equal(writes.length,route==='/api/web-vitals-settings'?1:0);
+ }
+});

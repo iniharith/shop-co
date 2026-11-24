@@ -37,7 +37,9 @@ const describeRequest = (req) => {
     return { entityType, entityId, action, summary: `${action.replace(/_/g, ' ')}: ${String(label).slice(0, 300)}` };
 };
 const auditMiddleware = (req, res, next) => {
-    if (!mutatingMethods.has(req.method) || hiddenRoutes.some(route => req.originalUrl.startsWith(route))) {
+    const requestPath = req.originalUrl.split('?')[0];
+    const isPerformanceTelemetry = requestPath === '/api/web-vitals' || requestPath.startsWith('/api/web-vitals/');
+    if (!mutatingMethods.has(req.method) || isPerformanceTelemetry || hiddenRoutes.some(route => req.originalUrl.startsWith(route))) {
         next();
         return;
     }
