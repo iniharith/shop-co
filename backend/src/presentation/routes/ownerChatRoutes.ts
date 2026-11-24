@@ -24,7 +24,7 @@ router.use((req: any, res, next) => {
 const bridgeOnly = (req: any, res: any, next: any) => req.ownerChatBridge ? next() : res.status(403).json({ message: 'Worker access required' });
 async function transaction(fn: (session: mongoose.ClientSession) => Promise<any>) {
   const session = await mongoose.startSession();
-  try { return await session.withTransaction(() => fn(session)); } finally { await session.endSession(); }
+  try { return await session.withTransaction(() => fn(session), { readPreference: "primary" }); } finally { await session.endSession(); }
 }
 async function ensureRoom() { await Room.updateOne({ _id: owner() }, { $setOnInsert: { workerSeenAt: new Date(0) } }, { upsert: true }); }
 

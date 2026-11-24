@@ -60,7 +60,7 @@ function transaction(fn) {
     return __awaiter(this, void 0, void 0, function* () {
         const session = yield mongoose_1.default.startSession();
         try {
-            return yield session.withTransaction(() => fn(session));
+            return yield session.withTransaction(() => fn(session), { readPreference: "primary" });
         }
         finally {
             yield session.endSession();
