@@ -15,7 +15,7 @@ async function main(){
  let idleHeartbeat=0;
  for(;;){try{
   if(Date.now()-idleHeartbeat>10000){await api('/worker/heartbeat',{});idleHeartbeat=Date.now();health('connected');}
-  const {job}=await api('/worker/claim');if(!job){await sleep(2500);continue;}
+  const {job}=await api('/worker/claim',{});if(!job){await sleep(2500);continue;}
   const controller=new AbortController(),identity={messageId:String(job._id),leaseToken:job.leaseToken};health('working');
   let renewing=false;
   const renewal=setInterval(()=>{if(renewing)return;renewing=true;void api('/worker/heartbeat',identity).then(r=>{health('working');if(!r.active)controller.abort();}).catch(()=>controller.abort()).finally(()=>{renewing=false;});},10000);
