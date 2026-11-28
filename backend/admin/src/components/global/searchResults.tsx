@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   ArrowUpRight,
   ChevronRight,
@@ -158,6 +159,26 @@ type SearchResultItemProps = {
   onActiveIndexChange?: (index: number) => void;
 };
 
+function FileSearchThumbnail({ id }: { id: string }) {
+  const [failed, setFailed] = useState(false);
+  const backend = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
+  if (failed) return <FileText className="size-4" />;
+
+  return (
+    // The existing preview endpoint serves the stored thumbnail and signs private S3 URLs.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`${backend.replace(/\/$/, "")}/api/files/${encodeURIComponent(id)}/preview?thumbnail=true`}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      className="size-full object-contain"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 export function GlobalSearchResultItem({
   hit,
   index,
@@ -172,6 +193,9 @@ export function GlobalSearchResultItem({
   const title = getGlobalSearchHitTitle(hit);
   const details = getGlobalSearchHitDetails(hit);
   const EndIcon = compact ? ChevronRight : ArrowUpRight;
+  const imageFile = hit.group === "files" && (
+    hit.item.mimetype?.toLowerCase().startsWith("image/") || /\.(?:jpe?g|png|gif|webp|avif|bmp|svg)$/i.test(hit.item.name)
+  );
 
   return (
     <button
@@ -189,8 +213,8 @@ export function GlobalSearchResultItem({
         compact && active && "bg-muted"
       )}
     >
-      <span className={cn("flex shrink-0 items-center justify-center", compact ? "size-8 rounded-lg" : "size-10 rounded-xl", iconClassName)}>
-        <Icon className={compact ? "size-4" : "size-5"} />
+      <span className={cn("flex shrink-0 items-center justify-center overflow-hidden", imageFile ? (compact ? "size-10 rounded-lg" : "size-16 rounded-xl") : (compact ? "size-8 rounded-lg" : "size-10 rounded-xl"), iconClassName)}>
+        {imageFile ? <FileSearchThumbnail key={hit.item.id} id={hit.item.id} /> : <Icon className={compact ? "size-4" : "size-5"} />}
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex min-w-0 items-center gap-2">
